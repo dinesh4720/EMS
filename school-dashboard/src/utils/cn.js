@@ -1,14 +1,10 @@
-/**
- * cn - Utility for merging class names
- * Simple implementation without external dependencies
- */
+import { twMerge } from 'tailwind-merge';
 
+/**
+ * cn - Utility for merging class names with Tailwind conflict resolution
+ */
 export function cn(...classes) {
-  return classes
-    .filter(Boolean)
-    .flat(Infinity)
-    .join(' ')
-    .trim();
+  return twMerge(classes.filter(Boolean).flat(Infinity).join(' '));
 }
 
 export default cn;

@@ -20,7 +20,8 @@ import { MinimalButton } from '../../components/ui';
 import { getAcademicYearOptions } from '../../utils/constants';
 import { useChartTheme, CHART_COLORS } from '../../utils/chartTheme';
 import { useTranslation } from 'react-i18next';
-import { formatShortDate } from '../../utils/dateFormatter';
+import { formatShortDate, toTodayDateString } from '../../utils/dateFormatter';
+import toast from 'react-hot-toast';
 
 // Global cache for API responses - persists across component mounts
 // [AUDIT-539] Clear on logout to prevent tenant data leaking across sessions
@@ -181,6 +182,77 @@ const PerformanceDashboard = ({ onCreateExam }) => {
     setFilters({ class: 'all', year: null });
   };
 
+  const handleExportReport = () => {
+    const sections = [];
+
+    // Summary stats
+    sections.push('Performance Dashboard Report');
+    sections.push(`Academic Year: ${selectedAcademicYear}`);
+    sections.push(`Generated: ${new Date().toLocaleDateString()}`);
+    sections.push('');
+
+    sections.push('Summary');
+    sections.push('Metric,Value');
+    sections.push(`Total Exams,${stats.totalExams}`);
+    sections.push(`Scheduled,${stats.scheduled}`);
+    sections.push(`Completed,${stats.completed}`);
+    sections.push(`Published,${stats.published}`);
+    sections.push(`Average Score,${stats.avgScore}`);
+    sections.push(`Pass Rate,${stats.passingRate}`);
+    sections.push('');
+
+    // Class performance
+    if (classPerformance.length > 0) {
+      sections.push('Class-wise Performance');
+      sections.push('Class,Average %');
+      classPerformance.forEach(c => {
+        sections.push(`"${c.className || c.classId}",${c.averagePercentage}`);
+      });
+      sections.push('');
+    }
+
+    // Subject averages
+    if (subjectAverages.length > 0) {
+      sections.push('Subject Averages');
+      sections.push('Subject,Average');
+      subjectAverages.forEach(s => {
+        sections.push(`"${s.subject}",${s.average}`);
+      });
+      sections.push('');
+    }
+
+    // Grade distribution
+    if (gradeDistribution.length > 0) {
+      sections.push('Grade Distribution');
+      sections.push('Grade,Count');
+      gradeDistribution.forEach(g => {
+        sections.push(`${g.name},${g.value}`);
+      });
+      sections.push('');
+    }
+
+    // Top performers
+    if (topPerformers.length > 0) {
+      sections.push('Top Performers');
+      sections.push('Name,Class,Percentage');
+      topPerformers.forEach(s => {
+        sections.push(`"${s.name}","${s.class}",${s.percentage}`);
+      });
+    }
+
+    const csvContent = sections.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `performance-report-${selectedAcademicYear}-${toTodayDateString()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    toast.success('Report exported');
+  };
+
   // Build class comparison chart data from backend performance data
   const buildClassComparisonData = () => {
     if (classPerformance.length > 0) {
@@ -215,7 +287,20 @@ const PerformanceDashboard = ({ onCreateExam }) => {
     passingRate: dashboardStats?.passingRate != null ? `${dashboardStats.passingRate}%` : '—'
   };
 
-  const classComparisonData = buildClassComparisonData();
+  // Apply class filter client-side
+  const filteredClassPerformance = filters.class !== 'all'
+    ? classPerformance.filter(c => c.classId === filters.class)
+    : classPerformance;
+  const filteredTopPerformers = filters.class !== 'all'
+    ? topPerformers.filter(s => {
+        const matchClass = classPerformance.find(c => c.classId === filters.class);
+        return matchClass ? s.class === matchClass.className : false;
+      })
+    : topPerformers;
+
+  const classComparisonData = filteredClassPerformance.length > 0
+    ? filteredClassPerformance.map(c => ({ class: c.className || c.classId, average: c.averagePercentage }))
+    : buildClassComparisonData();
   const subjectAveragesData = buildSubjectAveragesData();
   const gradeDistributionData = buildGradeDistributionData();
 
@@ -235,7 +320,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
           onClearAll={handleClearFilters}
           activeFiltersCount={activeFiltersCount}
         />
-        <MinimalButton variant="ghost" icon={<Download size={16} />}>
+        <MinimalButton variant="ghost" icon={<Download size={16} />} onClick={handleExportReport}>
           Export Report
         </MinimalButton>
       </div>
@@ -348,10 +433,10 @@ const PerformanceDashboard = ({ onCreateExam }) => {
             </div>
           </CardHeader>
           <CardBody className="p-6">
-            {topPerformers.length > 0 ? (
+            {filteredTopPerformers.length > 0 ? (
               <div className="space-y-3">
-                {topPerformers.slice(0, 5).map((student, idx) => (
-                  <div key={student._id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-zinc-900">
+                {filteredTopPerformers.slice(0, 5).map((student, idx) => (
+                  <div key={student.studentId || idx} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-zinc-900">
                     <div className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
                         idx === 0 ? 'bg-yellow-500' : idx === 1 ? 'bg-gray-400' : idx === 2 ? 'bg-amber-600' : 'bg-gray-300'
@@ -389,32 +474,40 @@ const PerformanceDashboard = ({ onCreateExam }) => {
             </div>
           </CardHeader>
           <CardBody className="p-6">
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie
-                  data={gradeDistributionData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={40}
-                  outerRadius={70}
-                  paddingAngle={2}
-                  dataKey="value"
-                >
-                  {gradeDistributionData.map((entry) => (
-                    <Cell key={`cell-${entry.name}`} fill={entry.color} />
+            {gradeDistributionData.length > 0 ? (
+              <>
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie
+                      data={gradeDistributionData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={70}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {gradeDistributionData.map((entry) => (
+                        <Cell key={`cell-${entry.name}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={chart.tooltipStyle} itemStyle={chart.tooltipItemStyle} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="flex flex-wrap justify-center gap-3 mt-4">
+                  {gradeDistributionData.map((item) => (
+                    <div key={`legend-${item.name}`} className="flex items-center gap-1.5 text-xs">
+                      <div className="w-3 h-3 rounded" style={{ backgroundColor: item.color }} />
+                      <span className="text-gray-600 dark:text-zinc-400">{item.name}</span>
+                    </div>
                   ))}
-                </Pie>
-                <Tooltip contentStyle={chart.tooltipStyle} itemStyle={chart.tooltipItemStyle} />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="flex flex-wrap justify-center gap-3 mt-4">
-              {gradeDistributionData.map((item) => (
-                <div key={`legend-${item.name}`} className="flex items-center gap-1.5 text-xs">
-                  <div className="w-3 h-3 rounded" style={{ backgroundColor: item.color }} />
-                  <span className="text-gray-600 dark:text-zinc-400">{item.name}</span>
                 </div>
-              ))}
-            </div>
+              </>
+            ) : (
+              <div className="h-[250px] flex items-center justify-center text-gray-400 dark:text-zinc-500">
+                No data available
+              </div>
+            )}
           </CardBody>
         </Card>
 
@@ -506,7 +599,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
                   isPressable
                   shadow="none"
                   className="border border-gray-200 dark:border-zinc-700 hover:shadow-md transition-all"
-                  onPress={() => navigate(`/academics/exams/${exam.id}`)}
+                  onPress={() => navigate(`/academics/exams/${exam._id || exam.id}`)}
                 >
                   <CardBody className="p-4">
                     <div className="flex justify-between items-start mb-3">
@@ -522,7 +615,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
                         }
                         variant="flat"
                       >
-                        {exam.status?.replace('_', ' ')}
+                        {exam.status?.replace(/_/g, ' ')}
                       </Chip>
                     </div>
                     <h4 className="font-medium text-gray-900 dark:text-zinc-100 mb-1">{exam.name}</h4>

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Flag, Plus, X } from 'lucide-react';
 import { featureFlagsAdminApi } from '../../services/api';
 import { useTranslation } from 'react-i18next';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import useConfirmDialog from '../../hooks/useConfirmDialog';
 
 const EMPTY_FLAG = { key: '', description: '', defaultEnabled: false, plan: 'starter' };
 const PLAN_OPTIONS = ['starter', 'growth', 'enterprise'];
@@ -65,6 +67,7 @@ export default function FeatureFlagsPanel() {
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState(EMPTY_FLAG);
   const [creating, setCreating] = useState(false);
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
 
   const load = async () => {
     setLoading(true);
@@ -93,17 +96,24 @@ export default function FeatureFlagsPanel() {
     }
   };
 
-  const handleDelete = async (key) => {
-    if (!window.confirm(`Are you sure you want to delete the feature flag "${key}"? This action cannot be undone.`)) return;
-    setSaving((prev) => ({ ...prev, [key]: true }));
-    try {
-      await featureFlagsAdminApi.delete(key);
-      await load();
-    } catch (err) {
-      setError(err.message || 'Delete failed');
-    } finally {
-      setSaving((prev) => ({ ...prev, [key]: false }));
-    }
+  const handleDelete = (key) => {
+    showConfirm({
+      title: 'Delete Feature Flag',
+      message: `Are you sure you want to delete the feature flag "${key}"? This action cannot be undone.`,
+      variant: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        setSaving((prev) => ({ ...prev, [key]: true }));
+        try {
+          await featureFlagsAdminApi.delete(key);
+          await load();
+        } catch (err) {
+          setError(err.message || 'Delete failed');
+        } finally {
+          setSaving((prev) => ({ ...prev, [key]: false }));
+        }
+      },
+    });
   };
 
   const handleCreate = async (e) => {
@@ -222,6 +232,8 @@ export default function FeatureFlagsPanel() {
           )}
         </div>
       )}
+
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </div>
   );
 }

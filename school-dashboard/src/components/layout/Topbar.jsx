@@ -13,6 +13,7 @@ import { studentsApi, notificationsApi } from "../../services/api";
 import { SUPPORTED_LANGUAGES, setLanguage } from "../../i18n";
 
 function Topbar({ isSidebarOpen }) {
+    const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform);
     const [searchOpen, setSearchOpen] = useState(false);
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
     const [isLangOpen, setIsLangOpen] = useState(false);
@@ -27,10 +28,9 @@ function Topbar({ isSidebarOpen }) {
 
     useEffect(() => {
         const fetchUnreadCount = () => {
-            notificationsApi.getAll()
+            notificationsApi.getUnreadCount()
                 .then((data) => {
-                    const list = Array.isArray(data) ? data : [];
-                    setNotificationUnreadCount(list.filter(n => !n.read).length);
+                    setNotificationUnreadCount(data?.count ?? 0);
                 })
                 .catch(() => {
                     setNotificationUnreadCount(0);
@@ -55,24 +55,30 @@ function Topbar({ isSidebarOpen }) {
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, []);
 
-    useEffect(() => {
+    const studentIdFromPath = useMemo(() => {
         const parts = location.pathname.split("/").filter(Boolean);
         const studentIndex = parts.indexOf("students");
-        const studentId = studentIndex >= 0 ? parts[studentIndex + 1] : null;
-
+        const id = studentIndex >= 0 ? parts[studentIndex + 1] : null;
         if (
-            !studentId ||
-            studentId === "attendance" ||
-            studentId === "submissions" ||
-            (!isObjectId(studentId) && !/^[a-f\d]{20,}$/i.test(studentId))
+            !id ||
+            id === "attendance" ||
+            id === "submissions" ||
+            (!isObjectId(id) && !/^[a-f\d]{20,}$/i.test(id))
         ) {
+            return null;
+        }
+        return id;
+    }, [location.pathname]);
+
+    useEffect(() => {
+        if (!studentIdFromPath) {
             setResolvedStudentLabel(null);
             return;
         }
 
         let isActive = true;
 
-        studentsApi.getById(studentId)
+        studentsApi.getById(studentIdFromPath)
             .then((student) => {
                 if (!isActive) {
                     return;
@@ -82,20 +88,20 @@ function Topbar({ isSidebarOpen }) {
                     ? student.name
                     : student?.admissionId
                         ? `Student ${student.admissionId}`
-                        : `...${studentId.slice(-8)}`;
+                        : `...${studentIdFromPath.slice(-8)}`;
 
-                setResolvedStudentLabel({ id: studentId, label });
+                setResolvedStudentLabel({ id: studentIdFromPath, label });
             })
             .catch(() => {
                 if (isActive) {
-                    setResolvedStudentLabel({ id: studentId, label: `...${studentId.slice(-8)}` });
+                    setResolvedStudentLabel({ id: studentIdFromPath, label: `...${studentIdFromPath.slice(-8)}` });
                 }
             });
 
         return () => {
             isActive = false;
         };
-    }, [location.pathname]);
+    }, [studentIdFromPath]);
 
     const breadcrumbs = useMemo(() => {
         const path = location.pathname;
@@ -197,7 +203,7 @@ function Topbar({ isSidebarOpen }) {
                     <Search className="text-gray-400 dark:text-zinc-500" size={16} />
                     <span className="text-gray-400 dark:text-zinc-500 text-sm flex-1 text-left">Search...</span>
                     <div className="flex items-center gap-1 text-gray-400 dark:text-zinc-500 bg-gray-50 dark:bg-zinc-800 px-2 py-1 rounded border border-gray-200 dark:border-zinc-700">
-                        <Command size={11} />
+                        {isMac ? <Command size={11} /> : <span className="text-[10px] font-medium">Ctrl</span>}
                         <span className="text-[10px] font-medium">K</span>
                     </div>
                 </button>
@@ -230,7 +236,9 @@ function Topbar({ isSidebarOpen }) {
                         </button>
                     </PopoverTrigger>
                     <PopoverContent className="p-0 w-[380px]">
-                        <NotificationCenter onClose={() => setIsNotificationOpen(false)} isPopover={true} />
+                        {isNotificationOpen && (
+                            <NotificationCenter onClose={() => setIsNotificationOpen(false)} isPopover={true} />
+                        )}
                     </PopoverContent>
                 </Popover>
 

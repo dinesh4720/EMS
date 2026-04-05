@@ -31,7 +31,7 @@ export function SchoolProvider({ children }) {
  *  isBeforeSchoolHours,
  *  updateSchoolSettings, addSubject, updateSubject, deleteSubject,
  *  addEvent, updateEvent, deleteEvent, getEventsForDate,
- *  addFeePayment, getStudentFeeHistory, addAnnouncement,
+ *  addFeePayment, syncFeePaymentLocal, getStudentFeeHistory, addAnnouncement,
  *  addLeaveType, updateLeaveType, deleteLeaveType,
  *  addFeeHead, updateFeeHead, deleteFeeHead,
  *  updateThemeSettings, resetThemeSettings

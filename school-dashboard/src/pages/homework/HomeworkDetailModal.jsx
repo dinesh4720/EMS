@@ -38,8 +38,8 @@ export default function HomeworkDetailModal({ homeworkId, onClose, onDataChanged
       const classId = res?.classId?._id || res?.classId;
       if (classId) {
         try {
-          const students = await request(`/students?classId=${classId}&limit=200`);
-          setClassStudents(students?.students || students?.data || (Array.isArray(students) ? students : []));
+          const studentsRes = await request(`/students?classId=${classId}&limit=200`);
+          setClassStudents(studentsRes?.data ?? []);
         } catch {
           // Non-critical — unsubmitted list simply won't show
         }

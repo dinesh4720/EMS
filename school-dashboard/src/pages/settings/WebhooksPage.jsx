@@ -78,9 +78,11 @@ export default function WebhooksPage() {
     }
     setSaving(true);
     try {
+      const payload = { ...form };
+      if (!payload.secret) delete payload.secret;
       const res = await request('/webhooks', {
         method: 'POST',
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       if (res?.secret) setNewSecret(res.secret);
       toast.success('Webhook created');

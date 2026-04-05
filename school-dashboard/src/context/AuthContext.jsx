@@ -57,6 +57,7 @@ export const AuthProvider = ({ children }) => {
           return;
         }
 
+        // Explicit auth rejection — clear everything
         if (status === 401 || status === 403) {
           clearStoredUser();
           if (isMounted) {
@@ -66,21 +67,24 @@ export const AuthProvider = ({ children }) => {
           }
           return;
         }
+
+        // SECURITY: Network failure (status 0) or any non-OK response that
+        // isn't an explicit auth rejection — fail closed. Do NOT fall through
+        // to unverified sessionStorage auth, as an attacker could force a
+        // network error (e.g. airplane mode, DNS hijack) to bypass server
+        // verification and authenticate with tampered sessionStorage data.
+        if (isMounted) {
+          setUser(null);
+          setIsAuthenticated(false);
+          setLoading(false);
+        }
       } catch (error) {
-        console.warn('Session restore failed, using stored user fallback:', error.message);
-      }
-
-      // SECURITY: When falling back to sessionStorage, the role is NOT
-      // verified by the server. Mark it so the permission system can
-      // refuse to grant elevated privileges based on a potentially
-      // tampered sessionStorage value.
-      if (storedUser?.id && isMounted) {
-        setUser({ ...storedUser, _roleVerified: false });
-        setIsAuthenticated(true);
-      }
-
-      if (isMounted) {
-        setLoading(false);
+        console.warn('Session restore failed:', error.message);
+        if (isMounted) {
+          setUser(null);
+          setIsAuthenticated(false);
+          setLoading(false);
+        }
       }
     };
 
@@ -114,8 +118,8 @@ export const AuthProvider = ({ children }) => {
         },
         credentials: 'include',
         body: JSON.stringify({
-          email: emailOrPhone.includes('@') ? emailOrPhone : undefined,
-          phone: !emailOrPhone.includes('@') ? emailOrPhone : undefined,
+          email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailOrPhone) ? emailOrPhone : undefined,
+          phone: /^[0-9]{7,15}$/.test(emailOrPhone) ? emailOrPhone : undefined,
           password
         }),
       });
@@ -160,10 +164,6 @@ export const AuthProvider = ({ children }) => {
     navigate('/login');
   };
 
-  const updatePassword = () => false;
-
-  const updateStaffCredentials = () => false;
-
   return (
     <AuthContext.Provider value={{
       user,
@@ -171,8 +171,6 @@ export const AuthProvider = ({ children }) => {
       login,
       logout,
       loading,
-      updatePassword,
-      updateStaffCredentials
     }}>
       {children}
     </AuthContext.Provider>

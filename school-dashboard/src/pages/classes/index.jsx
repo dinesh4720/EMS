@@ -15,7 +15,7 @@ import { PageLayout, MinimalButton } from "../../components/ui";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 
-const classNames = ["Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8", "Class 9", "Class 10", "Class 11", "Class 12"];
+const classNames = ["Nursery", "LKG", "UKG", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8", "Class 9", "Class 10", "Class 11", "Class 12"];
 const sections = ["A", "B", "C", "D"];
 
 export default function ClassesPage() {
@@ -28,6 +28,13 @@ export default function ClassesPage() {
   const [formData, setFormData] = useState({ name: "", section: "", strength: "", teacherId: "", room: "", block: "" });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleDrawerOpenChange = (open) => {
+    setIsOpen(open);
+    if (!open && isSubmitting) {
+      setIsSubmitting(false);
+    }
+  };
 
   const getActiveTab = () => {
     if (location.pathname.includes("/attendance")) return "attendance";
@@ -86,8 +93,9 @@ export default function ClassesPage() {
         ...(formData.block && { block: formData.block }),
       });
 
+      // Fire refetch in background — don't block the UI on cache refresh
       if (refetch) {
-        await refetch(true);
+        refetch(true).catch(() => {});
       }
 
       toast.success(`Class ${formData.name}-${formData.section} created successfully with ${selectedTeacher.name} as class teacher`);
@@ -216,7 +224,7 @@ export default function ClassesPage() {
         </Routes>
       </PageLayout>
 
-      <Drawer isOpen={isOpen} onOpenChange={setIsOpen} placement="right" size="md" classNames={{ wrapper: "justify-end", base: "m-2 rounded-md h-[calc(100%-1rem)]", backdrop: "bg-black/30" }}>
+      <Drawer isOpen={isOpen} onOpenChange={handleDrawerOpenChange} placement="right" size="md" classNames={{ wrapper: "justify-end", base: "m-2 rounded-md h-[calc(100%-1rem)]", backdrop: "bg-black/30" }}>
         <DrawerContent>
           {(onClose) => (
             <>
@@ -246,8 +254,7 @@ export default function ClassesPage() {
                   <Select size="sm" label={t('pages.classTeacher2')} placeholder={t('pages.selectTeacher')} selectedKeys={formData.teacherId ? new Set([formData.teacherId]) : new Set()} onSelectionChange={(keys) => setFormData({ ...formData, teacherId: Array.from(keys)[0] || "" })} isInvalid={!!errors.teacherId} errorMessage={errors.teacherId} isRequired variant="bordered" radius="lg" aria-label={t('aria.inputs.classTeacher')}>
                     {staff.filter(s => {
                       const roles = Array.isArray(s.role) ? s.role : (s.role ? [s.role] : []);
-                      const staffTypes = Array.isArray(s.staffType) ? s.staffType : (s.staffType ? [s.staffType] : []);
-                      return roles.includes('Teacher') || staffTypes.includes('Teacher') || s.isClassTeacher;
+                      return roles.includes('Teacher') || roles.includes('Teaching');
                     }).map(t => <SelectItem key={String(t.id || t._id)} textValue={`${t.name} ${t.department || ''}`}>{t.name} {t.department ? `(${t.department})` : ''}</SelectItem>)}
                   </Select>
                   <div className="grid grid-cols-2 gap-3">

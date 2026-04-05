@@ -1,8 +1,9 @@
 import { Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/react";
-import { IndianRupee, MoreVertical, CreditCard, Download, CheckCircle, Clock, FileText, Bell } from "lucide-react";
+import { Banknote, MoreVertical, CreditCard, Download, CheckCircle, Clock, FileText, Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { getDateLocale } from '../../../i18n/index';
 import { useTranslation } from 'react-i18next';
+import { formatCurrency } from '../../../utils/numberFormatter';
+import { formatShortDate } from '../../../utils/dateFormatter';
 
 
 export default function StudentFeeSummary({
@@ -21,6 +22,29 @@ export default function StudentFeeSummary({
   const totalFee = studentFeeStructure?.totalFee || 0;
   const totalPaid = studentFeeStructure?.totalPaid || 0;
   const progressPercent = totalFee > 0 ? Math.round((totalPaid / totalFee) * 100) : 0;
+
+  // Show overall empty state when no fee structure and no history
+  const hasFeeData = (studentFeeStructure?.feeHeads?.length > 0) || totalFee > 0 || feeHistory?.length > 0;
+
+  if (!loadingFeeStructure && !hasFeeData) {
+    return (
+      <div className="text-center py-16 border-2 border-dashed border-gray-200 dark:border-zinc-700 rounded-lg bg-gray-50 dark:bg-zinc-800">
+        <div className="inline-flex p-4 bg-white dark:bg-zinc-900 rounded-full mb-4 ring-1 ring-gray-200 dark:ring-zinc-700 shadow-sm dark:shadow-zinc-900/50">
+          <Banknote size={32} className="text-gray-400 dark:text-zinc-500" />
+        </div>
+        <h4 className="font-semibold text-gray-900 dark:text-zinc-100 mb-1">{t('pages.noFeeStructureAssigned', 'No fee structure assigned')}</h4>
+        <p className="text-sm text-gray-500 dark:text-zinc-400 max-w-xs mx-auto">{t('pages.feeHeadsAssignedByClass', 'Fee heads will appear once the class fee structure is configured in Fee Settings.')}</p>
+        <Button
+          className="mt-4"
+          size="sm"
+          variant="bordered"
+          onPress={() => navigate('/fees/settings')}
+        >
+          {t('pages.goToFeeSettings', 'Go to Fee Settings')}
+        </Button>
+      </div>
+    );
+  }
 
   if (loadingFeeStructure) {
     return (
@@ -72,7 +96,7 @@ export default function StudentFeeSummary({
           <div>
             <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">{t('pages.outstandingBalance')}</p>
             <p className="text-3xl font-bold text-gray-900 dark:text-zinc-100">
-              ₹{studentFeeStructure?.totalBalance?.toLocaleString() || 0}
+              {formatCurrency(studentFeeStructure?.totalBalance || 0)}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -134,8 +158,8 @@ export default function StudentFeeSummary({
             />
           </div>
           <div className="flex justify-between items-center text-xs">
-            <span className="text-gray-500 dark:text-zinc-400">Paid: <span className="font-medium text-gray-700 dark:text-zinc-300">₹{totalPaid.toLocaleString()}</span></span>
-            <span className="text-gray-500 dark:text-zinc-400">Total: <span className="font-medium text-gray-700 dark:text-zinc-300">₹{totalFee.toLocaleString()}</span></span>
+            <span className="text-gray-500 dark:text-zinc-400">Paid: <span className="font-medium text-gray-700 dark:text-zinc-300">{formatCurrency(totalPaid)}</span></span>
+            <span className="text-gray-500 dark:text-zinc-400">Total: <span className="font-medium text-gray-700 dark:text-zinc-300">{formatCurrency(totalFee)}</span></span>
           </div>
         </div>
       </div>
@@ -165,22 +189,25 @@ export default function StudentFeeSummary({
                         {payment.paymentPeriod || payment.feeHeads?.[0]?.period || 'Fee Payment'}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-zinc-400">
-                        {payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString(getDateLocale(), { day: 'numeric', month: 'short', year: 'numeric' }) : payment.date}
+                        {payment.paymentDate ? formatShortDate(payment.paymentDate) : payment.date}
                         {payment.receiptNumber && <span className="ml-2">• #{payment.receiptNumber}</span>}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">₹{payment.amount?.toLocaleString() || 0}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{formatCurrency(payment.amount || 0)}</p>
                     <p className="text-xs text-gray-500 dark:text-zinc-400 capitalize">{payment.paymentMode || payment.mode}</p>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="p-8 text-center">
-              <CreditCard size={24} className="mx-auto text-gray-300 dark:text-zinc-600 mb-2" />
-              <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.noPaymentHistoryYet')}</p>
+            <div className="py-10 text-center">
+              <div className="inline-flex p-3 bg-gray-50 dark:bg-zinc-800 rounded-full mb-3">
+                <CreditCard size={24} className="text-gray-300 dark:text-zinc-600" />
+              </div>
+              <h4 className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">{t('pages.noPaymentsRecorded', 'No payments recorded')}</h4>
+              <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.noPaymentHistoryYet')}</p>
             </div>
           )}
         </div>
@@ -230,13 +257,13 @@ export default function StudentFeeSummary({
                     <p className="text-xs text-gray-500 dark:text-zinc-400 capitalize">{feeHead.frequency} • {feeHead.category}</p>
                   </div>
                   <div className="col-span-2 text-right">
-                    <span className="text-sm font-mono text-gray-900 dark:text-zinc-100">₹{feeHead.amount?.toLocaleString() || 0}</span>
+                    <span className="text-sm font-mono text-gray-900 dark:text-zinc-100">{formatCurrency(feeHead.amount || 0)}</span>
                   </div>
                   <div className="col-span-2 text-right">
-                    <span className="text-sm font-mono text-gray-600 dark:text-zinc-400">₹{feeHead.paidAmount?.toLocaleString() || 0}</span>
+                    <span className="text-sm font-mono text-gray-600 dark:text-zinc-400">{formatCurrency(feeHead.paidAmount || 0)}</span>
                   </div>
                   <div className="col-span-2 text-right">
-                    <span className="text-sm font-mono text-gray-600 dark:text-zinc-400">₹{feeHead.balanceAmount?.toLocaleString() || 0}</span>
+                    <span className="text-sm font-mono text-gray-600 dark:text-zinc-400">{formatCurrency(feeHead.balanceAmount || 0)}</span>
                   </div>
                   <div className="col-span-2 text-center">
                     <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium border border-gray-200 dark:border-zinc-700 rounded bg-gray-50 dark:bg-zinc-800">
@@ -258,19 +285,19 @@ export default function StudentFeeSummary({
             <div className="grid grid-cols-4 gap-4 px-4 py-4 bg-gray-50 dark:bg-zinc-800 border-t border-gray-200 dark:border-zinc-700">
               <div>
                 <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">{t('pages.totalFee3')}</p>
-                <p className="text-base font-bold text-gray-900 dark:text-zinc-100">₹{studentFeeStructure.totalFee?.toLocaleString() || 0}</p>
+                <p className="text-base font-bold text-gray-900 dark:text-zinc-100">{formatCurrency(studentFeeStructure.totalFee || 0)}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">{t('pages.paid2')}</p>
-                <p className="text-base font-bold text-gray-700 dark:text-zinc-300">₹{studentFeeStructure.totalPaid?.toLocaleString() || 0}</p>
+                <p className="text-base font-bold text-gray-700 dark:text-zinc-300">{formatCurrency(studentFeeStructure.totalPaid || 0)}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">{t('pages.discount1')}</p>
-                <p className="text-base font-bold text-gray-700 dark:text-zinc-300">₹{studentFeeStructure.discountApplied?.toLocaleString() || 0}</p>
+                <p className="text-base font-bold text-gray-700 dark:text-zinc-300">{formatCurrency(studentFeeStructure.discountApplied || 0)}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">{t('pages.balance1')}</p>
-                <p className="text-base font-bold text-gray-900 dark:text-zinc-100">₹{studentFeeStructure.totalBalance?.toLocaleString() || 0}</p>
+                <p className="text-base font-bold text-gray-900 dark:text-zinc-100">{formatCurrency(studentFeeStructure.totalBalance || 0)}</p>
               </div>
             </div>
 
@@ -282,7 +309,7 @@ export default function StudentFeeSummary({
           </div>
         ) : (
           <div className="p-6 text-center border border-dashed border-gray-200 dark:border-zinc-800 rounded-lg bg-gray-50 dark:bg-zinc-900/50">
-            <IndianRupee size={24} className="mx-auto text-gray-300 dark:text-zinc-600 mb-2" />
+            <Banknote size={24} className="mx-auto text-gray-300 dark:text-zinc-600 mb-2" />
             <p className="text-sm text-gray-500 dark:text-zinc-400 mb-1">{t('pages.noFeeStructureAssigned', 'No fee structure assigned yet')}</p>
             <p className="text-xs text-gray-400 dark:text-zinc-500">{t('pages.feeHeadsAssignedByClass', 'Fee heads will appear once the class fee structure is configured in Fee Settings.')}</p>
           </div>

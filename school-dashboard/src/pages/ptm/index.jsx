@@ -10,8 +10,7 @@ import {
   CheckCircle, XCircle, AlertCircle, BookOpen, UserPlus,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { request } from '../../services/api';
-import { ptmApi } from '../../services/api/extensions';
+import { ptmApi, classesApi, staffApi, studentsApi } from '../../services/api';
 import { PageLayout, MinimalButton } from '../../components/ui';
 import toast from 'react-hot-toast';
 import { formatShortDate } from '../../utils/dateFormatter';
@@ -26,7 +25,7 @@ const STATUS_COLORS = {
 
 const EMPTY_FORM = {
   title: '', description: '', sessionDate: '', startTime: '', endTime: '',
-  slotDuration: 15, classId: '', staffId: '', venue: '', status: 'scheduled',
+  slotDuration: 15, classId: '', staffId: '', venue: '',
 };
 
 export default function PTMPage() {
@@ -45,7 +44,7 @@ export default function PTMPage() {
   const [errors, setErrors] = useState({});
   const [bookSlotForm, setBookSlotForm] = useState({ parentName: '', studentId: '', scheduledTime: '', notes: '' });
   const [bookingSlot, setBookingSlot] = useState(false);
-  const [changingStatus, setChangingStatus] = useState(false);
+  const [changingStatus, setChangingStatus] = useState(null);
   const [classStudents, setClassStudents] = useState([]);
 
   const fetchData = useCallback(async () => {
@@ -53,8 +52,8 @@ export default function PTMPage() {
     try {
       const [sessRes, classRes, staffRes] = await Promise.all([
         ptmApi.getAll(),
-        request('/classes'),
-        request('/staff'),
+        classesApi.getAll(),
+        staffApi.getAll(),
       ]);
       setSessions(sessRes?.data || sessRes || []);
       setClasses(classRes?.classes || classRes || []);
@@ -133,8 +132,8 @@ export default function PTMPage() {
       const classId = session?.classId?._id || session?.classId;
       if (classId) {
         try {
-          const studentsRes = await request(`/students?classId=${classId}`);
-          setClassStudents(studentsRes?.students || studentsRes || []);
+          const students = await studentsApi.getAll(classId);
+          setClassStudents(students || []);
         } catch {
           setClassStudents([]);
         }
@@ -179,7 +178,7 @@ export default function PTMPage() {
   };
 
   const handleStatusChange = async (newStatus) => {
-    setChangingStatus(true);
+    setChangingStatus(newStatus);
     try {
       await ptmApi.update(detailSession._id, { status: newStatus });
       toast.success(`Status changed to ${newStatus}`);
@@ -189,7 +188,7 @@ export default function PTMPage() {
     } catch (e) {
       toast.error(e?.message || 'Failed to update status');
     } finally {
-      setChangingStatus(false);
+      setChangingStatus(null);
     }
   };
 
@@ -622,7 +621,8 @@ export default function PTMPage() {
                     key={s}
                     size="sm"
                     variant="flat"
-                    isLoading={changingStatus}
+                    isLoading={changingStatus === s}
+                    isDisabled={changingStatus !== null && changingStatus !== s}
                     className={
                       s === 'completed' ? 'bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 text-xs' :
                       s === 'ongoing' ? 'bg-yellow-50 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-300 text-xs' :

@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { attendanceApi, studentsApi } from "../../../../services/api.js";
 import { useTranslation } from 'react-i18next';
 import { useApp } from "../../../../context/AppContext";
+import { toTodayDateString } from '../../../../utils/dateFormatter';
 
 /**
  * AttendanceTab - Student attendance overview and management
@@ -19,7 +20,7 @@ export default function AttendanceTab({
   const [attendanceData, setAttendanceData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toLocaleString('default', { month: 'long' }).toLowerCase());
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(toTodayDateString());
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch attendance data on component mount and when student changes

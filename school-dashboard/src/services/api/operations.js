@@ -148,8 +148,12 @@ export const frontDeskApi = {
 
 // PIN Code Lookup API (External - No Auth Required)
 export const lookupPincode = async (pincode) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
   try {
-    const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+    const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`, {
+      signal: controller.signal,
+    });
     if (!response.ok) {
       return null;
     }
@@ -167,6 +171,8 @@ export const lookupPincode = async (pincode) => {
   } catch (error) {
     logger.error('PIN code lookup failed:', error);
     return null;
+  } finally {
+    clearTimeout(timeoutId);
   }
 };
 

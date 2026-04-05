@@ -78,7 +78,10 @@ function AlertsPanel({ alerts = [] }) {
           return (
             <div
               key={alert.id}
-              className="group p-4 hover:bg-gray-50 dark:hover:bg-zinc-900 transition-colors"
+              onClick={() => alert.link && navigate(alert.link)}
+              role={alert.link ? 'button' : undefined}
+              tabIndex={alert.link ? 0 : undefined}
+              className={`group p-4 hover:bg-gray-50 dark:hover:bg-zinc-900 transition-colors${alert.link ? ' cursor-pointer' : ''}`}
             >
               <div className="flex items-start gap-3">
                 <div className={`w-2 h-2 rounded-full ${styles.dot} mt-1.5 shrink-0`} />
@@ -94,7 +97,7 @@ function AlertsPanel({ alerts = [] }) {
                       </p>
                     </div>
                     <button
-                      onClick={() => handleDismiss(alert.id)}
+                      onClick={(e) => { e.stopPropagation(); handleDismiss(alert.id); }}
                       className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded"
                     >
                       <X size={12} className="text-gray-400 dark:text-zinc-500" />
@@ -124,7 +127,7 @@ function AlertsPanel({ alerts = [] }) {
       {visibleAlerts.length > 0 && (
         <div className="p-4 border-t border-gray-200 dark:border-zinc-800">
           <button
-            onClick={() => navigate('/classes')}
+            onClick={() => navigate('/notifications')}
             className="w-full py-2 text-xs font-medium text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 transition-colors flex items-center justify-center gap-1"
           >
             Review alerts

@@ -117,9 +117,9 @@ export function toDateInputValue(value, fallback = '') {
   try {
     const d = new Date(value);
     if (isNaN(d.getTime())) return fallback;
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
+    const year = d.getUTCFullYear();
+    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(d.getUTCDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   } catch {
     return fallback;
@@ -187,4 +187,40 @@ export function formatRelativeTime(value, fallback = '—') {
   } catch {
     return formatShortDate(value, fallback);
   }
+}
+
+/**
+ * Return today's date as "YYYY-MM-DD" (for HTML date inputs and API payloads).
+ * Replaces the scattered `new Date().toISOString().split('T')[0]` pattern.
+ */
+export function toTodayDateString() {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Return the current local time as "HH:MM" (24-hour, zero-padded).
+ * Replaces the locale-dependent `new Date().toTimeString().slice(0, 5)` pattern.
+ */
+export function toCurrentTimeString() {
+  const d = new Date();
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
+}
+
+/**
+ * Format a number as Indian-locale currency: "1,23,456"
+ * @param {number|string} amount - The amount to format
+ * @param {string} [fallback='0'] - Fallback when amount is null/undefined
+ * @returns {string} Formatted string WITHOUT the ₹ symbol (caller adds it)
+ */
+export function formatCurrency(amount, fallback = '0') {
+  if (amount == null || amount === '') return fallback;
+  const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+  if (!Number.isFinite(num)) return fallback;
+  return num.toLocaleString('en-IN');
 }

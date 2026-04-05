@@ -361,7 +361,15 @@ export const npsApi = {
   getStatus: () => request('/nps/status'),
   submit: (data) => request('/nps/submit', { method: 'POST', body: JSON.stringify(data) }),
   dismiss: () => request('/nps/dismiss', { method: 'POST' }),
-  getAnalytics: () => request('/nps/analytics'),
+  getAnalytics: (params) => {
+    const qs = new URLSearchParams();
+    if (params?.from) qs.set('from', params.from);
+    if (params?.to) qs.set('to', params.to);
+    const query = qs.toString();
+    return request(`/nps/analytics${query ? `?${query}` : ''}`);
+  },
+  getConfig: () => request('/nps/config'),
+  updateConfig: (data) => request('/nps/config', { method: 'PUT', body: JSON.stringify(data) }),
 };
 
 // CBSE Report Card API

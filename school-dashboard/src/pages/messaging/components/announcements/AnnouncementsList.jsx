@@ -37,11 +37,14 @@ import toast from 'react-hot-toast';
 import { getDateLocale } from '../../../../i18n/index';
 import { useTranslation } from 'react-i18next';
 import SkeletonList from '../../../../components/skeletons/SkeletonList';
+import ConfirmDialog from '../../../../components/ui/ConfirmDialog';
+import useConfirmDialog from '../../../../hooks/useConfirmDialog';
 
 
 export default function AnnouncementsList({
   onView, onEdit, onRefresh }) {
   const { t } = useTranslation();
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -107,18 +110,24 @@ export default function AnnouncementsList({
     });
   }, [announcements, searchQuery, statusFilter, channelFilter, dateFilter]);
 
-  const handleDelete = async (announcementId) => {
-    if (!confirm(t('confirm.deleteAnnouncement'))) return;
-
-    try {
-      await announcementsApi.delete(announcementId);
-      toast.success(t('toast.success.announcementDeleted'));
-      loadAnnouncements();
-      onRefresh?.();
-    } catch (error) {
-      console.error('Error deleting announcement:', error);
-      toast.error(t('toast.error.failedToDeleteAnnouncement'));
-    }
+  const handleDelete = (announcementId) => {
+    showConfirm({
+      title: 'Delete Announcement',
+      message: t('confirm.deleteAnnouncement'),
+      variant: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        try {
+          await announcementsApi.delete(announcementId);
+          toast.success(t('toast.success.announcementDeleted'));
+          loadAnnouncements();
+          onRefresh?.();
+        } catch (error) {
+          console.error('Error deleting announcement:', error);
+          toast.error(t('toast.error.failedToDeleteAnnouncement'));
+        }
+      },
+    });
   };
 
   const handleDuplicate = async (announcement) => {
@@ -616,6 +625,8 @@ export default function AnnouncementsList({
           </p>
         </div>
       )}
+
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </div>
   );
 }

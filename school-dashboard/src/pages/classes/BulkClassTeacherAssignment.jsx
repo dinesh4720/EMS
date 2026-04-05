@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 
 export default function BulkClassTeacherAssignment() {
   const { t } = useTranslation();
-  const { staff, classesWithTeachers, classesApi, updateClassLocal, refetch } = useApp();
+  const { staff, classesWithTeachers, classesApi, updateClassLocal, updateStaffLocal, refetch } = useApp();
   const { hasPermission } = usePermissions();
 
   const canEdit = hasPermission('classes', 'edit');
@@ -110,6 +110,15 @@ export default function BulkClassTeacherAssignment() {
       teacher: teacherInfo.name,
       teacherPhoto: teacherInfo.picture
     });
+
+    // Update staff records to reflect the assignment
+    if (prevState.classTeacherId && String(prevState.classTeacherId) !== String(teacherIdToSet)) {
+      updateStaffLocal(prevState.classTeacherId, { classTeacherOf: null, isClassTeacher: false });
+    }
+    if (teacherIdToSet) {
+      updateStaffLocal(teacherIdToSet, { classTeacherOf: `${targetClass.name}-${targetClass.section}`, isClassTeacher: true });
+    }
+
     handleClose();
 
     try {

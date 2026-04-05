@@ -110,7 +110,7 @@ export default function PayrollTable({
                 </div>
               </td>
               <td className={cellClass}>
-                <Chip size="sm" variant="flat" className="capitalize">{record.employmentType.replace('_', ' ')}</Chip>
+                <Chip size="sm" variant="flat" className="capitalize">{record.employmentType.replace(/_/g, ' ')}</Chip>
               </td>
               <td className={cellClass}>
                 <span className="font-mono text-sm text-default-600">{formatCurrency(record.baseSalary)}</span>

@@ -9,6 +9,7 @@ import {
 import { useTranslation } from "react-i18next";
 import TCGeneratorModal from "../../TCGeneratorModal";
 import toast from "react-hot-toast";
+import { trashApi } from "../../../../services/api";
 
 /**
  * StudentsBulkModals
@@ -326,12 +327,35 @@ export default function StudentsBulkModals({
                                         try {
                                             const result = await deleteStudent(studentToDelete.id);
                                             await refreshStudentsList();
-                                            toast.success(
-                                                result.message ||
-                                                    `${studentToDelete.name} permanently deleted`
-                                            );
+                                            const deletedName = studentToDelete.name;
+                                            const trashItemId = result?.trashItemId;
                                             onClose();
                                             setStudentToDelete(null);
+                                            toast(
+                                                (toastObj) => (
+                                                    <div className="flex items-center gap-3">
+                                                        <span>{deletedName} {t('common.deleted', 'deleted')}</span>
+                                                        {trashItemId && (
+                                                            <button
+                                                                className="font-semibold text-primary underline whitespace-nowrap"
+                                                                onClick={async () => {
+                                                                    toast.dismiss(toastObj.id);
+                                                                    try {
+                                                                        await trashApi.restore(trashItemId);
+                                                                        await refreshStudentsList();
+                                                                        toast.success(t('toast.success.studentRestored', { name: deletedName, defaultValue: `${deletedName} restored` }));
+                                                                    } catch {
+                                                                        toast.error(t('toast.error.failedToRestore', 'Failed to restore student'));
+                                                                    }
+                                                                }}
+                                                            >
+                                                                {t('common.undo', 'Undo')}
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                ),
+                                                { duration: 5000, icon: '🗑️' }
+                                            );
                                         } catch (error) {
                                             console.error("Delete error:", error);
                                             toast.error(

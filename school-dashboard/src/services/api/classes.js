@@ -1,13 +1,13 @@
 import { request } from './core.js';
 
 export const classesApi = {
-  getAll: () => request('/classes'),
+  getAll: (skipCache = false, opts) => request('/classes', { skipCache, ...opts }),
   getPublic: () => request('/classes/public'),
-  getById: (id) => request(`/classes/${id}`),
+  getById: (id, opts) => request(`/classes/${id}`, opts),
   create: (data) => request('/classes', { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => request(`/classes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id) => request(`/classes/${id}`, { method: 'DELETE' }),
-  getStudents: (id) => request(`/classes/${id}/students`),
+  getStudents: (id, options) => request(`/classes/${id}/students`, options),
   getNextRollNumber: (classId) => request(`/classes/${classId}/next-roll-number`),
   checkCapacity: (id) => request(`/classes/${id}/capacity`),
 
@@ -47,7 +47,7 @@ export const classesApi = {
       throw error;
     }
   },
-  updateClassTeacher: (id, teacherId) => request(`/classes/${id}/class-teacher`, { method: 'PUT', body: JSON.stringify({ classTeacherId: teacherId }) }),
+  updateClassTeacher: (id, teacherId, { force } = {}) => request(`/classes/${id}/class-teacher`, { method: 'PUT', body: JSON.stringify({ classTeacherId: teacherId, ...(force ? { force: true } : {}) }) }),
 };
 
 // Classes Enhanced API
@@ -115,8 +115,9 @@ export const attendanceApi = {
 
 // Staff Attendance API
 export const staffAttendanceApi = {
-  getAll: () => request('/staff-attendance'),
+  getAll: (opts) => request('/staff-attendance', opts),
   getByDate: (date) => request(`/staff-attendance/date/${date}`),
+  getReport: (startDate, endDate) => request(`/staff-attendance/report?startDate=${startDate}&endDate=${endDate}`),
   getByStaff: (staffId, startDate, endDate) => {
     const params = new URLSearchParams();
     if (startDate) params.append('startDate', startDate);
@@ -146,33 +147,13 @@ export const timetableApi = {
 
   // Generate/regenerate timetables for all classes
   generateAll: (data) => request('/timetable/generate-all', { method: 'POST', body: JSON.stringify(data) }),
-  updateSlot: async (classId, data) => {
-    try {
-      return await request(`/timetable/${classId}/slot`, { method: 'PUT', body: JSON.stringify(data) });
-    } catch (error) {
-      // Re-throw conflict errors with enhanced information
-      if (error.type === 'ConflictError') {
-        throw error;
-      }
-      throw error;
-    }
-  },
+  updateSlot: (classId, data) => request(`/timetable/${classId}/slot`, { method: 'PUT', body: JSON.stringify(data) }),
 
   // Batch update multiple slots
-  batchUpdateSlots: async (classId, slots, academicYear) => {
-    try {
-      return await request(`/timetable/${classId}/batch`, {
-        method: 'POST',
-        body: JSON.stringify({ slots, academicYear })
-      });
-    } catch (error) {
-      // Handle batch conflict errors
-      if (error.type === 'BatchConflictError' || error.status === 409) {
-        throw error;
-      }
-      throw error;
-    }
-  },
+  batchUpdateSlots: (classId, slots, academicYear) => request(`/timetable/${classId}/batch`, {
+    method: 'POST',
+    body: JSON.stringify({ slots, academicYear })
+  }),
 
   updatePeriods: (classId, data) => request(`/timetable/${classId}/periods`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (classId, academicYear) => request(`/timetable/${classId}${academicYear ? `?academicYear=${academicYear}` : ''}`, { method: 'DELETE' }),
@@ -222,29 +203,9 @@ export const teacherAssignmentsApi = {
 export const teacherTimetableApi = {
   get: (teacherId, academicYear) => request(`/teacher-timetable/${teacherId}${academicYear ? `?academicYear=${academicYear}` : ''}`),
   create: (teacherId, data) => request(`/teacher-timetable/${teacherId}`, { method: 'POST', body: JSON.stringify(data) }),
-  updateSlot: async (teacherId, data) => {
-    try {
-      return await request(`/teacher-timetable/${teacherId}/slot`, { method: 'PUT', body: JSON.stringify(data) });
-    } catch (error) {
-      // Re-throw conflict errors with enhanced information
-      if (error.type === 'ConflictError') {
-        throw error;
-      }
-      throw error;
-    }
-  },
+  updateSlot: (teacherId, data) => request(`/teacher-timetable/${teacherId}/slot`, { method: 'PUT', body: JSON.stringify(data) }),
   getConflicts: (teacherId, academicYear) => request(`/teacher-timetable/${teacherId}/conflicts${academicYear ? `?academicYear=${academicYear}` : ''}`),
-  switchClass: async (teacherId, data) => {
-    try {
-      return await request(`/teacher-timetable/${teacherId}/switch-class`, { method: 'POST', body: JSON.stringify(data) });
-    } catch (error) {
-      // Re-throw conflict errors with enhanced information
-      if (error.type === 'ConflictError') {
-        throw error;
-      }
-      throw error;
-    }
-  },
+  switchClass: (teacherId, data) => request(`/teacher-timetable/${teacherId}/switch-class`, { method: 'POST', body: JSON.stringify(data) }),
 };
 
 // Settings API

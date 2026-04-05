@@ -5,6 +5,8 @@ import { libraryApi } from "../../services/api";
 import toast from "react-hot-toast";
 import AddBookModal from "./AddBookModal";
 import { useTranslation } from 'react-i18next';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import useConfirmDialog from '../../hooks/useConfirmDialog';
 
 const CATEGORIES = [
   { key: "all", label: "All Categories" },
@@ -19,6 +21,7 @@ const CATEGORIES = [
 
 export default function BooksList() {
   const { t } = useTranslation();
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
   const [books, setBooks] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -55,15 +58,22 @@ export default function BooksList() {
     return () => clearTimeout(t);
   }, [searchInput]);
 
-  const handleDelete = async (id) => {
-    if (!confirm(t('confirm.deleteBook'))) return;
-    try {
-      await libraryApi.deleteBook(id);
-      toast.success(t('toast.success.bookDeleted'));
-      fetchBooks();
-    } catch (err) {
-      toast.error(err.message || "Failed to delete");
-    }
+  const handleDelete = (id) => {
+    showConfirm({
+      title: 'Delete Book',
+      message: t('confirm.deleteBook'),
+      variant: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        try {
+          await libraryApi.deleteBook(id);
+          toast.success(t('toast.success.bookDeleted'));
+          fetchBooks();
+        } catch (err) {
+          toast.error(err.message || "Failed to delete");
+        }
+      },
+    });
   };
 
   const handleEdit = (book) => {
@@ -193,6 +203,8 @@ export default function BooksList() {
       </div>
 
       <AddBookModal isOpen={isOpen} onClose={() => { onClose(); setEditBook(null); }} book={editBook} onSaved={handleSaved} />
+
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </div>
   );
 }

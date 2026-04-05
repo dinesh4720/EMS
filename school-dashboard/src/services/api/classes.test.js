@@ -42,7 +42,7 @@ describe('classesApi — basic CRUD', () => {
 
   it('getById calls GET /classes/:id', () => {
     classesApi.getById('cls001');
-    expect(request).toHaveBeenCalledWith('/classes/cls001');
+    expect(request).toHaveBeenCalledWith('/classes/cls001', undefined);
   });
 
   it('create calls POST /classes with serialised body', () => {
@@ -72,7 +72,7 @@ describe('classesApi — basic CRUD', () => {
 describe('classesApi — helper endpoints', () => {
   it('getStudents calls GET /classes/:id/students', () => {
     classesApi.getStudents('cls003');
-    expect(request).toHaveBeenCalledWith('/classes/cls003/students');
+    expect(request).toHaveBeenCalledWith('/classes/cls003/students', undefined);
   });
 
   it('getNextRollNumber calls GET /classes/:id/next-roll-number', () => {

@@ -8,7 +8,7 @@ import {
   ClipboardList, Calendar, Eye, Trash2, AlertTriangle, Plus, Clock, Users, Home, Pencil,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { homeworkApi, classesApi } from '../../services/api';
+import { homeworkApi } from '../../services/api';
 import { PageLayout, MinimalButton } from '../../components/ui';
 import FiltersDropdown from '../../components/FiltersDropdown';
 import CreateHomeworkModal from './CreateHomeworkModal';

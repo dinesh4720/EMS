@@ -80,10 +80,16 @@ export default function PeriodSettings() {
         setPeriods(DEFAULT_PERIODS.map((p, i) => ({ ...p, _key: i })));
         setHasExisting(false);
       }
-    } catch {
-      // No timetable exists yet — use defaults
-      setPeriods(DEFAULT_PERIODS.map((p, i) => ({ ...p, _key: i })));
-      setHasExisting(false);
+    } catch (error) {
+      if (error?.status === 404) {
+        // No timetable exists yet — use defaults
+        setPeriods(DEFAULT_PERIODS.map((p, i) => ({ ...p, _key: i })));
+        setHasExisting(false);
+      } else {
+        console.error("Failed to load periods:", error);
+        toast.error(error?.message || "Failed to load period settings");
+        setPeriods([]);
+      }
     } finally {
       setLoading(false);
     }

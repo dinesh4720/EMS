@@ -5,22 +5,22 @@ import { batchRequests, retryRequest, debounce } from './requestQueue';
 
 describe('batchRequests', () => {
   it('returns results for all requests', async () => {
-    const requests = [
-      Promise.resolve(1),
-      Promise.resolve(2),
-      Promise.resolve(3),
+    const requestFns = [
+      () => Promise.resolve(1),
+      () => Promise.resolve(2),
+      () => Promise.resolve(3),
     ];
-    const results = await batchRequests(requests, 3, 0);
+    const results = await batchRequests(requestFns, 3, 0);
     expect(results).toHaveLength(3);
     expect(results[0]).toMatchObject({ status: 'fulfilled', value: 1 });
   });
 
   it('captures rejections without throwing', async () => {
-    const requests = [
-      Promise.resolve('ok'),
-      Promise.reject(new Error('boom')),
+    const requestFns = [
+      () => Promise.resolve('ok'),
+      () => Promise.reject(new Error('boom')),
     ];
-    const results = await batchRequests(requests, 2, 0);
+    const results = await batchRequests(requestFns, 2, 0);
     expect(results[0].status).toBe('fulfilled');
     expect(results[1].status).toBe('rejected');
     expect(results[1].reason.message).toBe('boom');
@@ -28,18 +28,31 @@ describe('batchRequests', () => {
 
   it('processes requests in batches of the given size', async () => {
     // 5 requests, batch size 2 → we expect all 5 results
-    const requests = Array.from({ length: 5 }, (_, i) => Promise.resolve(i));
-    const results = await batchRequests(requests, 2, 0);
+    const requestFns = Array.from({ length: 5 }, (_, i) => () => Promise.resolve(i));
+    const results = await batchRequests(requestFns, 2, 0);
     expect(results).toHaveLength(5);
   });
 
-  it('returns fulfilled results in order', async () => {
-    const requests = [
-      Promise.resolve('a'),
-      Promise.resolve('b'),
-      Promise.resolve('c'),
+  it('only invokes functions within the current batch', async () => {
+    const callOrder = [];
+    const requestFns = [
+      () => { callOrder.push(0); return Promise.resolve(0); },
+      () => { callOrder.push(1); return Promise.resolve(1); },
+      () => { callOrder.push(2); return Promise.resolve(2); },
+      () => { callOrder.push(3); return Promise.resolve(3); },
     ];
-    const results = await batchRequests(requests, 3, 0);
+    await batchRequests(requestFns, 2, 0);
+    // All 4 should be called, but in batch order (0,1 before 2,3)
+    expect(callOrder).toEqual([0, 1, 2, 3]);
+  });
+
+  it('returns fulfilled results in order', async () => {
+    const requestFns = [
+      () => Promise.resolve('a'),
+      () => Promise.resolve('b'),
+      () => Promise.resolve('c'),
+    ];
+    const results = await batchRequests(requestFns, 3, 0);
     const values = results.map(r => r.value);
     expect(values).toEqual(['a', 'b', 'c']);
   });
@@ -185,5 +198,41 @@ describe('debounce', () => {
     debounced();
     vi.advanceTimersByTime(100);
     expect(fn).toHaveBeenCalledTimes(2);
+  });
+
+  it('returns a promise that resolves with the function return value', async () => {
+    const fn = vi.fn(() => 42);
+    const debounced = debounce(fn, 100);
+    const promise = debounced();
+    vi.advanceTimersByTime(100);
+    await expect(promise).resolves.toBe(42);
+  });
+
+  it('cancel() prevents the pending call', () => {
+    const fn = vi.fn();
+    const debounced = debounce(fn, 100);
+    const promise = debounced();
+    promise.catch(() => {}); // suppress expected rejection
+    debounced.cancel();
+    vi.advanceTimersByTime(200);
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  it('cancel() rejects the pending promise with AbortError', async () => {
+    const fn = vi.fn();
+    const debounced = debounce(fn, 100);
+    const promise = debounced();
+    debounced.cancel();
+    await expect(promise).rejects.toThrow('Debounce cancelled');
+  });
+
+  it('only the latest call resolves when superseded', async () => {
+    const fn = vi.fn(() => 'final');
+    const debounced = debounce(fn, 100);
+    debounced(); // superseded — promise never settles
+    const second = debounced();
+    vi.advanceTimersByTime(100);
+    await expect(second).resolves.toBe('final');
+    expect(fn).toHaveBeenCalledTimes(1);
   });
 });

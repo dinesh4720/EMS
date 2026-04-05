@@ -25,6 +25,8 @@ import {
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { notificationsApi } from '../../../../services/api';
+import ConfirmDialog from '../../../../components/ui/ConfirmDialog';
+import useConfirmDialog from '../../../../hooks/useConfirmDialog';
 
 const CHANNEL_ICONS = {
   email: { icon: Mail, color: 'primary', label: 'Email' },
@@ -94,6 +96,7 @@ const DEFAULT_PREFERENCES = {
 
 export default function NotificationSettings({ userRole = 'staff' }) {
   const { t } = useTranslation();
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
   const NOTIFICATION_LABELS = useMemo(() => ({
     parent: {
       fee_reminders: t('constants.notifications.labels.parent.feeReminders'),
@@ -228,22 +231,28 @@ export default function NotificationSettings({ userRole = 'staff' }) {
     }
   };
 
-  const handleReset = async () => {
-    if (!confirm(t('confirm.resetPreferences'))) return;
-
-    try {
-      await notificationsApi.resetPreferences();
-      setPreferences(DEFAULT_PREFERENCES[userRole] || DEFAULT_PREFERENCES.staff);
-      setQuietHoursEnabled(false);
-      setQuietHoursStart('22:00');
-      setQuietHoursEnd('08:00');
-      setDigestFrequency('immediate');
-      toast.success(t('toast.success.preferencesResetToDefault'));
-      setHasChanges(false);
-    } catch (error) {
-      console.error('Error resetting preferences:', error);
-      toast.error(t('toast.error.failedToResetPreferences'));
-    }
+  const handleReset = () => {
+    showConfirm({
+      title: 'Reset Preferences',
+      message: t('confirm.resetPreferences'),
+      variant: 'warning',
+      confirmText: 'Reset',
+      onConfirm: async () => {
+        try {
+          await notificationsApi.resetPreferences();
+          setPreferences(DEFAULT_PREFERENCES[userRole] || DEFAULT_PREFERENCES.staff);
+          setQuietHoursEnabled(false);
+          setQuietHoursStart('22:00');
+          setQuietHoursEnd('08:00');
+          setDigestFrequency('immediate');
+          toast.success(t('toast.success.preferencesResetToDefault'));
+          setHasChanges(false);
+        } catch (error) {
+          console.error('Error resetting preferences:', error);
+          toast.error(t('toast.error.failedToResetPreferences'));
+        }
+      },
+    });
   };
 
   return (
@@ -439,6 +448,8 @@ export default function NotificationSettings({ userRole = 'staff' }) {
           </CardBody>
         </Card>
       )}
+
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </div>
   );
 }

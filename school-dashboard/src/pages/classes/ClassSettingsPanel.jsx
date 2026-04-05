@@ -8,16 +8,21 @@ import { Settings, Tag, BookOpen, Save, X } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { usePermissions } from "../../context/PermissionContext";
 import { useTranslation } from 'react-i18next';
-import { 
-  showErrorToast, 
+import {
+  showErrorToast,
   showSuccessToast,
   executeWithFeedback
 } from "../../utils/errorHandling";
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import useConfirmDialog from '../../hooks/useConfirmDialog';
+import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
+import UnsavedChangesModal from '../../components/modals/UnsavedChangesModal';
 
 export default function ClassSettingsPanel({
   classId }) {
   const { t } = useTranslation();
   const { classesApi, schoolSettings } = useApp();
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
   const { hasPermission } = usePermissions();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -31,6 +36,8 @@ export default function ClassSettingsPanel({
     classTag !== originalTag ||
     selectedSubjects.size !== originalSubjects.size ||
     [...selectedSubjects].some(s => !originalSubjects.has(s));
+
+  const { isBlocked, proceed, reset } = useUnsavedChanges(isDirty);
 
   // Check if user has edit permission
   const canEdit = hasPermission('classes', 'edit');
@@ -332,8 +339,18 @@ export default function ClassSettingsPanel({
             <Button
               variant="flat"
               onPress={() => {
-                if (!isDirty || confirm(t('confirm.discardChanges'))) {
+                if (!isDirty) {
                   loadClassSettings();
+                } else {
+                  showConfirm({
+                    title: t('pages.discardChanges', 'Discard Changes'),
+                    message: t('confirm.discardChanges'),
+                    variant: 'warning',
+                    confirmText: t('pages.discard', 'Discard'),
+                    onConfirm: () => {
+                      loadClassSettings();
+                    },
+                  });
                 }
               }}
               isDisabled={saving || !canEdit || !isDirty}
@@ -361,6 +378,9 @@ export default function ClassSettingsPanel({
           )}
         </CardBody>
       </Card>
+
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
+      <UnsavedChangesModal isOpen={isBlocked} onDiscard={proceed} onCancel={reset} />
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

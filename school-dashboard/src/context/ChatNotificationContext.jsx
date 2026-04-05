@@ -3,6 +3,7 @@ import { useAuth } from './AuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import socketService from '../services/socketServiceEnhanced';
 import chatService from '../services/chatServiceEnhanced';
+import toast from 'react-hot-toast';
 import { MessageCircle, X, Reply, Send } from 'lucide-react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Textarea } from '@heroui/react';
 import { useTranslation } from 'react-i18next';
@@ -244,7 +245,7 @@ export function ChatNotificationProvider({ children }) {
       setReplyingTo(null);
     } catch (error) {
       logger.error('❌ Error sending reply:', error);
-      alert('Failed to send reply');
+      toast.error(t('toast.error.failedToSendReply', 'Failed to send reply'));
     } finally {
       setSendingReply(false);
     }

@@ -35,6 +35,8 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import ConfirmDialog from '../../../../components/ui/ConfirmDialog';
+import useConfirmDialog from '../../../../hooks/useConfirmDialog';
 
 const REMINDER_TYPE_CONFIG = {
   fee: { icon: DollarSign, color: 'warning', gradient: 'from-amber-500 to-orange-500', bgLight: 'bg-amber-50', bgDark: 'dark:bg-amber-500/10', textLight: 'text-amber-600', textDark: 'dark:text-amber-400', borderLight: 'border-amber-200', borderDark: 'dark:border-amber-500/20' },
@@ -52,6 +54,7 @@ export default function RemindersList({
   onDuplicate,
 }) {
   const { t } = useTranslation();
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
   const REMINDER_TYPES = useMemo(() => ({
     fee: { ...REMINDER_TYPE_CONFIG.fee, label: t('constants.reminders.types.fee') },
     attendance: { ...REMINDER_TYPE_CONFIG.attendance, label: t('constants.reminders.types.attendance') },
@@ -101,14 +104,21 @@ export default function RemindersList({
     }
   };
 
-  const handleDelete = async (reminderId) => {
-    if (!confirm(t('confirm.deleteReminder'))) return;
-    try {
-      await onDelete(reminderId);
-      toast.success(t('toast.success.reminderDeleted'));
-    } catch (error) {
-      toast.error(t('toast.error.failedToDeleteReminder'));
-    }
+  const handleDelete = (reminderId) => {
+    showConfirm({
+      title: 'Delete Reminder',
+      message: t('confirm.deleteReminder'),
+      variant: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        try {
+          await onDelete(reminderId);
+          toast.success(t('toast.success.reminderDeleted'));
+        } catch (error) {
+          toast.error(t('toast.error.failedToDeleteReminder'));
+        }
+      },
+    });
   };
 
   const handleDuplicate = async (reminder) => {
@@ -418,6 +428,8 @@ export default function RemindersList({
         </TableBody>
       </Table>
       </div>
+
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </div>
   );
 }

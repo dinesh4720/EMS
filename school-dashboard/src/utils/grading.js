@@ -71,6 +71,7 @@ export function getGradeColor(grade) {
  */
 export function getAttendanceColor(percentage) {
   if (percentage >= 90) return 'success';
-  if (percentage >= 75) return 'warning';
+  if (percentage >= 75) return 'primary';
+  if (percentage >= 50) return 'warning';
   return 'danger';
 }

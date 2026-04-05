@@ -3,15 +3,7 @@
  * Extracted from StudentDashboard.jsx for better code organization
  */
 
-/**
- * Confirm permanent deletion of a student with a browser dialog
- * @param {string} studentName - Name of the student
- * @param {Function} t - i18n translation function
- * @returns {boolean} Whether the user confirmed
- */
-export function confirmPermanentDeletion(studentName, t) {
-  return window.confirm(t('students.confirmPermanentDeletion', 'Permanently delete {{name}}? This removes linked attendance, fees, and parent-contact data.', { name: studentName }));
-}
+// confirmPermanentDeletion removed — replaced by ConfirmDialog modal in StudentDashboard.jsx
 
 /**
  * Custom Recharts tooltip component for performance/attendance charts

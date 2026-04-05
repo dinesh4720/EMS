@@ -87,8 +87,8 @@ describe('DEFAULT_STUDENT_FORM', () => {
 });
 
 describe('CATEGORIES', () => {
-  it('includes General, OBC, SC, ST, EWS', () => {
-    ['General', 'OBC', 'SC', 'ST', 'EWS'].forEach((cat) => {
+  it('includes General, OBC, SC, ST, EWS, Other', () => {
+    ['General', 'OBC', 'SC', 'ST', 'EWS', 'Other'].forEach((cat) => {
       expect(CATEGORIES).toContain(cat);
     });
   });

@@ -10,7 +10,7 @@ import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 
 export default function HolidaySettings() {
   const { t } = useTranslation();
-  const { events, addEvent, updateEvent, deleteEvent, loading } = useApp();
+  const { events, addEvent, updateEvent, deleteEvent, loading, currentAcademicYear } = useApp();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editingHoliday, setEditingHoliday] = useState(null);
   const [formData, setFormData] = useState({
@@ -88,6 +88,30 @@ export default function HolidaySettings() {
 
   const handleSave = async () => {
     if (!formData.title.trim() || !formData.date) return;
+
+    // Academic year validation: date must fall within current academic year (Apr–Mar)
+    const [startYearStr] = (currentAcademicYear || "").split("-");
+    const startYear = parseInt(startYearStr, 10);
+    if (startYear) {
+      const ayStart = new Date(startYear, 3, 1); // April 1
+      const ayEnd = new Date(startYear + 1, 2, 31); // March 31
+      const selectedDate = new Date(formData.date);
+      if (selectedDate < ayStart || selectedDate > ayEnd) {
+        toast.error(`Date must be within academic year ${currentAcademicYear} (Apr ${startYear} – Mar ${startYear + 1})`);
+        return;
+      }
+    }
+
+    // Duplicate date validation: no two holidays on the same date
+    const editingId = editingHoliday?._id || editingHoliday?.id;
+    const duplicate = holidays.find(h => {
+      const hId = h._id || h.id;
+      return h.date === formData.date && hId !== editingId;
+    });
+    if (duplicate) {
+      toast.error(`A holiday already exists on this date: "${duplicate.title}"`);
+      return;
+    }
 
     setSaving(true);
     try {

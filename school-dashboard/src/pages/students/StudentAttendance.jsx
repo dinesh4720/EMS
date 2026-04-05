@@ -11,9 +11,9 @@ import { Search, Filter, ChevronDown, ChevronLeft, ChevronRight, CalendarDays, C
 import { useApp } from "../../context/AppContext";
 import PhotoAvatar from "../../components/PhotoAvatar";
 import toast from "react-hot-toast";
-import { getDateLocale } from '../../i18n/index';
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+import { toTodayDateString, formatShortDate } from '../../utils/dateFormatter';
 
 
 const StudentAttendance = memo(function StudentAttendance() {
@@ -21,7 +21,7 @@ const StudentAttendance = memo(function StudentAttendance() {
     const { students: allStudents } = useApp();
     // Only show active students for attendance marking (Bug #38)
     const students = useMemo(() => allStudents.filter(s => (s.status || 'active') === 'active'), [allStudents]);
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [selectedDate, setSelectedDate] = useState(toTodayDateString());
     const [searchQuery, setSearchQuery] = useState("");
     const [classFilter, setClassFilter] = useState("all");
     const [statusFilter, setStatusFilter] = useState("all");
@@ -41,9 +41,14 @@ const StudentAttendance = memo(function StudentAttendance() {
         setBulkDropdownOpen(false);
     };
 
+    const uniqueClasses = useMemo(() => [...new Set(students.map(s => s.class))].sort(), [students]);
+
     // Fetch existing attendance from backend, fall back to "unmarked"
     useEffect(() => {
         if (students.length === 0) return;
+        // Skip the wasted fetch while auto-class-init is pending —
+        // useEffect below will set classFilter and re-trigger this effect
+        if (classFilter === 'all' && uniqueClasses.length > 0 && !initializedRef.current) return;
 
         const controller = new AbortController();
         setAttendanceLoading(true);
@@ -88,9 +93,7 @@ const StudentAttendance = memo(function StudentAttendance() {
 
         fetchAttendance();
         return () => controller.abort();
-    }, [students, selectedDate, classFilter]);
-
-    const uniqueClasses = useMemo(() => [...new Set(students.map(s => s.class))].sort(), [students]);
+    }, [students, selectedDate, classFilter, uniqueClasses]);
 
     // Auto-select the first available class so the default view isn't empty
     useEffect(() => {
@@ -276,7 +279,7 @@ const StudentAttendance = memo(function StudentAttendance() {
                             <PopoverTrigger>
                                 <button className="flex items-center gap-2 px-3 py-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 text-sm cursor-pointer whitespace-nowrap">
                                     <CalendarDays size={16} className="text-default-400 flex-shrink-0" />
-                                    <span>{new Date(selectedDate).toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                    <span>{formatShortDate(selectedDate)}</span>
                                 </button>
                             </PopoverTrigger>
                             <PopoverContent className="p-0">
@@ -293,15 +296,15 @@ const StudentAttendance = memo(function StudentAttendance() {
                                 date.setDate(date.getDate() + 1);
                                 setSelectedDate(date.toISOString().split('T')[0]);
                             }}
-                            disabled={selectedDate >= new Date().toISOString().split('T')[0]}
+                            disabled={selectedDate >= toTodayDateString()}
                             className="p-1.5 hover:bg-default-100 rounded cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed border border-default-300"
                         >
                             <ChevronRight size={14} className="text-default-400" />
                         </button>
                     </div>
                     <button
-                        onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
-                        disabled={selectedDate === new Date().toISOString().split('T')[0]}
+                        onClick={() => setSelectedDate(toTodayDateString())}
+                        disabled={selectedDate === toTodayDateString()}
                         className="px-3 py-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 text-sm cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                         Today

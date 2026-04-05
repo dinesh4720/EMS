@@ -150,8 +150,6 @@ export function identifyUser(user) {
   if (mixpanelReady && mixpanel) {
     mixpanel.identify(user.id);
     mixpanel.people.set({
-      $name: user.name || user.username,
-      $email: user.email,
       role: user.role,
     });
   }

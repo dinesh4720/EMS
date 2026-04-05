@@ -96,10 +96,18 @@ function ActivityFeed({ payments, announcements, communications }) {
           filteredActivities.map((activity, index) => {
             const { icon: Icon, color } = getActivityIcon(activity.type);
 
+            const activityRoute = activity.type === 'payment' ? '/fees'
+              : activity.type === 'announcement' ? '/messaging'
+              : activity.type === 'message' ? '/messaging'
+              : null;
+
             return (
               <div
                 key={`${activity.type}-${activity.id || index}`}
-                className="group flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-zinc-900 transition-colors"
+                onClick={() => activityRoute && navigate(activityRoute)}
+                role={activityRoute ? 'button' : undefined}
+                tabIndex={activityRoute ? 0 : undefined}
+                className={`group flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-zinc-900 transition-colors${activityRoute ? ' cursor-pointer' : ''}`}
               >
                 {/* Icon */}
                 <div className={`shrink-0 w-8 h-8 rounded-lg ${color} flex items-center justify-center`}>

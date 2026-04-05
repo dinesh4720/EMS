@@ -39,7 +39,8 @@ export default function ReturnBookModal({ isOpen, onClose, issue, onSaved }) {
   const rawFine = issue.accruedFine || (daysLate * (issue.finePerDay || 0));
   const accruedFine = Math.min(Math.max(0, rawFine), MAX_FINE);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e?.preventDefault?.();
     try {
       setSaving(true);
       await libraryApi.returnBook(issue._id, {

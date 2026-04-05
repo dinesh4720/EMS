@@ -12,6 +12,8 @@ import toast from "react-hot-toast";
 import { useApp } from "../../context/AppContext";
 import { useTranslation } from 'react-i18next';
 import HelpIcon from '../../components/ui/HelpIcon';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import useConfirmDialog from '../../hooks/useConfirmDialog';
 
 
 // ============ CONCESSIONS TAB ============
@@ -23,6 +25,7 @@ export function ConcessionsTab() {
   const [saving, setSaving] = useState(false);
   const [fetchError, setFetchError] = useState(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
   const [editingConcession, setEditingConcession] = useState(null);
   const [formData, setFormData] = useState({
     name: "",
@@ -96,15 +99,22 @@ export function ConcessionsTab() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm(t('confirm.deleteConcession'))) return;
-    try {
-      await request(`/fee-settings/concessions/${id}`, { method: 'DELETE' });
-      toast.success(t('toast.success.deleted'));
-      fetchConcessions();
-    } catch (error) {
-      toast.error(error.message || t('toast.error.failedToDelete'));
-    }
+  const handleDelete = (id) => {
+    showConfirm({
+      title: 'Delete Concession',
+      message: t('confirm.deleteConcession'),
+      variant: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        try {
+          await request(`/fee-settings/concessions/${id}`, { method: 'DELETE' });
+          toast.success(t('toast.success.deleted'));
+          fetchConcessions();
+        } catch (error) {
+          toast.error(error.message || t('toast.error.failedToDelete'));
+        }
+      },
+    });
   };
 
   if (loading) return <TablePageSkeleton kpiCards={0} searchBar={false} rows={4} />;
@@ -209,6 +219,8 @@ export function ConcessionsTab() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </div>
   );
 }
@@ -219,15 +231,20 @@ export function LateFeeTab() {
   const { currentAcademicYear } = useApp();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
   const [formData, setFormData] = useState({ enabled: false, gracePeriod: 7, fineType: "flat", flatAmount: 100, perDayAmount: 10, maximumCap: 0 });
 
   const fetchConfig = useCallback(async () => {
+    setFetchError(null);
     try {
       setLoading(true);
       const data = await request(`/fee-settings/late-fee-rules?academicYear=${currentAcademicYear}`);
-      if (data.length > 0) setFormData(prev => ({ ...prev, ...data[0] }));
-    } catch (error) { logger.error(error); }
-    finally { setLoading(false); }
+      const items = Array.isArray(data) ? data : [];
+      if (items.length > 0) setFormData(prev => ({ ...prev, ...items[0] }));
+    } catch (error) {
+      logger.error(error);
+      setFetchError(error.message || 'Failed to load late fee rules');
+    } finally { setLoading(false); }
   }, [currentAcademicYear]);
 
   useEffect(() => { fetchConfig(); }, [fetchConfig]);
@@ -252,6 +269,14 @@ export function LateFeeTab() {
   };
 
   if (loading) return <TablePageSkeleton kpiCards={0} searchBar={false} rows={4} />;
+
+  if (fetchError) return (
+    <div className="flex flex-col items-center py-12 gap-4">
+      <p className="text-sm font-medium text-gray-700 dark:text-zinc-300">Failed to load late fee rules</p>
+      <p className="text-xs text-gray-500 dark:text-zinc-400">{fetchError}</p>
+      <button onClick={fetchConfig} className="px-3 py-1.5 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800">Retry</button>
+    </div>
+  );
 
   return (
     <div className="space-y-4">
@@ -332,18 +357,30 @@ export function PaymentMethodsTab() {
   const { currentAcademicYear } = useApp();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState({
+  const [fetchError, setFetchError] = useState(null);
+  const defaultFormData = {
     online: { enabled: true, upi: true, debitCard: true, creditCard: true, bankTransfer: true },
     offline: { enabled: true, cash: true, cheque: true, dd: true }
-  });
+  };
+  const [formData, setFormData] = useState(defaultFormData);
 
   const fetchConfig = useCallback(async () => {
+    setFetchError(null);
     try {
       setLoading(true);
       const data = await request(`/fee-settings/payment-methods?academicYear=${currentAcademicYear}`);
-      if (data.length > 0) setFormData(data[0]);
-    } catch (error) { logger.error(error); }
-    finally { setLoading(false); }
+      const items = Array.isArray(data) ? data : [];
+      if (items.length > 0) {
+        const config = items[0];
+        setFormData({
+          online: { ...defaultFormData.online, ...config.online },
+          offline: { ...defaultFormData.offline, ...config.offline }
+        });
+      }
+    } catch (error) {
+      logger.error(error);
+      setFetchError(error.message || 'Failed to load payment methods');
+    } finally { setLoading(false); }
   }, [currentAcademicYear]);
 
   useEffect(() => { fetchConfig(); }, [fetchConfig]);
@@ -361,6 +398,14 @@ export function PaymentMethodsTab() {
   };
 
   if (loading) return <TablePageSkeleton kpiCards={0} searchBar={false} rows={4} />;
+
+  if (fetchError) return (
+    <div className="flex flex-col items-center py-12 gap-4">
+      <p className="text-sm font-medium text-gray-700 dark:text-zinc-300">Failed to load payment methods</p>
+      <p className="text-xs text-gray-500 dark:text-zinc-400">{fetchError}</p>
+      <button onClick={fetchConfig} className="px-3 py-1.5 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800">Retry</button>
+    </div>
+  );
 
   const onlineMethods = [
     { key: 'upi', label: 'UPI', desc: 'Google Pay, PhonePe, etc.' },
@@ -435,15 +480,20 @@ export function CollectionPeriodTab() {
   const { currentAcademicYear } = useApp();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
   const [formData, setFormData] = useState({ collectionInterval: "yearly", reminders: { enabled: true, daysBefore: 3 } });
 
   const fetchConfig = useCallback(async () => {
+    setFetchError(null);
     try {
       setLoading(true);
       const data = await request(`/fee-settings/collection-period?academicYear=${currentAcademicYear}`);
-      if (data.length > 0) setFormData({ collectionInterval: data[0].collectionInterval, reminders: data[0].autoPay || { enabled: true, daysBefore: 3 } });
-    } catch (error) { logger.error(error); }
-    finally { setLoading(false); }
+      const items = Array.isArray(data) ? data : [];
+      if (items.length > 0) setFormData({ collectionInterval: items[0].collectionInterval || "yearly", reminders: items[0].autoPay || { enabled: true, daysBefore: 3 } });
+    } catch (error) {
+      logger.error(error);
+      setFetchError(error.message || 'Failed to load collection settings');
+    } finally { setLoading(false); }
   }, [currentAcademicYear]);
 
   useEffect(() => { fetchConfig(); }, [fetchConfig]);
@@ -462,6 +512,14 @@ export function CollectionPeriodTab() {
   };
 
   if (loading) return <TablePageSkeleton kpiCards={0} searchBar={false} rows={4} />;
+
+  if (fetchError) return (
+    <div className="flex flex-col items-center py-12 gap-4">
+      <p className="text-sm font-medium text-gray-700 dark:text-zinc-300">Failed to load collection settings</p>
+      <p className="text-xs text-gray-500 dark:text-zinc-400">{fetchError}</p>
+      <button onClick={fetchConfig} className="px-3 py-1.5 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800">Retry</button>
+    </div>
+  );
 
   return (
     <div className="space-y-4">
@@ -507,20 +565,34 @@ export function GeneralRulesTab() {
   const { currentAcademicYear } = useApp();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState({
+  const [fetchError, setFetchError] = useState(null);
+  const defaultFormData = {
     newAdmission: { feeCalculation: "total" },
     allowPartialPayment: true,
     minimumPartialPaymentPercent: 0,
     refundPolicy: { enabled: false, processingDays: 7 }
-  });
+  };
+  const [formData, setFormData] = useState(defaultFormData);
 
   const fetchConfig = useCallback(async () => {
+    setFetchError(null);
     try {
       setLoading(true);
       const data = await request(`/fee-settings/rules?academicYear=${currentAcademicYear}`);
-      if (data.length > 0) setFormData(data[0]);
-    } catch (error) { logger.error(error); }
-    finally { setLoading(false); }
+      const items = Array.isArray(data) ? data : [];
+      if (items.length > 0) {
+        const config = items[0];
+        setFormData({
+          newAdmission: { ...defaultFormData.newAdmission, ...config.newAdmission },
+          allowPartialPayment: config.allowPartialPayment ?? defaultFormData.allowPartialPayment,
+          minimumPartialPaymentPercent: config.minimumPartialPaymentPercent ?? defaultFormData.minimumPartialPaymentPercent,
+          refundPolicy: { ...defaultFormData.refundPolicy, ...config.refundPolicy }
+        });
+      }
+    } catch (error) {
+      logger.error(error);
+      setFetchError(error.message || 'Failed to load fee rules');
+    } finally { setLoading(false); }
   }, [currentAcademicYear]);
 
   useEffect(() => { fetchConfig(); }, [fetchConfig]);
@@ -538,6 +610,14 @@ export function GeneralRulesTab() {
   };
 
   if (loading) return <TablePageSkeleton kpiCards={0} searchBar={false} rows={4} />;
+
+  if (fetchError) return (
+    <div className="flex flex-col items-center py-12 gap-4">
+      <p className="text-sm font-medium text-gray-700 dark:text-zinc-300">Failed to load fee rules</p>
+      <p className="text-xs text-gray-500 dark:text-zinc-400">{fetchError}</p>
+      <button onClick={fetchConfig} className="px-3 py-1.5 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800">Retry</button>
+    </div>
+  );
 
   return (
     <div className="space-y-4">
@@ -570,7 +650,7 @@ export function GeneralRulesTab() {
         {formData.allowPartialPayment && (
           <div className="p-4">
             <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">Minimum Payment %</label>
-            <input type="number" value={formData.minimumPartialPaymentPercent} onChange={(e) => setFormData({ ...formData, minimumPartialPaymentPercent: parseFloat(e.target.value) || 0 })} className="w-24 px-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg dark:bg-zinc-950 dark:text-zinc-100" />
+            <input type="number" min={0} max={100} value={formData.minimumPartialPaymentPercent} onChange={(e) => { const v = parseFloat(e.target.value); setFormData({ ...formData, minimumPartialPaymentPercent: isNaN(v) ? 0 : Math.min(100, Math.max(0, v)) }); }} className="w-24 px-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg dark:bg-zinc-950 dark:text-zinc-100" />
           </div>
         )}
 

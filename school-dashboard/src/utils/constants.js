@@ -90,7 +90,9 @@ export const FEE_STATUS = {
 export const ATTENDANCE_STATUS = {
   PRESENT: 'present',
   ABSENT: 'absent',
-  LATE: 'late'
+  LATE: 'late',
+  LEAVE: 'leave',
+  HALFDAY: 'halfday'
 };
 
 /**
@@ -103,6 +105,11 @@ export const STUDENT_STATUS = {
   TRANSFERRED: 'transferred',
   ALUMNI: 'alumni'
 };
+
+/**
+ * Boards of Education
+ */
+export const BOARDS_OF_EDUCATION = ["CBSE", "ICSE", "State Board", "IB", "IGCSE", "NIOS"];
 
 /**
  * App Config Defaults

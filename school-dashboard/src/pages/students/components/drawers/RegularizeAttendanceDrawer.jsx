@@ -6,7 +6,7 @@ import {
 } from "@heroui/react";
 import { AlertTriangle, CalendarCheck, Loader2 } from "lucide-react";
 import { request } from "../../../../services/api";
-import { formatShortDate } from "../../../../utils/dateFormatter";
+import { formatShortDate, toTodayDateString } from "../../../../utils/dateFormatter";
 import toast from "react-hot-toast";
 
 export default function RegularizeAttendanceDrawer({ isOpen, onOpenChange, studentId }) {
@@ -25,7 +25,7 @@ export default function RegularizeAttendanceDrawer({ isOpen, onOpenChange, stude
       setReasons({});
 
       // Try to get absent dates from the last 30 days
-      const endDate = new Date().toISOString().split('T')[0];
+      const endDate = toTodayDateString();
       const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
       request(`/attendance/student/${encodeURIComponent(studentId)}?startDate=${startDate}&endDate=${endDate}`)

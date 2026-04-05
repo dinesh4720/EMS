@@ -26,6 +26,7 @@ import {
 import StudentStatCard from "../shared/StudentStatCard";
 import { CHART_COLORS } from "../../../../utils/chartTheme";
 import { useTranslation } from 'react-i18next';
+import { formatCurrency } from '../../../../utils/numberFormatter';
 
 /**
  * OverviewTab - Main overview tab for student dashboard
@@ -273,10 +274,9 @@ function OverviewTab({
               <div className="space-y-1 text-left">
                 <div className="flex items-center gap-2">
                   <h4 className="text-2xl font-semibold text-default-900">
-                    ₹
                     {totalBalance <= 0
-                      ? (studentFeeStructure?.totalPaid || 0).toLocaleString()
-                      : (studentFeeStructure?.totalBalance || 0).toLocaleString()}
+                      ? formatCurrency(studentFeeStructure?.totalPaid || 0)
+                      : formatCurrency(studentFeeStructure?.totalBalance || 0)}
                   </h4>
                 </div>
                 <p className="text-sm font-medium text-default-500">
@@ -289,7 +289,7 @@ function OverviewTab({
                     <>
                       <span className="font-medium text-default-600">{t('pages.totalFee2')}</span>
                       <span className="font-bold text-default-700">
-                        ₹{(studentFeeStructure?.totalFee || 0).toLocaleString()}
+                        {formatCurrency(studentFeeStructure?.totalFee || 0)}
                       </span>
                     </>
                   )}
@@ -360,7 +360,7 @@ function OverviewTab({
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-default-900">{t('pages.pendingFees1')}</p>
                     <p className="text-xs text-default-500">
-                      ₹{totalBalance.toLocaleString()} outstanding
+                      {formatCurrency(totalBalance)} outstanding
                     </p>
                   </div>
                   <ChevronRight size={16} className="text-gray-400 dark:text-zinc-600" />

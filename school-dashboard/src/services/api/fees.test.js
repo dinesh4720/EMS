@@ -37,18 +37,19 @@ describe('feesApi — payments', () => {
     expect(url).toContain('academicYear=2025-26');
   });
 
-  it('getPayments — unwraps paginated response into payments array', async () => {
+  it('getPayments — preserves pagination metadata from paginated response', async () => {
     const mockPayments = [{ _id: 'p1', amount: 100 }];
-    request.mockResolvedValue({ payments: mockPayments, pagination: { total: 1 } });
+    const mockPagination = { total: 1, page: 1, limit: 20 };
+    request.mockResolvedValue({ payments: mockPayments, pagination: mockPagination });
     const result = await feesApi.getPayments({});
-    expect(result).toEqual(mockPayments);
+    expect(result).toEqual({ payments: mockPayments, pagination: mockPagination });
   });
 
-  it('getPayments — returns raw array for backward-compatible responses', async () => {
+  it('getPayments — normalizes raw array into { payments, pagination } shape', async () => {
     const mockPayments = [{ _id: 'p1', amount: 100 }];
     request.mockResolvedValue(mockPayments);
     const result = await feesApi.getPayments({});
-    expect(result).toEqual(mockPayments);
+    expect(result).toEqual({ payments: mockPayments, pagination: null });
   });
 
   it('getPaymentById — calls /fees/payments/:id', () => {
@@ -292,6 +293,11 @@ describe('notificationsApi', () => {
     expect(url).toContain('/notifications?');
     expect(url).toContain('unreadOnly=true');
     expect(url).toContain('type=fee_due');
+  });
+
+  it('getUnreadCount — calls /notifications/unread-count', () => {
+    notificationsApi.getUnreadCount();
+    expect(request).toHaveBeenCalledWith('/notifications/unread-count');
   });
 
   it('markAsRead — PUTs to /notifications/:id/read', () => {

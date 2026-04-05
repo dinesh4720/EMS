@@ -18,6 +18,8 @@ import {
 import { Save, FileText, Plus, Edit, Trash2, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import ConfirmDialog from '../../../../components/ui/ConfirmDialog';
+import useConfirmDialog from '../../../../hooks/useConfirmDialog';
 
 const DEFAULT_TEMPLATES = {
   fee: [
@@ -72,6 +74,7 @@ export default function ReminderTemplates({
   onSelectTemplate,
 }) {
   const { t } = useTranslation();
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
   const [templates, setTemplates] = useState([]);
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -102,9 +105,16 @@ export default function ReminderTemplates({
   };
 
   const handleDelete = (templateId) => {
-    if (!confirm(t('confirm.deleteReminderTemplate'))) return;
-    setTemplates(prev => prev.filter(t => t.id !== templateId));
-    toast.success(t('toast.success.templateDeleted'));
+    showConfirm({
+      title: 'Delete Template',
+      message: t('confirm.deleteReminderTemplate'),
+      variant: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        setTemplates(prev => prev.filter(t => t.id !== templateId));
+        toast.success(t('toast.success.templateDeleted'));
+      },
+    });
   };
 
   const handleSaveTemplate = () => {
@@ -126,6 +136,7 @@ export default function ReminderTemplates({
   };
 
   return (
+    <>
     <Modal
       isOpen={isOpen}
       onClose={onClose}
@@ -312,5 +323,7 @@ export default function ReminderTemplates({
         </ModalContent>
       </Modal>
     </Modal>
+    <ConfirmDialog {...confirmState} onClose={closeConfirm} />
+    </>
   );
 }

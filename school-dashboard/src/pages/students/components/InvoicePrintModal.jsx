@@ -1,9 +1,10 @@
 import { CURRENT_ACADEMIC_YEAR } from "../../../utils/constants";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Checkbox } from '@heroui/react';
 import { useRef, useCallback, useState } from 'react';
-import { getDateLocale } from '../../../i18n/index';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../../../context/AppContext';
+import { formatShortDate } from '../../../utils/dateFormatter';
+import { formatCurrencyPrecise } from '../../../utils/numberFormatter';
 
 
 // School configuration - prefers live school settings from API
@@ -23,25 +24,10 @@ const generateInvoiceNumber = (studentId, date) => {
   return `INV-${year}${month}-${idPart}`;
 };
 
-// Format currency
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat(getDateLocale(), {
-    style: 'currency',
-    currency: 'INR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2
-  }).format(amount || 0);
-};
+// Use shared currency formatter from numberFormatter.js
+const formatCurrency = formatCurrencyPrecise;
 
-// Format date
-const formatDate = (date) => {
-  if (!date) return '-';
-  return new Date(date).toLocaleDateString(getDateLocale(), {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric'
-  });
-};
+
 
 export default function InvoicePrintModal({
   isOpen,
@@ -259,8 +245,8 @@ export default function InvoicePrintModal({
     );
   }
 
-  const invoiceDate = formatDate(new Date());
-  const dueDate = formatDate(new Date(Date.now() + 15 * 24 * 60 * 60 * 1000));
+  const invoiceDate = formatShortDate(new Date());
+  const dueDate = formatShortDate(new Date(Date.now() + 15 * 24 * 60 * 60 * 1000));
 
   const feeHeads = studentFeeStructure?.feeHeads || [];
   const paidHeads = feeHeads.filter(fh => (fh.paidAmount || 0) > 0);
@@ -464,7 +450,7 @@ export default function InvoicePrintModal({
                     <tbody className="divide-y divide-gray-100 dark:divide-zinc-700">
                       {feeHistory.slice(0, 3).map((payment, index) => (
                         <tr key={payment._id || payment.receiptNumber || index}>
-                          <td className="px-4 py-2 text-sm text-gray-600 dark:text-zinc-400">{formatDate(payment.paymentDate || payment.date)}</td>
+                          <td className="px-4 py-2 text-sm text-gray-600 dark:text-zinc-400">{formatShortDate(payment.paymentDate || payment.date)}</td>
                           <td className="px-4 py-2 text-sm text-gray-600 dark:text-zinc-400 font-mono">{payment.receiptNumber || `#${index + 1}`}</td>
                           <td className="px-4 py-2 text-sm text-gray-600 dark:text-zinc-400 capitalize">{payment.paymentMode || payment.mode || 'Cash'}</td>
                           <td className="px-4 py-2 text-sm text-gray-900 dark:text-zinc-100 text-right font-mono">{formatCurrency(payment.amount)}</td>

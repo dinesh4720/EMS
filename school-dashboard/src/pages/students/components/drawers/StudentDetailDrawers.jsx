@@ -4,6 +4,7 @@ import {
 } from "@heroui/react";
 import { Phone } from "lucide-react";
 import { formatDate } from '../../../../utils/dateFormatter';
+import { formatCurrency } from '../../../../utils/numberFormatter';
 
 const drawerClassNames = {
   wrapper: "!z-50",
@@ -72,7 +73,7 @@ export function FeeStatusDrawer({ isOpen, onOpenChange, onViewFees, studentFeeSt
                     {hasPending ? t('students.profile.overview.paymentDue', 'Payment Due') : t('students.profile.overview.allFeesPaid', 'All Fees Paid')}
                   </h4>
                   <p className={`text-2xl font-bold ${hasPending ? 'text-warning-800' : 'text-success-800'}`}>
-                    ₹{(studentFeeStructure?.totalBalance || 0).toLocaleString()}
+                    {formatCurrency(studentFeeStructure?.totalBalance || 0)}
                   </p>
                   {studentFeeStructure?.nextDueDate && hasPending && (
                     <p className="text-xs text-warning-600">

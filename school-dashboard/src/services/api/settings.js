@@ -30,6 +30,12 @@ export const settingsApi = {
   deleteSubject: (id) => request(`/settings/subjects/${id}`, { method: 'DELETE' }),
   syncSubjectsToClasses: () => request('/settings/subjects/sync', { method: 'POST' }),
 
+  // Salary Templates
+  getSalaryTemplates: () => request('/settings/salary-templates'),
+  createSalaryTemplate: (data) => request('/settings/salary-templates', { method: 'POST', body: JSON.stringify(data) }),
+  updateSalaryTemplate: (id, data) => request(`/settings/salary-templates/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteSalaryTemplate: (id) => request(`/settings/salary-templates/${id}`, { method: 'DELETE' }),
+
   // Payroll Settings
   getPayrollSettings: () => request('/settings/payroll'),
   updatePayrollSettings: (data) => request('/settings/payroll', { method: 'PUT', body: JSON.stringify(data) }),
@@ -125,16 +131,18 @@ export const billingApi = {
     const qs = new URLSearchParams(params).toString();
     return request(`/billing/invoices${qs ? `?${qs}` : ''}`);
   },
-  downloadInvoicePdf: (invoiceNumber) => request(`/billing/invoices/${invoiceNumber}/pdf`, { skipCache: true })
-    .then((data) => {
-      if (data?.url) {
-        const a = document.createElement('a');
-        a.href = data.url;
-        a.download = `invoice-${invoiceNumber}.pdf`;
-        a.rel = 'noopener noreferrer';
-        a.click();
-      }
-    }),
+  downloadInvoicePdf: async (invoiceNumber) => {
+    const data = await request(`/billing/invoices/${invoiceNumber}/pdf`, { skipCache: true });
+    if (!data?.url) {
+      throw new Error('Invoice PDF URL not available');
+    }
+    const a = document.createElement('a');
+    a.href = data.url;
+    a.download = `invoice-${invoiceNumber}.pdf`;
+    a.rel = 'noopener noreferrer';
+    a.click();
+    return data;
+  },
   markInvoicePaid: (invoiceNumber) => request(`/billing/invoices/${invoiceNumber}/mark-paid`, { method: 'POST' }),
 };
 

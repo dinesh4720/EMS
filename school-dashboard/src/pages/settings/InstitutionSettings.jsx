@@ -3,6 +3,7 @@ import { Button, Input, Chip, Select, SelectItem, Divider } from "@heroui/react"
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { Save, Building2, FileText, Edit2, Upload, X } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import { BOARDS_OF_EDUCATION } from "../../utils/constants";
 import { useTranslation } from 'react-i18next';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 import UnsavedChangesModal from '../../components/modals/UnsavedChangesModal';
@@ -75,8 +76,6 @@ export default function InstitutionSettings() {
       reader.readAsDataURL(file);
     }
   };
-
-  const boards = ["CBSE", "ICSE", "State Board", "IB", "IGCSE", "NIOS"];
 
   if (loading) {
     return (
@@ -166,7 +165,7 @@ export default function InstitutionSettings() {
                   labelPlacement="outside"
                   classNames={{ trigger: "bg-white dark:bg-zinc-950 border-default-200" }}
                 >
-                  {boards.map(board => (
+                  {BOARDS_OF_EDUCATION.map(board => (
                     <SelectItem key={board} value={board}>{board}</SelectItem>
                   ))}
                 </Select>

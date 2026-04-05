@@ -51,6 +51,7 @@ export default function FeeManagementSettings() {
 
       {/* Tabs - Consolidated to 4 */}
       <Tabs
+        aria-label="Fee management settings"
         selectedKey={activeTab}
         onSelectionChange={setActiveTab}
         variant="underlined"

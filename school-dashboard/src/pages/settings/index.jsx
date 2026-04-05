@@ -17,8 +17,6 @@ import {
   Search,
   Shield,
   Puzzle,
-  Smartphone,
-  Mail,
   Zap,
   Trash2,
   Clock,
@@ -116,13 +114,6 @@ export default function SettingsPage() {
       title: "Communication",
       items: [
         { key: "communication", label: "Communication Settings", icon: MessageSquare, path: "/settings/communication" },
-        { key: "email", label: "Email Integration", icon: Mail, path: "/settings/email", isNew: true },
-      ]
-    },
-    {
-      title: "Installation",
-      items: [
-        { key: "mobile", label: "Mobile App", icon: Smartphone, path: "/settings/mobile" },
       ]
     },
     {
@@ -137,7 +128,6 @@ export default function SettingsPage() {
       title: "System",
       items: [
         { key: "subscription", label: "Subscription", icon: CreditCard, path: "/settings/subscription" },
-        { key: "integrations", label: "Apps & Integrations", icon: Puzzle, path: "/settings/integrations" },
         { key: "trash", label: "Trash", icon: Trash2, path: "/settings/trash", isNew: true },
         { key: "seed-data", label: "Seed Data", icon: Zap, path: "/settings/seed-data", isNew: true },
         { key: "data-cleanup", label: "Data Cleanup", icon: Trash2, path: "/settings/data-cleanup", isNew: true },
@@ -145,8 +135,7 @@ export default function SettingsPage() {
         { key: "onboarding", label: "Setup Wizard", icon: Zap, isAction: true, onClick: () => setShowOnboarding(true) },
       ]
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], []);
+  ], [t, setShowOnboarding]);
 
   const isActive = (path) => {
     if (path === "/settings") return location.pathname === "/settings";

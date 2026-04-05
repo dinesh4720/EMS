@@ -85,19 +85,22 @@ const VirtualizedTable = forwardRef(function VirtualizedTable(
         className="w-full border-spacing-0 select-text border-collapse"
         aria-label={ariaLabel}
       >
-        <thead className="sticky top-0 z-30 bg-white">
+        <thead className="sticky top-0 z-30" style={{ backgroundColor: 'var(--color-bg)' }}>
           <tr>
             {columns.map((col) => (
               <th
                 key={col.key}
                 scope="col"
                 aria-sort={col.sortDirection || undefined}
-                className={`bg-white text-gray-500 font-medium text-xs uppercase tracking-wider h-11 border-b border-gray-200 px-3 select-none ${
+                className={`font-medium text-xs uppercase tracking-wider h-11 border-b px-3 select-none ${
                   col.align === "end" ? "text-right pr-6" : "text-left"
                 } ${headerClassName} ${col.className || ""}`}
                 style={{
                   width: col.width,
                   minWidth: col.minWidth || col.width,
+                  backgroundColor: 'var(--color-bg)',
+                  color: 'var(--color-text-secondary)',
+                  borderBottomColor: 'var(--color-border-strong)',
                 }}
                 onClick={col.onSort}
               >
@@ -141,8 +144,8 @@ const VirtualizedTable = forwardRef(function VirtualizedTable(
                     ref={rowVirtualizer.measureElement}
                     tabIndex={handleRowClick ? 0 : undefined}
                     role={handleRowClick ? "button" : undefined}
-                    className={`group transition-colors hover:bg-gray-50 ${
-                      handleRowClick ? "cursor-pointer focus-visible:bg-gray-100 focus-visible:outline-none" : ""
+                    className={`group transition-colors hover:bg-gray-50 dark:hover:bg-zinc-800 ${
+                      handleRowClick ? "cursor-pointer focus-visible:bg-gray-100 dark:focus-visible:bg-zinc-800 focus-visible:outline-none" : ""
                     } ${extraClass}`}
                     onClick={
                       handleRowClick

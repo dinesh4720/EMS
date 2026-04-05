@@ -5,13 +5,14 @@ import { hostelApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useHostelLookups } from "../../hooks/useHostelLookups";
 import { getDateLocale } from '../../i18n/index';
+import { toTodayDateString } from '../../utils/dateFormatter';
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 
 
 const INITIAL_FORM = {
   hostelId: "", roomId: "", studentId: "", bedNumber: "",
-  startDate: new Date().toISOString().split("T")[0], monthlyFee: 0, notes: "",
+  startDate: toTodayDateString(), monthlyFee: 0, notes: "",
 };
 
 export default function AllocationsList() {
@@ -30,7 +31,7 @@ export default function AllocationsList() {
   const [vacatingId, setVacatingId] = useState(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { isOpen: isVacateOpen, onOpen: onVacateOpen, onClose: onVacateClose } = useDisclosure();
-  const [vacateData, setVacateData] = useState({ endDate: new Date().toISOString().split("T")[0], notes: "" });
+  const [vacateData, setVacateData] = useState({ endDate: toTodayDateString(), notes: "" });
   // Student search term for the async dropdown (MF-24)
   const [studentSearch, setStudentSearch] = useState("");
 
@@ -71,7 +72,8 @@ export default function AllocationsList() {
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e?.preventDefault?.();
     if (!validateForm()) return;
     setSaving(true);
     try {
@@ -108,7 +110,7 @@ export default function AllocationsList() {
 
   const openVacateModal = (allocationId) => {
     setVacatingId(allocationId);
-    setVacateData({ endDate: new Date().toISOString().split("T")[0], notes: "" });
+    setVacateData({ endDate: toTodayDateString(), notes: "" });
     onVacateOpen();
   };
 

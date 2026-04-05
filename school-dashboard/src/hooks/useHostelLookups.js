@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { hostelApi, studentsApi } from "../services/api";
 
 /**
@@ -14,22 +14,31 @@ export function useHostelLookups(hostelIdForRooms, studentSearch = "") {
   const [rooms, setRooms] = useState([]);
   const [students, setStudents] = useState([]);
   const [studentsLoading, setStudentsLoading] = useState(false);
+  const [error, setError] = useState(null);
   const debounceRef = useRef(null);
+
+  const clearError = useCallback(() => setError(null), []);
 
   // Load hostel list once on mount
   useEffect(() => {
-    hostelApi.getHostels().then((d) => setHostels(d.hostels || [])).catch(() => {});
+    let cancelled = false;
+    hostelApi.getHostels()
+      .then((d) => { if (!cancelled) setHostels(d.hostels || []); })
+      .catch((err) => { if (!cancelled) setError(err.message || "Failed to load hostels"); });
+    return () => { cancelled = true; };
   }, []);
 
   // Load available rooms when selected hostel changes
   useEffect(() => {
+    let cancelled = false;
     if (hostelIdForRooms) {
       hostelApi.getRooms({ hostelId: hostelIdForRooms, available: true })
-        .then((d) => setRooms(d.rooms || []))
-        .catch(() => {});
+        .then((d) => { if (!cancelled) setRooms(d.rooms || []); })
+        .catch((err) => { if (!cancelled) setError(err.message || "Failed to load rooms"); });
     } else {
       setRooms([]);
     }
+    return () => { cancelled = true; };
   }, [hostelIdForRooms]);
 
   // Debounced server-side search — only fires after 300ms idle, min 2 chars
@@ -41,20 +50,28 @@ export function useHostelLookups(hostelIdForRooms, studentSearch = "") {
       return;
     }
 
+    let cancelled = false;
+
     debounceRef.current = setTimeout(async () => {
-      setStudentsLoading(true);
+      if (!cancelled) setStudentsLoading(true);
       try {
         const data = await studentsApi.list({ search: studentSearch.trim(), limit: 30 });
-        setStudents(data.data || []);
-      } catch {
-        setStudents([]);
+        if (!cancelled) setStudents(data.data || []);
+      } catch (err) {
+        if (!cancelled) {
+          setStudents([]);
+          setError(err.message || "Failed to search students");
+        }
       } finally {
-        setStudentsLoading(false);
+        if (!cancelled) setStudentsLoading(false);
       }
     }, 300);
 
-    return () => clearTimeout(debounceRef.current);
+    return () => {
+      cancelled = true;
+      clearTimeout(debounceRef.current);
+    };
   }, [studentSearch]);
 
-  return { hostels, rooms, students, studentsLoading };
+  return { hostels, rooms, students, studentsLoading, error, clearError };
 }

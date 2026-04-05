@@ -75,22 +75,26 @@ export function getSafeInitials(name, fallback = '?') {
  * @param {string[]} nameFields - Array of field names to check (default: ['name', 'userName', 'staffName', 'studentName'])
  * @returns {object} - The sanitized object
  */
-export function sanitizeObjectNames(obj, nameFields = ['name', 'userName', 'staffName', 'studentName']) {
+export function sanitizeObjectNames(obj, nameFields = ['name', 'userName', 'staffName', 'studentName'], _seen = new WeakSet()) {
   if (!obj || typeof obj !== 'object') return obj
-  
+
+  // Circular reference protection
+  if (_seen.has(obj)) return obj
+  _seen.add(obj)
+
   const sanitized = Array.isArray(obj) ? [] : {}
-  
+
   for (const [key, value] of Object.entries(obj)) {
     if (nameFields.includes(key) && typeof value === 'string' && isObjectId(value)) {
       // This field contains an ObjectId, try to find a better value
       sanitized[key] = getSafeDisplayName(obj, 'code')
     } else if (typeof value === 'object' && value !== null) {
       // Recursively sanitize nested objects
-      sanitized[key] = sanitizeObjectNames(value, nameFields)
+      sanitized[key] = sanitizeObjectNames(value, nameFields, _seen)
     } else {
       sanitized[key] = value
     }
   }
-  
+
   return sanitized
 }

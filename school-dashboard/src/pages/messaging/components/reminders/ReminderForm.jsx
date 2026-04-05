@@ -140,7 +140,8 @@ export default function ReminderForm({
     }));
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e?.preventDefault?.();
     const newErrors = {};
     if (!formData.title.trim()) newErrors.title = t('toast.error.pleaseFillInTitleAndMessage');
     if (!formData.message.trim()) newErrors.message = t('toast.error.pleaseFillInTitleAndMessage');

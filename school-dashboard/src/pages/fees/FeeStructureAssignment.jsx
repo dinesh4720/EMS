@@ -7,6 +7,8 @@ import { useApp } from "../../context/AppContext";
 import { getAcademicYearOptions } from "../../utils/constants";
 import { getDateLocale } from '../../i18n/index';
 import { useTranslation } from 'react-i18next';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import useConfirmDialog from '../../hooks/useConfirmDialog';
 
 
 
@@ -31,6 +33,7 @@ const buildAcademicYearDate = (academicYear, month, day, useNextYear = false) =>
 export default function FeeStructureAssignment({ classes, onAssignmentComplete }) {
   const { t } = useTranslation();
   const { currentAcademicYear } = useApp();
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
   const academicYearOptions = useMemo(
     () => getAcademicYearOptions(currentAcademicYear, { past: 2, future: 2 }),
     [currentAcademicYear]
@@ -225,33 +228,36 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
       return;
     }
 
-    // Note: Using window.confirm for now — should be replaced with custom ConfirmDialog component for i18n
-    if (!window.confirm(t('confirm.applyFeeStructure', 'Apply this fee structure to all students in the selected class? This cannot be undone.'))) {
-      return;
-    }
-
-    setApplying(true);
-    try {
-      const result = await request('/fee-structure/apply-to-students', {
-        method: 'POST',
-        body: JSON.stringify({
-          classId: selectedClass,
-          academicYear
-        })
-      });
-      toast.success(result.message || `Fee structure applied to all students`);
-      onPreviewClose();
-    } catch (error) {
-      console.error('Failed to apply structure:', error);
-      toast.error(t('toast.error.failedToApplyFeeStructureToStudents'));
-    } finally {
-      setApplying(false);
-    }
+    showConfirm({
+      title: t('pages.applyFeeStructure', 'Apply Fee Structure'),
+      message: t('confirm.applyFeeStructure', 'Apply this fee structure to all students in the selected class? This cannot be undone.'),
+      variant: 'warning',
+      confirmText: t('pages.apply', 'Apply'),
+      onConfirm: async () => {
+        setApplying(true);
+        try {
+          const result = await request('/fee-structure/apply-to-students', {
+            method: 'POST',
+            body: JSON.stringify({
+              classId: selectedClass,
+              academicYear
+            })
+          });
+          toast.success(result.message || `Fee structure applied to all students`);
+          onPreviewClose();
+        } catch (error) {
+          console.error('Failed to apply structure:', error);
+          toast.error(t('toast.error.failedToApplyFeeStructureToStudents'));
+        } finally {
+          setApplying(false);
+        }
+      },
+    });
   };
 
   const updateFeeHeadAmount = (index, amount) => {
     const updatedHeads = [...formData.feeHeads];
-    updatedHeads[index].amount = parseInt(amount) || 0;
+    updatedHeads[index].amount = parseFloat(amount) || 0;
     
     // Recalculate total
     const newTotal = updatedHeads.reduce((sum, head) => {
@@ -586,6 +592,8 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </Card>
   );
 }

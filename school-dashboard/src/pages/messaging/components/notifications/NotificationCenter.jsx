@@ -34,6 +34,8 @@ import toast from 'react-hot-toast';
 import { notificationsApi } from '../../../../services/api';
 import { useTranslation } from 'react-i18next';
 import { formatShortDate } from '../../../../utils/dateFormatter';
+import ConfirmDialog from '../../../../components/ui/ConfirmDialog';
+import useConfirmDialog from '../../../../hooks/useConfirmDialog';
 
 const NOTIFICATION_ICONS = {
   // Matches backend Notification.type enum values
@@ -64,6 +66,7 @@ const CHANNEL_ICONS = {
 
 export default function NotificationCenter({ onClose, isPopover = false }) {
   const { t } = useTranslation();
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
   const [notifications, setNotifications] = useState([]);
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
@@ -127,17 +130,23 @@ export default function NotificationCenter({ onClose, isPopover = false }) {
     }
   };
 
-  const handleClearAll = async () => {
-    if (!confirm(t('confirm.deleteAllNotifications'))) return;
-
-    try {
-      await notificationsApi.clearAll();
-      setNotifications([]);
-      toast.success(t('toast.success.allNotificationsCleared'));
-    } catch (error) {
-      logger.error('Error clearing notifications:', error);
-      toast.error(t('toast.error.failedToClearNotifications'));
-    }
+  const handleClearAll = () => {
+    showConfirm({
+      title: 'Delete All Notifications',
+      message: t('confirm.deleteAllNotifications'),
+      variant: 'danger',
+      confirmText: 'Delete All',
+      onConfirm: async () => {
+        try {
+          await notificationsApi.clearAll();
+          setNotifications([]);
+          toast.success(t('toast.success.allNotificationsCleared'));
+        } catch (error) {
+          logger.error('Error clearing notifications:', error);
+          toast.error(t('toast.error.failedToClearNotifications'));
+        }
+      },
+    });
   };
 
   const groupNotificationsByDate = (notifs) => {
@@ -191,6 +200,7 @@ export default function NotificationCenter({ onClose, isPopover = false }) {
   };
 
   return (
+    <>
     <div className={isPopover ? "w-full" : "w-full max-w-2xl mx-auto"}>
       {/* Header */}
       <div className={`flex justify-between items-center ${isPopover ? 'p-3 border-b border-default-200' : 'mb-4'}`}>
@@ -276,6 +286,7 @@ export default function NotificationCenter({ onClose, isPopover = false }) {
                         onMarkAsRead={handleMarkAsRead}
                         onDelete={handleDelete}
                         formatTime={formatTime}
+                        showConfirm={showConfirm}
                       />
                     ))}
                   </>
@@ -294,6 +305,7 @@ export default function NotificationCenter({ onClose, isPopover = false }) {
                         onMarkAsRead={handleMarkAsRead}
                         onDelete={handleDelete}
                         formatTime={formatTime}
+                        showConfirm={showConfirm}
                       />
                     ))}
                   </>
@@ -312,6 +324,7 @@ export default function NotificationCenter({ onClose, isPopover = false }) {
                         onMarkAsRead={handleMarkAsRead}
                         onDelete={handleDelete}
                         formatTime={formatTime}
+                        showConfirm={showConfirm}
                       />
                     ))}
                   </>
@@ -322,10 +335,12 @@ export default function NotificationCenter({ onClose, isPopover = false }) {
         </CardBody>
       </Card>
     </div>
+    <ConfirmDialog {...confirmState} onClose={closeConfirm} />
+    </>
   );
 }
 
-function NotificationItem({ notification, onMarkAsRead, onDelete, formatTime }) {
+function NotificationItem({ notification, onMarkAsRead, onDelete, formatTime, showConfirm }) {
   const IconComponent = NOTIFICATION_ICONS[notification.type]?.icon || Bell;
   const iconColor = NOTIFICATION_ICONS[notification.type]?.color || 'default';
   // Derive delivery channel from the channels array (notification.channel doesn't exist in schema)
@@ -394,9 +409,15 @@ function NotificationItem({ notification, onMarkAsRead, onDelete, formatTime }) 
             color="danger"
             onPress={(e) => {
               e.stopPropagation();
-              if (confirm(t('confirm.deleteNotification'))) {
-                onDelete(notification._id);
-              }
+              showConfirm({
+                title: 'Delete Notification',
+                message: 'Are you sure you want to delete this notification?',
+                variant: 'danger',
+                confirmText: 'Delete',
+                onConfirm: async () => {
+                  onDelete(notification._id);
+                },
+              });
             }}
           >
             <X size={16} />

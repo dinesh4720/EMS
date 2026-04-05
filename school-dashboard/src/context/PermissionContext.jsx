@@ -32,7 +32,9 @@ export const PermissionProvider = ({ children }) => {
     try {
       setLoading(true);
 
-      const data = await request(`/permissions/user/${id}`);
+      // [AUDIT-595] Use /permissions/me to derive userId from auth token server-side,
+      // eliminating IDOR risk from client-controlled userId in the URL
+      const data = await request(`/permissions/me`);
       const apiPermissions = data.permissions || [];
 
       // If API returns empty or incomplete permissions, merge with role defaults
@@ -73,78 +75,78 @@ export const PermissionProvider = ({ children }) => {
         'PermissionContext: role not server-verified, granting view-only fallback permissions'
       );
       setPermissions([
-        { module: 'dashboard', actions: ['view'] },
-        { module: 'staff', actions: ['view'] },
-        { module: 'students', actions: ['view'] },
-        { module: 'classes', actions: ['view'] },
-        { module: 'academics', actions: ['view'] },
-        { module: 'attendance', actions: ['view'] },
-        { module: 'timetable', actions: ['view'] },
-        { module: 'messaging', actions: ['view'] },
+        { module: 'dashboard', view: true, create: false, edit: false, delete: false, publish: false },
+        { module: 'staff', view: true, create: false, edit: false, delete: false, publish: false },
+        { module: 'students', view: true, create: false, edit: false, delete: false, publish: false },
+        { module: 'classes', view: true, create: false, edit: false, delete: false, publish: false },
+        { module: 'academics', view: true, create: false, edit: false, delete: false, publish: false },
+        { module: 'attendance', view: true, create: false, edit: false, delete: false, publish: false },
+        { module: 'timetable', view: true, create: false, edit: false, delete: false, publish: false },
+        { module: 'messaging', view: true, create: false, edit: false, delete: false, publish: false },
       ]);
       return;
     }
 
     // Grant all permissions for Admin roles (role verified by server)
     if (normalizedRole === 'super admin' || normalizedRole === 'admin' || normalizedRole === 'superadmin') {
-      setPermissions([{ module: '*', actions: ['view', 'create', 'edit', 'delete', 'publish'] }]);
+      setPermissions([{ module: '*', view: true, create: true, edit: true, delete: true, publish: true }]);
     } else if (normalizedRole === 'principal') {
       // Principal has full access except settings delete
       setPermissions([
-        { module: '*', actions: ['view', 'create', 'edit', 'delete', 'publish'] },
-        { module: 'settings', actions: ['view', 'create', 'edit'] }
+        { module: '*', view: true, create: true, edit: true, delete: true, publish: true },
+        { module: 'settings', view: true, create: true, edit: true, delete: false, publish: false }
       ]);
     } else if (normalizedRole === 'vice principal' || normalizedRole === 'vice-principal') {
       // Vice Principal has access without delete
       setPermissions([
-        { module: 'dashboard', actions: ['view'] },
-        { module: 'staff', actions: ['view', 'create', 'edit'] },
-        { module: 'students', actions: ['view', 'create', 'edit'] },
-        { module: 'classes', actions: ['view', 'create', 'edit'] },
-        { module: 'academics', actions: ['view', 'create', 'edit', 'publish'] },
-        { module: 'attendance', actions: ['view', 'create', 'edit'] },
-        { module: 'timetable', actions: ['view', 'create', 'edit'] },
-        { module: 'fees', actions: ['view'] },
-        { module: 'payroll', actions: ['view'] },
-        { module: 'messaging', actions: ['view', 'create', 'edit'] },
-        { module: 'reports', actions: ['view', 'create'] },
+        { module: 'dashboard', view: true, create: false, edit: false, delete: false, publish: false },
+        { module: 'staff', view: true, create: true, edit: true, delete: false, publish: false },
+        { module: 'students', view: true, create: true, edit: true, delete: false, publish: false },
+        { module: 'classes', view: true, create: true, edit: true, delete: false, publish: false },
+        { module: 'academics', view: true, create: true, edit: true, delete: false, publish: true },
+        { module: 'attendance', view: true, create: true, edit: true, delete: false, publish: false },
+        { module: 'timetable', view: true, create: true, edit: true, delete: false, publish: false },
+        { module: 'fees', view: true, create: false, edit: false, delete: false, publish: false },
+        { module: 'payroll', view: true, create: false, edit: false, delete: false, publish: false },
+        { module: 'messaging', view: true, create: true, edit: true, delete: false, publish: false },
+        { module: 'reports', view: true, create: true, edit: false, delete: false, publish: false },
       ]);
     } else if (normalizedRole === 'teacher') {
       // Teacher has access to classes, attendance, academics
       setPermissions([
-        { module: 'dashboard', actions: ['view'] },
-        { module: 'staff', actions: ['view'] },
-        { module: 'students', actions: ['view', 'edit'] },
-        { module: 'classes', actions: ['view'] },
-        { module: 'academics', actions: ['view', 'create', 'edit'] },
-        { module: 'attendance', actions: ['view', 'create', 'edit'] },
-        { module: 'timetable', actions: ['view'] },
-        { module: 'fees', actions: ['view'] },
-        { module: 'messaging', actions: ['view', 'create'] },
-        { module: 'reports', actions: ['view'] },
+        { module: 'dashboard', view: true, create: false, edit: false, delete: false, publish: false },
+        { module: 'staff', view: true, create: false, edit: false, delete: false, publish: false },
+        { module: 'students', view: true, create: false, edit: true, delete: false, publish: false },
+        { module: 'classes', view: true, create: false, edit: false, delete: false, publish: false },
+        { module: 'academics', view: true, create: true, edit: true, delete: false, publish: false },
+        { module: 'attendance', view: true, create: true, edit: true, delete: false, publish: false },
+        { module: 'timetable', view: true, create: false, edit: false, delete: false, publish: false },
+        { module: 'fees', view: true, create: false, edit: false, delete: false, publish: false },
+        { module: 'messaging', view: true, create: true, edit: false, delete: false, publish: false },
+        { module: 'reports', view: true, create: false, edit: false, delete: false, publish: false },
       ]);
     } else if (normalizedRole === 'accountant') {
       // Accountant has access to fees and payroll
       setPermissions([
-        { module: 'dashboard', actions: ['view'] },
-        { module: 'staff', actions: ['view'] },
-        { module: 'students', actions: ['view'] },
-        { module: 'academics', actions: ['view'] },
-        { module: 'fees', actions: ['view', 'create', 'edit', 'delete'] },
-        { module: 'payroll', actions: ['view', 'create', 'edit'] },
-        { module: 'reports', actions: ['view'] },
+        { module: 'dashboard', view: true, create: false, edit: false, delete: false, publish: false },
+        { module: 'staff', view: true, create: false, edit: false, delete: false, publish: false },
+        { module: 'students', view: true, create: false, edit: false, delete: false, publish: false },
+        { module: 'academics', view: true, create: false, edit: false, delete: false, publish: false },
+        { module: 'fees', view: true, create: true, edit: true, delete: true, publish: false },
+        { module: 'payroll', view: true, create: true, edit: true, delete: false, publish: false },
+        { module: 'reports', view: true, create: false, edit: false, delete: false, publish: false },
       ]);
     } else {
       // Grant basic view permissions for other roles
       setPermissions([
-        { module: 'dashboard', actions: ['view'] },
-        { module: 'staff', actions: ['view'] },
-        { module: 'students', actions: ['view'] },
-        { module: 'classes', actions: ['view'] },
-        { module: 'academics', actions: ['view'] },
-        { module: 'attendance', actions: ['view'] },
-        { module: 'timetable', actions: ['view'] },
-        { module: 'messaging', actions: ['view', 'create'] },
+        { module: 'dashboard', view: true, create: false, edit: false, delete: false, publish: false },
+        { module: 'staff', view: true, create: false, edit: false, delete: false, publish: false },
+        { module: 'students', view: true, create: false, edit: false, delete: false, publish: false },
+        { module: 'classes', view: true, create: false, edit: false, delete: false, publish: false },
+        { module: 'academics', view: true, create: false, edit: false, delete: false, publish: false },
+        { module: 'attendance', view: true, create: false, edit: false, delete: false, publish: false },
+        { module: 'timetable', view: true, create: false, edit: false, delete: false, publish: false },
+        { module: 'messaging', view: true, create: true, edit: false, delete: false, publish: false },
       ]);
     }
   };
@@ -172,10 +174,6 @@ export const PermissionProvider = ({ children }) => {
     // would otherwise grant it.
     const modulePermission = permissions.find(p => p.module === module);
     if (modulePermission) {
-      // Check if it has actions array (old format) or boolean fields (new format)
-      if (modulePermission.actions?.includes(action)) {
-        return true;
-      }
       if (modulePermission[action] === true) {
         return true;
       }
@@ -187,10 +185,6 @@ export const PermissionProvider = ({ children }) => {
     // No specific entry for this module — check wildcard permission
     const wildcardPermission = permissions.find(p => p.module === '*');
     if (wildcardPermission) {
-      // Check if it has actions array (old format) or boolean fields (new format)
-      if (wildcardPermission.actions?.includes(action)) {
-        return true;
-      }
       if (wildcardPermission[action] === true) {
         return true;
       }
@@ -209,7 +203,7 @@ export const PermissionProvider = ({ children }) => {
           userName: user.name || 'Unknown User',
           userEmail: user.email || '',
           module,
-          permissions: [action],
+          permissions: Array.isArray(action) ? action : [action],
           reason,
         }),
       });

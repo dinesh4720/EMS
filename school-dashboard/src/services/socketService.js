@@ -9,6 +9,7 @@ class SocketService {
     this.userId = null;
     this.userType = null;
     this.listeners = new Map();
+    this.conversationRooms = new Set();
   }
 
   connect(token) {
@@ -31,8 +32,6 @@ class SocketService {
       reconnectionAttempts: 10, // Increased from 5
       timeout: 20000,
     });
-
-    this.conversationRooms = new Set(); // NEW: Track joined rooms
 
     this.socket.on('connect', () => {
       this.connected = true;

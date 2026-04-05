@@ -61,24 +61,8 @@ export default function IssuedBooksList() {
   }, [status, page]);
 
   useEffect(() => {
-    let cancelled = false;
-    const params = { page, limit: 25 };
-    if (status === "overdue") params.overdue = "true";
-    else if (status !== "all") params.status = status;
-
-    setLoading(true);
-    libraryApi.getIssues(params)
-      .then(data => {
-        if (!cancelled) {
-          setIssues(data.issues || []);
-          setTotal(data.total || 0);
-        }
-      })
-      .catch(() => { if (!cancelled) toast.error(t('toast.error.failedToLoadIssuedBooks')); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-
-    return () => { cancelled = true; };
-  }, [status, page]);
+    fetchIssues();
+  }, [fetchIssues]);
 
   const handleReturn = (issue) => {
     setReturnIssue(issue);

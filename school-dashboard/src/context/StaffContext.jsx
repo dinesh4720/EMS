@@ -3,11 +3,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { staffApi } from "../services/api";
 import { useSalaryState } from "./hooks/useSalaryState";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import logger from "../utils/logger";
 
 export const StaffContext = createContext();
 
 export function StaffProvider({ children }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [staff, setStaff] = useState([]);
 
@@ -23,6 +25,7 @@ export function StaffProvider({ children }) {
     updateSalarySettings,
     updateStaffSalary,
     processPayroll,
+    fetchPayrollHistory,
     getPayrollForMonth,
   } = useSalaryState();
 
@@ -44,7 +47,7 @@ export function StaffProvider({ children }) {
       return created;
     } catch (err) {
       logger.error("Failed to add staff:", err);
-      toast.error("Failed to add staff member");
+      toast.error(t('toast.error.failedToAddStaffMember', 'Failed to add staff member'));
       throw err;
     }
   };
@@ -69,7 +72,7 @@ export function StaffProvider({ children }) {
       return finalUpdates;
     } catch (err) {
       logger.error("Failed to update staff:", err);
-      toast.error("Failed to update staff member");
+      toast.error(t('toast.error.failedToUpdateStaffMember', 'Failed to update staff member'));
       setStaff(prev);
       throw err;
     }
@@ -90,7 +93,7 @@ export function StaffProvider({ children }) {
       void invalidateAppData();
     } catch (err) {
       logger.error("Failed to delete staff:", err);
-      toast.error("Failed to delete staff member");
+      toast.error(t('toast.error.failedToDeleteStaffMember', 'Failed to delete staff member'));
       setStaff(prev);
       throw err;
     }
@@ -148,6 +151,7 @@ export function StaffProvider({ children }) {
     updateSalarySettings,
     updateStaffSalary,
     processPayroll,
+    fetchPayrollHistory,
     getPayrollForMonth,
   };
 

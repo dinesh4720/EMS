@@ -80,13 +80,14 @@ export default async function getCroppedImg(
     // paste generated rotate image at the top left corner
     ctx.putImageData(data, 0, 0)
 
-    // As Base64 string
-    return canvas.toDataURL('image/jpeg');
-
-    // As Blob
-    // return new Promise((resolve, reject) => {
-    //   canvas.toBlob((file) => {
-    //     resolve(URL.createObjectURL(file))
-    //   }, 'image/jpeg')
-    // })
+    // Return as Blob (memory-efficient for large images, avoids base64 overhead)
+    return new Promise((resolve, reject) => {
+        canvas.toBlob((blob) => {
+            if (blob) {
+                resolve(blob);
+            } else {
+                reject(new Error('Canvas toBlob failed'));
+            }
+        }, 'image/jpeg');
+    });
 }

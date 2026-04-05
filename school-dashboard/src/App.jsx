@@ -1,5 +1,5 @@
 import { safeGetItem } from './utils/safeStorage';
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation, Link } from "react-router-dom";
 import { Suspense, lazy } from "react";
 const TrialBanner = lazy(() => import('./components/billing/TrialBanner'));
 const SessionTimeoutWarning = lazy(() => import('./components/common/SessionTimeoutWarning'));
@@ -125,57 +125,24 @@ function AuthenticatedApp() {
   // Add window scroll detection for scrollbar visibility
   useEffect(() => {
     let scrollTimeout;
-    
-    // Create style element for dynamic scrollbar styles
-    const styleEl = document.createElement('style');
-    styleEl.id = 'dynamic-scrollbar-styles';
-    document.head.appendChild(styleEl);
-    
-    const showScrollbar = () => {
-      styleEl.textContent = `
-        *::-webkit-scrollbar-thumb {
-          background: rgba(0, 0, 0, 0.4) !important;
-        }
-        *::-webkit-scrollbar-thumb:hover {
-          background: rgba(0, 0, 0, 0.6) !important;
-        }
-        * {
-          scrollbar-color: rgba(0, 0, 0, 0.4) transparent !important;
-        }
-        html.dark *::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.4) !important;
-        }
-        html.dark *::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.6) !important;
-        }
-        html.dark * {
-          scrollbar-color: rgba(255, 255, 255, 0.4) transparent !important;
-        }
-      `;
-    };
-    
-    const hideScrollbar = () => {
-      styleEl.textContent = '';
-    };
-    
+    const root = document.documentElement;
+
     const handleScroll = () => {
-      showScrollbar();
-
+      if (!root.classList.contains('scrollbar-visible')) {
+        root.classList.add('scrollbar-visible');
+      }
       clearTimeout(scrollTimeout);
-
       scrollTimeout = setTimeout(() => {
-        hideScrollbar();
+        root.classList.remove('scrollbar-visible');
       }, 1500);
     };
 
     window.addEventListener('scroll', handleScroll, true);
-    document.addEventListener('scroll', handleScroll, true);
 
     return () => {
       window.removeEventListener('scroll', handleScroll, true);
-      document.removeEventListener('scroll', handleScroll, true);
       clearTimeout(scrollTimeout);
-      styleEl.remove();
+      root.classList.remove('scrollbar-visible');
     };
   }, []);
 
@@ -194,8 +161,6 @@ function AuthenticatedApp() {
 
   const isSettingsPage = location.pathname.startsWith("/settings");
   const isFullWidthPage = isSettingsPage || location.pathname === "/timetable-wizard";
-  // Use user preference for sidebar state
-  const effectiveSidebarOpen = isSidebarOpen;
 
   return (
     <>
@@ -215,17 +180,20 @@ function AuthenticatedApp() {
         )}
 
         <ErrorBoundary message="The sidebar encountered an error.">
-          <Sidebar isSidebarOpen={effectiveSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
+          <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
         </ErrorBoundary>
         <AiAssistantLayout>
-          <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${effectiveSidebarOpen ? 'ml-[var(--sidebar-width)]' : 'ml-[var(--sidebar-width-collapsed)]'} relative z-10 bg-gray-50 dark:bg-zinc-950`}>
-            <Topbar isSidebarOpen={effectiveSidebarOpen} />
+          <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${isSidebarOpen ? 'ml-[var(--sidebar-width)]' : 'ml-[var(--sidebar-width-collapsed)]'} relative z-10 bg-gray-50 dark:bg-zinc-950`}>
+            <Topbar isSidebarOpen={isSidebarOpen} />
             <div className="mt-14 flex-1 flex flex-col min-h-0">
               <Suspense fallback={null}>
                 <TrialBanner />
               </Suspense>
               <Suspense fallback={null}>
                 <StaleDataBanner />
+              </Suspense>
+              <Suspense fallback={null}>
+                <OfflineBanner />
               </Suspense>
               <BeforeSchoolAlert />
               <main id="main-content" tabIndex={-1} className={`flex-1 flex flex-col min-h-0 ${isFullWidthPage ? 'p-0' : 'p-2 md:p-3'}`}>
@@ -333,7 +301,9 @@ function AuthenticatedApp() {
                     } />
                     <Route path="/reports/*" element={
                       <RouteEB>
-                        <ReportsPage />
+                        <PermissionGuard module="reports">
+                          <ReportsPage />
+                        </PermissionGuard>
                       </RouteEB>
                     } />
                     <Route path="/accounts/*" element={<Navigate to="/fees" replace />} />
@@ -453,12 +423,12 @@ function AuthenticatedApp() {
                         <p className="text-sm text-gray-500 dark:text-zinc-400 max-w-md text-center">
                           The page you are looking for does not exist or has been moved.
                         </p>
-                        <a
-                          href="/"
+                        <Link
+                          to="/"
                           className="mt-2 px-4 py-2 bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
                         >
                           Back to Dashboard
-                        </a>
+                        </Link>
                       </div>
                     } />
                   </Routes>
@@ -498,34 +468,25 @@ function AppRoutes() {
     <ErrorBoundary>
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          {/* Public route - accessible without authentication */}
+          {/* Public routes - accessible without authentication */}
           <Route path="/form/:token" element={<PublicFormSubmission />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
 
-          {/* Authenticated routes */}
-          {!isAuthenticated ? (
-            <>
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="*" element={<Navigate to="/login" replace />} />
-            </>
-          ) : (
-            <>
-              <Route path="/login" element={<Navigate to={isSuperAdmin ? "/super-admin" : "/"} replace />} />
-              <Route path="/signup" element={<Navigate to={isSuperAdmin ? "/super-admin" : "/"} replace />} />
-              {isSuperAdmin ? (
-                <>
-                  <Route path="/super-admin" element={<SuperAdminDashboard />} />
-                  <Route path="*" element={<Navigate to="/super-admin" replace />} />
-                </>
-              ) : (
-                <>
-                  <Route path="/super-admin" element={<Navigate to="/" replace />} />
-                  <Route path="/*" element={<AuthenticatedApp />} />
-                </>
-              )}
-            </>
-          )}
+          {/* Auth routes - stable tree, conditional logic in element prop */}
+          <Route path="/login" element={
+            !isAuthenticated ? <Login /> : <Navigate to={isSuperAdmin ? "/super-admin" : "/"} replace />
+          } />
+          <Route path="/signup" element={
+            !isAuthenticated ? <Signup /> : <Navigate to={isSuperAdmin ? "/super-admin" : "/"} replace />
+          } />
+          <Route path="/super-admin" element={
+            !isAuthenticated ? <Navigate to="/login" replace /> :
+            isSuperAdmin ? <SuperAdminDashboard /> : <Navigate to="/" replace />
+          } />
+          <Route path="/*" element={
+            !isAuthenticated ? <Navigate to="/login" replace /> :
+            isSuperAdmin ? <Navigate to="/super-admin" replace /> : <AuthenticatedApp />
+          } />
         </Routes>
       </Suspense>
     </ErrorBoundary>
@@ -541,9 +502,6 @@ export default function App() {
         <PermissionProvider>
           <ChatNotificationProvider>
             <AiAssistantProvider>
-              <Suspense fallback={null}>
-                <OfflineBanner />
-              </Suspense>
               <AppRoutes />
               <Suspense fallback={null}>
                 <CookieConsentBanner />

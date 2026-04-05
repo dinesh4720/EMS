@@ -6,15 +6,14 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 import en from './locales/en.json';
 
 // ──────────────────────────────────────────────────────────────
-// i18n is DISABLED for now. Set this to true to re-enable
-// multi-language support, language detection, and lazy loading.
+// i18n multi-language support is ENABLED. Set to false to
+// disable language detection and lazy loading (English only).
 //
-// AUDIT-172: When disabled, i18n still initializes with English
-// so that t() calls return keys/English values without errors.
-// To re-enable: set I18N_ENABLED = true and verify that all
-// locale JSON files in ./locales/ have complete translations.
+// AUDIT-249: Enabled i18n — all 6 locale JSON files in
+// ./locales/ have complete translations. All context files
+// and toast messages now use the t() function.
 // ──────────────────────────────────────────────────────────────
-const I18N_ENABLED = false;
+const I18N_ENABLED = true;
 
 const LOCALE_MAP = {
   en: 'en-IN',

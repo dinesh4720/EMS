@@ -306,7 +306,7 @@ function PersonalInfoStep({
         <SectionHeader icon={ShieldAlert} title={t('staff.form.emergencyContacts')} />
         <p className="text-xs text-gray-500 dark:text-zinc-400 -mt-1">{t('staff.form.emergencyContactsHint')}</p>
         {(formData.emergencyContacts || []).map((contact, index) => (
-          <div key={contact.phone || index} className="p-3 border border-gray-200 dark:border-zinc-700 rounded-lg space-y-3 relative group hover:border-gray-300 dark:hover:border-zinc-600 transition-colors">
+          <div key={contact._key} className="p-3 border border-gray-200 dark:border-zinc-700 rounded-lg space-y-3 relative group hover:border-gray-300 dark:hover:border-zinc-600 transition-colors">
             {(formData.emergencyContacts || []).length > 1 && (
               <button
                 className="absolute top-2 right-2 text-gray-400 hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity"

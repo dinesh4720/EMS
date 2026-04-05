@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Sun, Moon } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
@@ -12,7 +13,14 @@ const GRID_PATTERN_STYLE = {
 export default function WelcomeBanner({ className }) {
   const { schoolSettings } = useApp();
   const { user } = useAuth();
-  const currentHour = new Date().getHours();
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const currentHour = now.getHours();
 
   const getGreeting = () => {
     if (currentHour < 12) return 'Good morning';
@@ -75,9 +83,9 @@ export default function WelcomeBanner({ className }) {
           {/* Right: Date display */}
           <div className="flex items-center gap-4 md:gap-6">
             <div className="text-center">
-              <p className="text-3xl font-bold text-white">{new Date().getDate()}</p>
+              <p className="text-3xl font-bold text-white">{now.getDate()}</p>
               <p className="text-white/60 text-xs">
-                {new Date().toLocaleDateString(getDateLocale(), { month: 'short', weekday: 'short' })}
+                {now.toLocaleDateString(getDateLocale(), { month: 'short', weekday: 'short' })}
               </p>
             </div>
           </div>
@@ -85,15 +93,9 @@ export default function WelcomeBanner({ className }) {
 
         {/* Bottom Action */}
         <div className="mt-6 flex items-center gap-3">
-          <Link to="/analytics">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-white text-indigo-600 rounded-xl font-semibold text-sm hover:bg-white/90 transition-colors shadow-lg shadow-black/10"
-            >
-              View Analytics
-              <ArrowRight size={14} />
-            </motion.button>
+          <Link to="/analytics" className="inline-flex items-center gap-2 px-4 py-2 bg-white text-indigo-600 rounded-xl font-semibold text-sm hover:bg-white/90 transition-colors shadow-lg shadow-black/10">
+            View Analytics
+            <ArrowRight size={14} />
           </Link>
         </div>
       </div>

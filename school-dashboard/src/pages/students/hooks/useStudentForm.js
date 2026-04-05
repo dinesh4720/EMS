@@ -186,6 +186,17 @@ export function useStudentForm(initialData = null) {
         const ddmmyyPattern = /^\d{2}\/\d{2}\/\d{4}$/;
         if (!ddmmyyPattern.test(formData.dateOfBirth)) {
           newErrors.dateOfBirth = "Please enter date in DD/MM/YYYY format";
+        } else {
+          const [dd, mm, yyyy] = formData.dateOfBirth.split("/").map(Number);
+          const dateObj = new Date(yyyy, mm - 1, dd);
+          const isRealDate = dateObj.getFullYear() === yyyy && dateObj.getMonth() === mm - 1 && dateObj.getDate() === dd;
+          if (!isRealDate) {
+            newErrors.dateOfBirth = "Invalid date";
+          } else if (dateObj > new Date()) {
+            newErrors.dateOfBirth = "Date of birth cannot be in the future";
+          } else if (yyyy < 1990) {
+            newErrors.dateOfBirth = "Year must be 1990 or later";
+          }
         }
       }
 

@@ -32,6 +32,8 @@ import { STAFF_ROLES } from "../../constants/roles";
 import { useTranslation } from 'react-i18next';
 import SkeletonTable from '../../components/skeletons/SkeletonTable';
 import { permissionsApi } from '../../services/api';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import useConfirmDialog from '../../hooks/useConfirmDialog';
 
 // Transform backend permissions array to frontend object format
 const permissionsArrayToObject = (permsArray = []) => {
@@ -243,6 +245,7 @@ export default function RolesAccess() {
   const navigate = useNavigate();
   const { staff } = useApp();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
   // activeTab state removed - was unused
   const [editingRole, setEditingRole] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -346,7 +349,8 @@ export default function RolesAccess() {
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e?.preventDefault?.();
     if (!formData.name.trim()) {
       toast.error(t('toast.error.roleNameIsRequired'));
       return;
@@ -377,16 +381,28 @@ export default function RolesAccess() {
     }
   };
 
-  const handleDelete = async (roleId) => {
-    if (!confirm(t('confirm.deleteRole'))) return;
-    try {
-      await permissionsApi.deleteCustomRole(roleId);
-      toast.success(t('toast.success.roleDeletedSuccessfully'));
-      await fetchRoles();
-    } catch (error) {
-      console.error('Failed to delete role:', error);
-      toast.error(error.message || 'Failed to delete role');
+  const handleDelete = (roleId) => {
+    const role = roles.find(r => r.id === roleId);
+    if (role?.userCount > 0) {
+      toast.error(`Cannot delete role "${role.name}". ${role.userCount} user(s) are currently assigned to it. Please reassign them first.`);
+      return;
     }
+    showConfirm({
+      title: 'Delete Role',
+      message: t('confirm.deleteRole'),
+      variant: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        try {
+          await permissionsApi.deleteCustomRole(roleId);
+          toast.success(t('toast.success.roleDeletedSuccessfully'));
+          await fetchRoles();
+        } catch (error) {
+          console.error('Failed to delete role:', error);
+          toast.error(error.message || 'Failed to delete role');
+        }
+      },
+    });
   };
 
   const countPermissions = (permissions) => {
@@ -664,6 +680,8 @@ export default function RolesAccess() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </div>
   );
 }

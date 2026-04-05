@@ -3,6 +3,7 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Chip,
 import { User, BookOpen, GraduationCap, Clock, Edit, BarChart3, Calendar, MapPin } from 'lucide-react';
 import { examsApi, homeworkApi } from '../../services/api';
 import { useTranslation } from 'react-i18next';
+import { getDateLocale } from '../../i18n/index';
 
 // Color mapping for subjects (matches Timetable.jsx)
 const colorMap = {
@@ -130,7 +131,7 @@ export default function SlotInfoModal({
 
   const formatDate = (d) => {
     if (!d) return '';
-    return new Date(d).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
+    return new Date(d).toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric' });
   };
 
   return (

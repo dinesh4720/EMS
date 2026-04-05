@@ -59,9 +59,13 @@ const ConfirmDialog = memo(function ConfirmDialog({
 
   const handleConfirm = useCallback(async () => {
     if (onConfirm) {
-      await onConfirm();
+      try {
+        await onConfirm();
+      } catch {
+        onClose();
+      }
     }
-  }, [onConfirm]);
+  }, [onConfirm, onClose]);
 
   return (
     <Modal

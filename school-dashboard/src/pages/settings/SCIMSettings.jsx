@@ -6,8 +6,11 @@ import {
 import { ssoApi } from "../../services/settingsService";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import useConfirmDialog from '../../hooks/useConfirmDialog';
 
 export default function SCIMSettings() {
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
   const [scimEnabled, setScimEnabled] = useState(false);
   const [hasToken, setHasToken] = useState(false);
   const [revealedToken, setRevealedToken] = useState(null);
@@ -58,26 +61,30 @@ export default function SCIMSettings() {
     });
   }, [revealedToken]);
 
-  const handleRegenerate = useCallback(async () => {
-    if (!window.confirm(
-      "Regenerating the token will immediately invalidate the existing token. Any IdP currently using it will stop working until you update it there. Continue?"
-    )) return;
-
-    setRegenerating(true);
-    try {
-      const data = await ssoApi.regenerateScimToken();
-      if (data?.token) {
-        setRevealedToken(data.token);
-        setIsTokenVisible(true);
-        setHasToken(true);
-        toast.success("New SCIM token generated. Copy it now — it won't be shown again.");
-      }
-    } catch {
-      toast.error("Failed to regenerate token.");
-    } finally {
-      setRegenerating(false);
-    }
-  }, []);
+  const handleRegenerate = useCallback(() => {
+    showConfirm({
+      title: 'Regenerate SCIM Token',
+      message: 'Regenerating the token will immediately invalidate the existing token. Any IdP currently using it will stop working until you update it there. Continue?',
+      variant: 'warning',
+      confirmText: 'Regenerate',
+      onConfirm: async () => {
+        setRegenerating(true);
+        try {
+          const data = await ssoApi.regenerateScimToken();
+          if (data?.token) {
+            setRevealedToken(data.token);
+            setIsTokenVisible(true);
+            setHasToken(true);
+            toast.success("New SCIM token generated. Copy it now — it won't be shown again.");
+          }
+        } catch {
+          toast.error("Failed to regenerate token.");
+        } finally {
+          setRegenerating(false);
+        }
+      },
+    });
+  }, [showConfirm]);
 
   const handleToggleEnabled = useCallback(async (enabled) => {
     setScimEnabled(enabled);
@@ -270,6 +277,8 @@ export default function SCIMSettings() {
           ))}
         </div>
       </div>
+
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </div>
   );
 }

@@ -2,8 +2,8 @@ import { useState, useMemo } from "react";
 import { Button, Textarea } from "@heroui/react";
 import { Star, Award, Clock, Edit3, Save, X } from "lucide-react";
 import toast from "react-hot-toast";
-import { getDateLocale } from '../../../i18n/index';
 import { useTranslation } from 'react-i18next';
+import { formatShortDate } from '../../../utils/dateFormatter';
 
 
 const RATING_DIMENSIONS = [
@@ -187,7 +187,7 @@ export default function StudentRatingSystem({
           {lastUpdated && (
             <p className="text-xs text-gray-400 dark:text-zinc-500 flex items-center justify-end gap-1 mt-0.5">
               <Clock size={12} />
-              {lastUpdated.toLocaleDateString(getDateLocale(), { month: "short", day: "numeric", year: "numeric" })}
+              {formatShortDate(lastUpdated)}
             </p>
           )}
         </div>

@@ -16,7 +16,7 @@ export default function OfflineBanner() {
     <div
       role="status"
       aria-live="assertive"
-      className="fixed top-0 left-0 right-0 z-[10000] bg-gray-900 text-white px-4 py-2 flex items-center justify-center gap-2 text-sm shadow-md"
+      className="sticky top-14 z-30 bg-gray-900 text-white px-4 py-2 flex items-center justify-center gap-2 text-sm shadow-md"
     >
       <WifiOff size={15} className="flex-shrink-0 text-red-400" />
       <span>

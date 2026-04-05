@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useCallback } from "react";
 import { staffAttendanceApi, attendanceApi } from "../services/api";
 import { getStoredUser } from "../utils/authSession";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import logger from "../utils/logger";
 
 // TODO [AUDIT-64]: This context provides staff and student attendance state management
@@ -13,6 +14,7 @@ import logger from "../utils/logger";
 export const AttendanceContext = createContext();
 
 export function AttendanceProvider({ children, staff }) {
+  const { t } = useTranslation();
   const [staffAttendance, setStaffAttendance] = useState({});
   const [studentAttendance, setStudentAttendance] = useState({});
 
@@ -103,10 +105,10 @@ export function AttendanceProvider({ children, staff }) {
         reason,
         markedBy: user.id,
       });
-      toast.success("Attendance marked successfully");
+      toast.success(t('toast.success.attendanceSavedSuccessfully', 'Attendance marked successfully'));
     } catch (err) {
       logger.error("Failed to mark attendance on server:", err);
-      toast.error("Failed to save attendance");
+      toast.error(t('toast.error.failedToMarkAttendance', 'Failed to save attendance'));
       // Revert optimistic update on failure
       setStaffAttendance(prevAttendance);
     }
@@ -130,10 +132,10 @@ export function AttendanceProvider({ children, staff }) {
         status,
         clientTimestamp: new Date().toISOString(),
       });
-      toast.success("Student attendance marked");
+      toast.success(t('toast.success.studentAttendanceMarked', 'Student attendance marked'));
     } catch (err) {
       logger.error("Failed to mark student attendance on server:", err);
-      toast.error("Failed to save student attendance");
+      toast.error(t('toast.error.failedToSaveStudentAttendance', 'Failed to save student attendance'));
       // Revert optimistic update on failure
       setStudentAttendance((prev) => {
         const updated = { ...prev };
@@ -201,10 +203,10 @@ export function AttendanceProvider({ children, staff }) {
         reason,
         markedBy: user.id,
       });
-      toast.success("Bulk attendance marked successfully");
+      toast.success(t('toast.success.bulkAttendanceMarkedSuccessfully', 'Bulk attendance marked successfully'));
     } catch (err) {
       logger.error("Failed to bulk mark attendance:", err);
-      toast.error("Failed to save bulk attendance");
+      toast.error(t('toast.error.failedToSaveBulkAttendance', 'Failed to save bulk attendance'));
       // Revert optimistic update on failure
       setStaffAttendance(prevAttendance);
     }
@@ -236,11 +238,11 @@ export function AttendanceProvider({ children, staff }) {
         },
       }));
 
-      toast.success("Attendance regularized successfully");
+      toast.success(t('toast.success.attendanceRegularizedSuccessfully', 'Attendance regularized successfully'));
       return response;
     } catch (err) {
       logger.error("Regularization failed:", err);
-      toast.error("Failed to regularize attendance");
+      toast.error(t('toast.error.failedToRegularizeAttendance', 'Failed to regularize attendance'));
       throw err;
     }
   };

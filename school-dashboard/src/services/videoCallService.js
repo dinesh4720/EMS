@@ -23,24 +23,45 @@ class VideoCallService {
       });
 
       return new Promise((resolve, reject) => {
+        let settled = false;
+        const timeoutId = setTimeout(() => {
+          if (!settled) {
+            settled = true;
+            if (this.peer) {
+              this.peer.destroy();
+              this.peer = null;
+            }
+            reject(new Error('PeerJS initialization timeout'));
+          }
+        }, 10000);
+
         this.peer.on('open', (id) => {
-          this.emit('peerReady', id);
-          resolve(id);
+          if (!settled) {
+            settled = true;
+            clearTimeout(timeoutId);
+            this.emit('peerReady', id);
+            resolve(id);
+          }
         });
 
         this.peer.on('error', (error) => {
           logger.error('❌ PeerJS error:', error);
           this.emit('peerError', error);
-          reject(error);
+          if (!settled) {
+            settled = true;
+            clearTimeout(timeoutId);
+            if (this.peer) {
+              this.peer.destroy();
+              this.peer = null;
+            }
+            reject(error);
+          }
         });
 
         // Handle incoming calls
         this.peer.on('call', (call) => {
           this.handleIncomingCall(call);
         });
-
-        // Timeout after 10 seconds
-        setTimeout(() => reject(new Error('PeerJS initialization timeout')), 10000);
       });
     } catch (error) {
       logger.error('❌ Failed to initialize PeerJS:', error);
@@ -277,10 +298,25 @@ class VideoCallService {
    * Cleanup
    */
   destroy() {
-    // End all calls
-    this.calls.forEach((call, callId) => {
-      this.endCall(callId);
+    // Close all calls (snapshot keys to avoid modifying Map while iterating)
+    for (const [callId, call] of Array.from(this.calls)) {
+      call.close();
+    }
+    this.calls.clear();
+
+    // Stop local stream
+    if (this.localStream) {
+      this.localStream.getTracks().forEach(track => track.stop());
+      this.localStream = null;
+    }
+
+    // Stop remote streams
+    this.remoteStreams.forEach((stream) => {
+      stream.getTracks().forEach(track => track.stop());
     });
+    this.remoteStreams.clear();
+
+    this.currentCallId = null;
 
     // Destroy peer
     if (this.peer) {

@@ -2,17 +2,23 @@ import { createContext, useContext, useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { studentsApi } from "../services/api";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import logger from "../utils/logger";
 
 export const StudentsContext = createContext();
 
 export function StudentsProvider({ children }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [students, setStudents] = useState([]);
   const [studentsHydrated, setStudentsHydrated] = useState(false);
 
   const invalidateAppData = useCallback(
-    () => queryClient.invalidateQueries({ queryKey: ["app-context-data"] }),
+    () => {
+      queryClient.invalidateQueries({ queryKey: ["app-context-data"] });
+      // Also invalidate the students list query used by StudentsList page
+      queryClient.invalidateQueries({ queryKey: ["students", "list"] });
+    },
     [queryClient]
   );
 
@@ -30,7 +36,7 @@ export function StudentsProvider({ children }) {
       return created;
     } catch (err) {
       logger.error("Failed to add student:", err);
-      toast.error("Failed to add student");
+      toast.error(t('toast.error.failedToAddStudent', 'Failed to add student'));
       throw err;
     }
   };
@@ -54,7 +60,7 @@ export function StudentsProvider({ children }) {
       return finalUpdates;
     } catch (err) {
       logger.error("Failed to update student:", err);
-      toast.error("Failed to update student");
+      toast.error(t('toast.error.failedToUpdateStudent', 'Failed to update student'));
       setStudents(prev);
       throw err;
     }
@@ -76,7 +82,7 @@ export function StudentsProvider({ children }) {
       return result;
     } catch (err) {
       logger.error("Failed to delete student:", err);
-      toast.error("Failed to delete student");
+      toast.error(t('toast.error.failedToDeleteStudent', 'Failed to delete student'));
       setStudents(prev);
       throw err;
     }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { ModalHeader, ModalBody, ModalFooter, Chip, Button, Modal, ModalContent } from '@heroui/react';
-import { FileText, Calendar, Award, Users, Eye, Pencil, Send, AlertTriangle, BookOpen, Clock } from 'lucide-react';
+import { ModalHeader, ModalBody, Chip, Button } from '@heroui/react';
+import { FileText, Calendar, Award, Pencil, Send, AlertTriangle } from 'lucide-react';
 import { examsApi, resultsApi, classesApi } from '../../services/api';
 import { MinimalButton } from '../../components/ui';
 import toast from 'react-hot-toast';
@@ -122,7 +122,7 @@ const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
             variant="flat"
             className="capitalize"
           >
-            {exam.status?.replace('_', ' ')}
+            {exam.status?.replace(/_/g, ' ')}
           </Chip>
         </div>
       </ModalHeader>
@@ -229,6 +229,28 @@ const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
             </div>
           )}
 
+          {/* Publish Confirmation Inline */}
+          {publishConfirmOpen && (
+            <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle size={16} className="text-amber-600 dark:text-amber-400" />
+                <span className="font-medium text-amber-800 dark:text-amber-200 text-sm">Confirm Publish</span>
+              </div>
+              <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
+                Are you sure you want to publish results for <span className="font-medium">{exam?.name}</span>?
+                This will make results visible to students and parents and cannot be undone.
+              </p>
+              <div className="flex gap-2 justify-end">
+                <Button size="sm" variant="light" onPress={() => setPublishConfirmOpen(false)} isDisabled={publishing}>
+                  Cancel
+                </Button>
+                <Button size="sm" color="success" onPress={handlePublish} isLoading={publishing}>
+                  Publish Results
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Actions */}
           <div className="flex justify-between items-center pt-4 border-t border-gray-100 dark:border-zinc-800">
             <Button variant="light" onPress={onClose}>
@@ -258,42 +280,6 @@ const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
           </div>
         </div>
       </ModalBody>
-
-      {/* Publish Confirmation Modal */}
-      <Modal
-        isOpen={publishConfirmOpen}
-        onClose={() => !publishing && setPublishConfirmOpen(false)}
-        size="sm"
-        classNames={{ backdrop: 'bg-black/30', base: 'bg-white dark:bg-zinc-950' }}
-      >
-        <ModalContent>
-          <ModalHeader className="border-b border-gray-100 dark:border-zinc-800 py-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
-                <Send size={20} className="text-green-600 dark:text-green-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-medium">Publish Results</h3>
-                <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal">Make results visible to students and parents</p>
-              </div>
-            </div>
-          </ModalHeader>
-          <ModalBody className="py-4">
-            <p className="text-sm text-gray-600 dark:text-zinc-400">
-              Are you sure you want to publish results for <span className="font-medium">{exam?.name}</span>?
-              This action cannot be undone.
-            </p>
-          </ModalBody>
-          <ModalFooter className="border-t border-gray-100 dark:border-zinc-800">
-            <Button variant="light" onPress={() => setPublishConfirmOpen(false)} isDisabled={publishing}>
-              Cancel
-            </Button>
-            <Button color="success" onPress={handlePublish} isLoading={publishing}>
-              Publish Results
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
     </>
   );
 };

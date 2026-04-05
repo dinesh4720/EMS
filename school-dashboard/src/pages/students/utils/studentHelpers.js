@@ -1,5 +1,4 @@
 import { getStoredAuthToken } from "../../../utils/authSession";
-import { getDateLocale } from '../../../i18n/index';
 
 
 /**
@@ -107,20 +106,6 @@ export const calculateAttendanceStats = (attendance = []) => {
 };
 
 /**
- * Format date for display
- */
-export const formatDate = (date, format = 'short') => {
-  if (!date) return 'N/A';
-  const d = new Date(date);
-  if (isNaN(d.getTime())) return 'N/A';
-  const options = {
-    short: { month: 'short', day: 'numeric', year: 'numeric' },
-    long: { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }
-  };
-  return d.toLocaleDateString(getDateLocale(), options[format] || options.short);
-};
-
-/**
  * Get initials from a name
  */
 export const getInitials = (name) => {
@@ -137,4 +122,49 @@ export const getAvatarColor = (str) => {
   const colors = ['bg-gray-400', 'bg-slate-500', 'bg-zinc-500', 'bg-neutral-500'];
   const index = str ? str.charCodeAt(0) % colors.length : 0;
   return colors[index];
+};
+
+// ── Fee Calculation Utilities ──
+
+/**
+ * Extract the ID from a feeHead's feeHeadId (which may be a populated object or a plain string/ObjectId).
+ */
+export const extractFeeHeadId = (feeHead) => {
+  if (typeof feeHead.feeHeadId === 'object' && feeHead.feeHeadId !== null) {
+    return feeHead.feeHeadId._id || feeHead.feeHeadId.id;
+  }
+  return feeHead.feeHeadId;
+};
+
+/**
+ * Get the balance amount for a fee head, falling back to computed balance if balanceAmount is not stored.
+ */
+export const getFeeHeadBalance = (feeHead) => {
+  if (feeHead.balanceAmount != null) return feeHead.balanceAmount;
+  return Math.max((feeHead.amount || 0) - (feeHead.paidAmount || 0), 0);
+};
+
+/**
+ * Distribute a payment amount across fee heads in order.
+ * Returns an array of { feeHeadId, amount } objects.
+ * Fee heads with zero balance are skipped; distribution stops when the full amount is allocated.
+ */
+export const distributeFeePayment = (feeHeads, paymentAmount) => {
+  const payments = [];
+  let remaining = paymentAmount;
+
+  for (const feeHead of feeHeads) {
+    if (remaining <= 0) break;
+    const balance = feeHead.balanceAmount || 0;
+    if (balance > 0) {
+      const amount = Math.min(remaining, balance);
+      payments.push({
+        feeHeadId: extractFeeHeadId(feeHead),
+        amount,
+      });
+      remaining -= amount;
+    }
+  }
+
+  return payments;
 };

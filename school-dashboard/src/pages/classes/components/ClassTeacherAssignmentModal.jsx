@@ -29,7 +29,7 @@ export default function ClassTeacherAssignmentModal({
   currentTeacherId
 }) {
   const { t } = useTranslation();
-  const { staff, classesApi, updateClassLocal, classesWithTeachers } = useApp();
+  const { staff, classesApi, updateClassLocal, updateStaffLocal, classesWithTeachers } = useApp();
 
   // Local state
   const [searchQuery, setSearchQuery] = useState("");
@@ -86,18 +86,19 @@ export default function ClassTeacherAssignmentModal({
         title: t('classes.replaceClassTeacher', 'Replace Class Teacher Assignment'),
         message: t('classes.replaceClassTeacherMessage', '{{name}} is currently the class teacher for {{currentClass}}.\n\nDo you want to assign them to {{newClass}} instead?\n\n{{currentClass}} will become unassigned.', { name: teacher.name, currentClass: `${currentAssignedClass.name}-${currentAssignedClass.section}`, newClass: `${className}-${section}` }),
         onConfirm: async () => {
-          await performAssignment(teacher.id);
+          await performAssignment(teacher.id, { force: true });
         },
         variant: "warning"
       });
     } else {
       // Teacher is not assigned to any class - direct assignment
+      // Always use force: true — there may be stale assignments in the database
       setConfirmDialog({
         isOpen: true,
         title: t('classes.assignAsClassTeacher', 'Assign as Class Teacher'),
         message: t('classes.assignAsClassTeacherMessage', 'Assign {{name}} as class teacher for {{class}}?', { name: teacher.name, class: `${className}-${section}` }),
         onConfirm: async () => {
-          await performAssignment(teacher.id);
+          await performAssignment(teacher.id, { force: true });
         },
         variant: "info"
       });
@@ -105,22 +106,35 @@ export default function ClassTeacherAssignmentModal({
   }, [currentTeacherId, className, section, classesWithTeachers]);
 
   // Perform the actual assignment
-  const performAssignment = async (teacherId) => {
+  const performAssignment = async (teacherId, options = {}) => {
     try {
       setIsProcessing(true);
 
       // Call API to update class teacher
-      await classesApi.updateClassTeacher(classId, teacherId);
+      await classesApi.updateClassTeacher(classId, teacherId, { force: options.force });
 
       // Get teacher name for toast
-      const teacher = staff.find(s => s.id === teacherId);
+      const teacher = staff.find(s => String(s.id || s._id) === String(teacherId));
       const teacherName = teacher?.name || 'Teacher';
 
-      // Update local state immediately
+      // Update local class state immediately
       updateClassLocal(classId, {
         classTeacherId: teacherId,
         teacher: teacherName,
         teacherPhoto: teacher?.picture || null
+      });
+
+      // Update local staff state to reflect the assignment
+      // Clear previous teacher's assignment if there was one
+      if (currentTeacherId && String(currentTeacherId) !== String(teacherId)) {
+        updateStaffLocal(currentTeacherId, {
+          classTeacherOf: null,
+          isClassTeacher: false,
+        });
+      }
+      updateStaffLocal(teacherId, {
+        classTeacherOf: `${className}-${section}`,
+        isClassTeacher: true,
       });
 
       toast.success(t('toast.success.classTeacherAssigned', '{{name}} assigned as class teacher for {{class}}', { name: teacherName, class: `${className}-${section}` }));

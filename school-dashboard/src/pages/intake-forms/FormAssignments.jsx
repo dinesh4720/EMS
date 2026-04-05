@@ -38,6 +38,8 @@ import toast from "react-hot-toast";
 import { intakeFormsApi } from "../../services/api";
 import { format } from "date-fns";
 import { useTranslation } from 'react-i18next';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import useConfirmDialog from '../../hooks/useConfirmDialog';
 
 export default function FormAssignments() {
   const { t } = useTranslation();
@@ -54,6 +56,7 @@ export default function FormAssignments() {
   const [forms, setForms] = useState([]);
   const [selectedAssignment, setSelectedAssignment] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all");
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
 
   const [assignmentData, setAssignmentData] = useState({
     formId: "",
@@ -145,16 +148,22 @@ export default function FormAssignments() {
     }
   };
 
-  const handleDelete = async (assignmentId) => {
-    if (!confirm(t('confirm.cancelAssignment'))) return;
-
-    try {
-      await intakeFormsApi.deleteAssignment(assignmentId);
-      toast.success(t('toast.success.assignmentCancelled'));
-      fetchAssignments();
-    } catch (error) {
-      toast.error(t('toast.error.failedToCancelAssignment'));
-    }
+  const handleDelete = (assignmentId) => {
+    showConfirm({
+      title: t('confirm.cancelAssignmentTitle', 'Cancel Assignment'),
+      message: t('confirm.cancelAssignment'),
+      variant: 'warning',
+      confirmText: t('common.confirm', 'Confirm'),
+      onConfirm: async () => {
+        try {
+          await intakeFormsApi.deleteAssignment(assignmentId);
+          toast.success(t('toast.success.assignmentCancelled'));
+          fetchAssignments();
+        } catch (error) {
+          toast.error(t('toast.error.failedToCancelAssignment'));
+        }
+      },
+    });
   };
 
   const handleViewDetails = (assignment) => {
@@ -418,6 +427,8 @@ export default function FormAssignments() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
 
       {/* Assignment Details Modal */}
       <Modal isOpen={isDetailsOpen} onClose={onDetailsClose} size="lg">

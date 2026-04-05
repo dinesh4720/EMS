@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { AlertCircle, CheckCircle2, ChevronRight, IndianRupee, TrendingUp } from "lucide-react";
+import { formatCurrency } from '../../../utils/numberFormatter';
 
 /**
  * StudentSidebarAlerts - Right sidebar alerts section
@@ -92,7 +93,7 @@ export default function StudentSidebarAlerts({
                 {t('students.profile.overview.pendingFees', 'Pending Fees')}
               </p>
               <p className="text-xs text-gray-500 dark:text-zinc-400">
-                {t('students.profile.overview.pendingFeesDesc', '₹{{amount}} outstanding', { amount: studentFeeStructure.totalBalance.toLocaleString() })}
+                {t('students.profile.overview.pendingFeesDesc', '{{amount}} outstanding', { amount: formatCurrency(studentFeeStructure.totalBalance) })}
               </p>
             </div>
             <ChevronRight size={16} className="text-gray-400 dark:text-zinc-500" />

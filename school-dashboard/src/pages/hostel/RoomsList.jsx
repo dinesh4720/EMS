@@ -76,7 +76,8 @@ export default function RoomsList() {
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e?.preventDefault?.();
     if (!validateForm()) return;
     setSaving(true);
     try {

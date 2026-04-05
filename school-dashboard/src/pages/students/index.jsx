@@ -165,7 +165,7 @@ export default function StudentsPage() {
       setShowSuccessModal(true);
     } catch (error) {
       logger.error('Form send error:', error);
-      toast.error(error.message || 'Failed to send form');
+      toast.error(t('toast.error.failedToSendForm', 'Failed to send form') + ": " + (error.message || t('common.unknownError', 'Unknown error')));
     } finally {
       setIsSendingForm(false);
     }
@@ -187,12 +187,11 @@ export default function StudentsPage() {
       handleCloseAddStudent();
     } catch (err) {
       logger.error('Failed to add student:', err);
-      toast.error('Failed to add student: ' + (err.message || 'Unknown error'));
+      toast.error(t('toast.error.failedToAddStudent', 'Failed to add student') + ": " + (err.message || t('common.unknownError', 'Unknown error')));
       throw err;
     }
   };
 
-  const classOptions = classesWithTeachers.map(c => `${c.name}-${c.section}`);
   const activeTab = getActiveTab();
 
   const tabHeaderInfo = {
@@ -322,7 +321,6 @@ export default function StudentsPage() {
                     ref={addStudentRef}
                     onClose={handleCloseAddStudent}
                     onSave={handleSaveStudent}
-                    classOptions={classOptions}
                     classesWithTeachers={classesWithTeachers}
                   />
                 </Suspense>

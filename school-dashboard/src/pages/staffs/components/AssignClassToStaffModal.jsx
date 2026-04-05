@@ -25,7 +25,7 @@ export default function AssignClassToStaffModal({
   staffName
 }) {
   const { t } = useTranslation();
-  const { classes, classesApi, updateClassLocal } = useApp();
+  const { classes, classesApi, updateClassLocal, updateStaffLocal } = useApp();
 
   // Local state
   const [searchQuery, setSearchQuery] = useState("");
@@ -64,18 +64,19 @@ export default function AssignClassToStaffModal({
         title: "Replace Class Teacher",
         message: `${cls.classTeacherName} is currently the class teacher for ${cls.name}-${cls.section}.\n\nDo you want to replace them with ${staffName}?`,
         onConfirm: async () => {
-          await performAssignment(cls);
+          await performAssignment(cls, { force: true });
         },
         variant: "warning"
       });
     } else {
       // Direct assignment for vacant class
+      // Always use force: true — the staff member may already be assigned to another class
       setConfirmDialog({
         isOpen: true,
         title: "Assign as Class Teacher",
         message: `Assign ${staffName} as class teacher for ${cls.name}-${cls.section}?`,
         onConfirm: async () => {
-          await performAssignment(cls);
+          await performAssignment(cls, { force: true });
         },
         variant: "default"
       });
@@ -83,18 +84,24 @@ export default function AssignClassToStaffModal({
   }, [staffName, staffId]);
 
   // Perform the actual assignment
-  const performAssignment = async (cls) => {
+  const performAssignment = async (cls, options = {}) => {
     try {
       setIsProcessing(true);
 
       // Call API to update class teacher
-      await classesApi.updateClassTeacher(cls.id, staffId);
+      await classesApi.updateClassTeacher(cls.id, staffId, { force: options.force });
 
-      // Update local state immediately
+      // Update local class state immediately
       updateClassLocal(cls.id, {
         classTeacherId: staffId,
         teacher: staffName,
-        teacherPhoto: null // Will be populated by API response
+        teacherPhoto: null
+      });
+
+      // Update local staff state to reflect the assignment
+      updateStaffLocal(staffId, {
+        classTeacherOf: `${cls.name}-${cls.section}`,
+        isClassTeacher: true,
       });
 
       toast.success(`${staffName} assigned as class teacher for ${cls.name}-${cls.section}`);

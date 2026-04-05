@@ -1,7 +1,7 @@
-import { useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
+import { X, ImageOff } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -20,6 +20,17 @@ import { useTranslation } from 'react-i18next';
 export default function PhotoModal({
   isOpen, onClose, src, alt = "Photo" }) {
   const { t } = useTranslation();
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  // Reset image state when src changes or modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setImageLoaded(false);
+      setImageError(false);
+    }
+  }, [isOpen, src]);
+
   // Use ref to track latest isOpen/onClose without recreating the handler
   const isOpenRef = useRef(isOpen);
   const onCloseRef = useRef(onClose);
@@ -46,15 +57,16 @@ export default function PhotoModal({
 
   // Set up keyboard listener - use capture phase to ensure it runs first
   useEffect(() => {
-    if (isOpen) {
-      document.addEventListener("keydown", handleEscape, true); // true = capture phase
-      // Prevent body scroll when modal is open
-      document.body.style.overflow = "hidden";
-    }
+    if (!isOpen) return;
+
+    document.addEventListener("keydown", handleEscape, true); // true = capture phase
+    // Prevent body scroll when modal is open - save original to restore later
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
 
     return () => {
       document.removeEventListener("keydown", handleEscape, true);
-      document.body.style.overflow = "unset";
+      document.body.style.overflow = originalOverflow;
     };
   }, [isOpen, handleEscape]);
 
@@ -105,36 +117,36 @@ export default function PhotoModal({
               {/* Image Container */}
               <div className="relative bg-default-100 rounded-2xl overflow-hidden shadow-2xl">
                 {/* Loading State */}
-                <div className="absolute inset-0 flex items-center justify-center bg-default-100 z-10">
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full"
-                  />
-                </div>
+                {!imageLoaded && !imageError && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-default-100 z-10">
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full"
+                    />
+                  </div>
+                )}
+
+                {/* Error State */}
+                {imageError && (
+                  <div className="flex items-center justify-center py-16 bg-default-100">
+                    <div className="text-center">
+                      <ImageOff className="w-16 h-16 text-default-400 mx-auto mb-4" strokeWidth={1.5} />
+                      <p className="text-default-500 font-medium">Failed to load image</p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Actual Image */}
-                <img
-                  src={src}
-                  alt={alt}
-                  className="w-full h-auto max-h-[80vh] object-contain"
-                  onLoad={(e) => {
-                    // Hide loading spinner when image loads
-                    e.target.previousElementSibling?.remove();
-                  }}
-                  onError={(e) => {
-                    // Show error state
-                    e.target.style.display = "none";
-                    e.target.previousElementSibling.innerHTML = `
-                      <div class="text-center">
-                        <svg class="w-16 h-16 text-default-400 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <p class="text-default-500 font-medium">Failed to load image</p>
-                      </div>
-                    `;
-                  }}
-                />
+                {!imageError && (
+                  <img
+                    src={src}
+                    alt={alt}
+                    className="w-full h-auto max-h-[80vh] object-contain"
+                    onLoad={() => setImageLoaded(true)}
+                    onError={() => setImageError(true)}
+                  />
+                )}
 
                 {/* Photo Title/Alt Text (Optional) */}
                 {alt && alt !== "Photo" && (
@@ -157,5 +169,17 @@ export default function PhotoModal({
     </AnimatePresence>
   );
 
-  return createPortal(modalContent, document.body);
+  // Use a dedicated portal container to avoid bypassing React's control of document.body
+  const portalContainer = useRef(null);
+  if (!portalContainer.current) {
+    let el = document.getElementById("photo-modal-root");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "photo-modal-root";
+      document.body.appendChild(el);
+    }
+    portalContainer.current = el;
+  }
+
+  return createPortal(modalContent, portalContainer.current);
 }

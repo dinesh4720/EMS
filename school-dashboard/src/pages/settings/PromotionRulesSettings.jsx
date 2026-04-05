@@ -18,15 +18,25 @@ export default function PromotionRulesSettings() {
   const [feeRequirement, setFeeRequirement] = useState('none');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
-  useEffect(() => {
+  const fetchRules = () => {
+    setLoading(true);
+    setLoadError(false);
     request('/promotions/rules')
       .then(data => {
         setMinAttendance(data?.minAttendancePercent ?? 75);
         setFeeRequirement(data?.feeRequirement ?? 'none');
       })
-      .catch(() => toast.error('Failed to load promotion rules'))
+      .catch(() => {
+        setLoadError(true);
+        toast.error('Failed to load promotion rules');
+      })
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchRules();
   }, []);
 
   const handleSave = async () => {
@@ -48,6 +58,19 @@ export default function PromotionRulesSettings() {
     return (
       <div className="max-w-2xl">
         <SkeletonForm fields={3} showSubmit />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="max-w-2xl flex flex-col items-center justify-center py-16 text-center">
+        <p className="text-sm text-gray-500 dark:text-zinc-400 mb-4">
+          Could not load promotion rules. Please check your connection and try again.
+        </p>
+        <Button variant="bordered" size="sm" onPress={fetchRules}>
+          Retry
+        </Button>
       </div>
     );
   }

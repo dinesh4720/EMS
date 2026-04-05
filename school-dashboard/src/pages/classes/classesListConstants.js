@@ -6,6 +6,9 @@ export const CLASS_DETAILS_BATCH_DELAY_MS = 300;
 export const hasOwnKey = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
 
 // Available columns configuration
+// Bump this version when AVAILABLE_COLUMNS keys/structure change to invalidate stale localStorage
+export const COLUMNS_SCHEMA_VERSION = 2;
+
 export const AVAILABLE_COLUMNS = [
   { key: 'class', labelKey: 'classes.columnClassDetails', label: 'CLASS DETAILS', width: 180, visible: true, fixed: true },
   { key: 'teacher', labelKey: 'classes.columnClassTeacher', label: 'CLASS TEACHER', width: 200, visible: true },

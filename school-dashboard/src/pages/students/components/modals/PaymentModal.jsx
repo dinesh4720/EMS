@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-// eslint-disable-next-line no-unused-vars -- all components used in JSX
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Select, SelectItem, Textarea } from "@heroui/react";
 import toast from "react-hot-toast";
 import { useApp } from "../../../../context/AppContext";
-import { getDateLocale } from '../../../../i18n/index';
 import { useTranslation } from 'react-i18next';
+import { toTodayDateString, formatMonthYear } from '../../../../utils/dateFormatter';
+import { formatCurrency } from '../../../../utils/numberFormatter';
 
 
 /**
@@ -26,7 +26,7 @@ export default function PaymentModal({
   const [paymentForm, setPaymentForm] = useState({
     amount: "",
     paymentMode: "cash",
-    date: new Date().toISOString().split('T')[0],
+    date: toTodayDateString(),
     notes: ""
   });
 
@@ -36,7 +36,7 @@ export default function PaymentModal({
       setPaymentForm({
         amount: studentFeeStructure?.totalBalance ? studentFeeStructure.totalBalance.toString() : "",
         paymentMode: "cash",
-        date: new Date().toISOString().split('T')[0],
+        date: toTodayDateString(),
         notes: ""
       });
     }
@@ -50,7 +50,7 @@ export default function PaymentModal({
     }
     const totalBalance = studentFeeStructure?.totalBalance;
     if (totalBalance != null && paymentAmount > totalBalance) {
-      setAmountError(`Amount exceeds outstanding balance of ₹${totalBalance.toLocaleString()}`);
+      setAmountError(`Amount exceeds outstanding balance of ${formatCurrency(totalBalance)}`);
       return;
     }
     setAmountError("");
@@ -65,13 +65,13 @@ export default function PaymentModal({
       const paymentData = {
         studentId: student.id,
         studentName: student.name,
-        classId: student.classId,
+        classId: typeof student.classId === 'object' ? student.classId._id : student.classId,
         academicYear: student?.academicYear || currentAcademicYear,
         paymentDate: paymentForm.date,
         amount: paymentAmount,
         paymentMode: paymentForm.paymentMode,
         feeHeads: [{
-          period: paymentForm.date ? new Date(paymentForm.date).toLocaleDateString(getDateLocale(), { month: 'long', year: 'numeric' }) : '—',
+          period: paymentForm.date ? formatMonthYear(paymentForm.date) : '—',
           amount: paymentAmount
         }],
         remarks: paymentForm.notes.trim() || `Fee payment via ${paymentForm.paymentMode}`,
@@ -98,18 +98,21 @@ export default function PaymentModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
+      scrollBehavior="inside"
+      placement="center"
+      classNames={{ wrapper: "items-end sm:items-center" }}
       onOpenChange={(open) => {
         if (!open) {
           setPaymentForm({
             amount: "",
             paymentMode: "cash",
-            date: new Date().toISOString().split('T')[0],
+            date: toTodayDateString(),
             notes: ""
           });
         }
       }}
     >
-      <ModalContent className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800">
+      <ModalContent className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 max-h-[90vh] sm:max-h-[85vh]">
         <ModalHeader className="text-gray-900 dark:text-zinc-100 font-medium">{t('pages.recordFeePayment1')}</ModalHeader>
         <ModalBody>
           <div className="space-y-4">
@@ -123,7 +126,7 @@ export default function PaymentModal({
               classNames={{
                 input: "border border-gray-200 dark:border-zinc-800 focus:border-gray-300 dark:focus:border-zinc-600"
               }}
-              description={`Outstanding: ₹${studentFeeStructure?.totalBalance?.toLocaleString() || 0}`}
+              description={`Outstanding: ${formatCurrency(studentFeeStructure?.totalBalance || 0)}`}
               isRequired
               isInvalid={!!amountError}
               errorMessage={amountError}

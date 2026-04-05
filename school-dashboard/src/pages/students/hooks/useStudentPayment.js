@@ -7,6 +7,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { studentFeesApi } from '../../../services/api';
 import { useTranslation } from 'react-i18next';
+import { toTodayDateString } from '../../../utils/dateFormatter';
+import { formatCurrency } from '../../../utils/numberFormatter';
 
 export function useStudentPayment(studentId, {
   currentAcademicYear,
@@ -21,14 +23,14 @@ export function useStudentPayment(studentId, {
   const [paymentForm, setPaymentForm] = useState({
     amount: '',
     paymentMode: 'cash',
-    date: new Date().toISOString().split('T')[0],
+    date: toTodayDateString(),
   });
 
   const resetPaymentForm = useCallback(() => {
     setPaymentForm({
       amount: '',
       paymentMode: 'cash',
-      date: new Date().toISOString().split('T')[0],
+      date: toTodayDateString(),
     });
   }, []);
 
@@ -51,7 +53,7 @@ export function useStudentPayment(studentId, {
 
     const totalBalance = studentFeeStructure?.totalBalance || 0;
     if (paymentAmount > totalBalance) {
-      toast.error(`Amount cannot exceed outstanding balance of ₹${totalBalance.toLocaleString('en-IN')}`);
+      toast.error(`Amount cannot exceed outstanding balance of ${formatCurrency(totalBalance)}`);
       return;
     }
 

@@ -6,6 +6,7 @@ import { Search, X, Download, Bell, MoreVertical, CreditCard } from "lucide-reac
 import { feesApi, studentsApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import { formatShortDate, toTodayDateString } from "../../utils/dateFormatter";
 
 const ITEMS_PER_LOAD = 10;
 
@@ -48,7 +49,7 @@ export default function FeeDefaulters() {
             class: cls.name ? `${cls.name} ${cls.section || ''}`.trim() : '—',
             rollNo: student.rollNo || '—',
             pending: d.totalBalance || 0,
-            dueDate: d.lastPaymentDate ? new Date(d.lastPaymentDate).toLocaleDateString('en-IN') : '—',
+            dueDate: formatShortDate(d.lastPaymentDate),
             days: daysOverdue > 0 ? daysOverdue : 0,
             phone: student.parentPhone || student.phone || '',
           };
@@ -99,7 +100,7 @@ export default function FeeDefaulters() {
 
   const totalPending = filteredDefaulters.reduce((sum, d) => sum + d.pending, 0);
 
-  const [, setSendingReminders] = useState(false);
+  const [sendingReminders, setSendingReminders] = useState(false);
 
   const handleSendReminders = async () => {
     if (filteredDefaulters.length === 0) return;
@@ -137,7 +138,7 @@ export default function FeeDefaulters() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `fee-defaulters-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `fee-defaulters-${toTodayDateString()}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -228,9 +229,9 @@ export default function FeeDefaulters() {
         </div>
 
         <div className="flex gap-2 w-full sm:w-auto">
-          <button onClick={handleSendReminders} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 transition-all">
-            <Bell size={14} />
-            <span>{t('pages.remindAll')}</span>
+          <button onClick={handleSendReminders} disabled={sendingReminders} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+            {sendingReminders ? <Spinner size="sm" className="w-3.5 h-3.5" /> : <Bell size={14} />}
+            <span>{sendingReminders ? t('pages.sending', 'Sending...') : t('pages.remindAll')}</span>
           </button>
           <button onClick={handleExportDefaulters} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 transition-all">
             <Download size={14} />

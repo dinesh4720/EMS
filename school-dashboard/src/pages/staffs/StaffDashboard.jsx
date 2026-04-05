@@ -39,7 +39,9 @@ import { DetailPageSkeleton } from "../../components/skeletons/PageSkeletons";
 // Context & Services
 import { useApp } from "../../context/AppContext";
 import { usePermissions } from "../../context/PermissionContext";
-import { uploadApi } from "../../services/api";
+import { uploadApi, classesApi } from "../../services/api";
+import ConfirmDialog from "../../components/ui/ConfirmDialog";
+import useConfirmDialog from "../../hooks/useConfirmDialog";
 import { getSocketService } from "../../services/socketServiceEnhanced.js";
 import { useTranslation } from 'react-i18next';
 
@@ -52,12 +54,13 @@ export default function StaffDashboard() {
 
   const {
     getStaffById, getMonthlyAttendance, staffAttendance: attendance,
-    staffSalaries, salarySettings, classesWithTeachers, updateStaff, updateStaffLocal,
+    staffSalaries, salarySettings, classesWithTeachers, updateStaff, updateStaffLocal, updateClassLocal,
     payrollHistory, staff: allStaffList, classes, loading, error: appError, teacherAssignmentsApi,
-    fetchStaffAttendanceByStaff
+    fetchStaffAttendanceByStaff, fetchPayrollHistory
   } = useApp();
 
   const { isOpen, onOpen, onClose } = useDisclosure(); // Message Modal
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
 
   // AddStaff Drawer State
   const [isAddStaffOpen, setIsAddStaffOpen] = useState(false);
@@ -126,6 +129,14 @@ export default function StaffDashboard() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const setActiveTab = (tab) => setActiveTabState(tab);
+
+  // Fetch payroll records from backend when payroll tab is active
+  useEffect(() => {
+    if (activeTab === "payroll" && id) {
+      fetchPayrollHistory({ employeeId: id });
+    }
+  }, [activeTab, id, fetchPayrollHistory]);
+
   const [subjectAssignments, setSubjectAssignments] = useState([]);
 
   // Document State
@@ -338,6 +349,7 @@ export default function StaffDashboard() {
     setActiveUploads(prev => [...prev, ...newUploads]);
 
     try {
+      const newDocs = [];
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const uploadId = newUploads[i].id;
@@ -353,7 +365,7 @@ export default function StaffDashboard() {
         };
 
         const newDoc = {
-          id: Date.now().toString(),
+          id: `custom-${Date.now()}-${i}`,
           name: file.name,
           type: file.type,
           url: response.url,
@@ -361,8 +373,18 @@ export default function StaffDashboard() {
           uploadDate: new Date().toISOString()
         };
 
+        newDocs.push(newDoc);
         setDocuments(prev => [...prev, newDoc]);
         setActiveUploads(prev => prev.map(u => u.id === uploadId ? { ...u, status: 'completed', progress: 100 } : u));
+      }
+
+      // Persist new documents to DB
+      if (newDocs.length > 0) {
+        const existingCustomUrls = documents
+          .filter(d => d.id?.startsWith('custom-'))
+          .map(d => d.url);
+        const allCustomDocuments = [...existingCustomUrls, ...newDocs.map(d => d.url)];
+        await updateStaff(id, { customDocuments: allCustomDocuments });
       }
 
       setTimeout(() => setActiveUploads([]), 2000);
@@ -375,9 +397,28 @@ export default function StaffDashboard() {
     }
   };
 
-  const handleDeleteDocument = (docId) => {
-    setDocuments(prev => prev.filter(d => d.id !== docId && d.url !== docId));
-    toast.success(t('toast.success.documentDeleted'));
+  const handleDeleteDocument = async (docId) => {
+    const updatedDocs = documents.filter(d => d.id !== docId && d.url !== docId);
+
+    try {
+      // Reconstruct backend document arrays from remaining docs
+      const idDocuments = updatedDocs
+        .filter(d => d.id?.startsWith('id-'))
+        .map(d => ({ type: d.type, url: d.url, name: d.name }));
+      const qualificationDocs = updatedDocs
+        .filter(d => d.id?.startsWith('qual-'))
+        .map(d => d.url);
+      const customDocuments = updatedDocs
+        .filter(d => d.id?.startsWith('custom-'))
+        .map(d => d.url);
+
+      await updateStaff(id, { idDocuments, qualificationDocs, customDocuments });
+      setDocuments(updatedDocs);
+      toast.success(t('toast.success.documentDeleted'));
+    } catch (error) {
+      logger.error("Document delete error:", error);
+      toast.error(t('toast.error.deleteFailed'));
+    }
   };
 
   const handleFileSelect = (e) => {
@@ -407,20 +448,11 @@ export default function StaffDashboard() {
     }
   };
 
-  const handlePhotoSave = async (croppedImage) => {
+  const handlePhotoSave = async (croppedBlob) => {
     const loadingToast = toast.loading(t('toast.loading.uploadingPhoto'));
 
     try {
-      const dataURLtoFile = (dataurl, filename) => {
-        const arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
-          bstr = atob(arr[1]);
-        let n = bstr.length;
-        const u8arr = new Uint8Array(n);
-        while (n--) u8arr[n] = bstr.charCodeAt(n);
-        return new File([u8arr], filename, { type: mime });
-      };
-
-      const file = dataURLtoFile(croppedImage, "profile_photo.jpg");
+      const file = new File([croppedBlob], "profile_photo.jpg", { type: "image/jpeg" });
       const response = await uploadApi.uploadFile(file);
       await updateStaff(id, { picture: response.url });
       setPicturePreview(response.url);
@@ -728,6 +760,31 @@ export default function StaffDashboard() {
                               <div className={`h-full rounded-full transition-all ${clsAttendance >= 90 ? 'bg-gray-800 dark:bg-zinc-200' : clsAttendance >= 75 ? 'bg-gray-600 dark:bg-zinc-400' : 'bg-gray-400 dark:bg-zinc-500'}`} style={{ width: `${clsAttendance}%` }} />
                             </div>
                             <span className="text-sm font-semibold text-gray-900 dark:text-zinc-100 w-12 text-right">{clsAttendance}%</span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                showConfirm({
+                                  title: t('classes.unassignClassTeacher', 'Unassign Class Teacher'),
+                                  message: t('classes.unassignClassTeacherMessage', 'Remove {{name}} as class teacher of {{class}}?', { name: staff.name, class: `${cls.name}-${cls.section}` }),
+                                  variant: 'danger',
+                                  confirmText: t('common.unassign', 'Unassign'),
+                                  onConfirm: async () => {
+                                    try {
+                                      await classesApi.updateClassTeacher(cls.id, null, { force: true });
+                                      updateClassLocal(cls.id, { classTeacherId: null, teacher: null, teacherPhoto: null });
+                                      updateStaffLocal(staff.id, { classTeacherOf: null, isClassTeacher: false });
+                                      toast.success(t('toast.success.classTeacherUnassigned', '{{name}} unassigned from {{class}}', { name: staff.name, class: `${cls.name}-${cls.section}` }));
+                                    } catch (error) {
+                                      toast.error(error.message || t('toast.error.failedToUnassign', 'Failed to unassign class teacher'));
+                                    }
+                                  },
+                                });
+                              }}
+                              className="p-1.5 text-gray-400 dark:text-zinc-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded transition-all"
+                              title={t('classes.unassign', 'Unassign')}
+                            >
+                              <X size={14} />
+                            </button>
                             <Link size={16} className="text-gray-400 dark:text-zinc-500" />
                           </div>
                         </div>
@@ -1067,6 +1124,9 @@ export default function StaffDashboard() {
         staffId={id}
         staffName={staff.name}
       />
+
+      {/* Confirm Dialog for unassign etc. */}
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </div>
   );
 }

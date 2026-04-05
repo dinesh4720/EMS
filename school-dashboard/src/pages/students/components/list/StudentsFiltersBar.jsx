@@ -246,7 +246,7 @@ export default function StudentsFiltersBar({
                 </div>
 
                 {/* Right side: bulk actions + filter tools */}
-                <div className="flex gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap items-center">
+                <div className="flex gap-2 w-full sm:w-auto overflow-x-auto flex-nowrap items-center">
                     {/* Bulk actions — visible only when rows are selected */}
                     {selectedCount > 0 && (
                         <Dropdown
@@ -426,7 +426,7 @@ export default function StudentsFiltersBar({
                         <DropdownTrigger>
                             <button className="flex items-center gap-2 px-3 py-2.5 bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all text-sm cursor-pointer whitespace-nowrap">
                                 <Columns3 size={16} className="text-gray-400 dark:text-zinc-500" />
-                                <span className="text-gray-700 dark:text-zinc-300">
+                                <span className="text-gray-700 dark:text-zinc-300 hidden sm:inline">
                                     {t("pages.columns")}
                                 </span>
                                 <ChevronDown size={14} className="text-gray-400 dark:text-zinc-500" />

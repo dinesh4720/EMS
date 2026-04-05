@@ -4,6 +4,12 @@ import { Save, AlertCircle } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import { settingsApi } from "../../services/api";
 
+const DEFAULT_PERMISSIONS = [
+  { role: "Super Admin", canMark: true, canEdit: true, canLock: true },
+  { role: "Admin", canMark: true, canEdit: true, canLock: true },
+  { role: "Teacher", canMark: true, canEdit: false, canLock: false },
+];
+
 const DEFAULT_RULES = {
   defaulterThreshold: 75,
   lockTime: "16:00",
@@ -11,6 +17,8 @@ const DEFAULT_RULES = {
   editWindow: 24,
   notifyAbsent: true,
   notifyDefaulter: true,
+  lateWeight: 100,
+  permissions: DEFAULT_PERMISSIONS,
 };
 
 export default function AttendanceRules() {
@@ -53,7 +61,7 @@ export default function AttendanceRules() {
       // Build only the fields relevant to the editing section
       let payload = {};
       if (editingSection === 'defaulter') {
-        payload = { defaulterThreshold: Number(tempRules.defaulterThreshold) };
+        payload = { defaulterThreshold: Number(tempRules.defaulterThreshold), lateWeight: Number(tempRules.lateWeight) };
       } else if (editingSection === 'lock') {
         payload = {
           lockTime: tempRules.lockTime,
@@ -64,6 +72,10 @@ export default function AttendanceRules() {
         payload = {
           notifyAbsent: tempRules.notifyAbsent,
           notifyDefaulter: tempRules.notifyDefaulter,
+        };
+      } else if (editingSection === 'permissions') {
+        payload = {
+          permissions: tempRules.permissions,
         };
       }
 
@@ -150,24 +162,47 @@ export default function AttendanceRules() {
           <SectionHeader title={t('pages.defaulterSettings')} section="defaulter" />
           <CardBody className="p-4 space-y-4">
             {editingSection === 'defaulter' ? (
-              <Input
-                size="sm"
-                type="number"
-                label="Defaulter Threshold (%)"
-                value={tempRules.defaulterThreshold}
-                onChange={(e) => setTempRules({ ...tempRules, defaulterThreshold: e.target.value })}
-                description="Students below this % are marked as defaulters"
-                variant="bordered"
-              />
+              <>
+                <Input
+                  size="sm"
+                  type="number"
+                  label="Defaulter Threshold (%)"
+                  value={tempRules.defaulterThreshold}
+                  onChange={(e) => setTempRules({ ...tempRules, defaulterThreshold: e.target.value })}
+                  description="Students below this % are marked as defaulters"
+                  variant="bordered"
+                />
+                <Input
+                  size="sm"
+                  type="number"
+                  label="Late Arrival Weight (%)"
+                  value={tempRules.lateWeight}
+                  onChange={(e) => {
+                    const v = Math.max(0, Math.min(100, Number(e.target.value) || 0));
+                    setTempRules({ ...tempRules, lateWeight: v });
+                  }}
+                  description="How much a 'Late' counts toward attendance (100% = fully present, 50% = half, 0% = absent)"
+                  variant="bordered"
+                  min={0}
+                  max={100}
+                />
+              </>
             ) : (
-              <div className="flex justify-between items-center p-2">
-                <span className="text-sm text-default-600">{t('pages.threshold')}</span>
-                <span className="text-lg font-bold text-default-900">{rules.defaulterThreshold}%</span>
-              </div>
+              <>
+                <div className="flex justify-between items-center p-2">
+                  <span className="text-sm text-default-600">{t('pages.threshold')}</span>
+                  <span className="text-lg font-bold text-default-900">{rules.defaulterThreshold}%</span>
+                </div>
+                <div className="flex justify-between items-center p-2">
+                  <span className="text-sm text-default-600">Late Arrival Weight</span>
+                  <span className="text-lg font-bold text-default-900">{rules.lateWeight}%</span>
+                </div>
+              </>
             )}
             <div className="p-4 bg-warning-50 rounded-lg border border-warning-200">
               <p className="text-xs text-warning-700 font-medium">
                 Students with attendance below {editingSection === 'defaulter' ? tempRules.defaulterThreshold : rules.defaulterThreshold}% will be flagged as attendance defaulters.
+                {' '}Late arrivals count as {editingSection === 'defaulter' ? tempRules.lateWeight : rules.lateWeight}% present.
               </p>
             </div>
           </CardBody>
@@ -260,29 +295,42 @@ export default function AttendanceRules() {
           </CardBody>
         </Card>
 
-        <Card className="shadow-sm border border-default-200 rounded-lg">
-          <CardHeader className="py-4 px-4 bg-default-50/50 border-b border-default-100">
-            <h3 className="text-sm font-semibold text-default-700">{t('pages.editPermissions')}</h3>
-          </CardHeader>
+        <Card className={`shadow-sm border transition-all duration-200 ${editingSection === 'permissions' ? 'border-primary ring-1 ring-primary' : 'border-default-200'}`}>
+          <SectionHeader title={t('pages.editPermissions')} section="permissions" />
           <CardBody className="p-4 space-y-3">
-            {[
-              { role: "Super Admin", canMark: true, canEdit: true, canLock: true },
-              { role: "Admin", canMark: true, canEdit: true, canLock: true },
-              { role: "Teacher", canMark: true, canEdit: false, canLock: false },
-            ].map((item, i) => (
+            {(editingSection === 'permissions' ? tempRules.permissions : rules.permissions).map((item, i) => (
               <div key={item.role} className="flex items-center justify-between p-4 bg-default-50 rounded-lg border border-default-200">
                 <span className="text-sm font-medium text-default-800">{item.role}</span>
-                <div className="flex gap-2 text-xs font-medium">
-                  <span className={item.canMark ? "text-success-700 bg-success-50 px-2 py-1 rounded-md border border-success-200" : "text-default-400 opacity-50"}>
-                    Mark
-                  </span>
-                  <span className={item.canEdit ? "text-success-700 bg-success-50 px-2 py-1 rounded-md border border-success-200" : "text-default-400 opacity-50"}>
-                    Edit
-                  </span>
-                  <span className={item.canLock ? "text-success-700 bg-success-50 px-2 py-1 rounded-md border border-success-200" : "text-default-400 opacity-50"}>
-                    Lock
-                  </span>
-                </div>
+                {editingSection === 'permissions' ? (
+                  <div className="flex gap-3">
+                    {['canMark', 'canEdit', 'canLock'].map((perm) => (
+                      <label key={perm} className="flex items-center gap-1.5 text-xs font-medium text-default-600">
+                        <Switch
+                          size="sm"
+                          isSelected={item[perm]}
+                          onValueChange={(v) => {
+                            const updated = [...tempRules.permissions];
+                            updated[i] = { ...updated[i], [perm]: v };
+                            setTempRules({ ...tempRules, permissions: updated });
+                          }}
+                        />
+                        {perm === 'canMark' ? 'Mark' : perm === 'canEdit' ? 'Edit' : 'Lock'}
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex gap-2 text-xs font-medium">
+                    <span className={item.canMark ? "text-success-700 bg-success-50 px-2 py-1 rounded-md border border-success-200" : "text-default-400 opacity-50"}>
+                      Mark
+                    </span>
+                    <span className={item.canEdit ? "text-success-700 bg-success-50 px-2 py-1 rounded-md border border-success-200" : "text-default-400 opacity-50"}>
+                      Edit
+                    </span>
+                    <span className={item.canLock ? "text-success-700 bg-success-50 px-2 py-1 rounded-md border border-success-200" : "text-default-400 opacity-50"}>
+                      Lock
+                    </span>
+                  </div>
+                )}
               </div>
             ))}
           </CardBody>

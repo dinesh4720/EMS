@@ -6,6 +6,7 @@ import {
 import { FileText, Download, Printer, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { formatDate } from '../../../../utils/dateFormatter';
 
 const CONDUCT_OPTIONS = ['Excellent', 'Very Good', 'Good', 'Satisfactory', 'Needs Improvement'];
 
@@ -81,19 +82,20 @@ export default function CertificateModal({ isOpen, onClose, student, type = 'bon
     const blob = new Blob([html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const printWindow = window.open(url, '', 'width=800,height=600');
+    const revoke = () => URL.revokeObjectURL(url);
     if (printWindow) {
-      printWindow.addEventListener('afterprint', () => URL.revokeObjectURL(url));
+      printWindow.addEventListener('afterprint', revoke);
+      // Fallback: revoke blob URL even if afterprint never fires (e.g. window closed)
+      const tid = setInterval(() => { if (printWindow.closed) { clearInterval(tid); revoke(); } }, 1000);
     } else {
-      URL.revokeObjectURL(url);
+      revoke();
     }
     toast.success('Print dialog opened');
   };
 
   if (!student) return null;
 
-  const today = new Date().toLocaleDateString('en-IN', {
-    day: '2-digit', month: 'long', year: 'numeric',
-  });
+  const today = formatDate(new Date());
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} size="3xl" scrollBehavior="inside">

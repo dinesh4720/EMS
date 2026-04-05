@@ -1,65 +1,34 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardBody, CardHeader, Button, Input, Divider, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/react";
 import { Plus, Edit, Trash2, DollarSign, X } from "lucide-react";
 import { useTranslation } from 'react-i18next';
-
-// TODO: AUDIT-115 - This is hardcoded placeholder data. Replace with API fetch
-// from a salary templates endpoint (e.g. GET /settings/salary-templates).
-// All CRUD operations below only update local state and are lost on refresh.
-const initialTemplates = [
-  {
-    id: 1,
-    name: "Teacher", 
-    breakdown: [
-      { component: "Basic Salary", amount: 25000 },
-      { component: "HRA", amount: 10000 },
-      { component: "Special Allowance", amount: 5000 },
-      { component: "Transport Allowance", amount: 2000 }
-    ]
-  },
-  { 
-    id: 2,
-    name: "Lab Assistant", 
-    breakdown: [
-      { component: "Basic Salary", amount: 18000 },
-      { component: "HRA", amount: 7000 },
-      { component: "Special Allowance", amount: 3000 }
-    ]
-  },
-  { 
-    id: 3,
-    name: "Lab Incharge", 
-    breakdown: [
-      { component: "Basic Salary", amount: 22000 },
-      { component: "HRA", amount: 8000 },
-      { component: "Special Allowance", amount: 4000 },
-      { component: "Responsibility Allowance", amount: 3000 }
-    ]
-  },
-  { 
-    id: 4,
-    name: "Accountant", 
-    breakdown: [
-      { component: "Basic Salary", amount: 23000 },
-      { component: "HRA", amount: 9000 },
-      { component: "Special Allowance", amount: 4000 }
-    ]
-  },
-  { 
-    id: 5,
-    name: "Others", 
-    breakdown: [
-      { component: "Basic Salary", amount: 20000 },
-      { component: "HRA", amount: 8000 }
-    ]
-  }
-];
+import toast from "react-hot-toast";
+import { settingsApi } from '../../services/api';
+import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import useConfirmDialog from '../../hooks/useConfirmDialog';
 
 export default function SalaryTemplates() {
   const { t } = useTranslation();
-  const [templates, setTemplates] = useState(initialTemplates);
+  const [templates, setTemplates] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
+
+  const fetchTemplates = useCallback(async () => {
+    try {
+      const res = await settingsApi.getSalaryTemplates();
+      setTemplates(res?.data || []);
+    } catch {
+      toast.error('Failed to load salary templates');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
 
   const handleEdit = (template) => {
     setEditingTemplate({ ...template, breakdown: [...template.breakdown] });
@@ -68,34 +37,59 @@ export default function SalaryTemplates() {
 
   const handleNew = () => {
     setEditingTemplate({
-      id: Date.now(),
       name: "",
       breakdown: [{ component: "", amount: 0 }]
     });
     onOpen();
   };
 
-  // TODO: AUDIT-115 - Wire up to API: POST/PUT /settings/salary-templates
-  const handleSave = () => {
-    if (templates.find(t => t.id === editingTemplate.id)) {
-      setTemplates(templates.map(t => t.id === editingTemplate.id ? editingTemplate : t));
-    } else {
-      setTemplates([...templates, editingTemplate]);
+  const handleSave = async () => {
+    if (!editingTemplate?.name.trim()) return;
+    setSaving(true);
+    try {
+      const payload = {
+        name: editingTemplate.name.trim(),
+        breakdown: editingTemplate.breakdown.filter(b => b.component.trim()),
+      };
+
+      if (editingTemplate._id) {
+        await settingsApi.updateSalaryTemplate(editingTemplate._id, payload);
+        toast.success('Template updated');
+      } else {
+        await settingsApi.createSalaryTemplate(payload);
+        toast.success('Template created');
+      }
+      onClose();
+      setEditingTemplate(null);
+      await fetchTemplates();
+    } catch (err) {
+      toast.error(err?.error || 'Failed to save template');
+    } finally {
+      setSaving(false);
     }
-    onClose();
-    setEditingTemplate(null);
   };
 
-  // TODO: AUDIT-115 - Wire up to API: DELETE /settings/salary-templates/:id
   const handleDelete = (id) => {
-    if (confirm(t('confirm.deleteTemplate'))) {
-      setTemplates(templates.filter(t => t.id !== id));
-    }
+    showConfirm({
+      title: 'Delete Template',
+      message: t('confirm.deleteTemplate'),
+      variant: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        try {
+          await settingsApi.deleteSalaryTemplate(id);
+          toast.success('Template deleted');
+          await fetchTemplates();
+        } catch {
+          toast.error('Failed to delete template');
+        }
+      },
+    });
   };
 
   const updateBreakdownItem = (index, field, value) => {
     const updated = [...editingTemplate.breakdown];
-    updated[index][field] = field === "amount" ? Number(value) : value;
+    updated[index] = { ...updated[index], [field]: field === "amount" ? Number(value) : value };
     setEditingTemplate({ ...editingTemplate, breakdown: updated });
   };
 
@@ -117,6 +111,8 @@ export default function SalaryTemplates() {
     return breakdown.reduce((sum, item) => sum + (item.amount || 0), 0);
   };
 
+  if (loading) return <TablePageSkeleton kpiCards={0} searchBar={false} rows={4} />;
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -133,7 +129,7 @@ export default function SalaryTemplates() {
         {templates.map(template => {
           const total = calculateTotal(template.breakdown);
           return (
-            <Card key={template.id} className="shadow-sm border border-default-200">
+            <Card key={template._id} className="shadow-sm border border-default-200">
               <CardHeader className="flex justify-between items-center pb-3">
                 <div className="flex items-center gap-2">
                   <div className="p-2 bg-primary/10 rounded-lg">
@@ -145,7 +141,7 @@ export default function SalaryTemplates() {
                   <Button size="sm" isIconOnly variant="light" onPress={() => handleEdit(template)} title={t('pages.editTemplate')}>
                     <Edit size={16} />
                   </Button>
-                  <Button size="sm" isIconOnly variant="light" color="danger" onPress={() => handleDelete(template.id)} title={t('pages.deleteTemplate1')}>
+                  <Button size="sm" isIconOnly variant="light" color="danger" onPress={() => handleDelete(template._id)} title={t('pages.deleteTemplate1')}>
                     <Trash2 size={16} />
                   </Button>
                 </div>
@@ -154,7 +150,7 @@ export default function SalaryTemplates() {
               <CardBody className="pt-4">
                 <div className="space-y-2 mb-4">
                   {template.breakdown.map((item, i) => (
-                    <div key={`${template.id}-${item.component}`} className="flex justify-between text-sm">
+                    <div key={`${template._id}-${item.component}`} className="flex justify-between text-sm">
                       <span className="text-default-600">{item.component}</span>
                       <span className="font-medium">₹{item.amount.toLocaleString()}</span>
                     </div>
@@ -179,7 +175,7 @@ export default function SalaryTemplates() {
           {(onModalClose) => (
             <>
               <ModalHeader>
-                {editingTemplate && templates.find(t => t.id === editingTemplate.id) ? "Edit" : "Create"} Salary Template
+                {editingTemplate?._id ? "Edit" : "Create"} Salary Template
               </ModalHeader>
               <ModalBody>
                 {editingTemplate && (
@@ -198,7 +194,7 @@ export default function SalaryTemplates() {
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
                         <label className="text-sm font-medium">{t('pages.salaryComponents')}</label>
-                        <Button size="sm" variant="flat" color="primary" startContent={<Plus size={16} />} 
+                        <Button size="sm" variant="flat" color="primary" startContent={<Plus size={16} />}
                           onPress={addBreakdownItem}>
                           Add Component
                         </Button>
@@ -254,7 +250,7 @@ export default function SalaryTemplates() {
               </ModalBody>
               <ModalFooter>
                 <Button variant="light" onPress={onModalClose}>{t('pages.cancel2')}</Button>
-                <Button color="primary" onPress={handleSave} isDisabled={!editingTemplate?.name.trim()}>
+                <Button color="primary" onPress={handleSave} isLoading={saving} isDisabled={!editingTemplate?.name.trim()}>
                   Save Template
                 </Button>
               </ModalFooter>
@@ -262,6 +258,8 @@ export default function SalaryTemplates() {
           )}
         </ModalContent>
       </Modal>
+
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </div>
   );
 }

@@ -2,6 +2,28 @@
  * Validation utilities for Front Desk module
  */
 
+// Allowed domains for document/image URLs (all uploads go through Cloudinary)
+const ALLOWED_URL_DOMAINS = [
+  'res.cloudinary.com',
+];
+
+/**
+ * Check whether a URL string belongs to an allowed upload domain.
+ * Returns true for File/Blob objects (they haven't been uploaded yet).
+ * Returns true for empty/null values (optional fields).
+ * @param {string} url - URL to validate
+ * @returns {boolean}
+ */
+export const isAllowedDocumentUrl = (url) => {
+  if (!url || typeof url !== 'string') return true;
+  try {
+    const parsed = new URL(url);
+    return ALLOWED_URL_DOMAINS.includes(parsed.hostname);
+  } catch {
+    return false;
+  }
+};
+
 /**
  * Validate phone number — accepts Indian (10-digit) and international (7-15 digit) formats.
  * Supports optional leading + and country codes, spaces, hyphens, parentheses.
@@ -14,6 +36,16 @@ export const validatePhone = (phone, required = false) => {
   const digitsOnly = phone.replace(/\D/g, '');
   // Accepts 7–15 digits (ITU-T E.164 range)
   return digitsOnly.length >= 7 && digitsOnly.length <= 15;
+};
+
+/**
+ * Check if a phone number is all the same digit repeated (e.g. "1111111111").
+ * @param {string} phone - Phone number to check
+ * @returns {boolean} True if every digit is identical
+ */
+export const isRepeatedDigits = (phone) => {
+  if (!phone) return false;
+  return /^(\d)\1{9}$/.test(phone);
 };
 
 /**
@@ -122,7 +154,7 @@ export const getErrorMessage = (field, t) => {
     parentName: 'Parent name is required',
     callerName: 'Caller name is required',
     name: 'Name is required',
-    phoneNumber: 'Please enter a valid 10-digit phone number',
+    phoneNumber: 'Please enter a valid phone number (7–15 digits)',
     email: 'Please enter a valid email address',
     classApplyingFor: 'Please select a class',
     personId: 'Please select a person',
@@ -169,14 +201,14 @@ export const validateClassData = (data, t) => {
 
   if (!data.name || data.name.trim() === '') {
     errors.name = msg('validation.classNameRequired', 'Class name is required');
-  } else if (!/^[A-Za-z0-9\s-]+$/.test(data.name)) {
-    errors.name = msg('validation.classNameInvalid', 'Class name can only contain letters, numbers, and hyphens');
+  } else if (!/^[A-Za-z0-9\s.()\-]+$/.test(data.name)) {
+    errors.name = msg('validation.classNameInvalid', 'Class name can only contain letters, numbers, spaces, hyphens, dots, and parentheses');
   }
 
   if (!data.section || data.section.trim() === '') {
     errors.section = msg('validation.sectionRequired', 'Section is required');
-  } else if (!/^[A-Za-z0-9-]+$/.test(data.section)) {
-    errors.section = msg('validation.sectionInvalid', 'Section can only contain letters, numbers, and hyphens');
+  } else if (!/^[A-Za-z0-9()\-]+$/.test(data.section)) {
+    errors.section = msg('validation.sectionInvalid', 'Section can only contain letters, numbers, hyphens, and parentheses');
   }
 
   if (data.strength !== undefined) {

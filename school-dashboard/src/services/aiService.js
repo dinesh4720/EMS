@@ -1,4 +1,5 @@
 import { clearStoredUser, getAuthHeaders } from '../utils/authSession';
+import { attemptTokenRefresh } from './api/core.js';
 import { API_URL } from '../config/api.js';
 
 const PREBUILT_PROMPTS = [
@@ -44,21 +45,7 @@ let modelsCache = [];
 let defaultModelIdCache = null;
 let pendingModelsRequest = null;
 
-async function parseJsonResponse(response) {
-  const payload = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    if (response.status === 401) {
-      clearStoredUser();
-    }
-
-    throw new Error(payload.error || payload.message || `Request failed with status ${response.status}`);
-  }
-
-  return payload;
-}
-
-async function aiRequest(endpoint, options = {}) {
+async function aiRequest(endpoint, options = {}, _isRetry = false) {
   const hasFormDataBody = options.body instanceof FormData;
   const headers = getAuthHeaders({
     ...(hasFormDataBody ? {} : { 'Content-Type': 'application/json' }),
@@ -72,7 +59,21 @@ async function aiRequest(endpoint, options = {}) {
     cache: 'no-store',
   });
 
-  return parseJsonResponse(response);
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    if (response.status === 401 && !_isRetry) {
+      const refreshed = await attemptTokenRefresh();
+      if (refreshed) {
+        return aiRequest(endpoint, options, true);
+      }
+      clearStoredUser();
+    }
+
+    throw new Error(payload.error || payload.message || `Request failed with status ${response.status}`);
+  }
+
+  return payload;
 }
 
 function updateModelCache(payload) {

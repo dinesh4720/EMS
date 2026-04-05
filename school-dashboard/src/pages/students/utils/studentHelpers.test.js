@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatFileSize, getNextClass } from './studentHelpers';
+import { formatFileSize, getNextClass, calculateAttendanceStats, getInitials, getAvatarColor } from './studentHelpers';
 
 describe('formatFileSize', () => {
   it('returns "0 B" for null', () => {
@@ -75,5 +75,132 @@ describe('getNextClass', () => {
 
   it('returns null for non-numeric class names', () => {
     expect(getNextClass('Advanced')).toBeNull();
+  });
+});
+
+// ─── calculateAttendanceStats ────────────────────────────────────────────────
+
+describe('calculateAttendanceStats', () => {
+  it('returns zeros for empty array', () => {
+    const result = calculateAttendanceStats([]);
+    expect(result).toEqual({ present: 0, absent: 0, total: 0, percentage: 0 });
+  });
+
+  it('returns zeros for null', () => {
+    const result = calculateAttendanceStats(null);
+    expect(result).toEqual({ present: 0, absent: 0, total: 0, percentage: 0 });
+  });
+
+  it('returns zeros for undefined', () => {
+    const result = calculateAttendanceStats(undefined);
+    expect(result).toEqual({ present: 0, absent: 0, total: 0, percentage: 0 });
+  });
+
+  it('counts present and absent correctly', () => {
+    const attendance = [
+      { status: 'present' },
+      { status: 'present' },
+      { status: 'absent' },
+    ];
+    const result = calculateAttendanceStats(attendance);
+    expect(result.present).toBe(2);
+    expect(result.absent).toBe(1);
+    expect(result.total).toBe(3);
+    expect(result.percentage).toBe(67); // Math.round(2/3 * 100)
+  });
+
+  it('handles shorthand status values (P/A)', () => {
+    const attendance = [
+      { status: 'P' },
+      { status: 'A' },
+      { status: 'p' },
+    ];
+    const result = calculateAttendanceStats(attendance);
+    expect(result.present).toBe(2);
+    expect(result.absent).toBe(1);
+  });
+
+  it('handles case-insensitive status', () => {
+    const attendance = [
+      { status: 'Present' },
+      { status: 'ABSENT' },
+      { status: 'present' },
+    ];
+    const result = calculateAttendanceStats(attendance);
+    expect(result.present).toBe(2);
+    expect(result.absent).toBe(1);
+  });
+
+  it('calculates 100% when all present', () => {
+    const attendance = [{ status: 'present' }, { status: 'present' }];
+    const result = calculateAttendanceStats(attendance);
+    expect(result.percentage).toBe(100);
+  });
+
+  it('calculates 0% when all absent', () => {
+    const attendance = [{ status: 'absent' }, { status: 'absent' }];
+    const result = calculateAttendanceStats(attendance);
+    expect(result.percentage).toBe(0);
+  });
+});
+
+// ─── getInitials ─────────────────────────────────────────────────────────────
+
+describe('getInitials', () => {
+  it('returns empty string for null', () => {
+    expect(getInitials(null)).toBe('');
+  });
+
+  it('returns empty string for undefined', () => {
+    expect(getInitials(undefined)).toBe('');
+  });
+
+  it('returns empty string for empty string', () => {
+    expect(getInitials('')).toBe('');
+  });
+
+  it('returns single initial for one-word name', () => {
+    expect(getInitials('Alice')).toBe('A');
+  });
+
+  it('returns first and last initials for two-word name', () => {
+    expect(getInitials('Alice Smith')).toBe('AS');
+  });
+
+  it('returns first and last initials for three-word name', () => {
+    expect(getInitials('Alice Marie Smith')).toBe('AS');
+  });
+
+  it('uppercases initials', () => {
+    expect(getInitials('alice smith')).toBe('AS');
+  });
+
+  it('trims whitespace', () => {
+    expect(getInitials('  Alice  ')).toBe('A');
+  });
+});
+
+// ─── getAvatarColor ──────────────────────────────────────────────────────────
+
+describe('getAvatarColor', () => {
+  it('returns a color class for a string', () => {
+    const result = getAvatarColor('Alice');
+    expect(result).toMatch(/^bg-/);
+  });
+
+  it('returns first color for null/undefined', () => {
+    expect(getAvatarColor(null)).toBe('bg-gray-400');
+    expect(getAvatarColor(undefined)).toBe('bg-gray-400');
+  });
+
+  it('returns deterministic color for same input', () => {
+    expect(getAvatarColor('Alice')).toBe(getAvatarColor('Alice'));
+  });
+
+  it('may return different colors for different inputs', () => {
+    // Just verify it returns valid color classes
+    const colors = ['bg-gray-400', 'bg-slate-500', 'bg-zinc-500', 'bg-neutral-500'];
+    expect(colors).toContain(getAvatarColor('A'));
+    expect(colors).toContain(getAvatarColor('Z'));
   });
 });

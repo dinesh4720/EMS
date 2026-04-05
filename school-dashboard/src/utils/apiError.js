@@ -6,7 +6,18 @@
  * @returns {Promise<Error>}
  */
 export async function parseApiError(response) {
-  const body = await response.json().catch(() => ({}));
+  const contentType = response.headers?.get?.('content-type') || '';
+  let body = {};
+
+  if (contentType.includes('application/json')) {
+    body = await response.json().catch(() => ({}));
+  } else {
+    const text = await response.text().catch(() => '');
+    if (text) {
+      body = { message: text };
+    }
+  }
+
   const message =
     body.error || body.message || `Request failed with status ${response.status}`;
   const error = new Error(message);

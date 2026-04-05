@@ -26,12 +26,16 @@ import { feesApi, studentsApi, studentFeesApi } from "../../services/api";
 import { showErrorToast } from "../../utils/errorHandling";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
-import { formatShortDate } from '../../utils/dateFormatter';
+import { formatShortDate, toTodayDateString } from '../../utils/dateFormatter';
+import { getFeeHeadBalance } from '../students/utils/studentHelpers';
+import { getDateLocale } from '../../i18n/index';
 import { getStoredUser } from '../../utils/authSession';
+import { useApp } from '../../context/AppContext';
 
 
 export default function Payments() {
   const { t } = useTranslation();
+  const { schoolSettings } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
@@ -84,7 +88,7 @@ export default function Payments() {
       if (dateTo) filters.dateTo = dateTo;
       if (amountMin) filters.amountMin = amountMin;
       if (amountMax) filters.amountMax = amountMax;
-      const paymentsData = await feesApi.getPayments(filters);
+      const { payments: paymentsData } = await feesApi.getPayments(filters);
       setPayments(paymentsData);
     } catch (error) {
       console.error('Error fetching payments:', error);
@@ -153,17 +157,20 @@ export default function Payments() {
 
   // Transform students to payment format
   const feePayments = useMemo(() => {
+    // Pre-index payments by studentId for O(1) lookup instead of O(n*m) filter
+    const paymentsByStudent = new Map();
+    for (const p of payments) {
+      if (!p?._id) continue;
+      const sid = p.studentId?._id || p.studentId;
+      if (sid && !paymentsByStudent.has(sid)) {
+        paymentsByStudent.set(sid, p.paymentDate);
+      }
+    }
+
     return students.map((s) => {
       const studentId = s.id || s._id;
-      // BUG-24: skip payments without a valid _id to avoid downstream reference errors
-      const studentPayments = payments.filter(p => {
-        if (!p?._id) return false;
-        return p.studentId?._id === studentId || p.studentId === studentId;
-      });
 
       // Use StudentFeeStructure as the authoritative source of truth for fee totals.
-      // Previously, totalPaid was recomputed from the local (potentially filtered/paginated)
-      // payments array, causing "Pending 0" when the payments list was incomplete.
       const sfs = feeStructures[studentId];
       const totalAnnualFee = sfs?.totalFee ?? s.feeDetails?.totalFee ?? 0;
       const totalPaid = sfs?.totalPaid ?? s.feeDetails?.paidAmount ?? 0;
@@ -182,7 +189,7 @@ export default function Payments() {
         feeAssigned,
         totalAnnualFee,
         feeStructure: sfs || null,
-        lastPayment: sfs?.lastPaymentDate || (studentPayments.length > 0 ? studentPayments[0].paymentDate : null),
+        lastPayment: sfs?.lastPaymentDate || paymentsByStudent.get(studentId) || null,
       };
     });
   }, [students, payments, feeStructures]);
@@ -236,9 +243,9 @@ export default function Payments() {
     if (!Array.isArray(sfs.feeHeads) || sfs.feeHeads.length === 0) return [];
 
     return sfs.feeHeads
-      .filter(h => (h.balanceAmount ?? (h.amount - (h.paidAmount || 0))) > 0)
+      .filter(h => getFeeHeadBalance(h) > 0)
       .map((h, index) => {
-        const balance = h.balanceAmount ?? Math.max((h.amount || 0) - (h.paidAmount || 0), 0);
+        const balance = getFeeHeadBalance(h);
         return {
           id: h.feeHeadId?._id || h.feeHeadId || null,
           head: h.name || 'Fee',
@@ -276,7 +283,7 @@ export default function Payments() {
       const paymentData = {
         studentId: selectedStudent.id,
         classId: student?.classId,
-        paymentDate: new Date().toISOString().split("T")[0],
+        paymentDate: toTodayDateString(),
         amount: totalSelected,
         paymentMode,
         feeHeads: studentFees
@@ -296,7 +303,10 @@ export default function Payments() {
         student: selectedStudent.student,
         class: selectedStudent.class,
         paymentMode,
-        date: formatShortDate(new Date())
+        date: formatShortDate(new Date()),
+        feeHeads: studentFees
+          .filter((f) => f.id && selectedFees.includes(f.id.toString()))
+          .map(f => ({ name: f.head, amount: f.amount }))
       });
 
       setSelectedStudent(null);
@@ -330,9 +340,18 @@ export default function Payments() {
 
   const escapeHtml = (str) => String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
 
+  const schoolName = schoolSettings?.schoolName || schoolSettings?.name || '';
+  const schoolAddress = schoolSettings?.address || schoolSettings?.schoolAddress || '';
+
   const generateReceiptPDF = (data) => {
+    const feeHeadsHtml = Array.isArray(data.feeHeads) && data.feeHeads.length > 0
+      ? `<table class="fee-table"><thead><tr><th style="text-align:left">Fee Head</th><th style="text-align:right">Amount</th></tr></thead><tbody>${data.feeHeads.map(h =>
+          `<tr><td>${escapeHtml(h.name || h.head || 'Fee')}</td><td style="text-align:right">&#8377;${(h.amount||0).toLocaleString()}</td></tr>`
+        ).join('')}<tr class="total-row"><td><strong>Total</strong></td><td style="text-align:right"><strong>&#8377;${(data.amount||0).toLocaleString()}</strong></td></tr></tbody></table>`
+      : '';
+
     const html = `<!DOCTYPE html>
-<html><head><meta charset="utf-8"/><title>Fee Receipt</title>
+<html><head><meta charset="utf-8"/><title>Fee Receipt - ${escapeHtml(data.receiptNumber||'')}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#1a1a1a;padding:40px;max-width:620px;margin:auto}
@@ -347,11 +366,15 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#1a1a1a;paddi
 .row{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid #f0f0f0}
 .row:last-child{border-bottom:none}
 .row .lbl{color:#6b7280}.row .val{font-weight:500}
+.fee-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:13px}
+.fee-table th{color:#6b7280;font-weight:500;padding:8px 0;border-bottom:2px solid #e5e7eb}
+.fee-table td{padding:6px 0;border-bottom:1px solid #f0f0f0}
+.fee-table .total-row td{border-top:2px solid #e5e7eb;border-bottom:none;padding-top:10px}
 .footer{text-align:center;font-size:11px;color:#aaa;margin-top:28px}
 @media print{body{padding:20px}}
 </style></head>
 <body>
-<div class="logo-row"><div><h1>Fee Receipt</h1><p>Payment Confirmation</p></div><span class="badge">&#x2713; Paid</span></div>
+<div class="logo-row"><div><h1>${escapeHtml(schoolName || 'Fee Receipt')}</h1><p>${escapeHtml(schoolAddress || 'Payment Confirmation')}</p></div><span class="badge">&#x2713; Paid</span></div>
 <div class="amount-block"><div class="amt">&#8377;${(data.amount||0).toLocaleString()}</div><div class="lbl">Amount Received</div></div>
 <div class="receipt-no">Receipt No: <strong>${escapeHtml(data.receiptNumber||'—')}</strong></div>
 <div class="rows">
@@ -360,20 +383,42 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#1a1a1a;paddi
 <div class="row"><span class="lbl">Payment Mode</span><span class="val" style="text-transform:capitalize">${escapeHtml(data.paymentMode)}</span></div>
 <div class="row"><span class="lbl">Date</span><span class="val">${escapeHtml(data.date)}</span></div>
 </div>
+${feeHeadsHtml}
 <div class="footer">Thank you — keep this receipt for your records.</div>
-<script>setTimeout(()=>{window.print();},400);<\/script>
 </body></html>`;
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const w = window.open(url, '_blank', 'width=700,height=580');
-    if (!w) { toast.error('Pop-up blocked. Allow pop-ups to download receipt.'); URL.revokeObjectURL(url); return; }
-    w.addEventListener('afterprint', () => URL.revokeObjectURL(url));
+    // Use a hidden iframe instead of window.open() to avoid popup blockers
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = 'none';
+    document.body.appendChild(iframe);
+    iframe.contentDocument.open();
+    iframe.contentDocument.write(html);
+    iframe.contentDocument.close();
+    iframe.contentWindow.focus();
+    iframe.contentWindow.print();
+    // Clean up after print dialog closes
+    setTimeout(() => document.body.removeChild(iframe), 1000);
   };
 
-  const handleDownloadReceipt = (payment) => {
-    const studentPayments = payments.filter(
+  const handleDownloadReceipt = async (payment) => {
+    // First check local payments array
+    let studentPayments = payments.filter(
       p => p.studentId?._id === payment.id || p.studentId === payment.id
     );
+    // If not found locally (paginated list may not include this student), fetch from API
+    if (studentPayments.length === 0) {
+      try {
+        const { payments: fetched } = await feesApi.getPayments({ studentId: payment.id });
+        studentPayments = fetched || [];
+      } catch {
+        toast.error('Failed to load payment record.');
+        return;
+      }
+    }
     if (studentPayments.length === 0) {
       toast.error('No payment record found for this student.');
       return;
@@ -386,6 +431,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#1a1a1a;paddi
       class: payment.class,
       paymentMode: latest.paymentMode || 'cash',
       date: latest.paymentDate ? formatShortDate(latest.paymentDate) : formatShortDate(new Date()),
+      feeHeads: latest.feeHeads || [],
     });
   };
 
@@ -404,7 +450,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#1a1a1a;paddi
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `fee-payments-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `fee-payments-${toTodayDateString()}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -602,7 +648,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#1a1a1a;paddi
                   </span>
                 </TableCell>
                 <TableCell>
-                  <span className="text-xs text-gray-500 dark:text-zinc-400">{payment.lastPayment ? new Date(payment.lastPayment).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</span>
+                  <span className="text-xs text-gray-500 dark:text-zinc-400">{payment.lastPayment ? new Date(payment.lastPayment).toLocaleDateString(getDateLocale(), { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</span>
                 </TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-2">
@@ -622,10 +668,11 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#1a1a1a;paddi
                         </button>
                       </>
                     )}
-                    {payment.status === "paid" && (
+                    {payment.paid > 0 && (
                       <button
                         onClick={() => handleDownloadReceipt(payment)}
                         className="p-1.5 bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-900 transition-all"
+                        title="Download receipt"
                       >
                         <Download size={14} className="text-gray-500 dark:text-zinc-400" />
                       </button>
@@ -784,6 +831,19 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#1a1a1a;paddi
                       <span className="text-gray-900 dark:text-zinc-100">{receiptData?.date}</span>
                     </div>
                   </div>
+                  {receiptData?.feeHeads?.length > 0 && (
+                    <div className="text-left mt-3 bg-gray-50 dark:bg-zinc-900 p-4 rounded-lg border border-gray-200 dark:border-zinc-800">
+                      <p className="text-xs text-gray-500 dark:text-zinc-400 font-medium mb-2 uppercase tracking-wider">Fee Breakdown</p>
+                      <div className="space-y-1.5">
+                        {receiptData.feeHeads.map((h, i) => (
+                          <div key={i} className="flex justify-between text-sm">
+                            <span className="text-gray-600 dark:text-zinc-400">{h.name}</span>
+                            <span className="text-gray-900 dark:text-zinc-100 font-mono">₹{(h.amount||0).toLocaleString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </ModalBody>
               <ModalFooter className="border-t border-gray-200 dark:border-zinc-800 gap-3">

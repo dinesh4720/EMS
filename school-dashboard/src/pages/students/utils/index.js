@@ -4,7 +4,6 @@ export {
   formatFileSize,
   getNextClass,
   calculateAttendanceStats,
-  formatDate,
   getInitials,
   getAvatarColor,
 } from './studentHelpers';

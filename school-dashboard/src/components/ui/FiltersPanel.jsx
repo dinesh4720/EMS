@@ -325,7 +325,7 @@ const FiltersPanel = ({
                                             )}
                                         </div>
                                         <motion.div
-                                            animate={{ rotate: expandedSections[filterKey] ? 180 : 0 }}
+                                            animate={{ rotate: expandedSections[filterKey] !== false ? 180 : 0 }}
                                             transition={{ type: "spring", stiffness: 200, damping: 20 }}
                                             className="p-1 rounded-lg hover:bg-default-200/50 transition-colors"
                                         >
@@ -335,7 +335,7 @@ const FiltersPanel = ({
 
                                     {/* Section Options */}
                                     <AnimatePresence mode="wait">
-                                        {expandedSections[filterKey] && (
+                                        {expandedSections[filterKey] !== false && (
                                             <motion.div
                                                 variants={sectionVariants}
                                                 initial="hidden"
@@ -392,7 +392,7 @@ const FiltersPanel = ({
                                                             </div>
                                                             {isSelected && (
                                                                 <motion.div
-                                                                    layoutId="selectedOption"
+                                                                    layoutId={`selectedOption-${filterKey}`}
                                                                     className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent pointer-events-none"
                                                                     initial={{ opacity: 0 }}
                                                                     animate={{ opacity: 1 }}

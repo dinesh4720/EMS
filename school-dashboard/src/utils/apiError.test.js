@@ -4,6 +4,7 @@ import { parseApiError } from './apiError';
 function mockResponse(body, status = 400) {
   return {
     status,
+    headers: { get: () => 'application/json' },
     json: vi.fn().mockResolvedValue(body),
   };
 }
@@ -47,11 +48,44 @@ describe('parseApiError', () => {
   it('handles JSON parse failure gracefully', async () => {
     const res = {
       status: 503,
+      headers: { get: () => 'application/json' },
       json: vi.fn().mockRejectedValue(new Error('JSON parse error')),
     };
     const err = await parseApiError(res);
     expect(err.message).toBe('Request failed with status 503');
     expect(err.status).toBe(503);
+  });
+
+  it('reads text body when Content-Type is not JSON', async () => {
+    const res = {
+      status: 502,
+      headers: { get: () => 'text/html' },
+      text: vi.fn().mockResolvedValue('<html>Bad Gateway</html>'),
+    };
+    const err = await parseApiError(res);
+    expect(err.message).toBe('<html>Bad Gateway</html>');
+    expect(err.status).toBe(502);
+  });
+
+  it('falls back to status message when non-JSON body is empty', async () => {
+    const res = {
+      status: 504,
+      headers: { get: () => 'text/plain' },
+      text: vi.fn().mockResolvedValue(''),
+    };
+    const err = await parseApiError(res);
+    expect(err.message).toBe('Request failed with status 504');
+    expect(err.status).toBe(504);
+  });
+
+  it('handles missing headers gracefully', async () => {
+    const res = {
+      status: 500,
+      text: vi.fn().mockResolvedValue(''),
+    };
+    const err = await parseApiError(res);
+    expect(err.message).toBe('Request failed with status 500');
+    expect(err.status).toBe(500);
   });
 
   it('returns an Error instance', async () => {

@@ -7,6 +7,7 @@ import { useReactToPrint } from "react-to-print";
 import { useTranslation } from 'react-i18next';
 import { request } from "../../services/api";
 import { DetailPageSkeleton } from "../../components/skeletons/PageSkeletons";
+import { toTodayDateString, formatDate } from '../../utils/dateFormatter';
 
 export default function TCGeneratorModal({ isOpen, onClose, students }) {
   const { t } = useTranslation();
@@ -18,6 +19,7 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
     const [baseNumber, setBaseNumber] = useState(null); // fetched from backend
     const [formLoading, setFormLoading] = useState(true);
     const printRef = useRef();
+    const generatingRef = useRef(false);
 
     const currentStudent = students[currentIndex];
     const isLastStudent = currentIndex === students.length - 1;
@@ -68,7 +70,7 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
             motherName: student.parents?.find(p => p.relationship?.toLowerCase() === 'mother')?.name || "",
             fatherName: student.parents?.find(p => p.relationship?.toLowerCase() === 'father')?.name || student.parentName || "",
             dob: student.dob || "",
-            dobInWords: student.dob ? new Date(student.dob).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : "",
+            dobInWords: student.dob ? formatDate(student.dob) : "",
             admissionClass: student.admissionClass || "I",
             standardLeaving: student.class || "",
             dateOfAdmission: student.admissionDate || "",
@@ -88,8 +90,8 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
             nccDetails: "Nil",
             extraCurricular: "Nil",
             generalConduct: "Good",
-            applicationDate: new Date().toISOString().split('T')[0],
-            issueDate: new Date().toISOString().split('T')[0],
+            applicationDate: toTodayDateString(),
+            issueDate: toTodayDateString(),
             reasonForLeaving: "Parents Request",
             remarks: "Nil",
         };
@@ -136,10 +138,9 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
     };
 
     const startGeneration = () => {
-        // Only set the flag; the useEffect below triggers generateAllTCs
-        // which handles both saving to backend and printing in a single loop
         setIsGenerating(true);
         setGenerationProgress(0);
+        generateAllTCs();
     };
 
     const escapeHtmlTitle = (str) => String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -273,10 +274,13 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
             const blob = new Blob([html], { type: 'text/html' });
             const url = URL.createObjectURL(blob);
             const printWindow = window.open(url, '', 'width=800,height=600');
+            const revoke = () => URL.revokeObjectURL(url);
             if (printWindow) {
-                printWindow.addEventListener('afterprint', () => URL.revokeObjectURL(url));
+                printWindow.addEventListener('afterprint', revoke);
+                // Fallback: revoke blob URL even if afterprint never fires (e.g. window closed)
+                const tid = setInterval(() => { if (printWindow.closed) { clearInterval(tid); revoke(); } }, 1000);
             } else {
-                URL.revokeObjectURL(url);
+                revoke();
             }
 
             // Resolve after print dialog opens
@@ -284,14 +288,9 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
         });
     };
 
-    // Effect to handle generation phase
-    useEffect(() => {
-        if (isGenerating) {
-            generateAllTCs();
-        }
-    }, [isGenerating]);
-
     const generateAllTCs = async () => {
+        if (generatingRef.current) return;
+        generatingRef.current = true;
         const errors = [];
         let savedCount = 0;
 
@@ -309,7 +308,7 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
                         method: 'POST',
                         body: JSON.stringify({
                             tcNumber: formData.tcNumber || buildTcNumber(baseNumber, i),
-                            issueDate: formData.issueDate || new Date().toISOString().split('T')[0],
+                            issueDate: formData.issueDate || toTodayDateString(),
                             reasonForLeaving: formData.reasonForLeaving || '',
                             lastClassAttended: formData.standardLeaving || '',
                             daysPresent: parseInt(formData.presentDays, 10) || undefined,
@@ -346,6 +345,7 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
             toast.success(`${savedCount} TC record${savedCount > 1 ? 's' : ''} saved`);
         }
 
+        generatingRef.current = false;
         setTimeout(() => {
             onClose();
         }, 1000);

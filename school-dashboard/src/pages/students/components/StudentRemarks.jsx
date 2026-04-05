@@ -3,8 +3,8 @@ import { useState } from "react";
 import { Button, Card, CardBody, CardHeader, Chip, Drawer, DrawerContent, DrawerHeader, DrawerBody, DrawerFooter, Select, SelectItem, Input, Textarea, Checkbox, Dropdown, DropdownMenu, DropdownTrigger, DropdownItem, Tooltip } from "@heroui/react";
 import { MessageSquare, AlertCircle, Award, CalendarCheck, Heart, Mail, Plus, Edit, Trash2, MoreVertical } from "lucide-react";
 import toast from "react-hot-toast";
-import { getDateLocale } from '../../../i18n/index';
 import { useTranslation } from 'react-i18next';
+import { formatShortDate } from '../../../utils/dateFormatter';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 
 
@@ -224,7 +224,7 @@ export default function StudentRemarks({
                             <Chip size="sm" variant="flat" className="bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400">{t('pages.staffOnly')}</Chip>
                           )}
                           <span className="text-xs text-gray-400 dark:text-zinc-500">
-                            • {remark.authorName || 'System'} • {remark.date ? new Date(remark.date).toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                            • {remark.authorName || 'System'} • {formatShortDate(remark.date)}
                           </span>
                         </div>
                       </div>

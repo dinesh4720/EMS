@@ -6,11 +6,14 @@ import {
   Spinner
 } from "@heroui/react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
 import { Search, Settings, BookOpen, X } from "lucide-react";
 import ClassTeacherAssignmentModal from "./components/ClassTeacherAssignmentModal";
 import { useTranslation } from 'react-i18next';
 
-import { ITEMS_PER_LOAD, AVAILABLE_COLUMNS } from './classesListConstants';
+import { ITEMS_PER_LOAD, AVAILABLE_COLUMNS, COLUMNS_SCHEMA_VERSION } from './classesListConstants';
+import { useApp } from '../../context/AppContext';
+import { toTodayDateString } from '../../utils/dateFormatter';
 import { useClassesListData } from './useClassesListData';
 import { EditColumnsModal } from './components/EditColumnsModal';
 import { EditClassModal } from './components/EditClassModal';
@@ -41,12 +44,22 @@ export default function ClassesList() {
     classSettingsMap,
   } = useClassesListData();
 
+  const { students } = useApp();
+
   const [selectedKeys, setSelectedKeys] = useState(new Set([]));
 
-  // Column visibility state
+  // Column visibility state (versioned to invalidate stale localStorage)
   const [visibleColumns, setVisibleColumns] = useState(() => {
     const saved = safeGetItem('classes_columns');
-    return saved ? JSON.parse(saved) : AVAILABLE_COLUMNS;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.version === COLUMNS_SCHEMA_VERSION && Array.isArray(parsed.columns)) {
+          return parsed.columns;
+        }
+      } catch { /* ignore corrupt data */ }
+    }
+    return AVAILABLE_COLUMNS;
   });
   const [showColumnModal, setShowColumnModal] = useState(false);
 
@@ -60,9 +73,9 @@ export default function ClassesList() {
   const [selectedClassForEdit, setSelectedClassForEdit] = useState(null);
   const [selectedClassForDelete, setSelectedClassForDelete] = useState(null);
 
-  // Save column visibility to localStorage
+  // Save column visibility to localStorage (with schema version)
   useEffect(() => {
-    safeSetItem('classes_columns', JSON.stringify(visibleColumns));
+    safeSetItem('classes_columns', JSON.stringify({ version: COLUMNS_SCHEMA_VERSION, columns: visibleColumns }));
   }, [visibleColumns]);
 
   // Handle row click
@@ -126,6 +139,27 @@ export default function ClassesList() {
     setDeleteClassModal(true);
   };
 
+  const handleDownloadReport = (cls) => {
+    const classStudents = students.filter(s => String(s.classId?._id || s.classId) === String(cls.id));
+    if (classStudents.length === 0) {
+      toast.error(t('toast.error.noStudentsToExport', 'No students to export'));
+      return;
+    }
+    const headers = [t('common.name', 'Name'), t('classes.rollNo', 'Roll No'), t('classes.admissionNo', 'Admission No'), t('common.gender', 'Gender'), t('classes.parentName', 'Parent Name'), t('classes.parentPhone', 'Parent Phone')];
+    const rows = classStudents.map(s => [s.name || '', s.rollNo || '', s.admissionNo || '', s.gender || '', s.parentName || s.fatherName || '', s.parentPhone || '']);
+    const csvContent = [headers.join(','), ...rows.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${cls?.name || 'class'}-${cls?.section || ''}-report-${toTodayDateString()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    toast.success(t('toast.success.reportExported', 'Report exported'));
+  };
+
   // Render a table row item (parent or child).
   // IMPORTANT: We call plain functions (not JSX components) so that
   // HeroUI's collection system receives <TableRow> elements directly.
@@ -174,6 +208,7 @@ export default function ClassesList() {
       onAssignTeacher: handleAssignTeacher,
       onEditClass: handleEditClass,
       onDeleteClass: handleDeleteClass,
+      onDownloadReport: handleDownloadReport,
       onRowClick: () => handleRowClick(item),
       t,
       navigate,

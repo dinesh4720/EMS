@@ -12,6 +12,11 @@ describe('STAFF_ROLES', () => {
     expect(STAFF_ROLES).toContain('Accountant');
   });
 
+  it('includes legacy roles from backend schema', () => {
+    expect(STAFF_ROLES).toContain('Administrative');
+    expect(STAFF_ROLES).toContain('Teaching');
+  });
+
   it('is an array', () => {
     expect(Array.isArray(STAFF_ROLES)).toBe(true);
   });

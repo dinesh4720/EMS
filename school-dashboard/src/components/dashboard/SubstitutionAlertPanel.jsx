@@ -17,6 +17,7 @@ import { request } from '../../services/api';
 import socketService from '../../services/socketServiceEnhanced';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { toTodayDateString } from '../../utils/dateFormatter';
 
 /**
  * SubstitutionAlertPanel - Shows real-time substitution alerts on dashboard
@@ -46,7 +47,7 @@ export default function SubstitutionAlertPanel({ className = '' }) {
   // Fetch alerts
   const fetchAlerts = useCallback(async () => {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = toTodayDateString();
       const response = await request(`/substitution-alerts?date=${today}`);
 
       if (response.success) {

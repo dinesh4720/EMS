@@ -112,7 +112,24 @@ const ResultsEntryModal = ({ examId, onClose }) => {
     }));
   };
 
-  const handleSave = async () => {
+  const buildResultsArray = () => {
+    const user = getStoredUser() || {};
+    return students
+      .filter(student => dirtyStudentIds.has(String(student.id || student._id)))
+      .map(student => {
+        const sid = student.id || student._id;
+        const entry = results[sid] || {};
+        return {
+          studentId: sid,
+          marksObtained: entry.marksObtained || 0,
+          remarks: entry.remarks || '',
+          ...(entry.status === 'absent' ? { status: 'absent' } : {}),
+          enteredBy: user.id
+        };
+      });
+  };
+
+  const handleSave = async ({ forceOverwrite } = {}) => {
     if (!exam) return;
 
     // AUDIT-31: Only send modified students
@@ -124,31 +141,26 @@ const ResultsEntryModal = ({ examId, onClose }) => {
     setSaving(true);
 
     try {
-      const user = getStoredUser() || {};
+      const resultsArray = buildResultsArray();
 
-      const resultsArray = students
-        .filter(student => dirtyStudentIds.has(String(student.id || student._id)))
-        .map(student => {
-          const sid = student.id || student._id;
-          const entry = results[sid] || {};
-          return {
-            studentId: sid,
-            marksObtained: entry.marksObtained || 0,
-            remarks: entry.remarks || '',
-            ...(entry.status === 'absent' ? { status: 'absent' } : {}),
-            enteredBy: user.id
-          };
-        });
-
-      await resultsApi.bulkCreate(resultsArray, examId, exam.classId, loadedAt);
+      await resultsApi.bulkCreate(resultsArray, examId, exam.classId, loadedAt, { forceOverwrite });
 
       toast.success(t('toast.success.resultsSavedSuccessfully'));
       setDirtyStudentIds(new Set());
     } catch (error) {
       console.error('Error saving results:', error);
-      // AUDIT-29: Handle 409 conflict response
-      if (error?.status === 409 || error?.response?.status === 409) {
-        toast.error('Results were updated by another user. Please refresh and try again.');
+      // AUDIT-233: Handle 409 conflict with forceOverwrite option
+      if (error?.status === 409) {
+        const count = error.details?.staleStudentIds?.length || 0;
+        const confirmed = window.confirm(
+          `Results for ${count || 'some'} student(s) were updated by another user since you loaded this page.\n\nClick OK to overwrite with your changes, or Cancel to reload the latest data.`
+        );
+        if (confirmed) {
+          setSaving(false);
+          return handleSave({ forceOverwrite: true });
+        } else {
+          fetchExamAndStudents();
+        }
       } else {
         toast.error(t('toast.error.failedToSaveResults'));
       }

@@ -4,7 +4,7 @@ import {
   Breadcrumbs, BreadcrumbItem, Chip, Divider,
 } from '@heroui/react';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
-import { Settings, Home, Save, RefreshCw, Edit2, X, Check } from 'lucide-react';
+import { Home, Save, RefreshCw, Edit2, X, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { request } from '../../services/api';
 import { PageLayout, MinimalButton } from '../../components/ui';
@@ -110,19 +110,21 @@ export default function CCEGradingPage() {
 
   // ── Co-scholastic toggle ────────────────────────────────────────────────────
   const handleCoScholasticToggle = useCallback(async (idx, newActive) => {
-    const updatedAreas = (config.coScholasticAreas || []).map((a, i) =>
-      i === idx ? { ...a, isActive: newActive } : a
-    );
-    const updated = { ...config, enabled, coScholasticAreas: updatedAreas };
-    setConfig(updated);
+    let updated;
+    setConfig(prev => {
+      const updatedAreas = (prev.coScholasticAreas || []).map((a, i) =>
+        i === idx ? { ...a, isActive: newActive } : a
+      );
+      updated = { ...prev, enabled, coScholasticAreas: updatedAreas };
+      return updated;
+    });
     try {
       await request('/cce/config', {
         method: 'PUT',
         body: JSON.stringify(updated),
       });
-      toast.success(`${updatedAreas[idx].name} ${newActive ? 'activated' : 'deactivated'}`);
+      toast.success(`${updated.coScholasticAreas[idx].name} ${newActive ? 'activated' : 'deactivated'}`);
     } catch {
-      // Revert on error
       setConfig(prev => ({
         ...prev,
         coScholasticAreas: prev.coScholasticAreas.map((a, i) =>
@@ -131,7 +133,7 @@ export default function CCEGradingPage() {
       }));
       toast.error('Failed to update co-scholastic area');
     }
-  }, [config, enabled]);
+  }, [enabled]);
 
   return (
     <div className="animate-fade-in">
@@ -303,7 +305,7 @@ export default function CCEGradingPage() {
                       <div>
                         <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{at.name}</p>
                         <p className="text-xs text-gray-500 dark:text-zinc-400 capitalize">
-                          {at.type} · {at.term?.replace('_', ' ')} · {at.weightage}% weightage · {at.maxMarks} marks
+                          {at.type} · {at.term?.replace(/_/g, ' ')} · {at.weightage}% weightage · {at.maxMarks} marks
                         </p>
                       </div>
                       <Chip
@@ -343,7 +345,7 @@ export default function CCEGradingPage() {
                     >
                       <div>
                         <p className="text-xs font-medium text-gray-800 dark:text-zinc-200">{area.name}</p>
-                        <p className="text-xs text-gray-400 dark:text-zinc-500 capitalize">{area.category?.replace('_', ' ')}</p>
+                        <p className="text-xs text-gray-400 dark:text-zinc-500 capitalize">{area.category?.replace(/_/g, ' ')}</p>
                       </div>
                       <Switch
                         isSelected={area.isActive}
