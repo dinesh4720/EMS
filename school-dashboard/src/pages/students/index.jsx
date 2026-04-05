@@ -231,7 +231,7 @@ export default function StudentsPage() {
   }
 
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div className="flex flex-col h-full min-h-0 overflow-hidden">
       <PageLayout
         tabs={tabs}
         activeTab={activeTab}

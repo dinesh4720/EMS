@@ -435,6 +435,7 @@ export default function StudentsFiltersBar({
                         <DropdownMenu
                             aria-label={t("aria.menus.toggleColumns")}
                             closeOnSelect={false}
+                            onAction={(key) => toggleColumn(key)}
                             className="max-h-[400px] overflow-y-auto"
                         >
                             <DropdownSection title="Show/Hide Columns">
@@ -442,12 +443,13 @@ export default function StudentsFiltersBar({
                                     <DropdownItem
                                         key={column.key}
                                         textValue={column.label}
-                                        onPress={() => toggleColumn(column.key)}
                                     >
-                                        <div className="flex items-center gap-2 w-full pointer-events-none">
+                                        <div className="flex items-center gap-2 w-full">
                                             <Checkbox
                                                 isSelected={visibleColumns.has(column.key)}
                                                 size="sm"
+                                                tabIndex={-1}
+                                                classNames={{ wrapper: "pointer-events-none" }}
                                             />
                                             <span>{column.label}</span>
                                         </div>
