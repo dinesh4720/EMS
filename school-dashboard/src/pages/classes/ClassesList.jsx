@@ -165,13 +165,15 @@ export default function ClassesList() {
   // HeroUI's collection system receives <TableRow> elements directly.
   const renderItem = (item) => {
     if (!item || !item.type || !item.data) {
-      return <TableRow key="invalid-item"><TableCell>{' '}</TableCell></TableRow>;
+      const cols = getVisibleColumns();
+      return <TableRow key="invalid-item">{cols.map((c, i) => <TableCell key={c?.key || i}>{' '}</TableCell>)}</TableRow>;
     }
 
     if (item.type === 'parent') {
       const group = item.data;
       if (!group) {
-        return <TableRow key="empty-parent"><TableCell>{' '}</TableCell></TableRow>;
+        const cols = getVisibleColumns();
+        return <TableRow key="empty-parent">{cols.map((c, i) => <TableCell key={c?.key || i}>{' '}</TableCell>)}</TableRow>;
       }
 
       return renderClassParentRow({
@@ -187,7 +189,8 @@ export default function ClassesList() {
     // Child row - individual section
     const cls = item.data;
     if (!cls || !cls.id) {
-      return <TableRow key="empty-child"><TableCell>{' '}</TableCell></TableRow>;
+      const cols = getVisibleColumns();
+      return <TableRow key="empty-child">{cols.map((c, i) => <TableCell key={c?.key || i}>{' '}</TableCell>)}</TableRow>;
     }
 
     const classKey = `${cls?.name || ''}-${cls?.section || ''}`;
@@ -256,7 +259,7 @@ export default function ClassesList() {
       {/* Table */}
       <div className="overflow-x-auto">
       <Table
-        key={`table-${visibleColumns.map(c => c?.key).join('-')}`}
+        key={`table-${getVisibleColumns().map(c => c?.key).join('-')}`}
         aria-label={t('aria.tables.classesList')}
         selectionMode="multiple"
         selectedKeys={selectedKeys}
@@ -280,8 +283,7 @@ export default function ClassesList() {
             .map((col) => (
               <TableColumn
                 key={col.key}
-                allowsSorting={col.key !== 'actions'}
-               scope="col">
+                allowsSorting={col.key !== 'actions'}>
                 {col.labelKey ? t(col.labelKey, col.label || '') : (col.label || '')}
               </TableColumn>
             ))

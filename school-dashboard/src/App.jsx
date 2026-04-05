@@ -115,8 +115,24 @@ function BeforeSchoolAlert() {
 
 function AuthenticatedApp() {
   const location = useLocation();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth >= 1024);
   const { showOnboarding, setShowOnboarding } = useApp();
+
+  // Auto-collapse sidebar when viewport is too narrow (resize or zoom)
+  useEffect(() => {
+    const COLLAPSE_WIDTH = 1024;
+    const check = () => {
+      const width = document.documentElement.clientWidth;
+      setIsSidebarOpen(width >= COLLAPSE_WIDTH);
+    };
+    window.addEventListener('resize', check);
+    // Also handle visual viewport changes (pinch zoom on some devices)
+    window.visualViewport?.addEventListener('resize', check);
+    return () => {
+      window.removeEventListener('resize', check);
+      window.visualViewport?.removeEventListener('resize', check);
+    };
+  }, []);
 
   // Initialize Owlin tracking
   useOwlinTracking();
@@ -182,7 +198,7 @@ function AuthenticatedApp() {
           <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
         </ErrorBoundary>
         <AiAssistantLayout>
-          <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${isSidebarOpen ? 'ml-[var(--sidebar-width)]' : 'ml-[var(--sidebar-width-collapsed)]'} relative z-10 bg-gray-50 dark:bg-zinc-950`}>
+          <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${isSidebarOpen ? 'ml-[var(--sidebar-width)]' : 'ml-0 lg:ml-[var(--sidebar-width-collapsed)]'} relative z-10 bg-gray-50 dark:bg-zinc-950`}>
             <Topbar isSidebarOpen={isSidebarOpen} />
             <div className="mt-14 flex-1 flex flex-col min-h-0">
               <Suspense fallback={null}>
