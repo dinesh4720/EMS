@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "school-dashboard",
-      "runtimeExecutable": "/bin/bash",
-      "runtimeArgs": ["/Users/dinesh/Documents/GitHub/EMS/school-dashboard/.claude/start-vite.sh"],
+      "runtimeExecutable": "/usr/local/bin/node",
+      "runtimeArgs": ["/Users/dinesh/Documents/GitHub/EMS/node_modules/vite/bin/vite.js", "--port", "5173"],
       "port": 5173,
       "cwd": "/Users/dinesh/Documents/GitHub/EMS/school-dashboard",
       "autoPort": true

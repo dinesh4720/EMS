@@ -29,7 +29,6 @@ const AcademicLayout = lazyWithRetry(() => import("./pages/academics"));
 const FormAssignments = lazyWithRetry(() => import("./pages/intake-forms/FormAssignments"));
 const FormSubmissions = lazyWithRetry(() => import("./pages/intake-forms/FormSubmissions"));
 const EnrollmentFunnel = lazyWithRetry(() => import("./pages/intake-forms/EnrollmentFunnel"));
-const HomeworkPage = lazyWithRetry(() => import("./pages/homework"));
 const InventoryPage = lazyWithRetry(() => import("./pages/inventory"));
 const HostelPage = lazyWithRetry(() => import("./pages/hostel"));
 const TransportPage = lazyWithRetry(() => import("./pages/transport"));
@@ -332,13 +331,6 @@ function AuthenticatedApp() {
                       <RouteEB>
                         <PermissionGuard module="academics">
                           <AcademicLayout />
-                        </PermissionGuard>
-                      </RouteEB>
-                    } />
-                    <Route path="/homework" element={
-                      <RouteEB>
-                        <PermissionGuard module="academics">
-                          <HomeworkPage />
                         </PermissionGuard>
                       </RouteEB>
                     } />

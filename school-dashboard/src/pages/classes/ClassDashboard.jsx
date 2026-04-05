@@ -26,6 +26,7 @@ import { OverviewTab } from './components/OverviewTab';
 import { StudentsTab } from './components/StudentsTab';
 import { FeesTab } from './components/FeesTab';
 import { AcademicsTab } from './components/AcademicsTab';
+import HomeworkTab from './components/HomeworkTab';
 
 export default function ClassDashboard() {
   const { t } = useTranslation();
@@ -148,6 +149,7 @@ export default function ClassDashboard() {
     { key: "attendance", label: t('classes.attendance', 'Attendance') },
     { key: "fees", label: t('classes.fees', 'Fees') },
     { key: "academics", label: t('classes.academics', 'Academics') },
+    { key: "homework", label: t('classes.homework', 'Homework') },
     { key: "timetable", label: t('classes.timeTable', 'Time Table') },
     { key: "settings", label: t('common.settings', 'Settings') },
   ];
@@ -299,6 +301,9 @@ export default function ClassDashboard() {
             {activeTab === "attendance" && <ErrorBoundary key="attendance"><Attendance classId={id} /></ErrorBoundary>}
             {activeTab === "academics" && (
               <ErrorBoundary key="academics"><AcademicsTab id={id} cls={cls} classesEnhancedApi={classesEnhancedApi} /></ErrorBoundary>
+            )}
+            {activeTab === "homework" && (
+              <ErrorBoundary key="homework"><HomeworkTab id={id} cls={cls} /></ErrorBoundary>
             )}
           </div>
 

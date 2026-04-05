@@ -6,7 +6,7 @@ import { useApp } from '../../context/AppContext';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 
-const CreateHomeworkModal = ({ onClose, onSuccess, editingHomework }) => {
+const CreateHomeworkModal = ({ onClose, onSuccess, editingHomework, defaultClassId }) => {
   const { t } = useTranslation();
   const { currentAcademicYear } = useApp();
   const [loading, setLoading] = useState(false);
@@ -34,7 +34,7 @@ const CreateHomeworkModal = ({ onClose, onSuccess, editingHomework }) => {
       title: '',
       description: '',
       subject: new Set([]),
-      classId: new Set([]),
+      classId: defaultClassId ? new Set([defaultClassId]) : new Set([]),
       dueDate: '',
       totalMarks: 100,
       sentToParents: true,

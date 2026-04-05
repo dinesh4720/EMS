@@ -23,7 +23,7 @@ const navigationItems = [
 
   // ── Academics ──
   { name: "Academics", path: "/academics", icon: FileText, category: "Navigation", keywords: "exams results marks grades" },
-  { name: "Homework", path: "/homework", icon: FileText, category: "Navigation", keywords: "assignments tasks classwork" },
+  { name: "Homework", path: "/classes", icon: FileText, category: "Navigation", keywords: "assignments tasks classwork homework tab" },
   { name: "PTM", path: "/ptm", icon: Users, category: "Navigation", keywords: "parent teacher meeting conference" },
 
   // ── Communication ──

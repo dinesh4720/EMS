@@ -23,8 +23,8 @@ const COLUMN_WIDTHS = {
     academicPerformance: 140,
 };
 
-/** Columns hidden on mobile (< md) to keep table usable */
-const MOBILE_HIDDEN_COLUMNS = new Set(["parentInfo", "attendance", "academicPerformance"]);
+/** Columns hidden on smaller screens to prevent horizontal scroll */
+const MOBILE_HIDDEN_COLUMNS = new Set(["parentInfo", "attendance", "academicPerformance", "feeStatus"]);
 
 /**
  * StudentsTableVirtualized
@@ -126,7 +126,7 @@ function StudentsTableVirtualized({
 
                         {/* Student name (sticky left) */}
                         <th
-                            className="bg-white dark:bg-zinc-900 text-gray-500 dark:text-zinc-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-gray-200 dark:border-zinc-700 select-none pl-3 pr-3 sticky left-0 z-20 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800/50 w-[160px] min-w-[160px] md:w-[220px] md:min-w-[220px]"
+                            className="bg-white dark:bg-zinc-900 text-gray-500 dark:text-zinc-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-gray-200 dark:border-zinc-700 select-none pl-3 pr-3 sticky left-0 z-20 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800/50 w-[40%] lg:w-[220px]"
                             onClick={() =>
                                 setSortDescriptor((prev) => ({
                                     column: "name",
@@ -155,8 +155,7 @@ function StudentsTableVirtualized({
                                         column.key === "class"
                                             ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800/50"
                                             : ""
-                                    } ${MOBILE_HIDDEN_COLUMNS.has(column.key) ? "hidden md:table-cell" : ""}`}
-                                    style={{ width: COLUMN_WIDTHS[column.key] ?? 100 }}
+                                    } ${MOBILE_HIDDEN_COLUMNS.has(column.key) ? "hidden lg:table-cell" : ""}`}
                                     onClick={
                                         column.key === "class"
                                             ? () =>
@@ -303,7 +302,7 @@ function StudentsTableVirtualized({
                                         {/* Student name (sticky left) */}
                                         <StudentNameCell
                                             student={student}
-                                            className={`py-4 border-b border-gray-200 dark:border-zinc-700 select-text pl-3 pr-3 sticky left-0 z-10 transition-colors w-[160px] min-w-[160px] md:w-[220px] md:min-w-[220px] ${bgClass}`}
+                                            className={`py-4 border-b border-gray-200 dark:border-zinc-700 select-text pl-3 pr-3 sticky left-0 z-10 transition-colors w-[40%] lg:w-[220px] ${bgClass}`}
                                             searchQuery={searchQuery}
                                         />
 
@@ -314,7 +313,7 @@ function StudentsTableVirtualized({
                                                     col.key !== "name" && col.key !== "actions"
                                             )
                                             .map((column) => {
-                                                const mobileHidden = MOBILE_HIDDEN_COLUMNS.has(column.key) ? " hidden md:table-cell" : "";
+                                                const mobileHidden = MOBILE_HIDDEN_COLUMNS.has(column.key) ? " hidden lg:table-cell" : "";
                                                 const baseTd = `py-4 border-b border-gray-200 dark:border-zinc-700 select-text px-3 transition-colors${mobileHidden} ${bgClass}`;
 
                                                 if (column.key === "class") {

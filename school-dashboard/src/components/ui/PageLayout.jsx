@@ -17,7 +17,7 @@ export default function PageLayout({
   const hasTabs = tabs && tabs.length > 0;
 
   return (
-    <div className={cn("bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-lg h-full flex flex-col", className)}>
+    <div className={cn("bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-lg h-full flex flex-col min-w-0 overflow-hidden", className)}>
       {/* Tabs */}
       {hasTabs && (
         <div className="px-6 py-3 border-b border-gray-100 dark:border-zinc-800 shrink-0">
@@ -54,7 +54,7 @@ export default function PageLayout({
       )}
 
       {/* Content */}
-      <div className={cn("flex-1 flex flex-col min-h-0", !noPadding && "p-6")}>
+      <div className={cn("flex-1 flex flex-col min-h-0 overflow-hidden", !noPadding && "p-6")}>
         {children}
       </div>
     </div>

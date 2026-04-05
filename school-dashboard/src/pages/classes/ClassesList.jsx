@@ -216,7 +216,7 @@ export default function ClassesList() {
   };
 
   return (
-    <div className="w-full flex flex-col">
+    <div className="w-full flex flex-col overflow-hidden">
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-background border-b border-default-200 py-4 -mx-6 -mt-6 px-6">
         {/* Left Side - Search */}
@@ -254,6 +254,7 @@ export default function ClassesList() {
       </div>
 
       {/* Table */}
+      <div className="overflow-x-auto">
       <Table
         key={`table-${visibleColumns.map(c => c?.key).join('-')}`}
         aria-label={t('aria.tables.classesList')}
@@ -265,7 +266,7 @@ export default function ClassesList() {
         removeWrapper
         radius="none"
         classNames={{
-          base: "-mx-6 overflow-visible [&_table]:w-[calc(100%+3rem)] [&_table]:border-spacing-0 [&_table]:select-text",
+          base: "[&_table]:w-full [&_table]:border-spacing-0 [&_table]:select-text",
           thead: "[&>tr]:first:shadow-none [&>tr>th:first-child]:pl-6 [&>tr>th:first-child]:pr-3 [&>tr>th:first-child]:w-12",
           th: "bg-transparent text-default-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200 last:pr-6 hover:bg-default-100 transition-colors cursor-pointer [&_svg]:text-default-300 [&:hover_svg]:text-default-500 [&_svg]:opacity-100 first:hover:bg-transparent first:cursor-default select-none",
           td: "py-0 border-b border-default-200 group-data-[last=true]:border-none last:pr-6 select-text transition-colors",
@@ -280,7 +281,6 @@ export default function ClassesList() {
               <TableColumn
                 key={col.key}
                 allowsSorting={col.key !== 'actions'}
-                style={{ width: col.width }}
                scope="col">
                 {col.labelKey ? t(col.labelKey, col.label || '') : (col.label || '')}
               </TableColumn>
@@ -300,6 +300,7 @@ export default function ClassesList() {
           {renderItem}
         </TableBody>
       </Table>
+      </div>
 
       {/* Lazy Loading Indicator */}
       <div ref={loaderRef} className="flex justify-center py-4">
@@ -313,7 +314,7 @@ export default function ClassesList() {
       <EditColumnsModal
         isOpen={showColumnModal}
         onClose={() => setShowColumnModal(false)}
-        getVisibleColumns={getVisibleColumns}
+        getVisibleColumns={getVisibleColumns()}
         toggleColumn={toggleColumn}
       />
 
