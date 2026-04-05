@@ -21,6 +21,10 @@ export const homeworkApi = {
     const queryString = params ? new URLSearchParams(params).toString() : '';
     return request(`/homework${queryString ? `?${queryString}` : ''}`);
   },
+  getByClass: (classId, params) => {
+    const queryString = params ? new URLSearchParams(params).toString() : '';
+    return request(`/homework/class/${classId}${queryString ? `?${queryString}` : ''}`);
+  },
   getById: (id) => request(`/homework/${id}`),
   create: (data) => request('/homework', { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => request(`/homework/${id}`, { method: 'PUT', body: JSON.stringify(data) }),

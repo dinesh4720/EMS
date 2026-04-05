@@ -2,7 +2,7 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Check
 import { useTranslation } from 'react-i18next';
 import { AVAILABLE_COLUMNS } from '../classesListConstants';
 
-export function EditColumnsModal({ isOpen, onClose, getVisibleColumns, toggleColumn }) {
+export function EditColumnsModal({ isOpen, onClose, getVisibleColumns: visibleCols = [], toggleColumn }) {
   const { t } = useTranslation();
 
   return (
@@ -14,7 +14,7 @@ export function EditColumnsModal({ isOpen, onClose, getVisibleColumns, toggleCol
             {AVAILABLE_COLUMNS.filter(col => col && typeof col === 'object' && col.key).map(col => (
               <Checkbox size="sm"
                 key={col.key}
-                isSelected={getVisibleColumns().find(c => c?.key === col.key)?.visible ?? true}
+                isSelected={(Array.isArray(visibleCols) ? visibleCols : []).find(c => c?.key === col.key)?.visible ?? true}
                 isDisabled={col.fixed}
                 onValueChange={() => col?.key && toggleColumn(col.key)}
               >

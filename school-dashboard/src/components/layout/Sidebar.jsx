@@ -11,7 +11,7 @@ import {
   LayoutDashboard, Users, BookOpen, MessageSquare, IndianRupee, Settings,
   ChevronsLeft, GraduationCap, Calendar, BarChart3, DoorOpen,
   Sun, Moon, LogOut, ChevronRight,
-  Layers, Award, ClipboardList, Package, Building2, Bus, Library,
+  Layers, Award, Package, Building2, Bus, Library,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useAuth } from "../../context/AuthContext";
@@ -39,7 +39,6 @@ const modules = {
       title: "Academics",
       items: [
         { icon: Award, label: "Academics", href: "/academics" },
-        { icon: ClipboardList, label: "Homework", href: "/homework" },
         { icon: Users, label: "PTM", href: "/ptm" },
       ]
     },
