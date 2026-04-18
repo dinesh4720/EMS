@@ -47,6 +47,11 @@ export async function attemptTokenRefresh() {
   return _refreshPromise;
 }
 
+// [AUDIT-857] In-flight request deduplication map for GET/HEAD requests.
+// Prevents duplicate network requests when the same endpoint is called concurrently
+// (e.g., React StrictMode double-mounts or multiple components requesting the same data).
+const _inflightRequests = new Map();
+
 function parseRetryAfterMs(retryAfterHeader) {
   if (!retryAfterHeader) {
     return null;
@@ -65,14 +70,21 @@ function parseRetryAfterMs(retryAfterHeader) {
   return Math.max(retryAt - Date.now(), 0);
 }
 
-export async function request(endpoint, options = {}) {
+export function request(endpoint, options = {}) {
   const url = `${API_URL}${endpoint}`;
   const method = options.method || 'GET';
+
+  // [AUDIT-857] Return the existing in-flight promise for concurrent GET/HEAD calls
+  // to avoid duplicate network requests for the same endpoint.
+  if ((method === 'GET' || method === 'HEAD') && _inflightRequests.has(url)) {
+    return _inflightRequests.get(url);
+  }
 
   // Create the actual request function
   const makeRequest = async () => {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+    const timeoutMs = options.timeout ?? 15000;
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     // If an external signal is provided, abort the internal controller when it fires.
     // [AUDIT-573] Re-check after listener registration to close the race window
@@ -119,7 +131,7 @@ export async function request(endpoint, options = {}) {
             // [AUDIT-155] Create a NEW AbortController for the retry — the original may
             // already be aborted (its signal stays aborted forever).
             const retryController = new AbortController();
-            const retryTimeoutId = setTimeout(() => retryController.abort(), 15000);
+            const retryTimeoutId = setTimeout(() => retryController.abort(), timeoutMs);
 
             try {
               // Re-fetch auth headers since the token was just refreshed
@@ -163,7 +175,7 @@ export async function request(endpoint, options = {}) {
             }
           }
           // Refresh failed or retried request still 401 — log out
-          console.warn('⚠️ 401 Unauthorized - token refresh failed, clearing session');
+          logger.warn('⚠️ 401 Unauthorized - token refresh failed, clearing session');
           clearStoredUser();
           queryClient.clear();
         }
@@ -176,12 +188,12 @@ export async function request(endpoint, options = {}) {
           throw rateLimitError;
         }
 
-        // If conflict error (409), throw with detailed information
-        if (response.status === 409) {
+        // If conflict error (409 or 422 with ConflictError body), throw with detailed information
+        if (response.status === 409 || (response.status === 422 && error.type === 'ConflictError')) {
           const conflictError = new Error(error.message || error.error || 'Conflict detected');
           conflictError.type = 'ConflictError';
           conflictError.details = error.details || error;
-          conflictError.status = 409;
+          conflictError.status = response.status;
           throw conflictError;
         }
 
@@ -190,8 +202,21 @@ export async function request(endpoint, options = {}) {
           logger.error('Validation details:', JSON.stringify(error.details, null, 2));
         }
 
-        const finalError = new Error(error.error || error.message || `Request failed with status ${response.status}`);
+        // For validation errors (400), include the first field-level message so the
+        // user sees something actionable (e.g. "Must be a valid email address")
+        // rather than the generic "Validation failed" wrapper.
+        let errorMessage = error.error || error.message || `Request failed with status ${response.status}`;
+        if (
+          response.status === 400 &&
+          Array.isArray(error.details) &&
+          error.details.length > 0 &&
+          error.details[0].message
+        ) {
+          errorMessage = error.details[0].message;
+        }
+        const finalError = new Error(errorMessage);
         finalError.status = response.status;
+        finalError.details = error.details;
         throw finalError;
       }
 
@@ -225,21 +250,31 @@ export async function request(endpoint, options = {}) {
   // Retries are handled by React Query's queryClient (see queryClient.js).
   // Do NOT add retryRequest() here — that creates a double retry layer
   // (up to 3 * 3 = 9 attempts per failed request).
-  try {
-    return await requestQueue.add(makeRequest);
-  } catch (error) {
-    // Only log errors that aren't rate limiting, 404s, or aborts (reduce console spam)
-    if (
-      error.name !== 'AbortError' &&
-      !error.message?.includes('rate limit') &&
-      !error.message?.includes('Too many requests') &&
-      error.status !== 404 &&
-      !error.message?.includes('not found')
-    ) {
-      logger.error(`❌ API Error: ${url}`, error.message || error);
+  const promise = (async () => {
+    try {
+      return await requestQueue.add(makeRequest);
+    } catch (error) {
+      // Only log errors that aren't rate limiting, 404s, or aborts (reduce console spam)
+      if (
+        error.name !== 'AbortError' &&
+        !error.message?.includes('rate limit') &&
+        !error.message?.includes('Too many requests') &&
+        error.status !== 404 &&
+        !error.message?.includes('not found')
+      ) {
+        logger.error(`❌ API Error: ${url}`, error.message || error);
+      }
+      throw error;
     }
-    throw error;
+  })();
+
+  // [AUDIT-857] Register and auto-clean GET/HEAD promises in the dedup map.
+  if (method === 'GET' || method === 'HEAD') {
+    _inflightRequests.set(url, promise);
+    promise.finally(() => _inflightRequests.delete(url));
   }
+
+  return promise;
 }
 
 /**
@@ -271,11 +306,14 @@ export async function requestUpload(endpoint, formData) {
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
 
-          if (response.status === 401 && !isRetry) {
-            const refreshed = await attemptTokenRefresh();
-            if (refreshed) {
-              return doUpload(true);
+          if (response.status === 401) {
+            if (!isRetry) {
+              const refreshed = await attemptTokenRefresh();
+              if (refreshed) {
+                return doUpload(true);
+              }
             }
+            // Either refresh failed, or retry still got 401 — clear session
             clearStoredUser();
             queryClient.clear();
           }
@@ -322,11 +360,14 @@ export async function requestBlob(endpoint) {
         });
 
         if (!response.ok) {
-          if (response.status === 401 && !isRetry) {
-            const refreshed = await attemptTokenRefresh();
-            if (refreshed) {
-              return doFetch(true);
+          if (response.status === 401) {
+            if (!isRetry) {
+              const refreshed = await attemptTokenRefresh();
+              if (refreshed) {
+                return doFetch(true);
+              }
             }
+            // Either refresh failed, or retry still got 401 — clear session
             clearStoredUser();
             queryClient.clear();
           }

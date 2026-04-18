@@ -15,9 +15,10 @@ import {
   CardBody,
   Chip,
 } from '@heroui/react';
-import { Save, Bell, Clock, DollarSign, Calendar, BookOpen, Users } from 'lucide-react';
+import { Save, Bell, DollarSign, Calendar, BookOpen, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { getStoredUser } from '../../../../utils/authSession';
 
 const REMINDER_TYPES = [
   { key: 'fee', label: 'Fee Reminder', icon: DollarSign, color: 'warning' },
@@ -110,11 +111,11 @@ export default function ReminderForm({
 
   const handleRecipientChange = (type) => {
     setFormData(prev => {
-      const exists = prev.recipients.find(r => r.type === type);
+      const exists = prev.recipients.find(rec => rec.type === type);
       if (exists) {
         return {
           ...prev,
-          recipients: prev.recipients.filter(r => r.type !== type)
+          recipients: prev.recipients.filter(rec => rec.type !== type)
         };
       }
       return {
@@ -128,7 +129,7 @@ export default function ReminderForm({
     setFormData(prev => ({
       ...prev,
       channels: prev.channels.includes(channel)
-        ? prev.channels.filter(c => c !== channel)
+        ? prev.channels.filter(ch => ch !== channel)
         : [...prev.channels, channel]
     }));
   };
@@ -158,15 +159,16 @@ export default function ReminderForm({
       return;
     }
 
+    const user = getStoredUser();
     const payload = {
       ...formData,
-      createdBy: 'current_user_id', // Replace with actual user ID
+      createdBy: user?.id || user?._id,
     };
 
     onSave(payload);
   };
 
-  const selectedTypeData = REMINDER_TYPES.find(t => t.key === formData.type);
+  const selectedTypeData = REMINDER_TYPES.find(rt => rt.key === formData.type);
   const TypeIcon = selectedTypeData?.icon || Bell;
 
   return (
@@ -288,7 +290,7 @@ export default function ReminderForm({
               ].map((recipient) => (
                 <Checkbox size="sm"
                   key={recipient.key}
-                  isSelected={formData.recipients.some(r => r.type === recipient.key)}
+                  isSelected={formData.recipients.some(rec => rec.type === recipient.key)}
                   onValueChange={() => { handleRecipientChange(recipient.key); setErrors(prev => ({ ...prev, recipients: '' })); }}
                 >
                   {recipient.label}
