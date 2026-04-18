@@ -19,22 +19,31 @@ import {
   Popover,
   PopoverTrigger,
   PopoverContent,
+  Spinner,
 } from "@heroui/react";
-import { Search, X, IndianRupee, Download, Printer, Bell, SlidersHorizontal } from "lucide-react";
+import { IndianRupee, Download, Printer, Bell, SlidersHorizontal } from "lucide-react";
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { feesApi, studentsApi, studentFeesApi } from "../../services/api";
 import { showErrorToast } from "../../utils/errorHandling";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { formatShortDate, toTodayDateString } from '../../utils/dateFormatter';
+import SearchInput from '../../components/ui/SearchInput';
+import FilterToolbar from '../../components/ui/FilterToolbar';
+import MobileResponsive from '../../components/ui/MobileResponsive';
 import { getFeeHeadBalance } from '../students/utils/studentHelpers';
 import { getDateLocale } from '../../i18n/index';
 import { getStoredUser } from '../../utils/authSession';
 import { useApp } from '../../context/AppContext';
+import { useCurrency } from '../../context/hooks/useCurrency';
+import logger from '../../utils/logger';
+
 
 
 export default function Payments() {
   const { t } = useTranslation();
+  const { fmt } = useCurrency();
+  const paymentModeLabels = { cash: t('pages.cash1'), online: t('pages.online1'), card: t('pages.card1'), cheque: t('pages.cheque1') };
   const { schoolSettings } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
@@ -60,6 +69,7 @@ export default function Payments() {
   const [feeStructures, setFeeStructures] = useState({});
   const [loading, setLoading] = useState(true);
   const [studentsLoading, setStudentsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({
@@ -84,14 +94,16 @@ export default function Payments() {
     try {
       setLoading(true);
       const filters = {};
-      if (dateFrom) filters.dateFrom = dateFrom;
-      if (dateTo) filters.dateTo = dateTo;
+      // Backend /fees/payments reads startDate/endDate; sending dateFrom/dateTo
+      // caused the filter to be silently ignored by Express before this fix.
+      if (dateFrom) filters.startDate = dateFrom;
+      if (dateTo) filters.endDate = dateTo;
       if (amountMin) filters.amountMin = amountMin;
       if (amountMax) filters.amountMax = amountMax;
       const { payments: paymentsData } = await feesApi.getPayments(filters);
       setPayments(paymentsData);
     } catch (error) {
-      console.error('Error fetching payments:', error);
+      logger.error('Error fetching payments:', error);
       toast.error(t('toast.error.failedToLoadPayments', 'Failed to load payments'));
     } finally {
       setLoading(false);
@@ -102,7 +114,8 @@ export default function Payments() {
     fetchPayments();
   }, [fetchPayments]);
 
-  const loadStudents = useCallback(async (pageToLoad) => {
+  // getIgnore: optional callback returning true when the caller has been superseded
+  const loadStudents = useCallback(async (pageToLoad, getIgnore = () => false) => {
     try {
       setStudentsLoading(true);
       const response = await studentsApi.list({
@@ -112,6 +125,7 @@ export default function Payments() {
         search: debouncedSearchQuery || undefined,
         ...(statusFilter !== 'all' && { feeStatus: statusFilter }),
       });
+      if (getIgnore()) return;
       const studentList = response.data || [];
       setStudents(studentList);
       setPagination(response.pagination || {
@@ -128,31 +142,36 @@ export default function Payments() {
         try {
           const studentIds = studentList.map(s => s.id || s._id);
           const structures = await studentFeesApi.getBatch(studentIds);
-          setFeeStructures(structures || {});
+          if (!getIgnore()) setFeeStructures(structures || {});
         } catch (feeErr) {
-          console.error('Error fetching fee structures:', feeErr);
-          setFeeStructures({});
+          logger.error('Error fetching fee structures:', feeErr);
+          if (!getIgnore()) setFeeStructures({});
         }
       } else {
-        setFeeStructures({});
+        if (!getIgnore()) setFeeStructures({});
       }
     } catch (error) {
-      console.error('Error fetching students:', error);
+      if (getIgnore()) return;
+      logger.error('Error fetching students:', error);
       toast.error(t('toast.error.failedToLoadStudentsPleaseRefresh'));
       setStudents([]);
       setFeeStructures({});
     } finally {
-      setStudentsLoading(false);
-      setInitialLoadDone(true);
+      if (!getIgnore()) { setStudentsLoading(false); setInitialLoadDone(true); }
     }
-  }, [debouncedSearchQuery, statusFilter]);
+  }, [debouncedSearchQuery, statusFilter, t]);
 
+  // Reset to page 1 when filters change; the page change will retrigger the fetch effect below.
   useEffect(() => {
     setCurrentPage(1);
   }, [debouncedSearchQuery, statusFilter]);
 
+  // Fetch students on page/filter change. The `ignore` flag cancels any in-flight
+  // request that fired with a stale currentPage before the page-reset committed.
   useEffect(() => {
-    loadStudents(currentPage);
+    let ignore = false;
+    loadStudents(currentPage, () => ignore);
+    return () => { ignore = true; };
   }, [currentPage, loadStudents]);
 
   // Transform students to payment format
@@ -180,6 +199,7 @@ export default function Payments() {
       return {
         id: studentId,
         student: s.name,
+        photo: s.photo || s.picture || '',
         class: s.class || s.className,
         rollNo: s.rollNo,
         classId: s.classId,
@@ -276,6 +296,7 @@ export default function Payments() {
   const handleCollect = async () => {
     if (!selectedStudent || totalSelected === 0) return;
     setCollectingPayment(true);
+    const loadingToast = toast.loading(t('fees.processing1'));
     try {
       const student = students.find(s => s.id === selectedStudent.id);
       const currentUser = getStoredUser();
@@ -294,13 +315,15 @@ export default function Payments() {
       };
 
       const newPayment = await feesApi.createPayment(paymentData);
-      setPayments([newPayment, ...payments]);
-      await loadStudents(currentPage);
+      await Promise.all([fetchPayments(), loadStudents(currentPage)]);
+
+      toast.dismiss(loadingToast);
 
       setReceiptData({
-        receiptNumber: newPayment.receiptNumber,
+        receiptNumber: newPayment?.receiptNumber,
         amount: totalSelected,
         student: selectedStudent.student,
+        photo: selectedStudent.photo || '',
         class: selectedStudent.class,
         paymentMode,
         date: formatShortDate(new Date()),
@@ -313,8 +336,11 @@ export default function Payments() {
       setSelectedFees([]);
       setReceiptModalOpen(true);
     } catch (error) {
-      console.error('Error creating payment:', error);
-      toast.error(t('toast.error.failedToCollectPaymentPleaseTryAgain'));
+      logger.error('Error creating payment:', error);
+      toast.error(
+        error?.message || t('toast.error.failedToCollectPaymentPleaseTryAgain'),
+        { id: loadingToast }
+      );
     } finally {
       setCollectingPayment(false);
     }
@@ -323,18 +349,18 @@ export default function Payments() {
   const handleSendReminder = async (payment) => {
     const studentId = payment.studentId?._id || payment.studentId || payment.id;
     if (!studentId) {
-      toast.error('Cannot send reminder: student not found');
+      toast.error(t('toast.error.cannotSendReminderStudentNotFound'));
       return;
     }
-    const loadingToast = toast.loading(`Sending reminder to ${payment.student}'s parents...`);
+    const loadingToast = toast.loading(t('fees.sendingReminderParents', { name: payment.student }));
     try {
       await studentsApi.sendReminder(studentId, {
         type: 'fee',
         message: `Fee payment reminder for ${payment.student}. Please pay at your earliest convenience.`,
       });
-      toast.success(`Reminder sent to ${payment.student}'s parents`, { id: loadingToast });
+      toast.success(t('toast.success.reminderSentToParents', { name: payment.student }), { id: loadingToast });
     } catch (error) {
-      toast.error(error.message || 'Failed to send reminder', { id: loadingToast });
+      toast.error(error.message || t('toast.error.failedToSendReminder'), { id: loadingToast });
     }
   };
 
@@ -344,11 +370,24 @@ export default function Payments() {
   const schoolAddress = schoolSettings?.address || schoolSettings?.schoolAddress || '';
 
   const generateReceiptPDF = (data) => {
-    const feeHeadsHtml = Array.isArray(data.feeHeads) && data.feeHeads.length > 0
-      ? `<table class="fee-table"><thead><tr><th style="text-align:left">Fee Head</th><th style="text-align:right">Amount</th></tr></thead><tbody>${data.feeHeads.map(h =>
+    // Normalize to array — lump-sum payments have no line items (feeHeads undefined/null)
+    const lineItems = Array.isArray(data.feeHeads) ? data.feeHeads : [];
+    const lineItemsTotal = lineItems.reduce((sum, h) => sum + (h.amount || 0), 0);
+    const displayTotal = lineItemsTotal > 0 ? lineItemsTotal : (data.amount || 0);
+    const feeHeadsHtml = lineItems.length > 0
+      ? `<table class="fee-table"><thead><tr><th style="text-align:left">${t('fees.feeHeadLabel')}</th><th style="text-align:right">${t('fees.amountLabel')}</th></tr></thead><tbody>${lineItems.map(h =>
           `<tr><td>${escapeHtml(h.name || h.head || 'Fee')}</td><td style="text-align:right">&#8377;${(h.amount||0).toLocaleString()}</td></tr>`
-        ).join('')}<tr class="total-row"><td><strong>Total</strong></td><td style="text-align:right"><strong>&#8377;${(data.amount||0).toLocaleString()}</strong></td></tr></tbody></table>`
+        ).join('')}<tr class="total-row"><td><strong>${t('common.total')}</strong></td><td style="text-align:right"><strong>&#8377;${displayTotal.toLocaleString()}</strong></td></tr></tbody></table>`
       : '';
+
+    // Student initial for photo placeholder (safe — already through escapeHtml on render)
+    const initial = escapeHtml((data.student || 'S')[0].toUpperCase());
+    // Photo HTML: img with onerror fallback to initial placeholder.
+    // Avoids any crash when the student photo URL returns 404 — the img is hidden and
+    // the sibling placeholder div is shown instead. Never use addImage() on an unverified URL.
+    const photoHtml = data.photo
+      ? `<img class="student-photo" src="${escapeHtml(data.photo)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/><div class="student-initial" style="display:none">${initial}</div>`
+      : `<div class="student-initial">${initial}</div>`;
 
     const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"/><title>Fee Receipt - ${escapeHtml(data.receiptNumber||'')}</title>
@@ -363,9 +402,11 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#1a1a1a;paddi
 .amount-block .lbl{font-size:12px;color:#666;margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
 .receipt-no{text-align:center;font-size:13px;color:#888;margin-bottom:28px}
 .rows{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px}
-.row{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid #f0f0f0}
+.row{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid #f0f0f0}
 .row:last-child{border-bottom:none}
-.row .lbl{color:#6b7280}.row .val{font-weight:500}
+.row .lbl{color:#6b7280}.row .val{font-weight:500;display:flex;align-items:center;gap:8px}
+.student-photo{width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid #e5e7eb}
+.student-initial{width:28px;height:28px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#6b7280;flex-shrink:0}
 .fee-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:13px}
 .fee-table th{color:#6b7280;font-weight:500;padding:8px 0;border-bottom:2px solid #e5e7eb}
 .fee-table td{padding:6px 0;border-bottom:1px solid #f0f0f0}
@@ -374,17 +415,17 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#1a1a1a;paddi
 @media print{body{padding:20px}}
 </style></head>
 <body>
-<div class="logo-row"><div><h1>${escapeHtml(schoolName || 'Fee Receipt')}</h1><p>${escapeHtml(schoolAddress || 'Payment Confirmation')}</p></div><span class="badge">&#x2713; Paid</span></div>
-<div class="amount-block"><div class="amt">&#8377;${(data.amount||0).toLocaleString()}</div><div class="lbl">Amount Received</div></div>
-<div class="receipt-no">Receipt No: <strong>${escapeHtml(data.receiptNumber||'—')}</strong></div>
+<div class="logo-row"><div><h1>${escapeHtml(schoolName || 'Fee Receipt')}</h1><p>${escapeHtml(schoolAddress || 'Payment Confirmation')}</p></div><span class="badge">&#x2713; ${t('fees.receiptPaid')}</span></div>
+<div class="amount-block"><div class="amt">&#8377;${(data.amount||0).toLocaleString()}</div><div class="lbl">${t('fees.amountReceived')}</div></div>
+<div class="receipt-no">${t('pages.receiptNo')}: <strong>${escapeHtml(data.receiptNumber||'—')}</strong></div>
 <div class="rows">
-<div class="row"><span class="lbl">Student</span><span class="val">${escapeHtml(data.student)}</span></div>
-<div class="row"><span class="lbl">Class</span><span class="val">${escapeHtml(data.class)}</span></div>
-<div class="row"><span class="lbl">Payment Mode</span><span class="val" style="text-transform:capitalize">${escapeHtml(data.paymentMode)}</span></div>
-<div class="row"><span class="lbl">Date</span><span class="val">${escapeHtml(data.date)}</span></div>
+<div class="row"><span class="lbl">${t('pages.student')}</span><span class="val">${photoHtml}${escapeHtml(data.student)}</span></div>
+<div class="row"><span class="lbl">${t('pages.class1')}</span><span class="val">${escapeHtml(data.class)}</span></div>
+<div class="row"><span class="lbl">${t('pages.mode1')}</span><span class="val" style="text-transform:capitalize">${escapeHtml(data.paymentMode)}</span></div>
+<div class="row"><span class="lbl">${t('pages.date2')}</span><span class="val">${escapeHtml(data.date)}</span></div>
 </div>
 ${feeHeadsHtml}
-<div class="footer">Thank you — keep this receipt for your records.</div>
+<div class="footer">${t('fees.receiptThankYou')}</div>
 </body></html>`;
     // Use a hidden iframe instead of window.open() to avoid popup blockers
     const iframe = document.createElement('iframe');
@@ -415,12 +456,12 @@ ${feeHeadsHtml}
         const { payments: fetched } = await feesApi.getPayments({ studentId: payment.id });
         studentPayments = fetched || [];
       } catch {
-        toast.error('Failed to load payment record.');
+        toast.error(t('toast.error.failedToLoadPaymentRecord'));
         return;
       }
     }
     if (studentPayments.length === 0) {
-      toast.error('No payment record found for this student.');
+      toast.error(t('toast.error.noPaymentRecordFound'));
       return;
     }
     const latest = studentPayments[0];
@@ -428,6 +469,7 @@ ${feeHeadsHtml}
       receiptNumber: latest.receiptNumber || latest._id,
       amount: latest.amount,
       student: payment.student,
+      photo: payment.photo || '',
       class: payment.class,
       paymentMode: latest.paymentMode || 'cash',
       date: latest.paymentDate ? formatShortDate(latest.paymentDate) : formatShortDate(new Date()),
@@ -435,26 +477,34 @@ ${feeHeadsHtml}
     });
   };
 
-  const handleExportData = () => {
-    const headers = ['Student', 'Class', 'Roll No', 'Paid', 'Pending', 'Status', 'Last Payment'];
-    const rows = filteredPayments.map(p => [
-      p.student, p.class, p.rollNo, p.paid, p.pending, p.status, p.lastPayment || 'N/A'
-    ]);
+  const handleExportData = async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    // Yield to event loop so the UI re-renders with disabled state before heavy work
+    await new Promise(resolve => setTimeout(resolve, 0));
+    try {
+      const headers = [t('common.student', 'Student'), t('common.class'), t('common.rollNo'), t('pages.paid2'), t('pages.pending2'), t('pages.sTATUS', 'Status'), t('pages.lASTPayment', 'Last Payment')];
+      const rows = filteredPayments.map(p => [
+        p.student, p.class, p.rollNo, p.paid, p.pending, p.status, p.lastPayment || 'N/A'
+      ]);
 
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(v => `"${v ?? ''}"`).join(','))
-    ].join('\n');
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(v => `"${v ?? ''}"`).join(','))
+      ].join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `fee-payments-${toTodayDateString()}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `fee-payments-${toTodayDateString()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const clearFilters = () => {
@@ -479,11 +529,11 @@ ${feeHeadsHtml}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 -mx-6 -mt-6 px-6 pt-6">
         <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
           <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">{t('pages.collected1')}</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">₹{totalCollected.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{fmt(totalCollected)}</p>
         </div>
         <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
           <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">{t('pages.pending2')}</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">₹{totalPending.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{fmt(totalPending)}</p>
         </div>
         <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
           <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">{t('pages.overdueStudents')}</p>
@@ -496,27 +546,15 @@ ${feeHeadsHtml}
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center border-b border-gray-200 dark:border-zinc-800 py-4 -mx-6 px-6 mb-6">
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="flex items-center gap-2 w-full sm:max-w-[250px] px-3 py-2 bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700 focus-within:border-gray-400 dark:focus-within:border-zinc-600 transition-all duration-200">
-            <Search size={16} className="text-gray-400 dark:text-zinc-500" />
-            <input
-              type="search"
-              name="payments-search"
-              autoComplete="off"
-              data-form-type="other"
-              placeholder={t('pages.searchStudent')}
-              className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-zinc-100 placeholder:text-gray-500 dark:placeholder:text-zinc-500"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery("")} className="p-0.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded">
-                <X size={14} className="text-gray-400 dark:text-zinc-500" />
-              </button>
-            )}
-          </div>
-
+      <FilterToolbar
+        className="items-start sm:items-center"
+        left={<>
+          <SearchInput
+            value={searchQuery}
+            onChange={setSearchQuery}
+            name="payments-search"
+            placeholder={t('pages.searchStudent')}
+          />
           <Popover isOpen={showFilters} onOpenChange={setShowFilters}>
             <PopoverTrigger>
               <button className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700 transition-all text-sm">
@@ -534,27 +572,26 @@ ${feeHeadsHtml}
                   <div>
                     <label className="text-xs text-gray-500 dark:text-zinc-400 mb-1 block">{t('pages.dateRangeLastPayment')}</label>
                     <div className="flex gap-2">
-                      <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="flex-1 px-2 py-1.5 text-sm border border-gray-200 dark:border-zinc-800 rounded-md dark:bg-zinc-950 dark:text-zinc-100" />
-                      <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="flex-1 px-2 py-1.5 text-sm border border-gray-200 dark:border-zinc-800 rounded-md dark:bg-zinc-950 dark:text-zinc-100" />
+                      <input type="date" aria-label={t('pages.dateFrom', 'Date from')} value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="flex-1 px-2 py-1.5 text-sm border border-gray-200 dark:border-zinc-800 rounded-md dark:bg-zinc-950 dark:text-zinc-100" />
+                      <input type="date" aria-label={t('pages.dateTo', 'Date to')} value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="flex-1 px-2 py-1.5 text-sm border border-gray-200 dark:border-zinc-800 rounded-md dark:bg-zinc-950 dark:text-zinc-100" />
                     </div>
                   </div>
                   <div>
                     <label className="text-xs text-gray-500 dark:text-zinc-400 mb-1 block">{t('pages.pendingAmountRange')}</label>
                     <div className="flex gap-2">
-                      <input type="number" value={amountMin} onChange={(e) => setAmountMin(e.target.value)} className="flex-1 px-2 py-1.5 text-sm border border-gray-200 dark:border-zinc-800 rounded-md dark:bg-zinc-950 dark:text-zinc-100" placeholder={t('pages.min')} />
-                      <input type="number" value={amountMax} onChange={(e) => setAmountMax(e.target.value)} className="flex-1 px-2 py-1.5 text-sm border border-gray-200 dark:border-zinc-800 rounded-md dark:bg-zinc-950 dark:text-zinc-100" placeholder={t('pages.max1')} />
+                      <input type="number" aria-label={t('pages.minimumAmount', 'Minimum amount')} value={amountMin} onChange={(e) => setAmountMin(e.target.value)} className="flex-1 px-2 py-1.5 text-sm border border-gray-200 dark:border-zinc-800 rounded-md dark:bg-zinc-950 dark:text-zinc-100" placeholder={t('pages.min')} />
+                      <input type="number" aria-label={t('pages.maximumAmount', 'Maximum amount')} value={amountMax} onChange={(e) => setAmountMax(e.target.value)} className="flex-1 px-2 py-1.5 text-sm border border-gray-200 dark:border-zinc-800 rounded-md dark:bg-zinc-950 dark:text-zinc-100" placeholder={t('pages.max1')} />
                     </div>
                   </div>
                 </div>
                 <button onClick={clearFilters} className="w-full py-2 text-sm text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100">
-                  Clear Filters
+                  {t('pages.clearFilters')}
                 </button>
               </div>
             </PopoverContent>
           </Popover>
-        </div>
-
-        <div className="flex gap-2 w-full sm:w-auto">
+        </>}
+        right={<>
           <Select
             size="sm"
             placeholder={t('pages.allStatus1')}
@@ -570,19 +607,19 @@ ${feeHeadsHtml}
             <SelectItem key="paid">{t('pages.paid2')}</SelectItem>
             <SelectItem key="pending">{t('pages.pending2')}</SelectItem>
           </Select>
-
           <button
             onClick={handleExportData}
-            className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700 transition-all text-sm"
+            disabled={isExporting}
+            className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Download size={14} className="text-gray-500 dark:text-zinc-400" />
-            <span className="text-gray-700 dark:text-zinc-300">{t('pages.export1')}</span>
+            {isExporting ? <Spinner size="sm" className="w-3.5 h-3.5" /> : <Download size={14} className="text-gray-500 dark:text-zinc-400" />}
+            <span className="text-gray-700 dark:text-zinc-300">{isExporting ? t('pages.exporting', 'Exporting...') : t('pages.export1')}</span>
           </button>
-        </div>
-      </div>
+        </>}
+      />
 
       {/* Table */}
-      <div className={`border border-gray-200 dark:border-zinc-800 rounded-lg overflow-hidden -mx-6 sm:mx-0 transition-opacity duration-200 ${studentsLoading ? 'opacity-50 pointer-events-none' : ''}`}>
+      <MobileResponsive className={`border border-gray-200 dark:border-zinc-800 rounded-lg overflow-hidden -mx-6 sm:mx-0 transition-opacity duration-200 ${studentsLoading ? 'opacity-50 pointer-events-none' : ''}`}>
         <Table
           aria-label={t('aria.misc.feePayments')}
           removeWrapper
@@ -623,15 +660,15 @@ ${feeHeadsHtml}
                       >
                         {payment.student}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-zinc-400">Class {payment.class}</p>
+                      <p className="text-xs text-gray-500 dark:text-zinc-400">{t('common.class')} {payment.class}</p>
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <span className="text-sm font-mono text-gray-700 dark:text-zinc-300">₹{payment.paid.toLocaleString()}</span>
+                  <span className="text-sm font-mono text-gray-700 dark:text-zinc-300">{fmt(payment.paid)}</span>
                 </TableCell>
                 <TableCell>
-                  <span className="text-sm font-mono text-gray-700 dark:text-zinc-300">₹{payment.pending.toLocaleString()}</span>
+                  <span className="text-sm font-mono text-gray-700 dark:text-zinc-300">{fmt(payment.pending)}</span>
                 </TableCell>
                 <TableCell>
                   <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium border rounded ${
@@ -644,7 +681,7 @@ ${feeHeadsHtml}
                     <span className={`w-1.5 h-1.5 rounded-full ${
                       payment.status === "paid" ? "bg-green-500" : payment.status === "not_assigned" ? "bg-gray-400" : "bg-yellow-500"
                     }`}></span>
-                    {payment.status === "not_assigned" ? "Fee not assigned" : payment.status}
+                    {payment.status === "not_assigned" ? t('fees.feeNotAssigned') : payment.status}
                   </span>
                 </TableCell>
                 <TableCell>
@@ -658,7 +695,7 @@ ${feeHeadsHtml}
                           onClick={() => setSelectedStudent(payment)}
                           className="px-3 py-1.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-all text-xs font-medium"
                         >
-                          Collect
+                          {t('pages.collect')}
                         </button>
                         <button
                           onClick={() => handleSendReminder(payment)}
@@ -672,7 +709,7 @@ ${feeHeadsHtml}
                       <button
                         onClick={() => handleDownloadReceipt(payment)}
                         className="p-1.5 bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-900 transition-all"
-                        title="Download receipt"
+                        title={t('pages.download')}
                       >
                         <Download size={14} className="text-gray-500 dark:text-zinc-400" />
                       </button>
@@ -683,11 +720,11 @@ ${feeHeadsHtml}
             ))}
           </TableBody>
         </Table>
-      </div>
+      </MobileResponsive>
 
       <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
         <span className="text-gray-500 dark:text-zinc-400 text-sm">
-          Page {currentPage} of {pagination.totalPages} ({pagination.totalItems} students)
+          {t('fees.paginationInfo', { current: currentPage, total: pagination.totalPages, count: pagination.totalItems })}
         </span>
         {pagination.totalPages > 1 && (
           <div className="flex items-center gap-2">
@@ -696,14 +733,14 @@ ${feeHeadsHtml}
               disabled={!pagination.hasPrevPage || studentsLoading}
               className="px-3 py-1.5 text-sm border border-gray-200 dark:border-zinc-800 rounded hover:bg-gray-50 dark:hover:bg-zinc-900 disabled:opacity-50 dark:text-zinc-300"
             >
-              Previous
+              {t('pages.previous')}
             </button>
             <button
               onClick={() => setCurrentPage((prev) => prev + 1)}
               disabled={!pagination.hasNextPage || studentsLoading}
               className="px-3 py-1.5 text-sm border border-gray-200 dark:border-zinc-800 rounded hover:bg-gray-50 dark:hover:bg-zinc-900 disabled:opacity-50 dark:text-zinc-300"
             >
-              Next
+              {t('pages.next')}
             </button>
           </div>
         )}
@@ -717,9 +754,9 @@ ${feeHeadsHtml}
               <ModalHeader className="border-b border-gray-200 dark:border-zinc-800 px-6 py-4">
                 <div className="flex justify-between items-center w-full">
                   <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">
-                    Collect Fee — {selectedStudent?.student}
+                    {t('fees.collectFee', { name: selectedStudent?.student })}
                   </h3>
-                  <span className="text-sm text-gray-500 dark:text-zinc-400">Class {selectedStudent?.class}</span>
+                  <span className="text-sm text-gray-500 dark:text-zinc-400">{t('common.class')} {selectedStudent?.class}</span>
                 </div>
               </ModalHeader>
               <ModalBody className="p-0">
@@ -743,7 +780,7 @@ ${feeHeadsHtml}
                           <p className="text-xs text-gray-500 dark:text-zinc-400">{fee.month}</p>
                         </div>
                       </div>
-                      <span className="text-sm font-mono text-gray-700 dark:text-zinc-300">₹{fee.amount.toLocaleString()}</span>
+                      <span className="text-sm font-mono text-gray-700 dark:text-zinc-300">{fmt(fee.amount)}</span>
                     </label>
                   ))}
                 </div>
@@ -763,14 +800,14 @@ ${feeHeadsHtml}
                                 : "bg-white dark:bg-zinc-950 text-gray-600 dark:text-zinc-400 border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700"
                             }`}
                           >
-                            {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                            {paymentModeLabels[mode] ?? (mode.charAt(0).toUpperCase() + mode.slice(1))}
                           </button>
                         ))}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.total1')}</span>
-                      <span className="text-xl font-bold text-gray-900 dark:text-zinc-100">₹{totalSelected.toLocaleString()}</span>
+                      <span className="text-xl font-bold text-gray-900 dark:text-zinc-100">{fmt(totalSelected)}</span>
                     </div>
                   </div>
                 </div>
@@ -781,14 +818,14 @@ ${feeHeadsHtml}
                   disabled={collectingPayment}
                   className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 transition-all disabled:opacity-50"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   onClick={handleCollect}
                   disabled={selectedFees.length === 0 || collectingPayment}
                   className="px-4 py-2 text-sm font-medium text-white bg-gray-900 border border-gray-900 rounded-lg hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {collectingPayment ? 'Processing...' : `Collect ₹${totalSelected.toLocaleString()}`}
+                  {collectingPayment ? t('fees.processing1') : t('fees.collectAmount', { amount: totalSelected.toLocaleString() })}
                 </button>
               </ModalFooter>
             </>
@@ -809,9 +846,9 @@ ${feeHeadsHtml}
                   </div>
                   <p className="text-gray-600 dark:text-zinc-400 text-sm font-medium">{t('pages.paymentSuccessful')}</p>
                   <p className="text-3xl font-bold text-gray-900 dark:text-zinc-100">
-                    ₹{(receiptData?.amount ?? 0).toLocaleString()}
+                    {fmt(receiptData?.amount ?? 0)}
                   </p>
-                  <p className="text-xs text-gray-400 dark:text-zinc-500">Receipt No: {receiptData?.receiptNumber}</p>
+                  <p className="text-xs text-gray-400 dark:text-zinc-500">{t('pages.receiptNo')}: {receiptData?.receiptNumber}</p>
                   <div className="border-t border-gray-200 dark:border-zinc-800 my-4"></div>
                   <div className="text-left space-y-2 bg-gray-50 dark:bg-zinc-900 p-4 rounded-lg border border-gray-200 dark:border-zinc-800">
                     <div className="flex justify-between text-sm">
@@ -833,12 +870,12 @@ ${feeHeadsHtml}
                   </div>
                   {receiptData?.feeHeads?.length > 0 && (
                     <div className="text-left mt-3 bg-gray-50 dark:bg-zinc-900 p-4 rounded-lg border border-gray-200 dark:border-zinc-800">
-                      <p className="text-xs text-gray-500 dark:text-zinc-400 font-medium mb-2 uppercase tracking-wider">Fee Breakdown</p>
+                      <p className="text-xs text-gray-500 dark:text-zinc-400 font-medium mb-2 uppercase tracking-wider">{t('pages.feeBreakdown')}</p>
                       <div className="space-y-1.5">
                         {receiptData.feeHeads.map((h, i) => (
                           <div key={i} className="flex justify-between text-sm">
                             <span className="text-gray-600 dark:text-zinc-400">{h.name}</span>
-                            <span className="text-gray-900 dark:text-zinc-100 font-mono">₹{(h.amount||0).toLocaleString()}</span>
+                            <span className="text-gray-900 dark:text-zinc-100 font-mono">{fmt(h.amount || 0)}</span>
                           </div>
                         ))}
                       </div>
@@ -848,7 +885,7 @@ ${feeHeadsHtml}
               </ModalBody>
               <ModalFooter className="border-t border-gray-200 dark:border-zinc-800 gap-3">
                 <button
-                  onClick={() => window.print()}
+                  onClick={() => receiptData && generateReceiptPDF(receiptData)}
                   className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 transition-all"
                 >
                   <Printer size={14} />
@@ -865,7 +902,7 @@ ${feeHeadsHtml}
                   onClick={onClose}
                   className="px-4 py-2 text-sm font-medium text-white bg-gray-900 border border-gray-900 rounded-lg hover:bg-gray-800 transition-all"
                 >
-                  Done
+                  {t('pages.done')}
                 </button>
               </ModalFooter>
             </>
