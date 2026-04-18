@@ -1,12 +1,15 @@
 import { request } from '../../services/api.js';
-import { useState, useEffect } from "react";
-import { Card, CardHeader, CardBody, Button, Input, Select, SelectItem, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Switch, Divider, Textarea, Badge } from "@heroui/react";
-import { Plus, Edit, Trash2, IndianRupee, Copy, Eye, Save, Layers, FolderTree } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardHeader, CardBody, Button, Input, Select, SelectItem, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Switch, Divider, Textarea } from "@heroui/react";
+import { Plus, Edit, Trash2, IndianRupee, Copy, Save, Layers, FolderTree } from "lucide-react";
 import toast from "react-hot-toast";
-import { CURRENT_ACADEMIC_YEAR } from "../../utils/constants";
+import { useApp } from "../../context/AppContext";
+import { useCurrency } from '../../context/hooks/useCurrency';
 import { useTranslation } from 'react-i18next';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
+import logger from '../../utils/logger';
+
 
 
 const SECTIONS = [
@@ -28,7 +31,16 @@ const CATEGORIES = ['Academic', 'Transport', 'Extra-curricular', 'Hostel', 'Othe
 
 export default function FeeTemplatesManagement() {
   const { t } = useTranslation();
+  const { fmt } = useCurrency();
+  const { currentAcademicYear } = useApp();
   const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
+  const CATEGORY_LABELS = {
+    Academic: t('fees.category.academic'),
+    Transport: t('fees.category.transport'),
+    'Extra-curricular': t('fees.category.extraCurricular'),
+    Hostel: t('fees.category.hostel'),
+    Other: t('fees.category.other'),
+  };
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -43,24 +55,23 @@ export default function FeeTemplatesManagement() {
   });
 
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const { isOpen: isPreviewOpen, onOpen: onPreviewOpen, onClose: onPreviewClose } = useDisclosure();
 
-  useEffect(() => {
-    fetchTemplates();
-  }, []);
-
-  const fetchTemplates = async () => {
+  const fetchTemplates = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await request(`/fee-templates?academicYear=${CURRENT_ACADEMIC_YEAR}`);
+      const data = await request(`/fee-templates?academicYear=${currentAcademicYear}`);
       setTemplates(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('Failed to fetch templates:', error);
+      logger.error('Failed to fetch templates:', error);
       toast.error(t('toast.error.failedToLoadFeeTemplates'));
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentAcademicYear, t]);
+
+  useEffect(() => {
+    fetchTemplates();
+  }, [fetchTemplates]);
 
   const handleOpen = (template = null) => {
     if (template) {
@@ -101,7 +112,7 @@ export default function FeeTemplatesManagement() {
     }
 
     // Validate all fee heads have non-empty names
-    const emptyNameHead = formData.feeHeads.find(h => !h.name?.trim());
+    const emptyNameHead = formData.feeHeads.find(head => !head.name?.trim());
     if (emptyNameHead) {
       toast.error(t('toast.error.allFeeHeadsMustHaveName', 'All fee heads must have a name'));
       return;
@@ -121,11 +132,11 @@ export default function FeeTemplatesManagement() {
         body: JSON.stringify(payload)
       });
 
-      toast.success(selectedTemplate ? 'Template updated successfully' : 'Template created successfully');
+      toast.success(selectedTemplate ? t('toast.success.templateUpdatedSuccessfully') : t('toast.success.templateCreatedSuccessfully'));
       onClose();
       fetchTemplates();
     } catch (error) {
-      console.error('Failed to save template:', error);
+      logger.error('Failed to save template:', error);
       toast.error(error.message || t('toast.error.failedToSaveTemplate'));
     } finally {
       setSaving(false);
@@ -133,9 +144,23 @@ export default function FeeTemplatesManagement() {
   };
 
   const handleDelete = async (id) => {
+    let usageInfo = null;
+    try {
+      usageInfo = await request(`/fee-templates/${id}/usage`);
+    } catch {
+      // proceed without usage count if fetch fails
+    }
+
+    let message = t('confirm.deleteFeeTemplate');
+    if (usageInfo?.studentCount > 0) {
+      message += ' ' + t('fees.templateUsedByStudents', { studentCount: usageInfo.studentCount, structureCount: usageInfo.structureCount });
+    } else if (usageInfo?.structureCount > 0) {
+      message += ' ' + t('fees.templateUsedByStructures', { structureCount: usageInfo.structureCount });
+    }
+
     showConfirm({
       title: t('pages.deleteFeeTemplate', 'Delete Fee Template'),
-      message: t('confirm.deleteFeeTemplate'),
+      message,
       variant: 'danger',
       confirmText: t('pages.delete', 'Delete'),
       onConfirm: async () => {
@@ -145,7 +170,7 @@ export default function FeeTemplatesManagement() {
           toast.success(t('toast.success.templateDeletedSuccessfully'));
           fetchTemplates();
         } catch (error) {
-          console.error('Failed to delete template:', error);
+          logger.error('Failed to delete template:', error);
           toast.error(error.message || t('toast.error.failedToDeleteTemplate'));
         }
       },
@@ -213,7 +238,7 @@ export default function FeeTemplatesManagement() {
       toast.success(t('toast.success.templateDuplicatedSuccessfully'));
       fetchTemplates();
     } catch (error) {
-      console.error('Failed to duplicate template:', error);
+      logger.error('Failed to duplicate template:', error);
       toast.error(t('toast.error.failedToDuplicateTemplate'));
     }
   };
@@ -260,14 +285,14 @@ export default function FeeTemplatesManagement() {
           startContent={<Plus size={18} />}
           onPress={() => handleOpen()}
         >
-          Create Template
+          {t('pages.createTemplate')}
         </Button>
       </div>
 
       {/* Templates Grid by Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {SECTIONS.map((section) => {
-          const sectionTemplates = templates.filter(t => t.section === section.key);
+          const sectionTemplates = templates.filter(tmpl => tmpl.section === section.key);
           return (
             <Card key={section.key} className="shadow-sm border border-default-200">
               <CardHeader className="flex gap-3 px-5 py-4 bg-default-50/50">
@@ -275,8 +300,8 @@ export default function FeeTemplatesManagement() {
                   <FolderTree size={24} />
                 </div>
                 <div className="flex flex-col">
-                  <h3 className="text-lg font-bold text-default-900">{section.label}</h3>
-                  <p className="text-xs text-default-500">{sectionTemplates.length} template(s)</p>
+                  <h3 className="text-lg font-bold text-default-900">{t('fees.section.' + section.key)}</h3>
+                  <p className="text-xs text-default-500">{t('fees.templateCount', { count: sectionTemplates.length })}</p>
                 </div>
               </CardHeader>
               <Divider />
@@ -343,19 +368,19 @@ export default function FeeTemplatesManagement() {
                         </div>
                         <div className="bg-success-50 rounded-lg p-3">
                           <p className="text-xs text-success-600 uppercase tracking-wider mb-1">{t('pages.annualFee')}</p>
-                          <p className="text-lg font-bold text-success-700">₹{(template.totalAnnualFee || 0).toLocaleString()}</p>
+                          <p className="text-lg font-bold text-success-700">{fmt(template.totalAnnualFee || 0)}</p>
                         </div>
                       </div>
 
                       <div className="flex flex-wrap gap-1">
-                        {template.feeHeads?.slice(0, 3).map((head, idx) => (
+                        {template.feeHeads?.slice(0, 3).map((head) => (
                           <Chip key={head._id || head.name} size="sm" variant="flat" className="text-xs">
                             {head.name}
                           </Chip>
                         ))}
                         {template.feeHeads?.length > 3 && (
                           <Chip size="sm" variant="flat" className="text-xs">
-                            +{template.feeHeads.length - 3} more
+                            {t('fees.moreCount', { count: template.feeHeads.length - 3 })}
                           </Chip>
                         )}
                       </div>
@@ -379,7 +404,7 @@ export default function FeeTemplatesManagement() {
                 <Layers size={24} />
               </div>
               <div>
-                <h3 className="text-lg font-bold">{selectedTemplate ? 'Edit Fee Template' : 'Create Fee Template'}</h3>
+                <h3 className="text-lg font-bold">{selectedTemplate ? t('pages.editFeeTemplate') : t('pages.createFeeTemplate')}</h3>
                 <p className="text-xs text-default-500">{t('pages.defineFeeStructureForASection')}</p>
               </div>
             </div>
@@ -390,9 +415,9 @@ export default function FeeTemplatesManagement() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label={t('pages.templateName')}
-                placeholder={`e.g., Primary Section ${CURRENT_ACADEMIC_YEAR}`}
+                placeholder={`e.g., Primary Section ${currentAcademicYear}`}
                 value={formData.name}
-                onValueChange={(v) => setFormData({ ...formData, name: v })}
+                onValueChange={(val) => setFormData({ ...formData, name: val })}
                 variant="bordered"
                 isRequired
               />
@@ -402,8 +427,8 @@ export default function FeeTemplatesManagement() {
                 selectedKeys={[formData.section]}
                 onChange={(e) => setFormData({ ...formData, section: e.target.value })}
               >
-                {SECTIONS.map(s => (
-                  <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
+                {SECTIONS.map(sec => (
+                  <SelectItem key={sec.key} value={sec.key}>{t('fees.section.' + sec.key)}</SelectItem>
                 ))}
               </Select>
             </div>
@@ -412,7 +437,7 @@ export default function FeeTemplatesManagement() {
               label={t('pages.description1')}
               placeholder={t('pages.briefDescriptionOfThisFeeTemplate')}
               value={formData.description}
-              onValueChange={(v) => setFormData({ ...formData, description: v })}
+              onValueChange={(val) => setFormData({ ...formData, description: val })}
               variant="bordered"
               minRows={2}
             />
@@ -433,7 +458,7 @@ export default function FeeTemplatesManagement() {
                   startContent={<Plus size={16} />}
                   onPress={addFeeHead}
                 >
-                  Add Fee Head
+                  {t('pages.addFeeHead')}
                 </Button>
               </div>
 
@@ -446,7 +471,7 @@ export default function FeeTemplatesManagement() {
                 {formData.feeHeads.map((head, index) => (
                   <div key={head._id || head.name || index} className="p-4 bg-default-50 rounded-xl border border-default-200">
                     <div className="flex items-center justify-between mb-4">
-                      <h5 className="font-semibold text-default-700">Fee Head #{index + 1}</h5>
+                      <h5 className="font-semibold text-default-700">{t('fees.feeHeadNum', { num: index + 1 })}</h5>
                       <Button
                         isIconOnly
                         size="sm"
@@ -463,7 +488,7 @@ export default function FeeTemplatesManagement() {
                         label={t('pages.feeHeadName')}
                         placeholder={t('fees.feeHeadNamePlaceholder')}
                         value={head.name}
-                        onValueChange={(v) => updateFeeHead(index, 'name', v)}
+                        onValueChange={(val) => updateFeeHead(index, 'name', val)}
                         variant="bordered"
                         size="sm"
                       />
@@ -475,7 +500,7 @@ export default function FeeTemplatesManagement() {
                         size="sm"
                       >
                         {CATEGORIES.map(cat => (
-                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                          <SelectItem key={cat} value={cat}>{CATEGORY_LABELS[cat] || cat}</SelectItem>
                         ))}
                       </Select>
                       <Select
@@ -486,7 +511,7 @@ export default function FeeTemplatesManagement() {
                         size="sm"
                       >
                         {FREQUENCIES.map(freq => (
-                          <SelectItem key={freq.key} value={freq.key}>{freq.label}</SelectItem>
+                          <SelectItem key={freq.key} value={freq.key}>{t('fees.frequency.' + freq.key)}</SelectItem>
                         ))}
                       </Select>
                     </div>
@@ -494,10 +519,10 @@ export default function FeeTemplatesManagement() {
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mt-3">
                       <Input
                         type="number"
-                        label="Amount (₹)"
+                        label={t('fees.amountLabel')}
                         placeholder={t('fees.amountPlaceholder')}
                         value={head.amount}
-                        onValueChange={(v) => updateFeeHead(index, 'amount', Math.max(0, parseInt(v) || 0))}
+                        onValueChange={(val) => updateFeeHead(index, 'amount', Math.max(0, parseInt(val) || 0))}
                         variant="bordered"
                         startContent={<IndianRupee size={16} className="text-default-400" />}
                         size="sm"
@@ -507,7 +532,7 @@ export default function FeeTemplatesManagement() {
                         label={t('pages.dueDay')}
                         placeholder={t('fees.dueDayPlaceholder')}
                         value={head.dueDay}
-                        onValueChange={(v) => updateFeeHead(index, 'dueDay', parseInt(v) || 10)}
+                        onValueChange={(val) => updateFeeHead(index, 'dueDay', parseInt(val) || 10)}
                         variant="bordered"
                         size="sm"
                       />
@@ -515,7 +540,7 @@ export default function FeeTemplatesManagement() {
                         <Switch
                           size="sm"
                           isSelected={head.mandatory}
-                          onValueChange={(v) => updateFeeHead(index, 'mandatory', v)}
+                          onValueChange={(val) => updateFeeHead(index, 'mandatory', val)}
                         >
                           <span className="text-sm">{t('pages.mandatory')}</span>
                         </Switch>
@@ -524,7 +549,7 @@ export default function FeeTemplatesManagement() {
                         <Switch
                           size="sm"
                           isSelected={head.refundable}
-                          onValueChange={(v) => updateFeeHead(index, 'refundable', v)}
+                          onValueChange={(val) => updateFeeHead(index, 'refundable', val)}
                         >
                           <span className="text-sm">{t('pages.refundable')}</span>
                         </Switch>
@@ -542,7 +567,7 @@ export default function FeeTemplatesManagement() {
                       <p className="text-xs text-success-600">{t('pages.sumOfAllFeeHeadsAnnualized')}</p>
                     </div>
                     <p className="text-2xl font-bold text-success-700">
-                      ₹{calculateTotalAnnualFee().toLocaleString()}
+                      {fmt(calculateTotalAnnualFee())}
                     </p>
                   </div>
                 </div>
@@ -552,7 +577,7 @@ export default function FeeTemplatesManagement() {
 
           <ModalFooter className="pt-2">
             <Button variant="light" onPress={onClose} className="font-medium">
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               color="primary"
@@ -562,7 +587,7 @@ export default function FeeTemplatesManagement() {
               className="font-medium shadow-md"
               startContent={<Save size={18} />}
             >
-              {selectedTemplate ? 'Update Template' : 'Create Template'}
+              {selectedTemplate ? t('pages.updateTemplate') : t('pages.createTemplate')}
             </Button>
           </ModalFooter>
         </ModalContent>
