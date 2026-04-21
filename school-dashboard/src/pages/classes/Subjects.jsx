@@ -8,12 +8,14 @@ import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { useNavigate } from "react-router-dom";
 import { useValidatedParams } from "../../hooks/useValidatedParams";
 import {
-  BookOpen, Plus, AlertCircle, Clock
+  BookOpen, Plus, AlertCircle, Clock, CheckCircle2, AlertTriangle
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import logger from '../../utils/logger';
+import StatCard from '../../components/ui/StatCard';
+import EmptyState from '../../components/ui/EmptyState';
 
 
 export default function Subjects() {
@@ -83,21 +85,25 @@ export default function Subjects() {
         </div>
         <Card className="border-default-200">
           <CardBody className="py-8 space-y-4">
-            <BookOpen size={48} className="mx-auto text-default-300" />
-            <p className="text-default-500 text-center">{t('pages.pleaseSelectAClassToViewItsSubjects')}</p>
-            <Select
-              label={t('pages.selectClass')}
-              placeholder={t('pages.chooseAClass')}
-              variant="bordered"
-              className="max-w-xs mx-auto"
-              onChange={(e) => setSelectedClassId(e.target.value)}
+            <EmptyState
+              icon={BookOpen}
+              title={t('pages.pleaseSelectAClassToViewItsSubjects')}
+              size="md"
             >
-              {(classes || []).map((cls) => (
-                <SelectItem key={cls._id} value={cls._id}>
-                  {cls.name}{cls.section ? ` - ${cls.section}` : ''}
-                </SelectItem>
-              ))}
-            </Select>
+              <Select
+                label={t('pages.selectClass')}
+                placeholder={t('pages.chooseAClass')}
+                variant="bordered"
+                className="max-w-xs mx-auto"
+                onChange={(e) => setSelectedClassId(e.target.value)}
+              >
+                {(classes || []).map((cls) => (
+                  <SelectItem key={cls._id} value={cls._id}>
+                    {cls.name}{cls.section ? ` - ${cls.section}` : ''}
+                  </SelectItem>
+                ))}
+              </Select>
+            </EmptyState>
           </CardBody>
         </Card>
       </div>
@@ -267,38 +273,48 @@ export default function Subjects() {
 
       {/* Curriculum Health Summary */}
       {subjects.length > 0 && (
-        <div className="grid grid-cols-3 gap-4 mb-4">
-          <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-default-200">
-            <p className="text-xs text-default-500">{t('classes.totalSubjects', 'Total Subjects')}</p>
-            <p className="text-2xl font-semibold text-default-900">{subjects.length}</p>
-          </div>
-          <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-default-200">
-            <p className="text-xs text-green-600">{t('classes.onTrack', 'On Track')}</p>
-            <p className="text-2xl font-semibold text-green-700">{onTrackCount}</p>
-            <p className="text-[11px] text-default-400">{t('classes.fiftyPlusProgress', '50%+ progress')}</p>
-          </div>
-          <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-default-200">
-            <p className="text-xs text-amber-600">{t('classes.behindSchedule', 'Behind Schedule')}</p>
-            <p className="text-2xl font-semibold text-amber-700">{behindCount}</p>
-            <p className="text-[11px] text-default-400">{t('classes.belowFifty', 'Below 50%')}</p>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+          <StatCard
+            label={t('classes.totalSubjects', 'Total Subjects')}
+            value={subjects.length}
+            icon={BookOpen}
+            color="gray"
+          />
+          <StatCard
+            label={t('classes.onTrack', 'On Track')}
+            value={onTrackCount}
+            subtext={t('classes.fiftyPlusProgress', '50%+ progress')}
+            icon={CheckCircle2}
+            color="success"
+          />
+          <StatCard
+            label={t('classes.behindSchedule', 'Behind Schedule')}
+            value={behindCount}
+            subtext={t('classes.belowFifty', 'Below 50%')}
+            icon={AlertTriangle}
+            color="warning"
+          />
         </div>
       )}
 
       {/* Subjects Table */}
       {subjects.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center bg-default-50/50 rounded-lg border border-dashed border-default-200">
-          <BookOpen size={48} className="text-default-300 mb-4" />
-          <p className="text-default-500 font-medium">{t('pages.noSubjectsAssignedYet')}</p>
-          <Button
-            color="primary"
-            variant="flat"
-            size="sm"
-            className="mt-4"
-            onPress={() => setAddSubjectModal(true)}
-          >
-            {t('classes.addFirstSubject', 'Add First Subject')}
-          </Button>
+        <div className="bg-default-50/50 rounded-lg border border-dashed border-default-200">
+          <EmptyState
+            icon={BookOpen}
+            title={t('pages.noSubjectsAssignedYet')}
+            size="lg"
+            action={
+              <Button
+                color="primary"
+                variant="flat"
+                size="sm"
+                onPress={() => setAddSubjectModal(true)}
+              >
+                {t('classes.addFirstSubject', 'Add First Subject')}
+              </Button>
+            }
+          />
         </div>
       ) : (
         <Table
@@ -549,9 +565,12 @@ export default function Subjects() {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8 bg-default-50 rounded-lg">
-                    <AlertCircle size={24} className="mx-auto text-default-300 mb-2" />
-                    <p className="text-default-500">{t('pages.noChaptersFound')}</p>
+                  <div className="bg-default-50 rounded-lg">
+                    <EmptyState
+                      icon={AlertCircle}
+                      title={t('pages.noChaptersFound')}
+                      size="sm"
+                    />
                   </div>
                 )}
               </div>

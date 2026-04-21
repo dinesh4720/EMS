@@ -3,7 +3,7 @@ import logger from "../../utils/logger";
 import {
   IndianRupee, Users, Clock,
   BookOpen, CheckCircle2, Star,
-  ArrowLeft, AlertCircle, MessageSquare,
+  ArrowLeft, MessageSquare,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useValidatedParams } from "../../hooks/useValidatedParams";
@@ -16,6 +16,9 @@ import { useTranslation } from 'react-i18next';
 import { DetailPageSkeleton } from '../../components/skeletons/PageSkeletons';
 import SkeletonTable from '../../components/skeletons/SkeletonTable';
 import ErrorBoundary from '../../components/ui/ErrorBoundary';
+import Alert from '../../components/ui/Alert';
+import ErrorState from '../../components/ui/ErrorState';
+import Chip from '../../components/ui/Chip';
 
 // Extracted components (always-visible sidebar/header — static imports)
 import { ClassDashboardHeader } from './components/ClassDashboardHeader';
@@ -198,13 +201,14 @@ export default function ClassDashboard() {
         <button onClick={() => navigate('/classes')} className="flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300 transition-colors mb-4">
           <ArrowLeft size={16} /><span>{t('pages.backToClasses')}</span>
         </button>
-        <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-8 text-center">
-          <AlertCircle size={40} className="mx-auto text-red-400 mb-3" />
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-zinc-200 mb-1">{t('pages.classNotFound1')}</h2>
-          <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.theClassYouReLookingForDoesnTExistOrHasBeenRemoved')}</p>
-          <button onClick={() => navigate('/classes')} className="mt-4 px-4 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded-lg text-sm text-gray-700 dark:text-zinc-300 transition-colors">
-            {t('classes.viewAllClasses', 'View All Classes')}
-          </button>
+        <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800">
+          <ErrorState
+            title={t('pages.classNotFound1')}
+            description={t('pages.theClassYouReLookingForDoesnTExistOrHasBeenRemoved')}
+            onRetry={() => navigate('/classes')}
+            retryLabel={t('classes.viewAllClasses', 'View All Classes')}
+            size="lg"
+          />
         </div>
       </div>
     );
@@ -268,24 +272,26 @@ export default function ClassDashboard() {
 
       {/* Refresh error banner */}
       {refreshError && (
-        <div className="mb-4 flex items-center justify-between gap-3 px-4 py-3 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg">
-          <div className="flex items-center gap-2">
-            <AlertCircle size={16} className="text-red-500 shrink-0" />
-            <span className="text-sm text-red-700 dark:text-red-300">{t('classes.refreshError', 'Failed to load latest data. Showing cached information.')}</span>
-          </div>
-          <button
-            onClick={() => {
-              setRefreshError(false);
-              setIsRefreshing(true);
-              refetch(true)
-                .catch(e => { logger.error('Retry refresh:', e); setRefreshError(true); })
-                .finally(() => setIsRefreshing(false));
-            }}
-            className="text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200 whitespace-nowrap"
-          >
-            {t('common.retry', 'Retry')}
-          </button>
-        </div>
+        <Alert
+          variant="danger"
+          className="mb-4"
+          action={
+            <button
+              onClick={() => {
+                setRefreshError(false);
+                setIsRefreshing(true);
+                refetch(true)
+                  .catch(e => { logger.error('Retry refresh:', e); setRefreshError(true); })
+                  .finally(() => setIsRefreshing(false));
+              }}
+              className="text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40 rounded"
+            >
+              {t('common.retry', 'Retry')}
+            </button>
+          }
+        >
+          {t('classes.refreshError', 'Failed to load latest data. Showing cached information.')}
+        </Alert>
       )}
 
       {/* TABS */}
@@ -389,9 +395,7 @@ export default function ClassDashboard() {
                 <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-3">{t('pages.assignedSubjects')} ({classSettings.assignedSubjects.length})</h3>
                 <div className="flex flex-wrap gap-1.5">
                   {classSettings.assignedSubjects.map((subject) => (
-                    <span key={subject} className="px-2 py-1 text-xs font-medium bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 rounded-md">
-                      {subject}
-                    </span>
+                    <Chip key={subject} size="sm" color="neutral">{subject}</Chip>
                   ))}
                 </div>
               </div>

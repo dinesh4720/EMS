@@ -76,6 +76,52 @@ export const createExamScheduleSchema = z
   });
 
 // ────────────────────────────────────────────────────────────
+// HOMEWORK
+// ────────────────────────────────────────────────────────────
+
+const homeworkAttachmentSchema = z.object({
+  name: z.string().optional(),
+  url: z.string().min(1, 'Attachment URL is required'),
+  type: z.string().optional(),
+});
+
+export const homeworkSchema = z
+  .object({
+    title: z.string().min(1, 'Title is required').max(200, 'Title too long').trim(),
+    description: z
+      .string()
+      .min(1, 'Description is required')
+      .max(2000, 'Description too long')
+      .trim(),
+    subject: z.string().min(1, 'Please select a subject'),
+    classId: z.string().min(1, 'Please select a class'),
+    dueDate: z.string().min(1, 'Due date is required'),
+    totalMarks: z.coerce.number().min(0, 'Total marks must be 0 or greater').max(1000).default(100),
+    sentToParents: z.boolean().optional(),
+    attachments: z.array(homeworkAttachmentSchema).optional(),
+  })
+  .refine(
+    (data) => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return new Date(data.dueDate) >= today;
+    },
+    { message: 'Due date cannot be in the past', path: ['dueDate'] }
+  );
+
+export const homeworkGradeSchema = z
+  .object({
+    studentId: z.string().min(1, 'Student is required'),
+    marks: z.coerce.number().min(0, 'Marks cannot be negative'),
+    feedback: z.string().max(1000).optional(),
+    maxMarks: z.number().optional(),
+  })
+  .refine((data) => data.maxMarks == null || data.marks <= data.maxMarks, {
+    message: 'Marks cannot exceed total marks',
+    path: ['marks'],
+  });
+
+// ────────────────────────────────────────────────────────────
 // FEES
 // ────────────────────────────────────────────────────────────
 

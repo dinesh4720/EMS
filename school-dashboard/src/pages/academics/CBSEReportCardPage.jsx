@@ -11,7 +11,7 @@ import { Search, FileText, Home, Plus, Users, Printer } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { request } from '../../services/api';
 import { classesApi } from '../../services/classesService';
-import { PageLayout } from '../../components/ui';
+import { PageLayout, Input as DSInput, ErrorState, EmptyState } from '../../components/ui';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import logger from '../../utils/logger';
@@ -250,9 +250,11 @@ function BulkMarkEntryModal({ isOpen, onClose, term, academicYear }) {
           <div className="space-y-4">
             {/* Class load error */}
             {classesError && (
-              <div className="p-3 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-400">
-                Failed to load classes. Please close the modal and try again.
-              </div>
+              <ErrorState
+                title="Failed to load classes"
+                description="Please close the modal and try again."
+                size="sm"
+              />
             )}
 
             {/* Class selector */}
@@ -285,20 +287,28 @@ function BulkMarkEntryModal({ isOpen, onClose, term, academicYear }) {
             {/* Subject list editor */}
             <div>
               <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mb-2">Subjects (edit to customize)</p>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 items-center">
                 {subjects.map((s, i) => (
                   <div key={i} className="flex items-center gap-1">
-                    <input
-                      className="border border-gray-300 dark:border-zinc-600 rounded px-2 py-1 text-xs bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none w-28"
+                    <DSInput
+                      size="sm"
                       value={s}
                       onChange={e => setSubjects(prev => prev.map((x, j) => j === i ? e.target.value : x))}
+                      wrapperClassName="w-28"
+                      aria-label={`Subject ${i + 1} name`}
                     />
-                    <button onClick={() => setSubjects(prev => prev.filter((_, j) => j !== i))} className="text-gray-400 hover:text-red-500">×</button>
+                    <button
+                      type="button"
+                      onClick={() => setSubjects(prev => prev.filter((_, j) => j !== i))}
+                      className="text-gray-400 hover:text-red-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 rounded"
+                      aria-label={`Remove subject ${i + 1}`}
+                    >×</button>
                   </div>
                 ))}
                 <button
+                  type="button"
                   onClick={() => setSubjects(prev => [...prev, ''])}
-                  className="text-xs text-primary hover:underline"
+                  className="text-xs text-[var(--color-primary)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 rounded px-1"
                 >+ Add</button>
               </div>
             </div>
@@ -338,19 +348,23 @@ function BulkMarkEntryModal({ isOpen, onClose, term, academicYear }) {
                           {subjects.filter(subj => subj.trim()).map(subj => (
                             <Fragment key={`${sid}-${subj}`}>
                               <td className="px-1 py-1 border-l border-gray-100 dark:border-zinc-800">
-                                <input
+                                <DSInput
+                                  size="sm"
                                   type="number" min={0} max={100}
                                   value={marks[sid]?.[subj]?.theoryMarks ?? ''}
                                   onChange={e => updateMark(sid, subj, 'theoryMarks', e.target.value)}
-                                  className="w-16 text-center border border-gray-200 dark:border-zinc-700 rounded px-1 py-0.5 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-primary"
+                                  wrapperClassName="w-20"
+                                  aria-label={`${s.name} ${subj} theory marks`}
                                 />
                               </td>
                               <td className="px-1 py-1">
-                                <input
+                                <DSInput
+                                  size="sm"
                                   type="number" min={0} max={100}
                                   value={marks[sid]?.[subj]?.practicalMarks ?? ''}
                                   onChange={e => updateMark(sid, subj, 'practicalMarks', e.target.value)}
-                                  className="w-16 text-center border border-gray-200 dark:border-zinc-700 rounded px-1 py-0.5 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-primary"
+                                  wrapperClassName="w-20"
+                                  aria-label={`${s.name} ${subj} practical marks`}
                                 />
                               </td>
                             </Fragment>
@@ -541,18 +555,21 @@ export default function CBSEReportCardPage() {
               </Card>
 
               {!reportCard ? (
-                <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-zinc-700 rounded-xl">
-                  <FileText size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-                  <p className="text-gray-500 dark:text-zinc-400 mb-4">No CBSE report card found for this term</p>
-                  <Button
-                    color="primary"
-                    size="sm"
-                    startContent={<Plus size={14} />}
-                    onPress={markEntryDisclosure.onOpen}
-                  >
-                    Enter Marks Now
-                  </Button>
-                </div>
+                <EmptyState
+                  icon={FileText}
+                  title="No CBSE report card found for this term"
+                  size="md"
+                  action={
+                    <Button
+                      color="primary"
+                      size="sm"
+                      startContent={<Plus size={14} />}
+                      onPress={markEntryDisclosure.onOpen}
+                    >
+                      Enter Marks Now
+                    </Button>
+                  }
+                />
               ) : (
                 <>
                   {/* Scholastic */}
@@ -652,10 +669,11 @@ export default function CBSEReportCardPage() {
 
           {/* Empty state */}
           {!loading && !result && (
-            <div className="text-center py-20">
-              <FileText size={48} className="mx-auto mb-4 text-gray-200 dark:text-zinc-700" />
-              <p className="text-gray-500 dark:text-zinc-400">Search for a student to view their CBSE report card</p>
-            </div>
+            <EmptyState
+              icon={FileText}
+              title="Search for a student to view their CBSE report card"
+              size="lg"
+            />
           )}
         </div>
       </PageLayout>

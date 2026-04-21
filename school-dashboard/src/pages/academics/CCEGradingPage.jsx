@@ -7,7 +7,7 @@ import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { Home, Save, RefreshCw, Edit2, X, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { request } from '../../services/api';
-import { PageLayout, MinimalButton } from '../../components/ui';
+import { PageLayout, MinimalButton, Input as DSInput, ErrorState } from '../../components/ui';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 
@@ -19,15 +19,17 @@ const GRADE_COLOR = (g) => {
   return 'bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-300';
 };
 
-function NumInput({ value, onChange, min, max, className = '' }) {
+function NumInput({ value, onChange, min, max, ariaLabel }) {
   return (
-    <input
+    <DSInput
+      size="sm"
       type="number"
       value={value ?? ''}
       min={min}
       max={max}
       onChange={e => onChange(e.target.value === '' ? '' : Number(e.target.value))}
-      className={`w-16 text-center border border-gray-300 dark:border-zinc-600 rounded px-1 py-0.5 text-xs bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-primary ${className}`}
+      wrapperClassName="w-20 mx-auto"
+      aria-label={ariaLabel}
     />
   );
 }
@@ -40,6 +42,7 @@ export default function CCEGradingPage() {
   const [enabled, setEnabled] = useState(true);
   const [editingScale, setEditingScale] = useState(false);
   const [draftScale, setDraftScale] = useState([]);
+  const [loadError, setLoadError] = useState(null);
 
   useEffect(() => {
     fetchConfig();
@@ -47,11 +50,13 @@ export default function CCEGradingPage() {
 
   const fetchConfig = async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const res = await request('/cce/config');
       setConfig(res);
       setEnabled(res.enabled !== false);
-    } catch {
+    } catch (e) {
+      setLoadError(e);
       toast.error('Failed to load CCE configuration');
     } finally {
       setLoading(false);
@@ -159,6 +164,15 @@ export default function CCEGradingPage() {
       >
         {loading ? (
           <TablePageSkeleton />
+        ) : loadError && !config ? (
+          <div className="p-6">
+            <ErrorState
+              title="Failed to load CCE configuration"
+              error={loadError}
+              onRetry={fetchConfig}
+              size="lg"
+            />
+          </div>
         ) : config ? (
           <div className="p-6 space-y-6">
             {/* Enable Toggle */}
@@ -237,20 +251,21 @@ export default function CCEGradingPage() {
                               </span>
                             </td>
                             <td className="py-2 text-center">
-                              <NumInput value={row.gradePoint} onChange={v => updateDraftRow(i, 'gradePoint', v)} min={0} max={10} />
+                              <NumInput value={row.gradePoint} onChange={v => updateDraftRow(i, 'gradePoint', v)} min={0} max={10} ariaLabel={`Grade point for ${row.grade}`} />
                             </td>
                             <td className="py-2 text-center">
-                              <NumInput value={row.minPercentage} onChange={v => updateDraftRow(i, 'minPercentage', v)} min={0} max={100} />
+                              <NumInput value={row.minPercentage} onChange={v => updateDraftRow(i, 'minPercentage', v)} min={0} max={100} ariaLabel={`Min percentage for ${row.grade}`} />
                             </td>
                             <td className="py-2 text-center">
-                              <NumInput value={row.maxPercentage} onChange={v => updateDraftRow(i, 'maxPercentage', v)} min={0} max={100} />
+                              <NumInput value={row.maxPercentage} onChange={v => updateDraftRow(i, 'maxPercentage', v)} min={0} max={100} ariaLabel={`Max percentage for ${row.grade}`} />
                             </td>
                             <td className="py-2">
-                              <input
+                              <DSInput
+                                size="sm"
                                 type="text"
                                 value={row.description ?? ''}
                                 onChange={e => updateDraftRow(i, 'description', e.target.value)}
-                                className="w-full border border-gray-300 dark:border-zinc-600 rounded px-2 py-0.5 text-xs bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-primary"
+                                aria-label={`Description for ${row.grade}`}
                               />
                             </td>
                           </tr>

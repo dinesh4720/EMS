@@ -2,14 +2,17 @@ import { useState, useMemo } from "react";
 import {
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Button, Avatar, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  Select, SelectItem, User, Input
+  Select, SelectItem, User
 } from "@heroui/react";
-import { Search, AlertCircle, X } from "lucide-react";
+import { Users, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { useApp } from "../../context/AppContext";
 import { usePermissions } from "../../context/PermissionContext";
 import { useTranslation } from 'react-i18next';
 import logger from '../../utils/logger';
+import SearchInput from "../../components/ui/SearchInput";
+import Alert from "../../components/ui/Alert";
+import EmptyState from "../../components/ui/EmptyState";
 
 
 export default function BulkClassTeacherAssignment() {
@@ -189,19 +192,11 @@ export default function BulkClassTeacherAssignment() {
           </Chip>
         </div>
 
-        <Input
+        <SearchInput
           placeholder={t('pages.searchClassesOrTeachers')}
-          size="sm"
-          startContent={<Search size={16} />}
           value={searchQuery}
-          onValueChange={setSearchQuery}
-          className="w-full sm:max-w-[350px]"
-          variant="flat"
-          isClearable
-          onClear={() => setSearchQuery("")}
-          classNames={{
-            inputWrapper: "bg-default-100 data-[hover=true]:bg-default-200 group-data-[focus=true]:bg-default-100",
-          }}
+          onChange={setSearchQuery}
+          className="w-full sm:max-w-[350px] px-3 py-2 bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700 focus-within:border-gray-400 dark:focus-within:border-zinc-600 transition-all"
         />
       </div>
 
@@ -225,10 +220,12 @@ export default function BulkClassTeacherAssignment() {
           <TableColumn align="center" scope="col">{t('pages.aCTIONS')}</TableColumn>
         </TableHeader>
         <TableBody items={filteredClasses} emptyContent={
-          <div className="py-12 text-center">
-            <p className="text-sm font-medium text-default-600 mb-1">{t('classes.noClassesFound', 'No classes found')}</p>
-            <p className="text-xs text-default-400">{t('classes.createClassesFirst', 'Create classes first before assigning teachers')}</p>
-          </div>
+          <EmptyState
+            icon={Users}
+            title={t('classes.noClassesFound', 'No classes found')}
+            description={t('classes.createClassesFirst', 'Create classes first before assigning teachers')}
+            size="lg"
+          />
         }>
           {(cls) => (
             <TableRow key={cls.id}>
@@ -331,15 +328,13 @@ export default function BulkClassTeacherAssignment() {
             </Select>
 
             {modal.selectedTeacherId && selectedTeacherCurrentClasses.length > 0 && (
-              <div className="mt-4 p-3 rounded-lg bg-warning-50 border border-warning-200 flex gap-3">
-                <AlertCircle size={20} className="text-warning-600 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-warning-800">{t('pages.alreadyAssignedToOtherClasses')}</p>
-                  <p className="text-xs text-warning-600 mt-1">
-                    {t('classes.teacherAlreadyAssignedWarning', 'This teacher is currently the class teacher for: {{classes}}. They will manage multiple classes.', { classes: selectedTeacherCurrentClasses.map(c => `${c.name}-${c.section}`).join(', ') })}
-                  </p>
-                </div>
-              </div>
+              <Alert
+                variant="warning"
+                title={t('pages.alreadyAssignedToOtherClasses')}
+                className="mt-4"
+              >
+                {t('classes.teacherAlreadyAssignedWarning', 'This teacher is currently the class teacher for: {{classes}}. They will manage multiple classes.', { classes: selectedTeacherCurrentClasses.map(c => `${c.name}-${c.section}`).join(', ') })}
+              </Alert>
             )}
           </ModalBody>
           <ModalFooter>
