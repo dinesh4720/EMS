@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import {
   ClipboardList, Clock, Star, UserCheck, Paperclip, ExternalLink,
-  Calendar, CheckCircle2, FileCheck2, Hourglass,
+  Calendar, CheckCircle2, FileCheck2, Hourglass, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { request } from '../../services/api';
 import toast from 'react-hot-toast';
 import { formatShortDate } from '../../utils/dateFormatter';
 import {
   Modal, Card, Chip, Button, Input,
-  EmptyState, MarkdownRenderer, StatCard,
+  EmptyState, ErrorState, MarkdownRenderer, StatCard, Skeleton,
 } from '../../components/ui';
 import { homeworkGradeSchema, parseFormSchema } from '../../validators/formSchemas';
 
@@ -21,6 +21,7 @@ const getSubmissionChipColor = ({ isGraded, isLate }) => {
 export default function HomeworkDetailModal({ homeworkId, onClose, onDataChanged }) {
   const [hw, setHw] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [classStudents, setClassStudents] = useState([]);
   const [grading, setGrading] = useState(null); // { studentId, marks, feedback }
   const [gradeErrors, setGradeErrors] = useState({});
@@ -36,6 +37,7 @@ export default function HomeworkDetailModal({ homeworkId, onClose, onDataChanged
 
   const fetchDetail = async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const res = await request(`/homework/${homeworkId}`);
       setHw(res);
@@ -48,7 +50,8 @@ export default function HomeworkDetailModal({ homeworkId, onClose, onDataChanged
           // Non-critical — unsubmitted list simply won't show
         }
       }
-    } catch {
+    } catch (err) {
+      setLoadError(err);
       toast.error('Failed to load homework details');
     } finally {
       setLoading(false);
@@ -129,19 +132,28 @@ export default function HomeworkDetailModal({ homeworkId, onClose, onDataChanged
     : `${hw?.subject || ''} · ${hw?.classId?.name || ''}${hw?.classId?.section ? ` (${hw.classId.section})` : ''}`;
 
   const renderLoading = () => (
-    <div role="status" aria-busy="true" className="space-y-4">
+    <div role="status" aria-busy="true" aria-live="polite" className="space-y-4">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="h-20 bg-gray-100 dark:bg-zinc-800 rounded-lg animate-pulse" />
+          <Skeleton key={i} variant="rect" className="h-20 w-full" />
         ))}
       </div>
-      <div className="h-4 bg-gray-100 dark:bg-zinc-800 rounded w-1/3 animate-pulse" />
-      <div className="h-24 bg-gray-100 dark:bg-zinc-800 rounded-lg animate-pulse" />
+      <Skeleton variant="text" className="h-4 w-1/3" />
+      <Skeleton variant="rect" className="h-24 w-full" />
     </div>
   );
 
   const renderBody = () => {
     if (loading) return renderLoading();
+    if (loadError) {
+      return (
+        <ErrorState
+          title="Couldn't load homework"
+          error={loadError}
+          onRetry={fetchDetail}
+        />
+      );
+    }
     if (!hw) return <EmptyState icon={ClipboardList} title="Homework not found" description="This homework could not be loaded." />;
 
     return (
@@ -211,7 +223,11 @@ export default function HomeworkDetailModal({ homeworkId, onClose, onDataChanged
                 <UserCheck size={14} aria-hidden="true" />
                 Not Submitted ({unsubmittedStudents.length}) — Mark Paper Submission
               </span>
-              <span aria-hidden="true" className="text-xs">{showUnsubmitted ? '▲' : '▼'}</span>
+              {showUnsubmitted ? (
+                <ChevronUp size={14} aria-hidden="true" />
+              ) : (
+                <ChevronDown size={14} aria-hidden="true" />
+              )}
             </button>
             {showUnsubmitted && (
               <div className="divide-y divide-gray-100 dark:divide-zinc-800 max-h-48 overflow-y-auto">

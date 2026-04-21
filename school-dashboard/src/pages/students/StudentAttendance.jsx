@@ -1,5 +1,5 @@
-import { request } from '../../services/api.js';
-import { useState, useMemo, memo, useRef, useEffect } from "react";
+import { attendanceApi } from '../../services/api';
+import { useState, useMemo, memo, useRef, useEffect, useCallback } from "react";
 import {
     Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
     Dropdown, DropdownTrigger, DropdownMenu, DropdownItem,
@@ -9,13 +9,13 @@ import { parseDate } from "@internationalized/date";
 import { Filter, ChevronDown, ChevronLeft, ChevronRight, CalendarDays, Check, X, Clock, UserCheck, UserX, Users, Layers, AlertCircle, Save } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import PhotoAvatar from "../../components/PhotoAvatar";
-import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { toTodayDateString, formatShortDate } from '../../utils/dateFormatter';
 import logger from '../../utils/logger';
 import Button from "../../components/ui/Button";
 import StatCard from "../../components/ui/StatCard";
+import Alert from "../../components/ui/Alert";
 import EmptyState from "../../components/ui/EmptyState";
 import SearchInput from "../../components/ui/SearchInput";
 import Chip from "../../components/ui/Chip";
@@ -35,7 +35,20 @@ const StudentAttendance = memo(function StudentAttendance() {
     const [selectedKeys, setSelectedKeys] = useState(new Set([]));
     const [attendance, setAttendance] = useState({});
     const [attendanceLoading, setAttendanceLoading] = useState(true);
+    const [fetchError, setFetchError] = useState(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveMessage, setSaveMessage] = useState(null);
     const initializedRef = useRef(false);
+    const messageTimerRef = useRef(null);
+
+    const clearMessageAfter = useCallback((ms) => {
+        if (messageTimerRef.current) clearTimeout(messageTimerRef.current);
+        messageTimerRef.current = setTimeout(() => setSaveMessage(null), ms);
+    }, []);
+
+    useEffect(() => () => {
+        if (messageTimerRef.current) clearTimeout(messageTimerRef.current);
+    }, []);
 
     // Controlled open state for toolbar dropdowns — mutual exclusion
     const [classDropdownOpen, setClassDropdownOpen] = useState(false);
@@ -57,8 +70,9 @@ const StudentAttendance = memo(function StudentAttendance() {
         // useEffect below will set classFilter and re-trigger this effect
         if (classFilter === 'all' && uniqueClasses.length > 0 && !initializedRef.current) return;
 
-        const controller = new AbortController();
+        let cancelled = false;
         setAttendanceLoading(true);
+        setFetchError(null);
 
         const fetchAttendance = async () => {
             // Initialize all students as unmarked first
@@ -73,14 +87,17 @@ const StudentAttendance = memo(function StudentAttendance() {
                     const classObj = students.find(s => s.classId === classFilter || s.class === classFilter);
                     const targetClassId = classObj?.classId || classFilter;
                     if (targetClassId) {
-                        const data = await request(`/attendance/${encodeURIComponent(targetClassId)}/${encodeURIComponent(selectedDate)}`, { signal: controller.signal });
-                        if (!controller.signal.aborted && data) {
-                            Object.entries(data).forEach(([studentId, record]) => {
-                                if (initial[studentId] !== undefined) {
+                        const data = await attendanceApi.getByClassDate(targetClassId, selectedDate);
+                        if (!cancelled && data && typeof data === 'object') {
+                            const entries = Array.isArray(data)
+                                ? data.map(r => [String(r.studentId?._id || r.studentId || ''), r])
+                                : Object.entries(data);
+                            entries.forEach(([studentId, record]) => {
+                                if (studentId && initial[studentId] !== undefined) {
                                     initial[studentId] = {
-                                        status: record.status || 'unmarked',
-                                        inTime: record.inTime || '-',
-                                        outTime: record.outTime || '-'
+                                        status: record?.status || 'unmarked',
+                                        inTime: record?.inTime || '-',
+                                        outTime: record?.outTime || '-'
                                     };
                                 }
                             });
@@ -88,18 +105,19 @@ const StudentAttendance = memo(function StudentAttendance() {
                     }
                 }
             } catch (error) {
-                if (error.name === 'AbortError') return;
+                if (cancelled) return;
                 logger.error('Failed to fetch attendance:', error);
+                setFetchError(error?.message || 'Failed to load attendance');
             }
 
-            if (!controller.signal.aborted) {
+            if (!cancelled) {
                 setAttendance(initial);
                 setAttendanceLoading(false);
             }
         };
 
         fetchAttendance();
-        return () => controller.abort();
+        return () => { cancelled = true; };
     }, [students, selectedDate, classFilter, uniqueClasses]);
 
     // Auto-select the first available class so the default view isn't empty
@@ -174,42 +192,52 @@ const StudentAttendance = memo(function StudentAttendance() {
     };
 
     const handleSaveAttendance = async () => {
+        if (isSaving) return;
         // classId is required by backend for bulk attendance
         const classStudent = filteredStudents.find(s => s.classId);
         if (!classStudent?.classId) {
-            toast.error('Please select a class before saving attendance');
+            setSaveMessage({ type: 'error', text: t('attendance.selectValidClass', 'Please select a valid class') });
+            clearMessageAfter(3000);
+            return;
+        }
+
+        const attendanceData = filteredStudents
+            .filter(s => {
+                const status = attendance[s.id]?.status;
+                return status && status !== 'unmarked';
+            })
+            .map(s => ({
+                studentId: s.id,
+                status: attendance[s.id].status
+            }));
+
+        if (attendanceData.length === 0) {
+            setSaveMessage({ type: 'error', text: t('attendance.markAtLeastOne', 'Please mark attendance for at least one student before saving') });
+            clearMessageAfter(3000);
             return;
         }
 
         try {
-            const attendanceData = filteredStudents
-                .filter(s => {
-                    const status = attendance[s.id]?.status;
-                    return status && status !== 'unmarked';
-                })
-                .map(s => ({
-                    studentId: s.id,
-                    status: attendance[s.id].status
-                }));
-
-            if (attendanceData.length === 0) {
-                toast.error('No students have been marked. Please mark attendance before saving.');
-                return;
-            }
-
-            await request('/attendance/bulk', {
-                method: 'POST',
-                body: JSON.stringify({
-                    classId: classStudent.classId,
-                    date: selectedDate,
-                    attendance: attendanceData
-                })
+            setIsSaving(true);
+            setSaveMessage(null);
+            const response = await attendanceApi.markBulk({
+                classId: classStudent.classId,
+                date: selectedDate,
+                attendance: attendanceData,
+                clientTimestamp: new Date().toISOString(),
             });
-
-            toast.success(t('toast.success.attendanceSavedSuccessfully'));
+            const savedCount = response?.results?.length ?? attendanceData.length;
+            setSaveMessage({
+                type: 'success',
+                text: t('attendance.savedForStudents', 'Attendance saved for {{count}} students', { count: savedCount }),
+            });
+            clearMessageAfter(3000);
         } catch (error) {
             logger.error('Error saving attendance:', error);
-            toast.error(error.message || 'Failed to save attendance');
+            setSaveMessage({ type: 'error', text: error?.message || t('attendance.failedToSave', 'Failed to save attendance') });
+            clearMessageAfter(5000);
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -406,12 +434,32 @@ const StudentAttendance = memo(function StudentAttendance() {
                         size="sm"
                         icon={<Save size={16} />}
                         onClick={handleSaveAttendance}
+                        loading={isSaving}
+                        disabled={isSaving}
                         className="whitespace-nowrap"
                     >
-                        {t('attendance.saveAttendance', 'Save Attendance')}
+                        {isSaving
+                            ? t('common.saving', 'Saving...')
+                            : t('attendance.saveAttendance', 'Save Attendance')}
                     </Button>
                 </div>
             </div>
+
+            {/* Inline save status / fetch error */}
+            {saveMessage && (
+                <Alert
+                    variant={saveMessage.type === 'success' ? 'success' : saveMessage.type === 'warning' ? 'warning' : 'danger'}
+                    className="mt-3 -mx-6 mx-0 sm:mx-1"
+                    onClose={() => setSaveMessage(null)}
+                >
+                    {saveMessage.text}
+                </Alert>
+            )}
+            {fetchError && !attendanceLoading && (
+                <Alert variant="danger" className="mt-3 sm:mx-1">
+                    {fetchError}
+                </Alert>
+            )}
 
             {/* Class selection hint */}
             {classFilter !== "all" && (

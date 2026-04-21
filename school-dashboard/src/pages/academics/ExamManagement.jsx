@@ -1,18 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import {
-  FileText,
-  Calendar,
-  Eye,
-  Pencil,
-  Trash2,
-  Plus,
-  Send,
-  Clock,
-  CheckCircle2,
-  ListChecks,
-} from 'lucide-react';
+import { FileText, Plus, Clock, CheckCircle2, ListChecks } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 
@@ -20,29 +9,21 @@ import { examsApi } from '../../services/api';
 import { useApp } from '../../context/AppContext';
 import FiltersDropdown from '../../components/FiltersDropdown';
 import {
-  Badge,
   Button,
   ConfirmDialog,
   DataTable,
   ErrorState,
-  IconButton,
   MinimalButton,
   MinimalTabs,
   StatCard,
 } from '../../components/ui';
-import { formatShortDate } from '../../utils/dateFormatter';
 import logger from '../../utils/logger';
 import ExamScheduleView from './ExamScheduleView';
+import { buildExamColumns } from './examTableColumns';
+import ExamRowActions from './examTableConfig';
 
 const STATUS_OPTIONS = ['all', 'scheduled', 'ongoing', 'completed', 'results_published'];
 const PAGE_LIMIT = 50;
-
-const STATUS_TO_BADGE = {
-  scheduled: 'info',
-  ongoing: 'warning',
-  completed: 'success',
-  results_published: 'success',
-};
 
 const ExamManagement = ({ onCreateExam }) => {
   const { t } = useTranslation();
@@ -244,121 +225,19 @@ const ExamManagement = ({ onCreateExam }) => {
     [exams],
   );
 
-  const columns = useMemo(
-    () => [
-      {
-        key: 'name',
-        label: t('pages.eXAM'),
-        render: (exam) => (
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-md bg-[var(--color-bg-tertiary)]">
-              <FileText size={16} className="text-[var(--color-text-muted)]" aria-hidden="true" />
-            </div>
-            <div className="min-w-0">
-              <span className="font-medium text-[var(--color-text-primary)] block truncate">
-                {exam.name}
-              </span>
-              {exam.academicYear && (
-                <p className="text-xs text-[var(--color-text-muted)] truncate">
-                  {exam.academicYear}
-                </p>
-              )}
-            </div>
-          </div>
-        ),
-      },
-      {
-        key: 'type',
-        label: t('pages.tYPE'),
-        render: (exam) => (
-          <span className="capitalize text-[var(--color-text-secondary)]">
-            {exam.type?.replace(/_/g, ' ')}
-          </span>
-        ),
-      },
-      {
-        key: 'class',
-        label: t('pages.cLASS'),
-        render: (exam) => (
-          <span className="text-[var(--color-text-secondary)]">
-            {exam.className || exam.classId || '—'}
-          </span>
-        ),
-      },
-      {
-        key: 'subject',
-        label: t('pages.sUBJECT'),
-        render: (exam) => (
-          <span className="text-[var(--color-text-secondary)]">{exam.subjectName || '—'}</span>
-        ),
-      },
-      {
-        key: 'date',
-        label: t('pages.dATE'),
-        render: (exam) => (
-          <div className="inline-flex items-center gap-1.5 text-[var(--color-text-secondary)]">
-            <Calendar size={14} aria-hidden="true" />
-            {exam.startDate
-              ? formatShortDate(exam.startDate)
-              : t('pages.notScheduled', { defaultValue: 'Not scheduled' })}
-          </div>
-        ),
-      },
-      {
-        key: 'status',
-        label: t('pages.sTATUS'),
-        render: (exam) => (
-          <Badge color={STATUS_TO_BADGE[exam.status] || 'neutral'} size="md" variant="solid">
-            <span className="capitalize">{exam.status?.replace(/_/g, ' ')}</span>
-          </Badge>
-        ),
-      },
-    ],
-    [t],
-  );
+  const columns = useMemo(() => buildExamColumns(t), [t]);
 
   const renderRowActions = useCallback(
-    (exam) => {
-      const id = exam.id || exam._id;
-      return (
-        <div className="flex items-center justify-end gap-1">
-          <IconButton
-            aria-label={t('pages.viewDetails1')}
-            title={t('pages.viewDetails1')}
-            size="sm"
-            variant="ghost"
-            onClick={() => navigate(`/academics/exams/${id}`)}
-            icon={<Eye size={16} />}
-          />
-          <IconButton
-            aria-label={t('pages.enterResults')}
-            title={t('pages.enterResults')}
-            size="sm"
-            variant="ghost"
-            onClick={() => navigate(`/academics/exams/${id}/results`)}
-            icon={<Pencil size={16} />}
-          />
-          {exam.status === 'completed' && !exam.isPublished && (
-            <IconButton
-              aria-label={t('pages.publishResults', { defaultValue: 'Publish Results' })}
-              title={t('pages.publishResults', { defaultValue: 'Publish Results' })}
-              size="sm"
-              variant="ghost"
-              onClick={() => handlePublishClick(id, exam.name)}
-              icon={<Send size={16} />}
-            />
-          )}
-          <IconButton
-            aria-label={t('pages.delete1')}
-            title={t('pages.delete1')}
-            size="sm"
-            variant="danger"
-            onClick={() => handleDeleteClick(id, exam.name)}
-            icon={<Trash2 size={16} />}
-          />
-        </div>
-      );
-    },
+    (exam) => (
+      <ExamRowActions
+        exam={exam}
+        t={t}
+        onView={(id) => navigate(`/academics/exams/${id}`)}
+        onEnterResults={(id) => navigate(`/academics/exams/${id}/results`)}
+        onPublish={handlePublishClick}
+        onDelete={handleDeleteClick}
+      />
+    ),
     [handleDeleteClick, handlePublishClick, navigate, t],
   );
 
