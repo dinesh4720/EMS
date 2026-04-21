@@ -2,12 +2,11 @@ import { request } from '../../services/api.js';
 import { useState, useMemo, memo, useRef, useEffect } from "react";
 import {
     Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
-    Chip,
     Dropdown, DropdownTrigger, DropdownMenu, DropdownItem,
     Popover, PopoverTrigger, PopoverContent, Calendar
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
-import { Search, Filter, ChevronDown, ChevronLeft, ChevronRight, CalendarDays, Check, X, Clock, UserCheck, UserX, Users, Layers, AlertCircle, Save } from "lucide-react";
+import { Filter, ChevronDown, ChevronLeft, ChevronRight, CalendarDays, Check, X, Clock, UserCheck, UserX, Users, Layers, AlertCircle, Save } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import PhotoAvatar from "../../components/PhotoAvatar";
 import toast from "react-hot-toast";
@@ -18,6 +17,9 @@ import logger from '../../utils/logger';
 import Button from "../../components/ui/Button";
 import StatCard from "../../components/ui/StatCard";
 import EmptyState from "../../components/ui/EmptyState";
+import SearchInput from "../../components/ui/SearchInput";
+import Chip from "../../components/ui/Chip";
+import IconButton from "../../components/ui/IconButton";
 
 
 
@@ -242,24 +244,28 @@ const StudentAttendance = memo(function StudentAttendance() {
             </div>
 
             {/* Toolbar */}
-            <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-background border-b border-default-200 py-4 -mx-6 px-6">
+            <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-[var(--color-bg)] border-b border-[var(--color-border)] py-4 -mx-6 px-6">
                 {/* Left Side - Date Picker */}
                 <div className="flex items-center gap-3 w-full sm:w-auto">
                     <div className="flex items-center gap-1">
-                        <button
+                        <IconButton
+                            variant="outline"
+                            size="sm"
+                            aria-label={t('common.previous', 'Previous day')}
+                            icon={<ChevronLeft size={14} />}
                             onClick={() => {
                                 const date = new Date(selectedDate);
                                 date.setDate(date.getDate() - 1);
                                 setSelectedDate(date.toISOString().split('T')[0]);
                             }}
-                            className="p-1.5 hover:bg-default-100 rounded cursor-pointer border border-default-300"
-                        >
-                            <ChevronLeft size={14} className="text-default-400" />
-                        </button>
+                        />
                         <Popover placement="bottom-start">
                             <PopoverTrigger>
-                                <button className="flex items-center gap-2 px-3 py-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 text-sm cursor-pointer whitespace-nowrap">
-                                    <CalendarDays size={16} className="text-default-400 flex-shrink-0" />
+                                <button
+                                    type="button"
+                                    className="inline-flex items-center gap-2 h-8 px-3 rounded-md border border-[var(--color-border-strong)] text-sm bg-transparent text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:ring-offset-2 whitespace-nowrap"
+                                >
+                                    <CalendarDays size={16} className="text-[var(--color-text-muted)] flex-shrink-0" />
                                     <span>{formatShortDate(selectedDate)}</span>
                                 </button>
                             </PopoverTrigger>
@@ -271,46 +277,47 @@ const StudentAttendance = memo(function StudentAttendance() {
                                 />
                             </PopoverContent>
                         </Popover>
-                        <button
+                        <IconButton
+                            variant="outline"
+                            size="sm"
+                            aria-label={t('common.next', 'Next day')}
+                            icon={<ChevronRight size={14} />}
                             onClick={() => {
                                 const date = new Date(selectedDate);
                                 date.setDate(date.getDate() + 1);
                                 setSelectedDate(date.toISOString().split('T')[0]);
                             }}
                             disabled={selectedDate >= toTodayDateString()}
-                            className="p-1.5 hover:bg-default-100 rounded cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed border border-default-300"
-                        >
-                            <ChevronRight size={14} className="text-default-400" />
-                        </button>
+                        />
                     </div>
-                    <button
+                    <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => setSelectedDate(toTodayDateString())}
                         disabled={selectedDate === toTodayDateString()}
-                        className="px-3 py-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 text-sm cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                     >
-                        Today
-                    </button>
+                        {t('common.today', 'Today')}
+                    </Button>
                 </div>
 
                 {/* Right Side - Filters */}
                 <div className="flex gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap">
-                    <div className="flex items-center gap-2 w-full sm:max-w-[200px] px-3 py-2 bg-default-100 rounded-lg border border-default-200 hover:border-primary hover:bg-default-50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200">
-                        <Search size={16} className="text-default-400" />
-                        <input
-                            type="text"
-                            placeholder={t('pages.search1')}
-                            className="flex-1 bg-transparent outline-none text-sm"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
+                    <SearchInput
+                        value={searchQuery}
+                        onChange={setSearchQuery}
+                        placeholder={t('pages.search1')}
+                        name="student-attendance-search"
+                    />
 
                     <Dropdown isOpen={classDropdownOpen} onOpenChange={(open) => { if (open) closeAllDropdowns(); setClassDropdownOpen(open); }}>
                         <DropdownTrigger>
-                            <button className="flex items-center gap-2 px-3 py-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 text-sm cursor-pointer whitespace-nowrap">
-                                <Filter size={16} className="text-default-400" />
-                                <span>{classFilter === "all" ? "Class" : classFilter}</span>
-                                <ChevronDown size={14} className="text-default-400" />
+                            <button
+                                type="button"
+                                className="inline-flex items-center gap-2 h-8 px-3 rounded-md border border-[var(--color-border-strong)] text-sm bg-transparent text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:ring-offset-2 whitespace-nowrap"
+                            >
+                                <Filter size={16} className="text-[var(--color-text-muted)]" />
+                                <span>{classFilter === "all" ? t('pages.class1', 'Class') : classFilter}</span>
+                                <ChevronDown size={14} className="text-[var(--color-text-muted)]" />
                             </button>
                         </DropdownTrigger>
                         <DropdownMenu
@@ -329,8 +336,12 @@ const StudentAttendance = memo(function StudentAttendance() {
 
                     <Dropdown isOpen={statusDropdownOpen} onOpenChange={(open) => { if (open) closeAllDropdowns(); setStatusDropdownOpen(open); }}>
                         <DropdownTrigger>
-                            <button className="p-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 cursor-pointer">
-                                <Filter size={16} className="text-default-400" />
+                            <button
+                                type="button"
+                                aria-label={t('aria.menus.filterByStatus')}
+                                className="inline-flex items-center justify-center h-8 w-8 rounded-md border border-[var(--color-border-strong)] bg-transparent text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:ring-offset-2"
+                            >
+                                <Filter size={16} className="text-[var(--color-text-muted)]" />
                             </button>
                         </DropdownTrigger>
                         <DropdownMenu
@@ -352,20 +363,21 @@ const StudentAttendance = memo(function StudentAttendance() {
                     <Dropdown isOpen={bulkDropdownOpen} onOpenChange={(open) => { if (open) closeAllDropdowns(); setBulkDropdownOpen(open); }}>
                         <DropdownTrigger>
                             <button
-                                className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-200 text-sm cursor-pointer whitespace-nowrap ${
+                                type="button"
+                                className={`inline-flex items-center gap-2 h-8 px-3 rounded-md text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:ring-offset-2 whitespace-nowrap ${
                                     selectedKeys === "all" || selectedKeys.size > 0
-                                        ? "bg-primary text-white border-primary"
-                                        : "bg-transparent border-default-300 hover:border-primary"
+                                        ? "bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)]"
+                                        : "bg-transparent border border-[var(--color-border-strong)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)]"
                                 }`}
                             >
-                                <Layers size={16} className={selectedKeys === "all" || selectedKeys.size > 0 ? "text-white" : "text-default-400"} />
+                                <Layers size={16} className={selectedKeys === "all" || selectedKeys.size > 0 ? "text-white" : "text-[var(--color-text-muted)]"} />
                                 <span>{t('pages.bulkActions1')}</span>
                                 {(selectedKeys === "all" || selectedKeys.size > 0) && (
                                     <span className="bg-white/20 px-1.5 py-0.5 rounded text-xs">
                                         {selectedKeys === "all" ? filteredStudents.length : selectedKeys.size}
                                     </span>
                                 )}
-                                <ChevronDown size={14} className={selectedKeys === "all" || selectedKeys.size > 0 ? "text-white" : "text-default-400"} />
+                                <ChevronDown size={14} className={selectedKeys === "all" || selectedKeys.size > 0 ? "text-white" : "text-[var(--color-text-muted)]"} />
                             </button>
                         </DropdownTrigger>
                         <DropdownMenu
@@ -403,8 +415,8 @@ const StudentAttendance = memo(function StudentAttendance() {
 
             {/* Class selection hint */}
             {classFilter !== "all" && (
-                <p className="text-xs text-default-400 px-6 -mx-6 pt-2">
-                    Showing attendance for class <span className="font-medium text-default-600">{classFilter}</span>. Use the Class filter above to switch.
+                <p className="text-xs text-[var(--color-text-muted)] px-6 -mx-6 pt-2">
+                    {t('attendance.showingForClassPrefix', 'Showing attendance for class')} <span className="font-medium text-[var(--color-text-secondary)]">{classFilter}</span>. {t('attendance.useClassFilterHint', 'Use the Class filter above to switch.')}
                 </p>
             )}
 
@@ -463,25 +475,28 @@ const StudentAttendance = memo(function StudentAttendance() {
                                             size="md"
                                         />
                                         <div className="flex flex-col">
-                                            <span className="text-default-900 font-medium text-base">{student.name}</span>
-                                            <span className="text-default-500 text-xs">{student.email || "No email"}</span>
+                                            <span className="text-[var(--color-text-primary)] font-medium text-base">{student.name}</span>
+                                            <span className="text-[var(--color-text-muted)] text-xs">{student.email || t('common.noEmail', 'No email')}</span>
                                         </div>
                                     </div>
                                 </TableCell>
                                 <TableCell>
-                                    <Chip size="sm" variant="flat" color="primary">{student.class}</Chip>
+                                    <Chip size="sm" color="info">{student.class}</Chip>
                                 </TableCell>
                                 <TableCell>
-                                    <span className="text-default-600 text-sm font-mono">#{student.rollNo?.toString().padStart(3, '0')}</span>
+                                    <span className="text-[var(--color-text-secondary)] text-sm font-mono">#{student.rollNo?.toString().padStart(3, '0')}</span>
                                 </TableCell>
                                 <TableCell>
                                     <Dropdown>
                                         <DropdownTrigger>
-                                            <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer border transition-all text-xs font-medium ${getStatusStyle(att.status)}`}>
+                                            <button
+                                                type="button"
+                                                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer border transition-all text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:ring-offset-2 ${getStatusStyle(att.status)}`}
+                                            >
                                                 {getStatusIcon(att.status)}
                                                 <span className="capitalize">{att.status}</span>
                                                 <ChevronDown size={12} className="opacity-50" />
-                                            </div>
+                                            </button>
                                         </DropdownTrigger>
                                         <DropdownMenu
                                             aria-label={t('aria.misc.changeStatusUpper')}
@@ -495,10 +510,10 @@ const StudentAttendance = memo(function StudentAttendance() {
                                     </Dropdown>
                                 </TableCell>
                                 <TableCell>
-                                    <span className="text-default-600 text-sm font-mono">{att.inTime || "-"}</span>
+                                    <span className="text-[var(--color-text-secondary)] text-sm font-mono">{att.inTime || "-"}</span>
                                 </TableCell>
                                 <TableCell>
-                                    <span className="text-default-600 text-sm font-mono">{att.outTime || "-"}</span>
+                                    <span className="text-[var(--color-text-secondary)] text-sm font-mono">{att.outTime || "-"}</span>
                                 </TableCell>
                             </TableRow>
                         );

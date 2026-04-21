@@ -14,6 +14,8 @@ import ChartCard from '../../components/ui/ChartCard';
 import EmptyState from '../../components/ui/EmptyState';
 import Alert from '../../components/ui/Alert';
 import { SkeletonTable } from '../../components/ui/Skeleton';
+import Input from '../../components/ui/Input';
+import Select from '../../components/ui/Select';
 
 function StatCard({ label, value, icon, color = 'gray' }) {
   return <DSStatCard label={label} value={value} icon={icon || Users} color={color} />;
@@ -79,22 +81,25 @@ function AttendanceTrendChart({ startDate, endDate, classId }) {
   }, [startDate, endDate, classId, groupBy]);
 
   return (
-    <div className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-xl p-5">
+    <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-5">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Attendance Trend</h3>
-          <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">School-wide attendance rate over time</p>
+          <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">Attendance Trend</h3>
+          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">School-wide attendance rate over time</p>
         </div>
-        <div className="flex gap-1">
+        <div role="tablist" aria-label="Group by" className="flex gap-1">
           {['day', 'week', 'month'].map((g) => (
             <button
               key={g}
+              type="button"
+              role="tab"
+              aria-selected={groupBy === g}
               onClick={() => setGroupBy(g)}
               disabled={loading}
-              className={`px-3 py-1 text-xs rounded-lg capitalize transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+              className={`px-3 py-1 text-xs rounded-lg capitalize transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:ring-offset-2 ${
                 groupBy === g
-                  ? 'bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-medium'
-                  : 'text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800'
+                  ? 'bg-[var(--color-text-primary)] text-[var(--color-bg)] font-medium'
+                  : 'text-[var(--color-text-muted)] hover:bg-[var(--color-bg-tertiary)]'
               }`}
             >
               {g}
@@ -106,7 +111,7 @@ function AttendanceTrendChart({ startDate, endDate, classId }) {
       {loading ? (
         <TrendChartSkeleton />
       ) : trendData.length === 0 ? (
-        <div className="h-52 flex items-center justify-center text-gray-400 dark:text-zinc-500 text-sm">
+        <div className="h-52 flex items-center justify-center text-[var(--color-text-muted)] text-sm">
           No attendance data for this period
         </div>
       ) : (
@@ -215,39 +220,33 @@ function AttendanceTab({ metrics }) {
 
       {/* Filters */}
       <div className="flex flex-wrap items-end gap-4">
-        <div>
-          <label className="block text-xs text-gray-500 dark:text-zinc-400 mb-1">From</label>
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-white"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 dark:text-zinc-400 mb-1">To</label>
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-white"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 dark:text-zinc-400 mb-1">Class</label>
-          <select
-            value={classId}
-            onChange={(e) => setClassId(e.target.value)}
-            className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-white"
-          >
-            <option value="">All Classes</option>
-            {classes.map((cls) => (
-              <option key={cls._id} value={cls._id}>
-                {cls.name}{cls.section ? ` ${cls.section}` : ''}
-              </option>
-            ))}
-          </select>
-        </div>
+        <Input
+          label="From"
+          type="date"
+          size="sm"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+        />
+        <Input
+          label="To"
+          type="date"
+          size="sm"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+        />
+        <Select
+          label="Class"
+          size="sm"
+          value={classId}
+          onChange={(e) => setClassId(e.target.value)}
+        >
+          <option value="">All Classes</option>
+          {classes.map((cls) => (
+            <option key={cls._id} value={cls._id}>
+              {cls.name}{cls.section ? ` ${cls.section}` : ''}
+            </option>
+          ))}
+        </Select>
       </div>
 
       {/* Trend Chart */}

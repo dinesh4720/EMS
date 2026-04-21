@@ -7,6 +7,7 @@ import MinimalCard from "../../components/ui/MinimalCard";
 import MinimalTabs from "../../components/ui/MinimalTabs";
 import ActivityFeed from "../../components/ui/ActivityFeed";
 import Button from "../../components/ui/Button";
+import SectionHeading from "../../components/ui/SectionHeading";
 import { getCurrencyFormatter, getRelativeTime } from "./dashboardHelpers";
 
 function buildActivityItems({ payments, announcements, communications, navigate }) {
@@ -98,9 +99,9 @@ function RecentActivityCard({
   return (
     <MinimalCard padding="none">
       <header className="px-5 pt-5 pb-3 space-y-3">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">
+        <SectionHeading as="h3" size="sm">
           {t("components.recentActivity")}
-        </h3>
+        </SectionHeading>
         <MinimalTabs
           size="sm"
           variant="pills"

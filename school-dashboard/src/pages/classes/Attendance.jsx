@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback, useLayoutEffect } from "react";
 import { useEntityFetch } from "../../hooks/useEntityFetch";
 import { useNavigate } from "react-router-dom";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Button as HeroButton, Select, SelectItem, Input, useDisclosure, Spinner } from "@heroui/react";
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, useDisclosure } from "@heroui/react";
 import { Check, X, Bell, AlertTriangle, Users, Clock, TrendingUp, TimerOff, LogOut, AlarmClock } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { useSettings } from "../../context/SettingsContext";
@@ -14,16 +14,20 @@ import StatCard from "../../components/ui/StatCard";
 import Alert from "../../components/ui/Alert";
 import Modal from "../../components/ui/Modal";
 import EmptyState from "../../components/ui/EmptyState";
+import Chip from "../../components/ui/Chip";
+import Input from "../../components/ui/Input";
+import Select from "../../components/ui/Select";
 
 
 const ITEMS_PER_LOAD = 10;
 
+// DS Chip supports: neutral/primary/success/warning/danger/info
 const ATTENDANCE_STATUSES = [
-  { key: 'present', labelKey: 'attendance.present', label: 'Present', color: 'success', icon: Check, bgClass: 'bg-green-100', textClass: 'text-green-600' },
-  { key: 'absent', labelKey: 'attendance.absent', label: 'Absent', color: 'danger', icon: X, bgClass: 'bg-red-100', textClass: 'text-red-600' },
-  { key: 'late', labelKey: 'attendance.late', label: 'Late', color: 'warning', icon: AlarmClock, bgClass: 'bg-amber-100', textClass: 'text-amber-600' },
-  { key: 'leave', labelKey: 'attendance.leave', label: 'Leave', color: 'secondary', icon: LogOut, bgClass: 'bg-purple-100', textClass: 'text-purple-600' },
-  { key: 'halfday', labelKey: 'attendance.halfDay', label: 'Half Day', color: 'primary', icon: TimerOff, bgClass: 'bg-blue-100', textClass: 'text-blue-600' },
+  { key: 'present', labelKey: 'attendance.present', label: 'Present', color: 'success', icon: Check },
+  { key: 'absent', labelKey: 'attendance.absent', label: 'Absent', color: 'danger', icon: X },
+  { key: 'late', labelKey: 'attendance.late', label: 'Late', color: 'warning', icon: AlarmClock },
+  { key: 'leave', labelKey: 'attendance.leave', label: 'Leave', color: 'info', icon: LogOut },
+  { key: 'halfday', labelKey: 'attendance.halfDay', label: 'Half Day', color: 'primary', icon: TimerOff },
 ];
 
 const STATUS_MAP = Object.fromEntries(ATTENDANCE_STATUSES.map(s => [s.key, s]));
@@ -419,22 +423,22 @@ export default function Attendance({
   return (
     <div className={`w-full flex flex-col ${isEmbedded ? 'bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5' : ''}`}>
       {/* Toolbar */}
-      <div className={`flex flex-col sm:flex-row justify-between gap-4 items-center border-b border-default-200 py-4 ${isEmbedded ? 'mb-0' : '-mx-6 -mt-6 px-6 mb-0'}`}>
+      <div className={`flex flex-col sm:flex-row justify-between gap-4 items-center border-b border-[var(--color-border)] py-4 ${isEmbedded ? 'mb-0' : '-mx-6 -mt-6 px-6 mb-0'}`}>
         {/* Left Side - Filters */}
         <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
           {!classId && (
             <Select
               size="sm"
-              selectedKeys={selectedClass ? [selectedClass] : []}
+              value={selectedClass || ''}
               onChange={(e) => { setSelectedClass(e.target.value); }}
               className="w-[180px]"
               aria-label={t('pages.class1')}
-              variant="flat"
-              classNames={{
-                trigger: "bg-default-100 data-[hover=true]:bg-default-200",
-              }}
             >
-              {classesWithTeachers.map(c => <SelectItem key={c.id || c._id || `${c.name}-${c.section}`} textValue={`${c.name} - ${c.section}`}>{c.name} - {c.section}</SelectItem>)}
+              {classesWithTeachers.map(c => (
+                <option key={c.id || c._id || `${c.name}-${c.section}`} value={c.id || c._id || `${c.name}-${c.section}`}>
+                  {c.name} - {c.section}
+                </option>
+              ))}
             </Select>
           )}
           <Input
@@ -453,18 +457,38 @@ export default function Attendance({
               setDate(selected);
             }}
             className="w-[150px]"
-            variant="flat"
-            classNames={{
-              inputWrapper: "bg-default-100 data-[hover=true]:bg-default-200 group-data-[focus=true]:bg-default-100",
-            }}
+            aria-label={t('pages.date', 'Date')}
           />
-          {isLoadingAttendance && <Spinner size="sm" color="primary" />}
+          {isLoadingAttendance && (
+            <span
+              aria-hidden="true"
+              className="inline-block w-4 h-4 rounded-full border-2 border-[var(--color-border-strong)] border-t-[var(--color-primary)] animate-spin"
+            />
+          )}
         </div>
 
         {/* Right Side - Actions */}
         <div className="flex gap-2 w-full sm:w-auto justify-end">
-          <HeroButton size="sm" color="success" variant="flat" startContent={<Check size={14} />} onPress={markAllPresent} isDisabled={isLocked || isFutureDate || !!invalidDateReason}>{t('pages.markAllPresent')}</HeroButton>
-          {absentCount > 0 && <HeroButton size="sm" color="warning" variant="flat" startContent={<Bell size={14} />} onPress={handleNotifyParents} isLoading={isNotifying}>{t('attendance.notifyParents', 'Notify Parents')} ({absentCount})</HeroButton>}
+          <Button
+            size="sm"
+            variant="outline"
+            icon={<Check size={14} />}
+            onClick={markAllPresent}
+            disabled={isLocked || isFutureDate || !!invalidDateReason}
+          >
+            {t('pages.markAllPresent')}
+          </Button>
+          {absentCount > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              icon={<Bell size={14} />}
+              onClick={handleNotifyParents}
+              loading={isNotifying}
+            >
+              {t('attendance.notifyParents', 'Notify Parents')} ({absentCount})
+            </Button>
+          )}
         </div>
       </div>
 
@@ -498,7 +522,7 @@ export default function Attendance({
       </div>
 
       {/* Save Button */}
-      <div className="flex items-center justify-end gap-3 mb-4 pb-4 border-b border-default-200">
+      <div className="flex items-center justify-end gap-3 mb-4 pb-4 border-b border-[var(--color-border)]">
         {saveMessage && (
           <span className={`text-sm font-medium ${saveMessage.type === 'success' ? 'text-[var(--color-success)]' : saveMessage.type === 'warning' ? 'text-[var(--color-warning)]' : 'text-[var(--color-error)]'}`}>
             {saveMessage.text}
@@ -539,7 +563,10 @@ export default function Attendance({
         <TableBody emptyContent={
           isLoadingAttendance ? (
             <div className="py-6 flex justify-center">
-              <Spinner size="sm" />
+              <span
+                aria-hidden="true"
+                className="inline-block w-5 h-5 rounded-full border-2 border-[var(--color-border-strong)] border-t-[var(--color-primary)] animate-spin"
+              />
             </div>
           ) : (
             <EmptyState
@@ -551,66 +578,77 @@ export default function Attendance({
             />
           )
         }>
-          {visibleStudents.map((student) => (
-            <TableRow key={sid(student)} className="hover:bg-default-50">
-              <TableCell>
-                <div className="py-4 text-default-600 text-sm">
-                  {student.rollNo}
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="py-4">
-                  <span
-                    className="font-medium text-default-900 hover:text-primary cursor-pointer transition-colors"
-                    onClick={() => navigate(`/students/${sid(student)}`)}
-                  >
-                    {student.name}
-                  </span>
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="py-4">
-                  <Chip
-                    size="sm"
-                    color={STATUS_MAP[attendance[sid(student)]]?.color || "default"}
-                    variant="flat"
-                    className="capitalize"
-                  >
-                    {STATUS_MAP[attendance[sid(student)]] ? t(STATUS_MAP[attendance[sid(student)]].labelKey, STATUS_MAP[attendance[sid(student)]].label) : t('attendance.notMarked', 'Not Marked')}
-                  </Chip>
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="py-4 flex gap-1">
-                  {ATTENDANCE_STATUSES.map(({ key, label, color, icon: Icon }) => {
-                    const isActive = attendance[sid(student)] === key;
-                    return (
-                      <HeroButton
-                        key={key}
-                        size="sm"
-                        color={isActive ? color : "default"}
-                        variant={isActive ? "solid" : "light"}
-                        onPress={() => markAttendance(sid(student), key)}
-                        isDisabled={isLocked || isFutureDate || !!invalidDateReason}
-                        className={`min-w-0 px-2 gap-1 text-xs ${isActive ? '' : 'text-default-400'}`}
-                        startContent={<Icon size={13} />}
-                      >
-                        <span className="hidden sm:inline">{t(ATTENDANCE_STATUSES.find(s => s.key === key)?.labelKey || key, label)}</span>
-                      </HeroButton>
-                    );
-                  })}
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
+          {visibleStudents.map((student) => {
+            const currentStatus = attendance[sid(student)];
+            const statusConfig = STATUS_MAP[currentStatus];
+            return (
+              <TableRow key={sid(student)} className="hover:bg-[var(--color-bg-secondary)]">
+                <TableCell>
+                  <div className="py-4 text-[var(--color-text-secondary)] text-sm">
+                    {student.rollNo}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="py-4">
+                    <button
+                      type="button"
+                      className="font-medium text-[var(--color-text-primary)] hover:text-[var(--color-primary)] cursor-pointer transition-colors bg-transparent border-0 p-0 text-left"
+                      onClick={() => navigate(`/students/${sid(student)}`)}
+                    >
+                      {student.name}
+                    </button>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="py-4">
+                    <Chip
+                      size="sm"
+                      color={statusConfig?.color || "neutral"}
+                      className="capitalize"
+                    >
+                      {statusConfig ? t(statusConfig.labelKey, statusConfig.label) : t('attendance.notMarked', 'Not Marked')}
+                    </Chip>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="py-4 flex gap-1 flex-wrap">
+                    {ATTENDANCE_STATUSES.map(({ key, label, labelKey, color, icon: Icon }) => {
+                      const isActive = currentStatus === key;
+                      const isDisabled = isLocked || isFutureDate || !!invalidDateReason;
+                      return (
+                        <Chip
+                          key={key}
+                          size="sm"
+                          color={color}
+                          selected={isActive}
+                          onClick={isDisabled ? undefined : () => markAttendance(sid(student), key)}
+                          disabled={isDisabled}
+                          startContent={<Icon size={13} />}
+                          aria-pressed={isActive}
+                          aria-label={t(labelKey, label)}
+                        >
+                          <span className="hidden sm:inline">{t(labelKey, label)}</span>
+                        </Chip>
+                      );
+                    })}
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
 
       {/* Lazy loading indicator */}
       <div ref={loaderRef} className="flex justify-center py-4">
-        {isLoadingMore && <Spinner size="sm" color="primary" />}
+        {isLoadingMore && (
+          <span
+            aria-hidden="true"
+            className="inline-block w-4 h-4 rounded-full border-2 border-[var(--color-border-strong)] border-t-[var(--color-primary)] animate-spin"
+          />
+        )}
         {!hasMore && classStudents.length > ITEMS_PER_LOAD && (
-          <span className="text-default-400 text-sm">{t('attendance.allStudentsLoaded', 'All {{count}} students loaded', { count: classStudents.length })}</span>
+          <span className="text-[var(--color-text-muted)] text-sm">{t('attendance.allStudentsLoaded', 'All {{count}} students loaded', { count: classStudents.length })}</span>
         )}
       </div>
 
@@ -677,9 +715,7 @@ export default function Attendance({
               <Chip
                 key={sid(s)}
                 size="sm"
-                variant="flat"
                 color="danger"
-                className="cursor-pointer hover:bg-danger-200/50 transition-colors border border-danger-100"
                 onClick={() => navigate(`/students/${sid(s)}`)}
               >
                 {s.name}
