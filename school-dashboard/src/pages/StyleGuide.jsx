@@ -52,6 +52,7 @@ const TOC = [
       { id: "primitives-inputs", label: "Form inputs (legacy)" },
       { id: "primitives-search", label: "SearchInput" },
       { id: "primitives-pageheader", label: "PageHeader" },
+      { id: "primitives-sectionheading", label: "SectionHeading" },
       { id: "primitives-modal", label: "Modal" },
       { id: "primitives-dialog", label: "Dialog" },
       { id: "primitives-drawer", label: "Drawer" },

@@ -11,6 +11,7 @@ import KpiTile from "../../components/ui/KpiTile";
 import MinimalCard from "../../components/ui/MinimalCard";
 import EmptyState from "../../components/ui/EmptyState";
 import Alert from "../../components/ui/Alert";
+import SectionHeading from "../../components/ui/SectionHeading";
 import {
   getCurrencyFormatter,
   getNumberFormatter,
@@ -46,23 +47,16 @@ function PrincipalSection({ dashboardStats, attendanceSnapshot, loading }) {
 
   return (
     <section className="space-y-4" data-testid="principal-section">
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">
-        Academic Overview
-      </h2>
+      <SectionHeading>Academic Overview</SectionHeading>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {tiles.map((tile) => (
           <KpiTile key={tile.label} {...tile} isLoading={loading} />
         ))}
       </div>
       <MinimalCard padding="sm">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-3 flex items-center gap-2">
-          <Users
-            size={16}
-            className="text-gray-500 dark:text-zinc-400"
-            aria-hidden="true"
-          />
+        <SectionHeading as="h3" size="sm" icon={Users} className="mb-3">
           Staff Attendance
-        </h3>
+        </SectionHeading>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-2xl font-semibold text-gray-900 dark:text-zinc-100 tabular-nums">
@@ -127,9 +121,7 @@ function AccountantSection({
 
   return (
     <section className="space-y-4" data-testid="accountant-section">
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">
-        Finance Overview
-      </h2>
+      <SectionHeading>Finance Overview</SectionHeading>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {tiles.map((tile) => (
           <KpiTile key={tile.label} {...tile} isLoading={loading} />
@@ -137,14 +129,9 @@ function AccountantSection({
       </div>
       {feeCollectionData.length > 0 ? (
         <MinimalCard padding="sm">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-3 flex items-center gap-2">
-            <IndianRupee
-              size={16}
-              className="text-gray-500 dark:text-zinc-400"
-              aria-hidden="true"
-            />
+          <SectionHeading as="h3" size="sm" icon={IndianRupee} className="mb-3">
             Monthly Collection Breakdown
-          </h3>
+          </SectionHeading>
           <ul className="space-y-2">
             {feeCollectionData.map((month) => (
               <li
@@ -164,9 +151,9 @@ function AccountantSection({
       ) : null}
       {recentPayments.length > 0 ? (
         <MinimalCard padding="sm">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-3">
+          <SectionHeading as="h3" size="sm" className="mb-3">
             Recent Transactions
-          </h3>
+          </SectionHeading>
           <ul className="divide-y divide-gray-100 dark:divide-zinc-800">
             {recentPayments.map((payment) => (
               <li
@@ -205,9 +192,7 @@ function TeacherSection({ teacherData }) {
 
   return (
     <section className="space-y-4" data-testid="teacher-section">
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">
-        My Classes
-      </h2>
+      <SectionHeading>My Classes</SectionHeading>
       {teacherData.assignedClasses.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {teacherData.assignedClasses.map((cls) => (

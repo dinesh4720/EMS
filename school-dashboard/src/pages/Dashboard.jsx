@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import KpiTile from "../components/ui/KpiTile";
 import QuickActionTile, { QuickActionGrid } from "../components/ui/QuickActionTile";
+import PageHeader from "../components/ui/PageHeader";
 import GuidedTour, { useGuidedTour } from "../components/ui/GuidedTour";
 import AlertsPanel from "../components/AlertsPanel";
 import SubstitutionAlertPanel from "../components/SubstitutionAlertPanel";
@@ -292,14 +293,12 @@ function Dashboard() {
         onClose={closeTour}
       />
 
-      <header className="mb-6">
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">
-          Overview
-        </h1>
-        <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">
-          Welcome back! Here&apos;s what&apos;s happening today.
-        </p>
-      </header>
+      <PageHeader
+        title="Overview"
+        description="Welcome back! Here's what's happening today."
+        bordered={false}
+        className="mb-6"
+      />
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
         <div className="xl:col-span-8 space-y-4">

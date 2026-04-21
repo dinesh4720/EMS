@@ -2,11 +2,9 @@ import { useState, useMemo, useEffect } from "react";
 import { useEntityFetch } from "../../hooks/useEntityFetch";
 import {
     Table, TableHeader, TableColumn, TableBody, Spinner,
-    Button,
     Dropdown, DropdownTrigger, DropdownMenu, DropdownItem,
-    Modal, ModalContent, ModalHeader, ModalBody, ModalFooter
 } from "@heroui/react";
-import { ArrowUpDown, X, ChevronDown, Download, AlertTriangle } from "lucide-react";
+import { ArrowUpDown, X, ChevronDown, Download, AlertTriangle, Users } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
 import FiltersDropdown from "../../components/FiltersDropdown";
@@ -14,6 +12,11 @@ import { STAFF_ROLES } from "../../constants/roles";
 import ScrollToTopButton from "../../components/ui/ScrollToTopButton";
 import SearchInput from "../../components/ui/SearchInput";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
+import Button from "../../components/ui/Button";
+import Modal from "../../components/ui/Modal";
+import Skeleton from "../../components/ui/Skeleton";
+import EmptyState from "../../components/ui/EmptyState";
+import ErrorState from "../../components/ui/ErrorState";
 import { useTranslation } from "react-i18next";
 import { getSocketService } from "../../services/socketServiceEnhanced.js";
 import { exportToCSV, exportToPDF } from "./utils/staffExportUtils";
@@ -23,6 +26,62 @@ import StaffTableRow from "./components/StaffTableRow";
 import StaffBulkActionsDropdown from "./components/StaffBulkActionsDropdown";
 
 const ITEMS_PER_LOAD = 10;
+
+function StaffListSkeleton() {
+    return (
+        <div className="w-full space-y-4" aria-busy="true" aria-live="polite">
+            <div className="flex items-center gap-3 px-2 py-3">
+                <Skeleton variant="rect" className="h-8 w-24" />
+                <Skeleton variant="rect" className="h-9 flex-1 max-w-xs" />
+                <Skeleton variant="rect" className="h-8 w-20" />
+                <Skeleton variant="rect" className="h-8 w-20" />
+            </div>
+            <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
+                <div className="flex items-center gap-4 px-4 py-3 border-b border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900">
+                    <Skeleton variant="rect" className="h-5 w-5 shrink-0" />
+                    <Skeleton variant="text" className="h-3 w-16" style={{ minWidth: 240 }} />
+                    <Skeleton variant="text" className="h-3 w-12" style={{ minWidth: 140 }} />
+                    <Skeleton variant="text" className="h-3 w-20" style={{ minWidth: 140 }} />
+                    <Skeleton variant="text" className="h-3 w-16" style={{ minWidth: 100 }} />
+                    <Skeleton variant="text" className="h-3 w-14" style={{ minWidth: 120 }} />
+                    <Skeleton variant="text" className="h-3 w-8" style={{ minWidth: 80 }} />
+                </div>
+                {Array.from({ length: 8 }).map((_, i) => (
+                    <div
+                        key={i}
+                        className="flex items-center gap-4 px-4 py-3 border-b border-gray-100 dark:border-zinc-800 last:border-b-0"
+                    >
+                        <Skeleton variant="rect" className="h-5 w-5 shrink-0" />
+                        <div className="flex items-center gap-3" style={{ minWidth: 240 }}>
+                            <Skeleton variant="circle" className="h-9 w-9 shrink-0" />
+                            <div className="space-y-1.5">
+                                <Skeleton variant="text" className="h-3.5" style={{ width: `${110 + (i % 3) * 30}px` }} />
+                                <Skeleton variant="text" className="h-2.5 w-16" />
+                            </div>
+                        </div>
+                        <div style={{ minWidth: 140 }}>
+                            <Skeleton variant="rect" className="h-6 w-20 rounded-full" />
+                        </div>
+                        <div className="space-y-1.5" style={{ minWidth: 140 }}>
+                            <Skeleton variant="text" className="h-3.5 w-28" />
+                            <Skeleton variant="text" className="h-2.5 w-24" />
+                        </div>
+                        <div className="space-y-1" style={{ minWidth: 100 }}>
+                            <Skeleton variant="rect" className="h-2 w-full rounded-full" />
+                            <Skeleton variant="text" className="h-2.5 w-8" />
+                        </div>
+                        <div style={{ minWidth: 120 }}>
+                            <Skeleton variant="rect" className="h-6 w-16 rounded-full" />
+                        </div>
+                        <div style={{ minWidth: 80 }}>
+                            <Skeleton variant="rect" className="h-7 w-7" />
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
 
 // Hoisted so it's not recreated on each render
 const TABLE_CLASSNAMES = {
@@ -36,7 +95,7 @@ const TABLE_CLASSNAMES = {
 
 export default function StaffList({ onStaffClick, onStaffEdit }) {
     const { t } = useTranslation();
-    const { staff, deleteStaff, updateStaff, updateStaffLocal, staffAttendance } = useApp();
+    const { staff, deleteStaff, updateStaff, updateStaffLocal, staffAttendance, loading: contextLoading, error: contextError } = useApp();
     const [searchQuery, setSearchQuery] = useState("");
     const [roleFilter, setRoleFilter] = useState("all");
     const [statusFilter, setStatusFilter] = useState("active");
@@ -296,6 +355,32 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
 
     const exportSuccessMsg = t("toast.success.staffListExportedSuccessfully");
 
+    if (contextLoading && staff.length === 0) {
+        return <StaffListSkeleton />;
+    }
+
+    if (contextError && staff.length === 0) {
+        return (
+            <ErrorState
+                size="lg"
+                title={t("pages.failedToLoadStaff", "Failed to load staff")}
+                error={contextError}
+                onRetry={() => window.location.reload()}
+            />
+        );
+    }
+
+    if (!contextLoading && staff.length === 0) {
+        return (
+            <EmptyState
+                size="lg"
+                icon={Users}
+                title={t("pages.noStaffYet", "No staff members yet")}
+                description={t("pages.noStaffYetDescription", "Add your first staff member to start managing your team.")}
+            />
+        );
+    }
+
     return (
         <div className="w-full flex flex-col">
             {/* Toolbar */}
@@ -427,7 +512,17 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
                     <TableColumn key="status" style={{ width: columnWidths.status }} scope="col">{t("pages.sTATUS")}</TableColumn>
                     <TableColumn key="actions" align="end" style={{ width: columnWidths.actions }} scope="col">{t("pages.aCTIONS")}</TableColumn>
                 </TableHeader>
-                <TableBody items={visibleItems} emptyContent="No staff members found">
+                <TableBody
+                    items={visibleItems}
+                    emptyContent={
+                        <EmptyState
+                            size="md"
+                            icon={Users}
+                            title={t("pages.noStaffMatchFilters", "No staff match these filters")}
+                            description={t("pages.tryAdjustingFilters", "Try clearing filters or adjusting your search.")}
+                        />
+                    }
+                >
                     {(s) => (
                         <StaffTableRow
                             key={s.id}
@@ -452,35 +547,47 @@ export default function StaffList({ onStaffClick, onStaffEdit }) {
             <ScrollToTopButton />
 
             {/* Bulk Status/Role Change Confirmation Modal */}
-            <Modal isOpen={bulkConfirm.isOpen} onClose={closeBulkConfirm} size="sm">
-                <ModalContent>
-                    <ModalHeader className="flex flex-col gap-1">
-                        Confirm Bulk {bulkConfirm.type === "status" ? "Status" : "Role"} Change
-                    </ModalHeader>
-                    <ModalBody>
-                        <div className="text-sm text-gray-600 dark:text-zinc-400">
-                            <p className="mb-2">
-                                Change {bulkConfirm.type} to <strong className="capitalize">{bulkConfirm.value}</strong> for <strong>{bulkConfirm.ids.length}</strong> staff member{bulkConfirm.ids.length !== 1 ? "s" : ""}?
+            <Modal
+                isOpen={bulkConfirm.isOpen}
+                onClose={closeBulkConfirm}
+                size="sm"
+                title={`Confirm Bulk ${bulkConfirm.type === "status" ? "Status" : "Role"} Change`}
+                footer={
+                    <>
+                        <Button
+                            variant="ghost"
+                            onClick={closeBulkConfirm}
+                            disabled={bulkConfirm.isProcessing}
+                        >
+                            {t("pages.cancel", "Cancel")}
+                        </Button>
+                        <Button
+                            variant="primary"
+                            onClick={confirmBulkAction}
+                            loading={bulkConfirm.isProcessing}
+                        >
+                            Confirm
+                        </Button>
+                    </>
+                }
+            >
+                <div className="text-sm text-gray-600 dark:text-zinc-400">
+                    <p className="mb-2">
+                        Change {bulkConfirm.type} to <strong className="capitalize">{bulkConfirm.value}</strong> for <strong>{bulkConfirm.ids.length}</strong> staff member{bulkConfirm.ids.length !== 1 ? "s" : ""}?
+                    </p>
+                    <ul className="list-disc pl-5 max-h-32 overflow-y-auto space-y-1">
+                        {bulkConfirm.names.slice(0, 10).map((name, idx) => <li key={idx}>{name}</li>)}
+                        {bulkConfirm.names.length > 10 && <li className="text-gray-400">...and {bulkConfirm.names.length - 10} more</li>}
+                    </ul>
+                    {bulkConfirm.selfAdminWarning && (
+                        <div className="mt-3 p-3 bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800 rounded-lg flex gap-2">
+                            <AlertTriangle size={16} className="text-warning flex-shrink-0 mt-0.5" />
+                            <p className="text-xs text-warning-800 dark:text-warning-200">
+                                <strong>Warning:</strong> This will remove your own Admin role. You will lose access to admin-only features immediately once the page refreshes.
                             </p>
-                            <ul className="list-disc pl-5 max-h-32 overflow-y-auto space-y-1">
-                                {bulkConfirm.names.slice(0, 10).map((name, idx) => <li key={idx}>{name}</li>)}
-                                {bulkConfirm.names.length > 10 && <li className="text-gray-400">...and {bulkConfirm.names.length - 10} more</li>}
-                            </ul>
-                            {bulkConfirm.selfAdminWarning && (
-                                <div className="mt-3 p-3 bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800 rounded-lg flex gap-2">
-                                    <AlertTriangle size={16} className="text-warning flex-shrink-0 mt-0.5" />
-                                    <p className="text-xs text-warning-800 dark:text-warning-200">
-                                        <strong>Warning:</strong> This will remove your own Admin role. You will lose access to admin-only features immediately once the page refreshes.
-                                    </p>
-                                </div>
-                            )}
                         </div>
-                    </ModalBody>
-                    <ModalFooter>
-                        <Button variant="light" onPress={closeBulkConfirm} isDisabled={bulkConfirm.isProcessing}>{t("pages.cancel", "Cancel")}</Button>
-                        <Button color="primary" onPress={confirmBulkAction} isLoading={bulkConfirm.isProcessing}>Confirm</Button>
-                    </ModalFooter>
-                </ModalContent>
+                    )}
+                </div>
             </Modal>
 
             {/* Delete Confirmation */}
