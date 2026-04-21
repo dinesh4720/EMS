@@ -29,8 +29,9 @@ export default function StudentAssignModal({
 
   const fetchRouteDetail = async () => {
     if (!route?._id) return;
+    setRouteDetail(null);
+    setLoading(true);
     try {
-      setLoading(true);
       const res = await transportApi.getRoute(route._id);
       setRouteDetail(res?.data || null);
     } catch {
@@ -48,6 +49,8 @@ export default function StudentAssignModal({
       setPickupActive(true);
       setDropActive(true);
       setSearch("");
+    } else if (!isOpen) {
+      setRouteDetail(null);
     }
   }, [isOpen, route?._id]);
 
@@ -65,7 +68,7 @@ export default function StudentAssignModal({
     return list;
   }, [allStudents, assignedStudentIds, search]);
 
-  const stops = routeDetail?.stops || [];
+  const stops = Array.isArray(routeDetail?.stops) ? routeDetail.stops : [];
 
   const handleAssign = async () => {
     if (!selectedStudentId) {

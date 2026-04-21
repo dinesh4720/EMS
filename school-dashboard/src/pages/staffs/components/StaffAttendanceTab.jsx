@@ -16,6 +16,7 @@ import {
 import { useApp } from "../../../context/AppContext";
 import { getDateLocale } from '../../../i18n/index';
 import { useTranslation } from 'react-i18next';
+import StaffLeaveBalance from "./StaffLeaveBalance";
 
 
 export default function StaffAttendanceTab({ staffId }) {
@@ -405,6 +406,9 @@ export default function StaffAttendanceTab({ staffId }) {
           </div>
         </div>
       )}
+
+      {/* Leave Balance */}
+      <StaffLeaveBalance staffId={staffId} />
 
       {/* Regularization Modal */}
       <Modal isOpen={isRegOpen} onClose={onRegClose}>

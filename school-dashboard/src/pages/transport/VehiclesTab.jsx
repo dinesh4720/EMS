@@ -134,7 +134,7 @@ export default function VehiclesTab() {
                   </Chip>
                   <Dropdown>
                     <DropdownTrigger>
-                      <Button isIconOnly size="sm" variant="light"><MoreVertical size={16} /></Button>
+                      <Button isIconOnly size="sm" variant="light" aria-label="Vehicle actions"><MoreVertical size={16} /></Button>
                     </DropdownTrigger>
                     <DropdownMenu>
                       <DropdownItem key="edit" startContent={<Edit2 size={14} />} onPress={() => { setEditingVehicle(vehicle); setIsModalOpen(true); }}>{t('pages.edit1')}</DropdownItem>

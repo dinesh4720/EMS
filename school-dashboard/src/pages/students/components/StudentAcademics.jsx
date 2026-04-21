@@ -7,7 +7,7 @@ import {
 import { TablePageSkeleton } from '../../../components/skeletons/PageSkeletons';
 import {
   Award, TrendingUp, Users, User, BookOpen, FileText,
-  Download, Calendar, BarChart3, ArrowUpRight, ArrowDownRight, Minus
+  Download, Calendar, BarChart3, ArrowUpRight, ArrowDownRight, Minus, CheckCircle2, XCircle
 } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -21,6 +21,8 @@ import { getAcademicYearOptions } from "../../../utils/constants";
 import { CHART_COLORS } from "../../../utils/chartTheme";
 import { formatDateShortWeekday } from '../../../utils/dateFormatter';
 import { useTranslation } from 'react-i18next';
+import logger from '../../../utils/logger';
+
 
 
 export default function StudentAcademics({
@@ -83,14 +85,14 @@ export default function StudentAcademics({
         try {
           const examsData = await request(`/exams/class/${classId}`, { signal });
           const upcoming = examsData.filter(e =>
-            new Date(e.date) >= new Date() && e.status === 'scheduled'
+            e.date && new Date(e.date) >= new Date() && e.status === 'scheduled'
           ).slice(0, 5);
           setUpcomingExams(upcoming);
         } catch (_) { /* no exams is fine */ }
       }
     } catch (err) {
       if (err.name === 'AbortError') return;
-      console.error('Error fetching academic data:', err);
+      logger.error('Error fetching academic data:', err);
       setError(err.message || 'Failed to load academic data');
     } finally {
       if (!signal?.aborted) setLoading(false);
@@ -592,6 +594,10 @@ export default function StudentAcademics({
                         size="sm"
                         color={result.status === 'pass' ? 'success' : 'danger'}
                         variant="flat"
+                        startContent={result.status === 'pass'
+                          ? <CheckCircle2 size={12} aria-hidden="true" />
+                          : <XCircle size={12} aria-hidden="true" />}
+                        aria-label={result.status === 'pass' ? 'Pass' : 'Fail'}
                       >
                         {result.status === 'pass' ? 'Pass' : 'Fail'}
                       </Chip>

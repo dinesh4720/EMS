@@ -157,13 +157,13 @@ export function useClassesListData() {
       let count = 0;
 
       if (!filteredGroupedClasses || !Array.isArray(filteredGroupedClasses)) {
-        console.warn('filteredGroupedClasses is not an array:', filteredGroupedClasses);
+        logger.warn('filteredGroupedClasses is not an array:', filteredGroupedClasses);
         return [];
       }
 
       for (const group of filteredGroupedClasses) {
         if (!group || typeof group !== 'object') {
-          console.warn('Skipping invalid group:', group);
+          logger.warn('Skipping invalid group:', group);
           continue;
         }
 
@@ -175,7 +175,7 @@ export function useClassesListData() {
         if (expandedClasses.has(group.classNum) && group.sections && Array.isArray(group.sections)) {
           for (const section of group.sections) {
             if (!section || typeof section !== 'object') {
-              console.warn('Skipping invalid section:', section);
+              logger.warn('Skipping invalid section:', section);
               continue;
             }
 
@@ -357,7 +357,7 @@ export function useClassesListData() {
           }, 300);
         }
       },
-      { threshold: 0.1 }
+      { rootMargin: '0px 0px 200px 0px', threshold: 0 }
     );
 
     if (loaderRef.current) {

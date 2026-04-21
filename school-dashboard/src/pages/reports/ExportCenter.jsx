@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { API_URL } from '../../config/api';
-import { getAuthHeaders } from '../../utils/authSession';
+import { clearStoredUser, getAuthHeaders } from '../../utils/authSession';
 
 /* ──────────────────────────────────────────────────────
    Module definitions
@@ -45,7 +45,7 @@ const MODULES = [
     name: 'Exam Results',
     endpoint: '/export/exam-results',
     requiredFilters: [
-      { key: 'examId', label: 'Exam ID', type: 'text' },
+      { key: 'examId', label: 'Exam', type: 'select', optionsEndpoint: '/exams?limit=200' },
     ],
   },
   {
@@ -101,6 +101,27 @@ function ExportCard({ module }) {
   const [filters, setFilters] = useState({});
   const [errors, setErrors] = useState({});
   const [exporting, setExporting] = useState(false);
+  const [selectOptions, setSelectOptions] = useState({});
+
+  useEffect(() => {
+    const selectFilters = module.requiredFilters.filter((f) => f.type === 'select');
+    if (selectFilters.length === 0) return;
+
+    selectFilters.forEach(async (f) => {
+      try {
+        const res = await fetch(`${API_URL}${f.optionsEndpoint}`, {
+          headers: getAuthHeaders(),
+          credentials: 'include',
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setSelectOptions((prev) => ({ ...prev, [f.key]: data }));
+        }
+      } catch {
+        // leave dropdown empty on error
+      }
+    });
+  }, [module]);
 
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -143,6 +164,11 @@ function ExportCard({ module }) {
         credentials: 'include',
       });
 
+      if (response.status === 401) {
+        clearStoredUser();
+        throw new Error('Session expired. Please log in again.');
+      }
+
       if (!response.ok) {
         throw new Error('Export failed');
       }
@@ -161,7 +187,8 @@ function ExportCard({ module }) {
       document.body.removeChild(a);
       URL.revokeObjectURL(downloadUrl);
       toast.success(`${module.name} exported successfully`);
-    } catch {
+    } catch (error) {
+      console.error(`Failed to export ${module.name}:`, error);
       toast.error(`Failed to export ${module.name}`);
     } finally {
       setExporting(false);
@@ -176,13 +203,28 @@ function ExportCard({ module }) {
       {module.requiredFilters.map((f) => (
         <div key={f.key}>
           <label className="block text-xs text-gray-500 dark:text-zinc-400 mb-1">{f.label}</label>
-          <input
-            type={f.type === 'date' ? 'date' : 'text'}
-            value={filters[f.key] || ''}
-            onChange={(e) => handleFilterChange(f.key, e.target.value)}
-            placeholder={f.label}
-            className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-white"
-          />
+          {f.type === 'select' ? (
+            <select
+              value={filters[f.key] || ''}
+              onChange={(e) => handleFilterChange(f.key, e.target.value)}
+              className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-white"
+            >
+              <option value="">Select {f.label}</option>
+              {(selectOptions[f.key] || []).map((opt) => (
+                <option key={opt._id} value={opt._id}>
+                  {opt.name}{opt.className ? ` — ${opt.className}` : ''}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              type={f.type === 'date' ? 'date' : 'text'}
+              value={filters[f.key] || ''}
+              onChange={(e) => handleFilterChange(f.key, e.target.value)}
+              placeholder={f.label}
+              className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-white"
+            />
+          )}
           {errors[f.key] && (
             <p className="text-xs text-red-500 mt-1">{errors[f.key]}</p>
           )}

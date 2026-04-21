@@ -31,6 +31,8 @@ import { useTranslation } from 'react-i18next';
 import { formatDateTime } from '../../../../utils/dateFormatter';
 import ConfirmDialog from '../../../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../../../hooks/useConfirmDialog';
+import logger from '../../../../utils/logger';
+
 
 export default function AnnouncementAnalyticsModal({
   isOpen,
@@ -55,7 +57,7 @@ export default function AnnouncementAnalyticsModal({
       const data = await announcementsApi.getAnalytics(announcementId);
       setAnalytics(data);
     } catch (error) {
-      console.error('Error loading analytics:', error);
+      logger.error('Error loading analytics:', error);
       toast.error(t('toast.error.failedToLoadAnalytics'));
     } finally {
       setLoading(false);
@@ -69,7 +71,7 @@ export default function AnnouncementAnalyticsModal({
       toast.success(t('toast.success.resentSuccessfully'));
       loadAnalytics();
     } catch (error) {
-      console.error('Error retrying:', error);
+      logger.error('Error retrying:', error);
       toast.error(t('toast.error.failedToResend'));
     } finally {
       setRetrying(false);
@@ -89,7 +91,7 @@ export default function AnnouncementAnalyticsModal({
           toast.success(t('toast.success.resendingToAllFailedRecipients'));
           loadAnalytics();
         } catch (error) {
-          console.error('Error retrying all:', error);
+          logger.error('Error retrying all:', error);
           toast.error(t('toast.error.failedToResend'));
         } finally {
           setRetrying(false);
@@ -129,13 +131,15 @@ export default function AnnouncementAnalyticsModal({
   };
 
   const calculateReadRate = () => {
-    if (!analytics || analytics.totalRecipients === 0) return 0;
-    return Math.round((analytics.readCount / analytics.totalRecipients) * 100);
+    const stats = analytics?.stats;
+    if (!stats || !stats.totalRecipients) return 0;
+    return Math.round((stats.read / stats.totalRecipients) * 100);
   };
 
   const calculateDeliveryRate = () => {
-    if (!analytics || analytics.totalRecipients === 0) return 0;
-    return Math.round((analytics.deliveredCount / analytics.totalRecipients) * 100);
+    const stats = analytics?.stats;
+    if (!stats || !stats.totalRecipients) return 0;
+    return Math.round((stats.delivered / stats.totalRecipients) * 100);
   };
 
   if (loading) {
@@ -177,8 +181,25 @@ export default function AnnouncementAnalyticsModal({
   }
 
   if (!analytics) {
-    return null;
+    return (
+      <Modal isOpen={isOpen} onClose={onClose} size="2xl">
+        <ModalContent>
+          <ModalBody className="py-8 text-center text-default-500">
+            No analytics data available.
+          </ModalBody>
+          <ModalFooter>
+            <Button onPress={onClose}>{t('pages.close2')}</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    );
   }
+
+  const announcement = analytics.announcement || {};
+  const stats = analytics.stats || {};
+  const channelBreakdown = stats.byChannel
+    ? Object.entries(stats.byChannel).map(([channel, data]) => ({ channel, ...data }))
+    : [];
 
   return (
     <>
@@ -191,8 +212,8 @@ export default function AnnouncementAnalyticsModal({
       <ModalContent>
         <ModalHeader>
           <div className="w-full">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{analytics.title}</h3>
-            <p className="text-sm text-default-500 mt-1">{analytics.content}</p>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{announcement.title}</h3>
+            <p className="text-sm text-default-500 mt-1">{announcement.content}</p>
           </div>
         </ModalHeader>
 
@@ -202,7 +223,7 @@ export default function AnnouncementAnalyticsModal({
             <Card>
               <CardBody className="text-center py-4">
                 <Users size={24} className="mx-auto mb-2 text-primary" />
-                <p className="text-2xl font-bold">{analytics.totalRecipients}</p>
+                <p className="text-2xl font-bold">{stats.totalRecipients ?? 0}</p>
                 <p className="text-xs text-default-500">{t('pages.totalRecipients')}</p>
               </CardBody>
             </Card>
@@ -210,7 +231,7 @@ export default function AnnouncementAnalyticsModal({
             <Card>
               <CardBody className="text-center py-4">
                 <CheckCircle size={24} className="mx-auto mb-2 text-success" />
-                <p className="text-2xl font-bold">{analytics.deliveredCount}</p>
+                <p className="text-2xl font-bold">{stats.delivered ?? 0}</p>
                 <p className="text-xs text-default-500">{t('pages.delivered')}</p>
               </CardBody>
             </Card>
@@ -218,7 +239,7 @@ export default function AnnouncementAnalyticsModal({
             <Card>
               <CardBody className="text-center py-4">
                 <Eye size={24} className="mx-auto mb-2 text-primary" />
-                <p className="text-2xl font-bold">{analytics.readCount}</p>
+                <p className="text-2xl font-bold">{stats.read ?? 0}</p>
                 <p className="text-xs text-default-500">{t('pages.read')}</p>
               </CardBody>
             </Card>
@@ -226,7 +247,7 @@ export default function AnnouncementAnalyticsModal({
             <Card>
               <CardBody className="text-center py-4">
                 <AlertCircle size={24} className="mx-auto mb-2 text-danger" />
-                <p className="text-2xl font-bold">{analytics.failedCount}</p>
+                <p className="text-2xl font-bold">{stats.failed ?? 0}</p>
                 <p className="text-xs text-default-500">{t('pages.failed')}</p>
               </CardBody>
             </Card>
@@ -267,7 +288,7 @@ export default function AnnouncementAnalyticsModal({
           <div>
             <h4 className="text-sm font-semibold mb-3 text-gray-900 dark:text-zinc-100">{t('pages.channelBreakdown')}</h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {analytics.channelBreakdown?.map((channel) => (
+              {channelBreakdown.map((channel) => (
                 <Card key={channel.channel} size="sm">
                   <CardBody className="py-3">
                     <div className="flex items-center gap-2 mb-2">
@@ -289,12 +310,12 @@ export default function AnnouncementAnalyticsModal({
           <Divider />
 
           {/* Attachments */}
-          {analytics.attachments && analytics.attachments.length > 0 && (
+          {announcement.attachments && announcement.attachments.length > 0 && (
             <>
               <div>
                 <h4 className="text-sm font-semibold mb-3 text-gray-900 dark:text-zinc-100">{t('pages.attachments')}</h4>
                 <div className="space-y-2">
-                  {analytics.attachments.map((attachment) => (
+                  {announcement.attachments.map((attachment) => (
                     <Card key={attachment._id || attachment.name} size="sm">
                       <CardBody className="py-2 flex flex-row items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -335,32 +356,26 @@ export default function AnnouncementAnalyticsModal({
                   </Button>
                 </div>
                 <div className="space-y-2">
-                  {analytics.failedRecipients.map((recipient) => (
-                    <Card key={recipient._id} size="sm">
+                  {analytics.failedRecipients.map((recipient, idx) => (
+                    <Card key={recipient.userId?.toString() || idx} size="sm">
                       <CardBody className="py-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <Avatar
-                              src={recipient.avatar}
-                              name={recipient.name}
+                              name={recipient.userType}
                               size="sm"
                             />
                             <div>
-                              <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{recipient.name}</p>
-                              <p className="text-xs text-default-500">
-                                {recipient.email || recipient.phone}
-                              </p>
-                              <p className="text-xs text-danger mt-1">
-                                {recipient.error || 'Failed to deliver'}
-                              </p>
+                              <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{recipient.userType}</p>
+                              {recipient.errors?.map((e, i) => (
+                                <p key={i} className="text-xs text-danger mt-0.5">
+                                  {e.channel}: {e.error || 'Failed to deliver'}
+                                </p>
+                              ))}
                             </div>
                           </div>
-                          <Chip
-                            size="sm"
-                            color={getStatusColor(recipient.status)}
-                            variant="flat"
-                          >
-                            {recipient.status?.toUpperCase()}
+                          <Chip size="sm" color="danger" variant="flat">
+                            FAILED
                           </Chip>
                         </div>
                       </CardBody>
@@ -375,12 +390,12 @@ export default function AnnouncementAnalyticsModal({
           {/* Sent By */}
           <div className="flex items-center justify-between text-sm">
             <span className="text-default-500">{t('pages.sentBy')}</span>
-            <span className="font-medium text-gray-900 dark:text-zinc-100">{analytics.sentBy?.name || 'Unknown'}</span>
+            <span className="font-medium text-gray-900 dark:text-zinc-100">{announcement.createdBy?.name || 'Unknown'}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-default-500">{t('pages.sentOn')}</span>
             <span className="font-medium text-gray-900 dark:text-zinc-100">
-              {formatDateTime(analytics.sentAt)}
+              {formatDateTime(announcement.sentAt)}
             </span>
           </div>
         </ModalBody>

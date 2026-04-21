@@ -4,6 +4,8 @@ import { request } from '../../services/api';
 import { CURRENT_ACADEMIC_YEAR } from '../../utils/constants';
 import { useTranslation } from 'react-i18next';
 import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
+import logger from '../../utils/logger';
+
 
 const ITEMS_PER_PAGE = 20;
 
@@ -58,7 +60,7 @@ const TimetableValidationDashboard = () => {
         setTeacherReport(teacherData.report);
       }
     } catch (err) {
-      console.error('Error fetching validation reports:', err);
+      logger.error('Error fetching validation reports:', err);
       setError(err.message || 'Failed to fetch validation reports');
     } finally {
       setLoading(false);

@@ -13,6 +13,8 @@ import {
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import logger from '../../utils/logger';
+
 
 export default function Subjects() {
   const { t } = useTranslation();
@@ -20,17 +22,34 @@ export default function Subjects() {
   // Instead of redirecting, show a class selector when no class is chosen.
   const { params: { id: routeId } } = useValidatedParams({ id: 'optional' }, {});
   const navigate = useNavigate();
-  const { classesEnhancedApi, staff, classes, students } = useApp();
+  const { classesEnhancedApi, classesApi, staff, classes } = useApp();
   const [selectedClassId, setSelectedClassId] = useState(routeId || '');
   const id = routeId || selectedClassId;
   const isValid = true; // Always valid — class selection handled by UI
 
-  // Filter students for this class
-  const classStudents = (students || []).filter(s =>
-    String(s.classId?._id || s.classId) === String(id) &&
-    (s.status || 'active') === 'active' &&
-    s.isDeleted !== true
-  );
+  // Lazily loaded students for this class (only fetched when "specific students" is selected)
+  const [classStudents, setClassStudents] = useState([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+
+  // Reset students cache when class changes
+  useEffect(() => {
+    setClassStudents([]);
+  }, [id]);
+
+  const fetchClassStudents = async () => {
+    if (!id || classStudents.length > 0) return;
+    try {
+      setLoadingStudents(true);
+      const data = await classesApi.getStudents(id);
+      setClassStudents((data || []).filter(s =>
+        (s.status || 'active') === 'active' && s.isDeleted !== true
+      ));
+    } catch (error) {
+      logger.error('Error loading class students:', error);
+    } finally {
+      setLoadingStudents(false);
+    }
+  };
 
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -92,7 +111,7 @@ export default function Subjects() {
       const data = await classesEnhancedApi.getSubjects(id);
       setSubjects(data || []);
     } catch (error) {
-      console.error('Error loading subjects:', error);
+      logger.error('Error loading subjects:', error);
         toast.error(t('toast.error.failedToLoadSubjects', 'Failed to load subjects'));
       // Fallback to class subjects if API fails
       const classData = classes.find(c => String(c.id || c._id) === String(id));
@@ -154,7 +173,7 @@ export default function Subjects() {
       loadSubjects();
       toast.success(t('toast.success.subjectAdded', 'Subject added successfully'));
     } catch (error) {
-      console.error('Error adding subject:', error);
+      logger.error('Error adding subject:', error);
       toast.error(error.response?.data?.message || error.message || t('toast.error.failedToAddSubject', 'Failed to add subject'));
     } finally {
       setIsAddingSubject(false);
@@ -174,7 +193,7 @@ export default function Subjects() {
       loadSubjects();
       toast.success(t('toast.success.chapterProgressUpdatedSuccessfully'));
     } catch (error) {
-      console.error('Error updating chapter:', error);
+      logger.error('Error updating chapter:', error);
       toast.error(error.response?.data?.message || error.message || t('toast.error.failedToUpdateChapter', 'Failed to update chapter progress'));
     } finally {
       setIsUpdatingChapter(false);
@@ -421,6 +440,7 @@ export default function Subjects() {
                   onValueChange={(checked) => {
                     if (checked) {
                       setNewSubject(prev => ({ ...prev, assignTo: 'specific' }));
+                      fetchClassStudents();
                     }
                   }}
                 >
@@ -429,7 +449,9 @@ export default function Subjects() {
               </div>
               {newSubject.assignTo === 'specific' && (
                 <div className="mt-2 max-h-40 overflow-y-auto border border-default-200 rounded-lg p-2 space-y-1">
-                  {classStudents.length > 0 ? classStudents.map(student => (
+                  {loadingStudents ? (
+                    <p className="text-sm text-default-400 text-center py-2">{t('common.loading', 'Loading...')}</p>
+                  ) : classStudents.length > 0 ? classStudents.map(student => (
                     <Checkbox
                       key={student._id || student.id}
                       size="sm"

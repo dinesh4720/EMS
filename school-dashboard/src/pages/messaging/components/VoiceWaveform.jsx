@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Play, Pause } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import logger from '../../../utils/logger';
+
 
 /**
  * VoiceWaveform Component - WhatsApp style
@@ -62,7 +64,7 @@ export default function VoiceWaveform({
     };
 
     const handleError = (e) => {
-      console.warn('Audio playback error:', e);
+      logger.warn('Audio playback error:', e);
       setIsPlaying(false);
     };
 
@@ -98,7 +100,7 @@ export default function VoiceWaveform({
         setIsPlaying(true);
         onPlay?.();
       } catch (err) {
-        console.warn('Failed to play audio:', err);
+        logger.warn('Failed to play audio:', err);
         setIsPlaying(false);
       }
     }

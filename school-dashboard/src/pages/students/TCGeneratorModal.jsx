@@ -8,6 +8,8 @@ import { useTranslation } from 'react-i18next';
 import { request } from "../../services/api";
 import { DetailPageSkeleton } from "../../components/skeletons/PageSkeletons";
 import { toTodayDateString, formatDate } from '../../utils/dateFormatter';
+import logger from '../../utils/logger';
+
 
 export default function TCGeneratorModal({ isOpen, onClose, students }) {
   const { t } = useTranslation();
@@ -319,7 +321,7 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
                     });
                     savedCount++;
                 } catch (err) {
-                    console.warn(`[TC] Failed to record TC for ${student.name}:`, err?.message);
+                    logger.warn(`[TC] Failed to record TC for ${student.name}:`, err?.message);
                     errors.push(student.name);
                 }
 
@@ -327,7 +329,7 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
                 try {
                     await handlePrint({ ...formData, serialNo: formData.tcNumber || '', emisNo: student.emisNo || '' });
                 } catch (err) {
-                    console.error(`Failed to print TC for ${student.name}:`, err);
+                    logger.error(`Failed to print TC for ${student.name}:`, err);
                     errors.push(student.name);
                 }
             }

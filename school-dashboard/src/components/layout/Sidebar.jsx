@@ -1,23 +1,19 @@
-import React, { useState } from "react";
-import {
-  Avatar,
-  Tooltip,
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@heroui/react";
+import React, { useState, useEffect, useCallback } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, BookOpen, MessageSquare, IndianRupee, Settings,
   ChevronsLeft, GraduationCap, Calendar, BarChart3, DoorOpen,
-  Sun, Moon, LogOut, ChevronRight,
+  Sun, Moon, ChevronRight,
   Layers, Award, Package, Building2, Bus, Library,
+  ClipboardList, Wand2, FileBarChart, Database,
 } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useAuth } from "../../context/AuthContext";
-import { useChatNotifications } from "../../context/ChatNotificationContext";
 import { motion, AnimatePresence } from "framer-motion";
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from "react-i18next";
+import Tooltip from "../ui/Tooltip";
+import { useChatNotifications } from "../../context/ChatNotificationContext";
+import UserMenu from "./UserMenu";
+import SchoolSwitcher from "./SchoolSwitcher";
 
 // Module Definitions
 const globalItems = [
@@ -33,20 +29,22 @@ const modules = {
         { icon: GraduationCap, label: "Students", href: "/students" },
         { icon: Users, label: "Staffs", href: "/staffs" },
         { icon: BookOpen, label: "Classes", href: "/classes" },
+        { icon: ClipboardList, label: "Intake Forms", href: "/intake-forms/assignments" },
       ]
     },
     {
       title: "Academics",
       items: [
         { icon: Award, label: "Academics", href: "/academics" },
+        { icon: ClipboardList, label: "Homework", href: "/homework" },
         { icon: Users, label: "PTM", href: "/ptm" },
+        { icon: Wand2, label: "Timetable Wizard", href: "/timetable-wizard" },
       ]
     },
     {
       title: "Communication",
       items: [
         { icon: MessageSquare, label: "Messages", href: "/messaging" },
-        // { icon: Mail, label: "Email Campaigns", href: "/messaging/email-campaigns" }, // Commented out — using announcements instead
       ]
     },
     {
@@ -58,10 +56,17 @@ const modules = {
     {
       title: "Operations",
       items: [
-        // { icon: Package, label: "Inventory", href: "/inventory" }, // Commented out — not needed for launch
+        { icon: Package, label: "Inventory", href: "/inventory" },
         { icon: Library, label: "Library", href: "/library" },
-        // { icon: Building2, label: "Hostel", href: "/hostel" },
-        // { icon: Bus, label: "Transport", href: "/transport" },
+        { icon: Building2, label: "Hostel", href: "/hostel" },
+        { icon: Bus, label: "Transport", href: "/transport" },
+        { icon: Database, label: "Data Tools", href: "/data-tools" },
+      ]
+    },
+    {
+      title: "Reports",
+      items: [
+        { icon: FileBarChart, label: "Reports", href: "/reports" },
       ]
     }
   ],
@@ -88,21 +93,69 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
-  const { user, logout } = useAuth();
   const { t } = useTranslation();
   const chatNotifications = useChatNotifications();
   const unreadCount = chatNotifications?.unreadCount || 0;
   const [expandedModules, setExpandedModules] = useState(["EMS"]);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
+  // Auto-expand the module containing the current route (handles browser back/forward navigation)
+  useEffect(() => {
+    Object.entries(modules).forEach(([key, groups]) => {
+      if (key === 'FrontDesk' || key === 'Analytics') return;
+      const containsCurrentRoute = groups.some(group =>
+        group.items.some(item =>
+          location.pathname === item.href ||
+          (item.href !== '/' && location.pathname.startsWith(item.href + '/'))
+        )
+      );
+      if (containsCurrentRoute) {
+        setExpandedModules(prev => prev.includes(key) ? prev : [...prev, key]);
+      }
+    });
+  }, [location.pathname]);
+
+  // Mobile drawer: close sidebar on route change (< lg breakpoint)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const isMobile = window.matchMedia('(max-width: 1023px)').matches;
+    if (isMobile && isSidebarOpen) {
+      setIsSidebarOpen(false);
+    }
+    // Intentionally only run on pathname change, not on isSidebarOpen change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
+
+  // Close on Escape when mobile drawer is open
+  useEffect(() => {
+    if (!isSidebarOpen) return undefined;
+    const handler = (e) => {
+      if (e.key !== 'Escape') return;
+      if (typeof window === 'undefined') return;
+      if (window.matchMedia('(max-width: 1023px)').matches) {
+        setIsSidebarOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [isSidebarOpen, setIsSidebarOpen]);
+
+  const closeOnMobileNav = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    if (window.matchMedia('(max-width: 1023px)').matches) {
+      setIsSidebarOpen(false);
+    }
+  }, [setIsSidebarOpen]);
 
   return (
     <>
       {/* Mobile backdrop overlay */}
       {isSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/30 z-40 lg:hidden"
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-label="Close navigation"
+          className="fixed inset-0 bg-black/40 z-40 lg:hidden cursor-default"
           onClick={() => setIsSidebarOpen(false)}
-          aria-hidden="true"
         />
       )}
       <aside
@@ -115,31 +168,14 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
           border-r border-gray-200 dark:border-zinc-800
           flex flex-col z-50
           transition-all duration-300
-          ${isSidebarOpen ? 'w-[240px]' : 'w-[64px] max-lg:-translate-x-full'}
+          ${isSidebarOpen ? 'w-[var(--sidebar-width)]' : 'w-[var(--sidebar-width-collapsed)] max-lg:-translate-x-full'}
         `}
       >
-      {/* Brand */}
-      <div className={`flex items-center h-14 border-b border-gray-100 dark:border-zinc-800 ${isSidebarOpen ? 'px-4 justify-between' : 'justify-center'}`}>
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gray-900 dark:bg-zinc-100 flex items-center justify-center">
-            <span className="text-white dark:text-zinc-900 font-bold text-sm">S</span>
-          </div>
-          {isSidebarOpen && (
-            <span className="font-semibold text-sm text-gray-900 dark:text-zinc-100">
-              SchoolSync
-            </span>
-          )}
-        </div>
-
-        {isSidebarOpen && (
-          <button
-            onClick={() => setIsSidebarOpen(false)}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-zinc-500 dark:hover:text-zinc-300 dark:hover:bg-zinc-800 transition-colors"
-          >
-            <ChevronsLeft size={16} />
-          </button>
-        )}
-      </div>
+      {/* Brand + SchoolSwitcher */}
+      <SchoolSwitcher
+        collapsed={!isSidebarOpen}
+        onToggleCollapsed={() => setIsSidebarOpen(false)}
+      />
 
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto py-3 space-y-0.5">
@@ -153,9 +189,12 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
                 content={item.label}
                 placement="right"
                 isDisabled={isSidebarOpen}
-                classNames={{ content: "bg-gray-800 text-white text-xs font-medium px-2 py-1" }}
               >
-                <NavLink to={item.href} aria-current={isActive ? "page" : undefined}>
+                <NavLink
+                  to={item.href}
+                  aria-current={isActive ? "page" : undefined}
+                  onClick={closeOnMobileNav}
+                >
                   <div className={`
                     flex items-center cursor-pointer
                     ${isSidebarOpen ? 'py-2 px-3 gap-3' : 'h-10 justify-center w-10 mx-auto py-0'}
@@ -189,10 +228,12 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
             const handleModuleClick = () => {
               if (key === 'FrontDesk') {
                 navigate('/front-desk');
+                closeOnMobileNav();
                 return;
               }
               if (key === 'Analytics') {
                 navigate('/analytics');
+                closeOnMobileNav();
                 return;
               }
 
@@ -203,7 +244,7 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
                 }
               } else {
                 if (isActive) {
-                  setExpandedModules(expandedModules.filter(m => m !== key));
+                  setExpandedModules(expandedModules.filter(mod => mod !== key));
                 } else {
                   setExpandedModules([...expandedModules, key]);
                 }
@@ -217,7 +258,6 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
                   content={info.label}
                   placement="right"
                   isDisabled={isSidebarOpen}
-                  classNames={{ content: "bg-gray-800 text-white text-xs font-medium px-2 py-1" }}
                 >
                   <button
                     onClick={handleModuleClick}
@@ -258,9 +298,9 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
                     >
                       <div className="pt-1 pb-1">
                         <div className="border-l border-gray-200 dark:border-zinc-800 ml-4 pl-3 space-y-0.5">
-                          {groups.filter(g => g.items.length > 0).map((group) => (
+                          {groups.filter(grp => grp.items.length > 0).map((group) => (
                             <div key={group.title}>
-                              {groups.filter(g => g.items.length > 0).length > 1 && group.title && (
+                              {groups.filter(grp => grp.items.length > 0).length > 1 && group.title && (
                                 <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-zinc-500 px-2 pt-2 pb-1">{group.title}</p>
                               )}
                             {group.items.map((item) => {
@@ -269,7 +309,12 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
                               const showBadge = isMessaging && unreadCount > 0;
 
                               return (
-                                <NavLink key={item.href} to={item.href} aria-current={isItemActive ? "page" : undefined}>
+                                <NavLink
+                                  key={item.href}
+                                  to={item.href}
+                                  aria-current={isItemActive ? "page" : undefined}
+                                  onClick={closeOnMobileNav}
+                                >
                                   <div className={`
                                     flex items-center py-2 px-2 gap-2 rounded-md transition-colors relative
                                     ${isItemActive
@@ -303,7 +348,11 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
       {/* Bottom Actions */}
       <div className={`border-t border-gray-200 dark:border-zinc-800 py-3 space-y-0.5 ${isSidebarOpen ? 'px-3' : 'px-2 flex flex-col items-center'}`}>
         {/* Settings */}
-        <NavLink to="/settings" aria-current={location.pathname.startsWith('/settings') ? "page" : undefined}>
+        <NavLink
+          to="/settings"
+          aria-current={location.pathname.startsWith('/settings') ? "page" : undefined}
+          onClick={closeOnMobileNav}
+        >
           <div className={`
             flex items-center cursor-pointer
             ${isSidebarOpen ? 'py-2 px-3 gap-3' : 'h-10 justify-center w-10 mx-auto py-0'}
@@ -329,82 +378,17 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
           {isSidebarOpen && <span className="text-sm font-medium">{theme === 'dark' ? t('sidebar.lightMode', 'Light Mode') : t('sidebar.darkMode', 'Dark Mode')}</span>}
         </button>
 
-        {/* User Profile */}
-        <Popover
-          placement={isSidebarOpen ? "top-start" : "right"}
-          isOpen={isUserMenuOpen}
-          onOpenChange={setIsUserMenuOpen}
-          offset={8}
-          showArrow
-        >
-          <PopoverTrigger>
-            <button
-              type="button"
-              className={`
-                flex items-center w-full
-                ${isSidebarOpen ? 'py-2 px-2 gap-3 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg mt-1' : 'h-10 justify-center w-10 mx-auto rounded-lg hover:bg-gray-100'}
-                transition-all focus:outline-none
-              `}
-            >
-              <Avatar
-                name={user?.name || "Admin"}
-                size="sm"
-                className="w-7 h-7 text-[10px]"
-              />
-              {isSidebarOpen && (
-                <div className="flex-1 flex flex-col items-start overflow-hidden">
-                  <span className="text-sm font-medium text-gray-800 dark:text-zinc-200 truncate">
-                    {user?.name || "User"}
-                  </span>
-                  <span className="text-xs text-gray-500 dark:text-zinc-400 truncate">
-                    {user?.role || "Staff"}
-                  </span>
-                </div>
-              )}
-            </button>
-          </PopoverTrigger>
-          <PopoverContent className="p-0">
-            <div className="min-w-[200px] rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-sm">
-              <div className="px-4 py-3 border-b border-gray-200 dark:border-zinc-700">
-                <p className="text-xs text-gray-500 dark:text-zinc-400">{t('components.signedInAs')}</p>
-                <p className="text-sm font-medium text-gray-800 dark:text-zinc-200 truncate">{user?.email}</p>
-              </div>
-              <div className="py-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsUserMenuOpen(false);
-                    navigate('/settings');
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
-                >
-                  {t('sidebar.mySettings', 'My Settings')}
-                </button>
-                <div className="h-px bg-gray-200 dark:bg-zinc-700 my-1" />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsUserMenuOpen(false);
-                    logout();
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950 transition-colors flex items-center gap-2"
-                >
-                  <LogOut size={14} />
-                  {t('sidebar.logOut', 'Log Out')}
-                </button>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
+        {/* User Menu */}
+        <UserMenu collapsed={!isSidebarOpen} />
       </div>
 
-      {/* Expand Button (when collapsed) */}
+      {/* Expand Button (when collapsed, desktop only) */}
       {!isSidebarOpen && (
         <button
           type="button"
           aria-label="Expand sidebar"
           onClick={() => setIsSidebarOpen(true)}
-          className="absolute -right-3 top-20 w-6 h-6 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-700 rounded-full flex items-center justify-center cursor-pointer hover:scale-110 transition-transform z-50 text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300"
+          className="hidden lg:flex absolute -right-3 top-20 w-6 h-6 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-700 rounded-full items-center justify-center cursor-pointer hover:scale-110 transition-transform z-50 text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
         >
           <ChevronsLeft size={12} className="rotate-180" />
         </button>

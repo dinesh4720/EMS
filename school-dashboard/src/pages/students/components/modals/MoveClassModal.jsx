@@ -2,6 +2,8 @@ import { useState, useMemo } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Select, SelectItem } from "@heroui/react";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import logger from '../../../../utils/logger';
+
 
 /**
  * MoveClassModal - Modal for moving a student to another class/section
@@ -56,7 +58,7 @@ export default function MoveClassModal({ isOpen, onClose, student, availableClas
       }
       onClose();
     } catch (error) {
-      console.error("Error moving student:", error);
+      logger.error("Error moving student:", error);
       toast.error(t('toast.error.failedToMoveStudent', 'Failed to move student') + ": " + (error.message || t('common.unknownError', 'Unknown error')), { id: loadingToast });
     } finally {
       setIsMoving(false);

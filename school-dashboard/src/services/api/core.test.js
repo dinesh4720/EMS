@@ -33,7 +33,7 @@ vi.mock('../../utils/authSession', () => ({
 }));
 
 vi.mock('../../config/api.js', () => ({
-  API_URL: 'http://localhost:5000/api',
+  API_URL: 'http://localhost:3002/api',
 }));
 
 import { clearApiCache } from './core';

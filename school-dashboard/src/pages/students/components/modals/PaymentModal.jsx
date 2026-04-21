@@ -5,6 +5,8 @@ import { useApp } from "../../../../context/AppContext";
 import { useTranslation } from 'react-i18next';
 import { toTodayDateString, formatMonthYear } from '../../../../utils/dateFormatter';
 import { formatCurrency } from '../../../../utils/numberFormatter';
+import logger from '../../../../utils/logger';
+
 
 
 /**
@@ -87,7 +89,7 @@ export default function PaymentModal({
       }
       onClose();
     } catch (error) {
-      console.error("Payment error:", error);
+      logger.error("Payment error:", error);
       toast.error("Failed to record payment: " + (error.message || "Unknown error"), { id: loadingToast });
     } finally {
       setIsLoading(false);

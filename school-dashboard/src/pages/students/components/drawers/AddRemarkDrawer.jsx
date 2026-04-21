@@ -7,6 +7,8 @@ import {
 import { MessageSquare, Mail, Plus } from "lucide-react";
 import { request } from "../../../../services/api";
 import toast from "react-hot-toast";
+import logger from '../../../../utils/logger';
+
 
 export default function AddRemarkDrawer({
   isOpen,
@@ -64,7 +66,7 @@ export default function AddRemarkDrawer({
       resetForm();
       onOpenChange(false);
     } catch (error) {
-      console.error("Error saving remark:", error);
+      logger.error("Error saving remark:", error);
       toast.error(error.message || t('students.profile.remarks.saveFailed', 'Failed to save remark'));
     } finally {
       setIsSubmitting(false);

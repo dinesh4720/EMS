@@ -4,6 +4,8 @@ import { AlertCircle, X } from "lucide-react";
 import { settingsApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import logger from '../../utils/logger';
+
 
 /**
  * PayrollReminder Component
@@ -45,7 +47,7 @@ export default function PayrollReminder() {
           ), { duration: 10000, id: 'payroll-reminder' });
         }
       } catch (error) {
-        console.error('Failed to check payroll reminder:', error);
+        logger.error('Failed to check payroll reminder:', error);
       } finally {
         setLoading(false);
       }
@@ -112,7 +114,7 @@ export function usePayrollReminder() {
       setLoading(false);
       return data;
     } catch (error) {
-      console.error('Failed to check payroll reminder:', error);
+      logger.error('Failed to check payroll reminder:', error);
       setLoading(false);
       return null;
     }

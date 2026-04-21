@@ -5,6 +5,8 @@ import { homeworkApi, classesApi, subjectsApi } from '../../services/api';
 import { useApp } from '../../context/AppContext';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import logger from '../../utils/logger';
+
 
 const CreateHomeworkModal = ({ onClose, onSuccess, editingHomework, defaultClassId }) => {
   const { t } = useTranslation();
@@ -68,7 +70,7 @@ const CreateHomeworkModal = ({ onClose, onSuccess, editingHomework, defaultClass
       setClasses(Array.from(uniqueClasses.values()));
       setSubjects(subjectsData || []);
     } catch (error) {
-      console.error('Error fetching form data:', error);
+      logger.error('Error fetching form data:', error);
       toast.error(t('toast.error.failedToLoadFormData'));
     } finally {
       setLoadingData(false);
@@ -119,7 +121,16 @@ const CreateHomeworkModal = ({ onClose, onSuccess, editingHomework, defaultClass
     if (!formData.description.trim()) newErrors.description = 'Description is required';
     if (formData.subject.size === 0) newErrors.subject = 'Please select a subject';
     if (formData.classId.size === 0) newErrors.classId = 'Please select a class';
-    if (!formData.dueDate) newErrors.dueDate = 'Due date is required';
+    if (!formData.dueDate) {
+      newErrors.dueDate = 'Due date is required';
+    } else {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const selected = new Date(formData.dueDate);
+      if (selected < today) {
+        newErrors.dueDate = 'Due date cannot be in the past';
+      }
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -160,7 +171,7 @@ const CreateHomeworkModal = ({ onClose, onSuccess, editingHomework, defaultClass
       }
       onSuccess?.();
     } catch (error) {
-      console.error(`Error ${isEditMode ? 'updating' : 'creating'} homework:`, error);
+      logger.error(`Error ${isEditMode ? 'updating' : 'creating'} homework:`, error);
       toast.error(`Failed to ${isEditMode ? 'update' : 'create'} homework: ` + (error.message || 'Unknown error'));
     } finally {
       setLoading(false);

@@ -34,207 +34,9 @@ import SkeletonTable from '../../components/skeletons/SkeletonTable';
 import { permissionsApi } from '../../services/api';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
-
-// Transform backend permissions array to frontend object format
-const permissionsArrayToObject = (permsArray = []) => {
-  const obj = {};
-  permsArray.forEach(p => {
-    obj[p.module] = { view: !!p.view, create: !!p.create, edit: !!p.edit, delete: !!p.delete, publish: !!p.publish };
-  });
-  return obj;
-};
-
-// Transform frontend permissions object to backend array format
-const permissionsObjectToArray = (permsObj = {}) => {
-  return Object.entries(permsObj).map(([module, actions]) => ({
-    module,
-    ...actions,
-  }));
-};
-
-// Define all modules and their actions (keys only — labels are translated in component)
-const MODULES_CONFIG = [
-  { key: "dashboard", actions: ["view"] },
-  { key: "staff", actions: ["view", "create", "edit", "delete"] },
-  { key: "students", actions: ["view", "create", "edit", "delete"] },
-  { key: "classes", actions: ["view", "create", "edit", "delete"] },
-  { key: "academics", actions: ["view", "create", "edit", "delete", "publish"] },
-  { key: "attendance", actions: ["view", "create", "edit", "delete"] },
-  { key: "timetable", actions: ["view", "create", "edit", "delete"] },
-  { key: "fees", actions: ["view", "create", "edit", "delete"] },
-  { key: "payroll", actions: ["view", "create", "edit", "delete"] },
-  { key: "messaging", actions: ["view", "create", "edit", "delete"] },
-  { key: "reports", actions: ["view", "create", "edit", "delete"] },
-  { key: "settings", actions: ["view", "create", "edit", "delete"] },
-  { key: "front-desk", actions: ["view", "create", "edit", "delete"] },
-  { key: "intake-forms", actions: ["view", "create", "edit", "delete"] },
-  { key: "communication", actions: ["view", "create", "edit", "delete"] },
-];
-
-// Default permission templates — must match backend UserPermission.js exactly.
-// Every module is listed explicitly so applying a template clears stale permissions.
-const PERMISSION_TEMPLATES = {
-  admin: {
-    name: "Admin",
-    description: "Full access to all modules",
-    permissions: {
-      dashboard: { view: true, create: true, edit: true, delete: true },
-      staff: { view: true, create: true, edit: true, delete: true },
-      students: { view: true, create: true, edit: true, delete: true },
-      classes: { view: true, create: true, edit: true, delete: true },
-      academics: { view: true, create: true, edit: true, delete: true, publish: true },
-      attendance: { view: true, create: true, edit: true, delete: true },
-      timetable: { view: true, create: true, edit: true, delete: true },
-      fees: { view: true, create: true, edit: true, delete: true },
-      payroll: { view: true, create: true, edit: true, delete: true },
-      messaging: { view: true, create: true, edit: true, delete: true },
-      reports: { view: true, create: true, edit: true, delete: true },
-      settings: { view: true, create: true, edit: true, delete: true },
-      "front-desk": { view: true, create: true, edit: true, delete: true },
-      "intake-forms": { view: true, create: true, edit: true, delete: true },
-    },
-  },
-  principal: {
-    name: "Principal",
-    description: "Full administrative access except settings deletion",
-    permissions: {
-      dashboard: { view: true, create: true, edit: true, delete: true },
-      staff: { view: true, create: true, edit: true, delete: true },
-      students: { view: true, create: true, edit: true, delete: true },
-      classes: { view: true, create: true, edit: true, delete: true },
-      academics: { view: true, create: true, edit: true, delete: true, publish: true },
-      attendance: { view: true, create: true, edit: true, delete: true },
-      timetable: { view: true, create: true, edit: true, delete: true },
-      fees: { view: true, create: true, edit: true, delete: true },
-      payroll: { view: true, create: true, edit: true, delete: true },
-      messaging: { view: true, create: true, edit: true, delete: true },
-      reports: { view: true, create: true, edit: true, delete: true },
-      settings: { view: true, create: true, edit: true, delete: false },
-      "front-desk": { view: true, create: true, edit: true, delete: true },
-      "intake-forms": { view: true, create: true, edit: true, delete: true },
-    },
-  },
-  "vice-principal": {
-    name: "Vice Principal",
-    description: "Administrative access without delete permissions",
-    permissions: {
-      dashboard: { view: true, create: true, edit: true, delete: false },
-      staff: { view: true, create: true, edit: true, delete: false },
-      students: { view: true, create: true, edit: true, delete: false },
-      classes: { view: true, create: true, edit: true, delete: false },
-      academics: { view: true, create: true, edit: true, delete: false, publish: true },
-      attendance: { view: true, create: true, edit: true, delete: false },
-      timetable: { view: true, create: true, edit: true, delete: false },
-      fees: { view: true, create: false, edit: false, delete: false },
-      payroll: { view: true, create: false, edit: false, delete: false },
-      messaging: { view: true, create: true, edit: true, delete: false },
-      reports: { view: true, create: true, edit: false, delete: false },
-      settings: { view: false, create: false, edit: false, delete: false },
-      "front-desk": { view: true, create: true, edit: true, delete: false },
-      "intake-forms": { view: true, create: true, edit: true, delete: false },
-    },
-  },
-  teacher: {
-    name: "Teacher",
-    description: "Access to classes, attendance, and students",
-    permissions: {
-      dashboard: { view: true, create: false, edit: false, delete: false },
-      staff: { view: true, create: false, edit: false, delete: false },
-      students: { view: true, create: false, edit: true, delete: false },
-      classes: { view: true, create: false, edit: false, delete: false },
-      academics: { view: true, create: true, edit: true, delete: false, publish: false },
-      attendance: { view: true, create: true, edit: true, delete: false },
-      timetable: { view: true, create: false, edit: false, delete: false },
-      fees: { view: true, create: false, edit: false, delete: false },
-      payroll: { view: false, create: false, edit: false, delete: false },
-      messaging: { view: true, create: true, edit: true, delete: false },
-      reports: { view: true, create: false, edit: false, delete: false },
-      settings: { view: false, create: false, edit: false, delete: false },
-      "front-desk": { view: false, create: false, edit: false, delete: false },
-      "intake-forms": { view: true, create: true, edit: true, delete: false },
-    },
-  },
-  accountant: {
-    name: "Accountant",
-    description: "Access to fees and payroll",
-    permissions: {
-      dashboard: { view: true, create: false, edit: false, delete: false },
-      staff: { view: true, create: false, edit: false, delete: false },
-      students: { view: true, create: false, edit: false, delete: false },
-      classes: { view: true, create: false, edit: false, delete: false },
-      academics: { view: true, create: false, edit: false, delete: false, publish: false },
-      attendance: { view: true, create: false, edit: false, delete: false },
-      timetable: { view: false, create: false, edit: false, delete: false },
-      fees: { view: true, create: true, edit: true, delete: true },
-      payroll: { view: true, create: true, edit: true, delete: false },
-      messaging: { view: true, create: true, edit: false, delete: false },
-      reports: { view: true, create: false, edit: false, delete: false },
-      settings: { view: false, create: false, edit: false, delete: false },
-      "front-desk": { view: false, create: false, edit: false, delete: false },
-      "intake-forms": { view: true, create: false, edit: false, delete: false },
-    },
-  },
-  librarian: {
-    name: "Librarian",
-    description: "Limited access for library management",
-    permissions: {
-      dashboard: { view: true, create: false, edit: false, delete: false },
-      staff: { view: true, create: false, edit: false, delete: false },
-      students: { view: true, create: false, edit: false, delete: false },
-      classes: { view: true, create: false, edit: false, delete: false },
-      academics: { view: true, create: false, edit: false, delete: false, publish: false },
-      attendance: { view: true, create: false, edit: false, delete: false },
-      timetable: { view: true, create: false, edit: false, delete: false },
-      fees: { view: false, create: false, edit: false, delete: false },
-      payroll: { view: false, create: false, edit: false, delete: false },
-      messaging: { view: true, create: true, edit: false, delete: false },
-      reports: { view: false, create: false, edit: false, delete: false },
-      settings: { view: false, create: false, edit: false, delete: false },
-      "front-desk": { view: false, create: false, edit: false, delete: false },
-      "intake-forms": { view: false, create: false, edit: false, delete: false },
-    },
-  },
-  "lab-assistant": {
-    name: "Lab Assistant",
-    description: "Limited access for lab management",
-    permissions: {
-      dashboard: { view: true, create: false, edit: false, delete: false },
-      staff: { view: true, create: false, edit: false, delete: false },
-      students: { view: true, create: false, edit: false, delete: false },
-      classes: { view: true, create: false, edit: false, delete: false },
-      academics: { view: true, create: false, edit: false, delete: false, publish: false },
-      attendance: { view: true, create: false, edit: false, delete: false },
-      timetable: { view: true, create: false, edit: false, delete: false },
-      fees: { view: false, create: false, edit: false, delete: false },
-      payroll: { view: false, create: false, edit: false, delete: false },
-      messaging: { view: true, create: true, edit: false, delete: false },
-      reports: { view: false, create: false, edit: false, delete: false },
-      settings: { view: false, create: false, edit: false, delete: false },
-      "front-desk": { view: false, create: false, edit: false, delete: false },
-      "intake-forms": { view: false, create: false, edit: false, delete: false },
-    },
-  },
-  receptionist: {
-    name: "Receptionist",
-    description: "Basic access for front desk operations",
-    permissions: {
-      dashboard: { view: true, create: false, edit: false, delete: false },
-      staff: { view: true, create: false, edit: false, delete: false },
-      students: { view: true, create: true, edit: true, delete: false },
-      classes: { view: true, create: false, edit: false, delete: false },
-      academics: { view: true, create: false, edit: false, delete: false, publish: false },
-      attendance: { view: true, create: false, edit: false, delete: false },
-      timetable: { view: false, create: false, edit: false, delete: false },
-      fees: { view: true, create: false, edit: false, delete: false },
-      payroll: { view: false, create: false, edit: false, delete: false },
-      messaging: { view: true, create: true, edit: false, delete: false },
-      reports: { view: false, create: false, edit: false, delete: false },
-      settings: { view: false, create: false, edit: false, delete: false },
-      "front-desk": { view: true, create: true, edit: true, delete: false },
-      "intake-forms": { view: true, create: true, edit: true, delete: false },
-    },
-  },
-};
+import logger from '../../utils/logger';
+import { MODULES_CONFIG, PERMISSION_TEMPLATES } from '../../constants/permissionConfig';
+import { permissionsArrayToObject, permissionsObjectToArray, countPermissions } from '../../utils/permissionsTransform';
 
 export default function RolesAccess() {
   const { t } = useTranslation();
@@ -251,6 +53,7 @@ export default function RolesAccess() {
   const [loading, setLoading] = useState(false);
   const [fetchingRoles, setFetchingRoles] = useState(true);
   const [roles, setRoles] = useState([]);
+  const [originalFormData, setOriginalFormData] = useState(null);
 
   // Fetch custom roles from backend API
   const fetchRoles = useCallback(async () => {
@@ -268,7 +71,7 @@ export default function RolesAccess() {
       }));
       setRoles(customRoles);
     } catch (error) {
-      console.error('Failed to fetch roles:', error);
+      logger.error('Failed to fetch roles:', error);
       toast.error('Failed to load roles');
     } finally {
       setFetchingRoles(false);
@@ -288,21 +91,47 @@ export default function RolesAccess() {
   const handleOpenModal = (role = null) => {
     if (role) {
       setEditingRole(role);
-      setFormData({
+      const initial = {
         name: role.name,
         permissions: JSON.parse(JSON.stringify(role.permissions)),
         locked: JSON.parse(JSON.stringify(role.locked || {})),
-      });
+      };
+      setFormData(initial);
+      setOriginalFormData(initial);
     } else {
       setEditingRole(null);
-      setFormData({
-        name: "",
-        permissions: {},
-        locked: {},
-      });
+      const initial = { name: "", permissions: {}, locked: {} };
+      setFormData(initial);
+      setOriginalFormData(initial);
     }
     onOpen();
   };
+
+  const handleResetChanges = () => {
+    if (originalFormData) {
+      setFormData(JSON.parse(JSON.stringify(originalFormData)));
+    }
+  };
+
+  const isPermissionChanged = (moduleKey, action) => {
+    if (!originalFormData || !editingRole) return false;
+    const orig = originalFormData.permissions[moduleKey]?.[action] || false;
+    const curr = formData.permissions[moduleKey]?.[action] || false;
+    return orig !== curr;
+  };
+
+  const changedCount = useMemo(() => {
+    if (!originalFormData || !editingRole) return 0;
+    let count = 0;
+    MODULES_CONFIG.forEach(({ key, actions }) => {
+      actions.forEach(action => {
+        const orig = originalFormData.permissions[key]?.[action] || false;
+        const curr = formData.permissions[key]?.[action] || false;
+        if (orig !== curr) count++;
+      });
+    });
+    return count;
+  }, [formData.permissions, originalFormData, editingRole]);
 
   const handlePermissionChange = (moduleKey, action, value) => {
     setFormData(prev => ({
@@ -374,7 +203,7 @@ export default function RolesAccess() {
       onClose();
       await fetchRoles();
     } catch (error) {
-      console.error('Failed to save role:', error);
+      logger.error('Failed to save role:', error);
       toast.error(error.message || 'Failed to save role');
     } finally {
       setLoading(false);
@@ -398,19 +227,11 @@ export default function RolesAccess() {
           toast.success(t('toast.success.roleDeletedSuccessfully'));
           await fetchRoles();
         } catch (error) {
-          console.error('Failed to delete role:', error);
+          logger.error('Failed to delete role:', error);
           toast.error(error.message || 'Failed to delete role');
         }
       },
     });
-  };
-
-  const countPermissions = (permissions) => {
-    let count = 0;
-    Object.values(permissions).forEach(actions => {
-      count += Object.values(actions).filter(Boolean).length;
-    });
-    return count;
   };
 
   const isPermissionLocked = (moduleKey, action) => {
@@ -507,6 +328,7 @@ export default function RolesAccess() {
                           isIconOnly
                           size="sm"
                           variant="light"
+                          aria-label="Edit role"
                           onPress={() => handleOpenModal(role)}
                           className="transition-all duration-200"
                         >
@@ -517,6 +339,7 @@ export default function RolesAccess() {
                           size="sm"
                           variant="light"
                           color="danger"
+                          aria-label="Delete role"
                           onPress={() => handleDelete(role.id)}
                           className="transition-all duration-200"
                         >
@@ -620,9 +443,10 @@ export default function RolesAccess() {
                             const hasAction = module.actions.includes(action);
                             const isChecked = formData.permissions[module.key]?.[action] || false;
                             const isLocked = isPermissionLocked(module.key, action);
+                            const isChanged = isPermissionChanged(module.key, action);
 
                             return (
-                              <TableCell key={action} className="text-center">
+                              <TableCell key={action} className={`text-center${isChanged ? " bg-warning-50 dark:bg-warning-900/10" : ""}`}>
                                 {hasAction ? (
                                   <div className="flex items-center justify-center gap-2">
                                     <Checkbox
@@ -632,11 +456,13 @@ export default function RolesAccess() {
                                         handlePermissionChange(module.key, action, value)
                                       }
                                       isDisabled={isLocked}
+                                      color={isChanged ? "warning" : "primary"}
                                     />
                                     <Button
                                       isIconOnly
                                       size="sm"
                                       variant="light"
+                                      aria-label={isLocked ? "Unlock permission" : "Lock permission"}
                                       onPress={() => handleLockToggle(module.key, action)}
                                       className="min-w-6 w-6 h-6"
                                     >
@@ -665,18 +491,37 @@ export default function RolesAccess() {
               </div>
             </div>
           </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={onClose}>
-              Cancel
-            </Button>
-            <Button
-              color="primary"
-              onPress={handleSubmit}
-              isLoading={loading}
-              className="transition-all duration-200"
-            >
-              {editingRole ? "Update" : "Create"} Role
-            </Button>
+          <ModalFooter className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {changedCount > 0 && (
+                <>
+                  <span className="text-sm text-warning-600 dark:text-warning-400 font-medium">
+                    {changedCount} unsaved change{changedCount !== 1 ? "s" : ""}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    color="warning"
+                    onPress={handleResetChanges}
+                  >
+                    Revert
+                  </Button>
+                </>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="light" onPress={onClose}>
+                Cancel
+              </Button>
+              <Button
+                color="primary"
+                onPress={handleSubmit}
+                isLoading={loading}
+                className="transition-all duration-200"
+              >
+                {editingRole ? "Update" : "Create"} Role
+              </Button>
+            </div>
           </ModalFooter>
         </ModalContent>
       </Modal>

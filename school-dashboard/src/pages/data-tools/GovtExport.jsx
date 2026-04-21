@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Chip } from '@heroui/react';
 import toast from 'react-hot-toast';
 import { API_URL } from '../../config/api';
-import { getAuthHeaders } from '../../utils/authSession';
+import { clearStoredUser, getAuthHeaders } from '../../utils/authSession';
 
 const EXPORT_TYPES = [
   { key: 'udise', title: 'UDISE+ Enrollment', badge: 'UDISE+', badgeColor: 'primary', hasClassId: false },
@@ -43,6 +43,11 @@ export default function GovtExport() {
         headers: getAuthHeaders(),
         credentials: 'include',
       });
+
+      if (response.status === 401) {
+        clearStoredUser();
+        throw new Error('Session expired. Please log in again.');
+      }
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({ error: 'Export failed' }));

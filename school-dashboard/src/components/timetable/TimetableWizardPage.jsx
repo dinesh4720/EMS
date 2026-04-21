@@ -204,6 +204,7 @@ const TimetableWizardPage = () => {
           <Button
             isIconOnly
             variant="light"
+            aria-label="Go back"
             onPress={() => navigate(-1)}
             className="text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100"
           >

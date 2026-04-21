@@ -4,6 +4,8 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Avata
 import { Share2, Search } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import logger from '../../../../utils/logger';
+
 
 /**
  * ShareProfileModal - Modal for sharing student profile with staff members
@@ -60,7 +62,7 @@ export default function ShareProfileModal({ isOpen, onClose, student, staff = []
             })
           });
         } catch (error) {
-          console.error(`Failed to send to user ${userId}:`, error);
+          logger.error(`Failed to send to user ${userId}:`, error);
           throw error;
         }
       });
@@ -70,7 +72,7 @@ export default function ShareProfileModal({ isOpen, onClose, student, staff = []
       toast.success(t('toast.success.profileShared', { count: selectedUsers.length, defaultValue: `Profile shared successfully with ${selectedUsers.length} user(s)` }), { id: loadingToast });
       handleClose();
     } catch (error) {
-      console.error("Error sharing profile:", error);
+      logger.error("Error sharing profile:", error);
       toast.error(t('toast.error.failedToShareProfile', 'Failed to share profile') + ": " + (error.message || t('common.unknownError', 'Unknown error')), { id: loadingToast });
     } finally {
       setIsSharing(false);

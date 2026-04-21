@@ -3,6 +3,8 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Selec
 import toast from "react-hot-toast";
 import { getAuthHeaders } from "../../../../utils/authSession";
 import { useTranslation } from 'react-i18next';
+import logger from '../../../../utils/logger';
+
 
 /**
  * WriteRemarkModal - Modal for writing a remark for a student
@@ -61,7 +63,7 @@ export default function WriteRemarkModal({ isOpen, onClose, student, onSave }) {
       setForm({ type: "", title: "", description: "", sendToParent: false });
       setErrors({});
     } catch (error) {
-      console.error("Error saving remark:", error);
+      logger.error("Error saving remark:", error);
       toast.error("Failed to save remark: " + (error.message || "Unknown error"), { id: loadingToast });
     } finally {
       setIsSaving(false);

@@ -19,6 +19,7 @@ import {
 } from '@heroui/react';
 import { FileText, Calendar, Eye, Pencil, Trash2, AlertTriangle, Plus, Clock, Send } from 'lucide-react';
 import { examsApi } from '../../services/api';
+import { useApp } from '../../context/AppContext';
 import FiltersDropdown from '../../components/FiltersDropdown';
 import { MinimalButton } from '../../components/ui';
 import toast from 'react-hot-toast';
@@ -28,15 +29,24 @@ const STATUS_OPTIONS = ['all', 'scheduled', 'ongoing', 'completed', 'results_pub
 
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { formatShortDate } from '../../utils/dateFormatter';
+import logger from '../../utils/logger';
+
+
+const PAGE_LIMIT = 50;
 
 const ExamManagement = ({ onCreateExam }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { selectedAcademicYear } = useApp();
   const [exams, setExams] = useState([]);
 
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [skip, setSkip] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, examId: null, examName: '' });
+  const [publishModal, setPublishModal] = useState({ isOpen: false, examId: null, examName: '', publishing: false });
   const [activeView, setActiveView] = useState('list');
   const [filters, setFilters] = useState({
     classId: 'all',
@@ -96,20 +106,40 @@ const ExamManagement = ({ onCreateExam }) => {
   }, [filters, searchQuery]);
 
   useEffect(() => {
-    fetchExams();
-  }, []);
+    fetchExams(0);
+  }, [selectedAcademicYear]);
 
-  const fetchExams = async () => {
-    setLoading(true);
+  const fetchExams = async (skipValue) => {
+    const isInitial = skipValue === 0;
+    if (isInitial) {
+      setLoading(true);
+      setExams([]);
+    } else {
+      setLoadingMore(true);
+    }
     try {
-      const data = await examsApi.getAll();
-      setExams(data || []);
+      const params = { limit: PAGE_LIMIT, skip: skipValue };
+      if (selectedAcademicYear) params.academicYear = selectedAcademicYear;
+      const data = await examsApi.getAll(params);
+      const results = data || [];
+      if (isInitial) {
+        setExams(results);
+      } else {
+        setExams(prev => [...prev, ...results]);
+      }
+      setSkip(skipValue + results.length);
+      setHasMore(results.length === PAGE_LIMIT);
     } catch (error) {
-      console.error('Error fetching exams:', error);
+      logger.error('Error fetching exams:', error);
       toast.error(t('toast.error.failedToLoadExams'));
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
+  };
+
+  const handleLoadMore = () => {
+    fetchExams(skip);
   };
 
   const handleFilterChange = (key, value) => {
@@ -145,23 +175,36 @@ const ExamManagement = ({ onCreateExam }) => {
     try {
       await examsApi.delete(deleteModal.examId);
       toast.success(t('toast.success.examDeletedSuccessfully'));
-      fetchExams();
+      fetchExams(0);
     } catch (error) {
-      console.error('Error deleting exam:', error);
+      logger.error('Error deleting exam:', error);
       toast.error(t('toast.error.failedToDeleteExam'));
     } finally {
       setDeleteModal({ isOpen: false, examId: null, examName: '' });
     }
   };
 
-  const handlePublish = async (examId, examName) => {
+  const handlePublishClick = (examId, examName) => {
+    setPublishModal({ isOpen: true, examId, examName, publishing: false });
+  };
+
+  const handleConfirmPublish = async () => {
+    const publishedId = publishModal.examId;
+    setPublishModal(prev => ({ ...prev, publishing: true }));
     try {
-      await examsApi.publish(examId);
-      toast.success(t('toast.success.resultsPublishedForExam', { examName }));
-      fetchExams();
+      await examsApi.publish(publishedId);
+      toast.success(t('toast.success.resultsPublishedForExam', { examName: publishModal.examName }));
+      setPublishModal({ isOpen: false, examId: null, examName: '', publishing: false });
+      // Optimistically update the status badge without a full re-fetch
+      setExams(prev => prev.map(e =>
+        (e.id || e._id) === publishedId
+          ? { ...e, status: 'results_published', isPublished: true }
+          : e
+      ));
     } catch (error) {
-      console.error('Error publishing results:', error);
+      logger.error('Error publishing results:', error);
       toast.error(t('toast.error.failedToPublishResults'));
+      setPublishModal(prev => ({ ...prev, publishing: false }));
     }
   };
 
@@ -294,6 +337,7 @@ const ExamManagement = ({ onCreateExam }) => {
                 )}
               </div>
             ) : (
+              <div className="overflow-x-auto">
               <Table aria-label={t('aria.tables.exams')} removeWrapper>
                 <TableHeader>
                   <TableColumn scope="col">{t('pages.eXAM')}</TableColumn>
@@ -366,7 +410,7 @@ const ExamManagement = ({ onCreateExam }) => {
                           {exam.status === 'completed' && !exam.isPublished && (
                             <button
                               className="p-2 rounded-lg hover:bg-green-50 dark:hover:bg-green-950 transition-colors"
-                              onClick={() => handlePublish(exam.id || exam._id, exam.name)}
+                              onClick={() => handlePublishClick(exam.id || exam._id, exam.name)}
                               title="Publish Results"
                             >
                               <Send size={16} className="text-green-500" />
@@ -385,6 +429,7 @@ const ExamManagement = ({ onCreateExam }) => {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             )}
           </CardBody>
         </Card>
@@ -498,6 +543,55 @@ const ExamManagement = ({ onCreateExam }) => {
           )}
         </div>
       )}
+
+      {/* Load More */}
+      {hasMore && (
+        <div className="flex justify-center pt-2">
+          <Button variant="flat" size="sm" onPress={handleLoadMore} isLoading={loadingMore}>
+            Load More
+          </Button>
+        </div>
+      )}
+
+      {/* Publish Confirmation Modal */}
+      <Modal
+        isOpen={publishModal.isOpen}
+        onClose={() => !publishModal.publishing && setPublishModal({ isOpen: false, examId: null, examName: '', publishing: false })}
+        size="sm"
+        classNames={{ backdrop: 'bg-black/30', base: 'bg-white dark:bg-zinc-950' }}
+      >
+        <ModalContent>
+          <ModalHeader className="border-b border-gray-100 dark:border-zinc-800 py-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                <Send size={20} className="text-green-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-medium">Publish Results</h3>
+                <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal">This will notify all parents and students</p>
+              </div>
+            </div>
+          </ModalHeader>
+          <ModalBody className="py-4">
+            <p className="text-sm text-gray-600 dark:text-zinc-400">
+              Are you sure you want to publish results for <span className="font-medium">{publishModal.examName}</span>?
+              Results will become visible to all students and parents in this class.
+            </p>
+          </ModalBody>
+          <ModalFooter className="border-t border-gray-100 dark:border-zinc-800">
+            <Button
+              variant="light"
+              onPress={() => setPublishModal({ isOpen: false, examId: null, examName: '', publishing: false })}
+              isDisabled={publishModal.publishing}
+            >
+              Cancel
+            </Button>
+            <Button color="success" onPress={handleConfirmPublish} isLoading={publishModal.publishing}>
+              Publish Results
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {/* Delete Confirmation Modal */}
       <Modal

@@ -10,6 +10,7 @@ import {
   showErrorToast,
   executeWithFeedback
 } from "../../utils/errorHandling";
+import logger from '../../utils/logger';
 
 export default function StaffAssignmentPanel({ staffId, onAssignClassTeacher }) {
   const { t } = useTranslation();
@@ -80,7 +81,7 @@ export default function StaffAssignmentPanel({ staffId, onAssignClassTeacher }) 
       setAssignments(assignmentsData.assignments || []);
       setAvailableClasses(classesData || []);
     } catch (error) {
-      console.error("Error loading data:", error);
+      logger.error("Error loading data:", error);
       showErrorToast(error, "Failed to load teacher assignments");
     } finally {
       setLoading(false);

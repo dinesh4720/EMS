@@ -141,6 +141,25 @@ describe('saveStoredUser', () => {
     expect(stored.token).toBeUndefined();
   });
 
+  it('preserves schoolId for multi-tenant isolation', () => {
+    saveStoredUser(validUser);
+    const stored = JSON.parse(sessionStorage.getItem(AUTH_STORAGE_KEY));
+    expect(stored.schoolId).toBe('sch_99');
+  });
+
+  it('getStoredUser preserves schoolId through the save/get cycle', () => {
+    saveStoredUser(validUser);
+    const result = getStoredUser();
+    expect(result.schoolId).toBe('sch_99');
+  });
+
+  it('does not store schoolId when it is null (treated as absent)', () => {
+    saveStoredUser({ ...validUser, schoolId: null });
+    const result = getStoredUser();
+    expect(result).not.toBeNull();
+    expect(result.schoolId).toBeUndefined();
+  });
+
   it('dispatches user-logged-in event on successful save', () => {
     const listener = vi.fn();
     window.addEventListener('user-logged-in', listener, { once: true });

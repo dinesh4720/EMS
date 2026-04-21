@@ -4,6 +4,8 @@ import { Card, CardBody, CardHeader, Input, Switch, Button, Divider, Select, Sel
 import { Save, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import logger from '../../utils/logger';
+
 
 export default function StaffIdSettings() {
   const { t } = useTranslation();
@@ -42,7 +44,7 @@ export default function StaffIdSettings() {
         separator: data.separator || ''
       });
     } catch (error) {
-      console.error("Error loading config:", error);
+      logger.error("Error loading config:", error);
       setConfig(DEFAULT_CONFIG);
       toast.error(t('toast.error.failedToLoadConfiguration'));
     } finally {
@@ -78,7 +80,7 @@ export default function StaffIdSettings() {
 
       toast.success(t('toast.success.staffIdConfigurationSavedSuccessfully'));
     } catch (error) {
-      console.error("Error saving config:", error);
+      logger.error("Error saving config:", error);
       toast.error(t('toast.error.failedToSaveConfiguration'));
     } finally {
       setSaving(false);

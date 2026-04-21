@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { clearStoredUser, getAuthHeaders, getStoredUser, saveStoredUser } from "../utils/authSession";
 import { isSuperAdminRole } from "../utils/roleUtils";
 import { clearApiCache } from "../services/api";
+import socketService from "../services/socketServiceEnhanced";
 import { API_URL } from "../config/api.js";
 import logger from "../utils/logger";
 
@@ -46,12 +47,17 @@ export const AuthProvider = ({ children }) => {
         if (ok && sessionUser) {
           if (!isMounted) return;
 
-          saveStoredUser(sessionUser);
+          // SECURITY: Strip token fields before storing — tokens live in httpOnly
+          // cookies only. Keeping them in React state exposes them to XSS via
+          // React DevTools or injected scripts.
+          const { token: _t, refreshToken: _rt, tokenExpiresAt: _tat, ...safeSessionUser } = sessionUser;
+
+          saveStoredUser(safeSessionUser);
 
           // SECURITY: Mark role as server-verified. The role in this object
           // came from the backend /auth/session endpoint (which reads from the
           // DB), so it cannot be tampered with via sessionStorage.
-          setUser({ ...sessionUser, _roleVerified: true });
+          setUser({ ...safeSessionUser, _roleVerified: true });
           setIsAuthenticated(true);
           setLoading(false);
           return;
@@ -79,7 +85,7 @@ export const AuthProvider = ({ children }) => {
           setLoading(false);
         }
       } catch (error) {
-        console.warn('Session restore failed:', error.message);
+        logger.warn('Session restore failed:', error.message);
         if (isMounted) {
           setUser(null);
           setIsAuthenticated(false);
@@ -119,7 +125,7 @@ export const AuthProvider = ({ children }) => {
         credentials: 'include',
         body: JSON.stringify({
           email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailOrPhone) ? emailOrPhone : undefined,
-          phone: /^[0-9]{7,15}$/.test(emailOrPhone) ? emailOrPhone : undefined,
+          phone: /^\+?[0-9]{7,15}$/.test(emailOrPhone) ? emailOrPhone : undefined,
           password
         }),
       });
@@ -130,12 +136,16 @@ export const AuthProvider = ({ children }) => {
       }
 
       const userData = await response.json();
-      saveStoredUser(userData);
+      // SECURITY: Strip token fields before storing — tokens live in httpOnly
+      // cookies only. Keeping them in React state exposes them to XSS via
+      // React DevTools or injected scripts.
+      const { token: _t, refreshToken: _rt, tokenExpiresAt: _tat, ...safeUserData } = userData;
+      saveStoredUser(safeUserData);
       // SECURITY: Role came from the server login response — mark as verified.
-      setUser({ ...userData, _roleVerified: true });
+      setUser({ ...safeUserData, _roleVerified: true });
       setIsAuthenticated(true);
-      navigate(isSuperAdminRole(userData.role) ? '/super-admin' : '/');
-      return userData;
+      navigate(isSuperAdminRole(safeUserData.role) ? '/super-admin' : '/');
+      return safeUserData;
     } catch (error) {
       logger.error('Login error:', error?.message || error);
       throw error;
@@ -154,13 +164,15 @@ export const AuthProvider = ({ children }) => {
       });
       clearTimeout(timeoutId);
     } catch (error) {
-      console.warn('Logout request failed:', error.message);
+      logger.warn('Logout request failed:', error.message);
     }
 
     setUser(null);
     setIsAuthenticated(false);
     clearStoredUser();
     clearApiCache();
+    // Tear down the shared socket singleton on logout (destroyAll clears listeners too)
+    socketService.destroyAll();
     navigate('/login');
   };
 

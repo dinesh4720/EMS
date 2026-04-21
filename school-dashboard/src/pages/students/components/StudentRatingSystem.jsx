@@ -4,6 +4,8 @@ import { Star, Award, Clock, Edit3, Save, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { formatShortDate } from '../../../utils/dateFormatter';
+import logger from '../../../utils/logger';
+
 
 
 const RATING_DIMENSIONS = [
@@ -125,7 +127,7 @@ export default function StudentRatingSystem({
       setInternalEditing(false);
       toast.success(t('toast.success.ratingsUpdatedSuccessfully'));
     } catch (error) {
-      console.error("Error saving ratings:", error);
+      logger.error("Error saving ratings:", error);
       toast.error(error.message || 'Failed to save ratings');
     } finally {
       setIsSubmitting(false);

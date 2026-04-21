@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { useApp } from "../../context/AppContext";
 import { PageLayout, MinimalButton } from "../../components/ui";
@@ -47,12 +47,15 @@ import ParentManagement from "./ParentManagement";
 import WebhooksPage from "./WebhooksPage";
 import NPSAnalyticsPage from "./NPSAnalyticsPage";
 import SCIMSettings from "./SCIMSettings";
+import SSOSettings from "./SSOSettings";
 import PromotionRulesSettings from "./PromotionRulesSettings";
 import PeriodSettings from "./PeriodSettings";
 import SeedDataSettings from "./SeedDataSettings";
 import DataCleanupSettings from "./DataCleanupSettings";
 import ActiveSessions from "./ActiveSessions";
 import { useTranslation } from 'react-i18next';
+import { SettingsNavigationContext } from '../../context/SettingsNavigationContext';
+import UnsavedChangesModal from '../../components/modals/UnsavedChangesModal';
 
 export default function SettingsPage() {
   const { t } = useTranslation();
@@ -61,6 +64,31 @@ export default function SettingsPage() {
   const { setShowOnboarding } = useApp();
   const [searchQuery, setSearchQuery] = useState("");
   const [owlinEnabled, setOwlinState] = useState(() => isOwlinEnabled());
+  const [isDirty, setIsDirty] = useState(false);
+  const [isNavBlocked, setIsNavBlocked] = useState(false);
+  const pendingNavPathRef = useRef(null);
+
+  const guardedNavigate = useCallback((path) => {
+    if (isDirty) {
+      pendingNavPathRef.current = path;
+      setIsNavBlocked(true);
+    } else {
+      navigate(path);
+    }
+  }, [isDirty, navigate]);
+
+  const proceedNavigation = useCallback(() => {
+    setIsNavBlocked(false);
+    setIsDirty(false);
+    const path = pendingNavPathRef.current;
+    pendingNavPathRef.current = null;
+    if (path) navigate(path);
+  }, [navigate]);
+
+  const cancelNavigation = useCallback(() => {
+    setIsNavBlocked(false);
+    pendingNavPathRef.current = null;
+  }, []);
 
   const handleOwlinToggle = useCallback(() => {
     const next = !owlinEnabled;
@@ -120,6 +148,7 @@ export default function SettingsPage() {
       title: "Integrations",
       items: [
         { key: "webhooks", label: "Webhooks", icon: Webhook, path: "/settings/webhooks", isNew: true },
+        { key: "sso", label: "SSO / Single Sign-On", icon: Shield, path: "/settings/sso", isNew: true },
         { key: "scim", label: "SCIM Provisioning", icon: Shield, path: "/settings/scim", isNew: true },
         { key: "nps", label: "NPS Analytics", icon: Activity, path: "/settings/nps", isNew: true },
       ]
@@ -159,6 +188,8 @@ export default function SettingsPage() {
   }, [searchQuery, menuCategories]);
 
   return (
+    <SettingsNavigationContext.Provider value={{ setDirty: setIsDirty }}>
+    <UnsavedChangesModal isOpen={isNavBlocked} onDiscard={proceedNavigation} onCancel={cancelNavigation} />
     <div className="flex h-[calc(100vh-3rem)] overflow-hidden bg-gray-50 dark:bg-zinc-950">
       {/* Settings Sidebar */}
       <div className="w-[260px] flex-shrink-0 border-r border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col">
@@ -205,7 +236,7 @@ export default function SettingsPage() {
                       return (
                         <li key={item.key}>
                           <button
-                            onClick={() => item.isAction ? item.onClick() : navigate(item.path)}
+                            onClick={() => item.isAction ? item.onClick() : guardedNavigate(item.path)}
                             className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors
                               ${!item.isAction && active
                                 ? "bg-gray-900 dark:bg-zinc-100 font-medium text-white dark:text-zinc-900"
@@ -275,6 +306,7 @@ export default function SettingsPage() {
             <Route path="subscription" element={<SubscriptionSettings />} />
             <Route path="trash" element={<TrashSettings />} />
             <Route path="webhooks" element={<WebhooksPage />} />
+            <Route path="sso" element={<SSOSettings />} />
             <Route path="scim" element={<SCIMSettings />} />
             <Route path="periods" element={<PeriodSettings />} />
             <Route path="promotion-rules" element={<PromotionRulesSettings />} />
@@ -302,5 +334,6 @@ export default function SettingsPage() {
         </div>
       </div>
     </div>
+    </SettingsNavigationContext.Provider>
   );
 }

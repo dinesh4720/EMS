@@ -12,6 +12,8 @@ import { useApp } from '../../context/AppContext';
 import { DEFAULT_PERIODS } from '../../utils/constants';
 import { useTranslation } from 'react-i18next';
 import { toTodayDateString } from '../../utils/dateFormatter';
+import logger from '../../utils/logger';
+
 
 export default function Substitution() {
   const { t } = useTranslation();
@@ -78,7 +80,7 @@ export default function Substitution() {
       const data = await request(`/substitutions?date=${selectedDate}`);
       setSubstitutions(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('Error loading substitutions:', error);
+      logger.error('Error loading substitutions:', error);
       setSubstitutions([]);
     } finally {
       setLoading(false);

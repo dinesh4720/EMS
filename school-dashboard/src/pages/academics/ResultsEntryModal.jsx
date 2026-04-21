@@ -7,6 +7,8 @@ import { MinimalButton } from '../../components/ui';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { calculateGrade as calculateGradeUtil } from '../../utils/grading';
+import logger from '../../utils/logger';
+
 
 const ResultsEntryModal = ({ examId, onClose }) => {
   const { t } = useTranslation();
@@ -45,7 +47,7 @@ const ResultsEntryModal = ({ examId, onClose }) => {
 
         const resultsMap = {};
         (existingResults || []).forEach(r => {
-          const normalizedId = typeof r.studentId === 'object' ? (r.studentId._id || r.studentId) : r.studentId;
+          const normalizedId = String(typeof r.studentId === 'object' ? (r.studentId._id || r.studentId) : r.studentId);
           resultsMap[normalizedId] = {
             marksObtained: r.marksObtained,
             remarks: r.remarks || '',
@@ -55,7 +57,7 @@ const ResultsEntryModal = ({ examId, onClose }) => {
         setResults(resultsMap);
       }
     } catch (error) {
-      console.error('Error fetching data:', error);
+      logger.error('Error fetching data:', error);
       toast.error(t('toast.error.failedToLoadExamData'));
     } finally {
       setLoading(false);
@@ -72,10 +74,10 @@ const ResultsEntryModal = ({ examId, onClose }) => {
 
   const handleMarksChange = (studentId, value) => {
     const marks = parseInt(value) || 0;
-    const maxMarks = exam?.maxMarks || 100;
+    const maxMarks = exam?.maxMarks ?? 100;
 
     if (marks > maxMarks) {
-      toast.error(`Marks cannot exceed ${maxMarks}`);
+      toast.error(t('toast.error.marksExceedMaximum', { maxMarks }));
       return;
     }
 
@@ -117,7 +119,7 @@ const ResultsEntryModal = ({ examId, onClose }) => {
     return students
       .filter(student => dirtyStudentIds.has(String(student.id || student._id)))
       .map(student => {
-        const sid = student.id || student._id;
+        const sid = String(student.id || student._id);
         const entry = results[sid] || {};
         return {
           studentId: sid,
@@ -148,7 +150,7 @@ const ResultsEntryModal = ({ examId, onClose }) => {
       toast.success(t('toast.success.resultsSavedSuccessfully'));
       setDirtyStudentIds(new Set());
     } catch (error) {
-      console.error('Error saving results:', error);
+      logger.error('Error saving results:', error);
       // AUDIT-233: Handle 409 conflict with forceOverwrite option
       if (error?.status === 409) {
         const count = error.details?.staleStudentIds?.length || 0;

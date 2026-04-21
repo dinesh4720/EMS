@@ -1,23 +1,26 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Search, Command, ChevronRight, MessageCircle, Bell, Globe, Check } from "lucide-react";
+import { Search, Command, ChevronRight, MessageCircle, Globe, Check, Menu } from "lucide-react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import GlobalSearch from "./GlobalSearch";
+import NotificationBell from "./NotificationBell";
 import { AiAssistantToggle } from "../AiAssistant/AiAssistantPanel";
 import { useChatNotifications } from "../../context/ChatNotificationContext";
-import { Tooltip, Popover, PopoverTrigger, PopoverContent } from "@heroui/react";
-import NotificationCenter from "../../pages/messaging/components/notifications/NotificationCenter";
+import Tooltip from "../ui/Tooltip";
+import { Popover, PopoverTrigger, PopoverContent } from "@heroui/react";
 import { useApp } from "../../context/AppContext";
 import { isObjectId } from "../../utils/objectIdHelper";
-import { studentsApi, notificationsApi } from "../../services/api";
+import { studentsApi } from "../../services/api";
 import { SUPPORTED_LANGUAGES, setLanguage } from "../../i18n";
+import AcademicYearSelector from "../AcademicYearSelector";
 
-function Topbar({ isSidebarOpen }) {
+// TODO: Re-enable when I18N_ENABLED is set to true in i18n/index.js
+const I18N_ENABLED = false;
+
+function Topbar({ isSidebarOpen, onOpenMobileNav }) {
     const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform);
     const [searchOpen, setSearchOpen] = useState(false);
-    const [isNotificationOpen, setIsNotificationOpen] = useState(false);
     const [isLangOpen, setIsLangOpen] = useState(false);
-    const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
     const location = useLocation();
     const navigate = useNavigate();
     const { i18n } = useTranslation();
@@ -25,24 +28,6 @@ function Topbar({ isSidebarOpen }) {
     const unreadCount = chatNotifications?.unreadCount || 0;
     const { staff } = useApp();
     const [resolvedStudentLabel, setResolvedStudentLabel] = useState(null);
-
-    useEffect(() => {
-        const fetchUnreadCount = () => {
-            notificationsApi.getUnreadCount()
-                .then((data) => {
-                    setNotificationUnreadCount(data?.count ?? 0);
-                })
-                .catch(() => {
-                    setNotificationUnreadCount(0);
-                });
-        };
-
-        fetchUnreadCount();
-
-        // Poll every 60 seconds for new notifications
-        const interval = setInterval(fetchUnreadCount, 60000);
-        return () => clearInterval(interval);
-    }, []);
 
     useEffect(() => {
         const handleKeyDown = (e) => {
@@ -120,7 +105,16 @@ function Topbar({ isSidebarOpen }) {
             "accounts": "Accounts",
             "hostel": "Hostel",
             "transport": "Transport",
-            "library": "Library"
+            "library": "Library",
+            "academics": "Academics",
+            "reports": "Reports",
+            "data-tools": "Data Tools",
+            "inventory": "Inventory",
+            "ptm": "PTM",
+            "intake-forms": "Intake Forms",
+            "ai-assistant": "AI Assistant",
+            "timetable-wizard": "Timetable Wizard",
+            "super-admin": "Super Admin"
         };
 
         if (parts.length === 0) return [{ label: "Dashboard", path: "/" }];
@@ -135,7 +129,7 @@ function Topbar({ isSidebarOpen }) {
 
                 // Check if it's a staff ID
                 if (prevPart === 'staffs' && staff) {
-                    const staffMember = staff.find(s => s.id === part || s._id === part);
+                    const staffMember = staff.find(member => member.id === part || member._id === part);
                     if (staffMember && staffMember.name && !isObjectId(staffMember.name)) {
                         label = staffMember.name;
                     } else if (staffMember && staffMember.code) {
@@ -163,18 +157,34 @@ function Topbar({ isSidebarOpen }) {
         <header
             aria-label="Application header"
             className="
-                fixed top-0 right-0 z-40 h-14 px-5
-                flex items-center justify-between
+                fixed top-0 right-0 left-0 z-40 h-14 px-4 md:px-5
+                flex items-center justify-between gap-2
                 bg-white dark:bg-zinc-950
                 border-b border-gray-200 dark:border-zinc-800
                 transition-all duration-300
+                lg:!left-[var(--sidebar-width-collapsed)]
             "
-            style={{ left: isSidebarOpen ? 'var(--sidebar-width)' : 'var(--sidebar-width-collapsed)' }}
+            style={{
+                // Desktop: align left edge with sidebar. Mobile: full-width (handled by !left- override above).
+                left: isSidebarOpen ? 'var(--sidebar-width)' : 'var(--sidebar-width-collapsed)',
+            }}
         >
             <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
 
-            {/* Left: Breadcrumbs */}
-            <div className="flex-1 flex items-center gap-2 text-sm min-w-0">
+            {/* Mobile: hamburger menu */}
+            {onOpenMobileNav && (
+                <button
+                    type="button"
+                    onClick={onOpenMobileNav}
+                    aria-label="Open navigation menu"
+                    className="lg:hidden h-9 w-9 flex items-center justify-center text-gray-600 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
+                >
+                    <Menu size={18} />
+                </button>
+            )}
+
+            {/* Left: Breadcrumbs (hidden on smallest screens) */}
+            <div className="flex-1 hidden sm:flex items-center gap-2 text-sm min-w-0">
                 {breadcrumbs.map((crumb, index) => (
                     <div key={crumb.path} className="flex items-center gap-2 shrink-0">
                         {index > 0 && (
@@ -195,10 +205,11 @@ function Topbar({ isSidebarOpen }) {
             </div>
 
             {/* Center: Search */}
-            <div className="flex-1 flex justify-center max-w-md">
+            <div className="flex-1 hidden md:flex justify-center max-w-md">
                 <button
                     onClick={() => setSearchOpen(true)}
-                    className="flex items-center gap-2 px-3 py-2.5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg focus-within:border-gray-400 transition-colors w-full max-w-xs hover:bg-gray-50 dark:hover:bg-zinc-800"
+                    aria-label="Open global search (Cmd/Ctrl+K)"
+                    className="flex items-center gap-2 px-3 py-2.5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg focus-within:border-gray-400 transition-colors w-full max-w-xs hover:bg-gray-50 dark:hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
                 >
                     <Search className="text-gray-400 dark:text-zinc-500" size={16} />
                     <span className="text-gray-400 dark:text-zinc-500 text-sm flex-1 text-left">Search...</span>
@@ -211,36 +222,18 @@ function Topbar({ isSidebarOpen }) {
 
             {/* Right: Actions */}
             <div className="flex-1 flex items-center justify-end gap-1">
-                {/* Notifications */}
-                <Popover
-                    isOpen={isNotificationOpen}
-                    onOpenChange={(open) => {
-                        setIsNotificationOpen(open);
-                        // Reset badge when closing (user has seen notifications)
-                        if (!open) setNotificationUnreadCount(0);
-                    }}
-                    placement="bottom-end"
-                    offset={8}
-                    shouldBlockScroll={false}
+                {/* Mobile: compact search trigger */}
+                <button
+                    type="button"
+                    onClick={() => setSearchOpen(true)}
+                    aria-label="Search"
+                    className="md:hidden h-9 w-9 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
                 >
-                    <PopoverTrigger>
-                        <button
-                            data-tour="notifications"
-                            aria-label={notificationUnreadCount > 0 ? `${notificationUnreadCount} unread notifications` : 'Notifications'}
-                            className="relative h-9 w-9 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800 rounded-lg transition-colors"
-                        >
-                            <Bell size={16} />
-                            {notificationUnreadCount > 0 && (
-                                <span aria-hidden="true" className="absolute top-1.5 right-1.5 w-2 h-2 bg-gray-900 dark:bg-zinc-100 rounded-full" />
-                            )}
-                        </button>
-                    </PopoverTrigger>
-                    <PopoverContent className="p-0 w-[380px]">
-                        {isNotificationOpen && (
-                            <NotificationCenter onClose={() => setIsNotificationOpen(false)} isPopover={true} />
-                        )}
-                    </PopoverContent>
-                </Popover>
+                    <Search size={16} />
+                </button>
+
+                {/* Notifications */}
+                <NotificationBell />
 
                 {/* Chat Button */}
                 <Tooltip
@@ -249,18 +242,18 @@ function Topbar({ isSidebarOpen }) {
                 >
                     <button
                         onClick={() => navigate('/messaging')}
-                        className="relative h-9 w-9 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                        aria-label={unreadCount > 0 ? `Messages, ${unreadCount} unread` : "Messages"}
+                        className="relative h-9 w-9 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
                     >
                         <MessageCircle size={16} />
                         {unreadCount > 0 && (
-                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full" />
+                            <span aria-hidden="true" className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full" />
                         )}
                     </button>
                 </Tooltip>
 
                 {/* Language Switcher — hidden while i18n is disabled */}
-                {/* TODO: Re-enable when I18N_ENABLED is set to true in i18n/index.js */}
-                {false && (
+                {I18N_ENABLED && (
                 <Popover
                     isOpen={isLangOpen}
                     onOpenChange={setIsLangOpen}
@@ -297,8 +290,13 @@ function Topbar({ isSidebarOpen }) {
                 </Popover>
                 )}
 
+                {/* Academic Year Selector */}
+                <div className="hidden sm:block">
+                    <AcademicYearSelector />
+                </div>
+
                 {/* Divider */}
-                <div className="h-5 w-px bg-gray-200 dark:bg-zinc-700 mx-2" />
+                <div className="hidden sm:block h-5 w-px bg-gray-200 dark:bg-zinc-700 mx-2" />
 
                 {/* AI Assistant Toggle Button */}
                 <AiAssistantToggle />

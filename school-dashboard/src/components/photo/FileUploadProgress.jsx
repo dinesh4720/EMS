@@ -146,7 +146,7 @@ export const UnifiedUploadProgress = ({ uploads = [], onClose }) => {
                             </div>
                         </div>
                         {isAllCompleted && (
-                            <Button isIconOnly size="sm" variant="light" onPress={onClose} className="-mr-2 -mt-2">
+                            <Button isIconOnly size="sm" variant="light" aria-label="Close" onPress={onClose} className="-mr-2 -mt-2">
                                 <X size={16} />
                             </Button>
                         )}

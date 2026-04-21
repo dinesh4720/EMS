@@ -111,8 +111,16 @@ export default function GuidedTour({ steps, isOpen, onClose, tourId, autoStart =
   useEffect(() => {
     if (!isOpen) return;
     measureTarget();
-    window.addEventListener('resize', measureTarget);
-    return () => window.removeEventListener('resize', measureTarget);
+    let resizeTimeout;
+    const debouncedMeasure = () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(measureTarget, 150);
+    };
+    window.addEventListener('resize', debouncedMeasure);
+    return () => {
+      window.removeEventListener('resize', debouncedMeasure);
+      clearTimeout(resizeTimeout);
+    };
   }, [isOpen, measureTarget]);
 
   // ── Position tooltip after measurement ─────────────────────────────────────

@@ -1,5 +1,6 @@
 import { request } from '../../services/api.js';
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useEntityFetch } from "../../hooks/useEntityFetch";
 import { z } from "zod";
 import {
   Button,
@@ -37,6 +38,9 @@ import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
+import logger from '../../utils/logger';
+import { useCurrency } from '../../context/hooks/useCurrency';
+
 
 
 const categories = ["Academic", "Transport", "Extra-curricular", "Hostel", "Other"];
@@ -68,6 +72,7 @@ const CLASS_PRESETS = {
 
 export default function FeeHeadsUnified({ embedded = false }) {
   const { t } = useTranslation();
+  const { fmt, currencySymbol } = useCurrency();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
   const [viewMode, setViewMode] = useState("fee-heads"); // "fee-heads" | "by-class"
@@ -92,11 +97,11 @@ export default function FeeHeadsUnified({ embedded = false }) {
   // Class range input
   const [classRangeInput, setClassRangeInput] = useState("");
 
-  // Lazy loading
   const ITEMS_PER_LOAD = 10;
-  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const loaderRef = useRef(null);
+  const { visibleItems: visibleFeeHeads, hasMore, isLoadingMore, loaderRef } = useEntityFetch(
+    feeHeads,
+    [feeHeads.length]
+  );
 
   useEffect(() => {
     fetchFeeHeads();
@@ -108,45 +113,12 @@ export default function FeeHeadsUnified({ embedded = false }) {
       const data = await request('/fee-heads');
       setFeeHeads(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('Error fetching fee heads:', error);
+      logger.error('Error fetching fee heads:', error);
       toast.error(t('toast.error.failedToLoadFeeHeads'));
     } finally {
       setLoading(false);
     }
   };
-
-  const visibleFeeHeads = useMemo(
-    () => feeHeads.slice(0, visibleCount),
-    [feeHeads, visibleCount]
-  );
-
-  const hasMore = visibleCount < feeHeads.length;
-
-  useEffect(() => {
-    setVisibleCount(ITEMS_PER_LOAD);
-  }, [feeHeads.length]);
-
-  // Lazy loading observer
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
-          setIsLoadingMore(true);
-          setTimeout(() => {
-            setVisibleCount(prev => prev + ITEMS_PER_LOAD);
-            setIsLoadingMore(false);
-          }, 300);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (loaderRef.current) {
-      observer.observe(loaderRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [hasMore, isLoadingMore]);
 
   // Parse class range input (e.g., "1-5" or "6,7,8")
   const parseClassRange = (input) => {
@@ -241,7 +213,7 @@ export default function FeeHeadsUnified({ embedded = false }) {
       await fetchFeeHeads();
       onClose();
     } catch (error) {
-      console.error('Failed to save fee head:', error);
+      logger.error('Failed to save fee head:', error);
       toast.error(error.message || 'Failed to save fee head');
     } finally {
       setSaving(false);
@@ -366,7 +338,7 @@ export default function FeeHeadsUnified({ embedded = false }) {
         </div>
         <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
           <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider">{t('pages.totalAmount')}</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100 mt-1">₹{totalFees.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100 mt-1">{fmt(totalFees)}</p>
         </div>
       </div>
 
@@ -443,15 +415,15 @@ export default function FeeHeadsUnified({ embedded = false }) {
                     </div>
                     <div className="flex items-center gap-4">
                       <span className="text-xs text-gray-500 dark:text-zinc-400">
-                        Required: <span className="font-mono font-medium text-gray-900 dark:text-zinc-100">₹{data.totalRequired.toLocaleString()}</span>
+                        Required: <span className="font-mono font-medium text-gray-900 dark:text-zinc-100">{fmt(data.totalRequired)}</span>
                       </span>
                       {data.totalOptional > 0 && (
                         <span className="text-xs text-gray-500 dark:text-zinc-400">
-                          Optional: <span className="font-mono font-medium text-gray-900 dark:text-zinc-100">₹{data.totalOptional.toLocaleString()}</span>
+                          Optional: <span className="font-mono font-medium text-gray-900 dark:text-zinc-100">{fmt(data.totalOptional)}</span>
                         </span>
                       )}
                       <span className="text-xs font-medium text-gray-900 dark:text-zinc-100 bg-gray-100 dark:bg-zinc-800 px-2 py-0.5 rounded">
-                        Total ₹{data.total.toLocaleString()}
+                        Total {fmt(data.total)}
                       </span>
                     </div>
                   </button>
@@ -477,7 +449,7 @@ export default function FeeHeadsUnified({ embedded = false }) {
                                 <p className="text-xs text-gray-400 dark:text-zinc-500">{fh.frequency}</p>
                               </td>
                               <td className="px-4 py-2.5 text-gray-600 dark:text-zinc-400">{fh.category}</td>
-                              <td className="px-4 py-2.5 text-right font-mono text-gray-900 dark:text-zinc-100">₹{fh.amount?.toLocaleString() || 0}</td>
+                              <td className="px-4 py-2.5 text-right font-mono text-gray-900 dark:text-zinc-100">{fmt(fh.amount || 0)}</td>
                               <td className="px-4 py-2.5">
                                 <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium border border-gray-200 dark:border-zinc-800 rounded bg-gray-50 dark:bg-zinc-900">
                                   <span className={`w-1.5 h-1.5 rounded-full ${fh.mandatory ? "bg-gray-400" : "bg-gray-300"}`}></span>
@@ -555,7 +527,7 @@ export default function FeeHeadsUnified({ embedded = false }) {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <span className="font-mono text-gray-900 dark:text-zinc-100">₹{feeHead.amount?.toLocaleString() || 0}</span>
+                  <span className="font-mono text-gray-900 dark:text-zinc-100">{fmt(feeHead.amount || 0)}</span>
                 </TableCell>
                 <TableCell>
                   <span className="text-sm text-gray-600 dark:text-zinc-400">
@@ -650,7 +622,7 @@ export default function FeeHeadsUnified({ embedded = false }) {
                       Amount
                     </label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 text-sm">₹</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 text-sm">{currencySymbol}</span>
                       <input
                         type="number"
                         placeholder={t('fees.amountPlaceholder')}

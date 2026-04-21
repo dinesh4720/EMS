@@ -127,7 +127,9 @@
     "success": "सफल",
     "optional": "वैकल्पिक",
     "offlineBanner": "आप ऑफलाइन हैं। कुछ सुविधाएं अनुपलब्ध हो सकती हैं।",
-    "staleDataBanner": "डेटा पुराना हो सकता है। कृपया रिफ्रेश करें।"
+    "staleDataBanner": "डेटा पुराना हो सकता है। कृपया रिफ्रेश करें।",
+    "done": "हो गया",
+    "mandatory": "अनिवार्य"
   },
   "messaging": {
     "chat": {
@@ -1130,7 +1132,9 @@
     "deleteFeedback": "क्या आप वाकई इस प्रतिक्रिया को हटाना चाहते हैं?",
     "deleteAdmission": "क्या आप वाकई इस प्रवेश पूछताछ को हटाना चाहते हैं?",
     "deleteCallLog": "क्या आप वाकई इस कॉल लॉग को हटाना चाहते हैं?",
-    "deleteRoom": "क्या यह कमरा हटाएं?",
+    "deleteRoomTitle": "कमरा हटाएं",
+    "deleteRoom": "क्या यह कमरा हटाएं? यह पूर्ववत नहीं किया जा सकता।",
+    "deleteHostelTitle": "छात्रावास हटाएं",
     "deleteHostel": "क्या यह छात्रावास हटाएं? यह पूर्ववत नहीं किया जा सकता।",
     "deleteItem": "क्या आप वाकई इस आइटम को हटाना चाहते हैं?",
     "deleteItemNamed": "क्या आप वाकई इस {{name}} को हटाना चाहते हैं?",
@@ -1364,7 +1368,9 @@
       "auditCreated": "ऑडिट बनाया गया",
       "auditDeleted": "ऑडिट हटाया गया",
       "examDeletedSuccessfully": "परीक्षा सफलतापूर्वक हटाई गई",
-      "examCreatedSuccessfully": "परीक्षा सफलतापूर्वक बनाई गई!"
+      "examCreatedSuccessfully": "परीक्षा सफलतापूर्वक बनाई गई!",
+      "templateUpdated": "टेम्पलेट सफलतापूर्वक अपडेट हुआ",
+      "feeStructureApplied": "सभी छात्रों पर शुल्क संरचना लागू की गई"
     },
     "error": {
       "cSVFileAppearsToBeEmptyOrHasNoDataRows": "CSV फ़ाइल खाली प्रतीत होती है या इसमें कोई डेटा पंक्तियां नहीं हैं",
@@ -1372,6 +1378,7 @@
       "failedToTranscribeAudio": "ऑडियो ट्रांसक्राइब करने में विफल",
       "failedToLoadExamData": "परीक्षा डेटा लोड करने में विफल",
       "failedToSaveResults": "परिणाम सहेजने करने में विफल",
+      "insufficientPermissionsToSaveResults": "आपको परिणाम सहेजने की अनुमति नहीं है",
       "failedToLoadExams": "परीक्षाएं लोड करने में विफल",
       "failedToDeleteExam": "परीक्षा हटाने करने में विफल",
       "failedToLoadExamDetails": "परीक्षा विवरण लोड करने में विफल",
@@ -4485,6 +4492,17 @@
     "shareWithStaff": "कर्मचारियों के साथ साझा करें",
     "plansComparison": "योजना तुलना",
     "attendanceReport": "उपस्थिति रिपोर्ट",
-    "subjectWiseAttendanceComingSoonDesc": "When per-subject attendance tracking is enabled, you will see each subject attendance percentage here."
+    "subjectWiseAttendanceComingSoonDesc": "When per-subject attendance tracking is enabled, you will see each subject attendance percentage here.",
+    "createFeeTemplate": "शुल्क टेम्पलेट बनाएं",
+    "retry": "पुनः प्रयास"
+  },
+  "fees": {
+    "pendingAmount": "लंबित राशि",
+    "dueDate": "नियत तिथि",
+    "daysOverdue": "अतिदेय दिन",
+    "templateCount": "{{count}} टेम्पलेट",
+    "feeHeadNum": "शुल्क मद #{{num}}",
+    "templateUsedByStudents": "यह टेम्पलेट {{structureCount}} कक्षा शुल्क संरचनाओं में {{studentCount}} छात्रों पर लागू है। उनकी शुल्क संरचनाएं टेम्पलेट लिंक खो देंगी।",
+    "templateUsedByStructures": "यह टेम्पलेट {{structureCount}} कक्षा शुल्क संरचनाओं द्वारा उपयोग किया जाता है जिनमें अभी तक कोई छात्र नहीं है।"
   }
 }

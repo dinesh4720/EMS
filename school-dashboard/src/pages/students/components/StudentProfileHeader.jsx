@@ -66,7 +66,7 @@ export default function StudentProfileHeader({
         <div className="flex flex-col md:flex-row items-center gap-6 z-10 w-full lg:w-auto">
           {/* Back Button */}
           <div className="self-start md:self-center mr-2">
-            <Button isIconOnly variant="light" onPress={() => navigate('/students')} className="text-default-500">
+            <Button isIconOnly variant="light" aria-label="Back to students" onPress={() => navigate('/students')} className="text-default-500">
               <ArrowLeft size={20} />
             </Button>
           </div>
@@ -171,7 +171,7 @@ export default function StudentProfileHeader({
           {/* Vertical Dot Menu */}
           <Dropdown>
             <DropdownTrigger>
-              <Button isIconOnly variant="light" color="default">
+              <Button isIconOnly variant="light" color="default" aria-label="More actions">
                 <MoreVertical size={20} />
               </Button>
             </DropdownTrigger>

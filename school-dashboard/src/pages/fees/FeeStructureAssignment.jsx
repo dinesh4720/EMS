@@ -1,14 +1,18 @@
-import { request } from '../../services/api.js';
+import { feesApi } from '../../services/api.js';
 import { useState, useEffect, useMemo } from "react";
+import { feeStructureAssignmentSchema, parseFormSchema } from '../../validators/formSchemas';
 import { Card, CardBody, Button, Select, SelectItem, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Divider, Textarea, Spinner, Chip, Badge, ButtonGroup } from "@heroui/react";
 import { Save, Users, CheckCircle, AlertCircle, IndianRupee, Info, FileText, Copy } from "lucide-react";
 import toast from "react-hot-toast";
 import { useApp } from "../../context/AppContext";
+import { useCurrency } from '../../context/hooks/useCurrency';
 import { getAcademicYearOptions } from "../../utils/constants";
 import { getDateLocale } from '../../i18n/index';
 import { useTranslation } from 'react-i18next';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
+import logger from '../../utils/logger';
+
 
 
 
@@ -32,6 +36,7 @@ const buildAcademicYearDate = (academicYear, month, day, useNextYear = false) =>
 
 export default function FeeStructureAssignment({ classes, onAssignmentComplete }) {
   const { t } = useTranslation();
+  const { fmt } = useCurrency();
   const { currentAcademicYear } = useApp();
   const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
   const academicYearOptions = useMemo(
@@ -48,6 +53,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [academicYearOverride, setAcademicYearOverride] = useState(null);
   const [existingStructure, setExistingStructure] = useState(null);
+  const [structureLoading, setStructureLoading] = useState(false);
   const academicYear = academicYearOverride || currentAcademicYear;
   
   const [formData, setFormData] = useState({
@@ -80,10 +86,10 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
   const fetchTemplates = async () => {
     setTemplateError(null);
     try {
-      const data = await request('/fee-templates');
+      const data = await feesApi.getTemplates();
       setTemplates(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('Failed to fetch templates:', error);
+      logger.error('Failed to fetch templates:', error);
       setTemplateError(error.message || 'Failed to load fee templates');
       toast.error(t('toast.error.failedToLoadTemplates'));
     }
@@ -92,9 +98,9 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
   const fetchExistingStructure = async () => {
     if (!selectedClass) return;
 
+    setStructureLoading(true);
     try {
-      const yearParam = academicYear ? `?academicYear=${academicYear}` : '';
-      const data = await request(`/fee-structure/class/${selectedClass}${yearParam}`);
+      const data = await feesApi.getFeeStructure(selectedClass, academicYear);
       setExistingStructure(data);
       setFormData({
         templateId: data.templateId?._id || data.templateId || '',
@@ -115,6 +121,8 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
         collectionSchedule: { mode: 'term', installments: [] },
         totalAnnualFee: 0
       });
+    } finally {
+      setStructureLoading(false);
     }
   };
 
@@ -177,8 +185,13 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
   };
 
   const handleSaveStructure = async () => {
-    if (!selectedClass || formData.feeHeads.length === 0) {
-      toast.error(t('toast.error.pleaseSelectAClassAndAddFeeHeads'));
+    const { success, errors: zodErrors } = parseFormSchema(feeStructureAssignmentSchema, {
+      classId: selectedClass,
+      feeHeads: formData.feeHeads,
+      academicYear,
+    });
+    if (!success) {
+      toast.error(Object.values(zodErrors)[0] || t('toast.error.pleaseSelectAClassAndAddFeeHeads'));
       return;
     }
 
@@ -190,10 +203,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
         ...formData
       };
 
-      await request('/fee-structure', {
-        method: 'POST',
-        body: JSON.stringify(payload)
-      });
+      await feesApi.saveFeeStructure(payload);
 
       toast.success(t('toast.success.feeStructureSavedSuccessfully'));
       fetchExistingStructure();
@@ -202,7 +212,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
         onAssignmentComplete();
       }
     } catch (error) {
-      console.error('Failed to save structure:', error);
+      logger.error('Failed to save structure:', error);
       toast.error(t('toast.error.failedToSaveFeeStructure'));
     } finally {
       setSaving(false);
@@ -213,11 +223,11 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
     if (!selectedClass) return;
 
     try {
-      const data = await request(`/students/class/${selectedClass}/fee-status?academicYear=${academicYear}`);
+      const data = await feesApi.getClassFeeStatus(selectedClass, academicYear);
       setPreviewStudents(Array.isArray(data) ? data : []);
       onPreviewOpen();
     } catch (error) {
-      console.error('Failed to fetch students:', error);
+      logger.error('Failed to fetch students:', error);
       toast.error(t('toast.error.failedToLoadStudentList'));
     }
   };
@@ -236,17 +246,11 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
       onConfirm: async () => {
         setApplying(true);
         try {
-          const result = await request('/fee-structure/apply-to-students', {
-            method: 'POST',
-            body: JSON.stringify({
-              classId: selectedClass,
-              academicYear
-            })
-          });
-          toast.success(result.message || `Fee structure applied to all students`);
+          const result = await feesApi.applyToStudents({ classId: selectedClass, academicYear });
+          toast.success(result.message || t('toast.success.feeStructureApplied'));
           onPreviewClose();
         } catch (error) {
-          console.error('Failed to apply structure:', error);
+          logger.error('Failed to apply structure:', error);
           toast.error(t('toast.error.failedToApplyFeeStructureToStudents'));
         } finally {
           setApplying(false);
@@ -257,7 +261,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
 
   const updateFeeHeadAmount = (index, amount) => {
     const updatedHeads = [...formData.feeHeads];
-    updatedHeads[index].amount = parseFloat(amount) || 0;
+    updatedHeads[index].amount = Math.max(0, parseFloat(amount) || 0);
     
     // Recalculate total
     const newTotal = updatedHeads.reduce((sum, head) => {
@@ -290,7 +294,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
           </div>
           {existingStructure && (
             <Chip color="success" variant="flat" startContent={<CheckCircle size={16} />}>
-              Structure Exists
+              {t('pages.structureExists')}
             </Chip>
           )}
         </div>
@@ -332,15 +336,23 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
           <>
             <Divider />
 
+            {/* Structure loading indicator */}
+            {structureLoading && (
+              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400 py-2">
+                <span className="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
+                {t('pages.loadingFeeStructure', 'Loading fee structure...')}
+              </div>
+            )}
+
             {/* Template load error */}
             {templateError && (
               <div className="flex items-center gap-3 p-4 rounded-lg bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800">
                 <AlertCircle size={18} className="text-red-500 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-red-800 dark:text-red-200">Failed to load fee templates</p>
+                  <p className="text-sm font-medium text-red-800 dark:text-red-200">{t('toast.error.failedToLoadFeeTemplates')}</p>
                   <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">{templateError}</p>
                 </div>
-                <Button size="sm" variant="flat" color="danger" onPress={fetchTemplates}>Retry</Button>
+                <Button size="sm" variant="flat" color="danger" onPress={fetchTemplates}>{t('pages.retry')}</Button>
               </div>
             )}
 
@@ -365,7 +377,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
                     <div className="flex flex-col">
                       <span className="font-medium">{template.name}</span>
                       <span className="text-xs text-default-500">
-                        {template.section} • ₹{(template.totalAnnualFee || 0).toLocaleString()}/year
+                        {template.section} • {fmt(template.totalAnnualFee || 0)}/year
                       </span>
                     </div>
                   </SelectItem>
@@ -385,7 +397,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
                       <p className="text-xs text-default-500">{t('pages.reviewAndCustomizeAmountsIfNeeded')}</p>
                     </div>
                     <Badge color="primary" variant="flat" size="lg">
-                      ₹{formData.totalAnnualFee.toLocaleString()}/year
+                      {fmt(formData.totalAnnualFee)}/year
                     </Badge>
                   </div>
 
@@ -396,7 +408,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
                           <div className="flex items-center gap-2">
                             <span className="font-semibold text-default-900">{head.name}</span>
                             <Chip size="sm" color={head.mandatory ? "success" : "warning"} variant="flat">
-                              {head.mandatory ? 'Mandatory' : 'Optional'}
+                              {head.mandatory ? t('common.mandatory') : t('common.optional')}
                             </Chip>
                             <Chip size="sm" variant="flat">{head.frequency}</Chip>
                           </div>
@@ -410,6 +422,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
                             onValueChange={(v) => updateFeeHeadAmount(index, v)}
                             variant="bordered"
                             size="sm"
+                            min={0}
                             startContent={<IndianRupee size={16} className="text-default-400" />}
                             className="w-32"
                           />
@@ -455,7 +468,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
                       className="w-48"
                     >
                       {COLLECTION_MODES.map(mode => (
-                        <SelectItem key={mode.key} value={mode.key}>{mode.label}</SelectItem>
+                        <SelectItem key={mode.key} value={mode.key}>{t(`fees.collectionMode.${mode.key}`)}</SelectItem>
                       ))}
                     </Select>
                   </div>
@@ -465,9 +478,9 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
                       <div key={installment._id || installment.name} className="p-4 bg-primary-50 rounded-xl border border-primary-200">
                         <div className="flex items-center justify-between mb-2">
                           <span className="font-semibold text-primary-900">{installment.name}</span>
-                          <Chip size="sm" color="primary" variant="flat">Due: {installment.dueDate ? new Date(installment.dueDate).toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric' }) : '—'}</Chip>
+                          <Chip size="sm" color="primary" variant="flat">{t('fees.dueLabel', { date: installment.dueDate ? new Date(installment.dueDate).toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric' }) : '—' })}</Chip>
                         </div>
-                        <p className="text-2xl font-bold text-primary-700">₹{installment.amount.toLocaleString()}</p>
+                        <p className="text-2xl font-bold text-primary-700">{fmt(installment.amount)}</p>
                       </div>
                     ))}
                   </div>
@@ -482,7 +495,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
                     onPress={handlePreviewStudents}
                     isDisabled={!existingStructure}
                   >
-                    Preview Students ({previewStudents.length})
+                    {t('pages.previewStudents')} ({previewStudents.length})
                   </Button>
                   
                   <Button
@@ -492,7 +505,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
                     onPress={handleSaveStructure}
                     isLoading={saving}
                   >
-                    Save Structure
+                    {t('pages.saveStructure')}
                   </Button>
 
                   {existingStructure && (
@@ -503,7 +516,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
                       onPress={handleApplyToStudents}
                       isLoading={applying}
                     >
-                      Apply to Students
+                      {t('pages.applyToStudents1')}
                     </Button>
                   )}
                 </div>
@@ -558,11 +571,11 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
                     </div>
                     <div>
                       <p className="font-medium text-default-900">{student.name}</p>
-                      <p className="text-xs text-default-500">{student.admissionId} • Roll: {student.rollNo}</p>
+                      <p className="text-xs text-default-500">{student.admissionId} • {t('fees.rollLabel', { rollNo: student.rollNo })}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-default-900">₹{student.balanceAmount.toLocaleString()}</p>
+                    <p className="font-semibold text-default-900">{fmt(student.balanceAmount)}</p>
                     <Chip 
                       size="sm" 
                       color={student.status === 'paid' ? 'success' : student.status === 'partial' ? 'warning' : 'danger'}
@@ -579,7 +592,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
 
           <ModalFooter>
             <Button variant="light" onPress={onPreviewClose}>
-              Close
+              {t('common.close')}
             </Button>
             <Button
               color="success"
@@ -587,7 +600,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
               isLoading={applying}
               startContent={<CheckCircle size={18} />}
             >
-              Apply to All Students
+              {t('pages.applyToAllStudents')}
             </Button>
           </ModalFooter>
         </ModalContent>

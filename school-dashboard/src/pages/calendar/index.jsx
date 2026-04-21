@@ -15,6 +15,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { getDateLocale } from '../../i18n/index';
 import { useTranslation } from 'react-i18next';
 import ConfirmDialog from "../../components/ConfirmDialog";
+import logger from '../../utils/logger';
+
 
 
 const eventTypes = {
@@ -120,7 +122,7 @@ export default function CalendarPage() {
       );
       setStaffAppointments(filtered);
     } catch (error) {
-      console.error('Failed to load appointments:', error);
+      logger.error('Failed to load appointments:', error);
       setStaffAppointments([]);
     } finally {
       setLoadingAppointments(false);
@@ -138,7 +140,7 @@ export default function CalendarPage() {
         setStaffTimetable(null);
       }
     } catch (error) {
-      console.error('Failed to load timetable:', error);
+      logger.error('Failed to load timetable:', error);
       setStaffTimetable(null);
     } finally {
       setLoadingTimetable(false);
@@ -771,6 +773,7 @@ export default function CalendarPage() {
               isIconOnly
               size="sm"
               variant="light"
+              aria-label="Previous year"
               className="text-default-400 hover:bg-default-100"
               onPress={() => {
                 const newDate = new Date(currentDate);
@@ -780,16 +783,17 @@ export default function CalendarPage() {
             >
               <ChevronsLeft size={16} />
             </Button>
-            <Button isIconOnly size="sm" variant="light" className="text-default-500 hover:bg-default-100" onPress={() => navigate(-1)}>
+            <Button isIconOnly size="sm" variant="light" aria-label="Previous month" className="text-default-500 hover:bg-default-100" onPress={() => navigate(-1)}>
               <ChevronLeft size={18} />
             </Button>
-            <Button isIconOnly size="sm" variant="light" className="text-default-500 hover:bg-default-100" onPress={() => navigate(1)}>
+            <Button isIconOnly size="sm" variant="light" aria-label="Next month" className="text-default-500 hover:bg-default-100" onPress={() => navigate(1)}>
               <ChevronRight size={18} />
             </Button>
             <Button
               isIconOnly
               size="sm"
               variant="light"
+              aria-label="Next year"
               className="text-default-400 hover:bg-default-100"
               onPress={() => {
                 const newDate = new Date(currentDate);
@@ -1058,7 +1062,7 @@ export default function CalendarPage() {
           <div className="flex flex-col h-full">
             <div className="flex items-center justify-between p-3 border-b border-default-100">
               <h3 className="text-sm font-semibold text-foreground">{t('pages.staffSchedule')}</h3>
-              <Button isIconOnly size="sm" variant="light" className="text-default-400" onPress={() => setSidebarExpanded(false)}>
+              <Button isIconOnly size="sm" variant="light" aria-label="Collapse sidebar" className="text-default-400" onPress={() => setSidebarExpanded(false)}>
                 <ChevronRight size={16} />
               </Button>
             </div>
@@ -1211,7 +1215,7 @@ export default function CalendarPage() {
           </div>
         ) : (
           <div className="flex flex-col items-center py-3">
-            <Button isIconOnly size="sm" variant="light" className="text-default-400" onPress={() => setSidebarExpanded(true)}>
+            <Button isIconOnly size="sm" variant="light" aria-label="Expand sidebar" className="text-default-400" onPress={() => setSidebarExpanded(true)}>
               <ChevronLeft size={16} />
             </Button>
             <div className="mt-2 writing-mode-vertical text-[10px] text-default-400 font-medium">{t('pages.staff1')}</div>
@@ -1272,6 +1276,7 @@ export default function CalendarPage() {
                   isIconOnly
                   size="sm"
                   variant="light"
+                  aria-label="Close"
                   onPress={onAddClose}
                   className="text-default-400 hover:text-foreground"
                 >

@@ -40,6 +40,7 @@ function ActionsCell({
                         size="sm"
                         variant="light"
                         className={student.isPinned ? "text-primary" : "text-default-400"}
+                        aria-label={student.isPinned ? "Unpin student" : "Pin student"}
                         onMouseDown={(e) => e.preventDefault()}
                         onPress={() => {
                             if (student.isPinned) {
@@ -60,6 +61,7 @@ function ActionsCell({
                         size="sm"
                         variant="light"
                         className="text-default-400"
+                        aria-label="Edit student details"
                         onMouseDown={(e) => e.preventDefault()}
                         onPress={() => {
                             setSelectedStudent(student);
@@ -78,6 +80,7 @@ function ActionsCell({
                             size="sm"
                             variant="light"
                             className="text-default-400"
+                            aria-label="More actions"
                             onMouseDown={(e) => e.preventDefault()}
                         >
                             <MoreVertical size={18} />

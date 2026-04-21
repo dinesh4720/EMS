@@ -26,17 +26,20 @@ export default function Announcements({ isDrawerOpen, setIsDrawerOpen }) {
   }, [isDrawerOpen]);
 
   useEffect(() => {
+    let mounted = true;
     if (refreshKey === 0) setLoading(true);
     announcementsApi.getAll()
       .then((data) => {
+        if (!mounted) return;
         const list = Array.isArray(data) ? data : (data?.announcements || []);
         const sent = list.filter(a => a.status === 'sent').length;
         const scheduled = list.filter(a => a.status === 'scheduled').length;
         const delivered = list.reduce((sum, a) => sum + (a.deliveredCount || a.recipientCount || 0), 0);
         setAnnouncementStats({ sent, delivered, scheduled });
       })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      .catch(() => { if (mounted) toast.error(t('toast.error.failedToLoad')); })
+      .finally(() => { if (mounted) setLoading(false); });
+    return () => { mounted = false; };
   }, [refreshKey]);
 
   const handleView = (announcement) => {

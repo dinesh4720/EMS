@@ -16,6 +16,8 @@ import HomeworkDetailModal from './HomeworkDetailModal';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { formatShortDate } from '../../utils/dateFormatter';
+import logger from '../../utils/logger';
+
 
 const STATUS_OPTIONS = ['all', 'active', 'completed', 'cancelled'];
 
@@ -100,7 +102,7 @@ const HomeworkPage = () => {
       homeworkCache.data = items;
       homeworkCache.timestamp = now;
     } catch (error) {
-      console.error('Error fetching homework:', error);
+      logger.error('Error fetching homework:', error);
       toast.error(t('toast.error.failedToLoadHomework'));
     } finally {
       setLoading(false);
@@ -127,7 +129,7 @@ const HomeworkPage = () => {
       toast.success(t('toast.success.homeworkDeletedSuccessfully'));
       refreshHomework();
     } catch (error) {
-      console.error('Error deleting homework:', error);
+      logger.error('Error deleting homework:', error);
       toast.error(t('toast.error.failedToDeleteHomework'));
     } finally {
       setDeleteModal({ isOpen: false, id: null, title: '' });

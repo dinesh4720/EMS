@@ -3,14 +3,14 @@ import {
     DropdownSection, Checkbox,
 } from "@heroui/react";
 import {
-    Search, ArrowUpDown, MoreVertical, ChevronDown,
+    ArrowUpDown, MoreVertical, ChevronDown,
     Check, Download, UserX,
-    ArrowUpCircle, Columns3, MessageSquare, FileText,
+    ArrowUpCircle, Columns3, MessageSquare, FileText, Trash2,
 } from "lucide-react";
 import { GraduationCap, FileSpreadsheet } from "lucide-react";
-import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import FiltersDropdown from "../../../../components/FiltersDropdown";
+import SearchInput from "../../../../components/ui/SearchInput";
 import { ALL_COLUMNS } from "../../utils/studentImportUtils";
 
 /**
@@ -218,31 +218,14 @@ export default function StudentsFiltersBar({
                     </Dropdown>
 
                     {/* Search */}
-                    <div className="flex items-center gap-2 w-full sm:max-w-[280px] px-3 py-2.5 bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600 focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-all">
-                        {isSearching ? (
-                            <div className="w-4 h-4 border-2 border-gray-300 dark:border-zinc-600 border-t-teal-500 rounded-full animate-spin flex-shrink-0" />
-                        ) : (
-                            <Search size={16} className="text-gray-400 dark:text-zinc-500 flex-shrink-0" />
-                        )}
-                        <input
-                            type="search"
-                            name="student-search-query"
-                            placeholder={t('students.form.searchNameIdPhonePlaceholder')}
-                            className="flex-1 bg-transparent outline-none text-sm text-gray-800 dark:text-zinc-200 placeholder:text-gray-500 dark:placeholder:text-zinc-500"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            autoComplete="off"
-                            data-form-type="other"
-                        />
-                        {searchQuery && (
-                            <button
-                                onClick={() => setSearchQuery("")}
-                                className="p-0.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded cursor-pointer"
-                            >
-                                <X size={14} className="text-gray-400 dark:text-zinc-500" />
-                            </button>
-                        )}
-                    </div>
+                    <SearchInput
+                        value={searchQuery}
+                        onChange={setSearchQuery}
+                        name="student-search-query"
+                        placeholder={t('students.form.searchNameIdPhonePlaceholder')}
+                        isLoading={isSearching}
+                        className="w-full sm:max-w-[280px] px-3 py-2.5 bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600 focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-all"
+                    />
                 </div>
 
                 {/* Right side: bulk actions + filter tools */}
@@ -311,6 +294,17 @@ export default function StudentsFiltersBar({
                                         onPress={downloadSelectedStudents}
                                     >
                                         Download Selected as CSV
+                                    </DropdownItem>
+                                </DropdownSection>
+                                <DropdownSection title="Danger Zone">
+                                    <DropdownItem
+                                        key="delete"
+                                        className="text-danger"
+                                        color="danger"
+                                        startContent={<Trash2 size={14} />}
+                                        onPress={() => handleBulkAction("delete")}
+                                    >
+                                        Delete Selected
                                     </DropdownItem>
                                 </DropdownSection>
                             </DropdownMenu>

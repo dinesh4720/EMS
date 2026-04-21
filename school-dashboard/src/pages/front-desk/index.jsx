@@ -1,4 +1,3 @@
-import { Navigate } from 'react-router-dom';
 import FrontDeskDashboard from './FrontDeskDashboard';
 import { useTranslation } from 'react-i18next';
 

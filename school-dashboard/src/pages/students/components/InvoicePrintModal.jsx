@@ -5,6 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { useApp } from '../../../context/AppContext';
 import { formatShortDate } from '../../../utils/dateFormatter';
 import { formatCurrencyPrecise } from '../../../utils/numberFormatter';
+import toast from 'react-hot-toast';
+import logger from '../../../utils/logger';
+
 
 
 // School configuration - prefers live school settings from API
@@ -48,7 +51,7 @@ export default function InvoicePrintModal({
   // Handle print using Blob URL to avoid document.write XSS
   const handlePrint = useCallback(() => {
     if (!printRef.current) {
-      console.error('Print content not ready');
+      logger.error('Print content not ready');
       return;
     }
 
@@ -223,6 +226,61 @@ export default function InvoicePrintModal({
       }
     }, 800);
   }, [invoiceNumber]);
+
+  // Build receipt text for sharing
+  const buildReceiptText = useCallback(() => {
+    const latestPayment = feeHistory?.[0] || selectedPayment;
+    const receiptNo = latestPayment?.receiptNumber || invoiceNumber;
+    const paidAmt = latestPayment?.amount != null
+      ? latestPayment.amount
+      : (studentFeeStructure?.totalPaid || 0);
+    const balanceAmt = studentFeeStructure?.totalBalance || 0;
+    const paymentDate = latestPayment?.paymentDate || latestPayment?.date
+      ? formatShortDate(latestPayment.paymentDate || latestPayment.date)
+      : formatShortDate(new Date());
+    const lines = [
+      `📋 Fee Receipt — ${schoolConfig.name}`,
+      ``,
+      `Student: ${student?.name || ''}`,
+      `Class: ${student?.class || ''}${student?.section ? ` - ${student.section}` : ''}`,
+      `Receipt No: ${receiptNo}`,
+      `Date: ${paymentDate}`,
+      `Amount Paid: ₹${formatCurrency(paidAmt)}`,
+      balanceAmt > 0 ? `Balance Due: ₹${formatCurrency(balanceAmt)}` : `Balance: Fully Paid ✅`,
+      ``,
+      `Thank you for your payment!`,
+    ];
+    return lines.join('\n');
+  }, [feeHistory, selectedPayment, invoiceNumber, schoolConfig.name, student, studentFeeStructure]);
+
+  const handleWhatsAppShare = useCallback(() => {
+    const text = buildReceiptText();
+    const phone = student?.parentPhone;
+    // Normalize phone: strip non-digits, add 91 country code if 10-digit Indian number
+    let wa = '';
+    if (phone) {
+      const digits = phone.replace(/\D/g, '');
+      wa = digits.length === 10 ? `91${digits}` : digits;
+    }
+    const url = wa
+      ? `https://wa.me/${wa}?text=${encodeURIComponent(text)}`
+      : `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }, [buildReceiptText, student]);
+
+  const handleEmailShare = useCallback(() => {
+    const text = buildReceiptText();
+    const email = student?.parentEmail || '';
+    const subject = encodeURIComponent(`Fee Receipt — ${student?.name || ''} — ${schoolConfig.name}`);
+    const body = encodeURIComponent(text);
+    const mailto = email
+      ? `mailto:${email}?subject=${subject}&body=${body}`
+      : `mailto:?subject=${subject}&body=${body}`;
+    window.location.href = mailto;
+    if (!email) {
+      toast('No parent email on record — enter the address manually.', { icon: 'ℹ️' });
+    }
+  }, [buildReceiptText, student, schoolConfig.name]);
 
   // Early return if no student data
   if (!student) {
@@ -515,23 +573,57 @@ export default function InvoicePrintModal({
               </Checkbox>
             </div>
           )}
-          <div className="flex justify-end gap-2">
-            <Button variant="light" onPress={onClose} className="text-gray-600 dark:text-zinc-400">
-              Close
-            </Button>
-            <Button
-              className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-gray-800 dark:hover:bg-zinc-200"
-              onPress={handlePrint}
-              startContent={
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="7 10 12 15 17 10"/>
-                  <line x1="12" y1="15" x2="12" y2="3"/>
-                </svg>
-              }
-            >
-              Download / Print
-            </Button>
+          <div className="flex justify-between items-center gap-2 flex-wrap">
+            <div className="flex gap-2">
+              {/* WhatsApp share */}
+              <Button
+                variant="flat"
+                size="sm"
+                onPress={handleWhatsAppShare}
+                className="bg-[#25D366] text-white hover:bg-[#1ebe5d]"
+                startContent={
+                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                    <path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.116 1.524 5.845L.057 23.428a.75.75 0 0 0 .916.916l5.583-1.467A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.694 9.694 0 0 1-4.945-1.354l-.354-.212-3.665.963.98-3.578-.232-.368A9.692 9.692 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/>
+                  </svg>
+                }
+              >
+                WhatsApp
+              </Button>
+              {/* Email share */}
+              <Button
+                variant="flat"
+                size="sm"
+                onPress={handleEmailShare}
+                className="bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900"
+                startContent={
+                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="4" width="20" height="16" rx="2"/>
+                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                  </svg>
+                }
+              >
+                Email
+              </Button>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="light" onPress={onClose} className="text-gray-600 dark:text-zinc-400">
+                Close
+              </Button>
+              <Button
+                className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-gray-800 dark:hover:bg-zinc-200"
+                onPress={handlePrint}
+                startContent={
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                }
+              >
+                Download / Print
+              </Button>
+            </div>
           </div>
         </ModalFooter>
       </ModalContent>

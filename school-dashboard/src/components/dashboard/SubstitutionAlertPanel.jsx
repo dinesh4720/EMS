@@ -246,6 +246,7 @@ export default function SubstitutionAlertPanel({ className = '' }) {
               isIconOnly
               size="sm"
               variant="light"
+              aria-label={soundEnabled ? 'Mute notifications' : 'Unmute notifications'}
               onPress={() => setSoundEnabled(!soundEnabled)}
             >
               {soundEnabled ? (
@@ -258,6 +259,7 @@ export default function SubstitutionAlertPanel({ className = '' }) {
               isIconOnly
               size="sm"
               variant="light"
+              aria-label="Refresh"
               onPress={handleRefresh}
               isLoading={refreshing}
             >

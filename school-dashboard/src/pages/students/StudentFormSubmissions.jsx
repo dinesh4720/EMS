@@ -262,6 +262,7 @@ export default function StudentFormSubmissions() {
       {/* Submissions Table */}
       <Card>
         <CardBody className="p-0">
+          <div className="overflow-x-auto">
           <Table
             aria-label={t('aria.tables.studentFormSubmissions')}
             removeWrapper
@@ -326,7 +327,7 @@ export default function StudentFormSubmissions() {
                   <TableCell>
                     <Dropdown>
                       <DropdownTrigger>
-                        <Button isIconOnly size="sm" variant="light">
+                        <Button isIconOnly size="sm" variant="light" aria-label="More actions">
                           <MoreVertical size={16} />
                         </Button>
                       </DropdownTrigger>
@@ -356,6 +357,7 @@ export default function StudentFormSubmissions() {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardBody>
       </Card>
 

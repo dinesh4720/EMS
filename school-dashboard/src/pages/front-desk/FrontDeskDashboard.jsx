@@ -14,6 +14,8 @@ import FeedbacksList from './FeedbacksList';
 import CallLogsList from './CallLogsList';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
+import logger from '../../utils/logger';
+
 
 // Hardcoded UI strings — centralised here for future i18n migration
 const STRINGS = {
@@ -45,6 +47,7 @@ export default function FrontDeskDashboard() {
     todayCalls: 0,
   });
   const [recentActivity, setRecentActivity] = useState([]);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     loadStats();
@@ -89,7 +92,7 @@ export default function FrontDeskDashboard() {
       activities.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
       setRecentActivity(activities);
     } catch (error) {
-      console.error('Error loading stats:', error);
+      logger.error('Error loading stats:', error);
       toast.error('Failed to load dashboard data');
     }
   };
@@ -139,6 +142,93 @@ export default function FrontDeskDashboard() {
     }
   };
 
+  const handleExport = async () => {
+    const sanitize = (value) => {
+      const str = String(value ?? '');
+      return (/^[=+\-@\t\r]/.test(str) ? "'" : '') + str.replace(/"/g, '""');
+    };
+    const toCSV = (headers, rows, title) =>
+      [title, '', headers.join(','), ...rows.map(r => r.map(c => `"${sanitize(c)}"`).join(','))].join('\n');
+    const triggerDownload = (content, filename) => {
+      const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    };
+
+    setIsExporting(true);
+    try {
+      const date = new Date().toISOString().split('T')[0];
+      if (selectedTab === 'overview') {
+        const content = toCSV(
+          ['Metric', 'Value'],
+          [
+            ['Today Visitors', stats.todayVisitors],
+            ['Today Gate Passes', stats.todayGatePasses],
+            ['Upcoming Appointments', stats.upcomingAppointments],
+            ['Open Feedbacks', stats.openFeedbacks],
+            ['Today Calls', stats.todayCalls],
+          ],
+          'Front Desk Overview'
+        );
+        triggerDownload(content, `front-desk-overview-${date}.csv`);
+      } else if (selectedTab === 'visitors') {
+        const data = await frontDeskApi.getVisitorsToday();
+        const content = toCSV(
+          ['Name', 'Phone', 'Email', 'Purpose', 'Whom To Meet', 'Check In', 'Check Out', 'Status'],
+          data.map(v => [v.name, v.phone || v.phoneNumber, v.email, v.purpose, v.whomToMeet, v.checkInTime, v.checkOutTime, v.status]),
+          `Visitors - ${date}`
+        );
+        triggerDownload(content, `visitors-${date}.csv`);
+      } else if (selectedTab === 'gate-passes') {
+        const data = await frontDeskApi.getGatePassesToday();
+        const content = toCSV(
+          ['Student Name', 'Class', 'Reason', 'Out Time', 'In Time', 'Status'],
+          data.map(g => [g.studentName, g.className, g.reason, g.outTime, g.inTime, g.status]),
+          `Gate Passes - ${date}`
+        );
+        triggerDownload(content, `gate-passes-${date}.csv`);
+      } else if (selectedTab === 'appointments') {
+        const raw = await frontDeskApi.getAppointments({});
+        const list = Array.isArray(raw) ? raw : (raw?.data || []);
+        const content = toCSV(
+          ['Visitor Name', 'Phone', 'Purpose', 'Host', 'Date', 'Time', 'Status'],
+          list.map(a => [a.visitorName || a.name, a.phone || a.phoneNumber, a.purpose, a.hostName || a.host, a.appointmentDate || a.date, a.time, a.status]),
+          `Appointments - ${date}`
+        );
+        triggerDownload(content, `appointments-${date}.csv`);
+      } else if (selectedTab === 'feedbacks') {
+        const raw = await frontDeskApi.getFeedbacks({});
+        const list = Array.isArray(raw) ? raw : (raw?.data || []);
+        const content = toCSV(
+          ['Name', 'Phone', 'Category', 'Message', 'Status', 'Date'],
+          list.map(f => [f.name, f.phone, f.category, f.message || f.feedback, f.status, f.createdAt]),
+          `Feedbacks - ${date}`
+        );
+        triggerDownload(content, `feedbacks-${date}.csv`);
+      } else if (selectedTab === 'call-logs') {
+        const raw = await frontDeskApi.getCallLogs();
+        const list = Array.isArray(raw) ? raw : (raw?.data || []);
+        const content = toCSV(
+          ['Caller Name', 'Phone', 'Purpose', 'Date/Time', 'Summary', 'Status'],
+          list.map(c => [c.callerName, c.phoneNumber || c.phone, c.purpose, c.dateTime, c.summary || c.keyNotes, c.status]),
+          `Call Logs - ${date}`
+        );
+        triggerDownload(content, `call-logs-${date}.csv`);
+      }
+    } catch (error) {
+      logger.error('Export failed:', error);
+      toast.error('Export failed');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="w-full flex-1 bg-gray-50 dark:bg-zinc-950 p-6 min-h-screen">
       {/* Tabs Row with Actions */}
@@ -174,7 +264,7 @@ export default function FrontDeskDashboard() {
               ))}
             </DropdownMenu>
           </Dropdown>
-          <Button variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300" startContent={<Download size={16} />}>
+          <Button variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300" startContent={<Download size={16} />} onClick={handleExport} isLoading={isExporting}>
             {STRINGS.export}
           </Button>
         </div>

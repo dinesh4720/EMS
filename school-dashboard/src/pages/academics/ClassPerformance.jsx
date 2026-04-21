@@ -5,7 +5,7 @@ import { useValidatedParams } from '../../hooks/useValidatedParams';
 import {
   Card, CardBody, CardHeader, Chip, Select, SelectItem,
   Button, Progress, Table, TableHeader, TableColumn,
-  TableBody, TableRow, TableCell, Input, Divider
+  TableBody, TableRow, TableCell, Input
 } from '@heroui/react';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import {
@@ -15,31 +15,34 @@ import {
 } from 'lucide-react';
 import { toTodayDateString } from '../../utils/dateFormatter';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer, LineChart, Line
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer
 } from 'recharts';
 import { useApp } from '../../context/AppContext';
 import { getAcademicYearOptions } from '../../utils/constants';
 import { CHART_COLORS } from '../../utils/chartTheme';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
+import logger from '../../utils/logger';
+
 
 const ClassPerformance = () => {
   const { t } = useTranslation();
   const { params: { classId }, isValid } = useValidatedParams({ classId: 'objectId' }, { redirectTo: '/academics' });
   const navigate = useNavigate();
-  const { currentAcademicYear } = useApp();
+  const { currentAcademicYear, selectedAcademicYear, setSelectedAcademicYear } = useApp();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [classInfo, setClassInfo] = useState(null);
   const [students, setStudents] = useState([]);
   const [performance, setPerformance] = useState([]);
+  const [subjectData, setSubjectData] = useState([]);
+  const [perfStats, setPerfStats] = useState(null);
   const [exams, setExams] = useState([]);
-  const [selectedYearOverride, setSelectedYearOverride] = useState(null);
   const [selectedTerm] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const selectedYear = selectedYearOverride || currentAcademicYear;
+  const selectedYear = selectedAcademicYear;
   const academicYearOptions = getAcademicYearOptions(currentAcademicYear, { past: 2, future: 1 });
 
 
@@ -65,11 +68,16 @@ const ClassPerformance = () => {
       if (classData.status === 'fulfilled') setClassInfo(classData.value);
       else setError(classData.reason?.message || 'Failed to load class data');
       if (studentsData.status === 'fulfilled') setStudents(studentsData.value);
-      if (perfData.status === 'fulfilled') setPerformance(perfData.value);
+      if (perfData.status === 'fulfilled') {
+        const pd = perfData.value;
+        setPerformance(pd.students || []);
+        setSubjectData(pd.subjectBreakdown || []);
+        setPerfStats(pd.stats || null);
+      }
       if (examsData.status === 'fulfilled') setExams(examsData.value);
     } catch (err) {
       if (err.name === 'AbortError') return;
-      console.error('Error fetching class performance:', err);
+      logger.error('Error fetching class performance:', err);
       setError(err.message || 'Failed to load performance data');
     } finally {
       if (!signal?.aborted) setLoading(false);
@@ -80,27 +88,19 @@ const ClassPerformance = () => {
   const buildStudentRanking = () => {
     if (performance.length === 0) return [];
 
-    return performance.map(p => {
-      const student = students.find(s => s.id === p.studentId);
-      return {
-        id: p.studentId,
-        name: student?.name || p.studentName || 'Unknown',
-        rollNo: student?.rollNo || '-',
-        percentage: p.overallPercentage,
-        grade: p.overallGrade,
-        rank: p.classRank,
-        trend: p.trend
-      };
-    }).sort((a, b) => a.rank - b.rank);
+    return performance.map(p => ({
+      id: p.studentId,
+      name: p.name || 'Unknown',
+      rollNo: p.rollNo || '-',
+      percentage: p.overallPercentage,
+      grade: p.overallGrade,
+      rank: p.classRank,
+      trend: p.trend
+    })).sort((a, b) => a.rank - b.rank);
   };
 
-  // Build subject breakdown — only from real data
-  const buildSubjectBreakdown = () => {
-    if (performance.length > 0 && performance[0].subjectWisePerformance) {
-      return performance[0].subjectWisePerformance;
-    }
-    return [];
-  };
+  // Build subject breakdown — from API response
+  const buildSubjectBreakdown = () => subjectData;
 
   // Filter students by search
   const filteredStudents = buildStudentRanking().filter(s =>
@@ -110,18 +110,24 @@ const ClassPerformance = () => {
 
   const subjectBreakdown = buildSubjectBreakdown();
 
-  // Class stats
+  // Class stats — prefer backend-computed stats, fall back to local computation
   const classStats = {
-    totalStudents: students.length,
-    averageScore: performance.length > 0
-      ? (performance.reduce((sum, p) => sum + (p.overallPercentage || 0), 0) / performance.length).toFixed(1)
-      : '—',
-    passingRate: performance.length > 0
-      ? `${Math.round((performance.filter(p => (p.overallPercentage || 0) >= 33).length / performance.length) * 100)}%`
-      : '—',
-    topScore: filteredStudents.length > 0
-      ? Math.max(...filteredStudents.map(s => s.percentage)).toFixed(1)
-      : '—'
+    totalStudents: perfStats?.totalStudents ?? students.length,
+    averageScore: perfStats?.averageScore != null
+      ? Number(perfStats.averageScore).toFixed(1)
+      : performance.length > 0
+        ? (performance.reduce((sum, p) => sum + (p.overallPercentage || 0), 0) / performance.length).toFixed(1)
+        : '—',
+    passingRate: perfStats?.passingRate != null
+      ? `${perfStats.passingRate}%`
+      : performance.length > 0
+        ? `${Math.round((performance.filter(p => (p.overallPercentage || 0) >= 33).length / performance.length) * 100)}%`
+        : '—',
+    topScore: perfStats?.topScore != null
+      ? Number(perfStats.topScore).toFixed(1)
+      : filteredStudents.length > 0
+        ? Math.max(...filteredStudents.map(s => s.percentage)).toFixed(1)
+        : '—'
   };
 
   const handleExport = () => {
@@ -219,7 +225,7 @@ const ClassPerformance = () => {
             selectedKeys={[selectedYear]}
             onSelectionChange={(keys) => {
               const nextYear = Array.from(keys)[0];
-              setSelectedYearOverride(nextYear === currentAcademicYear ? null : nextYear);
+              setSelectedAcademicYear(nextYear === currentAcademicYear ? null : nextYear);
             }}
             className="w-32"
           >
@@ -307,24 +313,32 @@ const ClassPerformance = () => {
             </div>
           </CardHeader>
           <CardBody className="p-6">
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart
-                data={[
-                  { range: '90-100', count: filteredStudents.filter(s => s.percentage >= 90).length },
-                  { range: '80-89', count: filteredStudents.filter(s => s.percentage >= 80 && s.percentage < 90).length },
-                  { range: '70-79', count: filteredStudents.filter(s => s.percentage >= 70 && s.percentage < 80).length },
-                  { range: '60-69', count: filteredStudents.filter(s => s.percentage >= 60 && s.percentage < 70).length },
-                  { range: '50-59', count: filteredStudents.filter(s => s.percentage >= 50 && s.percentage < 60).length },
-                  { range: '<50', count: filteredStudents.filter(s => s.percentage < 50).length },
-                ]}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="range" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Bar dataKey="count" fill={CHART_COLORS.blue} radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {filteredStudents.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-[250px] gap-2 text-center">
+                <BarChart3 size={32} className="text-default-300" />
+                <p className="text-sm text-default-500">No performance data available</p>
+                <p className="text-xs text-default-400">Publish exam results to see score distribution</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart
+                  data={[
+                    { range: '90-100', count: filteredStudents.filter(s => s.percentage >= 90).length },
+                    { range: '80-89', count: filteredStudents.filter(s => s.percentage >= 80 && s.percentage < 90).length },
+                    { range: '70-79', count: filteredStudents.filter(s => s.percentage >= 70 && s.percentage < 80).length },
+                    { range: '60-69', count: filteredStudents.filter(s => s.percentage >= 60 && s.percentage < 70).length },
+                    { range: '50-59', count: filteredStudents.filter(s => s.percentage >= 50 && s.percentage < 60).length },
+                    { range: '<50', count: filteredStudents.filter(s => s.percentage < 50).length },
+                  ]}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="range" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Bar dataKey="count" fill={CHART_COLORS.blue} radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </CardBody>
         </Card>
 
@@ -339,15 +353,23 @@ const ClassPerformance = () => {
             </div>
           </CardHeader>
           <CardBody className="p-6">
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={subjectBreakdown.slice(0, 6)} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11 }} />
-                <YAxis dataKey="subjectName" type="category" tick={{ fontSize: 10 }} width={80} />
-                <Tooltip />
-                <Bar dataKey="average" fill={CHART_COLORS.chart3} radius={[0, 4, 4, 0]} name="Average" />
-              </BarChart>
-            </ResponsiveContainer>
+            {subjectBreakdown.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-[250px] gap-2 text-center">
+                <BookOpen size={32} className="text-default-300" />
+                <p className="text-sm text-default-500">No subject data available</p>
+                <p className="text-xs text-default-400">Subject averages appear once results are published</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={subjectBreakdown.slice(0, 6)} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11 }} />
+                  <YAxis dataKey="subjectName" type="category" tick={{ fontSize: 10 }} width={80} />
+                  <Tooltip />
+                  <Bar dataKey="average" fill={CHART_COLORS.chart3} radius={[0, 4, 4, 0]} name="Average" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </CardBody>
         </Card>
       </div>
@@ -390,7 +412,11 @@ const ClassPerformance = () => {
               <TableColumn scope="col">{t('pages.tREND')}</TableColumn>
               <TableColumn scope="col">{t('pages.aCTIONS')}</TableColumn>
             </TableHeader>
-            <TableBody>
+            <TableBody emptyContent={
+              performance.length === 0
+                ? "No performance data available. Publish exam results to see rankings."
+                : "No students match your search."
+            }>
               {filteredStudents.slice(0, 20).map((student, idx) => (
                 <TableRow key={student.id || idx}>
                   <TableCell>
@@ -483,7 +509,7 @@ const ClassPerformance = () => {
               <TableColumn scope="col">{t('pages.lOWEST')}</TableColumn>
               <TableColumn scope="col">{t('pages.pASSRate')}</TableColumn>
             </TableHeader>
-            <TableBody>
+            <TableBody emptyContent="No subject data available. Subject breakdown appears once results are published.">
               {subjectBreakdown.map((subject, idx) => (
                 <TableRow key={subject.subjectId || idx}>
                   <TableCell>

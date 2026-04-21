@@ -127,7 +127,9 @@
     "success": "کامیاب",
     "optional": "اختیاری",
     "offlineBanner": "آپ آف لائن ہیں۔ کچھ خصوصیات دستیاب نہیں ہو سکتیں۔",
-    "staleDataBanner": "ڈیٹا پرانا ہو سکتا ہے۔ براہ کرم ریفریش کریں۔"
+    "staleDataBanner": "ڈیٹا پرانا ہو سکتا ہے۔ براہ کرم ریفریش کریں۔",
+    "done": "ہو گیا",
+    "mandatory": "لازمی"
   },
   "messaging": {
     "chat": {
@@ -1130,7 +1132,9 @@
     "deleteFeedback": "کیا آپ واقعی یہ تاثرات حذف کرنا چاہتے ہیں؟",
     "deleteAdmission": "کیا آپ واقعی یہ داخلہ انکوائری حذف کرنا چاہتے ہیں؟",
     "deleteCallLog": "کیا آپ واقعی یہ کال لاگ حذف کرنا چاہتے ہیں؟",
-    "deleteRoom": "یہ کمرہ حذف کریں؟",
+    "deleteRoomTitle": "کمرہ حذف کریں",
+    "deleteRoom": "یہ کمرہ حذف کریں؟ یہ واپس نہیں ہو سکتا۔",
+    "deleteHostelTitle": "ہاسٹل حذف کریں",
     "deleteHostel": "یہ ہاسٹل حذف کریں؟ یہ واپس نہیں ہو سکتا۔",
     "deleteItem": "کیا آپ واقعی یہ آئٹم حذف کرنا چاہتے ہیں؟",
     "deleteItemNamed": "کیا آپ واقعی یہ {{name}} حذف کرنا چاہتے ہیں؟",
@@ -1364,7 +1368,9 @@
       "auditCreated": "آڈٹ بنایا گیا",
       "auditDeleted": "آڈٹ حذف ہو گیا",
       "examDeletedSuccessfully": "امتحان کامیابی سے حذف ہو گیا",
-      "examCreatedSuccessfully": "امتحان کامیابی سے بنایا گیا!"
+      "examCreatedSuccessfully": "امتحان کامیابی سے بنایا گیا!",
+      "templateUpdated": "ٹیمپلیٹ کامیابی سے اپڈیٹ ہوا",
+      "feeStructureApplied": "تمام طلباء پر فیس ڈھانچہ لاگو کیا گیا"
     },
     "error": {
       "cSVFileAppearsToBeEmptyOrHasNoDataRows": "CSV فائل خالی ہے یا اس میں ڈیٹا کی قطاریں نہیں ہیں",
@@ -1372,6 +1378,7 @@
       "failedToTranscribeAudio": " audio میں ناکامی",
       "failedToLoadExamData": " exam data میں ناکامی",
       "failedToSaveResults": " نتائج میں ناکامی",
+      "insufficientPermissionsToSaveResults": "آپ کو نتائج محفوظ کرنے کی اجازت نہیں ہے",
       "failedToLoadExams": " امتحانات میں ناکامی",
       "failedToDeleteExam": " exam میں ناکامی",
       "failedToLoadExamDetails": " exam details میں ناکامی",
@@ -4485,6 +4492,17 @@
     "shareWithStaff": "شیئر کریں with عملہ",
     "plansComparison": "Plans comparison",
     "attendanceReport": "حاضری رپورٹ",
-    "subjectWiseAttendanceComingSoonDesc": "When per-مضمون حاضری tracking is enabled, you will see each مضمون حاضری percentage here."
+    "subjectWiseAttendanceComingSoonDesc": "When per-مضمون حاضری tracking is enabled, you will see each مضمون حاضری percentage here.",
+    "createFeeTemplate": "فیس ٹیمپلیٹ بنائیں",
+    "retry": "دوبارہ کوشش"
+  },
+  "fees": {
+    "pendingAmount": "واجب الادا رقم",
+    "dueDate": "مقررہ تاریخ",
+    "daysOverdue": "تاخیر کے دن",
+    "templateCount": "{{count}} ٹیمپلیٹ",
+    "feeHeadNum": "فیس ہیڈ #{{num}}",
+    "templateUsedByStudents": "یہ ٹیمپلیٹ {{structureCount}} کلاس فیس ڈھانچوں میں {{studentCount}} طلباء پر لاگو ہے۔",
+    "templateUsedByStructures": "یہ ٹیمپلیٹ {{structureCount}} کلاس فیس ڈھانچوں میں استعمال ہو رہا ہے۔"
   }
 }

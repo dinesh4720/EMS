@@ -1,4 +1,3 @@
-import { io } from 'socket.io-client';
 import Peer from 'peerjs';
 import logger from '../utils/logger';
 
@@ -10,6 +9,11 @@ class VideoCallService {
     this.calls = new Map();
     this.currentCallId = null;
     this.listeners = new Map();
+
+    // Cleanup on browser navigation / tab close so the camera indicator turns off
+    this._boundHandleUnload = () => this.destroy();
+    window.addEventListener('beforeunload', this._boundHandleUnload);
+    window.addEventListener('pagehide', this._boundHandleUnload);
   }
 
   /**
@@ -17,6 +21,12 @@ class VideoCallService {
    */
   async initialize(userId) {
     try {
+      // Destroy any existing peer before re-initializing to avoid orphaned connections
+      if (this.peer && !this.peer.destroyed) {
+        this.peer.destroy();
+        this.peer = null;
+      }
+
       // Create Peer instance
       this.peer = new Peer(userId.toString(), {
         debug: import.meta.env.DEV ? 2 : 0
@@ -326,6 +336,13 @@ class VideoCallService {
 
     // Clear listeners
     this.listeners.clear();
+
+    // Remove unload listeners so they don't fire after explicit destroy
+    if (this._boundHandleUnload) {
+      window.removeEventListener('beforeunload', this._boundHandleUnload);
+      window.removeEventListener('pagehide', this._boundHandleUnload);
+      this._boundHandleUnload = null;
+    }
   }
 }
 

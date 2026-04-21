@@ -1,12 +1,14 @@
-import { useState, useEffect, useMemo, useCallback, useDeferredValue } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Modal, ModalContent, ModalBody, Kbd } from "@heroui/react";
 import {
   Search, User, Users, GraduationCap, BookOpen, CreditCard,
   MessageSquare, Settings, Home, X, Calendar, FileText, Megaphone,
+  Plus, Zap, Clock, UserPlus, Receipt, Send, ClipboardCheck,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { searchApi } from "../../services/api";
 import { useTranslation } from "react-i18next";
+import useRecentlyViewed from "../../hooks/useRecentlyViewed";
 
 const navigationItems = [
   // ── Core ──
@@ -23,7 +25,7 @@ const navigationItems = [
 
   // ── Academics ──
   { name: "Academics", path: "/academics", icon: FileText, category: "Navigation", keywords: "exams results marks grades" },
-  { name: "Homework", path: "/classes", icon: FileText, category: "Navigation", keywords: "assignments tasks classwork homework tab" },
+  { name: "Homework", path: "/homework", icon: FileText, category: "Navigation", keywords: "assignments tasks classwork homework tab" },
   { name: "PTM", path: "/ptm", icon: Users, category: "Navigation", keywords: "parent teacher meeting conference" },
 
   // ── Communication ──
@@ -89,6 +91,16 @@ const navigationItems = [
   { name: "Active Sessions", path: "/settings/sessions", icon: Settings, category: "Settings", keywords: "login sessions devices security" },
 ];
 
+const quickActions = [
+  { name: "Add Student", path: "/students", icon: UserPlus, category: "Action", keywords: "new admission enroll create student add" },
+  { name: "Add Staff", path: "/staffs", icon: UserPlus, category: "Action", keywords: "new teacher employee hire create staff add" },
+  { name: "Collect Fee Payment", path: "/fees/collect", icon: Receipt, category: "Action", keywords: "pay receive record payment fee" },
+  { name: "Post Announcement", path: "/messaging/announcements", icon: Megaphone, category: "Action", keywords: "new notice circular broadcast create" },
+  { name: "Compose Message", path: "/messaging", icon: Send, category: "Action", keywords: "chat new conversation send" },
+  { name: "Assign Homework", path: "/homework", icon: FileText, category: "Action", keywords: "new assignment task classwork create" },
+  { name: "Mark Attendance", path: "/classes", icon: ClipboardCheck, category: "Action", keywords: "take attendance class present absent" },
+];
+
 const CATEGORY_ICONS = {
   Staff: User,
   Students: GraduationCap,
@@ -96,6 +108,13 @@ const CATEGORY_ICONS = {
   Exams: FileText,
   Fees: CreditCard,
   Announcements: Megaphone,
+  Action: Zap,
+  Recent: Clock,
+};
+
+const ICON_BY_NAME = {
+  Home, Calendar, GraduationCap, Users, BookOpen, FileText, MessageSquare,
+  Megaphone, CreditCard, Settings, User, UserPlus, Receipt, Send, ClipboardCheck, Plus,
 };
 
 export default function GlobalSearch({ isOpen, onClose }) {
@@ -105,11 +124,34 @@ export default function GlobalSearch({ isOpen, onClose }) {
   const [apiResults, setApiResults] = useState({});
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const deferredQuery = useDeferredValue(query.trim());
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const { recents, addRecent, clearRecents } = useRecentlyViewed();
+
+  // ── Debounce: clear stale results immediately, fire API after 300ms ───
+  useEffect(() => {
+    if (query.trim()) {
+      setApiResults({});
+      setLoading(true);
+    } else {
+      setLoading(false);
+    }
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query.trim());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  // ── Reset stale state immediately when modal closes ──────────────────
+  useEffect(() => {
+    if (!isOpen) {
+      setLoading(false);
+      setApiResults({});
+    }
+  }, [isOpen]);
 
   // ── Unified search API call ──────────────────────────────────────────
   useEffect(() => {
-    if (!deferredQuery) {
+    if (!debouncedQuery) {
       setApiResults({});
       setLoading(false);
       return;
@@ -121,7 +163,7 @@ export default function GlobalSearch({ isOpen, onClose }) {
     (async () => {
       try {
         const response = await searchApi.search(
-          { q: deferredQuery, types: "students,staff,classes,fees,exams,announcements", limit: "5" },
+          { q: debouncedQuery, types: "students,staff,classes,fees,exams,announcements", limit: "5" },
           { signal: controller.signal }
         );
         if (!controller.signal.aborted) {
@@ -137,7 +179,21 @@ export default function GlobalSearch({ isOpen, onClose }) {
     })();
 
     return () => controller.abort();
-  }, [deferredQuery]);
+  }, [debouncedQuery]);
+
+  // ── Empty-state content: quick actions + recents ─────────────────────
+  const emptyState = useMemo(() => {
+    if (query.trim()) return null;
+    const recentItems = recents.map((rec) => ({
+      id: rec.key,
+      name: rec.label,
+      path: rec.path,
+      sublabel: rec.sublabel,
+      icon: (rec.iconName && ICON_BY_NAME[rec.iconName]) || null,
+      category: "Recent",
+    }));
+    return { quickActions, recents: recentItems };
+  }, [query, recents]);
 
   // ── Combine navigation (client-side) + API results ───────────────────
   const searchResults = useMemo(() => {
@@ -206,36 +262,82 @@ export default function GlobalSearch({ isOpen, onClose }) {
   }, [query, apiResults]);
 
   // ── Flat list for keyboard navigation ────────────────────────────────
-  const allResults = useMemo(() => [
-    ...(searchResults.navigation || []),
-    ...(searchResults.students || []),
-    ...(searchResults.staff || []),
-    ...(searchResults.classes || []),
-    ...(searchResults.exams || []),
-    ...(searchResults.fees || []),
-    ...(searchResults.announcements || []),
-  ], [searchResults]);
+  const allResults = useMemo(() => {
+    if (!query.trim()) {
+      return [
+        ...(emptyState?.quickActions || []),
+        ...(emptyState?.recents || []),
+      ];
+    }
+    return [
+      ...(searchResults.navigation || []),
+      ...(searchResults.students || []),
+      ...(searchResults.staff || []),
+      ...(searchResults.classes || []),
+      ...(searchResults.exams || []),
+      ...(searchResults.fees || []),
+      ...(searchResults.announcements || []),
+    ];
+  }, [query, searchResults, emptyState]);
 
   // ── Navigation on select ─────────────────────────────────────────────
   const handleSelect = useCallback((item) => {
+    let destination = item.path;
+    let recentEntry = null;
+
     if (item.path) {
-      navigate(item.path);
+      destination = item.path;
+      recentEntry = {
+        key: `${item.category || "nav"}:${item.path}`,
+        path: item.path,
+        label: item.name,
+        sublabel: item.sublabel || item.category || "",
+        category: item.category,
+        iconName: item.icon?.displayName || null,
+      };
     } else if (item.category === "Students") {
-      navigate(`/students/${item.id}`);
+      destination = `/students/${item.id}`;
+      recentEntry = {
+        key: `Students:${item.id}`,
+        path: destination,
+        label: item.name,
+        sublabel: [item.className && `Class ${item.className}${item.section ? ` ${item.section}` : ""}`, item.admissionId].filter(Boolean).join(" • "),
+        category: "Students",
+        iconName: "GraduationCap",
+      };
     } else if (item.category === "Staff") {
-      navigate(`/staffs/${item.id}`);
+      destination = `/staffs/${item.id}`;
+      recentEntry = {
+        key: `Staff:${item.id}`,
+        path: destination,
+        label: item.name,
+        sublabel: [item.department, item.role].filter(Boolean).join(" • "),
+        category: "Staff",
+        iconName: "User",
+      };
     } else if (item.category === "Classes") {
-      navigate(`/classes/${item.id}`);
+      destination = `/classes/${item.id}`;
+      recentEntry = {
+        key: `Classes:${item.id}`,
+        path: destination,
+        label: `Class ${item.name}${item.section ? ` ${item.section}` : ""}`,
+        sublabel: "",
+        category: "Classes",
+        iconName: "BookOpen",
+      };
     } else if (item.category === "Exams") {
-      navigate("/academics/exams");
+      destination = "/academics/exams";
     } else if (item.category === "Fees") {
-      navigate("/fees/collect");
+      destination = "/fees/collect";
     } else if (item.category === "Announcements") {
-      navigate("/messaging/announcements");
+      destination = "/messaging/announcements";
     }
+
+    if (destination) navigate(destination);
+    if (recentEntry) addRecent(recentEntry);
     onClose();
     setQuery("");
-  }, [navigate, onClose]);
+  }, [navigate, onClose, addRecent]);
 
   // ── Reset index on query change ──────────────────────────────────────
   useEffect(() => { setSelectedIndex(0); }, [query]);
@@ -264,29 +366,34 @@ export default function GlobalSearch({ isOpen, onClose }) {
   const renderItem = (item, _index, globalIndex) => {
     const isSelected = globalIndex === selectedIndex;
     const Icon = item.icon || CATEGORY_ICONS[item.category] || Search;
+    const isAction = item.category === "Action";
 
     return (
       <button
         key={item.id || item.path || globalIndex}
-        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
+        type="button"
+        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 ${
           isSelected ? "bg-primary/10 text-primary" : "hover:bg-default-100"
         }`}
         onClick={() => handleSelect(item)}
         onMouseEnter={() => setSelectedIndex(globalIndex)}
       >
-        <div className={`p-1.5 rounded-md ${isSelected ? "bg-primary/20" : "bg-default-100"}`}>
+        <div className={`p-1.5 rounded-md ${isSelected ? "bg-primary/20" : isAction ? "bg-accent/10 text-accent" : "bg-default-100"}`}>
           <Icon size={16} />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">{item.name}</p>
+          {item.sublabel && (
+            <p className="text-xs text-default-400 truncate">{item.sublabel}</p>
+          )}
           {item.category === "Staff" && (
             <p className="text-xs text-default-400 truncate">
-              {[item.department, item.role].filter(Boolean).join(" \u2022 ")}
+              {[item.department, item.role].filter(Boolean).join(" • ")}
             </p>
           )}
           {item.category === "Students" && (
             <p className="text-xs text-default-400 truncate">
-              {[item.className && `Class ${item.className}${item.section ? ` ${item.section}` : ""}`, item.admissionId].filter(Boolean).join(" \u2022 ")}
+              {[item.className && `Class ${item.className}${item.section ? ` ${item.section}` : ""}`, item.admissionId].filter(Boolean).join(" • ")}
             </p>
           )}
           {item.category === "Classes" && (
@@ -296,45 +403,54 @@ export default function GlobalSearch({ isOpen, onClose }) {
           )}
           {item.category === "Exams" && (
             <p className="text-xs text-default-400 truncate">
-              {[item.className && `${item.className}${item.classSection ? ` ${item.classSection}` : ""}`, item.type, item.status].filter(Boolean).join(" \u2022 ")}
+              {[item.className && `${item.className}${item.classSection ? ` ${item.classSection}` : ""}`, item.type, item.status].filter(Boolean).join(" • ")}
             </p>
           )}
           {item.category === "Fees" && (
             <p className="text-xs text-default-400 truncate">
-              {[item.receiptNumber, item.amount && `\u20B9${item.amount}`].filter(Boolean).join(" \u2022 ")}
+              {[item.receiptNumber, item.amount && `₹${item.amount}`].filter(Boolean).join(" • ")}
             </p>
           )}
           {item.category === "Announcements" && (
             <p className="text-xs text-default-400 truncate">
-              {[item.status, item.createdAt && new Date(item.createdAt).toLocaleDateString('en-IN')].filter(Boolean).join(" \u2022 ")}
+              {[item.status, item.createdAt && new Date(item.createdAt).toLocaleDateString('en-IN')].filter(Boolean).join(" • ")}
             </p>
           )}
         </div>
+        {isAction && <Kbd className="text-[10px]">↵</Kbd>}
         {item.category === "Navigation" && <Kbd className="text-[10px]">↵</Kbd>}
       </button>
     );
   };
 
-  const renderSection = (title, items, startIndex) => {
+  const renderSection = (title, items, startIndex, trailingAction = null) => {
     if (!items || items.length === 0) return null;
     return (
       <div className="mb-3">
-        <p className="text-xs font-medium text-default-400 px-3 mb-1.5">{title}</p>
+        <div className="flex items-center justify-between px-3 mb-1.5">
+          <p className="text-xs font-medium text-default-400">{title}</p>
+          {trailingAction}
+        </div>
         {items.map((item, i) => renderItem(item, i, startIndex + i))}
       </div>
     );
   };
 
   // ── Compute section offsets for keyboard index ───────────────────────
-  const sections = [
-    { key: "navigation", items: searchResults.navigation || [] },
-    { key: "students", items: searchResults.students || [] },
-    { key: "staff", items: searchResults.staff || [] },
-    { key: "classes", items: searchResults.classes || [] },
-    { key: "exams", items: searchResults.exams || [] },
-    { key: "fees", items: searchResults.fees || [] },
-    { key: "announcements", items: searchResults.announcements || [] },
-  ];
+  const sections = query.trim()
+    ? [
+        { key: "navigation", items: searchResults.navigation || [] },
+        { key: "students", items: searchResults.students || [] },
+        { key: "staff", items: searchResults.staff || [] },
+        { key: "classes", items: searchResults.classes || [] },
+        { key: "exams", items: searchResults.exams || [] },
+        { key: "fees", items: searchResults.fees || [] },
+        { key: "announcements", items: searchResults.announcements || [] },
+      ]
+    : [
+        { key: "quickActions", items: emptyState?.quickActions || [] },
+        { key: "recent", items: emptyState?.recents || [] },
+      ];
 
   let runningOffset = 0;
 
@@ -346,6 +462,7 @@ export default function GlobalSearch({ isOpen, onClose }) {
       placement="top"
       classNames={{ base: "mt-20", backdrop: "bg-black/50 backdrop-blur-sm" }}
       hideCloseButton
+      aria-label="Command palette"
     >
       <ModalContent>
         <ModalBody className="p-0">
@@ -359,39 +476,70 @@ export default function GlobalSearch({ isOpen, onClose }) {
               autoComplete="off"
               data-form-type="other"
               placeholder={t("globalSearch.placeholder")}
+              aria-label="Search or run a command"
               className="flex-1 bg-transparent outline-none text-sm"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
-            <button onClick={() => { onClose(); setQuery(""); }} className="p-1 hover:bg-default-100 rounded">
+            <button
+              type="button"
+              onClick={() => { onClose(); setQuery(""); }}
+              aria-label="Close command palette"
+              className="p-1 hover:bg-default-100 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
+            >
               <X size={16} className="text-default-400" />
             </button>
           </div>
 
           {/* Results */}
           <div className="max-h-[400px] overflow-y-auto p-2">
-            {loading && allResults.length === 0 ? (
-              <div className="py-8 text-center text-default-400">
-                <Search size={32} className="mx-auto mb-2 opacity-50 animate-pulse" />
-                <p className="text-sm">{t("globalSearch.searching", "Searching...")}</p>
+            {loading && allResults.length === 0 && query.trim() ? (
+              <div className="py-2 space-y-2">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="flex items-center gap-3 px-3 py-2.5">
+                    <div className="h-7 w-7 rounded-md bg-default-100 animate-pulse" />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-3 w-1/3 rounded bg-default-100 animate-pulse" />
+                      <div className="h-2.5 w-1/2 rounded bg-default-100/70 animate-pulse" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : query.trim() && allResults.length === 0 && !loading ? (
               <div className="py-8 text-center text-default-400">
                 <Search size={32} className="mx-auto mb-2 opacity-50" />
                 <p className="text-sm">{t("globalSearch.noResults", { query })}</p>
               </div>
+            ) : !query.trim() && allResults.length === 0 ? (
+              <div className="py-8 text-center text-default-400">
+                <Zap size={32} className="mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Start typing to search, or pick a quick action above.</p>
+              </div>
             ) : (
               <>
                 {sections.map((sec) => {
                   const offset = runningOffset;
                   runningOffset += sec.items.length;
+
+                  const title = query.trim()
+                    ? t(`globalSearch.categories.${sec.key}`, sec.key)
+                    : sec.key === "quickActions"
+                      ? "Quick actions"
+                      : "Recent";
+
+                  const trailing = !query.trim() && sec.key === "recent" && sec.items.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={clearRecents}
+                      className="text-[11px] text-default-400 hover:text-default-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 rounded"
+                    >
+                      Clear
+                    </button>
+                  ) : null;
+
                   return (
                     <div key={sec.key}>
-                      {renderSection(
-                        t(`globalSearch.categories.${sec.key}`, sec.key),
-                        sec.items,
-                        offset
-                      )}
+                      {renderSection(title, sec.items, offset, trailing)}
                     </div>
                   );
                 })}

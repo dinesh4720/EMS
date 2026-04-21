@@ -18,6 +18,8 @@ import {
 } from "../../utils/errorHandling";
 import { DEFAULT_PERIODS, TIMETABLE_DAYS } from "../../utils/constants";
 import { useTranslation } from 'react-i18next';
+import logger from '../../utils/logger';
+
 
 const days = TIMETABLE_DAYS;
 const defaultPeriods = DEFAULT_PERIODS;
@@ -107,7 +109,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
         setSchedule(convertedSchedule);
       }
     } catch (err) {
-      console.error('Failed to load teacher timetable:', err);
+      logger.error('Failed to load teacher timetable:', err);
       showErrorToast(err, 'Failed to load teacher timetable. Please try again.');
       // Initialize empty schedule
       const emptySchedule = {};
@@ -128,7 +130,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
       const assignments = Array.isArray(response) ? response : (response?.assignments || []);
       setTeacherAssignments(assignments);
     } catch (err) {
-      console.error('Failed to load teacher assignments:', err);
+      logger.error('Failed to load teacher assignments:', err);
       showErrorToast(err, 'Failed to load teacher assignments.');
       setTeacherAssignments([]);
     } finally {
@@ -146,7 +148,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
         showWarningToast(`${response.conflicts.length} scheduling conflict(s) detected.`);
       }
     } catch (err) {
-      console.error('Failed to load conflicts:', err);
+      logger.error('Failed to load conflicts:', err);
       showErrorToast(err, 'Failed to load conflicts.');
       setConflicts([]);
     } finally {

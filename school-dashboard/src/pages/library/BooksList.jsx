@@ -1,22 +1,17 @@
 import { useState, useEffect, useCallback } from "react";
 import { Input, Button, Select, SelectItem, Chip, useDisclosure } from "@heroui/react";
-import { Plus, Search, BookOpen } from "lucide-react";
+import { Plus, Search, BookOpen, BookUp } from "lucide-react";
 import { libraryApi } from "../../services/api";
 import toast from "react-hot-toast";
-import AddBookModal from "./AddBookModal";
+import AddBookModal, { BOOK_CATEGORIES } from "./AddBookModal";
+import IssueBookModal from "./IssueBookModal";
 import { useTranslation } from 'react-i18next';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
 
 const CATEGORIES = [
   { key: "all", label: "All Categories" },
-  { key: "textbook", label: "Textbook" },
-  { key: "reference", label: "Reference" },
-  { key: "fiction", label: "Fiction" },
-  { key: "non-fiction", label: "Non-Fiction" },
-  { key: "periodical", label: "Periodical" },
-  { key: "digital", label: "Digital" },
-  { key: "other", label: "Other" },
+  ...BOOK_CATEGORIES,
 ];
 
 export default function BooksList() {
@@ -29,7 +24,9 @@ export default function BooksList() {
   const [category, setCategory] = useState("all");
   const [page, setPage] = useState(1);
   const [editBook, setEditBook] = useState(null);
+  const [issueBook, setIssueBook] = useState(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen: isIssueOpen, onOpen: onIssueOpen, onClose: onIssueClose } = useDisclosure();
 
   const fetchBooks = useCallback(async () => {
     try {
@@ -92,6 +89,17 @@ export default function BooksList() {
     fetchBooks();
   };
 
+  const handleIssueBook = (book) => {
+    setIssueBook(book);
+    onIssueOpen();
+  };
+
+  const handleIssued = () => {
+    onIssueClose();
+    setIssueBook(null);
+    fetchBooks();
+  };
+
   const totalPages = Math.ceil(total / 25);
 
   return (
@@ -119,7 +127,7 @@ export default function BooksList() {
           </Select>
         </div>
         <Button size="sm" className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-gray-800 dark:hover:bg-zinc-200" startContent={<Plus size={16} />} onPress={handleAdd}>
-          Add Book
+          {t('pages.addBook')}
         </Button>
       </div>
 
@@ -178,6 +186,9 @@ export default function BooksList() {
                     <td className="px-4 py-3 text-gray-500 dark:text-zinc-400">{book.isbn || "—"}</td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex gap-1 justify-end">
+                        {book.availableCopies > 0 && (
+                          <Button size="sm" variant="flat" color="primary" startContent={<BookUp size={13} />} onPress={() => handleIssueBook(book)}>{t('pages.issue1')}</Button>
+                        )}
                         <Button size="sm" variant="light" onPress={() => handleEdit(book)}>{t('pages.edit1')}</Button>
                         <Button size="sm" variant="light" color="danger" onPress={() => handleDelete(book._id)}>{t('pages.delete1')}</Button>
                       </div>
@@ -192,7 +203,7 @@ export default function BooksList() {
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-zinc-800">
-            <p className="text-sm text-gray-500 dark:text-zinc-400">{total} books total</p>
+            <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.booksTotal', { count: total })}</p>
             <div className="flex gap-1">
               <Button size="sm" variant="flat" isDisabled={page <= 1} onPress={() => setPage(page - 1)}>{t('pages.prev')}</Button>
               <span className="text-sm text-gray-600 dark:text-zinc-400 flex items-center px-2">{page} / {totalPages}</span>
@@ -203,6 +214,7 @@ export default function BooksList() {
       </div>
 
       <AddBookModal isOpen={isOpen} onClose={() => { onClose(); setEditBook(null); }} book={editBook} onSaved={handleSaved} />
+      <IssueBookModal isOpen={isIssueOpen} onClose={() => { onIssueClose(); setIssueBook(null); }} book={issueBook} onSaved={handleIssued} />
 
       <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </div>

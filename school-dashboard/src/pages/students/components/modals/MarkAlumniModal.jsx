@@ -3,6 +3,8 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from
 import { AlertCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import logger from '../../../../utils/logger';
+
 
 /**
  * MarkAlumniModal - Modal for marking a student as alumni
@@ -36,7 +38,7 @@ export default function MarkAlumniModal({ isOpen, onClose, student, onMark }) {
       }
       onClose();
     } catch (error) {
-      console.error("Error marking as alumni:", error);
+      logger.error("Error marking as alumni:", error);
       toast.error("Failed to mark as alumni: " + (error.message || "Unknown error"), { id: loadingToast });
     } finally {
       setIsMarking(false);

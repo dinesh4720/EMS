@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useStudentsListData } from "./hooks/useStudentsListData";
 import EditStudentDrawer from "./EditStudentDrawer";
 import ScrollToTopButton from "../../components/ui/ScrollToTopButton";
@@ -8,6 +9,7 @@ import StudentsBulkModals from "./components/list/StudentsBulkModals";
 import { StudentsTableProvider } from "./components/list/StudentsTableContext";
 
 export default function StudentsList() {
+  const { t } = useTranslation();
   const {
     // loading
     contextLoading, listLoading,
@@ -54,7 +56,8 @@ export default function StudentsList() {
     isCsvUploadOpen, onCsvUploadClose, onCsvUploadOpen,
     isPreviewOpen, onPreviewClose,
     // bulk handlers
-    bulkAction, handleBulkAction, executeBulkAction, executePromotion, executeSendReminders,
+    bulkAction, handleBulkAction, executeBulkAction, executeBulkDelete, executePromotion, executeSendReminders,
+    isBulkDeleteOpen, onBulkDeleteClose, bulkDeleteStudents,
     // delete/update
     deleteStudent, updateStudent,
     // csv upload
@@ -222,13 +225,17 @@ export default function StudentsList() {
       <div className="border-t border-gray-200 dark:border-zinc-700 px-6 py-3 shrink-0">
         <span className="text-default-500 text-sm">
           {filteredItems.length === students.length
-            ? `Showing ${students.length} student${students.length !== 1 ? "s" : ""}`
-            : `Showing ${filteredItems.length} of ${students.length} student${students.length !== 1 ? "s" : ""}`}
+            ? t('pages.showingStudents', { count: students.length })
+            : t('pages.showingFilteredStudents', { filtered: filteredItems.length, total: students.length })}
         </span>
       </div>
 
       {/* ── Bulk Modals ────────────────────────────────────────────────────── */}
       <StudentsBulkModals
+        isBulkDeleteOpen={isBulkDeleteOpen}
+        onBulkDeleteClose={onBulkDeleteClose}
+        bulkDeleteStudents={bulkDeleteStudents}
+        executeBulkDelete={executeBulkDelete}
         isBulkActionOpen={isBulkActionOpen}
         onBulkActionClose={onBulkActionClose}
         bulkAction={bulkAction}

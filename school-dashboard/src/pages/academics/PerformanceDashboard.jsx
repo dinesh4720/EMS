@@ -22,6 +22,8 @@ import { useChartTheme, CHART_COLORS } from '../../utils/chartTheme';
 import { useTranslation } from 'react-i18next';
 import { formatShortDate, toTodayDateString } from '../../utils/dateFormatter';
 import toast from 'react-hot-toast';
+import logger from '../../utils/logger';
+
 
 // Global cache for API responses - persists across component mounts
 // [AUDIT-539] Clear on logout to prevent tenant data leaking across sessions
@@ -43,7 +45,7 @@ if (typeof window !== 'undefined') {
 const PerformanceDashboard = ({ onCreateExam }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { currentAcademicYear } = useApp();
+  const { currentAcademicYear, selectedAcademicYear, setSelectedAcademicYear } = useApp();
   const chart = useChartTheme();
   const [loading, setLoading] = useState(true);
   const [exams, setExams] = useState([]);
@@ -53,11 +55,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
   const [topPerformers, setTopPerformers] = useState([]);
   const [classes, setClasses] = useState([]);
   const [dashboardStats, setDashboardStats] = useState(null);
-  const [filters, setFilters] = useState({
-    class: 'all',
-    year: null
-  });
-  const selectedAcademicYear = filters.year || currentAcademicYear;
+  const [filters, setFilters] = useState({ class: 'all' });
   const academicYearOptions = useMemo(
     () => getAcademicYearOptions(currentAcademicYear, { past: 2, future: 1 }),
     [currentAcademicYear]
@@ -84,9 +82,9 @@ const PerformanceDashboard = ({ onCreateExam }) => {
   const activeFiltersCount = useMemo(() => {
     let count = 0;
     if (filters.class !== 'all') count++;
-    if (filters.year) count++;
+    if (selectedAcademicYear !== currentAcademicYear) count++;
     return count;
-  }, [filters]);
+  }, [filters, selectedAcademicYear, currentAcademicYear]);
 
   useEffect(() => {
     if (!initialFetchDone.current) {
@@ -165,21 +163,23 @@ const PerformanceDashboard = ({ onCreateExam }) => {
       dashboardCache.timestamp = now;
       dashboardCache.key = cacheKey;
     } catch (error) {
-      console.error('Error fetching data:', error);
+      logger.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleFilterChange = (key, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: key === 'year' ? (value === currentAcademicYear ? null : value) : value
-    }));
+    if (key === 'year') {
+      setSelectedAcademicYear(value === currentAcademicYear ? null : value);
+    } else {
+      setFilters(prev => ({ ...prev, [key]: value }));
+    }
   };
 
   const handleClearFilters = () => {
-    setFilters({ class: 'all', year: null });
+    setFilters({ class: 'all' });
+    setSelectedAcademicYear(null);
   };
 
   const handleExportReport = () => {
@@ -549,7 +549,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
               </div>
               <div
                 className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 cursor-pointer transition-colors"
-                onClick={() => navigate('/academics/results')}
+                onClick={() => navigate('/academics/exams')}
               >
                 <div className="flex items-center justify-between">
                   <div>

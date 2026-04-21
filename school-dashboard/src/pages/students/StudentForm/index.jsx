@@ -7,6 +7,8 @@ import PersonalInfoStep from "./steps/PersonalInfoStep";
 import ParentsStep from "./steps/ParentsStep";
 import DocumentsStep from "./steps/DocumentsStep";
 import { useTranslation } from 'react-i18next';
+import logger from '../../../utils/logger';
+
 
 /**
  * Refactored Student Form Component
@@ -122,7 +124,7 @@ export default function StudentForm({
     try {
       await onSave(formData);
     } catch (error) {
-      console.error("Submit error:", error);
+      logger.error("Submit error:", error);
       toast.error(error?.message || "Failed to save student. Please try again.");
     } finally {
       setIsSubmitting(false);

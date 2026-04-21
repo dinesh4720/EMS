@@ -251,7 +251,7 @@ export default function TrashSettings() {
   const filteredItems = useMemo(() => {
     // Safety check: ensure trashItems is an array
     if (!Array.isArray(trashItems)) {
-      console.warn('⚠️ trashItems is not an array:', trashItems);
+      logger.warn('⚠️ trashItems is not an array:', trashItems);
       return [];
     }
     

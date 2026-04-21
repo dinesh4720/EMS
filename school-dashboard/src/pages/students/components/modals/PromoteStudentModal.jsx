@@ -4,6 +4,8 @@ import { GraduationCap, AlertTriangle } from "lucide-react";
 import toast from "react-hot-toast";
 import { getNextClass } from "../../utils/studentHelpers";
 import { useTranslation } from 'react-i18next';
+import logger from '../../../../utils/logger';
+
 
 /**
  * PromoteStudentModal - Modal for promoting a student to the next class
@@ -68,7 +70,7 @@ export default function PromoteStudentModal({ isOpen, onClose, student, availabl
       }
       onClose();
     } catch (error) {
-      console.error("Promotion error:", error);
+      logger.error("Promotion error:", error);
       toast.error("Failed to promote student: " + (error.message || "Unknown error"), { id: loadingToast });
     } finally {
       setIsPromoting(false);

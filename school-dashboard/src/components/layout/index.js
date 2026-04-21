@@ -4,3 +4,7 @@ export { default as PageHeader } from './PageHeader';
 export { default as Banner } from './Banner';
 export { default as WelcomeBanner } from './WelcomeBanner';
 export { default as GlobalSearch } from './GlobalSearch';
+export { default as CommandPalette } from './GlobalSearch';
+export { default as NotificationBell } from './NotificationBell';
+export { default as UserMenu } from './UserMenu';
+export { default as SchoolSwitcher } from './SchoolSwitcher';

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition, Suspense, useMemo } from "react";
 import logger from "../../utils/logger";
 import {
   IndianRupee, Users, Clock,
@@ -9,24 +9,28 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useValidatedParams } from "../../hooks/useValidatedParams";
 import { useApp } from "../../context/AppContext";
 import { toast } from "react-hot-toast";
-import Attendance from "./Attendance";
-import Timetable from "./Timetable";
-import ClassSettingsPanel from "./ClassSettingsPanel";
+import lazyWithRetry from "../../utils/lazyWithRetry";
 import ClassTeacherAssignmentModal from "./components/ClassTeacherAssignmentModal";
 import { toTodayDateString } from '../../utils/dateFormatter';
 import { useTranslation } from 'react-i18next';
 import { DetailPageSkeleton } from '../../components/skeletons/PageSkeletons';
+import SkeletonTable from '../../components/skeletons/SkeletonTable';
 import ErrorBoundary from '../../components/ui/ErrorBoundary';
 
-// Extracted components
+// Extracted components (always-visible sidebar/header — static imports)
 import { ClassDashboardHeader } from './components/ClassDashboardHeader';
 import { SidebarSchedule } from './components/SidebarSchedule';
 import { SidebarAnnouncements } from './components/SidebarAnnouncements';
-import { OverviewTab } from './components/OverviewTab';
-import { StudentsTab } from './components/StudentsTab';
-import { FeesTab } from './components/FeesTab';
-import { AcademicsTab } from './components/AcademicsTab';
-import HomeworkTab from './components/HomeworkTab';
+
+// Tab content — lazy-loaded to avoid synchronous render jank on tab switch
+const Attendance = lazyWithRetry(() => import("./Attendance"));
+const Timetable = lazyWithRetry(() => import("./Timetable"));
+const ClassSettingsPanel = lazyWithRetry(() => import("./ClassSettingsPanel"));
+const OverviewTab = lazyWithRetry(() => import('./components/OverviewTab').then(m => ({ default: m.OverviewTab })));
+const StudentsTab = lazyWithRetry(() => import('./components/StudentsTab').then(m => ({ default: m.StudentsTab })));
+const FeesTab = lazyWithRetry(() => import('./components/FeesTab').then(m => ({ default: m.FeesTab })));
+const AcademicsTab = lazyWithRetry(() => import('./components/AcademicsTab').then(m => ({ default: m.AcademicsTab })));
+const HomeworkTab = lazyWithRetry(() => import('./components/HomeworkTab'));
 
 export default function ClassDashboard() {
   const { t } = useTranslation();
@@ -38,10 +42,11 @@ export default function ClassDashboard() {
   const searchParams = new URLSearchParams(location.search);
   const tabFromUrl = searchParams.get('tab');
   const [activeTab, setActiveTabState] = useState(tabFromUrl || "overview");
+  const [isTabPending, startTabTransition] = useTransition();
 
-  // Sync tab state to URL so back/forward navigation restores correct tab
+  // Sync tab state to URL so back/forward navigation restores correct tab.
+  // startTransition defers the heavy tab render so the UI stays responsive.
   const setActiveTab = (tab) => {
-    setActiveTabState(tab);
     const newParams = new URLSearchParams(location.search);
     if (tab === 'overview') {
       newParams.delete('tab');
@@ -50,6 +55,9 @@ export default function ClassDashboard() {
     }
     const newSearch = newParams.toString();
     navigate(`${location.pathname}${newSearch ? `?${newSearch}` : ''}`, { replace: true });
+    startTabTransition(() => {
+      setActiveTabState(tab);
+    });
   };
 
   const [classSettings, setClassSettings] = useState(null);
@@ -66,6 +74,16 @@ export default function ClassDashboard() {
 
   const cls = classesWithTeachers.find(c => String(c.id) === String(id) || String(c._id) === String(id)) || null;
 
+  // Derive student count live from students array so it stays accurate after add/remove
+  const liveStudentCount = useMemo(
+    () => students.filter(s =>
+      String(s.classId?._id || s.classId) === String(id) &&
+      (s.status || 'active') === 'active' &&
+      s.isDeleted !== true
+    ).length,
+    [students, id]
+  );
+
   // Sync tab state from URL (e.g. browser back/forward) — use setActiveTabState
   // directly to avoid calling navigate() again (URL is already correct)
   useEffect(() => {
@@ -74,16 +92,15 @@ export default function ClassDashboard() {
 
   // Refresh class data on mount
   useEffect(() => {
-    if (id && refetch && !isRefreshing) {
-      setIsRefreshing(true);
-      setRefreshError(false);
-      refetch(true)
-        .catch(e => {
-          logger.error('Error refreshing class data:', e);
-          setRefreshError(true);
-        })
-        .finally(() => setIsRefreshing(false));
-    }
+    if (!id || !refetch) return;
+    setIsRefreshing(true);
+    setRefreshError(false);
+    refetch(true)
+      .catch(e => {
+        logger.error('Error refreshing class data:', e);
+        setRefreshError(true);
+      })
+      .finally(() => setIsRefreshing(false));
   }, [id, refetch]);
 
   // Load class settings
@@ -118,7 +135,20 @@ export default function ClassDashboard() {
     ]).catch(e => { if (!aborted()) logger.error('sidebar fetch:', e); })
       .finally(() => { if (!aborted()) setSidebarLoading(false); });
 
-    return () => controller.abort();
+    // Refresh todayStatus every 5 minutes so the "Current Period" KPI and
+    // sidebar schedule stay accurate as class periods change throughout the day.
+    const clockInterval = setInterval(() => {
+      if (!aborted()) {
+        classesEnhancedApi.getTodayStatus(id)
+          .then(d => { if (!aborted()) setTodayStatus(d); })
+          .catch(e => { if (!aborted()) logger.error('todayStatus refresh:', e); });
+      }
+    }, 5 * 60 * 1000);
+
+    return () => {
+      controller.abort();
+      clearInterval(clockInterval);
+    };
   }, [id, classesEnhancedApi]);
 
   const handleExportReport = () => {
@@ -207,7 +237,7 @@ export default function ClassDashboard() {
     },
     {
       label: t('classes.students', 'Students'),
-      value: `${cls?.studentCount || 0}`,
+      value: `${liveStudentCount}`,
       subtext: t('classes.ofCapacity', 'of {{count}} capacity', { count: cls?.strengthLimit?.current || 40 }),
       icon: Users,
       color: 'text-gray-600 dark:text-zinc-400',
@@ -227,6 +257,7 @@ export default function ClassDashboard() {
         <ClassDashboardHeader
           cls={cls}
           headerStats={headerStats}
+          studentCount={liveStudentCount}
           navigate={navigate}
           handleExportReport={handleExportReport}
           handleSendNotice={handleSendNotice}
@@ -259,7 +290,7 @@ export default function ClassDashboard() {
 
       {/* TABS */}
       <div className="mb-5">
-        <div role="tablist" aria-label={t('classes.classDashboardTabs', 'Class dashboard tabs')} className="flex items-center gap-1 border-b border-gray-200 dark:border-zinc-800 overflow-x-auto">
+        <div role="tablist" aria-label={t('classes.classDashboardTabs', 'Class dashboard tabs')} className={`flex items-center gap-1 border-b border-gray-200 dark:border-zinc-800 overflow-x-auto transition-opacity ${isTabPending ? 'opacity-70' : ''}`}>
           {tabs.map(tab => (
             <button key={tab.key} role="tab" aria-selected={activeTab === tab.key} aria-controls={`tabpanel-${tab.key}`} id={`tab-${tab.key}`}
               onClick={() => setActiveTab(tab.key)}
@@ -282,10 +313,10 @@ export default function ClassDashboard() {
       {/* CONTENT AREA */}
 
       {/* Full-width tabs */}
-      {activeTab === "timetable" && <ErrorBoundary key="timetable"><Timetable classId={id} /></ErrorBoundary>}
-      {activeTab === "settings" && <ErrorBoundary key="settings"><ClassSettingsPanel classId={id} /></ErrorBoundary>}
+      {activeTab === "timetable" && <ErrorBoundary key="timetable"><Suspense fallback={<SkeletonTable rows={6} />}><Timetable classId={id} /></Suspense></ErrorBoundary>}
+      {activeTab === "settings" && <ErrorBoundary key="settings"><Suspense fallback={<SkeletonTable rows={4} />}><ClassSettingsPanel classId={id} /></Suspense></ErrorBoundary>}
       {activeTab === "overview" && (
-        <ErrorBoundary key="overview"><OverviewTab id={id} cls={cls} classesEnhancedApi={classesEnhancedApi} todayStatus={todayStatus} classRating={classRating} /></ErrorBoundary>
+        <ErrorBoundary key="overview"><Suspense fallback={<SkeletonTable rows={4} />}><OverviewTab id={id} cls={cls} classesEnhancedApi={classesEnhancedApi} todayStatus={todayStatus} classRating={classRating} /></Suspense></ErrorBoundary>
       )}
 
       {/* Grid layout tabs (with sidebar) */}
@@ -293,17 +324,17 @@ export default function ClassDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2 space-y-4">
             {activeTab === "students" && (
-              <ErrorBoundary key="students"><StudentsTab id={id} cls={cls} navigate={navigate} classesEnhancedApi={classesEnhancedApi} /></ErrorBoundary>
+              <ErrorBoundary key="students"><Suspense fallback={<SkeletonTable rows={8} />}><StudentsTab id={id} cls={cls} navigate={navigate} classesEnhancedApi={classesEnhancedApi} /></Suspense></ErrorBoundary>
             )}
             {activeTab === "fees" && (
-              <ErrorBoundary key="fees"><FeesTab id={id} cls={cls} classesEnhancedApi={classesEnhancedApi} navigate={navigate} /></ErrorBoundary>
+              <ErrorBoundary key="fees"><Suspense fallback={<SkeletonTable rows={6} />}><FeesTab id={id} cls={cls} classesEnhancedApi={classesEnhancedApi} navigate={navigate} /></Suspense></ErrorBoundary>
             )}
-            {activeTab === "attendance" && <ErrorBoundary key="attendance"><Attendance classId={id} /></ErrorBoundary>}
+            {activeTab === "attendance" && <ErrorBoundary key="attendance"><Suspense fallback={<SkeletonTable rows={8} />}><Attendance classId={id} /></Suspense></ErrorBoundary>}
             {activeTab === "academics" && (
-              <ErrorBoundary key="academics"><AcademicsTab id={id} cls={cls} classesEnhancedApi={classesEnhancedApi} /></ErrorBoundary>
+              <ErrorBoundary key="academics"><Suspense fallback={<SkeletonTable rows={6} />}><AcademicsTab id={id} cls={cls} classesEnhancedApi={classesEnhancedApi} /></Suspense></ErrorBoundary>
             )}
             {activeTab === "homework" && (
-              <ErrorBoundary key="homework"><HomeworkTab id={id} cls={cls} /></ErrorBoundary>
+              <ErrorBoundary key="homework"><Suspense fallback={<SkeletonTable rows={5} />}><HomeworkTab id={id} cls={cls} /></Suspense></ErrorBoundary>
             )}
           </div>
 

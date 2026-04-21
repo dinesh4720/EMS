@@ -5,6 +5,8 @@ import { frontDeskApi } from '../../services/api';
 import { useTranslation } from 'react-i18next';
 import { formatShortDate, formatTime } from '../../utils/dateFormatter';
 import toast from 'react-hot-toast';
+import logger from '../../utils/logger';
+
 
 export default function AdmissionTracker({ admission, isOpen, onClose }) {
   const { t } = useTranslation();
@@ -23,7 +25,7 @@ export default function AdmissionTracker({ admission, isOpen, onClose }) {
       const data = await frontDeskApi.getAdmissionTracker(admission._id);
       setTrackerData(data);
     } catch (error) {
-      console.error('Failed to load tracker:', error);
+      logger.error('Failed to load tracker:', error);
       toast.error('Failed to load admission tracker');
     } finally {
       setLoading(false);

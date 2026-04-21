@@ -161,7 +161,7 @@ export default function Maintenance() {
                     </td>
                     <td className="px-4 py-3 text-gray-700 dark:text-zinc-300">{log.cost != null ? `₹${log.cost.toLocaleString()}` : "—"}</td>
                     <td className="px-4 py-3">
-                      <button onClick={() => openEdit(log)} className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-500 dark:text-zinc-400"><Edit3 size={14} /></button>
+                      <button aria-label="Edit maintenance log" onClick={() => openEdit(log)} className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-500 dark:text-zinc-400"><Edit3 size={14} /></button>
                     </td>
                   </tr>
                 ))

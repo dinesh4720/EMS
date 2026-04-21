@@ -13,6 +13,7 @@ import logger from "../../utils/logger";
  * @param {object} handlers - Stable setter/updater functions from domain contexts
  */
 export function useSocketSync({
+  userId,
   staff,
   updateStaffLocal,
   updateStudentLocal,
@@ -21,18 +22,124 @@ export function useSocketSync({
   syncFeePaymentLocal,
   setStudents,
 }) {
-  // [AUDIT-537] Use refs for ALL handler dependencies to avoid stale closures
-  // The effect runs once (empty deps) so all functions must be accessed via refs
-  const staffRef = useRef(staff);
-  const handlersRef = useRef({ updateStaffLocal, updateStudentLocal, updateClassLocal, setStaffAttendance, syncFeePaymentLocal, setStudents });
-  useEffect(() => { staffRef.current = staff; }, [staff]);
-  useEffect(() => {
-    handlersRef.current = { updateStaffLocal, updateStudentLocal, updateClassLocal, setStaffAttendance, syncFeePaymentLocal, setStudents };
-  }, [updateStaffLocal, updateStudentLocal, updateClassLocal, setStaffAttendance, syncFeePaymentLocal, setStudents]);
+  // [AUDIT-537] Use refs for ALL handler dependencies to avoid stale closures.
+  // [AUDIT-780] Merged into a single ref updated synchronously during render.
+  // Two separate useEffects created a window between updates where a socket event
+  // could fire with a mix of fresh and stale values (race condition). Updating the
+  // ref directly during render is safe because socket events are async — they always
+  // fire after the current render is fully committed, so syncRef.current is never
+  // stale when any handler executes.
+  const syncRef = useRef({ staff, updateStaffLocal, updateStudentLocal, updateClassLocal, setStaffAttendance, syncFeePaymentLocal, setStudents });
+  syncRef.current = { staff, updateStaffLocal, updateStudentLocal, updateClassLocal, setStaffAttendance, syncFeePaymentLocal, setStudents };
 
   useEffect(() => {
+    // Re-run when userId changes (logout sets it to undefined, login sets a new id).
+    // getStoredUser() is the authoritative source; userId is only the dep trigger.
     const user = getStoredUser();
     if (!user?.id) return;
+
+    // [AUDIT-793] Named callbacks so cleanup can pass exact references to off().
+    // Previously, anonymous callbacks were passed to socketService.on() and then
+    // off(event) was called without a callback — indexOf(undefined) always returns -1,
+    // so no listeners were ever removed. On logout→login cycles, stale callbacks
+    // accumulated in the module-level singleton's listeners Map.
+    const onConnectError = (err) => {
+      logger.error("Socket connection error:", err);
+    };
+    const onError = (err) => {
+      logger.error("Socket error:", err);
+    };
+    const onStaffUpdated = (data) => {
+      syncRef.current.updateStaffLocal(data.staffId, {
+        name: data.name,
+        role: data.role,
+        department: data.department,
+        status: data.status,
+        phone: data.phone,
+        email: data.email,
+        picture: data.picture,
+      });
+    };
+    const onStudentUpdated = (data) => {
+      syncRef.current.updateStudentLocal(data.studentId, {
+        name: data.name,
+        classId: data.classId,
+        rollNo: data.rollNo,
+        photo: data.photo,
+        status: data.status,
+      });
+    };
+    const onClassUpdated = (data) => {
+      // Only update teacher assignment fields from socket — don't overwrite
+      // name/section since they were normalized on initial load and the raw
+      // DB values (e.g. "Class 3") would break display.
+      const updates = {};
+      if (data.classTeacherId !== undefined) {
+        updates.classTeacherId = data.classTeacherId || null;
+        const teacher = syncRef.current.staff.find(
+          (s) =>
+            String(s.id) === String(data.classTeacherId) ||
+            String(s._id) === String(data.classTeacherId)
+        );
+        updates.teacher = teacher?.name || null;
+        updates.teacherPhoto = teacher?.picture || null;
+      }
+      if (Object.keys(updates).length > 0) {
+        syncRef.current.updateClassLocal(data.classId, updates);
+      }
+    };
+    const onAttendanceUpdated = (data) => {
+      if (data.type === "staff") {
+        syncRef.current.setStaffAttendance((prev) => {
+          if (!data.status || data.status === "unmarked") {
+            const updated = { ...prev };
+            if (updated[data.staffId]?.[data.date]) {
+              delete updated[data.staffId][data.date];
+              if (Object.keys(updated[data.staffId] || {}).length === 0) {
+                delete updated[data.staffId];
+              }
+            }
+            return updated;
+          }
+          return {
+            ...prev,
+            [data.staffId]: {
+              ...(prev[data.staffId] || {}),
+              [data.date]: {
+                status: data.status,
+                inTime: data.inTime,
+                outTime: data.outTime,
+                reason: data.reason,
+              },
+            },
+          };
+        });
+      }
+    };
+    const onFeePaymentCreated = (data) => {
+      syncRef.current.syncFeePaymentLocal({
+        id: data.paymentId,
+        studentId: data.studentId,
+        amount: data.amount,
+        date: data.paymentDate,
+        status: "paid",
+      });
+      syncRef.current.updateStudentLocal(data.studentId, { feeStatus: "paid" });
+    };
+    const onStudentCreated = (data) => {
+      syncRef.current.setStudents((prev) => [
+        ...prev,
+        {
+          id: data.id,
+          name: data.name,
+          admissionId: data.admissionId,
+          class: data.class,
+          status: "active",
+          feeStatus: "pending",
+          timestamp: data.timestamp,
+        },
+      ]);
+    };
 
     let capturedService = null;
     import("../../services/socketServiceEnhanced")
@@ -40,129 +147,35 @@ export function useSocketSync({
         capturedService = socketService;
         socketService.connect();
 
-        socketService.on("connect_error", (err) => {
-          logger.error("Socket connection error:", err);
-        });
-        socketService.on("error", (err) => {
-          logger.error("Socket error:", err);
-        });
-
-        socketService.on("staff_updated", (data) => {
-          handlersRef.current.updateStaffLocal(data.staffId, {
-            name: data.name,
-            role: data.role,
-            department: data.department,
-            status: data.status,
-            phone: data.phone,
-            email: data.email,
-            picture: data.picture,
-          });
-        });
-
-        socketService.on("student_updated", (data) => {
-          handlersRef.current.updateStudentLocal(data.studentId, {
-            name: data.name,
-            classId: data.classId,
-            rollNo: data.rollNo,
-            photo: data.photo,
-            status: data.status,
-          });
-        });
-
-        socketService.on("class_updated", (data) => {
-          // Only update teacher assignment fields from socket — don't overwrite
-          // name/section since they were normalized on initial load and the raw
-          // DB values (e.g. "Class 3") would break display.
-          const updates = {};
-          if (data.classTeacherId !== undefined) {
-            updates.classTeacherId = data.classTeacherId || null;
-            const teacher = staffRef.current.find(
-              (s) =>
-                String(s.id) === String(data.classTeacherId) ||
-                String(s._id) === String(data.classTeacherId)
-            );
-            updates.teacher = teacher?.name || null;
-            updates.teacherPhoto = teacher?.picture || null;
-          }
-          if (Object.keys(updates).length > 0) {
-            handlersRef.current.updateClassLocal(data.classId, updates);
-          }
-        });
-
-        socketService.on("attendance_updated", (data) => {
-          if (data.type === "staff") {
-            handlersRef.current.setStaffAttendance((prev) => {
-              if (!data.status || data.status === "unmarked") {
-                const updated = { ...prev };
-                if (updated[data.staffId]?.[data.date]) {
-                  delete updated[data.staffId][data.date];
-                  if (Object.keys(updated[data.staffId] || {}).length === 0) {
-                    delete updated[data.staffId];
-                  }
-                }
-                return updated;
-              }
-              return {
-                ...prev,
-                [data.staffId]: {
-                  ...(prev[data.staffId] || {}),
-                  [data.date]: {
-                    status: data.status,
-                    inTime: data.inTime,
-                    outTime: data.outTime,
-                    reason: data.reason,
-                  },
-                },
-              };
-            });
-          }
-        });
-
-        socketService.on("fee_payment_created", (data) => {
-          handlersRef.current.syncFeePaymentLocal({
-            id: data.paymentId,
-            studentId: data.studentId,
-            amount: data.amount,
-            date: data.paymentDate,
-            status: "paid",
-          });
-          handlersRef.current.updateStudentLocal(data.studentId, { feeStatus: "paid" });
-        });
-
-        socketService.on("student_created", (data) => {
-          handlersRef.current.setStudents((prev) => [
-            ...prev,
-            {
-              id: data.id,
-              name: data.name,
-              admissionId: data.admissionId,
-              class: data.class,
-              status: "active",
-              feeStatus: "pending",
-              timestamp: data.timestamp,
-            },
-          ]);
-        });
+        socketService.on("connect_error", onConnectError);
+        socketService.on("error", onError);
+        socketService.on("staff_updated", onStaffUpdated);
+        socketService.on("student_updated", onStudentUpdated);
+        socketService.on("class_updated", onClassUpdated);
+        socketService.on("attendance_updated", onAttendanceUpdated);
+        socketService.on("fee_payment_created", onFeePaymentCreated);
+        socketService.on("student_created", onStudentCreated);
       })
       .catch((err) => {
         logger.error("Failed to import socket service:", err);
       });
 
-    // [AUDIT-157] Clean up ALL socket event listeners to prevent memory leaks.
-    // Previously only student_created was cleaned up; the other 7 listeners leaked.
+    // [AUDIT-793] Pass the exact named callback references to off() so listeners
+    // are actually removed from the singleton's Map on unmount.
     return () => {
       if (capturedService) {
-        capturedService.off("connect_error");
-        capturedService.off("error");
-        capturedService.off("staff_updated");
-        capturedService.off("student_updated");
-        capturedService.off("class_updated");
-        capturedService.off("attendance_updated");
-        capturedService.off("fee_payment_created");
-        capturedService.off("student_created");
-        capturedService.disconnect();
+        capturedService.off("connect_error", onConnectError);
+        capturedService.off("error", onError);
+        capturedService.off("staff_updated", onStaffUpdated);
+        capturedService.off("student_updated", onStudentUpdated);
+        capturedService.off("class_updated", onClassUpdated);
+        capturedService.off("attendance_updated", onAttendanceUpdated);
+        capturedService.off("fee_payment_created", onFeePaymentCreated);
+        capturedService.off("student_created", onStudentCreated);
+        // Do NOT call disconnect() here — socketService is a shared singleton also used
+        // by ChatNotificationContext. Disconnecting here kills real-time updates app-wide.
+        // Logout teardown is handled by AuthContext via socketService.destroyAll().
       }
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  // ^ Empty deps: socket listeners set up once; all setters from useState are stable refs.
+  }, [userId]); // Re-run when the logged-in user changes (logout→login without page reload).
 }

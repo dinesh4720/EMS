@@ -91,13 +91,16 @@ describe('highlightMatches', () => {
 
   it('wraps match in mark tag', () => {
     const result = highlightMatches('Hello World', 'World');
-    expect(result).toContain('<mark');
-    expect(result).toContain('World');
+    expect(Array.isArray(result)).toBe(true);
+    const markEl = result.find(el => el && typeof el === 'object' && el.type === 'mark');
+    expect(markEl).toBeTruthy();
+    expect(markEl.props.children).toBe('World');
   });
 
   it('is case insensitive', () => {
     const result = highlightMatches('Hello World', 'world');
-    expect(result).toContain('<mark');
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.some(el => el && typeof el === 'object' && el.type === 'mark')).toBe(true);
   });
 });
 

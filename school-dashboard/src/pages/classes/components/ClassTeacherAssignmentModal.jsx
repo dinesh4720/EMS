@@ -8,6 +8,8 @@ import toast from "react-hot-toast";
 import ConfirmDialog from "../../../components/ConfirmDialog";
 import { useApp } from "../../../context/AppContext";
 import { useTranslation } from 'react-i18next';
+import logger from '../../../utils/logger';
+
 
 /**
  * ClassTeacherAssignmentModal - Modal to assign a teacher to a class
@@ -141,7 +143,7 @@ export default function ClassTeacherAssignmentModal({
       setConfirmDialog(prev => ({ ...prev, isOpen: false }));
       onClose();
     } catch (error) {
-      console.error('Error assigning class teacher:', error);
+      logger.error('Error assigning class teacher:', error);
       toast.error(error.message || t('toast.error.failedToAssignClassTeacher', 'Failed to assign class teacher'));
     } finally {
       setIsProcessing(false);

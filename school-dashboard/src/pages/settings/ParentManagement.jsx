@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import toast from "react-hot-toast";
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
+import StatusBadge from '../../components/ui/StatusBadge';
 
 import {
   Search,
@@ -149,18 +150,6 @@ export default function ParentManagement() {
     setTimeout(() => setCopiedPassword(false), 2000);
   };
 
-  const StatusBadge = ({ status }) => {
-    const colors = {
-      active: "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-      inactive: "bg-gray-50 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400",
-      suspended: "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-    };
-    return (
-      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${colors[status] || colors.inactive}`}>
-        {status}
-      </span>
-    );
-  };
 
   return (
     <div className="space-y-6">

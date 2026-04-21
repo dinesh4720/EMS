@@ -170,14 +170,14 @@ function RoleQualificationsStep({
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <SectionHeader icon={GraduationCap} title={t('staff.about.professionalQualifications')} />
-          {formData.professionalQualifications.length > 0 && (
+          {(formData.professionalQualifications || []).length > 0 && (
             <button type="button" onClick={addQualification} className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-primary-600 transition-colors px-2 py-1 rounded-md hover:bg-primary/5">
               <Plus size={12} /> {t('staff.form.addDegree')}
             </button>
           )}
         </div>
 
-        {formData.professionalQualifications.map((qual, i) => (
+        {(formData.professionalQualifications || []).map((qual, i) => (
           <div key={qual._id || `qual-${i}`} className="p-4 border border-gray-200 dark:border-zinc-700 rounded-lg space-y-3 relative group hover:border-gray-300 dark:hover:border-zinc-600 transition-colors">
             <button className="absolute top-3 right-3 text-gray-400 hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded-md" onClick={() => removeQualification(i)}>
               <X size={14} />
@@ -230,7 +230,7 @@ function RoleQualificationsStep({
           </div>
         ))}
 
-        {formData.professionalQualifications.length === 0 && (
+        {(formData.professionalQualifications || []).length === 0 && (
           <div className="text-center py-10 border-2 border-dashed border-gray-200 dark:border-zinc-700 rounded-lg flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-gray-300 transition-colors" onClick={addQualification}>
             <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-400 dark:text-zinc-500">
               <GraduationCap size={20} />
@@ -238,7 +238,7 @@ function RoleQualificationsStep({
             <p className="text-xs text-gray-500 dark:text-zinc-400">{t('staff.form.noDegreesAdded')}</p>
           </div>
         )}
-        {errors.qualifications && <p className="text-xs text-danger">{errors.qualifications}</p>}
+        {errors.qualifications && <p id="qualifications-error" role="alert" aria-live="polite" className="text-xs text-danger">{errors.qualifications}</p>}
       </div>
 
       <div className="space-y-3 pt-5 border-t border-gray-100 dark:border-zinc-800">

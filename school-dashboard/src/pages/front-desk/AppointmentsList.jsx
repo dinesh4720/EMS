@@ -343,6 +343,7 @@ const AppointmentsList = forwardRef(({ onSave, ...props }, ref) => {
                     color="warning"
                     variant="light"
                     isIconOnly
+                    aria-label="Edit appointment"
                     onPress={() => handleEdit(appointment)}
                   >
                     <Edit size={14} />
@@ -352,6 +353,7 @@ const AppointmentsList = forwardRef(({ onSave, ...props }, ref) => {
                     color="danger"
                     variant="light"
                     isIconOnly
+                    aria-label="Delete appointment"
                     onPress={() => handleDelete(appointment._id)}
                   >
                     <Trash2 size={14} />

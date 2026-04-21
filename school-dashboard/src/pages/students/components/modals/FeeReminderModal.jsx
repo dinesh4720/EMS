@@ -9,6 +9,8 @@ import { request } from "../../../../services/api";
 import { useApp } from "../../../../context/AppContext";
 import toast from "react-hot-toast";
 import { formatCurrency } from '../../../../utils/numberFormatter';
+import logger from '../../../../utils/logger';
+
 
 export default function FeeReminderModal({ isOpen, onClose, student, studentFeeStructure }) {
   const { t } = useTranslation();
@@ -59,7 +61,7 @@ export default function FeeReminderModal({ isOpen, onClose, student, studentFeeS
       toast.success(t('students.profile.overview.reminderSentTo', 'Reminder sent to {{name}}', { name: student?.parentName || 'parent' }));
       onClose();
     } catch (error) {
-      console.error('Error sending reminder:', error);
+      logger.error('Error sending reminder:', error);
       toast.error(t('students.profile.overview.reminderSendFailed', 'Failed to send reminder') + ': ' + (error.message || t('students.profile.overview.unknownError', 'Unknown error')));
     } finally {
       setReminderSending(false);

@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useValidatedParams } from '../../hooks/useValidatedParams';
 import { getStoredUser } from '../../utils/authSession';
+import { useUnsavedChanges, useBeforeUnloadWarning } from '../../hooks/useUnsavedChanges';
+import { UnsavedChangesModal } from '../../components/modals';
 import {
   Card,
   CardBody,
@@ -24,6 +26,122 @@ import { MinimalButton } from '../../components/ui';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { calculateGrade as calculateGradeUtil } from '../../utils/grading';
+import logger from '../../utils/logger';
+
+
+// Shared table used by both standalone and non-standalone modes
+const ResultsTable = ({
+  students,
+  results,
+  exam,
+  calculateGrade,
+  getStatus,
+  handleAbsentToggle,
+  handleMarksChange,
+  handleRemarksChange,
+  t
+}) => (
+  <Card shadow="none" className="border border-gray-100 dark:border-zinc-800 dark:bg-zinc-950">
+    <CardBody className="p-0">
+      {students.length === 0 ? (
+        <div className="text-center py-12">
+          <Users size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
+          <p className="text-gray-500 dark:text-zinc-400">{t('pages.noStudentsFoundInThisClass')}</p>
+        </div>
+      ) : (
+        <Table aria-label={t('aria.tables.resultsEntry')} removeWrapper>
+          <TableHeader>
+            <TableColumn scope="col">{t('pages.sTUDENT')}</TableColumn>
+            <TableColumn scope="col">{t('pages.rOLLNo')}</TableColumn>
+            <TableColumn scope="col">ABSENT</TableColumn>
+            <TableColumn scope="col">{t('pages.mARKS')}</TableColumn>
+            <TableColumn scope="col">{t('pages.gRADE')}</TableColumn>
+            <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
+            <TableColumn scope="col">{t('pages.rEMARKS')}</TableColumn>
+          </TableHeader>
+          <TableBody emptyContent="No students found">
+            {students.map((student) => {
+              const studentId = student.id || student._id;
+              const isAbsent = results[studentId]?.status === 'absent';
+              const marks = isAbsent ? 0 : (results[studentId]?.marksObtained || 0);
+              const grade = isAbsent ? '-' : calculateGrade(marks);
+              const status = getStatus(studentId, marks);
+
+              return (
+                <TableRow key={studentId} className="hover:bg-gray-50 dark:hover:bg-zinc-900">
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
+                        <span className="text-sm font-medium text-gray-600 dark:text-zinc-400">
+                          {student.name?.charAt(0)?.toUpperCase() || 'S'}
+                        </span>
+                      </div>
+                      <span className="font-medium text-gray-900 dark:text-zinc-100">{student.name}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm text-gray-600 dark:text-zinc-400">{student.rollNo || studentId}</span>
+                  </TableCell>
+                  <TableCell>
+                    <Checkbox
+                      size="sm"
+                      isSelected={isAbsent}
+                      onValueChange={(checked) => handleAbsentToggle(studentId, checked)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <div className="w-24">
+                      <input
+                        type="number"
+                        value={marks}
+                        onChange={(e) => handleMarksChange(studentId, e.target.value)}
+                        min={0}
+                        max={exam.maxMarks}
+                        disabled={isAbsent}
+                        className={`w-full px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:border-gray-900 focus:ring-2 focus:ring-gray-100 outline-none text-sm dark:bg-zinc-900 dark:border-zinc-700 dark:focus:border-zinc-100 dark:focus:ring-zinc-800 dark:text-zinc-100 ${isAbsent ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        placeholder={t('academics.marksInputPlaceholder')}
+                      />
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Chip size="sm" variant="flat">{grade || '-'}</Chip>
+                  </TableCell>
+                  <TableCell>
+                    {status === 'absent' ? (
+                      <Chip size="sm" color="warning" variant="flat" startContent={<UserX size={12} />}>
+                        absent
+                      </Chip>
+                    ) : marks > 0 ? (
+                      <Chip
+                        size="sm"
+                        color={status === 'pass' ? 'success' : 'danger'}
+                        variant="flat"
+                        startContent={status === 'pass' ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
+                      >
+                        {status}
+                      </Chip>
+                    ) : (
+                      <span className="text-sm text-gray-400 dark:text-zinc-500">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <input
+                      type="text"
+                      value={results[studentId]?.remarks || ''}
+                      onChange={(e) => handleRemarksChange(studentId, e.target.value)}
+                      placeholder={t('pages.addRemarks')}
+                      className="w-40 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:border-gray-900 focus:ring-2 focus:ring-gray-100 outline-none text-sm dark:bg-zinc-900 dark:border-zinc-700 dark:focus:border-zinc-100 dark:focus:ring-zinc-800 dark:text-zinc-100"
+                    />
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      )}
+    </CardBody>
+  </Card>
+);
 
 // Simple cache for exam data
 // [AUDIT-539] Clear on logout to prevent tenant data leaking across sessions
@@ -51,6 +169,22 @@ const ResultsEntry = ({ standalone = false }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [loadedAt, setLoadedAt] = useState(null);
   const [dirtyStudentIds, setDirtyStudentIds] = useState(new Set());
+  const [pendingNavPath, setPendingNavPath] = useState(null);
+
+  const isDirty = dirtyStudentIds.size > 0;
+
+  // Guard browser close/refresh when marks are entered but not saved
+  const { isBlocked, proceed, reset } = useUnsavedChanges(isDirty && !standalone);
+  useBeforeUnloadWarning(isDirty && standalone);
+
+  // Navigate away only if there are no unsaved marks; otherwise show confirmation
+  const navigateSafe = (path) => {
+    if (isDirty) {
+      setPendingNavPath(path);
+    } else {
+      navigate(path);
+    }
+  };
 
   // For standalone mode, fetch all exams first
   useEffect(() => {
@@ -79,7 +213,7 @@ const ResultsEntry = ({ standalone = false }) => {
         setSelectedExamId(new Set([data[0].id || data[0]._id]));
       }
     } catch (error) {
-      console.error('Error fetching exams:', error);
+      logger.error('Error fetching exams:', error);
       toast.error(t('toast.error.failedToLoadExams'));
     } finally {
       setLoadingExams(false);
@@ -130,7 +264,7 @@ const ResultsEntry = ({ standalone = false }) => {
         setResults(resultsMap);
       }
     } catch (error) {
-      console.error('Error fetching data:', error);
+      logger.error('Error fetching data:', error);
       toast.error(t('toast.error.failedToLoadExamData'));
     } finally {
       setLoading(false);
@@ -147,18 +281,16 @@ const ResultsEntry = ({ standalone = false }) => {
   };
 
   const handleMarksChange = (studentId, value) => {
-    const marks = parseInt(value) || 0;
-    const maxMarks = exam?.maxMarks || 100;
+    const maxMarks = exam?.maxMarks ?? 100;
     const sid = String(studentId);
+    const parsed = parseInt(value, 10);
+    // Always clamp to [0, maxMarks] so the controlled input resets to a valid value
+    const marks = isNaN(parsed) ? 0 : Math.max(0, Math.min(parsed, maxMarks));
 
-    if (marks < 0) {
+    if (!isNaN(parsed) && parsed < 0) {
       toast.error(t('toast.error.marksCannotBeNegative'));
-      return;
-    }
-
-    if (marks > maxMarks) {
-      toast.error(`Marks cannot exceed ${maxMarks}`);
-      return;
+    } else if (!isNaN(parsed) && parsed > maxMarks) {
+      toast.error(t('toast.error.marksExceedMaximum', { maxMarks }));
     }
 
     markDirty(sid);
@@ -229,6 +361,15 @@ const ResultsEntry = ({ standalone = false }) => {
     try {
       const resultsArray = buildResultsArray();
 
+      // Pre-submission guard: reject if any marks exceed maxMarks
+      const maxMarks = exam?.maxMarks || 100;
+      const overMax = resultsArray.filter(r => r.status !== 'absent' && r.marksObtained > maxMarks);
+      if (overMax.length > 0) {
+        toast.error(`${overMax.length} student(s) have marks exceeding the maximum of ${maxMarks}. Please correct before saving.`);
+        setSaving(false);
+        return;
+      }
+
       await resultsApi.bulkCreate(resultsArray, currentExamId, exam.classId, loadedAt, { forceOverwrite });
 
       toast.success(t('toast.success.resultsSavedSuccessfully'));
@@ -238,7 +379,7 @@ const ResultsEntry = ({ standalone = false }) => {
         navigate(`/academics/exams/${examId}`);
       }
     } catch (error) {
-      console.error('Error saving results:', error);
+      logger.error('Error saving results:', error);
       // AUDIT-233: Handle 409 conflict with forceOverwrite option
       if (error?.status === 409) {
         const count = error.details?.staleStudentIds?.length || 0;
@@ -252,6 +393,8 @@ const ResultsEntry = ({ standalone = false }) => {
           // Reload fresh data
           fetchExamAndStudents(currentExamId);
         }
+      } else if (error?.status === 403) {
+        toast.error(t('toast.error.insufficientPermissionsToSaveResults'));
       } else {
         toast.error(t('toast.error.failedToSaveResults'));
       }
@@ -390,111 +533,17 @@ const ResultsEntry = ({ standalone = false }) => {
             )}
 
             {/* Results Table */}
-            <Card shadow="none" className="border border-gray-100 dark:border-zinc-800 dark:bg-zinc-950">
-              <CardBody className="p-0">
-                {students.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Users size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-                    <p className="text-gray-500 dark:text-zinc-400">{t('pages.noStudentsFoundInThisClass')}</p>
-                  </div>
-                ) : (
-                  <Table aria-label={t('aria.tables.resultsEntry')} removeWrapper>
-                    <TableHeader>
-                      <TableColumn scope="col">{t('pages.sTUDENT')}</TableColumn>
-                      <TableColumn scope="col">{t('pages.rOLLNo')}</TableColumn>
-                      <TableColumn scope="col">ABSENT</TableColumn>
-                      <TableColumn scope="col">{t('pages.mARKS')}</TableColumn>
-                      <TableColumn scope="col">{t('pages.gRADE')}</TableColumn>
-                      <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
-                      <TableColumn scope="col">{t('pages.rEMARKS')}</TableColumn>
-                    </TableHeader>
-                    <TableBody emptyContent="No students found">
-                      {filteredStudents.map((student) => {
-                        const studentId = student.id || student._id;
-                        const isAbsent = results[studentId]?.status === 'absent';
-                        const marks = isAbsent ? 0 : (results[studentId]?.marksObtained || 0);
-                        const grade = isAbsent ? '-' : calculateGrade(marks);
-                        const status = getStatus(studentId, marks);
-
-                        return (
-                          <TableRow key={studentId} className="hover:bg-gray-50 dark:hover:bg-zinc-900">
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
-                                  <span className="text-sm font-medium text-gray-600 dark:text-zinc-400">
-                                    {student.name?.charAt(0)?.toUpperCase() || 'S'}
-                                  </span>
-                                </div>
-                                <span className="font-medium text-gray-900 dark:text-zinc-100">{student.name}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <span className="text-sm text-gray-600 dark:text-zinc-400">{student.rollNo || studentId}</span>
-                            </TableCell>
-                            <TableCell>
-                              <Checkbox
-                                size="sm"
-                                isSelected={isAbsent}
-                                onValueChange={(checked) => handleAbsentToggle(studentId, checked)}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <div className="w-24">
-                                <input
-                                  type="number"
-                                  value={marks}
-                                  onChange={(e) => handleMarksChange(studentId, e.target.value)}
-                                  min={0}
-                                  max={exam.maxMarks}
-                                  disabled={isAbsent}
-                                  className={`w-full px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:border-gray-900 focus:ring-2 focus:ring-gray-100 outline-none text-sm dark:bg-zinc-900 dark:border-zinc-700 dark:focus:border-zinc-100 dark:focus:ring-zinc-800 dark:text-zinc-100 ${isAbsent ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                  placeholder={t('academics.marksInputPlaceholder')}
-                                />
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Chip size="sm" variant="flat">{grade || '-'}</Chip>
-                            </TableCell>
-                            <TableCell>
-                              {status === 'absent' ? (
-                                <Chip
-                                  size="sm"
-                                  color="warning"
-                                  variant="flat"
-                                  startContent={<UserX size={12} />}
-                                >
-                                  absent
-                                </Chip>
-                              ) : marks > 0 ? (
-                                <Chip
-                                  size="sm"
-                                  color={status === 'pass' ? 'success' : 'danger'}
-                                  variant="flat"
-                                  startContent={status === 'pass' ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
-                                >
-                                  {status}
-                                </Chip>
-                              ) : (
-                                <span className="text-sm text-gray-400 dark:text-zinc-500">-</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <input
-                                type="text"
-                                value={results[studentId]?.remarks || ''}
-                                onChange={(e) => handleRemarksChange(studentId, e.target.value)}
-                                placeholder={t('pages.addRemarks')}
-                                className="w-40 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:border-gray-900 focus:ring-2 focus:ring-gray-100 outline-none text-sm dark:bg-zinc-900 dark:border-zinc-700 dark:focus:border-zinc-100 dark:focus:ring-zinc-800 dark:text-zinc-100"
-                              />
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardBody>
-            </Card>
+            <ResultsTable
+              students={filteredStudents}
+              results={results}
+              exam={exam}
+              calculateGrade={calculateGrade}
+              getStatus={getStatus}
+              handleAbsentToggle={handleAbsentToggle}
+              handleMarksChange={handleMarksChange}
+              handleRemarksChange={handleRemarksChange}
+              t={t}
+            />
           </>
         )}
       </div>
@@ -521,7 +570,7 @@ const ResultsEntry = ({ standalone = false }) => {
         <div className="flex items-center justify-between p-6">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => navigate(`/academics/exams/${examId}`)}
+              onClick={() => navigateSafe(`/academics/exams/${examId}`)}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
             >
               <ArrowLeft size={20} className="text-gray-500 dark:text-zinc-400" />
@@ -537,7 +586,7 @@ const ResultsEntry = ({ standalone = false }) => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <MinimalButton variant="ghost" onClick={() => navigate(`/academics/exams/${examId}`)}>
+            <MinimalButton variant="ghost" onClick={() => navigateSafe(`/academics/exams/${examId}`)}>
               Cancel
             </MinimalButton>
             <MinimalButton icon={<Save size={16} />} onClick={handleSave} disabled={saving}>
@@ -564,111 +613,35 @@ const ResultsEntry = ({ standalone = false }) => {
       </div>
 
       {/* Results Table */}
-      <Card shadow="none" className="border border-gray-100 dark:border-zinc-800 dark:bg-zinc-950">
-        <CardBody className="p-0">
-          {students.length === 0 ? (
-            <div className="text-center py-12">
-              <Users size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-              <p className="text-gray-500 dark:text-zinc-400">{t('pages.noStudentsFoundInThisClass')}</p>
-            </div>
-          ) : (
-            <Table aria-label={t('aria.tables.resultsEntry')} removeWrapper>
-              <TableHeader>
-                <TableColumn scope="col">{t('pages.sTUDENT')}</TableColumn>
-                <TableColumn scope="col">{t('pages.rOLLNo')}</TableColumn>
-                <TableColumn scope="col">ABSENT</TableColumn>
-                <TableColumn scope="col">{t('pages.mARKS')}</TableColumn>
-                <TableColumn scope="col">{t('pages.gRADE')}</TableColumn>
-                <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
-                <TableColumn scope="col">{t('pages.rEMARKS')}</TableColumn>
-              </TableHeader>
-              <TableBody emptyContent="No students found">
-                {students.map((student) => {
-                  const studentId = student.id || student._id;
-                  const isAbsent = results[studentId]?.status === 'absent';
-                  const marks = isAbsent ? 0 : (results[studentId]?.marksObtained || 0);
-                  const grade = isAbsent ? '-' : calculateGrade(marks);
-                  const status = getStatus(studentId, marks);
+      <ResultsTable
+        students={students}
+        results={results}
+        exam={exam}
+        calculateGrade={calculateGrade}
+        getStatus={getStatus}
+        handleAbsentToggle={handleAbsentToggle}
+        handleMarksChange={handleMarksChange}
+        handleRemarksChange={handleRemarksChange}
+        t={t}
+      />
 
-                  return (
-                    <TableRow key={studentId} className="hover:bg-gray-50 dark:hover:bg-zinc-900">
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
-                            <span className="text-sm font-medium text-gray-600 dark:text-zinc-400">
-                              {student.name?.charAt(0)?.toUpperCase() || 'S'}
-                            </span>
-                          </div>
-                          <span className="font-medium text-gray-900 dark:text-zinc-100">{student.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-gray-600 dark:text-zinc-400">{student.rollNo || studentId}</span>
-                      </TableCell>
-                      <TableCell>
-                        <Checkbox
-                          size="sm"
-                          isSelected={isAbsent}
-                          onValueChange={(checked) => handleAbsentToggle(studentId, checked)}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div className="w-24">
-                          <input
-                            type="number"
-                            value={marks}
-                            onChange={(e) => handleMarksChange(studentId, e.target.value)}
-                            min={0}
-                            max={exam.maxMarks}
-                            disabled={isAbsent}
-                            className={`w-full px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:border-gray-900 focus:ring-2 focus:ring-gray-100 outline-none text-sm dark:bg-zinc-900 dark:border-zinc-700 dark:focus:border-zinc-100 dark:focus:ring-zinc-800 dark:text-zinc-100 ${isAbsent ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            placeholder={t('academics.marksInputPlaceholder')}
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Chip size="sm" variant="flat">{grade || '-'}</Chip>
-                      </TableCell>
-                      <TableCell>
-                        {status === 'absent' ? (
-                          <Chip
-                            size="sm"
-                            color="warning"
-                            variant="flat"
-                            startContent={<UserX size={12} />}
-                          >
-                            absent
-                          </Chip>
-                        ) : marks > 0 ? (
-                          <Chip
-                            size="sm"
-                            color={status === 'pass' ? 'success' : 'danger'}
-                            variant="flat"
-                            startContent={status === 'pass' ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
-                          >
-                            {status}
-                          </Chip>
-                        ) : (
-                          <span className="text-sm text-gray-400 dark:text-zinc-500">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <input
-                          type="text"
-                          value={results[studentId]?.remarks || ''}
-                          onChange={(e) => handleRemarksChange(studentId, e.target.value)}
-                          placeholder={t('pages.addRemarks')}
-                          className="w-40 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:border-gray-900 focus:ring-2 focus:ring-gray-100 outline-none text-sm dark:bg-zinc-900 dark:border-zinc-700 dark:focus:border-zinc-100 dark:focus:ring-zinc-800 dark:text-zinc-100"
-                        />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </CardBody>
-      </Card>
+      {/* Warn before losing unsaved marks via browser-back or in-app navigation */}
+      <UnsavedChangesModal
+        isOpen={isBlocked || !!pendingNavPath}
+        onDiscard={() => {
+          if (isBlocked) {
+            proceed();
+          } else {
+            const path = pendingNavPath;
+            setPendingNavPath(null);
+            navigate(path);
+          }
+        }}
+        onCancel={() => {
+          reset();
+          setPendingNavPath(null);
+        }}
+      />
     </div>
   );
 };

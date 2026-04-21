@@ -40,7 +40,7 @@ export default function StaffSidebar({
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between p-3 border-b border-default-100">
             <h3 className="text-sm font-semibold text-foreground">{t('calendar.sidebar.title', 'Staff Schedule')}</h3>
-            <Button isIconOnly size="sm" variant="light" className="text-default-400" onPress={() => onToggleSidebar(false)}>
+            <Button isIconOnly size="sm" variant="light" aria-label="Collapse sidebar" className="text-default-400" onPress={() => onToggleSidebar(false)}>
               <ChevronRight size={16} />
             </Button>
           </div>
@@ -193,7 +193,7 @@ export default function StaffSidebar({
         </div>
       ) : (
         <div className="flex flex-col items-center py-3">
-          <Button isIconOnly size="sm" variant="light" className="text-default-400" onPress={() => onToggleSidebar(true)}>
+          <Button isIconOnly size="sm" variant="light" aria-label="Expand sidebar" className="text-default-400" onPress={() => onToggleSidebar(true)}>
             <ChevronLeft size={16} />
           </Button>
           <div className="mt-2 writing-mode-vertical text-2xs text-default-400 font-medium">{t('calendar.sidebar.staff', 'Staff')}</div>

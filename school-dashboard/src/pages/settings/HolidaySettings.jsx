@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useEntityFetch } from "../../hooks/useEntityFetch";
 import { Card, CardBody, CardHeader, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Select, SelectItem, Spinner } from "@heroui/react";
 import { Plus, Edit, Trash2, Calendar } from "lucide-react";
 import { useApp } from "../../context/AppContext";
@@ -6,6 +7,8 @@ import toast from "react-hot-toast";
 import { getDateLocale } from '../../i18n/index';
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+import logger from '../../utils/logger';
+
 
 
 export default function HolidaySettings() {
@@ -23,52 +26,18 @@ export default function HolidaySettings() {
   // AUDIT-128: State-driven delete confirmation instead of confirm()
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
-  // Lazy loading state
   const ITEMS_PER_LOAD = 10;
-  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const loaderRef = useRef(null);
-
   const holidays = events.filter(e => e.type === "holiday");
   // AUDIT-122: Use spread to avoid mutating the context array
   const sortedHolidays = useMemo(() =>
-    [...holidays].sort((a, b) => new Date(a.date) - new Date(b.date)),
+    [...holidays].sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0)),
     [holidays]
   );
 
-  const visibleHolidays = useMemo(() => 
-    sortedHolidays.slice(0, visibleCount),
-    [sortedHolidays, visibleCount]
+  const { visibleItems: visibleHolidays, hasMore, isLoadingMore, loaderRef } = useEntityFetch(
+    sortedHolidays,
+    [holidays.length]
   );
-
-  const hasMore = visibleCount < sortedHolidays.length;
-
-  // Reset visible count when holidays change
-  useEffect(() => {
-    setVisibleCount(ITEMS_PER_LOAD);
-  }, [holidays.length]);
-
-  // Lazy loading intersection observer
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
-          setIsLoadingMore(true);
-          setTimeout(() => {
-            setVisibleCount(prev => prev + ITEMS_PER_LOAD);
-            setIsLoadingMore(false);
-          }, 300);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (loaderRef.current) {
-      observer.observe(loaderRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [hasMore, isLoadingMore]);
 
   const handleOpen = (holiday = null) => {
     if (holiday) {
@@ -132,7 +101,7 @@ export default function HolidaySettings() {
       }
       onClose();
     } catch (error) {
-      console.error('Failed to save holiday:', error);
+      logger.error('Failed to save holiday:', error);
       toast.error(t('toast.error.failedToSaveHoliday'));
     } finally {
       setSaving(false);
@@ -152,7 +121,7 @@ export default function HolidaySettings() {
       await deleteEvent(id);
       toast.success(t('toast.success.holidayDeletedSuccessfully'));
     } catch (error) {
-      console.error('Failed to delete holiday:', error);
+      logger.error('Failed to delete holiday:', error);
       toast.error(t('toast.error.failedToDeleteHoliday'));
     }
   };
@@ -268,21 +237,23 @@ export default function HolidaySettings() {
                     <TableCell className="text-sm text-default-500">{dayName}</TableCell>
                     <TableCell>
                       <div className="flex gap-2 justify-end">
-                        <Button 
-                          isIconOnly 
-                          size="sm" 
-                          variant="light" 
-                          color="primary" 
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          color="primary"
+                          aria-label="Edit holiday"
                           onPress={() => handleOpen(holiday)}
                           className="transition-all duration-200"
                         >
                           <Edit size={16} />
                         </Button>
-                        <Button 
-                          isIconOnly 
-                          size="sm" 
-                          variant="light" 
-                          color="danger" 
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          color="danger"
+                          aria-label="Delete holiday"
                           onPress={() => handleDelete(holiday._id || holiday.id)}
                           className="transition-all duration-200"
                         >

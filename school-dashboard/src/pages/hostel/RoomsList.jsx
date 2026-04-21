@@ -40,8 +40,8 @@ export default function RoomsList() {
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
-    const t = setTimeout(() => { setSearch(searchInput); setPage(1); }, 300);
-    return () => clearTimeout(t);
+    const timerId = setTimeout(() => { setSearch(searchInput); setPage(1); }, 300);
+    return () => clearTimeout(timerId);
   }, [searchInput]);
 
   useEffect(() => {
@@ -189,7 +189,7 @@ export default function RoomsList() {
             className="max-w-[150px]"
             size="sm"
           >
-            {ROOM_TYPES.map(t => <SelectItem key={t.key}>{t.label}</SelectItem>)}
+            {ROOM_TYPES.map(rt => <SelectItem key={rt.key}>{rt.label}</SelectItem>)}
           </Select>
         </div>
         <Button color="primary" startContent={<Plus size={16} />} onPress={handleAdd} size="sm">
@@ -238,10 +238,10 @@ export default function RoomsList() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex gap-1 justify-end">
-                        <Button isIconOnly size="sm" variant="light" onPress={() => handleEdit(room)}>
+                        <Button isIconOnly size="sm" variant="light" aria-label="Edit room" onPress={() => handleEdit(room)}>
                           <Edit2 size={14} className="text-gray-500 dark:text-zinc-400" />
                         </Button>
-                        <Button isIconOnly size="sm" variant="light" onPress={() => setDeleteTarget(room._id)}>
+                        <Button isIconOnly size="sm" variant="light" aria-label="Delete room" onPress={() => setDeleteTarget(room._id)}>
                           <Trash2 size={14} className="text-red-500" />
                         </Button>
                       </div>
@@ -298,7 +298,7 @@ export default function RoomsList() {
                 selectedKeys={[formData.type]}
                 onSelectionChange={(keys) => setFormData(p => ({ ...p, type: [...keys][0] }))}
               >
-                {ROOM_TYPES.map(t => <SelectItem key={t.key}>{t.label}</SelectItem>)}
+                {ROOM_TYPES.map(rt => <SelectItem key={rt.key}>{rt.label}</SelectItem>)}
               </Select>
               <Input
                 label={t('pages.capacity')} isRequired type="number" min={1}
@@ -348,7 +348,7 @@ export default function RoomsList() {
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
-        title={t('confirm.deleteRoom')}
+        title={t('confirm.deleteRoomTitle')}
         message={t('confirm.deleteRoom')}
         confirmText="Delete"
         variant="danger"
