@@ -2,7 +2,7 @@ import { request } from '../../services/api.js';
 import { useState, useMemo, memo, useRef, useEffect } from "react";
 import {
     Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
-    Chip, Button,
+    Chip,
     Dropdown, DropdownTrigger, DropdownMenu, DropdownItem,
     Popover, PopoverTrigger, PopoverContent, Calendar
 } from "@heroui/react";
@@ -15,6 +15,9 @@ import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { toTodayDateString, formatShortDate } from '../../utils/dateFormatter';
 import logger from '../../utils/logger';
+import Button from "../../components/ui/Button";
+import StatCard from "../../components/ui/StatCard";
+import EmptyState from "../../components/ui/EmptyState";
 
 
 
@@ -232,34 +235,10 @@ const StudentAttendance = memo(function StudentAttendance() {
         <div className="w-full flex flex-col">
             {/* KPI Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 -mx-6 -mt-6 px-6 pt-6">
-                <div className="p-4 bg-default-50 rounded-lg border border-default-200">
-                    <div className="flex items-center gap-2 mb-2">
-                        <Users size={18} className="text-default-500" />
-                        <span className="text-xs text-default-500 uppercase tracking-wider">{t('pages.totalStudents1')}</span>
-                    </div>
-                    <p className="text-2xl font-semibold text-default-900">{stats.total}</p>
-                </div>
-                <div className="p-4 bg-success-50 rounded-lg border border-success-200">
-                    <div className="flex items-center gap-2 mb-2">
-                        <UserCheck size={18} className="text-success-600" />
-                        <span className="text-xs text-success-700 uppercase tracking-wider">{t('pages.present2')}</span>
-                    </div>
-                    <p className="text-2xl font-semibold text-success-700">{stats.present}</p>
-                </div>
-                <div className="p-4 bg-danger-50 rounded-lg border border-danger-200">
-                    <div className="flex items-center gap-2 mb-2">
-                        <UserX size={18} className="text-danger-600" />
-                        <span className="text-xs text-danger-700 uppercase tracking-wider">{t('pages.absent2')}</span>
-                    </div>
-                    <p className="text-2xl font-semibold text-danger-700">{stats.absent}</p>
-                </div>
-                <div className="p-4 bg-warning-50 rounded-lg border border-warning-200">
-                    <div className="flex items-center gap-2 mb-2">
-                        <Clock size={18} className="text-warning-600" />
-                        <span className="text-xs text-warning-700 uppercase tracking-wider">{t('pages.onLeave1')}</span>
-                    </div>
-                    <p className="text-2xl font-semibold text-warning-700">{stats.leave}</p>
-                </div>
+                <StatCard label={t('pages.totalStudents1')} value={stats.total} icon={Users} color="gray" />
+                <StatCard label={t('pages.present2')} value={stats.present} icon={UserCheck} color="success" />
+                <StatCard label={t('pages.absent2')} value={stats.absent} icon={UserX} color="danger" />
+                <StatCard label={t('pages.onLeave1')} value={stats.leave} icon={Clock} color="warning" />
             </div>
 
             {/* Toolbar */}
@@ -411,11 +390,10 @@ const StudentAttendance = memo(function StudentAttendance() {
 
                     {/* Save Button */}
                     <Button
-                        color="primary"
-                        variant="flat"
+                        variant="primary"
                         size="sm"
-                        startContent={<Save size={16} />}
-                        onPress={handleSaveAttendance}
+                        icon={<Save size={16} />}
+                        onClick={handleSaveAttendance}
                         className="whitespace-nowrap"
                     >
                         {t('attendance.saveAttendance', 'Save Attendance')}
@@ -460,7 +438,17 @@ const StudentAttendance = memo(function StudentAttendance() {
                     <TableColumn className="w-[100px]" scope="col">{t('pages.iNTime')}</TableColumn>
                     <TableColumn className="w-[100px]" scope="col">{t('pages.oUTTime')}</TableColumn>
                 </TableHeader>
-                <TableBody items={filteredStudents} emptyContent="No students found">
+                <TableBody
+                    items={filteredStudents}
+                    emptyContent={
+                        <EmptyState
+                            icon={Users}
+                            size="sm"
+                            title={t('attendance.noStudentsFound', 'No students found')}
+                            description={t('attendance.adjustFilters', 'Try adjusting the class or search filters.')}
+                        />
+                    }
+                >
                     {(student) => {
                         const att = attendance[student.id] || { status: "unmarked", inTime: "-", outTime: "-" };
                         return (

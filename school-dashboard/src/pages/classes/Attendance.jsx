@@ -1,14 +1,19 @@
 import { useState, useMemo, useEffect, useRef, useCallback, useLayoutEffect } from "react";
 import { useEntityFetch } from "../../hooks/useEntityFetch";
 import { useNavigate } from "react-router-dom";
-import { Card, CardBody, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Button, Select, SelectItem, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Textarea, Spinner } from "@heroui/react";
-import { Download, Check, X, Lock, Bell, AlertTriangle, Users, Clock, TrendingUp, TimerOff, LogOut, AlarmClock } from "lucide-react";
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Button as HeroButton, Select, SelectItem, Input, useDisclosure, Spinner } from "@heroui/react";
+import { Check, X, Bell, AlertTriangle, Users, Clock, TrendingUp, TimerOff, LogOut, AlarmClock } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { useSettings } from "../../context/SettingsContext";
 import { attendanceApi, classesApi } from "../../services/api";
 import { useTranslation } from 'react-i18next';
 import { toTodayDateString } from '../../utils/dateFormatter';
 import logger from '../../utils/logger';
+import Button from "../../components/ui/Button";
+import StatCard from "../../components/ui/StatCard";
+import Alert from "../../components/ui/Alert";
+import Modal from "../../components/ui/Modal";
+import EmptyState from "../../components/ui/EmptyState";
 
 
 const ITEMS_PER_LOAD = 10;
@@ -458,140 +463,54 @@ export default function Attendance({
 
         {/* Right Side - Actions */}
         <div className="flex gap-2 w-full sm:w-auto justify-end">
-          <Button size="sm" color="success" variant="flat" startContent={<Check size={14} />} onPress={markAllPresent} isDisabled={isLocked || isFutureDate || !!invalidDateReason}>{t('pages.markAllPresent')}</Button>
-          {absentCount > 0 && <Button size="sm" color="warning" variant="flat" startContent={<Bell size={14} />} onPress={handleNotifyParents} isLoading={isNotifying}>{t('attendance.notifyParents', 'Notify Parents')} ({absentCount})</Button>}
+          <HeroButton size="sm" color="success" variant="flat" startContent={<Check size={14} />} onPress={markAllPresent} isDisabled={isLocked || isFutureDate || !!invalidDateReason}>{t('pages.markAllPresent')}</HeroButton>
+          {absentCount > 0 && <HeroButton size="sm" color="warning" variant="flat" startContent={<Bell size={14} />} onPress={handleNotifyParents} isLoading={isNotifying}>{t('attendance.notifyParents', 'Notify Parents')} ({absentCount})</HeroButton>}
         </div>
       </div>
 
       {isLocked && (
-        <div className="flex items-center gap-2 p-3 bg-warning-50 text-warning-700 rounded-lg mb-4 mx-1">
-          <Lock size={16} />
-          <span className="text-sm font-medium">{t('pages.attendanceIsLockedUnlockInSettingsToMakeChanges')}</span>
-        </div>
+        <Alert variant="warning" className="mb-4 mx-1">
+          {t('pages.attendanceIsLockedUnlockInSettingsToMakeChanges')}
+        </Alert>
       )}
 
       {invalidDateReason && !isLocked && (
-        <div className="flex items-center gap-2 p-3 bg-danger-50 text-danger-700 rounded-lg mb-4 mx-1">
-          <AlertTriangle size={16} />
-          <span className="text-sm font-medium">{invalidDateReason}</span>
-        </div>
+        <Alert variant="danger" className="mb-4 mx-1">
+          {invalidDateReason}
+        </Alert>
       )}
 
       {/* KPI Stats - Card Grid Style */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-3 mb-4">
-        {/* Total */}
-        <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700 transition-colors">
-          <div className="flex items-start justify-between mb-3">
-            <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
-              <Users size={16} className="text-gray-600 dark:text-zinc-400" />
-            </div>
-          </div>
-          <h3 className="text-xl font-semibold text-gray-800 dark:text-zinc-200">{classStudents.length}</h3>
-          <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">{t('pages.total2')}</p>
-        </div>
-
-        {/* Present */}
-        <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700 transition-colors">
-          <div className="flex items-start justify-between mb-3">
-            <div className="w-9 h-9 rounded-lg bg-green-100 flex items-center justify-center">
-              <Check size={16} className="text-green-600" />
-            </div>
-          </div>
-          <h3 className="text-xl font-semibold text-gray-800 dark:text-zinc-200">{presentCount}</h3>
-          <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">{t('pages.present2')}</p>
-        </div>
-
-        {/* Absent */}
-        <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700 transition-colors">
-          <div className="flex items-start justify-between mb-3">
-            <div className="w-9 h-9 rounded-lg bg-red-100 flex items-center justify-center">
-              <X size={16} className="text-red-600" />
-            </div>
-          </div>
-          <h3 className="text-xl font-semibold text-gray-800 dark:text-zinc-200">{absentCount}</h3>
-          <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">{t('pages.absent2')}</p>
-        </div>
-
-        {/* Late */}
-        {lateCount > 0 && (
-          <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700 transition-colors">
-            <div className="flex items-start justify-between mb-3">
-              <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center">
-                <AlarmClock size={16} className="text-amber-600" />
-              </div>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-800 dark:text-zinc-200">{lateCount}</h3>
-            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">{t('attendance.late', 'Late')}</p>
-          </div>
-        )}
-
-        {/* Leave */}
-        {leaveCount > 0 && (
-          <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700 transition-colors">
-            <div className="flex items-start justify-between mb-3">
-              <div className="w-9 h-9 rounded-lg bg-purple-100 flex items-center justify-center">
-                <LogOut size={16} className="text-purple-600" />
-              </div>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-800 dark:text-zinc-200">{leaveCount}</h3>
-            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">{t('attendance.leave', 'Leave')}</p>
-          </div>
-        )}
-
-        {/* Half Day */}
-        {halfdayCount > 0 && (
-          <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700 transition-colors">
-            <div className="flex items-start justify-between mb-3">
-              <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center">
-                <TimerOff size={16} className="text-blue-600" />
-              </div>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-800 dark:text-zinc-200">{halfdayCount}</h3>
-            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">{t('attendance.halfDay', 'Half Day')}</p>
-          </div>
-        )}
-
-        {/* Unmarked */}
-        {unmarkedCount > 0 && (
-          <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700 transition-colors">
-            <div className="flex items-start justify-between mb-3">
-              <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
-                <Clock size={16} className="text-gray-600 dark:text-zinc-400" />
-              </div>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-800 dark:text-zinc-200">{unmarkedCount}</h3>
-            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">{t('pages.unmarked')}</p>
-          </div>
-        )}
-
-        {/* Attendance Rate */}
-        <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700 transition-colors">
-          <div className="flex items-start justify-between mb-3">
-            <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${markedCount === 0 ? 'bg-gray-100 dark:bg-zinc-800' : attendancePercent >= 75 ? 'bg-green-100' : 'bg-red-100'}`}>
-              <TrendingUp size={16} className={markedCount === 0 ? 'text-gray-600 dark:text-zinc-400' : attendancePercent >= 75 ? 'text-green-600' : 'text-red-600'} />
-            </div>
-          </div>
-          <h3 className={`text-xl font-semibold ${markedCount === 0 ? "text-gray-400 dark:text-zinc-500" : attendancePercent >= 75 ? "text-green-600" : "text-red-600"}`}>
-            {markedCount === 0 ? "—" : `${attendancePercent}%`}
-          </h3>
-          <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mt-0.5">{t('pages.attendanceRate')}</p>
-        </div>
+        <StatCard label={t('pages.total2')} value={classStudents.length} icon={Users} color="gray" />
+        <StatCard label={t('pages.present2')} value={presentCount} icon={Check} color="success" />
+        <StatCard label={t('pages.absent2')} value={absentCount} icon={X} color="danger" />
+        {lateCount > 0 && <StatCard label={t('attendance.late', 'Late')} value={lateCount} icon={AlarmClock} color="warning" />}
+        {leaveCount > 0 && <StatCard label={t('attendance.leave', 'Leave')} value={leaveCount} icon={LogOut} color="purple" />}
+        {halfdayCount > 0 && <StatCard label={t('attendance.halfDay', 'Half Day')} value={halfdayCount} icon={TimerOff} color="primary" />}
+        {unmarkedCount > 0 && <StatCard label={t('pages.unmarked')} value={unmarkedCount} icon={Clock} color="gray" />}
+        <StatCard
+          label={t('pages.attendanceRate')}
+          value={markedCount === 0 ? '—' : `${attendancePercent}%`}
+          icon={TrendingUp}
+          color={markedCount === 0 ? 'gray' : attendancePercent >= 75 ? 'success' : 'danger'}
+        />
       </div>
 
       {/* Save Button */}
       <div className="flex items-center justify-end gap-3 mb-4 pb-4 border-b border-default-200">
         {saveMessage && (
-          <span className={`text-sm font-medium ${saveMessage.type === 'success' ? 'text-success-600' : saveMessage.type === 'warning' ? 'text-warning-600' : 'text-danger-600'}`}>
+          <span className={`text-sm font-medium ${saveMessage.type === 'success' ? 'text-[var(--color-success)]' : saveMessage.type === 'warning' ? 'text-[var(--color-warning)]' : 'text-[var(--color-error)]'}`}>
             {saveMessage.text}
           </span>
         )}
         <Button
           size="md"
-          color="primary"
-          onPress={handleSaveAttendance}
-          isDisabled={isLocked || isFutureDate || isSaving || !!invalidDateReason}
-          isLoading={isSaving}
-          className="font-medium px-8"
+          variant="primary"
+          onClick={handleSaveAttendance}
+          disabled={isLocked || isFutureDate || isSaving || !!invalidDateReason}
+          loading={isSaving}
+          className="px-8"
         >
           {isSaving ? t('common.saving', 'Saving...') : t('attendance.saveAttendance', 'Save Attendance')}
         </Button>
@@ -618,11 +537,19 @@ export default function Attendance({
           <TableColumn scope="col">{t('pages.aCTIONS')}</TableColumn>
         </TableHeader>
         <TableBody emptyContent={
-          isLoadingAttendance
-            ? t('common.loading', 'Loading attendance...')
-            : classStudents.length === 0
-              ? t('attendance.noStudentsInClass', 'No students found in this class')
-              : t('common.noData', 'No data')
+          isLoadingAttendance ? (
+            <div className="py-6 flex justify-center">
+              <Spinner size="sm" />
+            </div>
+          ) : (
+            <EmptyState
+              icon={Users}
+              size="sm"
+              title={classStudents.length === 0
+                ? t('attendance.noStudentsInClass', 'No students found in this class')
+                : t('common.noData', 'No data')}
+            />
+          )
         }>
           {visibleStudents.map((student) => (
             <TableRow key={sid(student)} className="hover:bg-default-50">
@@ -658,7 +585,7 @@ export default function Attendance({
                   {ATTENDANCE_STATUSES.map(({ key, label, color, icon: Icon }) => {
                     const isActive = attendance[sid(student)] === key;
                     return (
-                      <Button
+                      <HeroButton
                         key={key}
                         size="sm"
                         color={isActive ? color : "default"}
@@ -669,7 +596,7 @@ export default function Attendance({
                         startContent={<Icon size={13} />}
                       >
                         <span className="hidden sm:inline">{t(ATTENDANCE_STATUSES.find(s => s.key === key)?.labelKey || key, label)}</span>
-                      </Button>
+                      </HeroButton>
                     );
                   })}
                 </div>
@@ -687,77 +614,79 @@ export default function Attendance({
         )}
       </div>
 
-      {/* AUDIT-847: Mark All Present confirmation modal */}
-      <Modal isOpen={isMarkAllOpen} onClose={onMarkAllClose} size="sm">
-        <ModalContent>
-          <ModalHeader className="flex items-center gap-2">
-            <AlertTriangle size={18} className="text-warning-500" />
+      <Modal
+        isOpen={isMarkAllOpen}
+        onClose={onMarkAllClose}
+        size="sm"
+        title={
+          <span className="flex items-center gap-2">
+            <AlertTriangle size={18} className="text-[var(--color-warning)]" />
             {t('attendance.markAllPresentTitle', 'Mark All Present?')}
-          </ModalHeader>
-          <ModalBody>
-            <p className="text-sm text-default-600">
-              {t('attendance.markAllPresentMessage', 'This will mark all {{count}} students as present, overwriting any statuses already set individually.', { count: classStudents.length })}
-            </p>
-          </ModalBody>
-          <ModalFooter>
-            <Button size="sm" variant="flat" onPress={onMarkAllClose}>
+          </span>
+        }
+        footer={
+          <>
+            <Button size="sm" variant="secondary" onClick={onMarkAllClose}>
               {t('common.cancel', 'Cancel')}
             </Button>
-            <Button size="sm" color="success" onPress={handleConfirmMarkAllPresent}>
+            <Button size="sm" variant="primary" onClick={handleConfirmMarkAllPresent}>
               {t('attendance.markAllPresentConfirm', 'Mark All Present')}
             </Button>
-          </ModalFooter>
-        </ModalContent>
+          </>
+        }
+      >
+        <p className="text-sm text-[var(--color-text-secondary)]">
+          {t('attendance.markAllPresentMessage', 'This will mark all {{count}} students as present, overwriting any statuses already set individually.', { count: classStudents.length })}
+        </p>
       </Modal>
 
-      {/* AUDIT-455: Overwrite confirmation modal */}
-      <Modal isOpen={isOverwriteOpen} onClose={onOverwriteClose} size="sm">
-        <ModalContent>
-          <ModalHeader className="flex items-center gap-2">
-            <AlertTriangle size={18} className="text-warning-500" />
+      <Modal
+        isOpen={isOverwriteOpen}
+        onClose={onOverwriteClose}
+        size="sm"
+        title={
+          <span className="flex items-center gap-2">
+            <AlertTriangle size={18} className="text-[var(--color-warning)]" />
             {t('attendance.overwriteTitle', 'Attendance Already Saved')}
-          </ModalHeader>
-          <ModalBody>
-            <p className="text-sm text-default-600">
-              {t('attendance.overwriteMessage', 'Attendance for this class on {{date}} has already been saved. Saving again will overwrite the existing records.', { date })}
-            </p>
-          </ModalBody>
-          <ModalFooter>
-            <Button size="sm" variant="flat" onPress={onOverwriteClose}>
+          </span>
+        }
+        footer={
+          <>
+            <Button size="sm" variant="secondary" onClick={onOverwriteClose}>
               {t('common.cancel', 'Cancel')}
             </Button>
-            <Button size="sm" color="warning" onPress={handleConfirmOverwrite}>
+            <Button size="sm" variant="danger" onClick={handleConfirmOverwrite}>
               {t('attendance.overwriteConfirm', 'Overwrite')}
             </Button>
-          </ModalFooter>
-        </ModalContent>
+          </>
+        }
+      >
+        <p className="text-sm text-[var(--color-text-secondary)]">
+          {t('attendance.overwriteMessage', 'Attendance for this class on {{date}} has already been saved. Saving again will overwrite the existing records.', { date })}
+        </p>
       </Modal>
 
       {defaulters.length > 0 && (
-        <Card className="mt-6 shadow-sm border border-danger-200 bg-danger-50/20">
-          <CardBody className="p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="p-1.5 bg-danger-100 rounded-md">
-                <AlertTriangle size={16} className="text-danger-600" />
-              </div>
-              <span className="text-sm font-semibold text-danger-700">{t('pages.absenteesToday')}</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {defaulters.map(s => (
-                <Chip
-                  key={sid(s)}
-                  size="sm"
-                  variant="flat"
-                  color="danger"
-                  className="cursor-pointer hover:bg-danger-200/50 transition-colors border border-danger-100"
-                  onClick={() => navigate(`/students/${sid(s)}`)}
-                >
-                  {s.name}
-                </Chip>
-              ))}
-            </div>
-          </CardBody>
-        </Card>
+        <Alert
+          variant="danger"
+          title={t('pages.absenteesToday')}
+          className="mt-6"
+        >
+          <div className="flex flex-wrap gap-2 mt-2">
+            {defaulters.map(s => (
+              <Chip
+                key={sid(s)}
+                size="sm"
+                variant="flat"
+                color="danger"
+                className="cursor-pointer hover:bg-danger-200/50 transition-colors border border-danger-100"
+                onClick={() => navigate(`/students/${sid(s)}`)}
+              >
+                {s.name}
+              </Chip>
+            ))}
+          </div>
+        </Alert>
       )}
     </div>
   );

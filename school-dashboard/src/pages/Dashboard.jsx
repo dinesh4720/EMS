@@ -1,197 +1,66 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useMemo } from "react";
 import { useApp } from "../context/AppContext";
-import { announcementsApi, attendanceApi, feesApi, studentFeesApi } from "../services/api";
-import StatCard from "../components/StatCard";
-import ChartSection from "../components/ChartSection";
-import ActivityFeed from "../components/ActivityFeed";
-import AlertsPanel from "../components/AlertsPanel";
-import QuickActions from "../components/QuickActions";
-import SubstitutionAlertPanel from "../components/SubstitutionAlertPanel";
-import NpsSurveyModal from "../components/NpsSurveyModal";
-import GuidedTour, { useGuidedTour } from "../components/ui/GuidedTour";
 import { useAuth } from "../context/AuthContext";
 import {
-  GraduationCap,
-  Users,
-  IndianRupee,
+  AlertCircle,
   Calendar,
   CheckCircle2,
-  AlertCircle,
+  GraduationCap,
+  IndianRupee,
   UserX,
-  BookOpen,
-  ClipboardList,
-  Clock,
+  Users,
 } from "lucide-react";
-import { getDateLocale } from "../i18n/index";
-const getNumberFormatter = () => new Intl.NumberFormat(getDateLocale());
-const getCurrencyFormatter = () => new Intl.NumberFormat(getDateLocale(), {
-  style: "currency",
-  currency: "INR",
-  maximumFractionDigits: 0,
-});
-
-const getMonthFormatter = () => new Intl.DateTimeFormat(getDateLocale(), { month: "short" });
-
-const createEmptyAttendanceSnapshot = (totalClasses = 0) => ({
-  studentRate: null,
-  studentPresent: 0,
-  studentTotal: 0,
-  markedClasses: 0,
-  totalClasses,
-  staffRate: null,
-  staffPresent: 0,
-  staffMarked: 0,
-  staffTotal: 0,
-});
-
-function toValidDate(value) {
-  if (!value) {
-    return null;
-  }
-
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-function getRecordDate(record) {
-  return (
-    record?.paymentDate ||
-    record?.date ||
-    record?.createdAt ||
-    record?.updatedAt ||
-    record?.sentAt ||
-    record?.scheduledFor ||
-    null
-  );
-}
-
-function isSameDay(date, reference) {
-  return (
-    date.getFullYear() === reference.getFullYear() &&
-    date.getMonth() === reference.getMonth() &&
-    date.getDate() === reference.getDate()
-  );
-}
-
-function isSameMonth(date, reference) {
-  return (
-    date.getFullYear() === reference.getFullYear() &&
-    date.getMonth() === reference.getMonth()
-  );
-}
-
-function normalizePayments(response, students) {
-  const studentsById = new Map((students || []).map((student) => [String(student.id), student]));
-  const records = Array.isArray(response)
-    ? response
-    : Array.isArray(response?.payments)
-      ? response.payments
-      : [];
-
-  return records
-    .map((payment) => {
-      const studentId = String(payment?.studentId?._id || payment?.studentId || "");
-      const studentRecord = studentsById.get(studentId);
-      const recordDate = toValidDate(getRecordDate(payment));
-      const amount = Number(payment?.amount || payment?.paidAmount || 0);
-      const status = String(payment?.status || "paid").toLowerCase();
-
-      return {
-        id: payment?._id || payment?.id || `${studentId}-${recordDate?.toISOString() || "payment"}`,
-        student: payment?.studentName || payment?.studentId?.name || studentRecord?.name || "Unknown student",
-        className: payment?.className || payment?.studentId?.className || studentRecord?.class || studentRecord?.className || "—",
-        amount: Number.isFinite(amount) ? amount : 0,
-        status,
-        date: recordDate?.toISOString() || null,
-      };
-    })
-    .filter((payment) => payment.date)
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
-}
-
-function isSuccessfulPayment(payment) {
-  return !["failed", "cancelled", "refunded"].includes(String(payment?.status || "").toLowerCase());
-}
-
-function normalizeAnnouncements(response) {
-  const records = Array.isArray(response)
-    ? response
-    : Array.isArray(response?.announcements)
-      ? response.announcements
-      : [];
-
-  return records
-    .map((announcement) => {
-      const recordDate = toValidDate(getRecordDate(announcement));
-
-      return {
-        id: announcement?._id || announcement?.id || announcement?.title || "announcement",
-        title: announcement?.title || "Announcement",
-        content: announcement?.content || announcement?.message || "",
-        status: announcement?.status || "draft",
-        date: recordDate?.toISOString() || null,
-      };
-    })
-    .filter((announcement) => announcement.date)
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
-}
-
-function createFeeCollectionSeries(payments) {
-  const now = new Date();
-  const months = [];
-
-  for (let index = 5; index >= 0; index -= 1) {
-    const monthDate = new Date(now.getFullYear(), now.getMonth() - index, 1);
-    months.push({
-      key: `${monthDate.getFullYear()}-${monthDate.getMonth()}`,
-      month: getMonthFormatter().format(monthDate),
-      collected: 0,
-    });
-  }
-
-  const monthIndex = new Map(months.map((month) => [month.key, month]));
-
-  payments.forEach((payment) => {
-    const paymentDate = toValidDate(payment.date);
-    if (!paymentDate) {
-      return;
-    }
-
-    const key = `${paymentDate.getFullYear()}-${paymentDate.getMonth()}`;
-    const month = monthIndex.get(key);
-    if (month) {
-      month.collected += payment.amount;
-    }
-  });
-
-  return months;
-}
+import KpiTile from "../components/ui/KpiTile";
+import QuickActionTile, { QuickActionGrid } from "../components/ui/QuickActionTile";
+import GuidedTour, { useGuidedTour } from "../components/ui/GuidedTour";
+import AlertsPanel from "../components/AlertsPanel";
+import SubstitutionAlertPanel from "../components/SubstitutionAlertPanel";
+import NpsSurveyModal from "../components/NpsSurveyModal";
+import useDashboardData from "./dashboard/useDashboardData";
+import {
+  getCurrencyFormatter,
+  getNumberFormatter,
+} from "./dashboard/dashboardHelpers";
+import AttendanceSnapshot from "./dashboard/AttendanceSnapshot";
+import FeeCollectionChart from "./dashboard/FeeCollectionChart";
+import RecentActivityCard from "./dashboard/RecentActivityCard";
+import RoleSections from "./dashboard/RoleSections";
 
 const DASHBOARD_TOUR_STEPS = [
   {
     target: '[data-tour="sidebar"]',
-    title: 'Navigation Sidebar',
-    content: 'Use the sidebar to navigate between all modules — Students, Fees, Academics, Staff, and more.',
-    placement: 'right',
+    title: "Navigation Sidebar",
+    content:
+      "Use the sidebar to navigate between all modules — Students, Fees, Academics, Staff, and more.",
+    placement: "right",
   },
   {
     target: '[data-tour="stat-cards"]',
-    title: 'Key Metrics',
-    content: 'These cards show real-time stats: total students, staff, fee collection, and today\'s attendance.',
-    placement: 'bottom',
+    title: "Key Metrics",
+    content:
+      "These cards show real-time stats: total students, staff, fee collection, and today's attendance.",
+    placement: "bottom",
   },
   {
     target: '[data-tour="notifications"]',
-    title: 'Notifications',
-    content: 'Stay updated with alerts for pending attendance, overdue fees, and important announcements.',
-    placement: 'bottom',
+    title: "Notifications",
+    content:
+      "Stay updated with alerts for pending attendance, overdue fees, and important announcements.",
+    placement: "bottom",
   },
   {
     target: '[data-tour="fee-chart"]',
-    title: 'Fee Collection Chart',
-    content: 'Track monthly fee collection trends over the last 6 months.',
-    placement: 'top',
+    title: "Fee Collection Chart",
+    content: "Track monthly fee collection trends over the last 6 months.",
+    placement: "top",
   },
+];
+
+const QUICK_ACTIONS = [
+  { label: "Attendance", icon: CheckCircle2, href: "/classes", tone: "primary" },
+  { label: "Schedule", icon: Calendar, href: "/calendar", tone: "info" },
+  { label: "Payments", icon: IndianRupee, href: "/fees", tone: "success" },
+  { label: "Announce", icon: AlertCircle, href: "/messaging", tone: "warning" },
 ];
 
 function Dashboard() {
@@ -203,23 +72,33 @@ function Dashboard() {
     staffAttendance,
     students,
   } = useApp();
-
   const { user: authUser } = useAuth();
+  const { isOpen: isTourOpen, closeTour } = useGuidedTour("dashboard-v1", true);
 
-  const { isOpen: isTourOpen, closeTour } = useGuidedTour('dashboard-v1', true);
-
-  const [recentPayments, setRecentPayments] = useState([]);
-  const [recentAnnouncements, setRecentAnnouncements] = useState([]);
-  const [feeCollectionData, setFeeCollectionData] = useState([]);
-  const [paymentSnapshot, setPaymentSnapshot] = useState({ totalPending: null, totalCollected: null, today: null, month: null });
-  const [attendanceSnapshot, setAttendanceSnapshot] = useState(() => createEmptyAttendanceSnapshot());
-  const [dashboardLoading, setDashboardLoading] = useState(true);
-  const [paymentsLoaded, setPaymentsLoaded] = useState(false);
-  const [feeDefaultersCount, setFeeDefaultersCount] = useState(0);
+  const {
+    recentPayments,
+    recentAnnouncements,
+    feeCollectionData,
+    paymentSnapshot,
+    attendanceSnapshot,
+    feeDefaultersCount,
+    dashboardLoading,
+    paymentsLoaded,
+  } = useDashboardData({
+    classes,
+    students,
+    staff,
+    staffAttendance,
+    currentAcademicYear,
+  });
 
   const dashboardStats = useMemo(() => {
-    const activeStudents = (students || []).filter((s) => (s.status || "active") === "active");
-    const activeStaffList = (staff || []).filter((s) => (s.status || "active") === "active");
+    const activeStudents = (students || []).filter(
+      (s) => (s.status || "active") === "active"
+    );
+    const activeStaffList = (staff || []).filter(
+      (s) => (s.status || "active") === "active"
+    );
     const teachers = activeStaffList.filter((s) => {
       const role = String(s.role || s.designation || "").toLowerCase();
       return role.includes("teacher") || role === "faculty";
@@ -235,188 +114,8 @@ function Dashboard() {
     };
   }, [students, classes, staff, feeDefaultersCount]);
 
-  // Use a ref for students so the payment effect doesn't re-run when students load.
-  // Students are only used for name resolution (cosmetic), not for filtering/amounts.
-  const studentsRef = useRef(students);
-  studentsRef.current = students;
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadDashboardFeed = async () => {
-      setDashboardLoading(true);
-      setPaymentsLoaded(false);
-
-      try {
-        const [paymentsResult, announcementsResult, feeStructuresResult] = await Promise.allSettled([
-          feesApi.getPayments({ academicYear: currentAcademicYear }),
-          announcementsApi.getAll({}),
-          studentFeesApi.getAll(currentAcademicYear),
-        ]);
-
-        if (cancelled) {
-          return;
-        }
-
-        const normalizedPayments = paymentsResult.status === "fulfilled"
-          ? normalizePayments(paymentsResult.value?.payments ?? [], studentsRef.current)
-          : [];
-        const normalizedAnnouncements = announcementsResult.status === "fulfilled"
-          ? normalizeAnnouncements(announcementsResult.value)
-          : [];
-        const now = new Date();
-        const settledPayments = normalizedPayments.filter(isSuccessfulPayment);
-        const liveAnnouncements = normalizedAnnouncements.filter((announcement) => announcement.status !== "draft");
-
-        // Compute fee totals from student fee structures
-        const feeStructures = feeStructuresResult.status === "fulfilled"
-          ? (Array.isArray(feeStructuresResult.value) ? feeStructuresResult.value : [])
-          : [];
-        const totalPending = feeStructures.reduce((sum, fs) => sum + (fs.totalBalance || 0), 0);
-        const totalCollected = feeStructures.reduce((sum, fs) => sum + (fs.totalPaid || 0), 0);
-        const defaulters = feeStructures.filter((fs) => (fs.totalBalance || 0) > 0).length;
-        setFeeDefaultersCount(defaulters);
-
-        setRecentPayments(settledPayments.slice(0, 6));
-        setRecentAnnouncements((liveAnnouncements.length > 0 ? liveAnnouncements : normalizedAnnouncements).slice(0, 6));
-        setFeeCollectionData(createFeeCollectionSeries(settledPayments));
-        setPaymentSnapshot({
-          totalPending: feeStructuresResult.status === "fulfilled" ? totalPending : null,
-          totalCollected: feeStructuresResult.status === "fulfilled" ? totalCollected : null,
-          today: paymentsResult.status === "fulfilled" ? settledPayments.reduce((sum, payment) => {
-            const paymentDate = toValidDate(payment.date);
-            return paymentDate && isSameDay(paymentDate, now) ? sum + payment.amount : sum;
-          }, 0) : null,
-          month: paymentsResult.status === "fulfilled" ? settledPayments.reduce((sum, payment) => {
-            const paymentDate = toValidDate(payment.date);
-            return paymentDate && isSameMonth(paymentDate, now) ? sum + payment.amount : sum;
-          }, 0) : null,
-        });
-        setPaymentsLoaded(paymentsResult.status === "fulfilled" || feeStructuresResult.status === "fulfilled");
-      } finally {
-        if (!cancelled) {
-          setDashboardLoading(false);
-        }
-      }
-    };
-
-    loadDashboardFeed();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [currentAcademicYear]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadStudentAttendanceSnapshot = async () => {
-      const activeStudents = (students || []).filter((student) => (student.status || "active") === "active");
-      const classesWithStudents = (classes || []).filter((classItem) =>
-        activeStudents.some((student) => String(student.classId) === String(classItem.id))
-      );
-
-      if (!classesWithStudents.length) {
-        setAttendanceSnapshot((current) => ({
-          ...current,
-          studentRate: null,
-          studentPresent: 0,
-          studentTotal: 0,
-          markedClasses: 0,
-          totalClasses: 0,
-        }));
-        return;
-      }
-
-      try {
-        // Single API call replaces N per-class calls (fixes 429 rate-limit issue)
-        const snapshot = await attendanceApi.getTodaySnapshot();
-
-        if (cancelled) return;
-
-        const classSummaries = snapshot?.classes || {};
-        let totalPresent = 0;
-        let totalStudentsInMarkedClasses = 0;
-        let markedClassCount = 0;
-
-        classesWithStudents.forEach((classItem) => {
-          const classData = classSummaries[String(classItem.id)];
-          if (classData && classData.total > 0) {
-            markedClassCount += 1;
-            const classStudentCount = activeStudents.filter(
-              (student) => String(student.classId) === String(classItem.id)
-            ).length;
-            totalStudentsInMarkedClasses += classStudentCount;
-            totalPresent += classData.present || 0;
-          }
-        });
-
-        setAttendanceSnapshot((current) => ({
-          ...current,
-          studentRate: totalStudentsInMarkedClasses > 0
-            ? Math.round((totalPresent / totalStudentsInMarkedClasses) * 100)
-            : null,
-          studentPresent: totalPresent,
-          studentTotal: totalStudentsInMarkedClasses,
-          markedClasses: markedClassCount,
-          totalClasses: classesWithStudents.length,
-        }));
-      } catch {
-        if (!cancelled) {
-          setAttendanceSnapshot((current) => ({
-            ...current,
-            studentRate: null,
-            studentPresent: 0,
-            studentTotal: 0,
-            markedClasses: 0,
-            totalClasses: classesWithStudents.length,
-          }));
-        }
-      }
-    };
-
-    loadStudentAttendanceSnapshot();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [classes, students]);
-
-  // Compute todayKey fresh each render so staffSnapshot stays current if
-  // the component remains mounted across midnight.
-  const todayKey = useMemo(() => new Date().toISOString().split("T")[0], [
-    // Re-evaluate when staffAttendance changes (most likely trigger after midnight)
-    staffAttendance,
-  ]);
-
-  const staffSnapshot = useMemo(() => {
-    const activeStaff = (staff || []).filter((staffMember) => (staffMember.status || "active") === "active");
-    const markedStaff = activeStaff.filter((staffMember) => staffAttendance?.[staffMember.id]?.[todayKey]?.status);
-    const presentStaff = markedStaff.filter((staffMember) => {
-      const status = String(staffAttendance?.[staffMember.id]?.[todayKey]?.status || "").toLowerCase();
-      return status === "present";
-    });
-
-    return {
-      staffRate: markedStaff.length > 0 ? Math.round((presentStaff.length / markedStaff.length) * 100) : null,
-      staffPresent: presentStaff.length,
-      staffMarked: markedStaff.length,
-      staffTotal: activeStaff.length,
-    };
-  }, [staff, staffAttendance, todayKey]);
-
-  useEffect(() => {
-    setAttendanceSnapshot((current) => ({
-      ...current,
-      ...staffSnapshot,
-    }));
-  }, [staffSnapshot]);
-
-
-
   const attendanceRows = useMemo(() => {
     const rows = [];
-
     if (typeof attendanceSnapshot.studentRate === "number") {
       rows.push({
         label: "Students",
@@ -424,7 +123,6 @@ function Dashboard() {
         subtext: `${getNumberFormatter().format(attendanceSnapshot.studentPresent)} present across ${attendanceSnapshot.markedClasses}/${attendanceSnapshot.totalClasses} marked classes`,
       });
     }
-
     if (typeof attendanceSnapshot.staffRate === "number") {
       rows.push({
         label: "Staff",
@@ -432,13 +130,11 @@ function Dashboard() {
         subtext: `${getNumberFormatter().format(attendanceSnapshot.staffPresent)} present from ${attendanceSnapshot.staffMarked}/${attendanceSnapshot.staffTotal} marked staff records`,
       });
     }
-
     return rows;
   }, [attendanceSnapshot]);
 
   const alerts = useMemo(() => {
     const items = [];
-
     if (attendanceSnapshot.totalClasses > attendanceSnapshot.markedClasses) {
       items.push({
         id: "student-attendance-pending",
@@ -449,7 +145,6 @@ function Dashboard() {
         link: "/classes",
       });
     }
-
     if (attendanceSnapshot.staffTotal > attendanceSnapshot.staffMarked) {
       items.push({
         id: "staff-attendance-pending",
@@ -460,7 +155,6 @@ function Dashboard() {
         link: "/staffs",
       });
     }
-
     if (dashboardStats.feeDefaultersCount > 0) {
       items.push({
         id: "fee-defaulters",
@@ -471,7 +165,6 @@ function Dashboard() {
         link: "/fees",
       });
     }
-
     if (dashboardStats.upcomingEvents > 0) {
       items.push({
         id: "upcoming-events",
@@ -482,134 +175,79 @@ function Dashboard() {
         link: "/calendar",
       });
     }
-
     return items;
   }, [attendanceSnapshot, dashboardStats.feeDefaultersCount, dashboardStats.upcomingEvents]);
 
-  const stats = useMemo(() => ([
-    {
-      label: "Total Students",
-      value: getNumberFormatter().format(dashboardStats.totalStudents || 0),
-      subtext: `${getNumberFormatter().format(dashboardStats.totalClasses || 0)} classes active`,
-      icon: GraduationCap,
-      color: "gray",
-      href: "/students",
-      isLoading: loading,
-    },
-    {
-      label: "Teaching Staff",
-      value: getNumberFormatter().format(dashboardStats.totalTeachers || 0),
-      subtext: typeof attendanceSnapshot.staffRate === "number"
-        ? `${getNumberFormatter().format(attendanceSnapshot.staffPresent)} present from ${getNumberFormatter().format(attendanceSnapshot.staffMarked)} marked records`
-        : "Staff attendance not marked yet",
-      icon: Users,
-      color: "gray",
-      href: "/staffs",
-      isLoading: loading,
-    },
-    {
-      label: "Pending Fees",
-      value: getCurrencyFormatter().format(paymentSnapshot.totalPending || 0),
-      subtext: paymentSnapshot.today !== null
-        ? `${getCurrencyFormatter().format(paymentSnapshot.today)} collected today`
-        : `${getCurrencyFormatter().format(paymentSnapshot.totalCollected || 0)} collected total`,
-      icon: IndianRupee,
-      color: "gray",
-      href: "/fees",
-      isLoading: dashboardLoading,
-    },
-    {
-      label: "Absent Today",
-      value: attendanceSnapshot.markedClasses > 0
-        ? getNumberFormatter().format((attendanceSnapshot.studentTotal - attendanceSnapshot.studentPresent) + (attendanceSnapshot.staffMarked - attendanceSnapshot.staffPresent))
-        : "—",
-      subtext: attendanceSnapshot.markedClasses > 0
-        ? [
-            `${getNumberFormatter().format(attendanceSnapshot.studentTotal - attendanceSnapshot.studentPresent)} students`,
-            attendanceSnapshot.staffMarked > 0 ? `${getNumberFormatter().format(attendanceSnapshot.staffMarked - attendanceSnapshot.staffPresent)} staff` : null,
-          ].filter(Boolean).join(" • ")
-        : "Awaiting marked attendance",
-      icon: UserX,
-      color: "gray",
-      href: (attendanceSnapshot.markedClasses > 0 && (attendanceSnapshot.studentTotal - attendanceSnapshot.studentPresent + attendanceSnapshot.staffMarked - attendanceSnapshot.staffPresent) > 0) ? "/classes" : undefined,
-      isLoading: loading,
-    },
-  ]), [attendanceSnapshot, dashboardStats, dashboardLoading, loading, paymentSnapshot]);
+  const kpiTiles = useMemo(() => {
+    const absentTotal =
+      attendanceSnapshot.markedClasses > 0
+        ? attendanceSnapshot.studentTotal -
+          attendanceSnapshot.studentPresent +
+          (attendanceSnapshot.staffMarked - attendanceSnapshot.staffPresent)
+        : null;
 
-  const quickActions = [
-    { label: "Attendance", icon: CheckCircle2, href: "/classes" },
-    { label: "Schedule", icon: Calendar, href: "/calendar" },
-    { label: "Payments", icon: IndianRupee, href: "/fees" },
-    { label: "Announce", icon: AlertCircle, href: "/messaging" },
-  ];
-
-  // ── Role Detection ──
-  // SECURITY: Use server-verified user from AuthContext, not sessionStorage, to prevent
-  // role spoofing via localStorage/sessionStorage editing.
-  const rawRole = authUser?.role || "admin";
-  const role = (Array.isArray(rawRole) ? rawRole[0] || "admin" : String(rawRole)).toLowerCase();
-
-  // ── Principal View: Academic Overview + Staff Attendance ──
-  const principalStats = useMemo(() => {
-    if (role !== "principal") return null;
     return [
       {
         label: "Total Students",
         value: getNumberFormatter().format(dashboardStats.totalStudents || 0),
-        subtext: `${getNumberFormatter().format(dashboardStats.totalClasses || 0)} classes active`,
+        caption: `${getNumberFormatter().format(dashboardStats.totalClasses || 0)} classes active`,
         icon: GraduationCap,
-        color: "blue",
+        tone: "primary",
         href: "/students",
         isLoading: loading,
       },
       {
-        label: "Total Staff",
-        value: getNumberFormatter().format(dashboardStats.totalStaff || 0),
-        subtext: `${getNumberFormatter().format(dashboardStats.activeStaff || 0)} active staff members`,
+        label: "Teaching Staff",
+        value: getNumberFormatter().format(dashboardStats.totalTeachers || 0),
+        caption:
+          typeof attendanceSnapshot.staffRate === "number"
+            ? `${getNumberFormatter().format(attendanceSnapshot.staffPresent)} present from ${getNumberFormatter().format(attendanceSnapshot.staffMarked)} marked records`
+            : "Staff attendance not marked yet",
         icon: Users,
-        color: "purple",
+        tone: "info",
         href: "/staffs",
         isLoading: loading,
       },
-    ];
-  }, [role, loading, dashboardStats]);
-
-  const principalStaffAttendance = useMemo(() => {
-    if (role !== "principal") return null;
-    return {
-      total: attendanceSnapshot.staffTotal,
-      present: attendanceSnapshot.staffPresent,
-      marked: attendanceSnapshot.staffMarked,
-      rate: attendanceSnapshot.staffRate,
-    };
-  }, [role, attendanceSnapshot]);
-
-  // ── Accountant View: Finance Overview ──
-  const accountantStats = useMemo(() => {
-    if (role !== "accountant") return null;
-    return [
       {
-        label: "Today's Collections",
-        value: getCurrencyFormatter().format(paymentSnapshot.today || 0),
-        subtext: "Fee payments received today",
+        label: "Pending Fees",
+        value: getCurrencyFormatter().format(paymentSnapshot.totalPending || 0),
+        caption:
+          paymentSnapshot.today !== null
+            ? `${getCurrencyFormatter().format(paymentSnapshot.today)} collected today`
+            : `${getCurrencyFormatter().format(paymentSnapshot.totalCollected || 0)} collected total`,
         icon: IndianRupee,
-        color: "green",
+        tone: "warning",
         href: "/fees",
         isLoading: dashboardLoading,
       },
       {
-        label: "Monthly Collections",
-        value: getCurrencyFormatter().format(paymentSnapshot.month || 0),
-        subtext: "Total collected this month",
-        icon: IndianRupee,
-        color: "blue",
-        href: "/fees",
-        isLoading: dashboardLoading,
+        label: "Absent Today",
+        value: absentTotal !== null ? getNumberFormatter().format(absentTotal) : "—",
+        caption:
+          attendanceSnapshot.markedClasses > 0
+            ? [
+                `${getNumberFormatter().format(attendanceSnapshot.studentTotal - attendanceSnapshot.studentPresent)} students`,
+                attendanceSnapshot.staffMarked > 0
+                  ? `${getNumberFormatter().format(attendanceSnapshot.staffMarked - attendanceSnapshot.staffPresent)} staff`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(" • ")
+            : "Awaiting marked attendance",
+        icon: UserX,
+        tone: "danger",
+        href:
+          attendanceSnapshot.markedClasses > 0 && (absentTotal ?? 0) > 0
+            ? "/classes"
+            : undefined,
+        isLoading: loading,
       },
     ];
-  }, [role, dashboardLoading, paymentSnapshot]);
+  }, [attendanceSnapshot, dashboardStats, dashboardLoading, loading, paymentSnapshot]);
 
-  // ── Teacher View: My Classes + Pending Tasks ──
+  const rawRole = authUser?.role || "admin";
+  const role = (Array.isArray(rawRole) ? rawRole[0] || "admin" : String(rawRole)).toLowerCase();
+
   const teacherData = useMemo(() => {
     if (role !== "teacher") return null;
     const teacherId = authUser?.id;
@@ -621,15 +259,10 @@ function Dashboard() {
       classIds.has(s.classId)
     ).length;
 
-    // Check which assigned classes have attendance marked today
-    const todayStr = new Date().toISOString().split("T")[0];
     const classesWithAttendance = assignedClasses.map((c) => {
-      const classStudents = (students || []).filter(
-        (s) => s.classId === c.id
-      );
-      // Check attendance snapshot from state for today
-      const hasAttendance = classStudents.some((s) =>
-        (attendanceSnapshot.markedClasses || 0) > 0
+      const classStudents = (students || []).filter((s) => s.classId === c.id);
+      const hasAttendance = classStudents.some(
+        () => (attendanceSnapshot.markedClasses || 0) > 0
       );
       return {
         ...c,
@@ -638,9 +271,10 @@ function Dashboard() {
       };
     });
 
-    const unmarkedCount = assignedClasses.length > 0
-      ? assignedClasses.length - (attendanceSnapshot.markedClasses || 0)
-      : 0;
+    const unmarkedCount =
+      assignedClasses.length > 0
+        ? assignedClasses.length - (attendanceSnapshot.markedClasses || 0)
+        : 0;
 
     return {
       assignedClasses: classesWithAttendance,
@@ -658,194 +292,77 @@ function Dashboard() {
         onClose={closeTour}
       />
 
-      <div className="mb-6">
+      <header className="mb-6">
         <h1 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">
           Overview
         </h1>
         <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">
           Welcome back! Here&apos;s what&apos;s happening today.
         </p>
-      </div>
+      </header>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
         <div className="xl:col-span-8 space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" data-tour="stat-cards">
-            {stats.map((stat) => (
-              <StatCard key={stat.label} {...stat} />
+          <div
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+            data-tour="stat-cards"
+          >
+            {kpiTiles.map((tile) => (
+              <KpiTile key={tile.label} {...tile} />
             ))}
           </div>
 
-          <QuickActions actions={quickActions} />
+          <QuickActionGrid columns={4} gap="sm">
+            {QUICK_ACTIONS.map((action) => (
+              <QuickActionTile
+                key={action.label}
+                label={action.label}
+                icon={action.icon}
+                href={action.href}
+                tone={action.tone}
+                showChevron={false}
+              />
+            ))}
+          </QuickActionGrid>
 
-          <div data-tour="fee-chart">
-            <ChartSection
-              attendanceRows={attendanceRows}
-              feeCollectionData={feeCollectionData}
-              loading={loading || dashboardLoading}
+          <div
+            className="grid grid-cols-1 lg:grid-cols-2 gap-4"
+            data-tour="fee-chart"
+          >
+            <AttendanceSnapshot
+              rows={attendanceRows}
+              isLoading={loading || dashboardLoading}
+            />
+            <FeeCollectionChart
+              data={feeCollectionData}
+              isLoading={loading || dashboardLoading}
               paymentsLoaded={paymentsLoaded}
             />
           </div>
 
-          <ActivityFeed
+          <RecentActivityCard
             payments={recentPayments}
             announcements={recentAnnouncements}
             communications={[]}
+            isLoading={dashboardLoading}
           />
 
-          {/* ── Principal View ── */}
-          {role === "principal" && (
-            <div className="space-y-4" data-testid="principal-section">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">
-                Academic Overview
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {principalStats?.map((stat) => (
-                  <StatCard key={stat.label} {...stat} />
-                ))}
-              </div>
-              {principalStaffAttendance && (
-                <div className="bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-3 flex items-center gap-2">
-                    <Users size={16} className="text-purple-500" />
-                    Staff Attendance
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">
-                        {getNumberFormatter().format(principalStaffAttendance.total)}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-zinc-400">Total Staff</p>
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                        {getNumberFormatter().format(principalStaffAttendance.present)}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-zinc-400">Present Today</p>
-                    </div>
-                  </div>
-                  {typeof principalStaffAttendance.rate === "number" && (
-                    <p className="text-xs text-gray-400 dark:text-zinc-500 mt-2">
-                      {principalStaffAttendance.rate}% attendance rate ({principalStaffAttendance.marked} marked)
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ── Accountant View ── */}
-          {role === "accountant" && (
-            <div className="space-y-4" data-testid="accountant-section">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">
-                Finance Overview
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {accountantStats?.map((stat) => (
-                  <StatCard key={stat.label} {...stat} />
-                ))}
-              </div>
-              {feeCollectionData.length > 0 && (
-                <div className="bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-3 flex items-center gap-2">
-                    <IndianRupee size={16} className="text-green-500" />
-                    Monthly Collection Breakdown
-                  </h3>
-                  <div className="space-y-2">
-                    {feeCollectionData.map((month) => (
-                      <div key={month.key} className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600 dark:text-zinc-400">{month.month}</span>
-                        <span className="font-medium text-gray-900 dark:text-zinc-100">
-                          {getCurrencyFormatter().format(month.collected)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {recentPayments.length > 0 && (
-                <div className="bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-3">
-                    Recent Transactions
-                  </h3>
-                  <div className="space-y-3">
-                    {recentPayments.map((payment) => (
-                      <div
-                        key={payment.id}
-                        className="flex items-center justify-between text-sm border-b border-gray-50 dark:border-zinc-800 pb-2 last:border-0"
-                      >
-                        <div>
-                          <p className="font-medium text-gray-900 dark:text-zinc-100">
-                            {payment.student}
-                          </p>
-                          <p className="text-xs text-gray-400 dark:text-zinc-500">
-                            {payment.className}
-                          </p>
-                        </div>
-                        <span className="font-medium text-green-600 dark:text-green-400">
-                          {getCurrencyFormatter().format(payment.amount)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ── Teacher View ── */}
-          {role === "teacher" && teacherData && (
-            <div className="space-y-4" data-testid="teacher-section">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">
-                My Classes
-              </h2>
-              {teacherData.assignedClasses.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {teacherData.assignedClasses.map((cls) => (
-                    <div
-                      key={cls.id}
-                      className="bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800"
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        <BookOpen size={16} className="text-blue-500" />
-                        <span className="font-medium text-gray-900 dark:text-zinc-100">
-                          Class {cls.name}-{cls.section}
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-500 dark:text-zinc-400">
-                        {cls.studentCount} students
-                      </p>
-                      <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
-                        Attendance: {cls.attendanceMarked ? "Marked" : "Not marked"}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500 dark:text-zinc-400">
-                  No classes assigned.
-                </p>
-              )}
-              {teacherData.unmarkedAttendanceCount > 0 && (
-                <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-4" data-testid="pending-tasks">
-                  <div className="flex items-center gap-2">
-                    <Clock size={16} className="text-amber-600 dark:text-amber-400" />
-                    <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-200">
-                      Pending Tasks
-                    </h3>
-                  </div>
-                  <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                    {teacherData.unmarkedAttendanceCount} {teacherData.unmarkedAttendanceCount === 1 ? "class has" : "classes have"} unmarked attendance for today.
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
+          <RoleSections
+            role={role}
+            dashboardStats={dashboardStats}
+            attendanceSnapshot={attendanceSnapshot}
+            paymentSnapshot={paymentSnapshot}
+            feeCollectionData={feeCollectionData}
+            recentPayments={recentPayments}
+            teacherData={teacherData}
+            loading={loading}
+          />
         </div>
 
-        <div className="xl:col-span-4 space-y-4">
+        <aside className="xl:col-span-4 space-y-4" data-tour="notifications">
           <SubstitutionAlertPanel />
           <AlertsPanel alerts={alerts} />
-        </div>
+        </aside>
       </div>
 
       <NpsSurveyModal />

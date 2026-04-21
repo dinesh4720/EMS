@@ -7,9 +7,12 @@ import {
 } from "@heroui/react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
-import { Search, Settings, BookOpen, X } from "lucide-react";
+import { Settings, BookOpen } from "lucide-react";
 import ClassTeacherAssignmentModal from "./components/ClassTeacherAssignmentModal";
 import { useTranslation } from 'react-i18next';
+import SearchInput from "../../components/ui/SearchInput";
+import IconButton from "../../components/ui/IconButton";
+import EmptyState from "../../components/ui/EmptyState";
 
 import { ITEMS_PER_LOAD, AVAILABLE_COLUMNS, COLUMNS_SCHEMA_VERSION } from './classesListConstants';
 import { useApp } from '../../context/AppContext';
@@ -224,35 +227,25 @@ export default function ClassesList() {
       <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-background border-b border-default-200 py-4 -mx-6 -mt-6 px-6">
         {/* Left Side - Search */}
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <div className="flex items-center gap-2 w-full sm:max-w-[350px] px-3 py-2 bg-default-100 rounded-lg border border-default-200 hover:border-primary hover:bg-default-50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200">
-            <Search size={16} className="text-default-400" />
-            <input
-              type="search"
-              name="class-search-query"
-              placeholder={t('pages.searchClasses1')}
-              className="flex-1 bg-transparent outline-none text-sm"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              autoComplete="off"
-              data-form-type="other"
-            />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery("")} className="p-0.5 hover:bg-default-200 rounded cursor-pointer">
-                <X size={14} className="text-default-400" />
-              </button>
-            )}
-          </div>
+          <SearchInput
+            name="class-search-query"
+            placeholder={t('pages.searchClasses1')}
+            value={searchQuery}
+            onChange={setSearchQuery}
+            className="w-full sm:max-w-[350px] px-3 py-2 bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700 focus-within:border-gray-400 dark:focus-within:border-zinc-600 transition-all"
+          />
         </div>
 
         {/* Right Side - Filters */}
         <div className="flex gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap">
-          <button
+          <IconButton
             onClick={() => setShowColumnModal(true)}
-            className="p-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 cursor-pointer"
+            aria-label={t('pages.editColumns')}
+            variant="outline"
+            size="md"
+            icon={<Settings size={16} />}
             title={t('pages.editColumns')}
-          >
-            <Settings size={16} className="text-default-400" />
-          </button>
+          />
         </div>
       </div>
 
@@ -292,11 +285,12 @@ export default function ClassesList() {
         <TableBody
           items={visibleItems.filter(item => item && item.type && item.data)}
           emptyContent={
-            <div className="py-12 text-center">
-              <BookOpen size={48} className="mx-auto text-default-200 mb-4" />
-              <h3 className="text-lg font-semibold text-default-700 mb-1">{t('classes.emptyStateTitle', 'No classes found')}</h3>
-              <p className="text-sm text-default-400 mb-4">{t('classes.emptyStateDescription', 'Get started by creating your first class')}</p>
-            </div>
+            <EmptyState
+              icon={BookOpen}
+              title={t('classes.emptyStateTitle', 'No classes found')}
+              description={t('classes.emptyStateDescription', 'Get started by creating your first class')}
+              size="lg"
+            />
           }
         >
           {renderItem}

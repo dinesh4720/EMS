@@ -2,36 +2,21 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
 } from 'recharts';
+import { Users, UserCheck, UserX, TrendingUp, AlertTriangle } from 'lucide-react';
 import { reportsApi } from '../../services/api/extensions';
 import { classesApi } from '../../services/api/classes';
 import { examsApi } from '../../services/api/academics';
 import { useApp } from '../../context/AppContext';
 import { getAcademicYearOptions } from '../../utils/constants';
 import toast from 'react-hot-toast';
+import DSStatCard from '../../components/ui/StatCard';
+import ChartCard from '../../components/ui/ChartCard';
+import EmptyState from '../../components/ui/EmptyState';
+import Alert from '../../components/ui/Alert';
+import { SkeletonTable } from '../../components/ui/Skeleton';
 
-/* ──────────────────────────────────────────────────────
-   Skeleton loaders
-   ────────────────────────────────────────────────────── */
-function TableSkeleton({ rows = 5 }) {
-  return (
-    <div className="space-y-3 animate-pulse">
-      {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="h-10 bg-gray-100 dark:bg-zinc-800 rounded" />
-      ))}
-    </div>
-  );
-}
-
-/* ──────────────────────────────────────────────────────
-   Stat Card
-   ────────────────────────────────────────────────────── */
-function StatCard({ label, value }) {
-  return (
-    <div className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-xl p-4">
-      <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">{label}</p>
-      <p className="text-2xl font-semibold text-gray-900 dark:text-white">{value}</p>
-    </div>
-  );
+function StatCard({ label, value, icon, color = 'gray' }) {
+  return <DSStatCard label={label} value={value} icon={icon || Users} color={color} />;
 }
 
 /* ──────────────────────────────────────────────────────
@@ -222,10 +207,10 @@ function AttendanceTab({ metrics }) {
     <div className="space-y-6">
       {/* Stat Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatCard label="Active Students" value={students.total ?? 0} />
-        <StatCard label="Today Present" value={students.todayPresent ?? 0} />
-        <StatCard label="Today Absent" value={students.todayAbsent ?? 0} />
-        <StatCard label="Attendance Rate" value={`${students.todayAttendanceRate ?? 0}%`} />
+        <StatCard label="Active Students" value={students.total ?? 0} icon={Users} color="gray" />
+        <StatCard label="Today Present" value={students.todayPresent ?? 0} icon={UserCheck} color="success" />
+        <StatCard label="Today Absent" value={students.todayAbsent ?? 0} icon={UserX} color="danger" />
+        <StatCard label="Attendance Rate" value={`${students.todayAttendanceRate ?? 0}%`} icon={TrendingUp} color="primary" />
       </div>
 
       {/* Filters */}
@@ -272,22 +257,18 @@ function AttendanceTab({ metrics }) {
 
       {/* Chronic Absentees */}
       {!loading && chronicAbsentees.length > 0 && (
-        <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/40 rounded-xl p-5">
-          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-            <div>
-              <h3 className="text-sm font-semibold text-red-700 dark:text-red-400">
-                Chronic Absentees ({chronicAbsentees.length})
-              </h3>
-              <p className="text-xs text-red-600/70 dark:text-red-400/70 mt-0.5">
-                Students below attendance threshold
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-xs text-gray-500 dark:text-zinc-400">Threshold</label>
+        <Alert
+          variant="danger"
+          title={`Chronic Absentees (${chronicAbsentees.length})`}
+          description="Students below attendance threshold"
+        >
+          <div className="mt-3 space-y-3">
+            <div className="flex items-center gap-2 justify-end">
+              <label className="text-xs text-[var(--color-text-muted)]">Threshold</label>
               <select
                 value={chronicThreshold}
                 onChange={(e) => setChronicThreshold(Number(e.target.value))}
-                className="border border-gray-300 dark:border-zinc-700 rounded-lg px-2 py-1 text-xs bg-white dark:bg-zinc-900 text-gray-900 dark:text-white"
+                className="border border-[var(--color-border)] rounded-lg px-2 py-1 text-xs bg-[var(--color-bg)] text-[var(--color-text-primary)]"
               >
                 <option value={60}>60%</option>
                 <option value={65}>65%</option>
@@ -297,47 +278,49 @@ function AttendanceTab({ metrics }) {
                 <option value={85}>85%</option>
               </select>
             </div>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-red-200 dark:border-red-800/40">
-                  <th className="text-left py-2 px-3 text-red-600 dark:text-red-400 font-medium text-xs">Student</th>
-                  <th className="text-left py-2 px-3 text-red-600 dark:text-red-400 font-medium text-xs">Class</th>
-                  <th className="text-center py-2 px-3 text-red-600 dark:text-red-400 font-medium text-xs">Present</th>
-                  <th className="text-center py-2 px-3 text-red-600 dark:text-red-400 font-medium text-xs">Absent</th>
-                  <th className="text-center py-2 px-3 text-red-600 dark:text-red-400 font-medium text-xs">Attendance %</th>
-                </tr>
-              </thead>
-              <tbody>
-                {chronicAbsentees.map((row, i) => (
-                  <tr key={i} className="border-b border-red-100 dark:border-red-900/20 last:border-0">
-                    <td className="py-2 px-3 text-gray-900 dark:text-white">
-                      <div>{row.studentName}</div>
-                      {row.rollNo && <div className="text-xs text-gray-400 dark:text-zinc-500">Roll: {row.rollNo}</div>}
-                    </td>
-                    <td className="py-2 px-3 text-gray-700 dark:text-zinc-300">
-                      {row.className}{row.classSection ? ` ${row.classSection}` : ''}
-                    </td>
-                    <td className="text-center py-2 px-3 text-green-600 dark:text-green-400 font-medium">{row.present}</td>
-                    <td className="text-center py-2 px-3 text-red-600 dark:text-red-400 font-medium">{row.absent}</td>
-                    <td className="text-center py-2 px-3 font-semibold text-red-700 dark:text-red-400">{row.percentage}%</td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--color-border)]">
+                    <th className="text-left py-2 px-3 text-[var(--color-error)] font-medium text-xs">Student</th>
+                    <th className="text-left py-2 px-3 text-[var(--color-error)] font-medium text-xs">Class</th>
+                    <th className="text-center py-2 px-3 text-[var(--color-error)] font-medium text-xs">Present</th>
+                    <th className="text-center py-2 px-3 text-[var(--color-error)] font-medium text-xs">Absent</th>
+                    <th className="text-center py-2 px-3 text-[var(--color-error)] font-medium text-xs">Attendance %</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {chronicAbsentees.map((row, i) => (
+                    <tr key={i} className="border-b border-[var(--color-border)]/50 last:border-0">
+                      <td className="py-2 px-3 text-[var(--color-text-primary)]">
+                        <div>{row.studentName}</div>
+                        {row.rollNo && <div className="text-xs text-[var(--color-text-muted)]">Roll: {row.rollNo}</div>}
+                      </td>
+                      <td className="py-2 px-3 text-[var(--color-text-secondary)]">
+                        {row.className}{row.classSection ? ` ${row.classSection}` : ''}
+                      </td>
+                      <td className="text-center py-2 px-3 text-[var(--color-success)] font-medium">{row.present}</td>
+                      <td className="text-center py-2 px-3 text-[var(--color-error)] font-medium">{row.absent}</td>
+                      <td className="text-center py-2 px-3 font-semibold text-[var(--color-error)]">{row.percentage}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        </Alert>
       )}
 
       {/* All Students Table */}
       <div>
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">All Students</h3>
         {rows.length === 0 && !loading ? (
-          <div className="text-center py-12 text-gray-500 dark:text-zinc-400">
-            <p className="text-lg font-medium">No attendance records found</p>
-            <p className="text-sm mt-1">No data available for the selected filters.</p>
-          </div>
+          <EmptyState
+            icon={Users}
+            size="sm"
+            title="No attendance records found"
+            description="No data available for the selected filters."
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -450,12 +433,14 @@ function MarksTab({ academicYear }) {
       </div>
 
       {!examId ? (
-        <div className="text-center py-16 text-gray-500 dark:text-zinc-400">
-          <p className="text-lg font-medium">Select an exam to view results</p>
-          <p className="text-sm mt-1">Choose an exam from the dropdown above.</p>
-        </div>
+        <EmptyState
+          icon={AlertTriangle}
+          size="sm"
+          title="Select an exam to view results"
+          description="Choose an exam from the dropdown above."
+        />
       ) : loading ? (
-        <TableSkeleton rows={6} />
+        <SkeletonTable rows={6} columns={5} />
       ) : (
         <div className="space-y-8">
           {/* Class Results */}
@@ -607,7 +592,7 @@ function FeesTab({ metrics, metricsLoading, academicYear }) {
       </div>
 
       {loading ? (
-        <TableSkeleton />
+        <SkeletonTable rows={5} columns={5} />
       ) : (
         <div className="space-y-8">
           {/* Fee Collection */}

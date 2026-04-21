@@ -20,9 +20,9 @@ import {
   Input
 } from '@heroui/react';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
-import { FileText, Users, ArrowLeft, Save, AlertCircle, Award, CheckCircle2, Search, UserX } from 'lucide-react';
+import { FileText, Users, ArrowLeft, Save, AlertCircle, Award, CheckCircle2, Search, UserX, GraduationCap } from 'lucide-react';
 import { examsApi, resultsApi, classesApi } from '../../services/api';
-import { MinimalButton } from '../../components/ui';
+import { MinimalButton, Input as DSInput, StatCard, ErrorState, EmptyState } from '../../components/ui';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { calculateGrade as calculateGradeUtil } from '../../utils/grading';
@@ -44,10 +44,11 @@ const ResultsTable = ({
   <Card shadow="none" className="border border-gray-100 dark:border-zinc-800 dark:bg-zinc-950">
     <CardBody className="p-0">
       {students.length === 0 ? (
-        <div className="text-center py-12">
-          <Users size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-          <p className="text-gray-500 dark:text-zinc-400">{t('pages.noStudentsFoundInThisClass')}</p>
-        </div>
+        <EmptyState
+          icon={Users}
+          title={t('pages.noStudentsFoundInThisClass')}
+          size="md"
+        />
       ) : (
         <Table aria-label={t('aria.tables.resultsEntry')} removeWrapper>
           <TableHeader>
@@ -90,18 +91,18 @@ const ResultsTable = ({
                     />
                   </TableCell>
                   <TableCell>
-                    <div className="w-24">
-                      <input
-                        type="number"
-                        value={marks}
-                        onChange={(e) => handleMarksChange(studentId, e.target.value)}
-                        min={0}
-                        max={exam.maxMarks}
-                        disabled={isAbsent}
-                        className={`w-full px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:border-gray-900 focus:ring-2 focus:ring-gray-100 outline-none text-sm dark:bg-zinc-900 dark:border-zinc-700 dark:focus:border-zinc-100 dark:focus:ring-zinc-800 dark:text-zinc-100 ${isAbsent ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        placeholder={t('academics.marksInputPlaceholder')}
-                      />
-                    </div>
+                    <DSInput
+                      size="sm"
+                      type="number"
+                      value={marks}
+                      onChange={(e) => handleMarksChange(studentId, e.target.value)}
+                      min={0}
+                      max={exam.maxMarks}
+                      disabled={isAbsent}
+                      placeholder={t('academics.marksInputPlaceholder')}
+                      wrapperClassName="w-24"
+                      aria-label={t('pages.mARKS')}
+                    />
                   </TableCell>
                   <TableCell>
                     <Chip size="sm" variant="flat">{grade || '-'}</Chip>
@@ -125,12 +126,14 @@ const ResultsTable = ({
                     )}
                   </TableCell>
                   <TableCell>
-                    <input
+                    <DSInput
+                      size="sm"
                       type="text"
                       value={results[studentId]?.remarks || ''}
                       onChange={(e) => handleRemarksChange(studentId, e.target.value)}
                       placeholder={t('pages.addRemarks')}
-                      className="w-40 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:border-gray-900 focus:ring-2 focus:ring-gray-100 outline-none text-sm dark:bg-zinc-900 dark:border-zinc-700 dark:focus:border-zinc-100 dark:focus:ring-zinc-800 dark:text-zinc-100"
+                      wrapperClassName="w-40"
+                      aria-label={t('pages.rEMARKS')}
                     />
                   </TableCell>
                 </TableRow>
@@ -170,6 +173,7 @@ const ResultsEntry = ({ standalone = false }) => {
   const [loadedAt, setLoadedAt] = useState(null);
   const [dirtyStudentIds, setDirtyStudentIds] = useState(new Set());
   const [pendingNavPath, setPendingNavPath] = useState(null);
+  const [loadError, setLoadError] = useState(null);
 
   const isDirty = dirtyStudentIds.size > 0;
 
@@ -205,6 +209,7 @@ const ResultsEntry = ({ standalone = false }) => {
 
   const fetchExamsList = async () => {
     setLoadingExams(true);
+    setLoadError(null);
     try {
       const data = await examsApi.getAll();
       setExams(data || []);
@@ -214,6 +219,7 @@ const ResultsEntry = ({ standalone = false }) => {
       }
     } catch (error) {
       logger.error('Error fetching exams:', error);
+      setLoadError(error);
       toast.error(t('toast.error.failedToLoadExams'));
     } finally {
       setLoadingExams(false);
@@ -223,6 +229,7 @@ const ResultsEntry = ({ standalone = false }) => {
   const fetchExamAndStudents = async (id) => {
     setLoadingStudents(true);
     setDirtyStudentIds(new Set());
+    setLoadError(null);
     try {
       // Check cache first
       const cacheKey = `exam-${id}`;
@@ -265,6 +272,7 @@ const ResultsEntry = ({ standalone = false }) => {
       }
     } catch (error) {
       logger.error('Error fetching data:', error);
+      setLoadError(error);
       toast.error(t('toast.error.failedToLoadExamData'));
     } finally {
       setLoading(false);
@@ -439,6 +447,18 @@ const ResultsEntry = ({ standalone = false }) => {
     );
   }
 
+  // Error state (initial load failed and nothing to show)
+  if (loadError && !exam && exams.length === 0) {
+    return (
+      <ErrorState
+        title={t('toast.error.failedToLoadExamData')}
+        error={loadError}
+        onRetry={() => (standalone ? fetchExamsList() : examId && fetchExamAndStudents(examId))}
+        size="lg"
+      />
+    );
+  }
+
   // Standalone mode - show exam selector
   if (standalone) {
     return (
@@ -473,11 +493,12 @@ const ResultsEntry = ({ standalone = false }) => {
 
         {/* No exam selected */}
         {exams.length === 0 && (
-          <div className="text-center py-12">
-            <FileText size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-            <p className="text-gray-500 dark:text-zinc-400">{t('pages.noExamsAvailable')}</p>
-            <p className="text-sm text-gray-400 dark:text-zinc-500 mt-1">{t('pages.createAnExamFirstToEnterResults')}</p>
-          </div>
+          <EmptyState
+            icon={FileText}
+            title={t('pages.noExamsAvailable')}
+            description={t('pages.createAnExamFirstToEnterResults')}
+            size="md"
+          />
         )}
 
         {/* Loading students */}
@@ -503,19 +524,25 @@ const ResultsEntry = ({ standalone = false }) => {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-3 border border-gray-100 dark:border-zinc-800">
-                <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.totalStudents1')}</p>
-                <p className="text-xl font-semibold text-gray-900 dark:text-zinc-100">{students.length}</p>
-              </div>
-              <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-3 border border-blue-100 dark:border-blue-800">
-                <p className="text-xs text-blue-600 dark:text-blue-400">{t('pages.resultsEntered')}</p>
-                <p className="text-xl font-semibold text-blue-700 dark:text-blue-300">{enteredCount}</p>
-              </div>
-              <div className="bg-green-50 dark:bg-green-950 rounded-lg p-3 border border-green-100 dark:border-green-800">
-                <p className="text-xs text-green-600 dark:text-green-400">{t('pages.passCount')}</p>
-                <p className="text-xl font-semibold text-green-700 dark:text-green-300">{passCount}</p>
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <StatCard
+                label={t('pages.totalStudents1')}
+                value={students.length}
+                icon={Users}
+                color="gray"
+              />
+              <StatCard
+                label={t('pages.resultsEntered')}
+                value={enteredCount}
+                icon={GraduationCap}
+                color="primary"
+              />
+              <StatCard
+                label={t('pages.passCount')}
+                value={passCount}
+                icon={CheckCircle2}
+                color="success"
+              />
             </div>
 
             {/* Search */}
@@ -553,13 +580,16 @@ const ResultsEntry = ({ standalone = false }) => {
   // Non-standalone mode (original behavior)
   if (!exam) {
     return (
-      <div className="text-center py-20">
-        <FileText size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-        <p className="text-gray-500 dark:text-zinc-400">{t('pages.examNotFound')}</p>
-        <MinimalButton className="mt-4" onClick={() => navigate('/academics/exams')}>
-          Back to Exams
-        </MinimalButton>
-      </div>
+      <EmptyState
+        icon={FileText}
+        title={t('pages.examNotFound')}
+        size="lg"
+        action={
+          <MinimalButton onClick={() => navigate('/academics/exams')}>
+            Back to Exams
+          </MinimalButton>
+        }
+      />
     );
   }
 
@@ -597,19 +627,25 @@ const ResultsEntry = ({ standalone = false }) => {
       </div>
 
       {/* Stats Summary */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
-          <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.totalStudents1')}</p>
-          <p className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">{students.length}</p>
-        </div>
-        <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
-          <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.resultsEntered')}</p>
-          <p className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">{enteredCount}</p>
-        </div>
-        <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
-          <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.passCount')}</p>
-          <p className="text-2xl font-semibold text-green-600 dark:text-green-400">{passCount}</p>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <StatCard
+          label={t('pages.totalStudents1')}
+          value={students.length}
+          icon={Users}
+          color="gray"
+        />
+        <StatCard
+          label={t('pages.resultsEntered')}
+          value={enteredCount}
+          icon={GraduationCap}
+          color="primary"
+        />
+        <StatCard
+          label={t('pages.passCount')}
+          value={passCount}
+          icon={CheckCircle2}
+          color="success"
+        />
       </div>
 
       {/* Results Table */}
