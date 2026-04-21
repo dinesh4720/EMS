@@ -1,27 +1,36 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import { Breadcrumbs, BreadcrumbItem } from "@heroui/react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { IndianRupee, RotateCcw, Home, Download, AlertTriangle, Settings, Layers } from "lucide-react";
 import { PageLayout, MinimalButton } from "../../components/ui";
-import Payments from "./Payments";
-import Refunds from "./Refunds";
-import FeeTemplatesManagement from "./FeeTemplatesManagement";
+import { TablePageSkeleton } from "../../components/skeletons/PageSkeletons";
 import toast from "react-hot-toast";
+
+const Payments = lazy(() => import("./Payments"));
+const Refunds = lazy(() => import("./Refunds"));
+const FeeTemplatesManagement = lazy(() => import("./FeeTemplatesManagement"));
+const FeeDefaulters = lazy(() => import("./FeeDefaulters"));
 import { feesApi } from "../../services/api";
 import { useTranslation } from 'react-i18next';
 import { getDateLocale } from '../../i18n/index';
 import { formatShortDate, toTodayDateString } from '../../utils/dateFormatter';
 import { useApp } from '../../context/AppContext';
+import { useCurrency } from '../../context/hooks/useCurrency';
+import logger from '../../utils/logger';
+
 
 export default function FeesPage() {
   const { t } = useTranslation();
-  const { currentAcademicYear } = useApp();
+  const { currentAcademicYear, selectedAcademicYear } = useApp();
+  const { currencySymbol } = useCurrency();
   const navigate = useNavigate();
   const location = useLocation();
 
   const getActiveTab = () => {
     if (location.pathname.includes("/refunds")) return "refunds";
     if (location.pathname.includes("/templates")) return "templates";
+    if (location.pathname.includes("/defaulters")) return "defaulters";
     return "payments";
   };
 
@@ -32,7 +41,7 @@ export default function FeesPage() {
     try {
       // Fetch all pages scoped to the current academic year
       const filters = { limit: 200 };
-      if (currentAcademicYear) filters.academicYear = currentAcademicYear;
+      if (selectedAcademicYear) filters.academicYear = selectedAcademicYear;
       let allPayments = [];
       let page = 1;
       let totalPages = 1;
@@ -67,7 +76,7 @@ export default function FeesPage() {
         }
       });
 
-      const headers = ['Student', 'Class', 'Total Paid (₹)', 'Last Payment Date', 'Payment Modes', 'Transactions'];
+      const headers = ['Student', 'Class', `Total Paid (${currencySymbol})`, 'Last Payment Date', 'Payment Modes', 'Transactions'];
       const txCounts = {};
       payments.forEach(p => {
         const sid = p.studentId?._id || p.studentId || 'unknown';
@@ -89,7 +98,7 @@ export default function FeesPage() {
         ['--- Summary ---'],
         ['Total Students with Payments', Object.keys(studentMap).length],
         ['Total Transactions', payments.length],
-        ['Total Collected (₹)', totalCollected],
+        [`Total Collected (${currencySymbol})`, totalCollected],
         ['Report Generated', new Date().toLocaleString(getDateLocale())],
       ];
 
@@ -114,7 +123,7 @@ export default function FeesPage() {
     } catch (err) {
       toast.dismiss(loadingId);
       toast.error('Failed to generate report. Please try again.');
-      console.error('Fee report error:', err);
+      logger.error('Fee report error:', err);
     }
   };
 
@@ -146,12 +155,22 @@ export default function FeesPage() {
         </div>
       ),
     },
+    {
+      key: "defaulters",
+      title: (
+        <div className="flex items-center gap-2">
+          <AlertTriangle size={16} />
+          <span>Defaulters</span>
+        </div>
+      ),
+    },
   ];
 
   const handleTabChange = (key) => {
     if (key === "payments") navigate("/fees");
     else if (key === "refunds") navigate("/fees/refunds");
     else if (key === "templates") navigate("/fees/templates");
+    else if (key === "defaulters") navigate("/fees/defaulters");
   };
 
   const getHeader = () => {
@@ -167,6 +186,12 @@ export default function FeesPage() {
         description: "Create and manage fee templates for different sections",
       };
     }
+    if (activeTab === "defaulters") {
+      return {
+        title: "Fee Defaulters",
+        description: "Students with unpaid or overdue fees",
+      };
+    }
     return {
       title: "Fee Refunds",
       description: "Process refunds and track refund history",
@@ -175,14 +200,6 @@ export default function FeesPage() {
 
   const actions = (
     <>
-      <MinimalButton
-        variant="ghost"
-        size="sm"
-        icon={<AlertTriangle size={16} />}
-        onClick={() => navigate("/fees/defaulters")}
-      >
-        Defaulters
-      </MinimalButton>
       <MinimalButton
         variant="ghost"
         size="sm"
@@ -213,6 +230,7 @@ export default function FeesPage() {
           <BreadcrumbItem>{t('pages.fees1')}</BreadcrumbItem>
           {activeTab === "refunds" && <BreadcrumbItem>{t('pages.refunds1')}</BreadcrumbItem>}
           {activeTab === "templates" && <BreadcrumbItem>{t('pages.templates1')}</BreadcrumbItem>}
+          {activeTab === "defaulters" && <BreadcrumbItem>Defaulters</BreadcrumbItem>}
         </Breadcrumbs>
       </div>
 
@@ -226,11 +244,14 @@ export default function FeesPage() {
         noPadding
       >
         <div className="min-h-[500px] p-6">
-          <Routes>
-            <Route index element={<Payments />} />
-            <Route path="refunds" element={<Refunds />} />
-            <Route path="templates" element={<FeeTemplatesManagement />} />
-          </Routes>
+          <Suspense fallback={<TablePageSkeleton kpiCards={3} columns={6} rows={8} />}>
+            <Routes>
+              <Route index element={<Payments />} />
+              <Route path="refunds" element={<Refunds />} />
+              <Route path="templates" element={<FeeTemplatesManagement />} />
+              <Route path="defaulters" element={<FeeDefaulters />} />
+            </Routes>
+          </Suspense>
         </div>
       </PageLayout>
     </div>

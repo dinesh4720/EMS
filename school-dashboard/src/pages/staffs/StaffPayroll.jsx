@@ -1,16 +1,16 @@
 import { useState, useMemo, useEffect, useRef } from "react";
+import { useEntityFetch } from "../../hooks/useEntityFetch";
 import logger from "../../utils/logger";
 import {
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Button, Spinner, Chip, Card, Breadcrumbs, BreadcrumbItem,
   Dropdown, DropdownTrigger, DropdownMenu, DropdownItem,
-  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  Input, Select, SelectItem, Textarea
+  Select, SelectItem
 } from "@heroui/react";
 import {
-  Clock, Filter, Search, Play, FileText,
-  TrendingUp, Wallet, CreditCard, Users, X, AlertCircle, CheckCircle2, ChevronDown,
-  Download, Lock, RotateCcw, ShieldCheck, AlertTriangle
+  Filter, Search, Play, FileText,
+  Wallet, CreditCard, X, AlertCircle, CheckCircle2, ChevronDown,
+  Download, Lock, RotateCcw
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import PhotoAvatar from "../../components/PhotoAvatar";
@@ -20,6 +20,16 @@ import toast from "react-hot-toast";
 import { getDateLocale } from '../../i18n/index';
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+import PaymentModal from './components/payroll/PaymentModal';
+import RunPayrollModal from './components/payroll/RunPayrollModal';
+import BulkPayModal from './components/payroll/BulkPayModal';
+import ValidationResultsModal from './components/payroll/ValidationResultsModal';
+import ReversePaymentModal from './components/payroll/ReversePaymentModal';
+import FixSalariesModal from './components/payroll/FixSalariesModal';
+import PayrollKPICards from './components/payroll/PayrollKPICards';
+import PayrollStatusBanner from './components/payroll/PayrollStatusBanner';
+import PayrollToolbar from './components/payroll/PayrollToolbar';
+import PayrollRecordsTable from './components/payroll/PayrollTable';
 
 
 export default function StaffPayroll() {
@@ -47,11 +57,6 @@ export default function StaffPayroll() {
   // Helper function to count active staff
   const getActiveStaffCount = () => staff.filter(isActiveStaff).length;
 
-  // Lazy loading
-  const ITEMS_PER_LOAD = 10;
-  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const loaderRef = useRef(null);
 
   // Payment modal
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
@@ -182,11 +187,12 @@ export default function StaffPayroll() {
   };
 
   const confirmPrepareRecords = async () => {
+    if (preparingRecords) return;
+    setPreparingRecords(true);
     setValidationModalOpen(false);
     setRunPayrollModalOpen(false);
 
     try {
-      setPreparingRecords(true);
       // Use helper function to filter active staff
       const activeStaff = staff.filter(isActiveStaff);
       // FIXED: Use _id from MongoDB
@@ -222,13 +228,22 @@ export default function StaffPayroll() {
   };
 
   const confirmPayment = async () => {
+    // editingRecord may be a string ID (from "Log Payment") or a full record object (from "Edit")
+    const recordId = typeof editingRecord === 'object' && editingRecord !== null
+      ? editingRecord._id
+      : editingRecord;
     try {
-      const response = await payrollApi.markAsPaid(editingRecord, paymentForm);
+      const response = await payrollApi.markAsPaid(recordId, paymentForm);
 
       if (response.success) {
         toast.success(t('toast.success.paymentRecordedSuccessfully'));
         setPaymentModalOpen(false);
         setPaymentForm({ paymentMethod: 'bank_transfer', paymentReference: '', notes: '' });
+        // Immediately update the record's status in local state so the table
+        // reflects the change without waiting for the async refetch
+        setPayrollRecords(prev =>
+          prev.map(r => r._id === recordId ? { ...r, status: 'paid' } : r)
+        );
         fetchDashboard();
         fetchPayrollRecords();
       }
@@ -393,38 +408,10 @@ export default function StaffPayroll() {
     return result;
   }, [payrollRecords, statusFilter, employmentFilter, searchQuery, staff]);
 
-  const visibleRecords = useMemo(() => {
-    return filteredRecords.slice(0, visibleCount);
-  }, [filteredRecords, visibleCount]);
-
-  const hasMore = visibleCount < filteredRecords.length;
-
-  // Reset visible count when filters change
-  useEffect(() => {
-    setVisibleCount(ITEMS_PER_LOAD);
-  }, [searchQuery, statusFilter, employmentFilter]);
-
-  // Lazy loading intersection observer
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
-          setIsLoadingMore(true);
-          setTimeout(() => {
-            setVisibleCount(prev => prev + ITEMS_PER_LOAD);
-            setIsLoadingMore(false);
-          }, 300);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (loaderRef.current) {
-      observer.observe(loaderRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [hasMore, isLoadingMore]);
+  const { visibleItems: visibleRecords, hasMore, isLoadingMore, loaderRef } = useEntityFetch(
+    filteredRecords,
+    [searchQuery, statusFilter, employmentFilter]
+  );
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat(getDateLocale(), {
@@ -445,262 +432,31 @@ export default function StaffPayroll() {
       ) : (
         <>
       {/* Payment Modal */}
-      <Modal isOpen={paymentModalOpen} onOpenChange={setPaymentModalOpen} size="md">
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader>{t('pages.logPaymentDetails1')}</ModalHeader>
-              <ModalBody className="gap-4">
-                <Select
-                  label={t('pages.paymentMethod1')}
-                  selectedKeys={new Set([paymentForm.paymentMethod])}
-                  onSelectionChange={(keys) => setPaymentForm({ ...paymentForm, paymentMethod: Array.from(keys)[0] })}
-                  variant="bordered"
-                >
-                  <SelectItem key="bank_transfer" textValue="Bank Transfer">{t('pages.bankTransfer1')}</SelectItem>
-                  <SelectItem key="cash" textValue="Cash">{t('pages.cash1')}</SelectItem>
-                  <SelectItem key="cheque" textValue="Cheque">{t('pages.cheque1')}</SelectItem>
-                  <SelectItem key="online" textValue="Online Payment">{t('pages.onlinePayment1')}</SelectItem>
-                </Select>
-                <Input
-                  label={t('pages.paymentReference1')}
-                  placeholder={t('staff.payroll.paymentReferencePlaceholder')}
-                  value={paymentForm.paymentReference}
-                  onValueChange={(v) => setPaymentForm({ ...paymentForm, paymentReference: v })}
-                  variant="bordered"
-                />
-                <Textarea
-                  label={t('pages.notesOptional1')}
-                  placeholder={t('pages.additionalNotes1')}
-                  value={paymentForm.notes}
-                  onValueChange={(v) => setPaymentForm({ ...paymentForm, notes: v })}
-                  variant="bordered"
-                  minRows={2}
-                />
-              </ModalBody>
-              <ModalFooter>
-                <Button variant="light" onPress={onClose}>{t('pages.cancel2')}</Button>
-                <Button color="success" onPress={confirmPayment}>
-                  Record Payment
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
+      <PaymentModal
+        isOpen={paymentModalOpen}
+        onOpenChange={setPaymentModalOpen}
+        paymentForm={paymentForm}
+        setPaymentForm={setPaymentForm}
+        onConfirm={confirmPayment}
+      />
 
       {/* Payroll Status Banner */}
-      {dashboardData && dashboardData.payrollRun && (
-        <div className={`
-          rounded-lg border p-4 flex items-start gap-4
-          ${dashboardData.payrollRun.status === 'completed'
-            ? 'bg-success-50 border-success-200'
-            : dashboardData.payrollRun.status === 'processing'
-            ? 'bg-warning-50 border-warning-200'
-            : 'bg-default-50 border-default-200'}
-        `}>
-          <div className={`
-            p-2 rounded-lg
-            ${dashboardData.payrollRun.status === 'completed'
-              ? 'bg-success-100'
-              : dashboardData.payrollRun.status === 'processing'
-              ? 'bg-warning-100'
-              : 'bg-default-200'}
-          `}>
-            {dashboardData.payrollRun.status === 'completed' ? (
-              <CheckCircle2 size={20} className="text-success-600" />
-            ) : dashboardData.payrollRun.status === 'processing' ? (
-              <Clock size={20} className="text-warning-600" />
-            ) : (
-              <AlertCircle size={20} className="text-default-600" />
-            )}
-          </div>
-          <div className="flex-1">
-            <h4 className={`font-semibold ${
-              dashboardData.payrollRun.status === 'completed'
-                ? 'text-success-900'
-                : dashboardData.payrollRun.status === 'processing'
-                ? 'text-warning-900'
-                : 'text-default-900'
-            }`}>
-              {dashboardData.payrollRun.status === 'completed'
-                ? 'Payment Records Finalized'
-                : dashboardData.payrollRun.status === 'processing'
-                ? 'Generating Records...'
-                : 'Payroll Status'}
-            </h4>
-            <p className={`text-sm mt-1 ${
-              dashboardData.payrollRun.status === 'completed'
-                ? 'text-success-700'
-                : dashboardData.payrollRun.status === 'processing'
-                ? 'text-warning-700'
-                : 'text-default-600'
-            }`}>
-              {dashboardData.payrollRun.status === 'completed'
-                ? `Records for ${months[selectedMonth - 1]} ${selectedYear} were prepared on ${dashboardData.payrollRun.completedAt ? new Date(dashboardData.payrollRun.completedAt).toLocaleDateString(getDateLocale(), { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}. `
-                : `Payroll records for ${months[selectedMonth - 1]} ${selectedYear} are currently being generated. `
-              }
-              {dashboardData.payrollRun.processedEmployees} of {dashboardData.payrollRun.totalEmployees} active {dashboardData.payrollRun.totalEmployees === 1 ? 'employee' : 'employees'} processed
-              {staff.length > dashboardData.payrollRun.totalEmployees && (
-                <span className="text-xs ml-2 text-default-500">(Total staff in system: {staff.length})</span>
-              )}
-              {(() => {
-                // Count active staff using same robust logic as payroll run
-                const activeCount = getActiveStaffCount();
-                if (activeCount > dashboardData.payrollRun.totalEmployees) {
-                  return (
-                    <span className="text-xs ml-2 text-warning-600 font-medium">
-                      ({activeCount - dashboardData.payrollRun.totalEmployees} more active staff not included)
-                    </span>
-                  );
-                }
-                return null;
-              })()}
-              {dashboardData.payrollRun.status === 'completed' && dashboardData.payrollRun.totalPaid > 0 && (
-                <>. Total amount recorded: <strong>{formatCurrency(dashboardData.payrollRun.totalPaid)}</strong></>
-              )}
-            </p>
-
-            {/* Staff Status Breakdown */}
-            <div className="mt-3 flex flex-wrap gap-2">
-              <span className="text-xs text-default-500">{t('pages.systemStaff')}</span>
-              {Object.entries(staff.reduce((acc, s) => {
-                const status = s.status || 'unknown';
-                acc[status] = (acc[status] || 0) + 1;
-                return acc;
-              }, {})).map(([status, count]) => (
-                <span key={status} className="text-xs px-2 py-1 bg-default-100 rounded-full">
-                  {count} {status}
-                </span>
-              ))}
-            </div>
-
-            {dashboardData.payrollRun.errorLog && dashboardData.payrollRun.errorLog.length > 0 && (
-              <div className="mt-2 p-2 bg-danger-50 border border-danger-200 rounded">
-                <p className="text-xs text-danger-700">
-                  <strong>{t('pages.errors')}</strong> {dashboardData.payrollRun.errorLog.length} employees failed
-                </p>
-              </div>
-            )}
-          </div>
-          <div className="text-right">
-            <Chip
-              size="sm"
-              color={dashboardData.payrollRun.status === 'completed' ? 'success' : dashboardData.payrollRun.status === 'processing' ? 'warning' : 'default'}
-              variant="flat"
-              className="capitalize"
-            >
-              {dashboardData.payrollRun.status === 'completed' && 'Finalized'}
-              {dashboardData.payrollRun.status === 'processing' && 'Processing'}
-              {dashboardData.payrollRun.status === 'partial' && 'Partial'}
-            </Chip>
-          </div>
-        </div>
-      )}
-
-      {!dashboardData?.payrollRun && (
-        <div className="bg-info-50 border border-info-200 rounded-lg p-4 flex items-start gap-4">
-          <div className="p-2 bg-info-100 rounded-lg">
-            <AlertCircle size={20} className="text-info-600" />
-          </div>
-          <div className="flex-1">
-            <h4 className="font-semibold text-info-900">{t('pages.recordsNotYetGenerated')}</h4>
-            <p className="text-sm text-info-700 mt-1">
-              Payroll records for <strong>{months[selectedMonth - 1]} {selectedYear}</strong> have not been generated yet.
-              {(() => {
-                const activeCount = getActiveStaffCount();
-                const inactiveCount = staff.length - activeCount;
-                return (
-                  <>
-                    {activeCount > 0 && (
-                      <> {activeCount} active {activeCount === 1 ? 'employee' : 'employees'} available for records.</>
-                    )}
-                    {inactiveCount > 0 && (
-                      <> {inactiveCount} inactive {inactiveCount === 1 ? 'employee' : 'employees'} will be excluded.</>
-                    )}
-                  </>
-                );
-              })()}
-              Click "Run Payroll" to generate salary records for all active staff.
-            </p>
-
-            {/* Staff Status Breakdown */}
-            <div className="mt-3 flex flex-wrap gap-2">
-              <span className="text-xs text-info-600">{t('pages.allStaff2')}</span>
-              {Object.entries(staff.reduce((acc, s) => {
-                const status = s.status || 'unknown';
-                acc[status] = (acc[status] || 0) + 1;
-                return acc;
-              }, {})).map(([status, count]) => (
-                <span key={status} className="text-xs px-2 py-1 bg-info-100 rounded-full">
-                  {count} {status}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      <PayrollStatusBanner
+        dashboardData={dashboardData}
+        staff={staff}
+        months={months}
+        selectedMonth={selectedMonth}
+        selectedYear={selectedYear}
+        getActiveStaffCount={getActiveStaffCount}
+        formatCurrency={formatCurrency}
+      />
 
       {/* Content Wrapper with Padding Context */}
       {/* This mimics the padding a parent Card would provide, allowing the full-bleed children to work correctly using negative margins */}
       <div className="relative">
 
         {/* KPI Cards */}
-        {dashboardData && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 -mx-6 -mt-6 px-6 pt-6">
-            <div className="p-4 bg-success-50 rounded-lg border border-success-200">
-              <div className="flex items-center gap-2 mb-2">
-                <Wallet size={18} className="text-success-600" />
-                <span className="text-xs text-success-700 uppercase tracking-wider">{t('pages.totalRecorded')}</span>
-              </div>
-              <p className="text-2xl font-semibold text-success-700">
-                {formatCurrency(dashboardData.totalPayout)}
-              </p>
-              <p className="text-xs text-success-600 mt-1">
-                {dashboardData.paidCount} records logged
-              </p>
-            </div>
-
-            <div className="p-4 bg-primary-50 rounded-lg border border-primary-200">
-              <div className="flex items-center gap-2 mb-2">
-                <Clock size={18} className="text-primary-600" />
-                <span className="text-xs text-primary-700 uppercase tracking-wider">{t('pages.unrecorded')}</span>
-              </div>
-              <p className="text-2xl font-semibold text-primary-700">
-                {formatCurrency(dashboardData.pendingAmount)}
-              </p>
-              <p className="text-xs text-primary-600 mt-1">
-                {dashboardData.pendingCount} records pending
-              </p>
-            </div>
-
-            <div className="p-4 bg-warning-50 rounded-lg border border-warning-200">
-              <div className="flex items-center gap-2 mb-2">
-                <TrendingUp size={18} className="text-warning-600" />
-                <span className="text-xs text-warning-700 uppercase tracking-wider">{t('pages.estimated')}</span>
-              </div>
-              <p className="text-2xl font-semibold text-warning-700">
-                {formatCurrency(dashboardData.projectedPayout)}
-              </p>
-              <p className="text-xs text-warning-600 mt-1">
-                Next month estimate
-              </p>
-            </div>
-
-            <div className="p-4 bg-default-50 rounded-lg border border-default-200">
-              <div className="flex items-center gap-2 mb-2">
-                <Users size={18} className="text-default-500" />
-                <span className="text-xs text-default-500 uppercase tracking-wider">{t('pages.totalStaff')}</span>
-              </div>
-              <p className="text-2xl font-semibold text-default-900">
-                {dashboardData.totalEmployees}
-              </p>
-              <p className="text-xs text-default-500 mt-1">
-                Active in payroll
-              </p>
-            </div>
-          </div>
-        )}
+        <PayrollKPICards dashboardData={dashboardData} formatCurrency={formatCurrency} />
 
         {/* Toolbar */}
         <div className="flex flex-col sm:flex-row justify-between gap-4 items-start bg-white dark:bg-zinc-950 border-b border-default-200 py-4 -mx-6 -mt-6 px-6">
@@ -961,7 +717,7 @@ export default function StaffPayroll() {
                   // FIXED: Use _id from MongoDB and string comparison for ID matching
                   const employee = staff.find(s => String(s._id || s.id) === String(record.employeeId));
                   if (!employee) {
-                    console.warn('⚠️ Employee not found for record:', { 
+                    logger.warn('⚠️ Employee not found for record:', { 
                       employeeId: record.employeeId, 
                       employeeIdType: typeof record.employeeId,
                       availableStaffIds: staff.map(s => s._id || s.id)
@@ -1095,255 +851,54 @@ export default function StaffPayroll() {
       </div>
 
       {/* Run Payroll Confirmation Modal */}
-      <Modal isOpen={runPayrollModalOpen} onOpenChange={setRunPayrollModalOpen} size="md">
-        <ModalContent>
-          <ModalHeader className="flex gap-3">
-            <div className="p-2 bg-warning-100 rounded-lg">
-              <AlertCircle className="text-warning-600" size={24} />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold">{t('pages.prepareSalaryRecords1')}</h3>
-              <p className="text-sm text-default-500">{t('pages.thisWillGeneratePayrollRecordsForAllActiveStaff')}</p>
-            </div>
-          </ModalHeader>
-          <ModalBody>
-            <div className="space-y-4">
-              <div className="bg-default-50 rounded-lg p-4">
-                <p className="text-sm text-default-600 mb-2">{t('pages.youAreAboutToGenerateRecordsFor')}</p>
-                <p className="text-lg font-semibold text-default-900">{months[selectedMonth - 1]} {selectedYear}</p>
-              </div>
-              <div className="bg-warning-50 rounded-lg p-4 border border-warning-200">
-                <p className="text-sm text-warning-800">
-                  <strong>{t('pages.note1')}</strong> This step only generates the salary breakdown. You will need to manually log the payment status afterwards.
-                </p>
-              </div>
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={() => setRunPayrollModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button color="primary" onPress={confirmPrepareRecords} isDisabled={preparingRecords}>
-              {preparingRecords ? <Spinner size="sm" color="white" /> : 'Confirm & Generate'}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <RunPayrollModal
+        isOpen={runPayrollModalOpen}
+        onOpenChange={setRunPayrollModalOpen}
+        preparingRecords={preparingRecords}
+        selectedMonth={selectedMonth}
+        selectedYear={selectedYear}
+        months={months}
+        onConfirm={confirmPrepareRecords}
+      />
 
       {/* Bulk Pay Confirmation Modal */}
-      <Modal isOpen={bulkPayModalOpen} onOpenChange={setBulkPayModalOpen} size="md">
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader className="flex gap-3">
-                <div className="p-2 bg-success-100 rounded-lg">
-                  <CreditCard className="text-success-600" size={24} />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold">{t('pages.logBulkPayments1')}</h3>
-                  <p className="text-sm text-default-500">Processing {pendingBulkPay?.count || 0} records</p>
-                </div>
-              </ModalHeader>
-              <ModalBody className="gap-4">
-                 <div className="bg-default-50 rounded-lg p-3 mb-2">
-                    <p className="text-sm text-default-600">
-                      You are about to record payments for <strong>{pendingBulkPay?.count || 0}</strong> staff members.
-                    </p>
-                 </div>
-                 
-                 <Select
-                  label={t('pages.paymentMethod1')}
-                  selectedKeys={new Set([paymentForm.paymentMethod])}
-                  onSelectionChange={(keys) => setPaymentForm({ ...paymentForm, paymentMethod: Array.from(keys)[0] })}
-                  variant="bordered"
-                >
-                  <SelectItem key="bank_transfer" textValue="Bank Transfer">{t('pages.bankTransfer1')}</SelectItem>
-                  <SelectItem key="cash" textValue="Cash">{t('pages.cash1')}</SelectItem>
-                  <SelectItem key="cheque" textValue="Cheque">{t('pages.cheque1')}</SelectItem>
-                  <SelectItem key="online" textValue="Online Payment">{t('pages.onlinePayment1')}</SelectItem>
-                </Select>
-
-                <Input
-                  label="Payment Reference / Batch ID"
-                  placeholder={t('staff.payroll.batchIdPlaceholder')}
-                  value={paymentForm.paymentReference}
-                  onValueChange={(v) => setPaymentForm({ ...paymentForm, paymentReference: v })}
-                  variant="bordered"
-                  description="Applied to all selected records"
-                />
-
-                <Textarea
-                  label={t('pages.notesOptional1')}
-                  placeholder={t('pages.additionalNotesForThisBatch')}
-                  value={paymentForm.notes}
-                  onValueChange={(v) => setPaymentForm({ ...paymentForm, notes: v })}
-                  variant="bordered"
-                  minRows={2}
-                />
-              </ModalBody>
-              <ModalFooter>
-                <Button variant="light" onPress={onClose}>
-                  Cancel
-                </Button>
-                <Button color="success" onPress={confirmBulkPay}>
-                  Log Payments
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
+      <BulkPayModal
+        isOpen={bulkPayModalOpen}
+        onOpenChange={setBulkPayModalOpen}
+        pendingBulkPay={pendingBulkPay}
+        paymentForm={paymentForm}
+        setPaymentForm={setPaymentForm}
+        onConfirm={confirmBulkPay}
+      />
 
       {/* Validation Modal */}
-      <Modal isOpen={validationModalOpen} onOpenChange={setValidationModalOpen} size="2xl" scrollBehavior="inside">
-        <ModalContent>
-          <ModalHeader className="flex gap-3">
-            <div className="p-2 bg-info-100 rounded-lg">
-              <ShieldCheck className="text-info-600" size={24} />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold">{t('pages.payrollValidationResults')}</h3>
-              <p className="text-sm text-default-500">{t('pages.reviewBeforeGeneratingRecords')}</p>
-            </div>
-          </ModalHeader>
-          <ModalBody>
-            {validating ? (
-              <div className="flex justify-center py-8"><div className="animate-spin h-8 w-8 rounded-full border-2 border-gray-300 border-t-gray-900" /></div>
-            ) : validationResults && (
-              <div className="space-y-4">
-                {/* Valid Employees */}
-                <div className="bg-success-50 rounded-lg p-4 border border-success-200">
-                  <h4 className="font-semibold text-success-900 mb-2 flex items-center gap-2">
-                    <CheckCircle2 size={18} />
-                    Ready to Process ({validationResults.valid?.length || 0})
-                  </h4>
-                  {validationResults.valid?.length > 0 && (
-                    <div className="max-h-40 overflow-y-auto text-sm">
-                      {validationResults.valid.slice(0, 5).map(emp => (
-                        <div key={emp.employeeId} className="py-1">{emp.name} - {formatCurrency(emp.salary)}</div>
-                      ))}
-                      {validationResults.valid.length > 5 && (
-                        <div className="text-success-700 italic">...and {validationResults.valid.length - 5} more</div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Invalid Employees */}
-                {validationResults.invalid?.length > 0 && (
-                  <div className="bg-danger-50 rounded-lg p-4 border border-danger-200">
-                    <h4 className="font-semibold text-danger-900 mb-2 flex items-center gap-2">
-                      <AlertTriangle size={18} />
-                      Will Be Excluded ({validationResults.invalid.length})
-                    </h4>
-                    <div className="max-h-40 overflow-y-auto text-sm space-y-1">
-                      {validationResults.invalid.map(emp => (
-                        <div key={emp.employeeId} className="text-danger-700">
-                          {emp.name}: {emp.reason}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Warnings */}
-                {validationResults.warnings?.length > 0 && (
-                  <div className="bg-warning-50 rounded-lg p-4 border border-warning-200">
-                    <h4 className="font-semibold text-warning-900 mb-2 flex items-center gap-2">
-                      <AlertCircle size={18} />
-                      Warnings ({validationResults.warnings.length})
-                    </h4>
-                    <div className="max-h-40 overflow-y-auto text-sm space-y-1">
-                      {validationResults.warnings.map((warning, idx) => (
-                        <div key={`warning-${idx}`} className="text-warning-700">
-                          {warning.name || warning.message || `Warning: ${warning.reason}`}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={() => setValidationModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button color="primary" onPress={confirmPrepareRecords} isDisabled={preparingRecords || !validationResults?.valid?.length}>
-              {preparingRecords ? <Spinner size="sm" color="white" /> : `Generate Records (${validationResults?.valid?.length || 0})`}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <ValidationResultsModal
+        isOpen={validationModalOpen}
+        onOpenChange={setValidationModalOpen}
+        validating={validating}
+        validationResults={validationResults}
+        preparingRecords={preparingRecords}
+        onConfirm={confirmPrepareRecords}
+        formatCurrency={formatCurrency}
+      />
 
       {/* Reverse Payment Modal */}
-      <Modal isOpen={reverseModalOpen} onOpenChange={setReverseModalOpen} size="md">
-        <ModalContent>
-          <ModalHeader className="flex gap-3">
-            <div className="p-2 bg-warning-100 rounded-lg">
-              <RotateCcw className="text-warning-600" size={24} />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold">{t('pages.reversePayment1')}</h3>
-              <p className="text-sm text-default-500">{t('pages.unlockAndResetPaymentStatus')}</p>
-            </div>
-          </ModalHeader>
-          <ModalBody>
-            <div className="space-y-4">
-              <div className="bg-warning-50 rounded-lg p-4 border border-warning-200">
-                <p className="text-sm text-warning-800">
-                  <strong>{t('pages.warning')}</strong> This will unlock the record and reset its status to "Generated". You will need to log the payment again.
-                </p>
-              </div>
-              <Textarea
-                label="Reason for Reversal *"
-                placeholder={t('pages.pleaseExplainWhyThisPaymentIsBeingReversed')}
-                value={reverseReason}
-                onValueChange={setReverseReason}
-                variant="bordered"
-                minRows={3}
-                isRequired
-              />
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={() => setReverseModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button color="warning" onPress={confirmReversePayment} isDisabled={reversing || !reverseReason.trim()}>
-              {reversing ? <Spinner size="sm" color="white" /> : 'Confirm Reversal'}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <ReversePaymentModal
+        isOpen={reverseModalOpen}
+        onOpenChange={setReverseModalOpen}
+        reversing={reversing}
+        reverseReason={reverseReason}
+        setReverseReason={setReverseReason}
+        onConfirm={confirmReversePayment}
+      />
 
       {/* Fix Salaries Confirmation Modal */}
-      <Modal isOpen={fixSalariesConfirmOpen} onOpenChange={setFixSalariesConfirmOpen} size="md">
-        <ModalContent>
-          <ModalHeader className="flex gap-3">
-            <div className="p-2 bg-warning-100 rounded-lg">
-              <AlertTriangle className="text-warning-600" size={24} />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold">{t('pages.fixSalaries1')}</h3>
-              <p className="text-sm text-default-500">{t('confirm.setDefaultSalary')}</p>
-            </div>
-          </ModalHeader>
-          <ModalBody>
-            <div className="bg-warning-50 rounded-lg p-4 border border-warning-200">
-              <p className="text-sm text-warning-800">
-                This will set default salary values for staff members who do not have salary information configured.
-              </p>
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={() => setFixSalariesConfirmOpen(false)}>Cancel</Button>
-            <Button color="warning" onPress={handleFixSalaries} isDisabled={fixingSalaries}>
-              {fixingSalaries ? <Spinner size="sm" color="white" /> : 'Confirm Fix Salaries'}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <FixSalariesModal
+        isOpen={fixSalariesConfirmOpen}
+        onOpenChange={setFixSalariesConfirmOpen}
+        fixingSalaries={fixingSalaries}
+        onConfirm={handleFixSalaries}
+      />
         </>
       )}
     </div>

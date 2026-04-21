@@ -9,7 +9,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { useDisclosure } from "@heroui/react";
 
 import { useApp } from "../../../context/AppContext";
-import { studentsApi, classesApi } from "../../../services/api";
+import { studentsApi } from "../../../services/api";
 import { useBatchStudentFees } from "./useStudentFees";
 import { useStudentsUpload } from "../components/list/StudentsUpload";
 import { safeGetItem, safeSetItem } from "../../../utils/safeStorage";
@@ -29,6 +29,7 @@ import {
   computeFilterCounts,
   resolveSelectedIds,
 } from "./useStudentsListData.helpers";
+import logger from '../../../utils/logger';
 
 const ROW_HEIGHT = 65;
 
@@ -44,7 +45,7 @@ export function useStudentsListData() {
   const queryClient = useQueryClient();
 
   // ── Filter state (restored from sessionStorage) ──────────────────────────
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(() => sessionStorage.getItem("students-filter-search") || "");
   const [classFilter, setClassFilter] = useState(() => sessionStorage.getItem("students-filter-class") || "all");
   const [feeStatusFilter, setFeeStatusFilter] = useState(() => sessionStorage.getItem("students-filter-feeStatus") || "all");
   const [statusFilter, setStatusFilter] = useState(() => sessionStorage.getItem("students-filter-status") || "active");
@@ -125,9 +126,11 @@ export function useStudentsListData() {
   const { isOpen: isCsvUploadOpen, onOpen: onCsvUploadOpen, onClose: onCsvUploadClose } = useDisclosure();
   const { isOpen: isPreviewOpen, onOpen: onPreviewOpen, onClose: onPreviewClose } = useDisclosure();
   const { isOpen: isTcModalOpen, onOpen: onTcModalOpen, onClose: onTcModalClose } = useDisclosure();
+  const { isOpen: isBulkDeleteOpen, onOpen: onBulkDeleteOpen, onClose: onBulkDeleteClose } = useDisclosure();
 
   // ── Bulk action state ─────────────────────────────────────────────────────
   const [bulkAction, setBulkAction] = useState("");
+  const [bulkDeleteStudents, setBulkDeleteStudents] = useState([]);
   // promoteToClass state removed - was unused
   const [promotionPreview, setPromotionPreview] = useState([]);
   const [tcStudents, setTcStudents] = useState([]);
@@ -217,7 +220,7 @@ export function useStudentsListData() {
 
   useEffect(() => {
     if (studentsQuery.error) {
-      console.error("Failed to load students list:", studentsQuery.error);
+      logger.error("Failed to load students list:", studentsQuery.error);
       toast.error(`Failed to load students: ${studentsQuery.error.message}`);
     }
   }, [studentsQuery.error]);
@@ -239,7 +242,7 @@ export function useStudentsListData() {
   }, [students, academicPerformanceFilter, attendanceFilter]);
 
   const visibleItems = useMemo(() => sortWithPinned(filteredItems), [filteredItems]);
-  const selectedCount = selectedKeys === "all" ? filteredItems.length : selectedKeys.size;
+  const selectedCount = selectedKeys.size;
 
   // ── Row virtualizer ───────────────────────────────────────────────────────
   const rowVirtualizer = useVirtualizer({
@@ -283,9 +286,14 @@ export function useStudentsListData() {
   }, [batchFeeStructures]);
 
   // ── Socket.IO real-time updates ───────────────────────────────────────────
+  // [AUDIT-785] Do NOT guard with isConnected() — socketServiceEnhanced.on()
+  // stores listeners in its internal Map even before the socket connects, and
+  // the 'connect' handler re-registers them on reconnection. Guarding with
+  // isConnected() caused the early-return path to return undefined (no cleanup),
+  // so if the effect re-ran while the socket was disconnected, the previous
+  // run's listeners would never be removed.
   useEffect(() => {
     const socketService = getSocketService();
-    if (!socketService?.isConnected()) return;
     const handleStudentUpdate = (data) => {
       toast.success(`${data.name}'s profile was updated`, { duration: 3000, icon: '🔄' });
     };
@@ -297,7 +305,7 @@ export function useStudentsListData() {
             const feeData = await request(`/student-fees/student/${data.studentId}?academicYear=${currentAcademicYear}`);
             setStudentFeeStructures((prev) => ({ ...prev, [data.studentId]: { ...feeData, _exists: true } }));
           } catch (err) {
-            console.error("❌ Error refetching fee structure:", err);
+            logger.error("❌ Error refetching fee structure:", err);
           }
         })();
       }
@@ -390,8 +398,29 @@ export function useStudentsListData() {
       const ids = resolveSelectedIds(selectedKeys, filteredItems);
       setTcStudents(filteredItems.filter((student) => ids.includes(String(student.id))));
       onTcModalOpen();
+    } else if (action === "delete") {
+      const ids = resolveSelectedIds(selectedKeys, filteredItems);
+      setBulkDeleteStudents(filteredItems.filter((student) => ids.includes(String(student.id))));
+      onBulkDeleteOpen();
     } else {
       onBulkActionOpen();
+    }
+  };
+
+  const executeBulkDelete = async () => {
+    const ids = bulkDeleteStudents.map((s) => String(s.id));
+    try {
+      await request("/bulk-ops/students/batch-delete", {
+        method: "POST",
+        body: JSON.stringify({ ids }),
+      });
+      await refreshStudentsList();
+      toast.success(`${ids.length} student${ids.length !== 1 ? "s" : ""} deleted`);
+      setSelectedKeys(new Set([]));
+      setBulkDeleteStudents([]);
+      onBulkDeleteClose();
+    } catch (err) {
+      toast.error("Failed to delete students: " + (err.message || "Unknown error"));
     }
   };
 
@@ -399,18 +428,23 @@ export function useStudentsListData() {
     const ids = resolveSelectedIds(selectedKeys, filteredItems);
     setIsBulkProcessing(true);
     try {
-      for (const id of ids) {
-        if (bulkAction === "deactivate") await updateStudent(id, { status: "inactive" });
-        else if (bulkAction === "tc") {
-          // Generate actual transfer certificate via dedicated endpoint
-          try {
-            await request(`/students/${id}/transfer-certificate`, { method: 'POST', body: JSON.stringify({}) });
-          } catch {
-            // Fall back to setting flag if TC endpoint not available
-            await updateStudent(id, { tcIssued: true });
-          }
-        }
-        else if (bulkAction === "alumni") await updateStudent(id, { status: "alumni" });
+      if (bulkAction === "deactivate" || bulkAction === "alumni") {
+        // Single batch request instead of N sequential requests
+        const statusValue = bulkAction === "deactivate" ? "inactive" : "alumni";
+        await request("/bulk-ops/students/batch-update", {
+          method: "POST",
+          body: JSON.stringify({ ids, data: { status: statusValue } }),
+        });
+      } else if (bulkAction === "tc") {
+        // TC generation still requires per-student calls; run in parallel
+        await Promise.allSettled(
+          ids.map((id) =>
+            request(`/students/${id}/transfer-certificate`, {
+              method: "POST",
+              body: JSON.stringify({}),
+            }).catch(() => updateStudent(id, { tcIssued: true }))
+          )
+        );
       }
       await refreshStudentsList();
       toast.success(t("toast.success.studentsUpdated", { count: ids.length, defaultValue: `${ids.length} student${ids.length > 1 ? "s" : ""} updated successfully` }));
@@ -426,46 +460,49 @@ export function useStudentsListData() {
   const executePromotion = async () => {
     const ids = resolveSelectedIds(selectedKeys, filteredItems);
     const selected = filteredItems.filter((student) => ids.includes(String(student.id)));
-    let successCount = 0, failCount = 0;
     setIsPromoting(true);
     try {
+      // Build the bulk payload in one pass — no per-student API calls
+      const promotions = [];
+      let skipCount = 0;
       for (const student of selected) {
-        try {
-          const nextClass = getNextClass(student.class, uniqueClasses);
-          if (!nextClass) { failCount++; continue; }
-          if (nextClass === "Passed Out / Alumni") {
-            await updateStudent(student.id, { class: "Passed Out" });
+        const nextClass = getNextClass(student.class, uniqueClasses);
+        if (!nextClass) { skipCount++; continue; }
+        if (nextClass === "Passed Out / Alumni") {
+          promotions.push({ studentId: String(student.id), graduate: true });
+        } else {
+          const target = classes.find((cls) => {
+            const label = cls.section ? `${cls.name}-${cls.section}` : cls.name;
+            return label === nextClass;
+          });
+          const classId = target?._id || target?.id;
+          if (classId) {
+            promotions.push({ studentId: String(student.id), targetClassId: String(classId) });
           } else {
-            let classId = null;
-            const target = classes.find((cls) => {
-              const label = cls.section ? `${cls.name}-${cls.section}` : cls.name;
-              return label === nextClass;
-            });
-            if (target) classId = target._id || target.id;
-            if (classId) {
-              const updateData = { classId, class: nextClass };
-              const conflict = students.find((st) => (String(st.classId) === String(classId) || st.class === nextClass) && st.id !== student.id && st.rollNo === student.rollNo);
-              if (conflict) {
-                try {
-                  const res = await classesApi.getNextRollNumber(classId);
-                  const nextRollNo = res?.rollNumber || res?.rollNo;
-                  if (nextRollNo) updateData.rollNo = nextRollNo;
-                } catch { /* skip */ }
-              }
-              await updateStudent(student.id, updateData);
-            } else {
-              // Cannot resolve classId — skip this student with error
-              toast.error(`Class "${nextClass}" not found for ${student.name}. Create the class first.`);
-              failCount++;
-              continue;
-            }
+            toast.error(`Class "${nextClass}" not found for ${student.name}. Create the class first.`);
+            skipCount++;
           }
-          successCount++;
-        } catch { failCount++; }
+        }
       }
-      if (failCount === 0) toast.success(t("toast.success.studentsPromoted", { count: successCount, defaultValue: `${successCount} student${successCount > 1 ? "s" : ""} promoted successfully` }));
-      else if (successCount === 0) toast.error(t("toast.error.failedToPromoteStudents", "Failed to promote any students"));
-      else toast.success(t("toast.success.studentsPromotedPartial", { success: successCount, fail: failCount, defaultValue: `${successCount} promoted, ${failCount} failed` }));
+
+      if (promotions.length === 0) {
+        toast.error(t("toast.error.failedToPromoteStudents", "Failed to promote any students"));
+        return;
+      }
+
+      // Single bulk API call instead of N sequential calls
+      const res = await studentsApi.bulkPromote({ promotions });
+      const successCount = (res.promoted || 0) + (res.graduated || 0);
+      const failCount = (res.failed || 0) + skipCount;
+
+      if (failCount === 0) {
+        toast.success(t("toast.success.studentsPromoted", { count: successCount, defaultValue: `${successCount} student${successCount > 1 ? "s" : ""} promoted successfully` }));
+      } else if (successCount === 0) {
+        toast.error(t("toast.error.failedToPromoteStudents", "Failed to promote any students"));
+      } else {
+        toast.success(t("toast.success.studentsPromotedPartial", { success: successCount, fail: failCount, defaultValue: `${successCount} promoted, ${failCount} failed` }));
+      }
+
       await refreshStudentsList();
       setSelectedKeys(new Set([]));
       setPromotionPreview([]);
@@ -495,7 +532,7 @@ export function useStudentsListData() {
       });
       toast.success(t("toast.success.messagesSent", { count: reminderTargetCount, defaultValue: `Messages ${reminderTime ? 'scheduled' : 'sent'} for ${reminderTargetCount} parents` }));
     } catch (err) {
-      console.error("Failed to send reminders:", err);
+      logger.error("Failed to send reminders:", err);
       toast.error(err.message || "Failed to send reminders");
     }
   };
@@ -510,10 +547,10 @@ export function useStudentsListData() {
   };
 
   const clearAllFilters = () => {
-    setClassFilter("all"); setFeeStatusFilter("all"); setStatusFilter("all");
+    setSearchQuery(""); setClassFilter("all"); setFeeStatusFilter("all"); setStatusFilter("all");
     setAcademicYearFilter("all"); setAcademicPerformanceFilter("all"); setAttendanceFilter("all");
     // Clear persisted filters
-    ["class", "feeStatus", "academicYear", "academicPerformance", "attendance", "status"].forEach(k => sessionStorage.removeItem(`students-filter-${k}`));
+    ["search", "class", "feeStatus", "academicYear", "academicPerformance", "attendance", "status"].forEach(k => sessionStorage.removeItem(`students-filter-${k}`));
     toast.success(t("toast.success.allFiltersCleared"));
   };
 
@@ -581,7 +618,7 @@ export function useStudentsListData() {
     students, filteredItems, visibleItems, selectedCount,
     currentAcademicYear, classes,
     // filter state
-    searchQuery, setSearchQuery, deferredSearchQuery,
+    searchQuery, setSearchQuery: (val) => { setSearchQuery(val); sessionStorage.setItem("students-filter-search", val); }, deferredSearchQuery,
     statusFilter, setStatusFilter: (val) => { setStatusFilter(val); sessionStorage.setItem("students-filter-status", val); },
     classFilter, feeStatusFilter, academicYearFilter, academicPerformanceFilter, attendanceFilter,
     // filter helpers
@@ -625,9 +662,10 @@ export function useStudentsListData() {
     isCsvUploadOpen, onCsvUploadClose, onCsvUploadOpen,
     isPreviewOpen, onPreviewClose,
     // bulk handlers
-    bulkAction, handleBulkAction, executeBulkAction,
+    bulkAction, handleBulkAction, executeBulkAction, executeBulkDelete,
     executePromotion, executeSendReminders,
     isBulkProcessing, isPromoting,
+    isBulkDeleteOpen, onBulkDeleteClose, bulkDeleteStudents,
     // delete/update
     deleteStudent, updateStudent,
     // csv upload

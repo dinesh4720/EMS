@@ -7,6 +7,8 @@ import { DEFAULT_PERIODS } from "../../utils/constants";
 import { TablePageSkeleton } from "../../components/skeletons/PageSkeletons";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
+import logger from '../../utils/logger';
+
 
 // Helper: add minutes to a HH:MM time string
 function addMinutes(time, mins) {
@@ -86,7 +88,7 @@ export default function PeriodSettings() {
         setPeriods(DEFAULT_PERIODS.map((p, i) => ({ ...p, _key: i })));
         setHasExisting(false);
       } else {
-        console.error("Failed to load periods:", error);
+        logger.error("Failed to load periods:", error);
         toast.error(error?.message || "Failed to load period settings");
         setPeriods([]);
       }
@@ -244,7 +246,7 @@ export default function PeriodSettings() {
       setHasExisting(true);
       toast.success("Period timings saved successfully");
     } catch (error) {
-      console.error("Failed to save periods:", error);
+      logger.error("Failed to save periods:", error);
       toast.error(error?.message || "Failed to save period timings");
     } finally {
       setSaving(false);

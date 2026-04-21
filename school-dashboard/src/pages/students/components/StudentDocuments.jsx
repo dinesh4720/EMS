@@ -6,6 +6,9 @@ import toast from "react-hot-toast";
 import { uploadApi } from "../../../services/api";
 import { useTranslation } from 'react-i18next';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
+import { filterAllowedFiles } from '../../../utils/fileValidation';
+import logger from '../../../utils/logger';
+
 
 export default function StudentDocuments({
   studentId,
@@ -20,7 +23,8 @@ export default function StudentDocuments({
   const [isDeletingDoc, setIsDeletingDoc] = useState(false);
 
   const handleDocumentUpload = async (e) => {
-    const files = Array.from(e.target.files || []);
+    const { valid: files, rejected } = filterAllowedFiles(Array.from(e.target.files || []));
+    rejected.forEach(msg => toast.error(msg));
     if (files && files.length > 0) {
 
       // Initialize uploads state
@@ -56,11 +60,14 @@ export default function StudentDocuments({
           }, 200);
 
           // Retry helper: up to 2 retries with back-off on network failure (AP-19)
+          // Does NOT retry client errors (4xx) — those are permanent failures.
           const uploadWithRetry = async (f, maxRetries = 2) => {
             let lastErr;
             for (let attempt = 0; attempt <= maxRetries; attempt++) {
               try { return await uploadApi.uploadFile(f); } catch (err) {
                 lastErr = err;
+                // Don't retry client-side errors (file too large, invalid type, etc.)
+                if (err.status && err.status >= 400 && err.status < 500) throw err;
                 if (attempt < maxRetries) await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
               }
             }
@@ -106,11 +113,13 @@ export default function StudentDocuments({
             successCount++;
           } catch (error) {
             clearInterval(progressInterval);
-            console.error(`Upload error for ${file.name}:`, error);
-            // Mark error
+            logger.error(`Upload error for ${file.name}:`, error);
+            const reason = error.message || 'Unknown error';
+            // Mark error with reason for display
             onActiveUploadsChange(prev => prev.map(u =>
-              u.id === uploadId ? { ...u, status: 'error', progress: 0 } : u
+              u.id === uploadId ? { ...u, status: 'error', progress: 0, errorMessage: reason } : u
             ));
+            toast.error(`Failed to upload "${file.name}": ${reason}`);
             failCount++;
           }
         }
@@ -126,7 +135,7 @@ export default function StudentDocuments({
         }
 
       } catch (error) {
-        console.error("Batch upload error:", error);
+        logger.error("Batch upload error:", error);
         toast.error(t('toast.error.uploadFailed'));
       } finally {
         e.target.value = null; // Reset input
@@ -166,7 +175,7 @@ export default function StudentDocuments({
       onDocumentsChange(result.documents || []);
       toast.success(t('toast.success.documentDeleted', 'Document deleted successfully'));
     } catch (error) {
-      console.error("Delete error:", error);
+      logger.error("Delete error:", error);
       toast.error(t('toast.error.failedToDeleteDocument', 'Failed to delete document') + ": " + (error.message || t('common.unknownError', 'Unknown error')));
     } finally {
       setIsDeletingDoc(false);
@@ -186,7 +195,7 @@ export default function StudentDocuments({
       onDocumentsChange(result.documents || []);
       toast.success(t('toast.success.documentsFixed', 'Documents fixed successfully'), { id: loadingToast });
     } catch (error) {
-      console.error("Fix error:", error);
+      logger.error("Fix error:", error);
       toast.error(t('toast.error.failedToFixDocuments', 'Failed to fix documents') + ": " + (error.message || t('common.unknownError', 'Unknown error')), { id: loadingToast });
     }
   };
@@ -266,6 +275,7 @@ export default function StudentDocuments({
                           isIconOnly
                           size="sm"
                           variant="light"
+                          aria-label="View front of document"
                           onPress={() => {
                             window.open(doc.front.url, '_blank', 'noopener,noreferrer');
                           }}
@@ -278,6 +288,7 @@ export default function StudentDocuments({
                           isIconOnly
                           size="sm"
                           variant="light"
+                          aria-label="View back of document"
                           onPress={() => {
                             window.open(doc.back.url, '_blank', 'noopener,noreferrer');
                           }}
@@ -293,6 +304,7 @@ export default function StudentDocuments({
                           isIconOnly
                           size="sm"
                           variant="light"
+                          aria-label="View document"
                           onPress={() => {
                             // Check if it's a data URL (base64)
                             if (doc.url.startsWith('data:')) {
@@ -306,7 +318,7 @@ export default function StudentDocuments({
                                   setTimeout(() => URL.revokeObjectURL(objectUrl), 100);
                                 })
                                 .catch(err => {
-                                  console.error('Error opening document:', err);
+                                  logger.error('Error opening document:', err);
                                   toast.error(t('toast.error.failedToOpenDocument'));
                                 });
                             } else {
@@ -328,6 +340,7 @@ export default function StudentDocuments({
                           isIconOnly
                           size="sm"
                           variant="light"
+                          aria-label="Download document"
                           as="a"
                           href={doc.url}
                           download={doc.name}
@@ -344,6 +357,7 @@ export default function StudentDocuments({
                       size="sm"
                       variant="light"
                       color="danger"
+                      aria-label="Delete document"
                       onPress={() => handleDeleteDocument(docId)}
                     >
                       <Trash2 size={16} />

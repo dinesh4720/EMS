@@ -6,6 +6,8 @@ import { attendanceApi, studentsApi } from "../../../../services/api.js";
 import { useTranslation } from 'react-i18next';
 import { useApp } from "../../../../context/AppContext";
 import { toTodayDateString } from '../../../../utils/dateFormatter';
+import logger from '../../../../utils/logger';
+
 
 /**
  * AttendanceTab - Student attendance overview and management
@@ -38,7 +40,7 @@ export default function AttendanceTab({
         const data = await attendanceApi.getStudentAttendance(student.id, startDate, endDate);
         setAttendanceData(Array.isArray(data) ? data : []);
       } catch (error) {
-        console.error('Error fetching attendance:', error);
+        logger.error('Error fetching attendance:', error);
         toast.error(t('toast.error.failedToLoadAttendanceData'));
         setAttendanceData([]);
       } finally {
@@ -194,7 +196,7 @@ export default function AttendanceTab({
       const data = await attendanceApi.getStudentAttendance(student.id, startDate, endDate);
       setAttendanceData(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('Error marking attendance:', error);
+      logger.error('Error marking attendance:', error);
       toast.error(t('toast.error.failedToMarkAttendance'));
     } finally {
       setIsSubmitting(false);

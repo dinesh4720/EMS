@@ -308,7 +308,7 @@ export default function StudentsPage() {
                     <p className="text-xs text-default-500">{t('pages.registerANewStudentManually')}</p>
                   </div>
                 </div>
-                <Button isIconOnly size="sm" variant="light" onPress={() => {
+                <Button isIconOnly size="sm" variant="light" aria-label="Close" onPress={() => {
                   if (addStudentRef.current) addStudentRef.current.attemptClose();
                   else handleCloseAddStudent();
                 }}>

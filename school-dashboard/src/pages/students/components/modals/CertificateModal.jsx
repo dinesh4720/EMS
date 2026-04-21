@@ -194,7 +194,7 @@ export default function CertificateModal({ isOpen, onClose, student, type = 'bon
                   {isBonafide ? (
                     <p>
                       This is to certify that <strong>{student.name}</strong>,
-                      {student.parentName && <> son/daughter of <strong>{student.parentName}</strong>,</>}
+                      {(student.parentName || student.guardianName) && <> son/daughter of <strong>{student.parentName || student.guardianName}</strong>,</>}
                       is a bonafide student of this institution studying in Class{' '}
                       <strong>{student.class}</strong> with Admission Number{' '}
                       <strong>{student.admissionId || 'N/A'}</strong> and Roll Number{' '}
@@ -204,7 +204,7 @@ export default function CertificateModal({ isOpen, onClose, student, type = 'bon
                     <>
                       <p>
                         This is to certify that <strong>{student.name}</strong>,
-                        {student.parentName && <> son/daughter of <strong>{student.parentName}</strong>,</>}
+                        {(student.parentName || student.guardianName) && <> son/daughter of <strong>{student.parentName || student.guardianName}</strong>,</>}
                         is a bonafide student of this institution studying in Class{' '}
                         <strong>{student.class}</strong>.
                       </p>

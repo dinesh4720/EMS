@@ -38,15 +38,21 @@ export default function LibraryDashboard() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
+  const [mostBorrowed, setMostBorrowed] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       try {
         setLoading(true);
-        const data = await libraryApi.getStats();
-        setStats(data);
-      } catch {
+        const [statsData, reportsData] = await Promise.all([
+          libraryApi.getStats(),
+          libraryApi.getReports(),
+        ]);
+        setStats(statsData);
+        setMostBorrowed(reportsData.mostBorrowed || []);
+      } catch (error) {
+        console.error('Failed to load library stats:', error);
         toast.error(t('toast.error.failedToLoadLibraryStats'));
       } finally {
         setLoading(false);
@@ -87,6 +93,26 @@ export default function LibraryDashboard() {
           <p className="text-3xl font-bold text-gray-900 dark:text-zinc-100">₹{stats.totalAccruedFines?.toLocaleString() || 0}</p>
           <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">{t('pages.fromCurrentlyOverdueBooks')}</p>
         </div>
+      </div>
+
+      {/* Most borrowed books */}
+      <div className="bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 rounded-xl p-5 shadow-sm dark:shadow-zinc-900/50">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-4">{t('pages.mostBorrowedBooks')}</h3>
+        {mostBorrowed.length === 0 ? (
+          <p className="text-sm text-gray-400 dark:text-zinc-500">{t('pages.noCirculationDataYet')}</p>
+        ) : (
+          <ol className="space-y-2">
+            {mostBorrowed.slice(0, 5).map((book, index) => (
+              <li key={book._id} className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-xs font-medium text-gray-400 dark:text-zinc-500 w-4 shrink-0">{index + 1}</span>
+                  <span className="text-sm text-gray-800 dark:text-zinc-200 truncate">{book.bookTitle}</span>
+                </div>
+                <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 shrink-0">{book.count}x</span>
+              </li>
+            ))}
+          </ol>
+        )}
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ import { request } from '../../services/api';
 import toast from 'react-hot-toast';
 import { formatShortDate } from '../../utils/dateFormatter';
 import { useTranslation } from 'react-i18next';
+import { MarkdownRenderer } from '../../components/ui';
 
 const SUBMISSION_STATUS_COLORS = {
   submitted: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
@@ -60,6 +61,7 @@ export default function HomeworkDetailModal({ homeworkId, onClose, onDataChanged
       });
       toast.success('Submission recorded');
       fetchDetail();
+      onDataChanged?.();
     } catch (e) {
       toast.error(e?.message || 'Failed to record submission');
     } finally {
@@ -177,7 +179,7 @@ export default function HomeworkDetailModal({ homeworkId, onClose, onDataChanged
               {hw?.description && (
                 <div>
                   <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">Description</p>
-                  <p className="text-sm text-gray-700 dark:text-zinc-300">{hw.description}</p>
+                  <MarkdownRenderer content={hw.description} className="text-sm text-gray-700 dark:text-zinc-300" />
                 </div>
               )}
 
@@ -262,7 +264,7 @@ export default function HomeworkDetailModal({ homeworkId, onClose, onDataChanged
                   </div>
                 ) : (
                   <div className="space-y-2 max-h-72 overflow-y-auto">
-                    {hw.submissions.map((sub, i) => {
+                    {(hw.submissions || []).map((sub, i) => {
                       const student = sub.studentId;
                       const isLate = sub.submittedAt && dueDate && new Date(sub.submittedAt) > dueDate;
                       const isGraded = sub.marks != null;

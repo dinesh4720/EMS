@@ -7,7 +7,10 @@ import { BOARDS_OF_EDUCATION } from "../../utils/constants";
 import { useTranslation } from 'react-i18next';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 import UnsavedChangesModal from '../../components/modals/UnsavedChangesModal';
+import { useSettingsDirty } from '../../context/SettingsNavigationContext';
 import toast from 'react-hot-toast';
+import logger from '../../utils/logger';
+
 
 export default function InstitutionSettings() {
   const { t } = useTranslation();
@@ -17,6 +20,13 @@ export default function InstitutionSettings() {
   const [isDirty, setIsDirty] = useState(false);
 
   const { isBlocked, proceed, reset } = useUnsavedChanges(isDirty);
+
+  // Register dirty state with the settings sidebar so navigating away shows a warning
+  const { setDirty } = useSettingsDirty();
+  useEffect(() => {
+    setDirty(isDirty);
+    return () => setDirty(false);
+  }, [isDirty, setDirty]);
 
   const updateLocalSettings = (updater) => {
     setLocalSettings(updater);
@@ -39,7 +49,7 @@ export default function InstitutionSettings() {
       setEditingSection(null);
       toast.success('Settings saved successfully');
     } catch (error) {
-      console.error('Failed to save settings:', error);
+      logger.error('Failed to save settings:', error);
       toast.error(error.message || 'Failed to save settings');
     } finally {
       setSaving(false);
@@ -72,6 +82,7 @@ export default function InstitutionSettings() {
       const reader = new FileReader();
       reader.onloadend = () => {
         updateLocalSettings((prev) => ({ ...prev, [field]: reader.result }));
+        reader.onloadend = null;
       };
       reader.readAsDataURL(file);
     }

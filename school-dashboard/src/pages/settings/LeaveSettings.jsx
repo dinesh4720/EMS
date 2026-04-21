@@ -1,10 +1,13 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect } from "react";
+import { useEntityFetch } from "../../hooks/useEntityFetch";
 import { Card, CardBody, CardHeader, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Select, SelectItem, Switch, Spinner } from "@heroui/react";
 import { Plus, Edit, Trash2, UserCheck, Users } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { useTranslation } from 'react-i18next';
+import logger from '../../utils/logger';
+
 
 export default function LeaveSettings() {
   const { t } = useTranslation();
@@ -22,45 +25,11 @@ export default function LeaveSettings() {
   // AUDIT-128: State-driven delete confirmation
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
-  // Lazy loading state
   const ITEMS_PER_LOAD = 10;
-  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const loaderRef = useRef(null);
-
-  const visibleLeaveTypes = useMemo(() => 
-    leaveTypes.slice(0, visibleCount),
-    [leaveTypes, visibleCount]
+  const { visibleItems: visibleLeaveTypes, hasMore, isLoadingMore, loaderRef } = useEntityFetch(
+    leaveTypes,
+    [leaveTypes.length]
   );
-
-  const hasMore = visibleCount < leaveTypes.length;
-
-  // Reset visible count when leave types change
-  useEffect(() => {
-    setVisibleCount(ITEMS_PER_LOAD);
-  }, [leaveTypes.length]);
-
-  // Lazy loading intersection observer
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
-          setIsLoadingMore(true);
-          setTimeout(() => {
-            setVisibleCount(prev => prev + ITEMS_PER_LOAD);
-            setIsLoadingMore(false);
-          }, 300);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (loaderRef.current) {
-      observer.observe(loaderRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [hasMore, isLoadingMore]);
 
   const handleOpen = (leaveType = null) => {
     if (leaveType) {
@@ -103,7 +72,7 @@ export default function LeaveSettings() {
       }
       onClose();
     } catch (error) {
-      console.error('Failed to save leave type:', error);
+      logger.error('Failed to save leave type:', error);
       toast.error(t('toast.error.failedToSaveLeaveType'));
     } finally {
       setSaving(false);
@@ -123,7 +92,7 @@ export default function LeaveSettings() {
       await deleteLeaveType(id);
       toast.success(t('toast.success.leaveTypeDeletedSuccessfully'));
     } catch (error) {
-      console.error('Failed to delete leave type:', error);
+      logger.error('Failed to delete leave type:', error);
       toast.error(t('toast.error.failedToDeleteLeaveType'));
     }
   };
@@ -248,21 +217,23 @@ export default function LeaveSettings() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2 justify-end">
-                      <Button 
-                        isIconOnly 
-                        size="sm" 
-                        variant="light" 
-                        color="primary" 
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        color="primary"
+                        aria-label="Edit leave type"
                         onPress={() => handleOpen(leaveType)}
                         className="transition-all duration-200"
                       >
                         <Edit size={16} />
                       </Button>
-                      <Button 
-                        isIconOnly 
-                        size="sm" 
-                        variant="light" 
-                        color="danger" 
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        color="danger"
+                        aria-label="Delete leave type"
                         onPress={() => handleDelete(leaveType._id || leaveType.id)}
                         className="transition-all duration-200"
                       >

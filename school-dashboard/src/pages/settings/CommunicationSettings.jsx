@@ -1,10 +1,13 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useEntityFetch } from "../../hooks/useEntityFetch";
 import { Card, CardBody, CardHeader, Input, Switch, Select, SelectItem, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Spinner, Divider } from "@heroui/react";
 import { Save, Plus, Edit, Search, X, MessageSquare, Mail } from "lucide-react";
 import { settingsApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+import logger from '../../utils/logger';
+
 
 // BUG-11: provider defaults to '' so user must explicitly choose — never assume Twilio
 // AUDIT-645: Never store raw secrets (apiKey, password) in React state — DevTools exposure risk.
@@ -48,7 +51,7 @@ export default function CommunicationSettings() {
         }
       })
       .catch((err) => {
-        console.error('Failed to load communication settings:', err);
+        logger.error('Failed to load communication settings:', err);
         toast.error(t('toast.error.failedToLoadCommunicationSettings'));
       })
       .finally(() => setLoadingSettings(false));
@@ -88,7 +91,7 @@ export default function CommunicationSettings() {
         setTemplates(merged);
       })
       .catch((err) => {
-        console.error('Failed to load templates:', err);
+        logger.error('Failed to load templates:', err);
         if (!cancelled) toast.error(t('toast.error.failedToLoadTemplates', 'Failed to load templates'));
       })
       .finally(() => { if (!cancelled) setLoadingTemplates(false); });
@@ -104,37 +107,10 @@ export default function CommunicationSettings() {
   }, [templates, searchQuery, typeFilter]);
 
   const ITEMS_PER_LOAD = 10;
-  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const loaderRef = useRef(null);
-
-  const visibleTemplates = useMemo(() =>
-    filteredTemplates.slice(0, visibleCount),
-    [filteredTemplates, visibleCount]
+  const { visibleItems: visibleTemplates, hasMore, isLoadingMore, loaderRef } = useEntityFetch(
+    filteredTemplates,
+    [searchQuery, typeFilter]
   );
-
-  const hasMore = visibleCount < filteredTemplates.length;
-
-  useEffect(() => {
-    setVisibleCount(ITEMS_PER_LOAD);
-  }, [searchQuery, typeFilter]);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
-          setIsLoadingMore(true);
-          setTimeout(() => {
-            setVisibleCount(prev => prev + ITEMS_PER_LOAD);
-            setIsLoadingMore(false);
-          }, 300);
-        }
-      },
-      { threshold: 0.1 }
-    );
-    if (loaderRef.current) observer.observe(loaderRef.current);
-    return () => observer.disconnect();
-  }, [hasMore, isLoadingMore]);
 
   const handleSave = async (section) => {
     setSaving(true);
@@ -142,10 +118,10 @@ export default function CommunicationSettings() {
       // AUDIT-645: Build payload — only include secret fields if user entered a new value
       const smsPayload = section === 'sms'
         ? { enabled: smsDraft.enabled, provider: smsDraft.provider, senderId: smsDraft.senderId, ...(smsDraft.apiKey ? { apiKey: smsDraft.apiKey } : {}) }
-        : { enabled: smsConfig.enabled, provider: smsConfig.provider, senderId: smsConfig.senderId };
+        : { enabled: smsConfig.enabled, provider: smsConfig.provider, senderId: smsConfig.senderId, ...(smsConfig.hasApiKey ? { apiKey: '••••••••' } : {}) };
       const emailPayload = section === 'email'
         ? { enabled: emailDraft.enabled, provider: emailDraft.provider, smtpHost: emailDraft.smtpHost, port: emailDraft.port, username: emailDraft.username, ...(emailDraft.password ? { password: emailDraft.password } : {}) }
-        : { enabled: emailConfig.enabled, provider: emailConfig.provider, smtpHost: emailConfig.smtpHost, port: emailConfig.port, username: emailConfig.username };
+        : { enabled: emailConfig.enabled, provider: emailConfig.provider, smtpHost: emailConfig.smtpHost, port: emailConfig.port, username: emailConfig.username, ...(emailConfig.hasPassword ? { password: '••••••••' } : {}) };
       const payload = { sms: smsPayload, email: emailPayload };
       const updated = await settingsApi.updateCommunicationSettings(payload);
       if (updated) {

@@ -31,13 +31,16 @@ export function AttendanceProvider({ children, staff }) {
         data.forEach((record) => {
           const staffId =
             record.staffId instanceof Object ? record.staffId._id : record.staffId;
-          if (!updated[staffId]) updated[staffId] = {};
-          updated[staffId][record.date] = {
-            status: record.status,
-            inTime: record.inTime || record.checkInTime || "-",
-            outTime: record.outTime || record.checkOutTime || "-",
-            reason: record.reason || "",
-            regularization: record.regularization,
+          // Spread nested object to avoid mutating the shared prev[staffId] reference
+          updated[staffId] = {
+            ...(prev[staffId] || {}),
+            [record.date]: {
+              status: record.status,
+              inTime: record.inTime || record.checkInTime || "-",
+              outTime: record.outTime || record.checkOutTime || "-",
+              reason: record.reason || "",
+              regularization: record.regularization,
+            },
           };
         });
         return updated;
@@ -45,8 +48,7 @@ export function AttendanceProvider({ children, staff }) {
       return data;
     } catch (err) {
       logger.error("Failed to fetch staff attendance for date:", err);
-      // Don't throw, just return empty to fail gracefully
-      return [];
+      throw err;
     }
   }, []);
 
@@ -54,10 +56,10 @@ export function AttendanceProvider({ children, staff }) {
     try {
       const data = await staffAttendanceApi.getByStaff(staffId, startDate, endDate);
       setStaffAttendance((prev) => {
-        const updated = { ...prev };
-        if (!updated[staffId]) updated[staffId] = {};
+        // Build new date entries without mutating the shared prev[staffId] reference
+        const dateEntries = {};
         data.forEach((record) => {
-          updated[staffId][record.date] = {
+          dateEntries[record.date] = {
             status: record.status,
             inTime: record.inTime || record.checkInTime || "-",
             outTime: record.outTime || record.checkOutTime || "-",
@@ -65,7 +67,10 @@ export function AttendanceProvider({ children, staff }) {
             regularization: record.regularization,
           };
         });
-        return updated;
+        return {
+          ...prev,
+          [staffId]: { ...(prev[staffId] || {}), ...dateEntries },
+        };
       });
       return data;
     } catch (err) {
@@ -136,13 +141,11 @@ export function AttendanceProvider({ children, staff }) {
     } catch (err) {
       logger.error("Failed to mark student attendance on server:", err);
       toast.error(t('toast.error.failedToSaveStudentAttendance', 'Failed to save student attendance'));
-      // Revert optimistic update on failure
+      // Revert optimistic update on failure — spread to avoid mutating the shared nested object
       setStudentAttendance((prev) => {
-        const updated = { ...prev };
-        if (updated[studentId]?.[date]) {
-          delete updated[studentId][date];
-        }
-        return updated;
+        if (!prev[studentId]?.[date]) return prev;
+        const { [date]: _removed, ...restDates } = prev[studentId];
+        return { ...prev, [studentId]: restDates };
       });
     }
   };
@@ -182,12 +185,11 @@ export function AttendanceProvider({ children, staff }) {
     // Save previous state for rollback
     const prevAttendance = staffAttendance;
 
-    // Optimistic update
+    // Optimistic update — spread each nested object so prev[id] is never mutated in place
     setStaffAttendance((prev) => {
       const newAtt = { ...prev };
       targetStaffIds.forEach((id) => {
-        if (!newAtt[id]) newAtt[id] = {};
-        newAtt[id][date] = { status, inTime: checkIn, outTime: checkOut, reason };
+        newAtt[id] = { ...(prev[id] || {}), [date]: { status, inTime: checkIn, outTime: checkOut, reason } };
       });
       return newAtt;
     });

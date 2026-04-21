@@ -14,11 +14,13 @@ import { useTranslation } from 'react-i18next';
 import HelpIcon from '../../components/ui/HelpIcon';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
+import { useCurrency } from '../../context/hooks/useCurrency';
 
 
 // ============ CONCESSIONS TAB ============
 export function ConcessionsTab() {
   const { t } = useTranslation();
+  const { fmt, currencySymbol } = useCurrency();
   const { currentAcademicYear } = useApp();
   const [concessions, setConcessions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -151,7 +153,7 @@ export function ConcessionsTab() {
               <TableRow key={c._id} className="hover:bg-gray-50 dark:hover:bg-zinc-900">
                 <TableCell><span className="font-medium text-gray-900 dark:text-zinc-100">{c.name}</span></TableCell>
                 <TableCell><span className="text-sm text-gray-600 dark:text-zinc-400">{c.discountType === 'percentage' ? 'Percentage' : 'Flat'}</span></TableCell>
-                <TableCell><span className="font-mono text-gray-900 dark:text-zinc-100">{c.discountType === 'percentage' ? `${c.discountValue}%` : `₹${c.discountValue}`}</span></TableCell>
+                <TableCell><span className="font-mono text-gray-900 dark:text-zinc-100">{c.discountType === 'percentage' ? `${c.discountValue}%` : fmt(c.discountValue)}</span></TableCell>
                 <TableCell><span className="text-sm text-gray-600 dark:text-zinc-400 capitalize">{c.eligibilityCriteria?.type || 'custom'}</span></TableCell>
                 <TableCell>
                   <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium border border-gray-200 dark:border-zinc-800 rounded bg-gray-50 dark:bg-zinc-900">
@@ -161,8 +163,8 @@ export function ConcessionsTab() {
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1 justify-end">
-                    <button onClick={() => handleOpen(c)} className="p-1.5 text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300"><Edit size={14} /></button>
-                    <button onClick={() => handleDelete(c._id)} className="p-1.5 text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300"><Trash2 size={14} /></button>
+                    <button aria-label="Edit fee rule" onClick={() => handleOpen(c)} className="p-1.5 text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300"><Edit size={14} /></button>
+                    <button aria-label="Delete fee rule" onClick={() => handleDelete(c._id)} className="p-1.5 text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300"><Trash2 size={14} /></button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -176,8 +178,8 @@ export function ConcessionsTab() {
           <ModalHeader className="border-b border-gray-200 dark:border-zinc-800 px-6 py-4">{editingConcession ? 'Edit' : 'Add'} Concession</ModalHeader>
           <ModalBody className="p-6 space-y-4">
             <div>
-              <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">{t('pages.name1')}</label>
-              <input type="text" placeholder={t('fees.concessionNamePlaceholder')} value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg dark:bg-zinc-950 dark:text-zinc-100" />
+              <label htmlFor="fee-concession-name" className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">{t('pages.name1')}</label>
+              <input id="fee-concession-name" type="text" placeholder={t('fees.concessionNamePlaceholder')} value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg dark:bg-zinc-950 dark:text-zinc-100" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -188,8 +190,8 @@ export function ConcessionsTab() {
                 </Select>
               </div>
               <div>
-                <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">{t('pages.value')}</label>
-                <input type="number" value={formData.discountValue} onChange={(e) => setFormData({ ...formData, discountValue: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg dark:bg-zinc-950 dark:text-zinc-100" />
+                <label htmlFor="fee-concession-value" className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">{t('pages.value')}</label>
+                <input id="fee-concession-value" type="number" value={formData.discountValue} onChange={(e) => setFormData({ ...formData, discountValue: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg dark:bg-zinc-950 dark:text-zinc-100" />
               </div>
             </div>
             <div>
@@ -228,6 +230,7 @@ export function ConcessionsTab() {
 // ============ LATE FEE TAB ============
 export function LateFeeTab() {
   const { t } = useTranslation();
+  const { currencySymbol } = useCurrency();
   const { currentAcademicYear } = useApp();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -299,8 +302,8 @@ export function LateFeeTab() {
         {formData.enabled && (
           <>
             <div className="p-4">
-              <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">{t('pages.gracePeriodDays')}</label>
-              <input type="number" value={formData.gracePeriod} onChange={(e) => setFormData({ ...formData, gracePeriod: parseInt(e.target.value) || 0 })} className="w-32 px-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg dark:bg-zinc-950 dark:text-zinc-100" />
+              <label htmlFor="late-fee-grace-period" className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">{t('pages.gracePeriodDays')}</label>
+              <input id="late-fee-grace-period" type="number" value={formData.gracePeriod} onChange={(e) => setFormData({ ...formData, gracePeriod: parseInt(e.target.value) || 0 })} className="w-32 px-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg dark:bg-zinc-950 dark:text-zinc-100" />
             </div>
 
             <div className="p-4">
@@ -319,29 +322,29 @@ export function LateFeeTab() {
 
             {formData.fineType === 'flat' && (
               <div className="p-4">
-                <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">{t('pages.flatAmount')}</label>
+                <label htmlFor="late-fee-flat-amount" className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">{t('pages.flatAmount')}</label>
                 <div className="relative w-40">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 text-sm">₹</span>
-                  <input type="number" value={formData.flatAmount} onChange={(e) => setFormData({ ...formData, flatAmount: parseFloat(e.target.value) || 0 })} className="w-full pl-7 pr-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg dark:bg-zinc-950 dark:text-zinc-100" />
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 text-sm">{currencySymbol}</span>
+                  <input id="late-fee-flat-amount" type="number" value={formData.flatAmount} onChange={(e) => setFormData({ ...formData, flatAmount: parseFloat(e.target.value) || 0 })} className="w-full pl-7 pr-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg dark:bg-zinc-950 dark:text-zinc-100" />
                 </div>
               </div>
             )}
 
             {formData.fineType === 'per_day' && (
               <div className="p-4">
-                <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">{t('pages.perDayAmount')}</label>
+                <label htmlFor="late-fee-per-day" className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">{t('pages.perDayAmount')}</label>
                 <div className="relative w-40">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 text-sm">₹</span>
-                  <input type="number" value={formData.perDayAmount} onChange={(e) => setFormData({ ...formData, perDayAmount: parseFloat(e.target.value) || 0 })} className="w-full pl-7 pr-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg dark:bg-zinc-950 dark:text-zinc-100" />
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 text-sm">{currencySymbol}</span>
+                  <input id="late-fee-per-day" type="number" value={formData.perDayAmount} onChange={(e) => setFormData({ ...formData, perDayAmount: parseFloat(e.target.value) || 0 })} className="w-full pl-7 pr-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg dark:bg-zinc-950 dark:text-zinc-100" />
                 </div>
               </div>
             )}
 
             <div className="p-4">
-              <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">{t('pages.maximumCap0ForNoLimit')}</label>
+              <label htmlFor="late-fee-max-cap" className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">{t('pages.maximumCap0ForNoLimit')}</label>
               <div className="relative w-40">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 text-sm">₹</span>
-                <input type="number" value={formData.maximumCap} onChange={(e) => setFormData({ ...formData, maximumCap: parseFloat(e.target.value) || 0 })} className="w-full pl-7 pr-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg dark:bg-zinc-950 dark:text-zinc-100" />
+                <input id="late-fee-max-cap" type="number" value={formData.maximumCap} onChange={(e) => setFormData({ ...formData, maximumCap: parseFloat(e.target.value) || 0 })} className="w-full pl-7 pr-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg dark:bg-zinc-950 dark:text-zinc-100" />
               </div>
             </div>
           </>
@@ -550,8 +553,8 @@ export function CollectionPeriodTab() {
 
         {formData.reminders.enabled && (
           <div className="p-4">
-            <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">{t('pages.daysBeforeDue')}</label>
-            <input type="number" value={formData.reminders.daysBefore} onChange={(e) => setFormData({ ...formData, reminders: { ...formData.reminders, daysBefore: parseInt(e.target.value) || 0 } })} className="w-24 px-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg dark:bg-zinc-950 dark:text-zinc-100" />
+            <label htmlFor="reminder-days-before" className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">{t('pages.daysBeforeDue')}</label>
+            <input id="reminder-days-before" type="number" value={formData.reminders.daysBefore} onChange={(e) => setFormData({ ...formData, reminders: { ...formData.reminders, daysBefore: parseInt(e.target.value) || 0 } })} className="w-24 px-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg dark:bg-zinc-950 dark:text-zinc-100" />
           </div>
         )}
       </div>
@@ -649,8 +652,8 @@ export function GeneralRulesTab() {
 
         {formData.allowPartialPayment && (
           <div className="p-4">
-            <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">Minimum Payment %</label>
-            <input type="number" min={0} max={100} value={formData.minimumPartialPaymentPercent} onChange={(e) => { const v = parseFloat(e.target.value); setFormData({ ...formData, minimumPartialPaymentPercent: isNaN(v) ? 0 : Math.min(100, Math.max(0, v)) }); }} className="w-24 px-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg dark:bg-zinc-950 dark:text-zinc-100" />
+            <label htmlFor="partial-payment-min-pct" className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">Minimum Payment %</label>
+            <input id="partial-payment-min-pct" type="number" min={0} max={100} value={formData.minimumPartialPaymentPercent} onChange={(e) => { const v = parseFloat(e.target.value); setFormData({ ...formData, minimumPartialPaymentPercent: isNaN(v) ? 0 : Math.min(100, Math.max(0, v)) }); }} className="w-24 px-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg dark:bg-zinc-950 dark:text-zinc-100" />
           </div>
         )}
 
@@ -665,8 +668,8 @@ export function GeneralRulesTab() {
 
         {formData.refundPolicy.enabled && (
           <div className="p-4">
-            <label className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">{t('pages.processingDays')}</label>
-            <input type="number" value={formData.refundPolicy.processingDays} onChange={(e) => setFormData({ ...formData, refundPolicy: { ...formData.refundPolicy, processingDays: parseInt(e.target.value) || 0 } })} className="w-24 px-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg dark:bg-zinc-950 dark:text-zinc-100" />
+            <label htmlFor="refund-processing-days" className="text-xs text-gray-500 dark:text-zinc-400 uppercase mb-2 block">{t('pages.processingDays')}</label>
+            <input id="refund-processing-days" type="number" value={formData.refundPolicy.processingDays} onChange={(e) => setFormData({ ...formData, refundPolicy: { ...formData.refundPolicy, processingDays: parseInt(e.target.value) || 0 } })} className="w-24 px-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg dark:bg-zinc-950 dark:text-zinc-100" />
           </div>
         )}
       </div>

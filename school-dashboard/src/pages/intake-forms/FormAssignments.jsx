@@ -235,6 +235,7 @@ export default function FormAssignments() {
       {/* Assignments Table */}
       <Card>
         <CardBody className="p-0">
+          <div className="overflow-x-auto">
           <Table
             aria-label={t('aria.tables.formAssignments')}
             removeWrapper
@@ -296,7 +297,7 @@ export default function FormAssignments() {
                   <TableCell>
                     <Dropdown>
                       <DropdownTrigger>
-                        <Button isIconOnly size="sm" variant="light">
+                        <Button isIconOnly size="sm" variant="light" aria-label="More actions">
                           <MoreVertical size={16} />
                         </Button>
                       </DropdownTrigger>
@@ -338,6 +339,7 @@ export default function FormAssignments() {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardBody>
       </Card>
 

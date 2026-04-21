@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { z } from 'zod';
 import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   Input, Select, SelectItem, Textarea,
 } from "@heroui/react";
-import { Search, Plus, Edit3, Trash2 } from "lucide-react";
+import { Search, Plus, Edit3, Trash2, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import { MinimalButton } from "../../components/ui";
 import { inventoryApi, staffApi } from "../../services/api";
 import toast from "react-hot-toast";
@@ -56,8 +57,14 @@ export default function Assets() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [stockTarget, setStockTarget] = useState(null); // { asset, type: 'IN'|'OUT' }
+  const [stockQty, setStockQty] = useState("");
+  const [stockSaving, setStockSaving] = useState(false);
 
   const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
+
+  // Track previous filter values to detect changes vs. pagination
+  const filterRef = useRef({ search, filterCategory, filterStatus });
 
   const fetchAssets = async (pageToLoad = page) => {
     try {
@@ -75,10 +82,22 @@ export default function Assets() {
     finally { setLoading(false); setInitialLoading(false); }
   };
 
-  // Reset to page 1 when filters change
-  useEffect(() => { setPage(1); }, [search, filterCategory, filterStatus]);
+  // Single effect handles both filter changes and pagination.
+  // When filters change, always fetch page 1 without also triggering a stale fetch
+  // for the old page value (which caused mixed results on rapid filter changes).
+  useEffect(() => {
+    const prev = filterRef.current;
+    const filtersChanged = prev.search !== search || prev.filterCategory !== filterCategory || prev.filterStatus !== filterStatus;
+    filterRef.current = { search, filterCategory, filterStatus };
 
-  useEffect(() => { fetchAssets(page); }, [page, search, filterCategory, filterStatus]);
+    if (filtersChanged && page !== 1) {
+      setPage(1); // page change will retrigger this effect at page 1
+      return;
+    }
+
+    fetchAssets(filtersChanged ? 1 : page);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, search, filterCategory, filterStatus]);
 
   const openCreate = () => { setEditing(null); setForm(emptyForm); setErrors({}); setIsOpen(true); };
   const openEdit = (a) => {
@@ -102,16 +121,35 @@ export default function Assets() {
       setErrors({ name: t('toast.error.nameIsRequired') });
       return toast.error(t('toast.error.nameIsRequired'));
     }
-    if (form.quantity < 0) return toast.error(t('toast.error.quantityCannotBeNegative'));
+    const numericValidation = z.object({
+      quantity: z.coerce.number({ invalid_type_error: "Must be a valid number" }).int("Must be a whole number").min(0, "Must be 0 or greater"),
+      minimumQuantity: z.coerce.number({ invalid_type_error: "Must be a valid number" }).int("Must be a whole number").min(0, "Must be 0 or greater"),
+      purchasePrice: z.union([z.literal(""), z.coerce.number({ invalid_type_error: "Must be a valid number" }).min(0, "Must be 0 or greater")]),
+      currentValue: z.union([z.literal(""), z.coerce.number({ invalid_type_error: "Must be a valid number" }).min(0, "Must be 0 or greater")]),
+      depreciationRate: z.union([z.literal(""), z.coerce.number({ invalid_type_error: "Must be a valid number" }).min(0, "Must be 0").max(100, "Must be 0–100")]),
+    }).safeParse({
+      quantity: String(form.quantity),
+      minimumQuantity: String(form.minimumQuantity),
+      purchasePrice: String(form.purchasePrice),
+      currentValue: String(form.currentValue),
+      depreciationRate: String(form.depreciationRate),
+    });
+    if (!numericValidation.success) {
+      const fieldErrors = {};
+      numericValidation.error.errors.forEach((e) => { fieldErrors[e.path[0]] = e.message; });
+      setErrors((prev) => ({ ...prev, ...fieldErrors }));
+      return toast.error("Please fix the highlighted fields");
+    }
+    const { quantity, minimumQuantity, purchasePrice, currentValue, depreciationRate } = numericValidation.data;
     try {
       setSaving(true);
       const payload = {
         ...form,
-        quantity: Number(form.quantity),
-        minimumQuantity: Number(form.minimumQuantity),
-        purchasePrice: form.purchasePrice ? Number(form.purchasePrice) : undefined,
-        currentValue: form.currentValue !== "" ? Number(form.currentValue) : undefined,
-        depreciationRate: form.depreciationRate !== "" ? Number(form.depreciationRate) : undefined,
+        quantity,
+        minimumQuantity,
+        purchasePrice: purchasePrice !== "" ? purchasePrice : undefined,
+        currentValue: currentValue !== "" ? currentValue : undefined,
+        depreciationRate: depreciationRate !== "" ? depreciationRate : undefined,
         purchaseDate: form.purchaseDate || undefined,
         warrantyExpiry: form.warrantyExpiry || undefined,
         vendorId: form.vendorId || undefined,
@@ -141,6 +179,25 @@ export default function Assets() {
     finally { setDeleteTarget(null); }
   };
 
+  const handleStockAdjust = async () => {
+    const delta = z.coerce.number().int("Must be a whole number").min(1, "Must be at least 1").safeParse(stockQty);
+    if (!delta.success) return toast.error(delta.error.errors[0].message);
+    const { asset, type } = stockTarget;
+    if (type === 'OUT' && asset.quantity - delta.data < 0) return toast.error("Stock cannot go below 0");
+    try {
+      setStockSaving(true);
+      await inventoryApi.adjustAssetStock(asset._id, { type, quantity: delta.data });
+      toast.success(type === 'IN' ? `Stock added: +${delta.data}` : `Stock removed: -${delta.data}`);
+      setStockTarget(null);
+      setStockQty("");
+      fetchAssets();
+    } catch (err) {
+      toast.error(err?.message || "Failed to update stock");
+    } finally {
+      setStockSaving(false);
+    }
+  };
+
   const set = (key, val) => {
     setForm((f) => ({ ...f, [key]: val }));
     setErrors((e) => ({ ...e, [key]: '' }));
@@ -153,30 +210,37 @@ export default function Assets() {
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex gap-2 flex-wrap items-center">
-          <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t('pages.searchAssets')}
-              className="pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 placeholder:text-gray-500 dark:placeholder:text-zinc-500 w-56"
-            />
-          </div>
-          {[{ label: "Category", value: filterCategory, setter: setFilterCategory, options: CATEGORIES },
-            { label: "Status", value: filterStatus, setter: setFilterStatus, options: STATUSES }].map(({ label, value, setter, options }) => (
-            <select
-              key={label}
-              value={value}
-              onChange={(e) => setter(e.target.value)}
-              className="text-sm rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 px-3 py-2"
-            >
-              <option value="all">All {label}</option>
-              {options.map((o) => <option key={o} value={o}>{o.replace(/_/g, " ")}</option>)}
-            </select>
-          ))}
+          <Input
+            value={search}
+            onValueChange={setSearch}
+            placeholder={t('pages.searchAssets')}
+            startContent={<Search size={16} className="text-gray-400 dark:text-zinc-500" />}
+            size="sm"
+            className="w-56"
+          />
+          <Select
+            selectedKeys={[filterCategory]}
+            onSelectionChange={(keys) => setFilterCategory([...keys][0] || "all")}
+            size="sm"
+            className="w-44"
+            aria-label="Filter by category"
+          >
+            <SelectItem key="all">All Category</SelectItem>
+            {CATEGORIES.map((o) => <SelectItem key={o}>{o.replace(/_/g, " ")}</SelectItem>)}
+          </Select>
+          <Select
+            selectedKeys={[filterStatus]}
+            onSelectionChange={(keys) => setFilterStatus([...keys][0] || "all")}
+            size="sm"
+            className="w-44"
+            aria-label="Filter by status"
+          >
+            <SelectItem key="all">{t('pages.allStatus1')}</SelectItem>
+            {STATUSES.map((o) => <SelectItem key={o}>{o.replace(/_/g, " ")}</SelectItem>)}
+          </Select>
         </div>
         <MinimalButton variant="primary" size="sm" icon={<Plus size={16} />} onClick={openCreate}>
-          Add Asset
+          {t('pages.addAsset')}
         </MinimalButton>
       </div>
 
@@ -186,7 +250,7 @@ export default function Assets() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 dark:bg-zinc-900 border-b border-gray-100 dark:border-zinc-800">
-                {["Name", "Category", "Location", "Assigned To", "Qty", "Current Value", "Condition", "Status", "Vendor", "Actions"].map((h) => (
+                {[t('pages.name1'), t('pages.category1'), t('pages.location'), t('pages.assignedTo'), t('pages.qty'), t('pages.currentValue'), t('pages.condition'), t('pages.status2'), t('pages.vendor'), t('pages.actions1')].map((h) => (
                   <th key={h} className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
@@ -222,8 +286,10 @@ export default function Assets() {
                     <td className="px-4 py-3 text-gray-600 dark:text-zinc-400">{a.vendorId?.name || "—"}</td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1">
-                        <button onClick={() => openEdit(a)} className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-500 dark:text-zinc-400"><Edit3 size={14} /></button>
-                        <button onClick={() => setDeleteTarget(a._id)} className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-950 text-gray-500 dark:text-zinc-400 hover:text-red-600"><Trash2 size={14} /></button>
+                        <button onClick={() => { setStockTarget({ asset: a, type: 'IN' }); setStockQty(""); }} className="p-1.5 rounded-md hover:bg-green-50 dark:hover:bg-green-950 text-gray-500 dark:text-zinc-400 hover:text-green-600" title={t('pages.stockIn')}><ArrowDownToLine size={14} /></button>
+                        <button onClick={() => { setStockTarget({ asset: a, type: 'OUT' }); setStockQty(""); }} className="p-1.5 rounded-md hover:bg-yellow-50 dark:hover:bg-yellow-950 text-gray-500 dark:text-zinc-400 hover:text-yellow-600" title={t('pages.stockOut')}><ArrowUpFromLine size={14} /></button>
+                        <button aria-label={t('pages.editAsset')} onClick={() => openEdit(a)} className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-500 dark:text-zinc-400"><Edit3 size={14} /></button>
+                        <button aria-label={t('pages.deleteAsset')} onClick={() => setDeleteTarget(a._id)} className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-950 text-gray-500 dark:text-zinc-400 hover:text-red-600"><Trash2 size={14} /></button>
                       </div>
                     </td>
                   </tr>
@@ -237,7 +303,7 @@ export default function Assets() {
       {/* Pagination */}
       <div className="flex items-center justify-between px-1">
         <p className="text-sm text-gray-500 dark:text-zinc-400">
-          {total} {total === 1 ? "asset" : "assets"} total
+          {t('pages.assetsTotal', { count: total })}
         </p>
         {totalPages > 1 && (
           <div className="flex items-center gap-2">
@@ -246,7 +312,7 @@ export default function Assets() {
               disabled={page <= 1 || loading}
               className="px-3 py-1.5 text-sm border border-gray-200 dark:border-zinc-700 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 disabled:opacity-50 text-gray-700 dark:text-zinc-300"
             >
-              Previous
+              {t('pages.previous')}
             </button>
             <span className="text-sm text-gray-600 dark:text-zinc-400 px-2">
               {page} / {totalPages}
@@ -256,7 +322,7 @@ export default function Assets() {
               disabled={page >= totalPages || loading}
               className="px-3 py-1.5 text-sm border border-gray-200 dark:border-zinc-700 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 disabled:opacity-50 text-gray-700 dark:text-zinc-300"
             >
-              Next
+              {t('pages.next')}
             </button>
           </div>
         )}
@@ -278,13 +344,13 @@ export default function Assets() {
               <Select label={t('pages.assignedTo')} selectedKeys={form.assignedTo ? [form.assignedTo] : []} onSelectionChange={(keys) => set("assignedTo", [...keys][0] || "")}>
                 {staffList.map((s) => <SelectItem key={s._id || s.id}>{s.name}</SelectItem>)}
               </Select>
-              <Input label={t('pages.quantity')} type="number" value={String(form.quantity)} onValueChange={(v) => set("quantity", v)} />
-              <Input label={t('pages.minimumQuantity')} type="number" value={String(form.minimumQuantity)} onValueChange={(v) => set("minimumQuantity", v)} />
+              <Input label={t('pages.quantity')} type="number" inputMode="numeric" value={String(form.quantity)} onValueChange={(v) => set("quantity", v)} isInvalid={!!errors.quantity} errorMessage={errors.quantity} />
+              <Input label={t('pages.minimumQuantity')} type="number" inputMode="numeric" value={String(form.minimumQuantity)} onValueChange={(v) => set("minimumQuantity", v)} isInvalid={!!errors.minimumQuantity} errorMessage={errors.minimumQuantity} />
               <Input label={t('pages.purchaseDate')} type="date" value={form.purchaseDate} onValueChange={(v) => set("purchaseDate", v)} />
-              <Input label={t('pages.purchasePrice')} type="number" value={String(form.purchasePrice)} onValueChange={(v) => set("purchasePrice", v)} />
-              <Input label="Current Value" type="number" value={String(form.currentValue)} onValueChange={(v) => set("currentValue", v)} description="Auto-calculated if depreciation rate is set" />
+              <Input label={t('pages.purchasePrice')} type="number" inputMode="decimal" value={String(form.purchasePrice)} onValueChange={(v) => set("purchasePrice", v)} isInvalid={!!errors.purchasePrice} errorMessage={errors.purchasePrice} />
+              <Input label="Current Value" type="number" inputMode="decimal" value={String(form.currentValue)} onValueChange={(v) => set("currentValue", v)} isInvalid={!!errors.currentValue} errorMessage={errors.currentValue} description="Auto-calculated if depreciation rate is set" />
               <Input label={t('pages.warrantyExpiry')} type="date" value={form.warrantyExpiry} onValueChange={(v) => set("warrantyExpiry", v)} />
-              <Input label="Depreciation Rate (%)" type="number" value={String(form.depreciationRate)} onValueChange={(v) => set("depreciationRate", v)} />
+              <Input label="Depreciation Rate (%)" type="number" inputMode="decimal" value={String(form.depreciationRate)} onValueChange={(v) => set("depreciationRate", v)} isInvalid={!!errors.depreciationRate} errorMessage={errors.depreciationRate} />
               <Select label={t('pages.vendor')} selectedKeys={form.vendorId ? [form.vendorId] : []} onSelectionChange={(keys) => set("vendorId", [...keys][0] || "")}>
                 {vendors.map((v) => <SelectItem key={v._id}>{v.name}</SelectItem>)}
               </Select>
@@ -314,6 +380,54 @@ export default function Assets() {
         confirmText="Delete"
         variant="danger"
       />
+
+      {/* Stock In / Stock Out Modal */}
+      <Modal isOpen={!!stockTarget} onOpenChange={(open) => { if (!open) { setStockTarget(null); setStockQty(""); } }} size="sm">
+        <ModalContent>
+          <ModalHeader>
+            <div className="flex items-center gap-2">
+              {stockTarget?.type === 'IN'
+                ? <ArrowDownToLine size={16} className="text-green-600" />
+                : <ArrowUpFromLine size={16} className="text-yellow-600" />}
+              {stockTarget?.type === 'IN' ? 'Stock In' : 'Stock Out'}: {stockTarget?.asset?.name}
+            </div>
+          </ModalHeader>
+          <ModalBody>
+            <p className="text-sm text-gray-500 dark:text-zinc-400 mb-3">
+              Current stock: <span className="font-medium text-gray-900 dark:text-zinc-100">{stockTarget?.asset?.quantity ?? 0}</span>
+            </p>
+            <Input
+              label={stockTarget?.type === 'IN' ? 'Quantity to add' : 'Quantity to remove'}
+              type="number"
+              inputMode="numeric"
+              min={1}
+              value={stockQty}
+              onValueChange={setStockQty}
+              autoFocus
+            />
+            {stockTarget?.type === 'OUT' && stockQty && Number(stockQty) > 0 && (
+              <p className={`text-xs mt-1 ${(stockTarget.asset.quantity - Number(stockQty)) < 0 ? 'text-red-600' : 'text-gray-500 dark:text-zinc-400'}`}>
+                New stock: {stockTarget.asset.quantity - Number(stockQty)}
+              </p>
+            )}
+            {stockTarget?.type === 'IN' && stockQty && Number(stockQty) > 0 && (
+              <p className="text-xs mt-1 text-gray-500 dark:text-zinc-400">
+                New stock: {stockTarget.asset.quantity + Number(stockQty)}
+              </p>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <MinimalButton variant="ghost" onClick={() => { setStockTarget(null); setStockQty(""); }}>Cancel</MinimalButton>
+            <MinimalButton
+              variant={stockTarget?.type === 'IN' ? 'primary' : 'danger'}
+              onClick={handleStockAdjust}
+              loading={stockSaving}
+            >
+              {stockTarget?.type === 'IN' ? 'Add Stock' : 'Remove Stock'}
+            </MinimalButton>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

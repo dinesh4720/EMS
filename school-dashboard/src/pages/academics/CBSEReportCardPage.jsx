@@ -14,6 +14,8 @@ import { classesApi } from '../../services/classesService';
 import { PageLayout } from '../../components/ui';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import logger from '../../utils/logger';
+
 
 const GRADE_COLORS = {
   A1: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200',
@@ -27,14 +29,14 @@ const GRADE_COLORS = {
   E2: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200',
 };
 
-const DEFAULT_SUBJECTS = ['English', 'Hindi', 'Mathematics', 'Science', 'Social Science'];
-
 // ── Mark Entry Modal (single student) ─────────────────────────────────────────
 function MarkEntryModal({ isOpen, onClose, student, classId, academicYear, term, onSaved }) {
   const { t } = useTranslation();
-  const [subjects, setSubjects] = useState(() =>
-    DEFAULT_SUBJECTS.map(name => ({ subjectName: name, theoryMarks: '', practicalMarks: '' }))
-  );
+  const { schoolSettings } = useApp();
+  const [subjects, setSubjects] = useState(() => {
+    const names = (schoolSettings?.subjects || []).map(s => (typeof s === 'string' ? s : s.name)).filter(Boolean);
+    return names.map(name => ({ subjectName: name, theoryMarks: '', practicalMarks: '' }));
+  });
   const [saving, setSaving] = useState(false);
 
   const updateSubject = (i, field, val) => {
@@ -148,10 +150,13 @@ function MarkEntryModal({ isOpen, onClose, student, classId, academicYear, term,
 
 // ── Bulk Class Mark Entry Modal ────────────────────────────────────────────────
 function BulkMarkEntryModal({ isOpen, onClose, term, academicYear }) {
+  const { schoolSettings } = useApp();
   const [classes, setClasses] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState('');
   const [students, setStudents] = useState([]);
-  const [subjects, setSubjects] = useState(DEFAULT_SUBJECTS.slice());
+  const [subjects, setSubjects] = useState(() =>
+    (schoolSettings?.subjects || []).map(s => (typeof s === 'string' ? s : s.name)).filter(Boolean)
+  );
   const [marks, setMarks] = useState({});
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -165,7 +170,7 @@ function BulkMarkEntryModal({ isOpen, onClose, term, academicYear }) {
       classesApi.getAll().then(data => {
         setClasses(Array.isArray(data) ? data : data?.classes || []);
       }).catch((err) => {
-        console.error('Failed to load classes:', err);
+        logger.error('Failed to load classes:', err);
         setClassesError(true);
         toast.error('Failed to load classes. Please close and try again.');
       });

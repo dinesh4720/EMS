@@ -14,6 +14,8 @@ import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { toTodayDateString, formatShortDate } from '../../utils/dateFormatter';
+import logger from '../../utils/logger';
+
 
 
 const StudentAttendance = memo(function StudentAttendance() {
@@ -82,7 +84,7 @@ const StudentAttendance = memo(function StudentAttendance() {
                 }
             } catch (error) {
                 if (error.name === 'AbortError') return;
-                console.error('Failed to fetch attendance:', error);
+                logger.error('Failed to fetch attendance:', error);
             }
 
             if (!controller.signal.aborted) {
@@ -201,7 +203,7 @@ const StudentAttendance = memo(function StudentAttendance() {
 
             toast.success(t('toast.success.attendanceSavedSuccessfully'));
         } catch (error) {
-            console.error('Error saving attendance:', error);
+            logger.error('Error saving attendance:', error);
             toast.error(error.message || 'Failed to save attendance');
         }
     };

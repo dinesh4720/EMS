@@ -7,6 +7,7 @@ import {
   safeSessionRemoveItem,
   safeSessionClear,
 } from './safeStorage';
+import logger from './logger';
 
 export const AUTH_STORAGE_KEY = 'app_user';
 
@@ -88,6 +89,18 @@ export function getStoredAuthToken() {
 export function getAuthHeaders(headers = {}) {
   // Auth is now handled by httpOnly cookies sent automatically with
   // credentials: 'include'. No Authorization header needed.
+
+  // Guard: if there is no stored user the session has definitely been cleared
+  // on the client side. Warn in development so callers can detect this early
+  // rather than silently proceeding to a 401 from the server.
+  if (process.env.NODE_ENV !== 'production' && !getStoredUser()) {
+    logger.warn(
+      '[authSession] getAuthHeaders() called with no active session. ' +
+      'The request will likely return 401. Ensure the caller handles 401 responses ' +
+      'by calling clearStoredUser() to trigger the auth redirect.'
+    );
+  }
+
   const nextHeaders = { ...headers };
 
   // Clean up any stale/invalid Authorization headers

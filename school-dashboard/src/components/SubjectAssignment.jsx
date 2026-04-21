@@ -4,6 +4,8 @@ import { classesApi, settingsApi } from '../services/api';
 import { ArrowLeft, Plus, X, Save, AlertTriangle, CheckCircle, BookOpen, Search, Settings, Users, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
+import logger from '../utils/logger';
+
 
 const SubjectAssignment = () => {
   const { t } = useTranslation();
@@ -34,7 +36,7 @@ const SubjectAssignment = () => {
       setMasterSubjects(Array.isArray(subjectData) ? subjectData : []);
     } catch (err) {
       setError('Failed to load data. Please try again.');
-      console.error('Error fetching data:', err);
+      logger.error('Error fetching data:', err);
     } finally {
       setLoading(false);
     }
@@ -76,7 +78,7 @@ const SubjectAssignment = () => {
       handleCancelEdit();
     } catch (err) {
       setError('Failed to update subjects. Please try again.');
-      console.error('Error updating subjects:', err);
+      logger.error('Error updating subjects:', err);
     } finally {
       setSaving(false);
     }
@@ -90,7 +92,7 @@ const SubjectAssignment = () => {
       await fetchData();
     } catch (err) {
       toast.error('Failed to sync subjects');
-      console.error('Error syncing subjects:', err);
+      logger.error('Error syncing subjects:', err);
     } finally {
       setSyncing(false);
     }

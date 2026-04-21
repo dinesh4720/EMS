@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 export function ClassDashboardHeader({
   cls,
   headerStats,
+  studentCount,
   navigate,
   handleExportReport,
   handleSendNotice,
@@ -33,7 +34,7 @@ export function ClassDashboardHeader({
               {cls?.name || 'N/A'} - {t('classes.section', 'Section')} {cls?.section || 'N/A'}
             </h1>
             <div className="flex items-center gap-2 mt-1 text-sm text-gray-500 dark:text-zinc-400 flex-wrap">
-              <span>{cls?.studentCount || 0} {t('classes.students', 'Students')}</span>
+              <span>{studentCount ?? cls?.studentCount ?? 0} {t('classes.students', 'Students')}</span>
               <span className="text-gray-300 dark:text-zinc-600">·</span>
               <span>{cls?.strengthLimit?.current || 40} {t('classes.capacity', 'Capacity')}</span>
               {cls?.room && (<><span className="text-gray-300 dark:text-zinc-600">·</span><span>{t('classes.room', 'Room')} {cls.room}</span></>)}

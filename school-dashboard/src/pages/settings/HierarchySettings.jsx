@@ -18,6 +18,8 @@ import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import SkeletonTable from '../../components/skeletons/SkeletonTable';
+import logger from '../../utils/logger';
+
 
 export default function HierarchySettings() {
   const { t } = useTranslation();
@@ -98,7 +100,7 @@ export default function HierarchySettings() {
       await updateStaff(staffId, { reporterId: reporterId || null });
       toast.success(`Reporter updated for ${staffMember.name}`);
     } catch (error) {
-      console.error("Failed to update reporter:", error);
+      logger.error("Failed to update reporter:", error);
       toast.error(error.message || "Failed to update reporter");
     } finally {
       setLoading(false);
@@ -128,7 +130,7 @@ export default function HierarchySettings() {
       setBulkReporter("");
       toast.success(`Updated ${selectedStaff.length} staff members`);
     } catch (error) {
-      console.error("Failed to bulk assign:", error);
+      logger.error("Failed to bulk assign:", error);
       toast.error(error.message || "Failed to bulk assign reporters");
     } finally {
       setLoading(false);

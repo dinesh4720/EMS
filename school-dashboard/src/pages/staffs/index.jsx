@@ -2,10 +2,11 @@ import { useState, useRef, useEffect } from "react";
 import logger from "../../utils/logger";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { Button, Drawer, DrawerContent, DrawerHeader, DrawerBody, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
-import { Plus, X, Mail, Phone, Send, UserPlus, FileText, CheckCircle2, ChevronDown, Briefcase, CalendarDays, BookOpen } from "lucide-react";
+import { Plus, X, Mail, Phone, Send, UserPlus, FileText, CheckCircle2, ChevronDown, Briefcase, CalendarDays, BookOpen, ClipboardList } from "lucide-react";
 import StaffList from "./StaffList";
 import StaffAttendance from "./StaffAttendance";
 import StaffAttendanceRegularize from "./StaffAttendanceRegularize";
+import LeaveManagement from "./LeaveManagement";
 import StaffPayroll from "./StaffPayroll";
 import StaffDashboard from "./StaffDashboard";
 import AddStaff from "./AddStaff";
@@ -91,6 +92,7 @@ export default function StaffsPage() {
 
   const isProfileView = location.pathname !== "/staffs" && location.pathname !== "/staffs/" && location.pathname !== "/staffs/attendance" && location.pathname !== "/staffs/payroll" && location.pathname !== "/staffs/bulk-subjects" && !location.pathname.endsWith("/staffs");
   const isRegularizeView = location.pathname.includes("/attendance/regularize");
+  const isLeaveView = location.pathname.includes("/attendance/leave");
 
   const handleSaveStaff = async (staffData) => {
     // Normalize role: send as array to match Mongoose schema [String]
@@ -265,12 +267,13 @@ export default function StaffsPage() {
     else if (key === "subjects") navigate("/staffs/bulk-subjects");
   };
 
-  if (isProfileView || isRegularizeView) {
+  if (isProfileView || isRegularizeView || isLeaveView) {
     return (
       <div className="space-y-6 animate-fade-in pb-8">
         <Routes>
           <Route path=":id" element={<StaffDashboard />} />
           <Route path="attendance/regularize" element={<StaffAttendanceRegularize />} />
+          <Route path="attendance/leave" element={<LeaveManagement />} />
         </Routes>
       </div>
     );
@@ -287,7 +290,10 @@ export default function StaffsPage() {
           activeTab === "list" ? (
             <MinimalButton icon={<Plus size={16} />} onClick={handleOpenAddStaff}>{t('pages.createStaff')}</MinimalButton>
           ) : activeTab === "overview" ? (
-            <MinimalButton icon={<CalendarDays size={16} />} onClick={() => navigate("/staffs/attendance/regularize")}>{t('pages.regularize')}</MinimalButton>
+            <div className="flex gap-2">
+              <MinimalButton icon={<ClipboardList size={16} />} onClick={() => navigate("/staffs/attendance/leave")}>Leave Requests</MinimalButton>
+              <MinimalButton icon={<CalendarDays size={16} />} onClick={() => navigate("/staffs/attendance/regularize")}>{t('pages.regularize')}</MinimalButton>
+            </div>
           ) : null
         }
       >
@@ -325,7 +331,7 @@ export default function StaffsPage() {
                       <p className="text-xs text-gray-500 dark:text-zinc-400">{editingStaffId ? 'Update staff details' : 'Fill in the staff details below'}</p>
                     </div>
                   </div>
-                  <Button isIconOnly size="sm" variant="light" onPress={() => {
+                  <Button isIconOnly size="sm" variant="light" aria-label="Close" onPress={() => {
                     if (addStaffRef.current) addStaffRef.current.attemptClose();
                     else handleCloseAddStaff();
                   }}>

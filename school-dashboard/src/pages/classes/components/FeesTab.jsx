@@ -7,9 +7,11 @@ import {
 import { useApp } from "../../../context/AppContext";
 import { useTranslation } from 'react-i18next';
 import { Bone } from './Bone';
+import { useCurrency } from '../../../context/hooks/useCurrency';
 
 export function FeesTab({ id, cls, classesEnhancedApi, navigate }) {
   const { t } = useTranslation();
+  const { fmt } = useCurrency();
   const [feesOverview, setFeesOverview] = useState(null);
   const [feesLoading, setFeesLoading] = useState(true);
   const { students } = useApp();
@@ -27,9 +29,9 @@ export function FeesTab({ id, cls, classesEnhancedApi, navigate }) {
   const pendingStudents = classStudents.filter(s => s.feeStatus !== 'paid');
 
   const stats = [
-    { label: t('classes.collected', 'Collected'), value: `₹${feesOverview?.collected?.toLocaleString('en-IN') || "0"}`, icon: CheckCircle2, bg: 'bg-green-50 dark:bg-green-950/30', iconColor: 'text-green-600 dark:text-green-400' },
-    { label: t('classes.pending', 'Pending'), value: `₹${feesOverview?.pending?.toLocaleString('en-IN') || "0"}`, icon: AlertCircle, bg: 'bg-amber-50 dark:bg-amber-950/30', iconColor: 'text-amber-600 dark:text-amber-400' },
-    { label: t('classes.overdue', 'Overdue'), value: `₹${feesOverview?.overdue?.toLocaleString('en-IN') || "0"}`, icon: AlertTriangle, bg: 'bg-red-50 dark:bg-red-950/30', iconColor: 'text-red-500 dark:text-red-400' },
+    { label: t('classes.collected', 'Collected'), value: fmt(feesOverview?.collected || 0), icon: CheckCircle2, bg: 'bg-green-50 dark:bg-green-950/30', iconColor: 'text-green-600 dark:text-green-400' },
+    { label: t('classes.pending', 'Pending'), value: fmt(feesOverview?.pending || 0), icon: AlertCircle, bg: 'bg-amber-50 dark:bg-amber-950/30', iconColor: 'text-amber-600 dark:text-amber-400' },
+    { label: t('classes.overdue', 'Overdue'), value: fmt(feesOverview?.overdue || 0), icon: AlertTriangle, bg: 'bg-red-50 dark:bg-red-950/30', iconColor: 'text-red-500 dark:text-red-400' },
   ];
 
   return (
@@ -82,7 +84,7 @@ export function FeesTab({ id, cls, classesEnhancedApi, navigate }) {
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">₹{student.pendingFees ? Number(student.pendingFees).toLocaleString('en-IN') : "0"}</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{fmt(student.pendingFees || 0)}</span>
                   <Button size="sm" variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300" onPress={() => navigate(`/fees/collect?student=${student.id}`)}>{t('pages.collect')}</Button>
                 </div>
               </div>

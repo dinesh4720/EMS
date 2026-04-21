@@ -11,6 +11,8 @@ import { useApp } from "../../context/AppContext";
 import { usePermissions } from "../../context/PermissionContext";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import { useTranslation } from 'react-i18next';
+import logger from '../../utils/logger';
+
 
 /**
  * BulkSubjectAssignment - Page for assigning subjects and classes to teachers in bulk
@@ -115,7 +117,7 @@ export default function BulkSubjectAssignment() {
             assignments: data.assignments || []
           };
         } catch (err) {
-          console.error(`Failed to load assignments for teacher ${teacher.id}:`, err);
+          logger.error(`Failed to load assignments for teacher ${teacher.id}:`, err);
           return {
             teacherId: String(teacher.id || teacher._id),
             assignments: []
@@ -132,7 +134,7 @@ export default function BulkSubjectAssignment() {
 
       setTeacherAssignments(assignmentsMap);
     } catch (error) {
-      console.error('Error loading assignments:', error);
+      logger.error('Error loading assignments:', error);
       toast.error(t('toast.error.failedToLoadTeacherAssignments'));
     } finally {
       setLoading(false);
@@ -315,7 +317,7 @@ export default function BulkSubjectAssignment() {
 
           const failures = results.filter(r => r.status === 'rejected');
           if (failures.length > 0) {
-            console.error('Some operations failed:', failures);
+            logger.error('Some operations failed:', failures);
             toast.error(`${failures.length} operation(s) failed`);
           }
 
@@ -331,7 +333,7 @@ export default function BulkSubjectAssignment() {
 
           if (refetch) await refetch();
         } catch (error) {
-          console.error('Error saving changes:', error);
+          logger.error('Error saving changes:', error);
           toast.error(error.message || 'Failed to save changes');
         } finally {
           setSaving(false);

@@ -10,6 +10,8 @@ import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
+import logger from '../../utils/logger';
+
 
 export default function StaffAttendanceRegularize() {
   const { t } = useTranslation();
@@ -130,7 +132,7 @@ export default function StaffAttendanceRegularize() {
       setRegularizeModalOpen(false);
       setSelectedDate(null);
     } catch (error) {
-      console.error('Regularization failed:', error);
+      logger.error('Regularization failed:', error);
       toast.error(error.message || 'Failed to regularize attendance');
     }
   };

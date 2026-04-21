@@ -11,6 +11,8 @@ import { Avatar } from '@heroui/react';
 import toast from 'react-hot-toast';
 import { useAiAssistant } from '../components/AiAssistant/AiAssistantPanel';
 import { useTranslation } from 'react-i18next';
+import logger from '../utils/logger';
+
 
 export default function AiAssistantPage() {
   const { t } = useTranslation();
@@ -72,7 +74,7 @@ export default function AiAssistantPage() {
                 });
             } catch (error) {
                 if (!cancelled) {
-                    console.error('Failed to load AI models:', error);
+                    logger.error('Failed to load AI models:', error);
                     setAvailableModels([]);
                 }
             } finally {
@@ -121,7 +123,7 @@ export default function AiAssistantPage() {
                     }
                 } catch (error) {
                     toast.error(t('toast.error.failedToTranscribeAudio'));
-                    console.error('Transcription error:', error);
+                    logger.error('Transcription error:', error);
                 } finally {
                     setIsTranscribing(false);
                 }
@@ -132,7 +134,7 @@ export default function AiAssistantPage() {
             toast.success(t('toast.success.recordingStarted'));
         } catch (error) {
             toast.error(t('toast.error.microphoneAccessDenied'));
-            console.error('Recording error:', error);
+            logger.error('Recording error:', error);
         }
     };
 

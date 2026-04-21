@@ -223,7 +223,7 @@ export function useMessageActions({ user, chatService, messages, setMessages, se
         break;
 
       default:
-        console.warn('Unknown action:', action);
+        logger.warn('Unknown action:', action);
     }
   }, [handleDeleteMessage, handlePinMessage, handleUnpinMessage, handleReaction, setReplyToMessage, setSelectedMessage, setShowForwardModal, setEditingMessage, setEditText, setEmojiPickerMessage, messageInputRef, t]);
 

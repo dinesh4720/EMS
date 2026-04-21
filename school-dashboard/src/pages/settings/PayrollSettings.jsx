@@ -18,6 +18,8 @@ import SalaryTemplates from "./SalaryTemplates";
 import { useTranslation } from "react-i18next";
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
+import logger from '../../utils/logger';
+
 
 function SalaryComponents() {
   const { t } = useTranslation();
@@ -314,7 +316,7 @@ function GeneralPayrollSettings() {
         }
         setInitialLoad(false);
       } catch (error) {
-        console.error("Failed to fetch payroll settings:", error);
+        logger.error("Failed to fetch payroll settings:", error);
         setInitialLoad(false);
       }
     };
@@ -367,7 +369,7 @@ function GeneralPayrollSettings() {
       toast.success(t("toast.success.payrollSettingsSavedSuccessfully"));
       setEditingSection(null);
     } catch (error) {
-      console.error("Failed to save payroll settings:", error);
+      logger.error("Failed to save payroll settings:", error);
       toast.error(error.message || "Failed to save payroll settings");
     } finally {
       setLoading(false);
@@ -383,7 +385,7 @@ function GeneralPayrollSettings() {
       toast.success("Payment settings saved");
       setEditingSection(null);
     } catch (error) {
-      console.error("Failed to save payment settings:", error);
+      logger.error("Failed to save payment settings:", error);
       toast.error(error.message || "Failed to save payment settings");
     } finally {
       setLoading(false);
@@ -403,7 +405,7 @@ function GeneralPayrollSettings() {
       toast.success("Reminder settings saved");
       setEditingSection(null);
     } catch (error) {
-      console.error("Failed to save reminder settings:", error);
+      logger.error("Failed to save reminder settings:", error);
       toast.error(error.message || "Failed to save reminder settings");
     } finally {
       setLoading(false);
@@ -614,6 +616,7 @@ function GeneralPayrollSettings() {
                   size="sm"
                   color="primary"
                   onPress={handleSavePayment}
+                  isLoading={loading}
                   startContent={<Save size={14} />}
                 >
                   Save
@@ -739,6 +742,7 @@ function GeneralPayrollSettings() {
                   size="sm"
                   color="primary"
                   onPress={handleSaveReminders}
+                  isLoading={loading}
                   startContent={<Save size={14} />}
                 >
                   Save

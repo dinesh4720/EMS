@@ -6,8 +6,9 @@ import {
 import { libraryApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import { addBookSchema, parseFormSchema } from '../../validators/formSchemas';
 
-const CATEGORIES = [
+export const BOOK_CATEGORIES = [
   { key: "textbook", label: "Textbook" },
   { key: "reference", label: "Reference" },
   { key: "fiction", label: "Fiction" },
@@ -66,16 +67,8 @@ export default function AddBookModal({ isOpen, onClose, book, onSaved }) {
 
   const handleSubmit = async (evt) => {
     evt?.preventDefault?.();
-    const e = {};
-    if (!form.title.trim()) e.title = t('toast.error.titleAndAuthorAreRequired');
-    if (!form.author.trim()) e.author = t('toast.error.titleAndAuthorAreRequired');
-    const copies = parseInt(form.totalCopies);
-    if (!copies || copies < 1) e.totalCopies = t('toast.error.totalCopiesMustBeAtLeast1');
-    if (form.finePerDay) {
-      const fine = parseFloat(form.finePerDay);
-      if (isNaN(fine) || fine < 0) e.finePerDay = t('toast.error.finePerDayMustBeANonNegativeNumber');
-    }
-    if (Object.keys(e).length > 0) { setErrors(e); return; }
+    const { success, errors: zodErrors } = parseFormSchema(addBookSchema, form);
+    if (!success) { setErrors(zodErrors); return; }
 
     const payload = {
       title: form.title.trim(),
@@ -126,7 +119,7 @@ export default function AddBookModal({ isOpen, onClose, book, onSaved }) {
             <Input label={t('pages.publishedYear')} type="number" value={form.publishedYear} onValueChange={(v) => updateField("publishedYear", v)} />
             <Input label={t('pages.edition')} value={form.edition} onValueChange={(v) => updateField("edition", v)} />
             <Select label={t('pages.category1')} selectedKeys={[form.category]} onSelectionChange={(keys) => updateField("category", [...keys][0])}>
-              {CATEGORIES.map((c) => <SelectItem key={c.key}>{c.label}</SelectItem>)}
+              {BOOK_CATEGORIES.map((c) => <SelectItem key={c.key}>{c.label}</SelectItem>)}
             </Select>
             <Input label={t('pages.subject2')} value={form.subject} onValueChange={(v) => updateField("subject", v)} />
             <Input label={t('pages.language')} value={form.language} onValueChange={(v) => updateField("language", v)} />

@@ -19,6 +19,8 @@ import { Send, Clock, Upload, X, FileText } from 'lucide-react';
 import { announcementsApi, uploadApi } from '../../../../services/api';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import logger from '../../../../utils/logger';
+
 
 export default function AnnouncementForm({
   isOpen,
@@ -115,7 +117,7 @@ export default function AnnouncementForm({
 
       toast.success(t('toast.success.fileUploadedSuccessfully'));
     } catch (error) {
-      console.error('Error uploading file:', error);
+      logger.error('Error uploading file:', error);
       toast.error(t('toast.error.failedToUploadFile'));
     } finally {
       setUploadingFile(false);
@@ -168,7 +170,7 @@ export default function AnnouncementForm({
       onSave();
       handleClose();
     } catch (error) {
-      console.error('Error saving announcement:', error);
+      logger.error('Error saving announcement:', error);
       toast.error(error.message || 'Failed to save announcement');
     } finally {
       setLoading(false);
@@ -179,31 +181,46 @@ export default function AnnouncementForm({
     const newErrors = {};
     if (!formData.title.trim()) newErrors.title = t('toast.error.pleaseFillInTitleAndContent');
     if (!formData.content.trim()) newErrors.content = t('toast.error.pleaseFillInTitleAndContent');
+    if (formData.channels.length === 0) newErrors.channels = t('toast.error.pleaseSelectAtLeastOneChannel');
+    if (formData.recipients.length === 0) newErrors.recipients = t('toast.error.pleaseSelectRecipients');
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      toast.error(t('toast.error.pleaseFillInTitleAndContent'));
+      if (newErrors.title || newErrors.content) toast.error(t('toast.error.pleaseFillInTitleAndContent'));
+      else if (newErrors.channels) toast.error(t('toast.error.pleaseSelectAtLeastOneChannel'));
+      else if (newErrors.recipients) toast.error(t('toast.error.pleaseSelectRecipients'));
       return;
     }
 
     setLoading(true);
 
     try {
+      let result;
       if (editData?._id) {
-        await announcementsApi.send(editData._id);
+        result = await announcementsApi.send(editData._id);
       } else {
         // Create first, then send
         const created = await announcementsApi.create({
           ...formData,
           status: 'sent',
         });
-        await announcementsApi.send(created._id);
+        result = await announcementsApi.send(created._id);
       }
 
-      toast.success(t('toast.success.announcementSentSuccessfully'));
+      if (result?.status === 'partial') {
+        toast(`Announcement partially sent — ${result.sent} delivered, ${result.failed} failed`, {
+          icon: '⚠️',
+        });
+      } else if (result?.pushFailed) {
+        toast.success(t('toast.success.announcementSentSuccessfully') + ' (push notifications failed)');
+      } else {
+        toast.success(t('toast.success.announcementSentSuccessfully'));
+      }
+
       onSave();
       handleClose();
     } catch (error) {
-      console.error('Error sending announcement:', error);
+      logger.error('Error sending announcement:', error);
       toast.error(error.message || 'Failed to send announcement');
     } finally {
       setLoading(false);
@@ -220,6 +237,8 @@ export default function AnnouncementForm({
       attachments: [],
     });
     setErrors({});
+    setUploadProgress(0);
+    setUploadingFile(false);
     onClose();
   };
 

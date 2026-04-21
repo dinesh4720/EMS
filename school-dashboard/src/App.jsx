@@ -39,9 +39,11 @@ const StyleGuide = isDev ? lazyWithRetry(() => import("./pages/StyleGuide")) : n
 const TimetableWizardPage = lazyWithRetry(() => import("./components/TimetableWizardPage"));
 const Login = lazyWithRetry(() => import("./pages/Login"));
 const Signup = lazyWithRetry(() => import("./pages/Signup"));
+const ResetPassword = lazyWithRetry(() => import("./pages/ResetPassword"));
 const SuperAdminDashboard = lazyWithRetry(() => import("./pages/super-admin"));
 
 // New module pages
+const HomeworkPage = lazyWithRetry(() => import("./pages/homework"));
 const PTMPage = lazyWithRetry(() => import("./pages/ptm"));
 // CBSEReportCardPage and CCEGradingPage are rendered as tabs within
 // AcademicLayout — no standalone routes needed, so no lazy imports here.
@@ -61,10 +63,9 @@ const PayrollReminder = lazyWithRetry(() => import("./components/PayrollReminder
 
 // Loading fallback component
 function PageLoader() {
-  const { t } = useTranslation();
   return (
     <div className="h-screen w-screen flex items-center justify-center bg-background">
-      <div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+      <div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin" role="status" aria-label="Loading"></div>
     </div>
   );
 }
@@ -78,7 +79,6 @@ import StructuredData from "./components/StructuredData";
 import { AlertCircle, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { isSuperAdminRole } from "./utils/roleUtils";
-import { useTranslation } from 'react-i18next';
 
 function RouteEB({ children }) {
   return (
@@ -125,12 +125,18 @@ function AuthenticatedApp() {
       const width = document.documentElement.clientWidth;
       setIsSidebarOpen(width >= COLLAPSE_WIDTH);
     };
-    window.addEventListener('resize', check);
+    let resizeTimeout;
+    const debouncedCheck = () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(check, 150);
+    };
+    window.addEventListener('resize', debouncedCheck);
     // Also handle visual viewport changes (pinch zoom on some devices)
-    window.visualViewport?.addEventListener('resize', check);
+    window.visualViewport?.addEventListener('resize', debouncedCheck);
     return () => {
-      window.removeEventListener('resize', check);
-      window.visualViewport?.removeEventListener('resize', check);
+      window.removeEventListener('resize', debouncedCheck);
+      window.visualViewport?.removeEventListener('resize', debouncedCheck);
+      clearTimeout(resizeTimeout);
     };
   }, []);
 
@@ -199,7 +205,10 @@ function AuthenticatedApp() {
         </ErrorBoundary>
         <AiAssistantLayout>
           <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${isSidebarOpen ? 'ml-[var(--sidebar-width)]' : 'ml-0 lg:ml-[var(--sidebar-width-collapsed)]'} relative z-10 bg-gray-50 dark:bg-zinc-950`}>
-            <Topbar isSidebarOpen={isSidebarOpen} />
+            <Topbar
+              isSidebarOpen={isSidebarOpen}
+              onOpenMobileNav={() => setIsSidebarOpen(true)}
+            />
             <div className="mt-14 flex-1 flex flex-col min-h-0">
               <Suspense fallback={null}>
                 <TrialBanner />
@@ -350,6 +359,13 @@ function AuthenticatedApp() {
                         </PermissionGuard>
                       </RouteEB>
                     } />
+                    <Route path="/homework" element={
+                      <RouteEB>
+                        <PermissionGuard module="academics">
+                          <HomeworkPage />
+                        </PermissionGuard>
+                      </RouteEB>
+                    } />
                     <Route path="/ptm" element={
                       <RouteEB>
                         <PermissionGuard module="academics">
@@ -479,6 +495,7 @@ function AppRoutes() {
           {/* Public routes - accessible without authentication */}
           <Route path="/form/:token" element={<PublicFormSubmission />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           {/* Auth routes - stable tree, conditional logic in element prop */}
           <Route path="/login" element={

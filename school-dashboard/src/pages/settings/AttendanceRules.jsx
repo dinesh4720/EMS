@@ -3,6 +3,8 @@ import { Card, CardBody, CardHeader, Button, Input, Switch, Divider, Select, Sel
 import { Save, AlertCircle } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import { settingsApi } from "../../services/api";
+import logger from '../../utils/logger';
+
 
 const DEFAULT_PERMISSIONS = [
   { role: "Super Admin", canMark: true, canEdit: true, canLock: true },
@@ -41,7 +43,7 @@ export default function AttendanceRules() {
       setRules(merged);
       setTempRules(merged);
     } catch (err) {
-      console.error('Failed to fetch attendance rules:', err);
+      logger.error('Failed to fetch attendance rules:', err);
       setError('Failed to load attendance rules. Using defaults.');
       // Keep defaults on error
     } finally {
@@ -87,7 +89,7 @@ export default function AttendanceRules() {
       setEditingSection(null);
       setTimeout(() => setSaveMessage(null), 3000);
     } catch (err) {
-      console.error('Failed to save attendance rules:', err);
+      logger.error('Failed to save attendance rules:', err);
       setSaveMessage({ type: 'error', text: err.message || 'Failed to save settings' });
       setTimeout(() => setSaveMessage(null), 5000);
     } finally {

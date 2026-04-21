@@ -4,15 +4,17 @@ import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Chip, useDisclosure, Button,
   Select, SelectItem, Textarea
 } from '@heroui/react';
-import { LogOut, Trash2, Plus, Edit, Search } from 'lucide-react';
+import { LogOut, Trash2, Plus, Edit, Search, Calendar } from 'lucide-react';
 import { frontDeskApi, studentsApi } from '../../services/api';
 import FormInput from '../../components/FormInput';
 import { validatePhone, validateRequired } from '../../utils/validations';
 import toast from 'react-hot-toast';
-import { toCurrentTimeString } from '../../utils/dateFormatter';
+import { toCurrentTimeString, formatTime } from '../../utils/dateFormatter';
 import { useTranslation } from 'react-i18next';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
+import logger from '../../utils/logger';
+
 
 const VISITOR_REASONS = [
   { key: 'PARENT_MEETING', label: 'Parent Meeting', needsGatePass: true, needsAppointment: false, needsStudentMapping: true },
@@ -34,6 +36,7 @@ const VisitorLog = forwardRef(({ onSave, ...props }, ref) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editingId, setEditingId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [searchTerm, setSearchTerm] = useState('');
   const [studentLookupQuery, setStudentLookupQuery] = useState('');
   const [studentsLoading, setStudentsLoading] = useState(false);
@@ -65,9 +68,9 @@ const VisitorLog = forwardRef(({ onSave, ...props }, ref) => {
   }));
 
   useEffect(() => {
-    loadVisitors();
+    loadVisitors(selectedDate);
     loadStudents();
-  }, []);
+  }, [selectedDate]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -82,12 +85,15 @@ const VisitorLog = forwardRef(({ onSave, ...props }, ref) => {
     return () => clearTimeout(timeoutId);
   }, [formData.reasonForVisit, isOpen, studentLookupQuery]);
 
-  const loadVisitors = async () => {
+  const loadVisitors = async (date) => {
     try {
-      const response = await frontDeskApi.getVisitorsToday();
+      const today = new Date().toISOString().split('T')[0];
+      const response = date && date !== today
+        ? await frontDeskApi.getVisitorsByDate(date)
+        : await frontDeskApi.getVisitorsToday();
       setVisitors(Array.isArray(response) ? response : []);
     } catch (error) {
-      console.error('Failed to load visitors:', error);
+      logger.error('Failed to load visitors:', error);
       toast.error(t('toast.error.failedToLoadVisitors'));
     } finally {
       setLoading(false);
@@ -105,7 +111,7 @@ const VisitorLog = forwardRef(({ onSave, ...props }, ref) => {
       });
       setStudents(response.data || []);
     } catch (error) {
-      console.error('Failed to load students:', error);
+      logger.error('Failed to load students:', error);
         toast.error('Failed to load students');
     } finally {
       setStudentsLoading(false);
@@ -215,7 +221,7 @@ const VisitorLog = forwardRef(({ onSave, ...props }, ref) => {
       }
       onClose();
       resetForm();
-      loadVisitors();
+      loadVisitors(selectedDate);
       onSave?.();
     } catch (error) {
       toast.error(t('toast.error.failedToSaveVisitor'));
@@ -228,7 +234,7 @@ const VisitorLog = forwardRef(({ onSave, ...props }, ref) => {
     try {
       await frontDeskApi.checkoutVisitor(id);
       toast.success(t('toast.success.visitorCheckedOutSuccessfully'));
-      loadVisitors();
+      loadVisitors(selectedDate);
       onSave?.();
     } catch (error) {
       toast.error(t('toast.error.failedToCheckOutVisitor'));
@@ -285,7 +291,7 @@ const VisitorLog = forwardRef(({ onSave, ...props }, ref) => {
         try {
           await frontDeskApi.deleteVisitor(id);
           toast.success(t('toast.success.visitorRecordDeleted'));
-          loadVisitors();
+          loadVisitors(selectedDate);
           onSave?.();
         } catch (error) {
           toast.error(t('toast.error.failedToDeleteVisitorRecord'));
@@ -359,15 +365,25 @@ const VisitorLog = forwardRef(({ onSave, ...props }, ref) => {
   return (
     <>
       <div className="flex flex-col sm:flex-row justify-between gap-4 mb-4">
-        <Input
-          placeholder={t('pages.searchVisitors')}
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          startContent={<Search size={16} />}
-          className="max-w-xs"
-          isClearable
-          onClear={() => setSearchTerm('')}
-        />
+        <div className="flex gap-2 flex-wrap">
+          <Input
+            placeholder={t('pages.searchVisitors')}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            startContent={<Search size={16} />}
+            className="max-w-xs"
+            isClearable
+            onClear={() => setSearchTerm('')}
+          />
+          <Input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            startContent={<Calendar size={16} />}
+            className="max-w-[180px]"
+            aria-label="Filter by date"
+          />
+        </div>
         <Button color="primary" startContent={<Plus size={16} />} onPress={onOpen}>
           Add New Visitor
         </Button>
@@ -387,7 +403,7 @@ const VisitorLog = forwardRef(({ onSave, ...props }, ref) => {
         <TableBody
           items={filteredVisitors}
           isLoading={loading}
-          emptyContent="No visitors today"
+          emptyContent={`No visitors on ${selectedDate === new Date().toISOString().split('T')[0] ? 'today' : selectedDate}`}
         >
           {(visitor) => (
             <TableRow key={visitor._id}>
@@ -398,8 +414,8 @@ const VisitorLog = forwardRef(({ onSave, ...props }, ref) => {
               </TableCell>
               <TableCell>{visitor.whomToMeet || visitor.concernedPerson || '-'}</TableCell>
               <TableCell>{visitor.studentName || '-'}</TableCell>
-              <TableCell>{visitor.checkInTime}</TableCell>
-              <TableCell>{visitor.checkOutTime || '-'}</TableCell>
+              <TableCell>{formatTime(visitor.checkInTime)}</TableCell>
+              <TableCell>{formatTime(visitor.checkOutTime, '-')}</TableCell>
               <TableCell>
                 <Chip
                   size="sm"
@@ -427,6 +443,7 @@ const VisitorLog = forwardRef(({ onSave, ...props }, ref) => {
                     color="primary"
                     variant="light"
                     isIconOnly
+                    aria-label="Edit visitor"
                     onPress={() => handleEdit(visitor)}
                   >
                     <Edit size={14} />
@@ -436,6 +453,7 @@ const VisitorLog = forwardRef(({ onSave, ...props }, ref) => {
                     color="danger"
                     variant="light"
                     isIconOnly
+                    aria-label="Delete visitor"
                     onPress={() => handleDelete(visitor._id)}
                   >
                     <Trash2 size={14} />

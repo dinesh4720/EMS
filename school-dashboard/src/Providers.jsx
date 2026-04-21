@@ -13,8 +13,22 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { HeroUIProvider } from '@heroui/react';
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
 import { BrowserRouter } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
+import toast, { Toaster, useToasterStore } from 'react-hot-toast';
+import { useEffect } from 'react';
 import { queryClient } from './lib/queryClient';
+
+const TOAST_LIMIT = 3;
+
+function ToastLimiter() {
+  const { toasts } = useToasterStore();
+  useEffect(() => {
+    toasts
+      .filter(t => t.visible)
+      .slice(TOAST_LIMIT)
+      .forEach(t => toast.dismiss(t.id));
+  }, [toasts]);
+  return null;
+}
 
 export default function Providers({ children }) {
   return (
@@ -24,6 +38,7 @@ export default function Providers({ children }) {
           <NextThemesProvider attribute="class" defaultTheme="light">
             <BrowserRouter>
               {children}
+              <ToastLimiter />
               <Toaster
                 position="top-center"
                 toastOptions={{
@@ -32,10 +47,7 @@ export default function Providers({ children }) {
                   success: { duration: 3000, iconTheme: { primary: '#10b981', secondary: '#fff' } },
                   error: { duration: 4000, iconTheme: { primary: '#ef4444', secondary: '#fff' } },
                 }}
-                containerStyle={{
-                  position: 'fixed', top: '20px', left: '50%',
-                  transform: 'translateX(-50%)', zIndex: 999999,
-                }}
+                containerStyle={{ zIndex: 999999 }}
               />
             </BrowserRouter>
           </NextThemesProvider>

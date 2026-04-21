@@ -128,6 +128,8 @@ export const staffAttendanceApi = {
   mark: (data) => request('/staff-attendance', { method: 'POST', body: JSON.stringify(data) }),
   markBulk: (data) => request('/staff-attendance/bulk', { method: 'POST', body: JSON.stringify(data) }),
   regularize: (id, data) => request(`/staff-attendance/${id}/regularize`, { method: 'PUT', body: JSON.stringify(data) }),
+  getPendingLeaves: () => request('/staff-attendance/leave/pending'),
+  approveLeave: (id, data) => request(`/staff-attendance/leave/${id}/approve`, { method: 'PUT', body: JSON.stringify(data) }),
 };
 
 // Timetable API

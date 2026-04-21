@@ -86,6 +86,7 @@ export default function CalendarToolbar({ currentDate, view, onViewChange, onNav
           isIconOnly
           size="sm"
           variant="light"
+          aria-label="Previous year"
           className="text-default-400 hover:bg-default-100"
           onPress={() => {
             const targetYear = year - 1;
@@ -96,16 +97,17 @@ export default function CalendarToolbar({ currentDate, view, onViewChange, onNav
         >
           <ChevronsLeft size={16} />
         </Button>
-        <Button isIconOnly size="sm" variant="light" className="text-default-500 hover:bg-default-100" onPress={() => onNavigate(-1)}>
+        <Button isIconOnly size="sm" variant="light" aria-label="Previous month" className="text-default-500 hover:bg-default-100" onPress={() => onNavigate(-1)}>
           <ChevronLeft size={18} />
         </Button>
-        <Button isIconOnly size="sm" variant="light" className="text-default-500 hover:bg-default-100" onPress={() => onNavigate(1)}>
+        <Button isIconOnly size="sm" variant="light" aria-label="Next month" className="text-default-500 hover:bg-default-100" onPress={() => onNavigate(1)}>
           <ChevronRight size={18} />
         </Button>
         <Button
           isIconOnly
           size="sm"
           variant="light"
+          aria-label="Next year"
           className="text-default-400 hover:bg-default-100"
           onPress={() => {
             const targetYear = year + 1;

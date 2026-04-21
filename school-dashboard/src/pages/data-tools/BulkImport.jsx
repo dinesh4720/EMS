@@ -3,7 +3,7 @@ import { Button, Chip, Checkbox } from '@heroui/react';
 import { Upload, Download, FileText, Users, UserCheck, DollarSign, Calendar, RotateCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { API_URL } from '../../config/api';
-import { getAuthHeaders } from '../../utils/authSession';
+import { clearStoredUser, getAuthHeaders } from '../../utils/authSession';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
 
@@ -91,6 +91,7 @@ export default function BulkImport() {
         headers: getAuthHeaders(),
         credentials: 'include',
       });
+      if (response.status === 401) { clearStoredUser(); throw new Error('Session expired. Please log in again.'); }
       if (!response.ok) throw new Error('Download failed');
 
       const blob = await response.blob();
@@ -134,9 +135,13 @@ export default function BulkImport() {
         body: formData,
       });
 
+      if (response.status === 401) { clearStoredUser(); throw new Error('Session expired. Please log in again.'); }
       if (!response.ok) {
-        const err = await response.json().catch(() => ({ error: 'Import failed' }));
-        throw new Error(err.error || 'Import failed');
+        const errData = await response.json().catch(() => null);
+        const errMsg =
+          typeof errData?.error === 'string' ? errData.error
+          : errData?.message || 'Import failed';
+        throw new Error(errMsg);
       }
 
       const data = await response.json();
@@ -145,7 +150,15 @@ export default function BulkImport() {
       if (dryRun) {
         toast.success('Dry run completed');
       } else {
-        toast.success('Import completed successfully');
+        const failedCount = Array.isArray(data.failed) ? data.failed.length : (data.failed || 0);
+        const importedCount = data.imported || 0;
+        if (failedCount > 0 && importedCount === 0) {
+          toast.error(`Import failed — ${failedCount} row(s) had errors, nothing was imported`);
+        } else if (failedCount > 0) {
+          toast(`${importedCount} imported, ${failedCount} failed — check errors below`, { icon: '⚠️' });
+        } else {
+          toast.success(`Import completed — ${importedCount} record(s) imported`);
+        }
       }
     } catch (err) {
       toast.error(err.message || 'Import failed');
@@ -161,6 +174,7 @@ export default function BulkImport() {
         headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         credentials: 'include',
       });
+      if (response.status === 401) { clearStoredUser(); throw new Error('Session expired. Please log in again.'); }
       if (!response.ok) throw new Error('Failed to load history');
       const data = await response.json();
       setHistory(data?.jobs || []);
@@ -190,6 +204,7 @@ export default function BulkImport() {
             headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
             credentials: 'include',
           });
+          if (response.status === 401) { clearStoredUser(); throw new Error('Session expired. Please log in again.'); }
           if (!response.ok) throw new Error('Rollback failed');
 
           toast.success('Import rolled back successfully');

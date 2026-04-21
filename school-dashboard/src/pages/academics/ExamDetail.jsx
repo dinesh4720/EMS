@@ -13,12 +13,14 @@ import {
   ModalFooter
 } from '@heroui/react';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
-import { FileText, Users, Eye, Pencil, Send, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
+import { FileText, Users, Eye, Pencil, Send, ArrowLeft, CheckCircle2, AlertCircle, Trophy, Award } from 'lucide-react';
 import { examsApi, resultsApi, classesApi } from '../../services/api';
 import { MinimalButton } from '../../components/ui';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { formatShortDate } from '../../utils/dateFormatter';
+import logger from '../../utils/logger';
+
 
 const ExamDetail = () => {
   const { t } = useTranslation();
@@ -53,7 +55,7 @@ const ExamDetail = () => {
             classesApi.getStudents(examData.classId, { signal })
           ]);
 
-          setResults(resultsData || []);
+          setResults(Array.isArray(resultsData) ? resultsData : []);
 
           // Build name map from students list
           const students = Array.isArray(studentsResponse)
@@ -68,7 +70,7 @@ const ExamDetail = () => {
         }
       } catch (error) {
         if (error.name === 'AbortError') return;
-        console.error('Error fetching exam details:', error);
+        logger.error('Error fetching exam details:', error);
         toast.error(t('toast.error.failedToLoadExamDetails'));
       } finally {
         if (!signal.aborted) setLoading(false);
@@ -87,7 +89,7 @@ const ExamDetail = () => {
       setPublishModal(false);
       setRefreshKey(k => k + 1);
     } catch (error) {
-      console.error('Error publishing results:', error);
+      logger.error('Error publishing results:', error);
       toast.error(t('toast.error.failedToPublishResults'));
     } finally {
       setPublishing(false);
@@ -126,15 +128,28 @@ const ExamDetail = () => {
     return studentMap[rawId]?.rollNo;
   };
 
-  // Computed stats
+  // Computed stats — use backend-stored status only; do not infer from marks
   const stats = useMemo(() => {
-    const passed = results.filter(r => r.status === 'passed' || r.marksObtained >= (exam?.passingMarks ?? 35)).length;
-    const failed = results.length - passed;
+    const passed = results.filter(r => r.status === 'passed').length;
+    const failed = results.filter(r => r.status === 'failed').length;
     const avg = results.length > 0
       ? (results.reduce((s, r) => s + (r.percentage ?? 0), 0) / results.length).toFixed(1)
       : 0;
     return { passed, failed, avg };
-  }, [results, exam]);
+  }, [results]);
+
+  // Client-side percentile: "beats X% of class" based on percentage scores
+  const percentileMap = useMemo(() => {
+    if (results.length === 0) return {};
+    const total = results.length;
+    const map = {};
+    results.forEach(r => {
+      const id = String(r._id || r.id);
+      const below = results.filter(o => (o.percentage ?? 0) < (r.percentage ?? 0)).length;
+      map[id] = total > 1 ? Math.round((below / total) * 100) : 100;
+    });
+    return map;
+  }, [results]);
 
   if (!isValid) return null;
 
@@ -297,27 +312,47 @@ const ExamDetail = () => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-100 dark:border-zinc-800">
+                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Rank</th>
                     <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Student</th>
                     <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Roll No</th>
                     <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Marks</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">%</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">% / Percentile</th>
                     <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Grade</th>
                     <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {results.map((result) => {
-                    const status = result.status || (result.marksObtained >= (exam.passingMarks ?? 35) ? 'passed' : 'failed');
+                    // AUDIT-748: Trust backend-stored status; do not recompute with hardcoded passing marks
+                    const status = result.status ?? 'pending';
                     const statusConfig = {
                       passed:   { color: 'success', label: 'Passed',   icon: <CheckCircle2 size={11} /> },
                       failed:   { color: 'danger',  label: 'Failed',   icon: <AlertCircle size={11} /> },
                       absent:   { color: 'warning', label: 'Absent',   icon: <AlertCircle size={11} /> },
                       promoted: { color: 'primary', label: 'Promoted', icon: <CheckCircle2 size={11} /> },
                       withheld: { color: 'default', label: 'Withheld', icon: <AlertCircle size={11} /> },
+                      pending:  { color: 'default', label: 'Pending',  icon: null },
                     };
                     const cfg = statusConfig[status] || { color: 'default', label: status || 'Unknown', icon: null };
+                    const rank = result.rank;
+                    const resultId = String(result._id || result.id);
+                    const percentile = percentileMap[resultId];
                     return (
                       <tr key={result.id || result._id} className="border-b border-gray-50 dark:border-zinc-800/50 hover:bg-gray-50 dark:hover:bg-zinc-900">
+                        <td className="py-3 px-4">
+                          {rank != null ? (
+                            <div className="flex items-center gap-1.5">
+                              {rank === 1 && <Trophy size={14} className="text-yellow-500 shrink-0" />}
+                              {rank === 2 && <Award size={14} className="text-gray-400 shrink-0" />}
+                              {rank === 3 && <Award size={14} className="text-amber-600 shrink-0" />}
+                              <span className={`text-sm font-semibold ${rank === 1 ? 'text-yellow-600 dark:text-yellow-400' : rank <= 3 ? 'text-gray-700 dark:text-zinc-300' : 'text-gray-500 dark:text-zinc-400'}`}>
+                                #{rank}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-gray-400 dark:text-zinc-500">—</span>
+                          )}
+                        </td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
                             <div className="w-7 h-7 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center shrink-0">
@@ -336,8 +371,15 @@ const ExamDetail = () => {
                         <td className="py-3 px-4 text-sm text-gray-700 dark:text-zinc-300 font-medium">
                           {result.marksObtained}/{exam.maxMarks || 100}
                         </td>
-                        <td className="py-3 px-4 text-sm text-gray-600 dark:text-zinc-400">
-                          {Math.max(0, Math.min(100, result.percentage ?? 0)).toFixed(1)}%
+                        <td className="py-3 px-4">
+                          <div className="text-sm text-gray-600 dark:text-zinc-400">
+                            {Math.max(0, Math.min(100, result.percentage ?? 0)).toFixed(1)}%
+                          </div>
+                          {percentile != null && status !== 'absent' && (
+                            <div className="text-xs text-gray-400 dark:text-zinc-500">
+                              Beats {percentile}% of class
+                            </div>
+                          )}
                         </td>
                         <td className="py-3 px-4">
                           <Chip size="sm" variant="flat">{result.grade || '—'}</Chip>

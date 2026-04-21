@@ -66,7 +66,7 @@ export default function ReturnBookModal({ isOpen, onClose, issue, onSaved }) {
           <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-3 space-y-1">
             <p className="font-medium text-gray-900 dark:text-zinc-100">{issue.bookId?.title || issue.bookTitle}</p>
             <p className="text-sm text-gray-500 dark:text-zinc-400">
-              Issued to: {issue.studentId?.name || "Unknown"}
+              Issued to: {issue.studentId?.name || issue.studentName || "Unknown"}
             </p>
             <p className="text-sm text-gray-500 dark:text-zinc-400">
               Due: {issue.dueDate ? new Date(issue.dueDate).toLocaleDateString(getDateLocale(), { day: "2-digit", month: "short", year: "numeric" }) : '—'}

@@ -24,6 +24,8 @@ import { TimetableGrid } from './components/TimetableGrid';
 import { TimetableEmptyState } from './components/TimetableEmptyState';
 import { PeriodsModal } from './components/PeriodsModal';
 import { EditSlotModal } from './components/EditSlotModal';
+import logger from '../../utils/logger';
+
 
 const days = TIMETABLE_DAYS;
 const defaultPeriods = DEFAULT_PERIODS;
@@ -101,7 +103,7 @@ export default function Timetable({ classId }) {
       setHasChanges(false);
     } catch (err) {
       if (err.status !== 404 && !err.message?.includes('not found')) {
-        console.error('Failed to load timetable:', err);
+        logger.error('Failed to load timetable:', err);
       }
       // Don't show error toast - just initialize empty state
       setPeriods(defaultPeriods);
@@ -150,7 +152,7 @@ export default function Timetable({ classId }) {
     onSlotOpen();
   };
 
-  const fetchAvailableTeachers = useCallback(async () => {
+  const fetchAvailableTeachers = useCallback(async (currentTeacherId) => {
     if (!slotForm.subject || !editingSlot || !selectedClass) return;
 
     try {
@@ -165,13 +167,31 @@ export default function Timetable({ classId }) {
       };
 
       const response = await teacherAssignmentsApi.getAvailableTeachers(params);
-      setAvailableTeachers(response.availableTeachers || []);
+      const teachers = response.available || [];
+      setAvailableTeachers(teachers);
 
-      if (response.availableTeachers?.length === 0) {
+      if (teachers.length === 0) {
         showWarningToast('No qualified teachers are available for this subject and time slot.');
       }
+
+      // If a teacher is already assigned to this slot, check whether they're
+      // still conflict-free across ALL classes (not just the currently loaded one).
+      if (currentTeacherId) {
+        const isStillAvailable = teachers.some(t =>
+          String(t.id) === String(currentTeacherId) || String(t._id) === String(currentTeacherId)
+        );
+        if (!isStillAvailable) {
+          setConflicts([{
+            type: 'double_booking',
+            message: 'This teacher is already assigned to another class at this time',
+            teacherId: currentTeacherId,
+            day,
+            period: periodIndex
+          }]);
+        }
+      }
     } catch (err) {
-      console.error('Failed to fetch available teachers:', err);
+      logger.error('Failed to fetch available teachers:', err);
       showErrorToast(err, 'Failed to load available teachers.');
       setAvailableTeachers([]);
     } finally {
@@ -179,10 +199,10 @@ export default function Timetable({ classId }) {
     }
   }, [slotForm.subject, editingSlot, selectedClass]);
 
-  // Fetch available teachers when subject is selected
+  // Fetch available teachers when subject or slot changes (pass current teacher for conflict pre-check)
   useEffect(() => {
     if (isSlotOpen && slotForm.subject && editingSlot && selectedClass) {
-      fetchAvailableTeachers();
+      fetchAvailableTeachers(slotForm.teacherId);
     }
   }, [slotForm.subject, isSlotOpen, editingSlot, selectedClass, fetchAvailableTeachers]);
 
@@ -205,8 +225,8 @@ export default function Timetable({ classId }) {
 
       const response = await teacherAssignmentsApi.getAvailableTeachers(params);
 
-      // Check if selected teacher is in available list
-      const isAvailable = response.availableTeachers?.some(t =>
+      // Check if selected teacher is in available list (backend checks ALL classes)
+      const isAvailable = response.available?.some(t =>
         String(t.id) === String(teacherId) || String(t._id) === String(teacherId)
       );
 
@@ -222,7 +242,7 @@ export default function Timetable({ classId }) {
         setConflicts([]);
       }
     } catch (err) {
-      console.error('Failed to check conflicts:', err);
+      logger.error('Failed to check conflicts:', err);
       setConflicts([]);
     }
   };
@@ -258,13 +278,14 @@ export default function Timetable({ classId }) {
 
         await timetableApi.updateSlot(selectedClass, slotData);
 
-        // Update local state
-        const newSchedule = { ...schedule };
-        if (!newSchedule[day]) newSchedule[day] = [];
-        newSchedule[day][periodIndex] = {
-          subject: slotForm.subject,
-          teacherId: slotForm.teacherId || null,
-          room: slotForm.room
+        // Update local state (create new array for day to avoid mutating original)
+        const newSchedule = {
+          ...schedule,
+          [day]: (schedule[day] || []).map((s, idx) =>
+            idx === periodIndex
+              ? { subject: slotForm.subject, teacherId: slotForm.teacherId || null, room: slotForm.room }
+              : s
+          )
         };
 
         setSchedule(newSchedule);
@@ -292,10 +313,17 @@ export default function Timetable({ classId }) {
           setSyncStatus('error');
 
           if (error.type === 'ConflictError') {
+            const details = error.details || {};
             setConflicts([{
-              type: 'conflict_error',
-              message: formatConflictDetails(error),
-              details: error.details
+              type: 'double_booking',
+              message: error.message || formatConflictDetails(error),
+              teacherName: details.teacherName,
+              day: details.day,
+              periodIndex: details.periodIndex,
+              conflicts: details.conflictingClass
+                ? [{ className: details.conflictingClass, classId: details.conflictingClassId }]
+                : [],
+              details,
             }]);
           }
         }
@@ -327,13 +355,12 @@ export default function Timetable({ classId }) {
 
         await timetableApi.updateSlot(selectedClass, slotData);
 
-        // Update local state
-        const newSchedule = { ...schedule };
-        if (!newSchedule[day]) newSchedule[day] = [];
-        newSchedule[day][periodIndex] = {
-          subject: "",
-          teacherId: null,
-          room: ""
+        // Update local state (create new array for day to avoid mutating original)
+        const newSchedule = {
+          ...schedule,
+          [day]: (schedule[day] || []).map((s, idx) =>
+            idx === periodIndex ? { subject: "", teacherId: null, room: "" } : s
+          )
         };
 
         setSchedule(newSchedule);
@@ -467,6 +494,53 @@ export default function Timetable({ classId }) {
     setPeriods(updated);
   };
 
+  const handleSlotSwap = async (srcDay, srcPeriod, dstDay, dstPeriod) => {
+    const srcSlot = schedule[srcDay]?.[srcPeriod] || { subject: "", teacherId: null, room: "" };
+    const dstSlot = schedule[dstDay]?.[dstPeriod] || { subject: "", teacherId: null, room: "" };
+
+    // Optimistic local update
+    const newSchedule = { ...schedule };
+    newSchedule[srcDay] = [...(newSchedule[srcDay] || [])];
+    newSchedule[dstDay] = [...(newSchedule[dstDay] || [])];
+    newSchedule[srcDay][srcPeriod] = { ...dstSlot };
+    newSchedule[dstDay][dstPeriod] = { ...srcSlot };
+    setSchedule(newSchedule);
+
+    await executeWithFeedback(
+      async () => {
+        setSyncStatus('syncing');
+        await timetableApi.updateSlot(selectedClass, {
+          day: srcDay, periodIndex: srcPeriod,
+          subject: dstSlot.subject || "",
+          teacherId: dstSlot.teacherId || null,
+          room: dstSlot.room || ""
+        });
+        await timetableApi.updateSlot(selectedClass, {
+          day: dstDay, periodIndex: dstPeriod,
+          subject: srcSlot.subject || "",
+          teacherId: srcSlot.teacherId || null,
+          room: srcSlot.room || ""
+        });
+        setSyncStatus('success');
+      },
+      {
+        loadingMessage: 'Swapping slots...',
+        successMessage: 'Slots swapped successfully!',
+        errorMessage: null,
+        retries: 1,
+        onSuccess: async () => {
+          clearSyncStatusAfterDelay();
+          await loadTimetable();
+        },
+        onError: () => {
+          // Revert optimistic update on failure
+          setSyncStatus('error');
+          setSchedule(schedule);
+        }
+      }
+    );
+  };
+
   const handleWizardClick = () => {
     navigate('/timetable-wizard');
   };
@@ -513,6 +587,7 @@ export default function Timetable({ classId }) {
           schedule={schedule}
           staff={staff}
           onSlotClick={handleSlotClick}
+          onSlotSwap={handleSlotSwap}
         />
       )}
 

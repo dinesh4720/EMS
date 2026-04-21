@@ -326,6 +326,23 @@ export function StudentCsvPreviewModal({
                                 </div>
                             )}
 
+                            {/* Error Summary Banner */}
+                            {summary.invalid > 0 && previewFilter === 'all' && (
+                                <div className="bg-danger-50 border border-danger-200 rounded-lg p-3">
+                                    <p className="text-sm font-medium text-danger-800 mb-2 flex items-center gap-1.5">
+                                        <XCircle size={14} className="flex-shrink-0" />
+                                        {summary.invalid} row{summary.invalid !== 1 ? 's' : ''} will be skipped — fix errors before importing
+                                    </p>
+                                    <div className="flex flex-wrap gap-1">
+                                        {validatedStudents.filter(s => !s.valid && !s.isDuplicate).map((s, i) => (
+                                            <span key={s.data._csvRow ?? i} className="text-xs bg-danger-100 text-danger-700 px-2 py-0.5 rounded font-mono">
+                                                {s.data._csvRow ? `Row ${s.data._csvRow}` : s.data.name || `Item ${i + 1}`}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Class-based Accordion */}
                             <div className="max-h-[500px] overflow-y-auto space-y-3">
                                 {Object.entries(grouped).map(([classKey, classData]) => {
@@ -383,7 +400,10 @@ export function StudentCsvPreviewModal({
                                                                         : <XCircle size={16} className="text-danger flex-shrink-0 mt-0.5" />}
                                                                     <div className="min-w-0 flex-1">
                                                                         <p className="font-semibold text-default-900 text-sm truncate">{student.data.name || 'Unnamed Student'}</p>
-                                                                        <p className="text-xs text-default-500 truncate">ID: {student.data.admissionId || 'No ID'}{student.data.section ? ` • Section ${student.data.section}` : ''}</p>
+                                                                        <p className="text-xs text-default-500 truncate">
+                                                                            {student.data._csvRow && <span className="font-mono bg-default-100 px-1 rounded mr-1">Row {student.data._csvRow}</span>}
+                                                                            ID: {student.data.admissionId || 'No ID'}{student.data.section ? ` • Section ${student.data.section}` : ''}
+                                                                        </p>
                                                                     </div>
                                                                 </div>
                                                                 <div className="flex items-center gap-1 flex-shrink-0 ml-2">

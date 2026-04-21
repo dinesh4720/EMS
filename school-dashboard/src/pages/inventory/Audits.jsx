@@ -180,14 +180,15 @@ export default function Audits() {
                 <div className="flex items-center gap-1">
                   {audit.auditItems?.length > 0 && (
                     <button
+                      aria-label={expanded === audit._id ? "Collapse audit items" : "Expand audit items"}
                       onClick={() => setExpanded(expanded === audit._id ? null : audit._id)}
                       className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-500 dark:text-zinc-400"
                     >
                       {expanded === audit._id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                     </button>
                   )}
-                  <button onClick={() => openEdit(audit)} className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-500 dark:text-zinc-400"><Edit3 size={14} /></button>
-                  <button onClick={() => setDeleteTarget(audit._id)} className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-950 text-gray-500 dark:text-zinc-400 hover:text-red-600"><Trash2 size={14} /></button>
+                  <button aria-label="Edit audit" onClick={() => openEdit(audit)} className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-500 dark:text-zinc-400"><Edit3 size={14} /></button>
+                  <button aria-label="Delete audit" onClick={() => setDeleteTarget(audit._id)} className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-950 text-gray-500 dark:text-zinc-400 hover:text-red-600"><Trash2 size={14} /></button>
                 </div>
               </div>
 

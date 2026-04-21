@@ -13,6 +13,8 @@ import AdmissionTracker from './AdmissionTracker.jsx';
 import { useTranslation } from 'react-i18next';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
+import logger from '../../utils/logger';
+
 
 const STATUS_OPTIONS = [
   { value: 'inquiry-logged', label: 'Inquiry Logged', color: 'default' },
@@ -96,7 +98,7 @@ const AdmissionsList = forwardRef((props, ref) => {
       const data = Array.isArray(response) ? response : (response?.data || []);
       setAdmissions(data);
     } catch (error) {
-      console.error('Failed to load admissions:', error);
+      logger.error('Failed to load admissions:', error);
       toast.error(t('toast.error.failedToLoadAdmissions'));
     } finally {
       setLoading(false);
@@ -109,7 +111,7 @@ const AdmissionsList = forwardRef((props, ref) => {
       const data = Array.isArray(response) ? response : (response?.data || []);
       setStaff(data.filter(s => s.role === 'Teacher'));
     } catch (error) {
-      console.error('Failed to load staff:', error);
+      logger.error('Failed to load staff:', error);
         toast.error('Failed to load staff');
     }
   };
@@ -123,7 +125,7 @@ const AdmissionsList = forwardRef((props, ref) => {
         setAvailableClasses(uniqueNames);
       }
     } catch (error) {
-      console.error('Failed to load classes:', error);
+      logger.error('Failed to load classes:', error);
         toast.error('Failed to load classes');
     }
   };
@@ -146,8 +148,11 @@ const AdmissionsList = forwardRef((props, ref) => {
 
     if (!formData.phoneNumber) {
       newErrors.phoneNumber = 'Phone number is required';
-    } else if (!validatePhone(formData.phoneNumber) || /^(\d)\1{9}$/.test(formData.phoneNumber)) {
-      newErrors.phoneNumber = 'Please enter a valid 10-digit phone number';
+    } else {
+      const phoneDigits = formData.phoneNumber.replace(/\D/g, '');
+      if (phoneDigits.length !== 10 || /^(\d)\1{9}$/.test(phoneDigits)) {
+        newErrors.phoneNumber = 'Please enter a valid 10-digit phone number';
+      }
     }
 
     if (formData.email && !validateEmail(formData.email)) {
@@ -182,10 +187,12 @@ const AdmissionsList = forwardRef((props, ref) => {
         if (!value.trim()) error = 'Parent name is required';
         else if (!nameRegex.test(value)) error = 'Parent name should contain only letters';
         break;
-      case 'phoneNumber':
+      case 'phoneNumber': {
+        const phoneDigits = (value || '').replace(/\D/g, '');
         if (!value) error = 'Phone number is required';
-        else if (!validatePhone(value) || /^(\d)\1{9}$/.test(value)) error = 'Please enter a valid 10-digit phone number';
+        else if (phoneDigits.length !== 10 || /^(\d)\1{9}$/.test(phoneDigits)) error = 'Please enter a valid 10-digit phone number';
         break;
+      }
       case 'email':
         if (value && !validateEmail(value)) error = 'Invalid email address';
         break;
@@ -215,6 +222,7 @@ const AdmissionsList = forwardRef((props, ref) => {
     try {
       // Clean up data before sending - remove assignedTeacher if not required
       const dataToSend = { ...formData };
+      dataToSend.phoneNumber = (dataToSend.phoneNumber || '').replace(/\D/g, '').slice(0, 10);
       if (!dataToSend.assessmentRequired) {
         dataToSend.assignedTeacher = null;
       }
@@ -242,7 +250,7 @@ const AdmissionsList = forwardRef((props, ref) => {
       studentName: admission.studentName,
       dateOfBirth: admission.dateOfBirth || '',
       parentName: admission.parentName || '',
-      phoneNumber: admission.phoneNumber || '',
+      phoneNumber: (admission.phoneNumber || '').replace(/\D/g, '').slice(0, 10),
       email: admission.email || '',
       classApplyingFor: admission.classApplyingFor || '',
       hscGroup: admission.hscGroup || '',
@@ -455,6 +463,7 @@ const AdmissionsList = forwardRef((props, ref) => {
                     color="secondary"
                     variant="light"
                     isIconOnly
+                    aria-label="View admission history"
                     onPress={() => handleTracker(admission)}
                   >
                     <History size={14} />
@@ -464,6 +473,7 @@ const AdmissionsList = forwardRef((props, ref) => {
                     color="primary"
                     variant="light"
                     isIconOnly
+                    aria-label="View admission"
                     onPress={() => handleView(admission)}
                   >
                     <Eye size={14} />
@@ -473,6 +483,7 @@ const AdmissionsList = forwardRef((props, ref) => {
                     color="warning"
                     variant="light"
                     isIconOnly
+                    aria-label="Edit admission"
                     onPress={() => handleEdit(admission)}
                   >
                     <Edit size={14} />
@@ -482,6 +493,7 @@ const AdmissionsList = forwardRef((props, ref) => {
                     color="danger"
                     variant="light"
                     isIconOnly
+                    aria-label="Delete admission"
                     onPress={() => handleDelete(admission._id)}
                   >
                     <Trash2 size={14} />
@@ -537,10 +549,13 @@ const AdmissionsList = forwardRef((props, ref) => {
                     placeholder={t('pages.enter10DigitPhoneNumber')}
                     value={formData.phoneNumber}
                     onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, ''); // Allow only numbers
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 10);
                       setFormData(prev => ({ ...prev, phoneNumber: val }));
                       validateField('phoneNumber', val);
                     }}
+                    type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]{10}"
                     maxLength={10}
                     required
                     error={errors.phoneNumber}

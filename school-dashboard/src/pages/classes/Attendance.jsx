@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback, useLayoutEffect } from "react";
+import { useEntityFetch } from "../../hooks/useEntityFetch";
 import { useNavigate } from "react-router-dom";
 import { Card, CardBody, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Button, Select, SelectItem, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Textarea, Spinner } from "@heroui/react";
 import { Download, Check, X, Lock, Bell, AlertTriangle, Users, Clock, TrendingUp, TimerOff, LogOut, AlarmClock } from "lucide-react";
@@ -7,6 +8,8 @@ import { useSettings } from "../../context/SettingsContext";
 import { attendanceApi, classesApi } from "../../services/api";
 import { useTranslation } from 'react-i18next';
 import { toTodayDateString } from '../../utils/dateFormatter';
+import logger from '../../utils/logger';
+
 
 const ITEMS_PER_LOAD = 10;
 
@@ -42,6 +45,11 @@ export default function Attendance({
     cutoff.setHours(0, 0, 0, 0);
     return selected < cutoff;
   }, [date, attendanceLockDays]);
+  const isFutureDate = useMemo(() => {
+    if (!date) return false;
+    return date > toTodayDateString();
+  }, [date]);
+
   // AUDIT-444: Check if selected date is a holiday or non-working day
   const invalidDateReason = useMemo(() => {
     if (!date) return null;
@@ -63,9 +71,13 @@ export default function Attendance({
   const [isLoadingAttendance, setIsLoadingAttendance] = useState(false);
   const [saveMessage, setSaveMessage] = useState(null);
   const { isOpen: isOverwriteOpen, onOpen: onOverwriteOpen, onClose: onOverwriteClose } = useDisclosure();
+  const { isOpen: isMarkAllOpen, onOpen: onMarkAllOpen, onClose: onMarkAllClose } = useDisclosure();
   const [hasExistingAttendance, setHasExistingAttendance] = useState(false);
   const [isNotifying, setIsNotifying] = useState(false);
   const messageTimerRef = useRef(null);
+  // Synchronous guard against double-click race condition — React state updates
+  // are batched so isSaving may still be false on a fast second click
+  const isSubmittingRef = useRef(false);
 
   // Helper: auto-clear saveMessage after `ms`, cancelling any previous timer
   const clearMessageAfter = useCallback((ms) => {
@@ -81,12 +93,6 @@ export default function Attendance({
   // Determine if we're embedded inside ClassDashboard (classId prop is an ObjectId)
   const isEmbedded = !!classId;
 
-  // Lazy loading state
-  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const loaderRef = useRef(null);
-  const hasMoreRef = useRef(false);
-  const isLoadingMoreRef = useRef(false);
 
   // Set default selected class when classesWithTeachers loads (for standalone mode)
   useEffect(() => {
@@ -174,22 +180,33 @@ export default function Attendance({
       const hasRecords = Object.keys(existingAttendance).length > 0;
       setHasExistingAttendance(hasRecords);
 
-      // Merge: set fetched data, default remaining students to "unmarked"
-      const merged = {};
-      currentStudents.forEach(s => {
-        const studentId = sid(s);
-        merged[studentId] = existingAttendance[studentId] || "unmarked";
+      // AUDIT-803: Merge fetched data without overwriting entries the user has already
+      // toggled mid-session. If the user clicked a cell before the API responded,
+      // their choice wins; only "unmarked" (untouched) slots get the server value.
+      setAttendance(prev => {
+        const next = { ...prev };
+        currentStudents.forEach(s => {
+          const studentId = sid(s);
+          if (!prev[studentId] || prev[studentId] === "unmarked") {
+            next[studentId] = existingAttendance[studentId] || "unmarked";
+          }
+        });
+        return next;
       });
-      setAttendance(prev => ({ ...prev, ...merged }));
     } catch (error) {
-      // If 404 or no data, initialize all as unmarked
-      console.warn('No existing attendance found, initializing defaults:', error.message);
+      // If 404 or no data, initialize untouched students as unmarked but keep user edits
+      logger.warn('No existing attendance found, initializing defaults:', error.message);
       setHasExistingAttendance(false);
-      const newAttendance = {};
-      currentStudents.forEach(s => {
-        newAttendance[sid(s)] = "unmarked";
+      setAttendance(prev => {
+        const next = { ...prev };
+        currentStudents.forEach(s => {
+          const studentId = sid(s);
+          if (!prev[studentId] || prev[studentId] === "unmarked") {
+            next[studentId] = "unmarked";
+          }
+        });
+        return next;
       });
-      setAttendance(prev => ({ ...prev, ...newAttendance }));
     } finally {
       setIsLoadingAttendance(false);
     }
@@ -208,51 +225,24 @@ export default function Attendance({
     }
   }, [classStudents.length, resolvedClassId, date, fetchAttendance]);
 
-  const visibleStudents = useMemo(() => {
-    return classStudents.slice(0, visibleCount);
-  }, [classStudents, visibleCount]);
-
-  const hasMore = visibleCount < classStudents.length;
-  hasMoreRef.current = hasMore;
-  isLoadingMoreRef.current = isLoadingMore;
-
-  // Reset visible count when class changes
-  useEffect(() => {
-    setVisibleCount(ITEMS_PER_LOAD);
-  }, [selectedClass, classId]);
-
-  // Lazy loading intersection observer — created once, reads refs for current state
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMoreRef.current && !isLoadingMoreRef.current) {
-          setIsLoadingMore(true);
-          setTimeout(() => {
-            setVisibleCount(prev => prev + ITEMS_PER_LOAD);
-            setIsLoadingMore(false);
-          }, 300);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (loaderRef.current) {
-      observer.observe(loaderRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
+  const { visibleItems: visibleStudents, hasMore, isLoadingMore, loaderRef } = useEntityFetch(
+    classStudents,
+    [selectedClass, classId]
+  );
 
   const markAttendance = (studentId, status) => {
-    if (!isLocked && !invalidDateReason) setAttendance(prev => ({ ...prev, [studentId]: status }));
+    if (!isLocked && !isFutureDate && !invalidDateReason) setAttendance(prev => ({ ...prev, [studentId]: status }));
   };
 
   const markAllPresent = () => {
-    if (!isLocked && !invalidDateReason) {
-      const newAttendance = {};
-      classStudents.forEach(s => { newAttendance[sid(s)] = "present"; });
-      setAttendance(prev => ({ ...prev, ...newAttendance }));
-    }
+    if (!isLocked && !isFutureDate && !invalidDateReason) onMarkAllOpen();
+  };
+
+  const handleConfirmMarkAllPresent = () => {
+    onMarkAllClose();
+    const newAttendance = {};
+    classStudents.forEach(s => { newAttendance[sid(s)] = "present"; });
+    setAttendance(prev => ({ ...prev, ...newAttendance }));
   };
 
   const handleNotifyParents = async () => {
@@ -266,7 +256,7 @@ export default function Attendance({
       });
     } catch (error) {
       // Graceful fallback: if the endpoint doesn't exist or fails, show a toast-style message
-      console.warn('Notify parents failed:', error?.message);
+      logger.warn('Notify parents failed:', error?.message);
       setSaveMessage({
         type: 'error',
         text: error?.message || t('attendance.failedToNotifyParents', 'Failed to notify parents. The notification service may be unavailable.'),
@@ -279,7 +269,7 @@ export default function Attendance({
 
   // AUDIT-455: Validate before save, prompt confirmation if overwriting existing attendance
   const handleSaveAttendance = () => {
-    if (isLocked || isSaving || invalidDateReason) return;
+    if (isLocked || isSaving || isSubmittingRef.current || invalidDateReason) return;
 
     // AUDIT-45: Prevent saving attendance for future dates
     const today = toTodayDateString();
@@ -320,6 +310,9 @@ export default function Attendance({
   };
 
   const performSave = async () => {
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+
     const validStatuses = ATTENDANCE_STATUSES.map(s => s.key);
     const markedStudents = classStudents.filter(s =>
       validStatuses.includes(attendance[sid(s)])
@@ -346,19 +339,34 @@ export default function Attendance({
       // After successful save, mark as existing so subsequent saves also warn
       setHasExistingAttendance(true);
 
-      // Show success message with unmarked warning if applicable
-      const savedCount = response.results?.length || markedStudents.length;
+      const savedCount = response.results?.length ?? markedStudents.length;
+      const skippedCount = response.skipped?.length ?? 0;
       const unmarkedRemaining = classStudents.length - markedStudents.length;
       const unmarkedWarning = unmarkedRemaining > 0 ? ` (${unmarkedRemaining} ${t('attendance.stillUnmarked', 'still unmarked')})` : '';
-      setSaveMessage({
-        type: 'success',
-        text: t('attendance.savedForStudents', 'Attendance saved for {{count}} students', { count: savedCount }) + unmarkedWarning
-      });
 
-      // Auto-hide message after 3 seconds
-      clearMessageAfter(3000);
+      if (skippedCount > 0 && savedCount === 0) {
+        // All submitted records were rejected by the server
+        setSaveMessage({
+          type: 'error',
+          text: t('attendance.allSkipped', 'No attendance saved — {{count}} record(s) were rejected by the server', { count: skippedCount }),
+        });
+        clearMessageAfter(5000);
+      } else if (skippedCount > 0) {
+        // Partial save — some records were skipped
+        setSaveMessage({
+          type: 'warning',
+          text: t('attendance.partialSave', 'Saved {{saved}} student(s); {{skipped}} record(s) could not be saved', { saved: savedCount, skipped: skippedCount }) + unmarkedWarning,
+        });
+        clearMessageAfter(5000);
+      } else {
+        setSaveMessage({
+          type: 'success',
+          text: t('attendance.savedForStudents', 'Attendance saved for {{count}} students', { count: savedCount }) + unmarkedWarning,
+        });
+        clearMessageAfter(3000);
+      }
     } catch (error) {
-      console.error('Error saving attendance:', error);
+      logger.error('Error saving attendance:', error);
       setSaveMessage({
         type: 'error',
         text: error.message || t('attendance.failedToSave', 'Failed to save attendance')
@@ -367,6 +375,7 @@ export default function Attendance({
       // Auto-hide error message after 5 seconds
       clearMessageAfter(5000);
     } finally {
+      isSubmittingRef.current = false;
       setIsSaving(false);
     }
   };
@@ -376,18 +385,31 @@ export default function Attendance({
     performSave();
   };
 
-  const presentCount = classStudents.filter(s => attendance[sid(s)] === "present").length;
-  const absentCount = classStudents.filter(s => attendance[sid(s)] === "absent").length;
-  const lateCount = classStudents.filter(s => attendance[sid(s)] === "late").length;
-  const leaveCount = classStudents.filter(s => attendance[sid(s)] === "leave").length;
-  const halfdayCount = classStudents.filter(s => attendance[sid(s)] === "halfday").length;
-  const unmarkedCount = classStudents.filter(s => !attendance[sid(s)] || attendance[sid(s)] === "unmarked").length;
-  const markedCount = presentCount + absentCount + lateCount + leaveCount + halfdayCount;
-  // AUDIT-46/456: Count halfday as 0.5; late weight is configurable via school settings (default 100%)
-  const lateWeight = (schoolSettings?.attendanceRules?.lateWeight ?? 100) / 100;
-  const effectivePresent = presentCount + lateCount * lateWeight + halfdayCount * 0.5;
-  const attendancePercent = markedCount > 0 ? Math.round((effectivePresent / markedCount) * 100) : 0;
-  const defaulters = classStudents.filter(s => attendance[sid(s)] === "absent");
+  // AUDIT-803: Wrap summary counts in useMemo so React sees attendance as an explicit
+  // dependency. Without this, any future refactor that hoists these out of the render
+  // body (e.g. for perf) could silently produce stale totals after a cell toggle.
+  const {
+    presentCount, absentCount, lateCount, leaveCount, halfdayCount,
+    unmarkedCount, markedCount, attendancePercent, defaulters,
+  } = useMemo(() => {
+    const present  = classStudents.filter(s => attendance[sid(s)] === "present").length;
+    const absent   = classStudents.filter(s => attendance[sid(s)] === "absent").length;
+    const late     = classStudents.filter(s => attendance[sid(s)] === "late").length;
+    const leave    = classStudents.filter(s => attendance[sid(s)] === "leave").length;
+    const halfday  = classStudents.filter(s => attendance[sid(s)] === "halfday").length;
+    const unmarked = classStudents.filter(s => !attendance[sid(s)] || attendance[sid(s)] === "unmarked").length;
+    const marked   = present + absent + late + leave + halfday;
+    // AUDIT-46/456: Count halfday as 0.5; late weight is configurable via school settings (default 100%)
+    const lateW    = (schoolSettings?.attendanceRules?.lateWeight ?? 100) / 100;
+    const effective = present + late * lateW + halfday * 0.5;
+    const pct      = marked > 0 ? Math.round((effective / marked) * 100) : 0;
+    const abs      = classStudents.filter(s => attendance[sid(s)] === "absent");
+    return {
+      presentCount: present, absentCount: absent, lateCount: late,
+      leaveCount: leave, halfdayCount: halfday, unmarkedCount: unmarked,
+      markedCount: marked, attendancePercent: pct, defaulters: abs,
+    };
+  }, [attendance, classStudents, schoolSettings?.attendanceRules?.lateWeight]);
 
   return (
     <div className={`w-full flex flex-col ${isEmbedded ? 'bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5' : ''}`}>
@@ -436,7 +458,7 @@ export default function Attendance({
 
         {/* Right Side - Actions */}
         <div className="flex gap-2 w-full sm:w-auto justify-end">
-          <Button size="sm" color="success" variant="flat" startContent={<Check size={14} />} onPress={markAllPresent} isDisabled={isLocked || !!invalidDateReason}>{t('pages.markAllPresent')}</Button>
+          <Button size="sm" color="success" variant="flat" startContent={<Check size={14} />} onPress={markAllPresent} isDisabled={isLocked || isFutureDate || !!invalidDateReason}>{t('pages.markAllPresent')}</Button>
           {absentCount > 0 && <Button size="sm" color="warning" variant="flat" startContent={<Bell size={14} />} onPress={handleNotifyParents} isLoading={isNotifying}>{t('attendance.notifyParents', 'Notify Parents')} ({absentCount})</Button>}
         </div>
       </div>
@@ -559,7 +581,7 @@ export default function Attendance({
       {/* Save Button */}
       <div className="flex items-center justify-end gap-3 mb-4 pb-4 border-b border-default-200">
         {saveMessage && (
-          <span className={`text-sm font-medium ${saveMessage.type === 'success' ? 'text-success-600' : 'text-danger-600'}`}>
+          <span className={`text-sm font-medium ${saveMessage.type === 'success' ? 'text-success-600' : saveMessage.type === 'warning' ? 'text-warning-600' : 'text-danger-600'}`}>
             {saveMessage.text}
           </span>
         )}
@@ -567,7 +589,7 @@ export default function Attendance({
           size="md"
           color="primary"
           onPress={handleSaveAttendance}
-          isDisabled={isLocked || isSaving || !!invalidDateReason}
+          isDisabled={isLocked || isFutureDate || isSaving || !!invalidDateReason}
           isLoading={isSaving}
           className="font-medium px-8"
         >
@@ -642,7 +664,7 @@ export default function Attendance({
                         color={isActive ? color : "default"}
                         variant={isActive ? "solid" : "light"}
                         onPress={() => markAttendance(sid(student), key)}
-                        isDisabled={isLocked || !!invalidDateReason}
+                        isDisabled={isLocked || isFutureDate || !!invalidDateReason}
                         className={`min-w-0 px-2 gap-1 text-xs ${isActive ? '' : 'text-default-400'}`}
                         startContent={<Icon size={13} />}
                       >
@@ -664,6 +686,29 @@ export default function Attendance({
           <span className="text-default-400 text-sm">{t('attendance.allStudentsLoaded', 'All {{count}} students loaded', { count: classStudents.length })}</span>
         )}
       </div>
+
+      {/* AUDIT-847: Mark All Present confirmation modal */}
+      <Modal isOpen={isMarkAllOpen} onClose={onMarkAllClose} size="sm">
+        <ModalContent>
+          <ModalHeader className="flex items-center gap-2">
+            <AlertTriangle size={18} className="text-warning-500" />
+            {t('attendance.markAllPresentTitle', 'Mark All Present?')}
+          </ModalHeader>
+          <ModalBody>
+            <p className="text-sm text-default-600">
+              {t('attendance.markAllPresentMessage', 'This will mark all {{count}} students as present, overwriting any statuses already set individually.', { count: classStudents.length })}
+            </p>
+          </ModalBody>
+          <ModalFooter>
+            <Button size="sm" variant="flat" onPress={onMarkAllClose}>
+              {t('common.cancel', 'Cancel')}
+            </Button>
+            <Button size="sm" color="success" onPress={handleConfirmMarkAllPresent}>
+              {t('attendance.markAllPresentConfirm', 'Mark All Present')}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {/* AUDIT-455: Overwrite confirmation modal */}
       <Modal isOpen={isOverwriteOpen} onClose={onOverwriteClose} size="sm">

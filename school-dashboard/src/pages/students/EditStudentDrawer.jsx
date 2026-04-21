@@ -5,6 +5,8 @@ import AddStudent from "./AddStudent";
 import toast from "react-hot-toast";
 import { studentsApi } from "../../services/api";
 import { useTranslation } from 'react-i18next';
+import logger from '../../utils/logger';
+
 
 /**
  * EditStudentDrawer - A drawer component for editing existing students
@@ -63,10 +65,18 @@ export default function EditStudentDrawer({
       // Close the drawer
       onClose();
     } catch (error) {
-      console.error('❌ Failed to update student:', error);
+      logger.error('❌ Failed to update student:', error);
 
-      // Show error toast
-      toast.error(error.message || 'Failed to update student');
+      // Stale data: another tab/session saved while this form was open
+      if (error.status === 409 && error.details?.code === 'STALE_DATA') {
+        toast.error(
+          'This student was updated elsewhere. Close this form and reopen it to get the latest data.',
+          { duration: 7000 }
+        );
+      } else {
+        toast.error(error.message || 'Failed to update student');
+      }
+      error._toastShown = true;
 
       // Re-throw the error so AddStudent can handle loading state
       throw error;

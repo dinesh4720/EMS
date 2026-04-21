@@ -53,7 +53,8 @@ export default function IssuedBooksList() {
       const data = await libraryApi.getIssues(params);
       setIssues(data.issues || []);
       setTotal(data.total || 0);
-    } catch {
+    } catch (error) {
+      console.error('Failed to load issued books:', error);
       toast.error(t('toast.error.failedToLoadIssuedBooks'));
     } finally {
       setLoading(false);
@@ -146,8 +147,8 @@ export default function IssuedBooksList() {
                       <p className="text-xs text-gray-500 dark:text-zinc-400">{issue.bookId?.isbn || issue.bookIsbn || ""}</p>
                     </td>
                     <td className="px-4 py-3">
-                      <p className="text-gray-700 dark:text-zinc-300">{issue.studentId?.name || "—"}</p>
-                      <p className="text-xs text-gray-500 dark:text-zinc-400">{issue.studentId?.admissionNo || ""}</p>
+                      <p className="text-gray-700 dark:text-zinc-300">{issue.studentId?.name || issue.studentName || "—"}</p>
+                      <p className="text-xs text-gray-500 dark:text-zinc-400">{issue.studentId?.admissionNo || issue.studentAdmissionNo || ""}</p>
                     </td>
                     <td className="px-4 py-3 text-gray-600 dark:text-zinc-400">{formatDate(issue.issueDate)}</td>
                     <td className="px-4 py-3">

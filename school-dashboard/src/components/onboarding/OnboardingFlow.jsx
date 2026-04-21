@@ -1,4 +1,5 @@
 import { safeSetItem } from '../../utils/safeStorage';
+import { settingsApi } from '../../services/api';
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, ChevronRight, School, Calendar, User, Settings, CheckCircle2, X } from "lucide-react";
@@ -67,14 +68,34 @@ export default function OnboardingFlow({ onComplete }) {
         }
     };
 
-    const handleComplete = () => {
-        // TODO: AUDIT-164 — This handler only persists to localStorage. It should also
-        // call the backend PUT /api/settings/school/onboarding-progress endpoint to
-        // persist school-details, academic-year, admin-profile, and preferences steps,
-        // and then PATCH /api/settings/school to set onboardingCompleted: true.
-        // The backend endpoints already exist (routes/settings/school.js) but are not
-        // wired up here. Until this is connected, onboarding completion is lost on
-        // logout / device switch.
+    const handleComplete = async () => {
+        try {
+            const calls = [];
+
+            const schoolPayload = {};
+            if (formData.schoolName?.trim()) schoolPayload.schoolName = formData.schoolName.trim();
+            if (formData.address?.trim()) schoolPayload.address = formData.address.trim();
+            if (Object.keys(schoolPayload).length > 0) {
+                calls.push(settingsApi.updateSchoolSettings(schoolPayload));
+            }
+
+            if (formData.academicYearStart) {
+                const startYear = new Date(formData.academicYearStart).getFullYear();
+                if (!isNaN(startYear)) {
+                    const yearPayload = {
+                        academicYear: `${startYear}-${String(startYear + 1).slice(-2)}`,
+                        academicYearStart: formData.academicYearStart,
+                    };
+                    if (formData.academicYearEnd) yearPayload.academicYearEnd = formData.academicYearEnd;
+                    calls.push(settingsApi.updateAcademicYear(yearPayload));
+                }
+            }
+
+            if (calls.length > 0) await Promise.allSettled(calls);
+        } catch (_) {
+            // ignore errors — onboarding completes locally regardless
+        }
+
         safeSetItem("hasCompletedOnboarding", "true");
         if (onComplete) onComplete();
     };

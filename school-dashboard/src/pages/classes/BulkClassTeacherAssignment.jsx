@@ -9,6 +9,8 @@ import toast from "react-hot-toast";
 import { useApp } from "../../context/AppContext";
 import { usePermissions } from "../../context/PermissionContext";
 import { useTranslation } from 'react-i18next';
+import logger from '../../utils/logger';
+
 
 export default function BulkClassTeacherAssignment() {
   const { t } = useTranslation();
@@ -129,7 +131,7 @@ export default function BulkClassTeacherAssignment() {
     } catch (error) {
       // Rollback on failure
       updateClassLocal(targetClass.id, prevState);
-      console.error('Error executing assignment:', error);
+      logger.error('Error executing assignment:', error);
       toast.error(error.message || t('toast.error.failedToUpdateAssignment', 'Failed to update assignment'));
     } finally {
       setIsProcessing(false);
@@ -164,7 +166,7 @@ export default function BulkClassTeacherAssignment() {
     } catch (error) {
       // Rollback on failure
       updateClassLocal(cls.id, prevState);
-      console.error('Error unassigning teacher:', error);
+      logger.error('Error unassigning teacher:', error);
       toast.error(error.message || t('toast.error.failedToUnassignTeacher', 'Failed to unassign teacher'));
     } finally {
       setIsProcessing(false);

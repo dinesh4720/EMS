@@ -7,9 +7,9 @@ import { Plus, Trash2, GripVertical } from "lucide-react";
 import { transportApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import { routeSchema, parseFormSchema } from '../../validators/formSchemas';
 
-let _stopCounter = 0;
-const makeStop = () => ({ _key: `stop-${++_stopCounter}`, name: "", address: "", pickupTime: "", dropTime: "" });
+const makeStop = () => ({ _key: `stop-${Date.now()}-${Math.random().toString(36).slice(2)}`, name: "", address: "", pickupTime: "", dropTime: "" });
 
 export default function RouteModal({ isOpen, onClose, route, vehicles, academicYear, onSaved }) {
   const { t } = useTranslation();
@@ -46,7 +46,6 @@ export default function RouteModal({ isOpen, onClose, route, vehicles, academicY
         });
       } else {
         setForm({ routeName: "", routeNumber: "", vehicleId: "", status: "active", notes: "", stops: [] });
-        _stopCounter = 0;
       }
     }
   }, [isOpen, route]);
@@ -71,12 +70,10 @@ export default function RouteModal({ isOpen, onClose, route, vehicles, academicY
   };
 
   const handleSave = async () => {
-    const newErrors = {};
-    if (!form.routeName.trim()) newErrors.routeName = t('toast.error.routeNameAndNumberAreRequired');
-    if (!form.routeNumber.trim()) newErrors.routeNumber = t('toast.error.routeNameAndNumberAreRequired');
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      toast.error(t('toast.error.routeNameAndNumberAreRequired'));
+    const { success, errors: zodErrors } = parseFormSchema(routeSchema, form);
+    if (!success) {
+      setErrors(zodErrors);
+      toast.error(Object.values(zodErrors)[0] || t('toast.error.routeNameAndNumberAreRequired'));
       return;
     }
 

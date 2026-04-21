@@ -5,6 +5,8 @@ import { IndianRupee, CheckCircle, AlertTriangle, TrendingUp, Calendar, Mail, Do
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import logger from '../../utils/logger';
+
 
 export default function FeeDetailsCard({ student }) {
   const { t } = useTranslation();
@@ -21,7 +23,7 @@ export default function FeeDetailsCard({ student }) {
         const data = await request(`/students/${student.id}/fee-summary`);
         setFeeSummary(data);
       } catch (error) {
-        console.error('Error fetching fee summary:', error);
+        logger.error('Error fetching fee summary:', error);
         setFeeSummary({
           totalFee: student.feeDetails?.totalFee || 0,
           totalPaid: student.feeDetails?.totalPaid || 0,

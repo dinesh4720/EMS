@@ -29,6 +29,8 @@ import RolesAccess from "./RolesAccess";
 import HierarchySettings from "./HierarchySettings";
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+import logger from '../../utils/logger';
+
 
 export default function UserManagement() {
   const { t } = useTranslation();
@@ -90,7 +92,7 @@ export default function UserManagement() {
             setCopiedPassword(true);
             setTimeout(() => setCopiedPassword(false), 2000);
         } catch (err) {
-            console.error('Failed to copy password:', err);
+            logger.error('Failed to copy password:', err);
         }
     };
 
@@ -438,6 +440,7 @@ export default function UserManagement() {
                                                     isIconOnly
                                                     size="lg"
                                                     variant="flat"
+                                                    aria-label={showGeneratedPassword ? "Hide password" : "Show password"}
                                                     onPress={() => setShowGeneratedPassword(prev => !prev)}
                                                     className="flex-shrink-0"
                                                 >
@@ -448,6 +451,7 @@ export default function UserManagement() {
                                                     size="lg"
                                                     color={copiedPassword ? "success" : "primary"}
                                                     variant="flat"
+                                                    aria-label="Copy password"
                                                     onPress={copyGeneratedPassword}
                                                     className="flex-shrink-0"
                                                 >

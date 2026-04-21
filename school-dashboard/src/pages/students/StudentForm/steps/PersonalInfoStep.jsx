@@ -1,10 +1,12 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import { Input, Select, SelectItem, RadioGroup, Radio, Checkbox, Textarea, Avatar } from "@heroui/react";
 import { User, Calendar } from "lucide-react";
 import { GENDERS, BLOOD_GROUPS, RELIGIONS, CATEGORIES, MOTHER_TONGUES } from "../../../../constants/studentConstants";
 import { INDIAN_STATES, normalizeStateName } from "../../../../constants/states";
 import { lookupPincode } from "../../../../services/api";
 import { useTranslation } from 'react-i18next';
+import logger from '../../../../utils/logger';
+
 
 /**
  * Personal Information Step for Student Form
@@ -63,7 +65,7 @@ export default function PersonalInfoStep({
             }
           }
         } catch (error) {
-          console.error("PIN code lookup failed:", error);
+          logger.error("PIN code lookup failed:", error);
         } finally {
           setIsZipLookupLoading(false);
         }
@@ -118,7 +120,7 @@ export default function PersonalInfoStep({
 
       {/* Gender */}
       <div className="space-y-1" ref={genderRef}>
-        <label className="text-xs font-medium text-default-600">
+        <label id="gender-label" className="text-xs font-medium text-default-600">
           Gender <span className="text-danger">*</span>
         </label>
         <RadioGroup
@@ -128,6 +130,7 @@ export default function PersonalInfoStep({
           classNames={{ wrapper: "gap-4" }}
           isInvalid={!!errors.gender}
           errorMessage={errors.gender}
+          aria-labelledby="gender-label"
         >
           {GENDERS.map((g) => (
             <Radio key={g} value={g} size="sm" classNames={{ label: "text-sm" }}>
@@ -168,11 +171,26 @@ export default function PersonalInfoStep({
 
 // Sub-components would go here...
 function ProfileSection({ formData, updateField }) {
+  const picturePreviewUrl = useMemo(() => {
+    if (formData.picture instanceof File) {
+      return URL.createObjectURL(formData.picture);
+    }
+    return null;
+  }, [formData.picture]);
+
+  useEffect(() => {
+    return () => {
+      if (picturePreviewUrl) URL.revokeObjectURL(picturePreviewUrl);
+    };
+  }, [picturePreviewUrl]);
+
+  const avatarSrc = picturePreviewUrl || (typeof formData.picture === 'string' ? formData.picture : null);
+
   return (
     <div className="flex items-center gap-5">
       {formData.picture ? (
         <Avatar
-          src={formData.picture instanceof File ? URL.createObjectURL(formData.picture) : formData.picture}
+          src={avatarSrc}
           className="w-20 h-20 text-3xl"
           isBordered
           radius="full"
@@ -228,11 +246,9 @@ function DateOfBirthInput({ value, onChange, error, inputRef }) {
   };
 
   return (
-    <div ref={inputRef} className="space-y-1">
-      <label className="text-xs font-medium text-default-600">
-        Date of Birth <span className="text-danger">*</span>
-      </label>
+    <div ref={inputRef}>
       <Input
+        label="Date of Birth"
         labelPlacement="outside"
         placeholder="DD/MM/YYYY"
         value={value || ""}

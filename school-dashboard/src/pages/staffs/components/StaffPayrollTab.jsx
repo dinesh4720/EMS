@@ -7,6 +7,9 @@ import toast from "react-hot-toast";
 import { getDateLocale } from '../../../i18n/index';
 import { useTranslation } from 'react-i18next';
 import { escapeHtml } from "../../../utils/sanitize";
+import { useCurrency } from '../../../context/hooks/useCurrency';
+import logger from '../../../utils/logger';
+
 
 
 export default function StaffPayrollTab({
@@ -16,10 +19,14 @@ export default function StaffPayrollTab({
   staff,
 }) {
   const { t } = useTranslation();
+  const { fmt } = useCurrency();
+  const safeSalary = staffSalary || {};
+  const hasSalaryStructure = Object.keys(safeSalary).length > 0;
   const safeCalculateTotals = calculateTotals || (() => ({ totalEarnings: 0, totalDeductions: 0, netSalary: 0 }));
-  const { totalEarnings, totalDeductions, netSalary } = safeCalculateTotals(staffSalary);
+  const { totalEarnings, totalDeductions, netSalary } = safeCalculateTotals(safeSalary);
 
   const generatePayslipPDF = (record) => {
+    try {
     const month = escapeHtml(record?.month || new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }));
     const net = record?.netSalary ?? netSalary;
     const staffName = escapeHtml(staff?.name || 'Staff Member');
@@ -68,20 +75,20 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:
   <div class="box">
     <div class="box-title">Earnings</div>
     <div class="box-body">
-      <div class="row"><span class="lbl">Basic Salary</span><span>${escapeHtml((staffSalary.basic||0).toLocaleString('en-IN'))}</span></div>
-      <div class="row"><span class="lbl">HRA</span><span>${escapeHtml((staffSalary.hra||0).toLocaleString('en-IN'))}</span></div>
-      <div class="row"><span class="lbl">DA</span><span>${escapeHtml((staffSalary.da||0).toLocaleString('en-IN'))}</span></div>
-      <div class="row"><span class="lbl">Special Allowance</span><span>${escapeHtml((staffSalary.specialAllowance||0).toLocaleString('en-IN'))}</span></div>
+      <div class="row"><span class="lbl">Basic Salary</span><span>${escapeHtml((safeSalary.basic||0).toLocaleString('en-IN'))}</span></div>
+      <div class="row"><span class="lbl">HRA</span><span>${escapeHtml((safeSalary.hra||0).toLocaleString('en-IN'))}</span></div>
+      <div class="row"><span class="lbl">DA</span><span>${escapeHtml((safeSalary.da||0).toLocaleString('en-IN'))}</span></div>
+      <div class="row"><span class="lbl">Special Allowance</span><span>${escapeHtml((safeSalary.specialAllowance||0).toLocaleString('en-IN'))}</span></div>
       <div class="row"><span class="lbl">Total Earnings</span><span>${escapeHtml(totalEarnings.toLocaleString('en-IN'))}</span></div>
     </div>
   </div>
   <div class="box">
     <div class="box-title">Deductions</div>
     <div class="box-body">
-      <div class="row"><span class="lbl">PF</span><span>${escapeHtml((staffSalary.pf||0).toLocaleString('en-IN'))}</span></div>
-      <div class="row"><span class="lbl">ESI</span><span>${escapeHtml((staffSalary.esi||0).toLocaleString('en-IN'))}</span></div>
-      <div class="row"><span class="lbl">Professional Tax</span><span>${escapeHtml((staffSalary.professionalTax||0).toLocaleString('en-IN'))}</span></div>
-      <div class="row"><span class="lbl">TDS</span><span>${escapeHtml((staffSalary.tds||0).toLocaleString('en-IN'))}</span></div>
+      <div class="row"><span class="lbl">PF</span><span>${escapeHtml((safeSalary.pf||0).toLocaleString('en-IN'))}</span></div>
+      <div class="row"><span class="lbl">ESI</span><span>${escapeHtml((safeSalary.esi||0).toLocaleString('en-IN'))}</span></div>
+      <div class="row"><span class="lbl">Professional Tax</span><span>${escapeHtml((safeSalary.professionalTax||0).toLocaleString('en-IN'))}</span></div>
+      <div class="row"><span class="lbl">TDS</span><span>${escapeHtml((safeSalary.tds||0).toLocaleString('en-IN'))}</span></div>
       <div class="row"><span class="lbl">Total Deductions</span><span>${escapeHtml(totalDeductions.toLocaleString('en-IN'))}</span></div>
     </div>
   </div>
@@ -99,6 +106,10 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:
     w.document.close();
     w.focus();
     setTimeout(() => w.print(), 400);
+    } catch (err) {
+      logger.error('Payslip PDF generation failed:', err);
+      toast.error('Failed to generate payslip. Please try again.');
+    }
   };
 
   // Current month and year
@@ -106,9 +117,9 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:
   const currentMonth = today.toLocaleDateString(getDateLocale(), { month: 'long', year: 'numeric' });
 
   const summaryCards = [
-    { label: "Net Salary", value: `₹${netSalary.toLocaleString()}`, icon: Wallet },
-    { label: "Total Earnings", value: `₹${totalEarnings.toLocaleString()}`, icon: TrendingUp },
-    { label: "Total Deductions", value: `₹${totalDeductions.toLocaleString()}`, icon: IndianRupee },
+    { label: "Net Salary", value: fmt(netSalary), icon: Wallet },
+    { label: "Total Earnings", value: fmt(totalEarnings), icon: TrendingUp },
+    { label: "Total Deductions", value: fmt(totalDeductions), icon: IndianRupee },
     { label: "Payment Cycle", value: "Monthly", icon: Calendar }
   ];
 
@@ -122,7 +133,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:
             <p className="text-xs text-gray-500 mt-0.5 dark:text-zinc-400">{currentMonth}</p>
           </div>
           <div className="text-right">
-            <p className="text-3xl font-bold text-gray-900 dark:text-zinc-100">₹{netSalary.toLocaleString()}</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-zinc-100">{fmt(netSalary)}</p>
             <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.netSalary')}</p>
           </div>
         </div>
@@ -172,7 +183,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <p className="text-sm font-bold text-gray-900 dark:text-zinc-100">₹{net.toLocaleString()}</p>
+                      <p className="text-sm font-bold text-gray-900 dark:text-zinc-100">{fmt(net)}</p>
                       <span className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400">{record.status || 'Paid'}</span>
                     </div>
                     <button
@@ -194,8 +205,15 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:
         )}
       </div>
 
+      {/* No salary structure notice */}
+      {!hasSalaryStructure && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg px-5 py-4 text-sm text-amber-800 dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-300">
+          No salary structure has been assigned to this staff member. Payslip values will show as zero until a salary is configured.
+        </div>
+      )}
+
       {/* Earnings & Deductions Breakdown */}
-      {staffSalary && Object.keys(staffSalary).length > 0 && (
+      {hasSalaryStructure && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Earnings */}
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden dark:bg-zinc-950 dark:border-zinc-800">
@@ -208,23 +226,23 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:
             <div className="p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.basicSalary')}</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">₹{(staffSalary.basic || 0).toLocaleString()}</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{fmt(safeSalary.basic || 0)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.hRA')}</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">₹{(staffSalary.hra || 0).toLocaleString()}</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{fmt(safeSalary.hra || 0)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-500 dark:text-zinc-400">DA</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">₹{(staffSalary.da || 0).toLocaleString()}</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{fmt(safeSalary.da || 0)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.specialAllowance')}</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">₹{(staffSalary.specialAllowance || 0).toLocaleString()}</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{fmt(safeSalary.specialAllowance || 0)}</span>
               </div>
               <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-zinc-800">
                 <span className="text-sm font-semibold text-gray-700 dark:text-zinc-300">{t('pages.totalEarnings')}</span>
-                <span className="text-sm font-bold text-gray-900 dark:text-zinc-100">₹{totalEarnings.toLocaleString()}</span>
+                <span className="text-sm font-bold text-gray-900 dark:text-zinc-100">{fmt(totalEarnings)}</span>
               </div>
             </div>
           </div>
@@ -240,23 +258,23 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:
             <div className="p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-500 dark:text-zinc-400">PF</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">₹{(staffSalary.pf || 0).toLocaleString()}</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{fmt(safeSalary.pf || 0)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.eSI')}</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">₹{(staffSalary.esi || 0).toLocaleString()}</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{fmt(safeSalary.esi || 0)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.professionalTax')}</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">₹{(staffSalary.professionalTax || 0).toLocaleString()}</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{fmt(safeSalary.professionalTax || 0)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.tDS')}</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">₹{(staffSalary.tds || 0).toLocaleString()}</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{fmt(safeSalary.tds || 0)}</span>
               </div>
               <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-zinc-800">
                 <span className="text-sm font-semibold text-gray-700 dark:text-zinc-300">{t('pages.totalDeductions')}</span>
-                <span className="text-sm font-bold text-gray-900 dark:text-zinc-100">₹{totalDeductions.toLocaleString()}</span>
+                <span className="text-sm font-bold text-gray-900 dark:text-zinc-100">{fmt(totalDeductions)}</span>
               </div>
             </div>
           </div>

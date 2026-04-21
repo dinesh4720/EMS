@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import { hostelSchema, parseFormSchema } from '../../validators/formSchemas';
 
 const INITIAL_FORM = {
   name: "", type: "boys", wardenName: "", wardenPhone: "", wardenEmail: "",
@@ -27,8 +28,8 @@ export default function HostelList() {
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
-    const t = setTimeout(() => { setSearch(searchInput); }, 300);
-    return () => clearTimeout(t);
+    const timerId = setTimeout(() => { setSearch(searchInput); }, 300);
+    return () => clearTimeout(timerId);
   }, [searchInput]);
 
   const fetchHostels = useCallback(async () => {
@@ -49,14 +50,9 @@ export default function HostelList() {
   useEffect(() => { fetchHostels(); }, [fetchHostels]);
 
   const validateForm = () => {
-    const e = {};
-    if (!formData.name.trim()) e.name = "Name is required";
-    if (!formData.type) e.type = "Type is required";
-    if (formData.wardenEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.wardenEmail)) {
-      e.wardenEmail = "Invalid email";
-    }
-    setErrors(e);
-    return Object.keys(e).length === 0;
+    const { success, errors: zodErrors } = parseFormSchema(hostelSchema, formData);
+    setErrors(zodErrors);
+    return success;
   };
 
   const handleSubmit = async (e) => {
@@ -171,10 +167,10 @@ export default function HostelList() {
                   </Chip>
                 </div>
                 <div className="flex gap-1">
-                  <Button isIconOnly size="sm" variant="light" onPress={() => handleEdit(hostel)}>
+                  <Button isIconOnly size="sm" variant="light" aria-label="Edit hostel" onPress={() => handleEdit(hostel)}>
                     <Edit2 size={14} className="text-gray-500 dark:text-zinc-400" />
                   </Button>
-                  <Button isIconOnly size="sm" variant="light" onPress={() => setDeleteTarget(hostel._id)}>
+                  <Button isIconOnly size="sm" variant="light" aria-label="Delete hostel" onPress={() => setDeleteTarget(hostel._id)}>
                     <Trash2 size={14} className="text-red-500" />
                   </Button>
                 </div>
@@ -203,7 +199,7 @@ export default function HostelList() {
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
-        title={t('confirm.deleteHostel')}
+        title={t('confirm.deleteHostelTitle')}
         message={t('confirm.deleteHostel')}
         confirmText="Delete"
         variant="danger"

@@ -4,6 +4,21 @@
  * Extracted from StudentsList.jsx to keep the component lean.
  */
 
+// ─── Security: HTML strip ─────────────────────────────────────────────────────
+
+/**
+ * Strip HTML tags from a CSV field value to prevent XSS injection.
+ * CSV data is untrusted input — stripping ensures no script/tag payload
+ * can reach any rendering context (JSX, toast, document.write, etc.).
+ *
+ * @param {*} val - Raw field value from CSV
+ * @returns {string} - Value with all HTML tags removed
+ */
+const stripHtml = (val) => {
+    if (val === null || val === undefined) return '';
+    return String(val).replace(/<[^>]*>/g, '').trim();
+};
+
 // ─── CSV Parsing ─────────────────────────────────────────────────────────────
 
 /**
@@ -61,7 +76,7 @@ export const parseCSV = (csvText) => {
         throw new Error('CSV file is empty or has no data rows');
     }
 
-    const headers = parseCSVLine(lines[0]);
+    const headers = parseCSVLine(lines[0]).map(stripHtml);
 
     const data = [];
     for (let i = 1; i < lines.length; i++) {
@@ -71,8 +86,9 @@ export const parseCSV = (csvText) => {
 
         const row = {};
         headers.forEach((header, index) => {
-            row[header] = values[index] || '';
+            row[header] = stripHtml(values[index] || '');
         });
+        row._csvRow = i + 1; // CSV row number (1-indexed; row 1 = header)
 
         data.push(row);
     }

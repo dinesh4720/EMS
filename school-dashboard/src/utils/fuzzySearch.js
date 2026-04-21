@@ -2,6 +2,7 @@
  * Fuzzy Search Utility for Messages
  * Implements character-level matching for better search results
  */
+import React from 'react';
 
 /**
  * Calculate similarity score between two strings
@@ -139,27 +140,24 @@ export function searchMessages(messages, query, threshold = 0.5) {
  * Highlight search matches in text
  * @param {string} text - Original text
  * @param {string} query - Search query
- * @returns {string} - HTML string with highlighted matches
+ * @returns {Array|string} - Array of React elements with matches wrapped in <mark>, or original string if no match
  */
 export function highlightMatches(text, query) {
   if (!text || !query) return text;
 
-  // HTML-escape the text first to prevent XSS from user-generated content
-  const escaped = escapeHtml(text);
   const regex = new RegExp(`(${escapeRegex(query)})`, 'gi');
-  return escaped.replace(regex, '<mark class="bg-primary-100 text-primary rounded px-0.5">$1</mark>');
-}
+  const parts = text.split(regex);
 
-/**
- * Escape HTML special characters to prevent XSS
- */
-function escapeHtml(str) {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+  // No match found — return original string (avoids unnecessary array wrapping)
+  if (parts.length === 1) return text;
+
+  // Odd indices are the captured match groups; even indices are surrounding text.
+  // React escapes text nodes automatically, so no manual HTML escaping is needed.
+  return parts.map((part, i) =>
+    i % 2 === 1
+      ? React.createElement('mark', { key: i, className: 'bg-primary-100 text-primary rounded px-0.5' }, part)
+      : part
+  );
 }
 
 /**

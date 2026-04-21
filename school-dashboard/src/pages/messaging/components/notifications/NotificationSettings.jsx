@@ -27,6 +27,8 @@ import { useTranslation } from 'react-i18next';
 import { notificationsApi } from '../../../../services/api';
 import ConfirmDialog from '../../../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../../../hooks/useConfirmDialog';
+import logger from '../../../../utils/logger';
+
 
 const CHANNEL_ICONS = {
   email: { icon: Mail, color: 'primary', label: 'Email' },
@@ -176,7 +178,7 @@ export default function NotificationSettings({ userRole = 'staff' }) {
         }
       }
     } catch (error) {
-      console.error('Error loading preferences:', error);
+      logger.error('Error loading preferences:', error);
       // Fall back to defaults — don't show error toast since this is non-critical
     }
   }, [userRole]);
@@ -224,7 +226,7 @@ export default function NotificationSettings({ userRole = 'staff' }) {
       toast.success(t('toast.success.notificationPreferencesSavedSuccessfully'));
       setHasChanges(false);
     } catch (error) {
-      console.error('Error saving preferences:', error);
+      logger.error('Error saving preferences:', error);
       toast.error(t('toast.error.failedToSavePreferences'));
     } finally {
       setSaving(false);
@@ -248,7 +250,7 @@ export default function NotificationSettings({ userRole = 'staff' }) {
           toast.success(t('toast.success.preferencesResetToDefault'));
           setHasChanges(false);
         } catch (error) {
-          console.error('Error resetting preferences:', error);
+          logger.error('Error resetting preferences:', error);
           toast.error(t('toast.error.failedToResetPreferences'));
         }
       },

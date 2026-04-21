@@ -1,7 +1,7 @@
 import { Button, Input, Select, SelectItem } from "@heroui/react";
 import { Building2, Banknote, Plus, X } from "lucide-react";
-import { formatCurrency } from "../../../utils/numberFormatter";
 import { useTranslation } from "react-i18next";
+import { useCurrency } from "../../../context/hooks/useCurrency";
 import SectionHeader from "./SectionHeader";
 
 const inputStyles = {
@@ -22,6 +22,7 @@ function SalaryStructureStep({
   updateField,
 }) {
   const { t } = useTranslation();
+  const { fmt, currencySymbol } = useCurrency();
 
   const handleTemplateChange = (templateName) => {
     const template = salaryTemplates.find(tmpl => tmpl.name === templateName);

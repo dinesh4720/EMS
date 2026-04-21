@@ -16,6 +16,8 @@ import { usePermissions } from "../../../context/PermissionContext";
 import { timetableApi, teacherAssignmentsApi, classesApi } from "../../../services/api";
 import { DEFAULT_PERIODS, TIMETABLE_DAYS } from "../../../utils/constants";
 import { useTranslation } from 'react-i18next';
+import logger from '../../../utils/logger';
+
 
 const DAYS = TIMETABLE_DAYS;
 const DEFAULT_PERIODS_LIST = DEFAULT_PERIODS;
@@ -139,7 +141,7 @@ export default function TimetableWizardModal({
       });
       setTeacherBusySlots(busyMap);
     } catch (error) {
-      console.error('Error loading teacher busy slots:', error);
+      logger.error('Error loading teacher busy slots:', error);
       // Non-blocking: proceed without cross-class checks
     } finally {
       setIsLoadingBusySlots(false);
@@ -207,7 +209,7 @@ export default function TimetableWizardModal({
       }
     } catch (error) {
       if (isStale()) return;
-      console.error('Error loading class data:', error);
+      logger.error('Error loading class data:', error);
       toast.error(t('toast.error.failedToLoadClassData'));
     } finally {
       if (!isStale()) {
@@ -240,7 +242,7 @@ export default function TimetableWizardModal({
 
       setTeacherAssignments(assignments);
     } catch (error) {
-      console.error('Error loading teacher assignments:', error);
+      logger.error('Error loading teacher assignments:', error);
     }
   };
 
@@ -433,7 +435,7 @@ export default function TimetableWizardModal({
         // Check if subject has assigned teachers
         const teachers = getTeachersForSubject(subject);
         if (teachers.length === 0) {
-          console.warn(`No teachers assigned for ${subject}`);
+          logger.warn(`No teachers assigned for ${subject}`);
         }
 
         for (let i = 0; i < Math.max(1, periodsPerSubject); i++) {
@@ -518,7 +520,7 @@ export default function TimetableWizardModal({
               }
               // Fallback: if all teachers are busy in other classes, log a warning instead of silently assigning a busy teacher
               if (!selectedTeacher) {
-                console.warn(`All teachers for ${selectedSubject} are busy on ${day} Period ${periodIdx + 1}. Assigning first available teacher (conflict expected).`);
+                logger.warn(`All teachers for ${selectedSubject} are busy on ${day} Period ${periodIdx + 1}. Assigning first available teacher (conflict expected).`);
                 selectedTeacher = teachers[startIdx].id;
                 // Mark this slot explicitly as a known conflict so the user is warned
                 if (!schedule._knownConflicts) schedule._knownConflicts = [];
@@ -554,7 +556,7 @@ export default function TimetableWizardModal({
       }
       return true;
     } catch (error) {
-      console.error('Error generating timetable:', error);
+      logger.error('Error generating timetable:', error);
       toast.error(t('toast.error.failedToGenerateTimetable'));
       return false;
     } finally {
@@ -619,7 +621,7 @@ export default function TimetableWizardModal({
 
       onClose();
     } catch (error) {
-      console.error('Error saving timetable:', error);
+      logger.error('Error saving timetable:', error);
       toast.error(error.message || t('toast.error.failedToSaveTimetable', 'Failed to save timetable'));
     } finally {
       setIsSaving(false);

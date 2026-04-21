@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Card, CardBody, Button, Checkbox, Chip } from '@heroui/react';
+import {
+  Card, CardBody, Button, Checkbox, Chip,
+  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
+  Input, useDisclosure,
+} from '@heroui/react';
 import {
   AlertTriangle, ArrowUpCircle, GraduationCap, Minus, ArrowRight,
 } from 'lucide-react';
@@ -9,6 +13,10 @@ import toast from 'react-hot-toast';
 export default function StepConfirm({ onNext, onBack, wizardState, setWizardState }) {
   const [executing, setExecuting] = useState(false);
   const [generateRolls, setGenerateRolls] = useState(false);
+  const [confirmText, setConfirmText] = useState('');
+  const { isOpen, onOpen, onClose } = useDisclosure();
+
+  const CONFIRM_PHRASE = 'CONFIRM';
 
   // AUDIT-111: Nav guard -- warn on browser close/refresh before promotion is executed
   useEffect(() => {
@@ -24,7 +32,13 @@ export default function StepConfirm({ onNext, onBack, wizardState, setWizardStat
 
   const { classMappings, summary, fromYear, toYear } = wizardState;
 
+  const openConfirmModal = () => {
+    setConfirmText('');
+    onOpen();
+  };
+
   const handleExecute = async () => {
+    onClose();
     setExecuting(true);
     try {
       // Build the execute-all payload
@@ -186,13 +200,66 @@ export default function StepConfirm({ onNext, onBack, wizardState, setWizardStat
         <Button
           color="primary"
           className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900"
-          onPress={handleExecute}
+          onPress={openConfirmModal}
           isLoading={executing}
           startContent={!executing && <ArrowUpCircle size={16} />}
         >
           Execute Year-End Promotion
         </Button>
       </div>
+
+      {/* Type-to-confirm modal */}
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        size="sm"
+        classNames={{ backdrop: 'bg-black/40', base: 'bg-white dark:bg-zinc-950' }}
+      >
+        <ModalContent>
+          <ModalHeader className="border-b border-gray-100 dark:border-zinc-800 py-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-100 dark:bg-red-950 rounded-lg">
+                <AlertTriangle size={18} className="text-red-600 dark:text-red-400" />
+              </div>
+              <h3 className="text-base font-medium text-gray-900 dark:text-zinc-100">
+                Confirm Year-End Promotion
+              </h3>
+            </div>
+          </ModalHeader>
+          <ModalBody className="py-4 space-y-3">
+            <p className="text-sm text-gray-700 dark:text-zinc-300">
+              This will permanently move all students from{' '}
+              <strong>{fromYear}</strong> to <strong>{toYear}</strong> and reset
+              current-year fee structures. This action cannot be undone without a rollback.
+            </p>
+            <p className="text-sm text-gray-600 dark:text-zinc-400">
+              Type <strong className="text-red-600 dark:text-red-400">{CONFIRM_PHRASE}</strong> to proceed:
+            </p>
+            <Input
+              autoFocus
+              placeholder={CONFIRM_PHRASE}
+              value={confirmText}
+              onValueChange={setConfirmText}
+              variant="bordered"
+              size="sm"
+              classNames={{ input: 'font-mono tracking-widest' }}
+            />
+          </ModalBody>
+          <ModalFooter className="border-t border-gray-100 dark:border-zinc-800">
+            <Button variant="light" onPress={onClose}>
+              Cancel
+            </Button>
+            <Button
+              color="danger"
+              onPress={handleExecute}
+              isDisabled={confirmText !== CONFIRM_PHRASE}
+              startContent={<ArrowUpCircle size={15} />}
+            >
+              Execute Promotion
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

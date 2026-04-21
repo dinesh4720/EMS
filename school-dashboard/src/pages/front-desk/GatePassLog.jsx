@@ -5,13 +5,13 @@ import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Select, SelectItem,
   Button, Textarea, Autocomplete, AutocompleteItem, Chip
 } from '@heroui/react';
-import { Trash2, Plus, Edit, Download, Check, X } from 'lucide-react';
+import { Trash2, Plus, Edit, Download, Check, X, Calendar } from 'lucide-react';
 import { frontDeskApi, studentsApi, staffApi } from '../../services/api';
 import { validatePhone } from '../../utils/validations';
 import toast from 'react-hot-toast';
 import GatePassPrint from './GatePassPrint.jsx';
 import { useTranslation } from 'react-i18next';
-import { formatShortDate, toCurrentTimeString } from '../../utils/dateFormatter';
+import { formatShortDate, toCurrentTimeString, toDateInputValue } from '../../utils/dateFormatter';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
 
@@ -39,6 +39,7 @@ const APPROVED_BY_OPTIONS = [
 const GatePassLog = forwardRef(({ onSave, ...props }, ref) => {
   const { t } = useTranslation();
   const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [gatePasses, setGatePasses] = useState([]);
   const [students, setStudents] = useState([]);
   const [staff, setStaff] = useState([]);
@@ -71,14 +72,7 @@ const GatePassLog = forwardRef(({ onSave, ...props }, ref) => {
     const loadData = async () => {
       setLoading(true);
       try {
-        // Load data sequentially to avoid rate limiting
-        await loadGatePasses();
-        await new Promise(resolve => setTimeout(resolve, 150));
-
-        await loadStudents();
-        await new Promise(resolve => setTimeout(resolve, 150));
-
-        await loadStaff();
+        await Promise.all([loadGatePasses(selectedDate), loadStudents(), loadStaff()]);
       } catch (error) {
         logger.error('Error loading data:', error);
       } finally {
@@ -87,7 +81,7 @@ const GatePassLog = forwardRef(({ onSave, ...props }, ref) => {
     };
 
     loadData();
-  }, []);
+  }, [selectedDate]);
 
   useEffect(() => {
     if (!isModalOpen) return;
@@ -106,10 +100,13 @@ const GatePassLog = forwardRef(({ onSave, ...props }, ref) => {
     }
   }));
 
-  const loadGatePasses = async () => {
+  const loadGatePasses = async (date) => {
     try {
-      const response = await frontDeskApi.getGatePassesToday();
-      setGatePasses(response);
+      const today = new Date().toISOString().split('T')[0];
+      const response = date && date !== today
+        ? await frontDeskApi.getGatePassesByDate(date)
+        : await frontDeskApi.getGatePassesToday();
+      setGatePasses(Array.isArray(response) ? response : []);
     } catch (error) {
       logger.error('Failed to load gate passes:', error);
       toast.error(t('toast.error.failedToLoadGatePasses'));
@@ -216,8 +213,18 @@ const GatePassLog = forwardRef(({ onSave, ...props }, ref) => {
 
     if (!approvedByStaffId) {
       toast.error(t('toast.error.pleaseSelectAStaffMember'));
+      return;
+    }
+
+    // Validate expected return is not before leaving time
+    if (expectedReturnDate && leavingDate) {
+      const leavingDateTime = new Date(`${leavingDate}T${leavingTime || '00:00'}`);
+      const returnDateTime = new Date(`${expectedReturnDate}T${expectedReturnTime || '00:00'}`);
+      if (returnDateTime < leavingDateTime) {
+        toast.error('Expected return date/time cannot be before the leaving date/time');
         return;
       }
+    }
 
     setIsSubmitting(true);
     try {
@@ -252,7 +259,7 @@ const GatePassLog = forwardRef(({ onSave, ...props }, ref) => {
 
       setIsModalOpen(false);
       resetForm();
-      loadGatePasses();
+      loadGatePasses(selectedDate);
       onSave?.();
     } catch (error) {
       logger.error('Failed to save gate pass:', error);
@@ -269,9 +276,9 @@ const GatePassLog = forwardRef(({ onSave, ...props }, ref) => {
     setStudentSearchQuery(gatePass.studentName || '');
     setReason(gatePass.reason || null);
     setOtherReason(gatePass.otherReason || '');
-    setLeavingDate(gatePass.leavingDate || new Date().toISOString().split('T')[0]);
+    setLeavingDate(toDateInputValue(gatePass.leavingDate) || new Date().toISOString().split('T')[0]);
     setLeavingTime(gatePass.leavingTime || toCurrentTimeString());
-    setExpectedReturnDate(gatePass.expectedReturnDate || '');
+    setExpectedReturnDate(toDateInputValue(gatePass.expectedReturnDate) || '');
     setExpectedReturnTime(gatePass.expectedReturnTime || '');
     setLeavingWith(gatePass.leavingWith || null);
     setEscortName(gatePass.escortName || '');
@@ -309,7 +316,7 @@ const GatePassLog = forwardRef(({ onSave, ...props }, ref) => {
         try {
           await frontDeskApi.deleteGatePass(id);
           toast.success(t('toast.success.gatePassDeleted'));
-          loadGatePasses();
+          loadGatePasses(selectedDate);
           onSave?.();
         } catch (error) {
           toast.error(t('toast.error.failedToDeleteGatePass'));
@@ -322,7 +329,7 @@ const GatePassLog = forwardRef(({ onSave, ...props }, ref) => {
     try {
       await frontDeskApi.updateGatePass(id, { approvalStatus: status });
       toast.success(status === 'APPROVED' ? t('toast.success.gatePassApproved') || 'Gate pass approved' : t('toast.success.gatePassRejected') || 'Gate pass rejected');
-      loadGatePasses();
+      loadGatePasses(selectedDate);
       onSave?.();
     } catch (error) {
       logger.error('Failed to update gate pass status:', error);
@@ -360,7 +367,15 @@ const GatePassLog = forwardRef(({ onSave, ...props }, ref) => {
 
   return (
     <>
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-between items-center mb-4 gap-4 flex-wrap">
+        <Input
+          type="date"
+          value={selectedDate}
+          onChange={(e) => setSelectedDate(e.target.value)}
+          startContent={<Calendar size={16} />}
+          className="max-w-[180px]"
+          aria-label="Filter by date"
+        />
         <Button
           color="primary"
           startContent={<Plus size={16} />}
@@ -387,7 +402,7 @@ const GatePassLog = forwardRef(({ onSave, ...props }, ref) => {
         <TableBody
           items={gatePasses}
           isLoading={loading}
-          emptyContent="No gate passes issued today"
+          emptyContent={`No gate passes on ${selectedDate === new Date().toISOString().split('T')[0] ? 'today' : selectedDate}`}
         >
           {(gatePass) => (
             <TableRow key={gatePass._id}>
@@ -431,8 +446,8 @@ const GatePassLog = forwardRef(({ onSave, ...props }, ref) => {
                         color="success"
                         variant="flat"
                         isIconOnly
+                        aria-label="Approve gate pass"
                         onPress={() => handleApproval(gatePass._id, 'APPROVED')}
-                        title="Approve"
                       >
                         <Check size={14} />
                       </Button>
@@ -441,8 +456,8 @@ const GatePassLog = forwardRef(({ onSave, ...props }, ref) => {
                         color="danger"
                         variant="flat"
                         isIconOnly
+                        aria-label="Reject gate pass"
                         onPress={() => handleApproval(gatePass._id, 'REJECTED')}
-                        title="Reject"
                       >
                         <X size={14} />
                       </Button>
@@ -453,6 +468,7 @@ const GatePassLog = forwardRef(({ onSave, ...props }, ref) => {
                     color="primary"
                     variant="light"
                     isIconOnly
+                    aria-label="Edit gate pass"
                     onPress={() => handleEdit(gatePass)}
                   >
                     <Edit size={14} />
@@ -462,6 +478,7 @@ const GatePassLog = forwardRef(({ onSave, ...props }, ref) => {
                     color="default"
                     variant="light"
                     isIconOnly
+                    aria-label="Download gate pass"
                     onPress={() => handleDownload(gatePass)}
                   >
                     <Download size={14} />
@@ -471,6 +488,7 @@ const GatePassLog = forwardRef(({ onSave, ...props }, ref) => {
                     color="danger"
                     variant="light"
                     isIconOnly
+                    aria-label="Delete gate pass"
                     onPress={() => handleDelete(gatePass._id)}
                   >
                     <Trash2 size={14} />

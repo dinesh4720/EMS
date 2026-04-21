@@ -9,7 +9,7 @@ import QuickActions from "../components/QuickActions";
 import SubstitutionAlertPanel from "../components/SubstitutionAlertPanel";
 import NpsSurveyModal from "../components/NpsSurveyModal";
 import GuidedTour, { useGuidedTour } from "../components/ui/GuidedTour";
-import { getStoredUser } from "../utils/authSession";
+import { useAuth } from "../context/AuthContext";
 import {
   GraduationCap,
   Users,
@@ -17,6 +17,7 @@ import {
   Calendar,
   CheckCircle2,
   AlertCircle,
+  UserX,
   BookOpen,
   ClipboardList,
   Clock,
@@ -195,7 +196,6 @@ const DASHBOARD_TOUR_STEPS = [
 
 function Dashboard() {
   const {
-    dashboardStats,
     classes,
     currentAcademicYear,
     loading,
@@ -203,6 +203,8 @@ function Dashboard() {
     staffAttendance,
     students,
   } = useApp();
+
+  const { user: authUser } = useAuth();
 
   const { isOpen: isTourOpen, closeTour } = useGuidedTour('dashboard-v1', true);
 
@@ -213,6 +215,25 @@ function Dashboard() {
   const [attendanceSnapshot, setAttendanceSnapshot] = useState(() => createEmptyAttendanceSnapshot());
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [paymentsLoaded, setPaymentsLoaded] = useState(false);
+  const [feeDefaultersCount, setFeeDefaultersCount] = useState(0);
+
+  const dashboardStats = useMemo(() => {
+    const activeStudents = (students || []).filter((s) => (s.status || "active") === "active");
+    const activeStaffList = (staff || []).filter((s) => (s.status || "active") === "active");
+    const teachers = activeStaffList.filter((s) => {
+      const role = String(s.role || s.designation || "").toLowerCase();
+      return role.includes("teacher") || role === "faculty";
+    });
+    return {
+      totalStudents: activeStudents.length,
+      totalClasses: (classes || []).length,
+      totalTeachers: teachers.length,
+      totalStaff: (staff || []).length,
+      activeStaff: activeStaffList.length,
+      feeDefaultersCount,
+      upcomingEvents: 0,
+    };
+  }, [students, classes, staff, feeDefaultersCount]);
 
   // Use a ref for students so the payment effect doesn't re-run when students load.
   // Students are only used for name resolution (cosmetic), not for filtering/amounts.
@@ -253,6 +274,8 @@ function Dashboard() {
           : [];
         const totalPending = feeStructures.reduce((sum, fs) => sum + (fs.totalBalance || 0), 0);
         const totalCollected = feeStructures.reduce((sum, fs) => sum + (fs.totalPaid || 0), 0);
+        const defaulters = feeStructures.filter((fs) => (fs.totalBalance || 0) > 0).length;
+        setFeeDefaultersCount(defaulters);
 
         setRecentPayments(settledPayments.slice(0, 6));
         setRecentAnnouncements((liveAnnouncements.length > 0 ? liveAnnouncements : normalizedAnnouncements).slice(0, 6));
@@ -389,17 +412,7 @@ function Dashboard() {
     }));
   }, [staffSnapshot]);
 
-  const combinedAttendanceRate = useMemo(() => {
-    const rates = [attendanceSnapshot.studentRate, attendanceSnapshot.staffRate].filter(
-      (value) => typeof value === "number"
-    );
 
-    if (!rates.length) {
-      return null;
-    }
-
-    return Math.round(rates.reduce((sum, value) => sum + value, 0) / rates.length);
-  }, [attendanceSnapshot.staffRate, attendanceSnapshot.studentRate]);
 
   const attendanceRows = useMemo(() => {
     const rows = [];
@@ -476,42 +489,52 @@ function Dashboard() {
   const stats = useMemo(() => ([
     {
       label: "Total Students",
-      value: loading ? "—" : getNumberFormatter().format(dashboardStats.totalStudents || 0),
+      value: getNumberFormatter().format(dashboardStats.totalStudents || 0),
       subtext: `${getNumberFormatter().format(dashboardStats.totalClasses || 0)} classes active`,
       icon: GraduationCap,
       color: "gray",
+      href: "/students",
+      isLoading: loading,
     },
     {
       label: "Teaching Staff",
-      value: loading ? "—" : getNumberFormatter().format(dashboardStats.totalTeachers || 0),
+      value: getNumberFormatter().format(dashboardStats.totalTeachers || 0),
       subtext: typeof attendanceSnapshot.staffRate === "number"
         ? `${getNumberFormatter().format(attendanceSnapshot.staffPresent)} present from ${getNumberFormatter().format(attendanceSnapshot.staffMarked)} marked records`
         : "Staff attendance not marked yet",
       icon: Users,
       color: "gray",
+      href: "/staffs",
+      isLoading: loading,
     },
     {
       label: "Pending Fees",
-      value: paymentsLoaded ? getCurrencyFormatter().format(paymentSnapshot.totalPending || 0) : "—",
-      subtext: paymentsLoaded
-        ? paymentSnapshot.today
-          ? `${getCurrencyFormatter().format(paymentSnapshot.today)} collected today`
-          : `${getCurrencyFormatter().format(paymentSnapshot.totalCollected || 0)} collected total`
-        : "Payment data unavailable",
+      value: getCurrencyFormatter().format(paymentSnapshot.totalPending || 0),
+      subtext: paymentSnapshot.today !== null
+        ? `${getCurrencyFormatter().format(paymentSnapshot.today)} collected today`
+        : `${getCurrencyFormatter().format(paymentSnapshot.totalCollected || 0)} collected total`,
       icon: IndianRupee,
       color: "gray",
+      href: "/fees",
+      isLoading: dashboardLoading,
     },
     {
-      label: "Avg Attendance",
-      value: typeof combinedAttendanceRate === "number" ? `${combinedAttendanceRate}%` : "—",
-      subtext: [
-        typeof attendanceSnapshot.studentRate === "number" ? `Students ${attendanceSnapshot.studentRate}%` : null,
-        typeof attendanceSnapshot.staffRate === "number" ? `Staff ${attendanceSnapshot.staffRate}%` : null,
-      ].filter(Boolean).join(" • ") || "Awaiting marked attendance",
-      icon: CheckCircle2,
+      label: "Absent Today",
+      value: attendanceSnapshot.markedClasses > 0
+        ? getNumberFormatter().format((attendanceSnapshot.studentTotal - attendanceSnapshot.studentPresent) + (attendanceSnapshot.staffMarked - attendanceSnapshot.staffPresent))
+        : "—",
+      subtext: attendanceSnapshot.markedClasses > 0
+        ? [
+            `${getNumberFormatter().format(attendanceSnapshot.studentTotal - attendanceSnapshot.studentPresent)} students`,
+            attendanceSnapshot.staffMarked > 0 ? `${getNumberFormatter().format(attendanceSnapshot.staffMarked - attendanceSnapshot.staffPresent)} staff` : null,
+          ].filter(Boolean).join(" • ")
+        : "Awaiting marked attendance",
+      icon: UserX,
       color: "gray",
+      href: (attendanceSnapshot.markedClasses > 0 && (attendanceSnapshot.studentTotal - attendanceSnapshot.studentPresent + attendanceSnapshot.staffMarked - attendanceSnapshot.staffPresent) > 0) ? "/classes" : undefined,
+      isLoading: loading,
     },
-  ]), [attendanceSnapshot, combinedAttendanceRate, dashboardStats, loading, paymentSnapshot, paymentsLoaded]);
+  ]), [attendanceSnapshot, dashboardStats, dashboardLoading, loading, paymentSnapshot]);
 
   const quickActions = [
     { label: "Attendance", icon: CheckCircle2, href: "/classes" },
@@ -521,8 +544,9 @@ function Dashboard() {
   ];
 
   // ── Role Detection ──
-  const storedUser = getStoredUser();
-  const rawRole = storedUser?.role || "admin";
+  // SECURITY: Use server-verified user from AuthContext, not sessionStorage, to prevent
+  // role spoofing via localStorage/sessionStorage editing.
+  const rawRole = authUser?.role || "admin";
   const role = (Array.isArray(rawRole) ? rawRole[0] || "admin" : String(rawRole)).toLowerCase();
 
   // ── Principal View: Academic Overview + Staff Attendance ──
@@ -531,17 +555,21 @@ function Dashboard() {
     return [
       {
         label: "Total Students",
-        value: loading ? "—" : getNumberFormatter().format(dashboardStats.totalStudents || 0),
+        value: getNumberFormatter().format(dashboardStats.totalStudents || 0),
         subtext: `${getNumberFormatter().format(dashboardStats.totalClasses || 0)} classes active`,
         icon: GraduationCap,
         color: "blue",
+        href: "/students",
+        isLoading: loading,
       },
       {
         label: "Total Staff",
-        value: loading ? "—" : getNumberFormatter().format(dashboardStats.totalStaff || 0),
+        value: getNumberFormatter().format(dashboardStats.totalStaff || 0),
         subtext: `${getNumberFormatter().format(dashboardStats.activeStaff || 0)} active staff members`,
         icon: Users,
         color: "purple",
+        href: "/staffs",
+        isLoading: loading,
       },
     ];
   }, [role, loading, dashboardStats]);
@@ -562,25 +590,29 @@ function Dashboard() {
     return [
       {
         label: "Today's Collections",
-        value: paymentsLoaded ? getCurrencyFormatter().format(paymentSnapshot.today || 0) : "—",
+        value: getCurrencyFormatter().format(paymentSnapshot.today || 0),
         subtext: "Fee payments received today",
         icon: IndianRupee,
         color: "green",
+        href: "/fees",
+        isLoading: dashboardLoading,
       },
       {
         label: "Monthly Collections",
-        value: paymentsLoaded ? getCurrencyFormatter().format(paymentSnapshot.month || 0) : "—",
+        value: getCurrencyFormatter().format(paymentSnapshot.month || 0),
         subtext: "Total collected this month",
         icon: IndianRupee,
         color: "blue",
+        href: "/fees",
+        isLoading: dashboardLoading,
       },
     ];
-  }, [role, paymentsLoaded, paymentSnapshot]);
+  }, [role, dashboardLoading, paymentSnapshot]);
 
   // ── Teacher View: My Classes + Pending Tasks ──
   const teacherData = useMemo(() => {
     if (role !== "teacher") return null;
-    const teacherId = storedUser?.id || storedUser?._id;
+    const teacherId = authUser?.id;
     const assignedClasses = (classes || []).filter(
       (c) => c.classTeacherId === teacherId
     );
@@ -615,7 +647,7 @@ function Dashboard() {
       totalStudents: totalClassStudents,
       unmarkedAttendanceCount: Math.max(0, unmarkedCount),
     };
-  }, [role, storedUser, classes, students, attendanceSnapshot]);
+  }, [role, authUser, classes, students, attendanceSnapshot]);
 
   return (
     <div className="min-h-screen pb-8">

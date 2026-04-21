@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { z } from 'zod';
 import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   Input, Select, SelectItem, Textarea,
@@ -73,13 +74,29 @@ export default function Procurement() {
       setErrors({ itemName: t('toast.error.itemNameIsRequired') });
       return toast.error(t('toast.error.itemNameIsRequired'));
     }
+    const numericValidation = z.object({
+      quantity: z.coerce.number({ invalid_type_error: "Must be a valid number" }).int("Must be a whole number").min(1, "Must be at least 1"),
+      estimatedCost: z.union([z.literal(""), z.coerce.number({ invalid_type_error: "Must be a valid number" }).min(0, "Must be 0 or greater")]),
+      actualCost: z.union([z.literal(""), z.coerce.number({ invalid_type_error: "Must be a valid number" }).min(0, "Must be 0 or greater")]),
+    }).safeParse({
+      quantity: String(form.quantity),
+      estimatedCost: String(form.estimatedCost),
+      actualCost: String(form.actualCost),
+    });
+    if (!numericValidation.success) {
+      const fieldErrors = {};
+      numericValidation.error.errors.forEach((e) => { fieldErrors[e.path[0]] = e.message; });
+      setErrors((prev) => ({ ...prev, ...fieldErrors }));
+      return toast.error("Please fix the highlighted fields");
+    }
+    const { quantity, estimatedCost, actualCost } = numericValidation.data;
     try {
       setSaving(true);
       const payload = {
         ...form,
-        quantity: Number(form.quantity),
-        estimatedCost: form.estimatedCost ? Number(form.estimatedCost) : undefined,
-        actualCost: form.actualCost !== "" ? Number(form.actualCost) : undefined,
+        quantity,
+        estimatedCost: estimatedCost !== "" ? estimatedCost : undefined,
+        actualCost: actualCost !== "" ? actualCost : undefined,
         vendorId: form.vendorId || undefined,
       };
       if (editing) {
@@ -125,14 +142,16 @@ export default function Procurement() {
     <div className="space-y-4">
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="text-sm rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 px-3 py-2"
+        <Select
+          selectedKeys={[filterStatus]}
+          onSelectionChange={(keys) => setFilterStatus([...keys][0] || "all")}
+          size="sm"
+          className="w-48"
+          aria-label="Filter by status"
         >
-          <option value="all">{t('pages.allStatuses')}</option>
-          {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
+          <SelectItem key="all">{t('pages.allStatuses')}</SelectItem>
+          {STATUSES.map((s) => <SelectItem key={s}>{s.replace(/_/g, " ")}</SelectItem>)}
+        </Select>
         <MinimalButton variant="primary" size="sm" icon={<Plus size={16} />} onClick={openCreate}>
           New Request
         </MinimalButton>
@@ -177,8 +196,8 @@ export default function Procurement() {
                             </button>
                           </>
                         )}
-                        <button onClick={() => openEdit(r)} className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-500 dark:text-zinc-400"><Edit3 size={14} /></button>
-                        <button onClick={() => setDeleteTarget(r._id)} className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-950 text-gray-500 dark:text-zinc-400 hover:text-red-600"><Trash2 size={14} /></button>
+                        <button aria-label="Edit procurement" onClick={() => openEdit(r)} className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-500 dark:text-zinc-400"><Edit3 size={14} /></button>
+                        <button aria-label="Delete procurement" onClick={() => setDeleteTarget(r._id)} className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-950 text-gray-500 dark:text-zinc-400 hover:text-red-600"><Trash2 size={14} /></button>
                       </div>
                     </td>
                   </tr>
@@ -199,9 +218,9 @@ export default function Procurement() {
               <Select label={t('pages.category1')} selectedKeys={[form.category]} onSelectionChange={(keys) => set("category", [...keys][0])}>
                 {CATEGORIES.map((c) => <SelectItem key={c}>{c.replace(/_/g, " ")}</SelectItem>)}
               </Select>
-              <Input label={t('pages.quantity')} isRequired type="number" value={String(form.quantity)} onValueChange={(v) => set("quantity", v)} />
-              <Input label={t('pages.estimatedCost')} type="number" value={String(form.estimatedCost)} onValueChange={(v) => set("estimatedCost", v)} startContent="₹" />
-              <Input label="Actual Cost" type="number" value={String(form.actualCost)} onValueChange={(v) => set("actualCost", v)} startContent="₹" />
+              <Input label={t('pages.quantity')} isRequired type="number" inputMode="numeric" value={String(form.quantity)} onValueChange={(v) => set("quantity", v)} isInvalid={!!errors.quantity} errorMessage={errors.quantity} />
+              <Input label={t('pages.estimatedCost')} type="number" inputMode="decimal" value={String(form.estimatedCost)} onValueChange={(v) => set("estimatedCost", v)} startContent="₹" isInvalid={!!errors.estimatedCost} errorMessage={errors.estimatedCost} />
+              <Input label="Actual Cost" type="number" inputMode="decimal" value={String(form.actualCost)} onValueChange={(v) => set("actualCost", v)} startContent="₹" isInvalid={!!errors.actualCost} errorMessage={errors.actualCost} />
               <Select label={t('pages.status2')} selectedKeys={[form.status]} onSelectionChange={(keys) => set("status", [...keys][0])}>
                 {STATUSES.map((s) => <SelectItem key={s}>{s.replace(/_/g, " ")}</SelectItem>)}
               </Select>

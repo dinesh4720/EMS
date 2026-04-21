@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import logger from '../../../../utils/logger';
+import socketServiceEnhanced from '../../../../services/socketServiceEnhanced';
 import {
   Card,
   CardBody,
@@ -64,7 +65,7 @@ const CHANNEL_ICONS = {
   in_app: { icon: Bell, label: 'In-App' },
 };
 
-export default function NotificationCenter({ onClose, isPopover = false }) {
+export default function NotificationCenter({ onClose, onUnreadCountChange, isPopover = false }) {
   const { t } = useTranslation();
   const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
   const [notifications, setNotifications] = useState([]);
@@ -73,21 +74,47 @@ export default function NotificationCenter({ onClose, isPopover = false }) {
   const [markingAll, setMarkingAll] = useState(false);
 
   useEffect(() => {
-    loadNotifications();
-  }, []);
+    let isMounted = true;
 
-  const loadNotifications = async () => {
-    setLoading(true);
-    try {
-      const data = await notificationsApi.getAll();
-      const list = Array.isArray(data) ? data : (data?.notifications || data?.data || []);
-      setNotifications(isPopover ? list.slice(0, 5) : list);
-    } catch (error) {
-      logger.error('Error loading notifications:', error);
-    } finally {
-      setLoading(false);
+    const load = async () => {
+      setLoading(true);
+      try {
+        const data = await notificationsApi.getAll();
+        if (!isMounted) return;
+        const list = Array.isArray(data) ? data : (data?.notifications || data?.data || []);
+        setNotifications(isPopover ? list.slice(0, 5) : list);
+      } catch (error) {
+        if (!isMounted) return;
+        logger.error('Error loading notifications:', error);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    load();
+
+    const handleNewNotification = (data) => {
+      if (!isMounted) return;
+      setNotifications(prev => {
+        const newNotif = { ...data, read: false };
+        const updated = [newNotif, ...prev];
+        return isPopover ? updated.slice(0, 5) : updated;
+      });
+    };
+
+    socketServiceEnhanced.on('notification:new', handleNewNotification);
+
+    return () => {
+      isMounted = false;
+      socketServiceEnhanced.off('notification:new', handleNewNotification);
+    };
+  }, [isPopover]);
+
+  useEffect(() => {
+    if (!loading && onUnreadCountChange) {
+      onUnreadCountChange(notifications.filter(n => !n.read).length);
     }
-  };
+  }, [notifications, loading, onUnreadCountChange]);
 
   const handleMarkAsRead = async (notificationId) => {
     try {

@@ -1,8 +1,9 @@
 /**
  * StaffDocumentsTab - Minimal gray styling matching StudentDashboard
  */
-import { Upload, FileText, Eye, Download, Link2, Trash2, FolderPlus, FileCheck } from "lucide-react";
-import { Button, Progress } from "@heroui/react";
+import { useRef } from "react";
+import { Upload, FileText, Eye, Download, Link2, Trash2, FolderPlus, FileCheck, IdCard, Award, FileSignature } from "lucide-react";
+import { Button, Progress, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/react";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { formatShortDate } from '../../../utils/dateFormatter';
@@ -16,6 +17,7 @@ export default function StaffDocumentsTab({
   staffName,
 }) {
   const { t } = useTranslation();
+  const uploadTypeRef = useRef('Custom');
   // Guard against undefined documents prop
   if (!documents) documents = [];
   const getDocumentType = (doc) => {
@@ -32,7 +34,7 @@ export default function StaffDocumentsTab({
         className="hidden"
         multiple
         accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-        onChange={onDocumentUpload}
+        onChange={(e) => onDocumentUpload(e, uploadTypeRef.current)}
       />
 
       {/* Document Stats */}
@@ -98,26 +100,46 @@ export default function StaffDocumentsTab({
             <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.documentLibrary')}</h3>
             <p className="text-xs text-gray-500 mt-0.5 dark:text-zinc-400">{t('pages.allUploadedDocuments')}</p>
           </div>
-          <Button size="sm" className="bg-gray-900 text-white" startContent={<Upload size={14} />} onPress={() => documentInputRef.current?.click()}>
-            Upload
-          </Button>
+          <Dropdown>
+            <DropdownTrigger>
+              <Button size="sm" className="bg-gray-900 text-white" startContent={<Upload size={14} />}>
+                Upload
+              </Button>
+            </DropdownTrigger>
+            <DropdownMenu
+              aria-label="Upload document type"
+              onAction={(key) => { uploadTypeRef.current = key; documentInputRef.current?.click(); }}
+            >
+              <DropdownItem key="ID Proof" startContent={<IdCard size={14} />}>ID Proof</DropdownItem>
+              <DropdownItem key="Qualification" startContent={<Award size={14} />}>Certificate / Qualification</DropdownItem>
+              <DropdownItem key="Custom" startContent={<FileSignature size={14} />}>Contract / Other</DropdownItem>
+            </DropdownMenu>
+          </Dropdown>
         </div>
 
         {documents.length === 0 ? (
-          <div
-            className="text-center py-12 cursor-pointer hover:bg-gray-50 transition-colors dark:hover:bg-zinc-800"
-            onClick={() => documentInputRef.current?.click()}
-          >
+          <div className="text-center py-12">
             <div className="inline-flex p-4 bg-gray-100 rounded-lg mb-4 dark:bg-zinc-800">
               <FolderPlus size={32} className="text-gray-400 dark:text-zinc-500" />
             </div>
             <h4 className="font-medium text-gray-900 mb-1 dark:text-zinc-100">{t('pages.noDocumentsUploadedYet')}</h4>
             <p className="text-sm text-gray-500 max-w-xs mx-auto mb-4 dark:text-zinc-400">
-              Upload certificates, ID proofs, or other essential documents.
+              Upload certificates, ID proofs, contracts, or other essential documents.
             </p>
-            <Button size="sm" variant="flat" className="bg-gray-100 text-gray-700 dark:bg-zinc-800 dark:text-zinc-300" startContent={<Upload size={14} />} onPress={() => documentInputRef.current?.click()}>
-              Browse Files
-            </Button>
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              <Button size="sm" variant="flat" className="bg-gray-100 text-gray-700 dark:bg-zinc-800 dark:text-zinc-300" startContent={<IdCard size={14} />}
+                onPress={() => { uploadTypeRef.current = 'ID Proof'; documentInputRef.current?.click(); }}>
+                ID Proof
+              </Button>
+              <Button size="sm" variant="flat" className="bg-gray-100 text-gray-700 dark:bg-zinc-800 dark:text-zinc-300" startContent={<Award size={14} />}
+                onPress={() => { uploadTypeRef.current = 'Qualification'; documentInputRef.current?.click(); }}>
+                Certificate
+              </Button>
+              <Button size="sm" variant="flat" className="bg-gray-100 text-gray-700 dark:bg-zinc-800 dark:text-zinc-300" startContent={<FileSignature size={14} />}
+                onPress={() => { uploadTypeRef.current = 'Custom'; documentInputRef.current?.click(); }}>
+                Contract / Other
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="divide-y divide-gray-50 dark:divide-zinc-800">

@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { Mic, MicOff, Send, Trash2 } from 'lucide-react';
 import { Button, Progress } from '@heroui/react';
 import { useTranslation } from 'react-i18next';
+import logger from '../../../utils/logger';
+
 
 export default function VoiceMessageRecorder({ onSend, onCancel }) {
   const [isRecording, setIsRecording] = useState(false);
@@ -82,7 +84,7 @@ export default function VoiceMessageRecorder({ onSend, onCancel }) {
       visualize();
 
     } catch (error) {
-      console.error('Error starting recording:', error);
+      logger.error('Error starting recording:', error);
     }
   };
 

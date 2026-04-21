@@ -10,6 +10,8 @@ import { useTranslation } from "react-i18next";
 import TCGeneratorModal from "../../TCGeneratorModal";
 import toast from "react-hot-toast";
 import { trashApi } from "../../../../services/api";
+import logger from '../../../../utils/logger';
+
 
 /**
  * StudentsBulkModals
@@ -55,6 +57,12 @@ export default function StudentsBulkModals({
     tcStudents,
     setSelectedKeys,
 
+    // ── Bulk Delete ──────────────────────────────────────────────────────
+    isBulkDeleteOpen,
+    onBulkDeleteClose,
+    bulkDeleteStudents,
+    executeBulkDelete,
+
     // ── Delete ───────────────────────────────────────────────────────────
     isDeleteOpen,
     onDeleteClose,
@@ -77,6 +85,7 @@ export default function StudentsBulkModals({
     const [isPromoting, setIsPromoting] = useState(false);
     const [isSendingReminders, setIsSendingReminders] = useState(false);
     const [isStatusChanging, setIsStatusChanging] = useState(false);
+    const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
     return (
         <>
@@ -119,6 +128,12 @@ export default function StudentsBulkModals({
                                         These students will be moved to the alumni list.
                                     </p>
                                 )}
+                                {isBulkSubmitting && (
+                                    <div className="mt-3 flex items-center gap-2 text-sm text-default-500">
+                                        <div className="w-4 h-4 border-2 border-default-300 border-t-primary rounded-full animate-spin shrink-0" />
+                                        Processing {selectedCount} student{selectedCount !== 1 ? "s" : ""}…
+                                    </div>
+                                )}
                             </ModalBody>
                             <ModalFooter>
                                 <Button variant="flat" onPress={onClose}>
@@ -134,7 +149,7 @@ export default function StudentsBulkModals({
                                             await executeBulkAction();
                                             onClose();
                                         } catch (error) {
-                                            console.error("Bulk action error:", error);
+                                            logger.error("Bulk action error:", error);
                                             toast.error(error.message || "Bulk action failed");
                                         } finally {
                                             setIsBulkSubmitting(false);
@@ -209,7 +224,7 @@ export default function StudentsBulkModals({
                                     await executePromotion();
                                     onPromoteClose();
                                 } catch (error) {
-                                    console.error("Promotion error:", error);
+                                    logger.error("Promotion error:", error);
                                     toast.error(error.message || "Promotion failed");
                                 } finally {
                                     setIsPromoting(false);
@@ -265,7 +280,7 @@ export default function StudentsBulkModals({
                                     await executeSendReminders();
                                     onReminderClose();
                                 } catch (error) {
-                                    console.error("Send reminders error:", error);
+                                    logger.error("Send reminders error:", error);
                                     toast.error(error.message || "Failed to send reminders");
                                 } finally {
                                     setIsSendingReminders(false);
@@ -287,6 +302,67 @@ export default function StudentsBulkModals({
                 }}
                 students={tcStudents}
             />
+
+            {/* ── Bulk Delete Confirmation Modal ────────────────────────────── */}
+            <Modal isOpen={isBulkDeleteOpen} onClose={onBulkDeleteClose} size="md">
+                <ModalContent>
+                    {(onClose) => (
+                        <>
+                            <ModalHeader className="flex flex-col gap-1">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-danger-50 rounded-lg">
+                                        <AlertTriangle size={24} className="text-danger" />
+                                    </div>
+                                    <span>Delete {bulkDeleteStudents.length} Student{bulkDeleteStudents.length !== 1 ? "s" : ""}?</span>
+                                </div>
+                            </ModalHeader>
+                            <ModalBody>
+                                <p className="text-sm text-danger font-medium mb-2">
+                                    This permanently removes all selected student profiles and their linked records (attendance, fees, health, parent-contact data).
+                                </p>
+                                <p className="text-sm text-default-600 mb-2">
+                                    The following students will be deleted:
+                                </p>
+                                <div className="max-h-52 overflow-y-auto rounded-lg border border-danger-100 bg-danger-50/40 divide-y divide-danger-100">
+                                    {bulkDeleteStudents.map((student) => (
+                                        <div key={student.id} className="flex items-center gap-2 px-3 py-2">
+                                            <Trash2 size={12} className="text-danger shrink-0" />
+                                            <span className="text-sm font-medium text-default-900">{student.name}</span>
+                                            {student.class && (
+                                                <span className="text-xs text-default-500 ml-auto">{student.class}</span>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </ModalBody>
+                            <ModalFooter>
+                                <Button variant="flat" onPress={onClose} isDisabled={isBulkDeleting}>
+                                    Cancel
+                                </Button>
+                                <Button
+                                    color="danger"
+                                    isLoading={isBulkDeleting}
+                                    isDisabled={isBulkDeleting}
+                                    startContent={!isBulkDeleting && <Trash2 size={16} />}
+                                    onPress={async () => {
+                                        setIsBulkDeleting(true);
+                                        try {
+                                            await executeBulkDelete();
+                                        } catch (error) {
+                                            logger.error("Bulk delete error:", error);
+                                            toast.error(error.message || "Failed to delete students");
+                                        } finally {
+                                            setIsBulkDeleting(false);
+                                        }
+                                    }}
+                                >
+                                    Delete {bulkDeleteStudents.length} Student{bulkDeleteStudents.length !== 1 ? "s" : ""}
+                                </Button>
+                            </ModalFooter>
+                        </>
+                    )}
+                </ModalContent>
+            </Modal>
 
             {/* ── Delete Confirmation Modal ─────────────────────────────────── */}
             <Modal isOpen={isDeleteOpen} onClose={onDeleteClose}>
@@ -357,12 +433,10 @@ export default function StudentsBulkModals({
                                                 { duration: 5000, icon: '🗑️' }
                                             );
                                         } catch (error) {
-                                            console.error("Delete error:", error);
+                                            logger.error("Delete error:", error);
                                             toast.error(
                                                 error.message || "Failed to delete student"
                                             );
-                                            onClose();
-                                            setStudentToDelete(null);
                                         } finally {
                                             setIsDeleting(false);
                                         }

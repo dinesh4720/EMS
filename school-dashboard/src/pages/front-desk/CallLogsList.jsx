@@ -12,6 +12,8 @@ import { useTranslation } from 'react-i18next';
 import { formatShortDate, formatDateTime} from '../../utils/dateFormatter';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
+import logger from '../../utils/logger';
+
 
 const CALL_PURPOSES = [
   { key: 'ADMISSION_INQUIRY', label: 'Admission Inquiry' },
@@ -68,7 +70,7 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
       const response = await frontDeskApi.getCallLogs();
       setCallLogs(Array.isArray(response) ? response : []);
     } catch (error) {
-      console.error('Failed to load call logs:', error);
+      logger.error('Failed to load call logs:', error);
       toast.error(t('toast.error.failedToLoadCallLogs'));
     } finally {
       setLoading(false);
@@ -278,6 +280,7 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
                     color="primary"
                     variant="light"
                     isIconOnly
+                    aria-label="View call log"
                     onPress={() => handleView(log)}
                   >
                     <Eye size={14} />
@@ -287,6 +290,7 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
                     color="warning"
                     variant="light"
                     isIconOnly
+                    aria-label="Edit call log"
                     onPress={() => handleEdit(log)}
                   >
                     <Edit size={14} />
@@ -296,6 +300,7 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
                     color="danger"
                     variant="light"
                     isIconOnly
+                    aria-label="Delete call log"
                     onPress={() => handleDelete(log._id)}
                   >
                     <Trash2 size={14} />

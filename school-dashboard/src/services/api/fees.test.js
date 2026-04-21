@@ -10,7 +10,7 @@ vi.mock('./core.js', () => ({ request: vi.fn() }));
 
 // API_URL is used only in payrollApi.exportPayroll which touches window.location —
 // stub the config module so the import doesn't fail in a test environment.
-vi.mock('../../config/api.js', () => ({ API_URL: 'http://localhost:5000/api' }));
+vi.mock('../../config/api.js', () => ({ API_URL: 'http://localhost:3002/api' }));
 
 import { request } from './core.js';
 

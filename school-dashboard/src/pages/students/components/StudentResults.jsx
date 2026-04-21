@@ -23,7 +23,7 @@ const getSubjectIcon = (name) => {
 };
 
 export default function StudentResults({
-  results,
+  results = [],
   resultsLoading,
   classTeacher,
   onExamSelect

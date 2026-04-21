@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Table,
   TableHeader,
@@ -39,12 +39,15 @@ import { useTranslation } from 'react-i18next';
 import SkeletonList from '../../../../components/skeletons/SkeletonList';
 import ConfirmDialog from '../../../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../../../hooks/useConfirmDialog';
+import logger from '../../../../utils/logger';
+
 
 
 export default function AnnouncementsList({
   onView, onEdit, onRefresh }) {
   const { t } = useTranslation();
   const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
+  const mountedRef = useRef(true);
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -55,7 +58,9 @@ export default function AnnouncementsList({
   const [dateFilter, setDateFilter] = useState('all');
 
   useEffect(() => {
+    mountedRef.current = true;
     loadAnnouncements();
+    return () => { mountedRef.current = false; };
   }, []);
 
   const loadAnnouncements = async () => {
@@ -68,14 +73,16 @@ export default function AnnouncementsList({
       }
       const response = await announcementsApi.getAll(params);
       // Backend returns { announcements: [], ... }
-      setAnnouncements(response.announcements || response || []);
+      if (mountedRef.current) setAnnouncements(response.announcements || response || []);
     } catch (error) {
-      console.error('Error loading announcements:', error);
-      const errorMsg = error.message || 'Unknown error';
-      setError(errorMsg);
-      toast.error(`Failed to load announcements: ${errorMsg}`);
+      logger.error('Error loading announcements:', error);
+      if (mountedRef.current) {
+        const errorMsg = error.message || 'Unknown error';
+        setError(errorMsg);
+        toast.error(`Failed to load announcements: ${errorMsg}`);
+      }
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   };
 
@@ -123,7 +130,7 @@ export default function AnnouncementsList({
           loadAnnouncements();
           onRefresh?.();
         } catch (error) {
-          console.error('Error deleting announcement:', error);
+          logger.error('Error deleting announcement:', error);
           toast.error(t('toast.error.failedToDeleteAnnouncement'));
         }
       },
@@ -135,8 +142,8 @@ export default function AnnouncementsList({
       const duplicate = {
         title: `${announcement.title} (Copy)`,
         content: announcement.content,
-        recipients: announcement.recipients,
-        channels: announcement.channels,
+        recipients: announcement.recipients?.length ? announcement.recipients : [{ type: 'all' }],
+        channels: announcement.channels?.length ? announcement.channels : ['inapp'],
         status: 'draft',
       };
 
@@ -145,7 +152,7 @@ export default function AnnouncementsList({
       loadAnnouncements();
       onRefresh?.();
     } catch (error) {
-      console.error('Error duplicating announcement:', error);
+      logger.error('Error duplicating announcement:', error);
       toast.error(t('toast.error.failedToDuplicateAnnouncement'));
     }
   };
@@ -157,7 +164,7 @@ export default function AnnouncementsList({
       loadAnnouncements();
       onRefresh?.();
     } catch (error) {
-      console.error('Error resending announcement:', error);
+      logger.error('Error resending announcement:', error);
       toast.error(t('toast.error.failedToResendAnnouncement'));
     }
   };

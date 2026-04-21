@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Chip, Select, SelectItem, Skeleton } from "@heroui/react";
 import { ChevronLeft, ChevronRight, Download, FileText } from "lucide-react";
@@ -35,26 +35,28 @@ export default function InvoiceHistory({ formatMoney }) {
   const [loading, setLoading] = useState(true);
   const [downloadingId, setDownloadingId] = useState(null);
   const [markingPaidId, setMarkingPaidId] = useState(null);
-
-  const loadInvoices = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = { page, limit: PAGE_SIZE };
-      if (statusFilter !== "all") params.status = statusFilter;
-      const data = await billingApi.getInvoices(params);
-      setInvoices(data.invoices || []);
-      setTotalPages(data.pages || 1);
-      setTotal(data.total || 0);
-    } catch (error) {
-      toast.error(error.message || "Failed to load invoices");
-    } finally {
-      setLoading(false);
-    }
-  }, [page, statusFilter]);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    loadInvoices();
-  }, [loadInvoices]);
+    let ignore = false;
+    setLoading(true);
+    const params = { page, limit: PAGE_SIZE };
+    if (statusFilter !== "all") params.status = statusFilter;
+    billingApi.getInvoices(params)
+      .then((data) => {
+        if (ignore) return;
+        setInvoices(data.invoices || []);
+        setTotalPages(data.pages || 1);
+        setTotal(data.total || 0);
+      })
+      .catch((error) => {
+        if (!ignore) toast.error(error.message || "Failed to load invoices");
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
+    return () => { ignore = true; };
+  }, [page, statusFilter, refreshKey]);
 
   const handleFilterChange = (keys) => {
     const value = Array.from(keys)[0] || "all";
@@ -78,7 +80,7 @@ export default function InvoiceHistory({ formatMoney }) {
     try {
       await billingApi.markInvoicePaid(invoiceNumber);
       toast.success("Invoice marked as paid");
-      await loadInvoices();
+      setRefreshKey((k) => k + 1);
     } catch (error) {
       toast.error(error.message || "Failed to mark invoice as paid");
     } finally {
@@ -192,6 +194,7 @@ export default function InvoiceHistory({ formatMoney }) {
               size="sm"
               variant="flat"
               isIconOnly
+              aria-label="Previous page"
               isDisabled={page <= 1}
               onPress={() => setPage((p) => Math.max(1, p - 1))}
             >
@@ -201,6 +204,7 @@ export default function InvoiceHistory({ formatMoney }) {
               size="sm"
               variant="flat"
               isIconOnly
+              aria-label="Next page"
               isDisabled={page >= totalPages}
               onPress={() => setPage((p) => Math.min(totalPages, p + 1))}
             >

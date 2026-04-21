@@ -27,7 +27,7 @@ const StudentDetailsContent = memo(function StudentDetailsContent({
         <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{title}</h3>
       </div>
       {showEdit && (
-        <button onClick={onEditOpen} className="p-2 hover:bg-gray-50 dark:hover:bg-zinc-800/50 rounded-lg">
+        <button aria-label={`Edit ${title}`} onClick={onEditOpen} className="p-2 hover:bg-gray-50 dark:hover:bg-zinc-800/50 rounded-lg">
           <Edit size={14} className="text-gray-400 dark:text-zinc-500" />
         </button>
       )}

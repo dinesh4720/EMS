@@ -119,8 +119,8 @@ export default function Vendors() {
                   {v.contactPerson && <p className="text-xs text-gray-500 dark:text-zinc-400">{v.contactPerson}</p>}
                 </div>
                 <div className="flex gap-1">
-                  <button onClick={() => openEdit(v)} className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-500 dark:text-zinc-400"><Edit3 size={14} /></button>
-                  <button onClick={() => setDeleteTarget(v._id)} className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-950 text-gray-500 dark:text-zinc-400 hover:text-red-600"><Trash2 size={14} /></button>
+                  <button aria-label="Edit vendor" onClick={() => openEdit(v)} className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-500 dark:text-zinc-400"><Edit3 size={14} /></button>
+                  <button aria-label="Delete vendor" onClick={() => setDeleteTarget(v._id)} className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-950 text-gray-500 dark:text-zinc-400 hover:text-red-600"><Trash2 size={14} /></button>
                 </div>
               </div>
               <div className="space-y-1.5">

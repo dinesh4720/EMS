@@ -26,6 +26,8 @@ import {
 import toast from "react-hot-toast";
 import { publicApi } from "../services/api";
 import { format } from "date-fns";
+import logger from '../utils/logger';
+
 
 /**
  * PublicFormSubmission - A parent-friendly form submission page
@@ -89,7 +91,7 @@ export default function PublicFormSubmission() {
       }
       setFormValues(initialValues);
     } catch (error) {
-      console.error("Failed to load form:", error);
+      logger.error("Failed to load form:", error);
       toast.error(error.message || "Invalid or expired form link");
       setFormData({
         formDetails: null,
@@ -166,7 +168,7 @@ export default function PublicFormSubmission() {
       setSubmitted(true);
       toast.success(t('toast.success.formSubmittedSuccessfully'));
     } catch (error) {
-      console.error("Submission failed:", error);
+      logger.error("Submission failed:", error);
       toast.error(error.message || "Failed to submit form. Please try again.");
     } finally {
       setSubmitting(false);
@@ -271,14 +273,17 @@ export default function PublicFormSubmission() {
       case "select":
         return (
           <div key={field.id} className="flex flex-col gap-1">
-            <label className="text-sm text-foreground/70 font-medium">
+            <label htmlFor={`${field.id}-select`} className="text-sm text-foreground/70 font-medium">
               {field.label}
               {field.required && <span className="text-danger ml-1">*</span>}
             </label>
             <select
+              id={`${field.id}-select`}
               value={value}
               onChange={(e) => handleFieldChange(field.id, e.target.value)}
               required={field.required}
+              aria-invalid={error ? "true" : undefined}
+              aria-describedby={error ? `${field.id}-error` : undefined}
               className={`px-3 py-2 rounded-lg border bg-background text-foreground transition-colors
                 ${error ? "border-danger" : "border-default-200 hover:border-default-400"}
                 focus:outline-none focus:ring-2 focus:ring-primary/50`}
@@ -295,7 +300,7 @@ export default function PublicFormSubmission() {
                 );
               })}
             </select>
-            {error && <p className="text-xs text-danger mt-1">{error}</p>}
+            {error && <p id={`${field.id}-error`} role="alert" aria-live="polite" className="text-xs text-danger mt-1">{error}</p>}
             {field.description && (
               <p className="text-xs text-default-400 mt-1">{field.description}</p>
             )}

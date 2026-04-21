@@ -490,6 +490,7 @@ export default function AdmissionFormSettings() {
                           isIconOnly
                           color="danger"
                           variant="light"
+                          aria-label="Remove document"
                           onPress={() => removeDocumentConfig(index)}
                           className="mt-6"
                         >

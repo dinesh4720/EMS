@@ -372,6 +372,7 @@ const FeedbacksList = forwardRef(({ onSave, ...props }, ref) => {
                     color="warning"
                     variant="light"
                     isIconOnly
+                    aria-label="Edit feedback"
                     onPress={() => handleEdit(feedback)}
                   >
                     <Edit size={14} />
@@ -381,6 +382,7 @@ const FeedbacksList = forwardRef(({ onSave, ...props }, ref) => {
                     color="danger"
                     variant="light"
                     isIconOnly
+                    aria-label="Delete feedback"
                     onPress={() => handleDelete(feedback._id)}
                   >
                     <Trash2 size={14} />

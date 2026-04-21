@@ -14,6 +14,8 @@ import StatCard from "../components/StatCard";
 import { useChartTheme, CHART_COLORS } from "../utils/chartTheme";
 import { getDateLocale } from '../i18n/index';
 import { useTranslation } from 'react-i18next';
+import logger from '../utils/logger';
+
 
 
 const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -192,7 +194,7 @@ export default function Analytics() {
           loading: false,
         });
       } catch (error) {
-        console.error("Failed to load analytics attendance summary:", error);
+        logger.error("Failed to load analytics attendance summary:", error);
 
         if (!cancelled) {
           setAttendanceSummary({
@@ -272,7 +274,7 @@ export default function Analytics() {
         pending: pendingFees,
         overdue: overdueFees,
         collectionRate: feeCollectionRate,
-        defaulters: feeDefaulters.length
+        defaulters: (feeDefaulters || []).length
       },
       staff: {
         total: safeStaff.length,
@@ -293,7 +295,7 @@ export default function Analytics() {
     };
   }, [students, staff, classesWithTeachers, feeDefaulters, attendanceSummary.avgAttendance]);
 
-  // Stat cards data
+  // Stat cards data — no trend badges: no year-over-year comparison data available
   const stats = [
     {
       label: "Total Students",
@@ -301,7 +303,6 @@ export default function Analytics() {
       subtext: `${analytics.students.active} active students`,
       icon: GraduationCap,
       color: "gray",
-      trend: { value: `${analytics.students.active}`, positive: true }
     },
     {
       label: "Total Staff",
@@ -309,7 +310,6 @@ export default function Analytics() {
       subtext: `${analytics.staff.teachers} teachers`,
       icon: Users,
       color: "gray",
-      trend: { value: `${analytics.staff.active}`, positive: true }
     },
     {
       label: "Total Classes",
@@ -317,7 +317,6 @@ export default function Analytics() {
       subtext: `Avg ${analytics.classes.avgSize} students/class`,
       icon: BookOpen,
       color: "gray",
-      trend: { value: analytics.classes.withTeacher, positive: true }
     },
     {
       label: "Fee Collection",
@@ -325,7 +324,6 @@ export default function Analytics() {
       subtext: `${analytics.fees.paid}/${analytics.students.total} paid`,
       icon: IndianRupee,
       color: "gray",
-      trend: { value: analytics.fees.collectionRate, positive: true }
     }
   ];
 

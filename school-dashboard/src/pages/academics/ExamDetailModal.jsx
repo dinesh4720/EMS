@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { ModalHeader, ModalBody, Chip, Button } from '@heroui/react';
-import { FileText, Calendar, Award, Pencil, Send, AlertTriangle } from 'lucide-react';
+import { FileText, Calendar, Award, Eye, Pencil, Send, AlertTriangle } from 'lucide-react';
 import { examsApi, resultsApi, classesApi } from '../../services/api';
 import { MinimalButton } from '../../components/ui';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { formatShortDate } from '../../utils/dateFormatter';
+import logger from '../../utils/logger';
+
 
 const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
   const { t } = useTranslation();
@@ -29,10 +31,10 @@ const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
 
       if (examData?.classId) {
         const resultsData = await resultsApi.getByClassExam(examData.classId, examId);
-        setResults(resultsData || []);
+        setResults(Array.isArray(resultsData) ? resultsData : []);
       }
     } catch (error) {
-      console.error('Error fetching exam details:', error);
+      logger.error('Error fetching exam details:', error);
       toast.error(t('toast.error.failedToLoadExamDetails'));
     } finally {
       setLoading(false);
@@ -47,7 +49,7 @@ const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
       setPublishConfirmOpen(false);
       fetchExamDetails();
     } catch (error) {
-      console.error('Error publishing results:', error);
+      logger.error('Error publishing results:', error);
       toast.error(t('toast.error.failedToPublishResults'));
     } finally {
       setPublishing(false);
@@ -98,8 +100,8 @@ const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
     );
   }
 
-  const passedCount = results.filter(r => r.marksObtained >= (exam.passingMarks || 35)).length;
-  const failedCount = results.length - passedCount;
+  const passedCount = results.filter(r => r.status === 'passed').length;
+  const failedCount = results.filter(r => r.status === 'failed').length;
 
   return (
     <>
@@ -181,7 +183,12 @@ const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
           </div>
 
           {/* Results Table */}
-          {results.length > 0 && (
+          {results.length === 0 ? (
+            <div className="text-center py-8 border border-gray-100 dark:border-zinc-800 rounded-lg">
+              <Eye size={32} className="mx-auto mb-2 text-gray-300 dark:text-zinc-600" />
+              <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.noResultsEnteredYet')}</p>
+            </div>
+          ) : (
             <div className="border border-gray-100 dark:border-zinc-800 rounded-lg overflow-hidden">
               <table className="w-full">
                 <thead className="bg-gray-50 dark:bg-zinc-900">

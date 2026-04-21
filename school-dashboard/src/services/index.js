@@ -16,6 +16,7 @@ export {
   resultsApi,
   academicPerformanceApi,
   subjectsApi,
+  examScheduleApi,
   classesApi,
   classesEnhancedApi,
   attendanceApi,
@@ -78,4 +79,3 @@ export { default as socketServiceEnhanced } from './socketServiceEnhanced.js';
 
 // Chat services
 export { default as chatService } from './chatService.js';
-export { default as chatServiceEnhanced } from './chatServiceEnhanced.js';

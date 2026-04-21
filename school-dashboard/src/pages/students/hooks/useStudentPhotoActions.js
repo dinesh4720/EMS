@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { useReactToPrint } from "react-to-print";
 import toast from "react-hot-toast";
 import { uploadApi } from "../../../services/api";
+import logger from '../../../utils/logger';
+
 
 /**
  * Custom hook for student photo-related actions
@@ -41,6 +43,7 @@ export function useStudentPhotoActions(student, onUpdateStudent, printRef) {
         setSelectedImageForEdit(reader.result);
         setIsPhotoEditorOpen(true);
         e.target.value = null;
+        reader.onloadend = null;
       };
       reader.readAsDataURL(file);
     }
@@ -89,7 +92,7 @@ export function useStudentPhotoActions(student, onUpdateStudent, printRef) {
       toast.success("Photo updated successfully", { id: loadingToast });
       setIsPhotoEditorOpen(false);
     } catch (error) {
-      console.error("❌ Photo upload error:", error);
+      logger.error("❌ Photo upload error:", error);
       toast.error("Photo upload failed: " + (error.message || "Unknown error"), { id: loadingToast });
     }
   };
@@ -111,7 +114,7 @@ export function useStudentPhotoActions(student, onUpdateStudent, printRef) {
       toast.success("Photo updated successfully", { id: loadingToast });
       setIsCameraCaptureOpen(false);
     } catch (error) {
-      console.error("❌ Photo upload error:", error);
+      logger.error("❌ Photo upload error:", error);
       toast.error("Photo upload failed: " + (error.message || "Unknown error"), { id: loadingToast });
     }
   };
@@ -148,7 +151,7 @@ export function useStudentPhotoActions(student, onUpdateStudent, printRef) {
       setPhotoPreview(null);
       toast.success("Photo removed successfully", { id: loadingToast });
     } catch (error) {
-      console.error("❌ Photo removal error:", error);
+      logger.error("❌ Photo removal error:", error);
       toast.error("Photo removal failed: " + (error.message || "Unknown error"), { id: loadingToast });
     }
   };

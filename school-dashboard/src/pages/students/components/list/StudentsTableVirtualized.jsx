@@ -2,7 +2,7 @@ import React from "react";
 import {
     Button, Checkbox,
 } from "@heroui/react";
-import { ArrowUpDown } from "lucide-react";
+import { ChevronUp, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useStudentsTableActions } from "./StudentsTableContext";
@@ -102,12 +102,10 @@ function StudentsTableVirtualized({
                                 size="md"
                                 classNames={{ base: "p-0 m-0", wrapper: "m-0" }}
                                 isSelected={
-                                    selectedKeys === "all" ||
-                                    (selectedKeys.size > 0 &&
-                                        selectedKeys.size === filteredItems.length)
+                                    filteredItems.length > 0 &&
+                                    selectedKeys.size === filteredItems.length
                                 }
                                 isIndeterminate={
-                                    selectedKeys !== "all" &&
                                     selectedKeys.size > 0 &&
                                     selectedKeys.size < filteredItems.length
                                 }
@@ -140,7 +138,9 @@ function StudentsTableVirtualized({
                             <div className="flex items-center gap-1">
                                 STUDENT
                                 {sortDescriptor.column === "name" && (
-                                    <ArrowUpDown size={12} className="text-gray-400 dark:text-zinc-500" />
+                                    sortDescriptor.direction === "ascending"
+                                        ? <ChevronUp size={12} className="text-gray-400 dark:text-zinc-500" />
+                                        : <ChevronDown size={12} className="text-gray-400 dark:text-zinc-500" />
                                 )}
                             </div>
                         </th>
@@ -174,10 +174,9 @@ function StudentsTableVirtualized({
                                         {column.label.toUpperCase()}
                                         {column.key === "class" &&
                                             sortDescriptor.column === "class" && (
-                                                <ArrowUpDown
-                                                    size={12}
-                                                    className="text-gray-400 dark:text-zinc-500"
-                                                />
+                                                sortDescriptor.direction === "ascending"
+                                                    ? <ChevronUp size={12} className="text-gray-400 dark:text-zinc-500" />
+                                                    : <ChevronDown size={12} className="text-gray-400 dark:text-zinc-500" />
                                             )}
                                     </div>
                                 </th>

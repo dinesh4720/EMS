@@ -6,6 +6,8 @@ import ReminderTemplates from "./components/reminders/ReminderTemplates";
 import { remindersApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import logger from '../../utils/logger';
+
 
 const typeTabs = [
   { id: "all", label: "All" },
@@ -37,7 +39,7 @@ export default function Reminders() {
       const response = await remindersApi.getAll();
       setReminders(response.reminders || response || []);
     } catch (error) {
-      console.error('Error loading reminders:', error);
+      logger.error('Error loading reminders:', error);
       setError(error.message || 'Unknown error');
       toast.error(`Failed to load reminders`);
     } finally {

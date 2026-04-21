@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Button, Input, Chip, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/react";
-import { Plus, Search, MoreVertical, MapPin, Users, Edit2, Trash2, UserPlus } from "lucide-react";
+import { Plus, Search, MoreVertical, MapPin, Users, Edit2, Trash2, UserPlus, Bus, Route as RouteIcon } from "lucide-react";
 import { transportApi } from "../../services/api";
 import { useApp } from "../../context/AppContext";
 import { CURRENT_ACADEMIC_YEAR } from "../../utils/constants";
@@ -10,6 +10,9 @@ import StudentAssignModal from "./StudentAssignModal";
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import StatCard from '../../components/ui/StatCard';
+import logger from '../../utils/logger';
+
 
 export default function RoutesTab() {
   const { t } = useTranslation();
@@ -39,10 +42,25 @@ export default function RoutesTab() {
       setRoutes(routesRes?.data || []);
       setVehicles(vehiclesRes?.data || []);
     } catch (error) {
-      console.error('Failed to load transport data:', error);
+      logger.error('Failed to load transport data:', error);
       toast.error(t('toast.error.failedToLoadRoutes'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Silent refresh — updates route data in the background without showing the skeleton loader.
+  // Used after student assign/remove so route card counts update without disrupting the open modal.
+  const silentRefresh = async () => {
+    try {
+      const [routesRes, vehiclesRes] = await Promise.all([
+        transportApi.getRoutes({ academicYear }),
+        transportApi.getVehicles(),
+      ]);
+      setRoutes(routesRes?.data || []);
+      setVehicles(vehiclesRes?.data || []);
+    } catch (error) {
+      logger.error('Failed to refresh transport data:', error);
     }
   };
 
@@ -65,7 +83,7 @@ export default function RoutesTab() {
       toast.success(t('toast.success.routeDeleted'));
       fetchData();
     } catch (error) {
-      console.error('Failed to delete route:', error);
+      logger.error('Failed to delete route:', error);
       toast.error(t('toast.error.failedToDeleteRoute'));
     } finally {
       setDeleteTarget(null);
@@ -82,10 +100,41 @@ export default function RoutesTab() {
     setIsStudentModalOpen(true);
   };
 
-  if (loading) return <TablePageSkeleton title={false} kpiCards={0} columns={5} rows={5} />;
+  // Compute stats from real data — "buses on route" = distinct vehicles assigned to active routes
+  const stats = useMemo(() => {
+    const activeRoutes = routes.filter((r) => r.status === 'active');
+    const busesOnRouteIds = new Set(
+      activeRoutes
+        .map((r) => r.vehicleId?._id?.toString() || r.vehicleId?.toString())
+        .filter(Boolean)
+    );
+    const totalStudents = routes.reduce((sum, r) => sum + (r.students?.length || 0), 0);
+    return {
+      totalRoutes: routes.length,
+      activeRoutes: activeRoutes.length,
+      busesOnRoute: busesOnRouteIds.size,
+      totalStudents,
+    };
+  }, [routes]);
+
+  if (loading) return <TablePageSkeleton title={false} kpiCards={4} columns={5} rows={5} />;
 
   return (
     <div className="space-y-4">
+      {/* Summary Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard label={t('pages.totalRoutes')} value={stats.totalRoutes} icon={RouteIcon} color="blue" />
+        <StatCard label={t('pages.activeRoutes')} value={stats.activeRoutes} icon={RouteIcon} color="green" />
+        <StatCard
+          label={t('pages.busesOnRoute')}
+          value={stats.busesOnRoute}
+          icon={Bus}
+          color="amber"
+          subtext={t('pages.ofTotalVehicles', { count: vehicles.length })}
+        />
+        <StatCard label={t('pages.totalStudents1')} value={stats.totalStudents} icon={Users} color="purple" />
+      </div>
+
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex gap-2 items-center flex-1 w-full sm:w-auto">
@@ -100,7 +149,7 @@ export default function RoutesTab() {
           <Dropdown>
             <DropdownTrigger>
               <Button size="sm" variant="flat">
-                {statusFilter === "all" ? "All Status" : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}
+                {statusFilter === "all" ? t('pages.allStatus1') : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}
               </Button>
             </DropdownTrigger>
             <DropdownMenu
@@ -120,7 +169,7 @@ export default function RoutesTab() {
           startContent={<Plus size={16} />}
           onPress={() => { setEditingRoute(null); setIsRouteModalOpen(true); }}
         >
-          Add Route
+          {t('pages.addRoute')}
         </Button>
       </div>
 
@@ -149,7 +198,7 @@ export default function RoutesTab() {
                   </Chip>
                   <Dropdown>
                     <DropdownTrigger>
-                      <Button isIconOnly size="sm" variant="light"><MoreVertical size={16} /></Button>
+                      <Button isIconOnly size="sm" variant="light" aria-label={t('pages.routeActions')}><MoreVertical size={16} /></Button>
                     </DropdownTrigger>
                     <DropdownMenu>
                       <DropdownItem key="edit" startContent={<Edit2 size={14} />} onPress={() => handleEdit(route)}>{t('pages.edit1')}</DropdownItem>
@@ -235,7 +284,7 @@ export default function RoutesTab() {
         isOpen={isStudentModalOpen}
         onClose={() => { setIsStudentModalOpen(false); setAssigningRoute(null); }}
         route={assigningRoute}
-        onSaved={fetchData}
+        onSaved={silentRefresh}
       />
 
       <ConfirmDialog

@@ -3,6 +3,8 @@ import { Button } from "@heroui/react";
 import { RotateCcw, Check, X, AlertCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import logger from '../../utils/logger';
+
 
 /**
  * CameraView - Fullscreen live camera preview with capture functionality
@@ -60,7 +62,7 @@ const CameraView = ({ onCapture, onClose }) => {
         };
       }
     } catch (err) {
-      console.error("Error accessing camera:", err);
+      logger.error("Error accessing camera:", err);
       setIsLoading(false);
 
       // Handle specific error types
@@ -258,6 +260,7 @@ const CameraView = ({ onCapture, onClose }) => {
                       size="lg"
                       variant="flat"
                       color="default"
+                      aria-label="Retake photo"
                       onPress={handleRetake}
                       className="rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/20"
                     >
@@ -265,6 +268,7 @@ const CameraView = ({ onCapture, onClose }) => {
                     </Button>
 
                     <button
+                      aria-label="Use photo"
                       onClick={handleUsePhoto}
                       className="w-20 h-20 rounded-full bg-white border-4 border-white/50 hover:scale-105 active:scale-95 transition-transform duration-200 flex items-center justify-center shadow-lg"
                     >
@@ -282,6 +286,7 @@ const CameraView = ({ onCapture, onClose }) => {
                       size="lg"
                       variant="flat"
                       color="default"
+                      aria-label="Switch camera"
                       onPress={switchCamera}
                       className="rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/20"
                     >
@@ -309,6 +314,7 @@ const CameraView = ({ onCapture, onClose }) => {
                       size="lg"
                       variant="flat"
                       color="default"
+                      aria-label="Close camera"
                       onPress={handleClose}
                       className="rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/20"
                     >

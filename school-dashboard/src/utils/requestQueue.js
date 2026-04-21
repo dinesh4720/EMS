@@ -84,7 +84,15 @@ class RequestQueue {
   }
 
   clear() {
+    const error = new DOMException('Request queue cleared', 'AbortError');
+    for (const { reject } of this.queue) {
+      reject(error);
+    }
     this.queue = [];
+    if (this.cooldownTimer) {
+      clearTimeout(this.cooldownTimer);
+      this.cooldownTimer = null;
+    }
   }
 
   get pending() {

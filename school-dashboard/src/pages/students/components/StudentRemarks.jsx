@@ -6,6 +6,9 @@ import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { formatShortDate } from '../../../utils/dateFormatter';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
+import { MarkdownRenderer } from '../../../components/ui';
+import logger from '../../../utils/logger';
+
 
 
 export default function StudentRemarks({
@@ -83,7 +86,7 @@ export default function StudentRemarks({
       });
       setIsRemarkOpen(false);
     } catch (error) {
-      console.error("Error saving remark:", error);
+      logger.error("Error saving remark:", error);
       toast.error(error.message || t('toast.error.failedToSaveRemark', 'Failed to save remark'));
     } finally {
       setIsSavingRemark(false);
@@ -119,7 +122,7 @@ export default function StudentRemarks({
       onRemarksChange(remarks.filter(r => r._id !== remarkToDelete._id));
       toast.success(t('toast.success.remarkDeleted', 'Remark deleted'));
     } catch (error) {
-      console.error("Error deleting remark:", error);
+      logger.error("Error deleting remark:", error);
       toast.error(error.message || t('toast.error.failedToDeleteRemark', 'Failed to delete remark'));
     } finally {
       setIsDeletingRemark(false);
@@ -132,7 +135,7 @@ export default function StudentRemarks({
       await request(`/students/${studentId}/remarks/${remark._id}/resend`, { method: 'POST' });
       toast.success(`Remark resent to ${student.parentName || 'parent'}`);
     } catch (error) {
-      console.error("Error resending remark:", error);
+      logger.error("Error resending remark:", error);
       toast.error(error.message || "Failed to resend remark");
     }
   };
@@ -230,7 +233,7 @@ export default function StudentRemarks({
                       </div>
                       <Dropdown>
                         <DropdownTrigger>
-                          <Button isIconOnly size="sm" variant="light">
+                          <Button isIconOnly size="sm" variant="light" aria-label="More actions">
                             <MoreVertical size={16} />
                           </Button>
                         </DropdownTrigger>
@@ -241,9 +244,7 @@ export default function StudentRemarks({
                         </DropdownMenu>
                       </Dropdown>
                     </div>
-                    <p className="text-sm text-gray-600 leading-relaxed dark:text-zinc-400">
-                      {remark.description}
-                    </p>
+                    <MarkdownRenderer content={remark.description} className="text-sm text-gray-600 leading-relaxed dark:text-zinc-400" />
                   </div>
                 </div>
               );
@@ -365,7 +366,7 @@ export default function StudentRemarks({
                       <h4 className="font-semibold text-gray-900 mb-1 dark:text-zinc-100">{remarkForm.title}</h4>
                     )}
                     {remarkForm.description && (
-                      <p className="text-sm text-gray-600 dark:text-zinc-400">{remarkForm.description}</p>
+                      <MarkdownRenderer content={remarkForm.description} className="text-sm text-gray-600 dark:text-zinc-400" />
                     )}
                     <div className="flex items-center gap-2 mt-2">
                       <Chip size="sm" variant="flat" className="bg-gray-100 text-gray-600 capitalize dark:bg-zinc-800 dark:text-zinc-400">

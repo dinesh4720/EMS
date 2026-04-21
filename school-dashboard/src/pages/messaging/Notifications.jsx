@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Bell, Settings, CheckCircle } from 'lucide-react';
 import NotificationCenter from './components/notifications/NotificationCenter';
 import NotificationSettings from './components/notifications/NotificationSettings';
-import { notificationsApi } from '../../services/api/fees';
+import { notificationsApi } from '../../services/api';
 import { useTranslation } from 'react-i18next';
 import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
 

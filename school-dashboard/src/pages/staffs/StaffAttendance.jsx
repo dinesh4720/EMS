@@ -16,9 +16,10 @@ import { staffAttendanceApi } from "../../services/api/classes";
 import PhotoAvatar from "../../components/PhotoAvatar";
 import { getDateLocale } from '../../i18n/index';
 import { useTranslation } from 'react-i18next';
+import { useEntityFetch } from "../../hooks/useEntityFetch";
+import logger from '../../utils/logger';
 
-
-const ITEMS_PER_LOAD = 10;
+const ITEMS_PER_LOAD = 20;
 
 export default function StaffAttendance() {
   const { t } = useTranslation();
@@ -44,15 +45,25 @@ export default function StaffAttendance() {
       return null;
     }, [selectedDate, schoolSettings?.workingDays, events, t]);
     const [attendancePeriod, setAttendancePeriod] = useState("this_month");
-    const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
-    const [isLoading, setIsLoading] = useState(false);
+    const [attendanceFetchError, setAttendanceFetchError] = useState(null);
+    const [isFetchingAttendance, setIsFetchingAttendance] = useState(false);
+
+    const loadAttendanceForDate = useCallback(async (date) => {
+        setIsFetchingAttendance(true);
+        setAttendanceFetchError(null);
+        try {
+            await fetchStaffAttendanceForDate(date);
+        } catch (err) {
+            setAttendanceFetchError(t('staffAttendance.fetchError', 'Failed to load attendance. Please try again.'));
+        } finally {
+            setIsFetchingAttendance(false);
+        }
+    }, [fetchStaffAttendanceForDate, t]);
 
     // Fetch attendance when date changes
     useEffect(() => {
-        fetchStaffAttendanceForDate(selectedDate);
-    }, [selectedDate, fetchStaffAttendanceForDate]);
-
-    const loaderRef = useRef(null);
+        loadAttendanceForDate(selectedDate);
+    }, [selectedDate, loadAttendanceForDate]);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedKeys, setSelectedKeys] = useState(new Set([]));
     const [statusFilter, setStatusFilter] = useState("all");
@@ -151,39 +162,10 @@ export default function StaffAttendance() {
         });
     }, [staff, searchQuery, statusFilter, dailyAttendance, sortDescriptor]);
 
-    const visibleStaff = useMemo(() => {
-        return filteredStaff.slice(0, visibleCount);
-    }, [filteredStaff, visibleCount]);
-
-    const hasMore = visibleCount < filteredStaff.length;
-
-    // Reset visible count when filters change
-    useEffect(() => {
-        setVisibleCount(ITEMS_PER_LOAD);
-    }, [searchQuery, statusFilter, sortDescriptor]);
-
-    // Intersection Observer for lazy loading
-    useEffect(() => {
-        const observer = new IntersectionObserver(
-            (entries) => {
-                if (entries[0].isIntersecting && hasMore && !isLoading) {
-                    setIsLoading(true);
-                    // Simulate loading delay for smooth UX
-                    setTimeout(() => {
-                        setVisibleCount(prev => prev + ITEMS_PER_LOAD);
-                        setIsLoading(false);
-                    }, 300);
-                }
-            },
-            { threshold: 0.1 }
-        );
-
-        if (loaderRef.current) {
-            observer.observe(loaderRef.current);
-        }
-
-        return () => observer.disconnect();
-    }, [hasMore, isLoading]);
+    const { visibleItems: visibleStaff, hasMore, isLoadingMore: isLoading, loaderRef } = useEntityFetch(
+        filteredStaff,
+        [searchQuery, statusFilter, sortDescriptor]
+    );
 
     const handleStatusChange = (staffId, status) => {
         if (invalidDateReason) return;
@@ -367,7 +349,7 @@ export default function StaffAttendance() {
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
         } catch (error) {
-            console.error('Failed to download attendance report:', error);
+            logger.error('Failed to download attendance report:', error);
         } finally {
             setDownloadLoading(false);
             setDownloadModalOpen(false);
@@ -680,6 +662,25 @@ export default function StaffAttendance() {
                 <div className="flex items-center gap-2 p-3 bg-danger-50 text-danger-700 rounded-lg mb-4 mx-1">
                     <AlertTriangle size={16} />
                     <span className="text-sm font-medium">{invalidDateReason}</span>
+                </div>
+            )}
+
+            {/* AUDIT-823: Attendance fetch error banner */}
+            {attendanceFetchError && (
+                <div className="flex items-center justify-between gap-2 p-3 bg-danger-50 text-danger-700 rounded-lg mb-4 mx-1">
+                    <div className="flex items-center gap-2">
+                        <AlertTriangle size={16} className="flex-shrink-0" />
+                        <span className="text-sm font-medium">{attendanceFetchError}</span>
+                    </div>
+                    <Button
+                        size="sm"
+                        variant="flat"
+                        color="danger"
+                        onPress={() => loadAttendanceForDate(selectedDate)}
+                        isLoading={isFetchingAttendance}
+                    >
+                        {t('pages.retry', 'Retry')}
+                    </Button>
                 </div>
             )}
 
