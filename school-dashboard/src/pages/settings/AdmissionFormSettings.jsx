@@ -200,8 +200,8 @@ export default function AdmissionFormSettings() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold text-default-900">{t('pages.admissionFormConfiguration')}</h2>
-        <p className="text-sm text-default-500 mt-1">
+        <h2 className="text-2xl font-semibold text-fg">{t('pages.admissionFormConfiguration')}</h2>
+        <p className="text-sm text-fg-muted mt-1">
           Configure admission ID format and document requirements for student admissions
         </p>
       </div>
@@ -211,7 +211,7 @@ export default function AdmissionFormSettings() {
         onSelectionChange={setActiveTab}
         variant="underlined"
         classNames={{
-          tabList: "gap-6 border-b border-default-200",
+          tabList: "gap-6 border-b border-border-token",
           cursor: "w-full bg-primary",
           tab: "max-w-fit px-0 h-12",
           tabContent: "group-data-[selected=true]:text-primary"
@@ -229,8 +229,8 @@ export default function AdmissionFormSettings() {
           <Card className="p-6 mt-6">
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-semibold text-default-900 mb-2">{t('pages.admissionIdConfiguration')}</h3>
-                <p className="text-sm text-default-500">
+                <h3 className="text-lg font-semibold text-fg mb-2">{t('pages.admissionIdConfiguration')}</h3>
+                <p className="text-sm text-fg-muted">
                   Configure how admission IDs are generated for new students
                 </p>
               </div>
@@ -315,8 +315,8 @@ export default function AdmissionFormSettings() {
               <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-default-700">{t('pages.preview1')}</p>
-                    <p className="text-xs text-default-500 mt-1">{t('pages.nextAdmissionIdWillBe')}</p>
+                    <p className="text-sm font-medium text-fg">{t('pages.preview1')}</p>
+                    <p className="text-xs text-fg-muted mt-1">{t('pages.nextAdmissionIdWillBe')}</p>
                   </div>
                   <Chip size="lg" color="primary" variant="flat" className="font-mono text-lg px-4">
                     {previewId}
@@ -356,8 +356,8 @@ export default function AdmissionFormSettings() {
           <Card className="p-6 mt-6">
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-semibold text-default-900 mb-2">{t('pages.rollNumberConfiguration')}</h3>
-                <p className="text-sm text-default-500">
+                <h3 className="text-lg font-semibold text-fg mb-2">{t('pages.rollNumberConfiguration')}</h3>
+                <p className="text-sm text-fg-muted">
                   Configure how roll numbers are assigned to students
                 </p>
               </div>
@@ -366,7 +366,7 @@ export default function AdmissionFormSettings() {
 
               <div className="space-y-6">
                 <div>
-                  <label className="text-sm font-medium text-default-700 mb-2 block">{t('pages.formatType')}</label>
+                  <label className="text-sm font-medium text-fg mb-2 block">{t('pages.formatType')}</label>
                   <RadioGroup
                     value={rollNumberConfig.format}
                     onValueChange={(value) => setRollNumberConfig({ ...rollNumberConfig, format: value })}
@@ -374,13 +374,13 @@ export default function AdmissionFormSettings() {
                     <Radio value="sequential">
                       <div>
                         <div className="font-medium">{t('pages.sequential')}</div>
-                        <div className="text-xs text-default-500">{t('pages.rollNumbersAssignedSequentially123')}</div>
+                        <div className="text-xs text-fg-muted">{t('pages.rollNumbersAssignedSequentially123')}</div>
                       </div>
                     </Radio>
                     <Radio value="class-based">
                       <div>
                         <div className="font-medium">{t('pages.classBased')}</div>
-                        <div className="text-xs text-default-500">{t('pages.rollNumbersBasedOnClassEG10a00110a002')}</div>
+                        <div className="text-xs text-fg-muted">{t('pages.rollNumbersBasedOnClassEG10a00110a002')}</div>
                       </div>
                     </Radio>
                   </RadioGroup>
@@ -403,13 +403,13 @@ export default function AdmissionFormSettings() {
                 >
                   <div>
                     <div className="font-medium">{t('pages.resetPerClass')}</div>
-                    <div className="text-xs text-default-500">{t('pages.startRollNumbersFromBeginningForEachClass')}</div>
+                    <div className="text-xs text-fg-muted">{t('pages.startRollNumbersFromBeginningForEachClass')}</div>
                   </div>
                 </Switch>
 
-                <div className="bg-default-100 p-4 rounded-lg">
-                  <p className="text-sm font-medium text-default-700 mb-2">{t('pages.preview1')}</p>
-                  <p className="text-xs text-default-500 mb-2">
+                <div className="bg-surface-2 p-4 rounded-lg">
+                  <p className="text-sm font-medium text-fg mb-2">{t('pages.preview1')}</p>
+                  <p className="text-xs text-fg-muted mb-2">
                     Example roll numbers for Class 10-A:
                   </p>
                   <div className="flex gap-2">
@@ -455,8 +455,8 @@ export default function AdmissionFormSettings() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-default-900 mb-2">{t('pages.documentConfiguration')}</h3>
-                  <p className="text-sm text-default-500">
+                  <h3 className="text-lg font-semibold text-fg mb-2">{t('pages.documentConfiguration')}</h3>
+                  <p className="text-sm text-fg-muted">
                     Configure which documents are required during student admission
                   </p>
                 </div>
@@ -474,7 +474,7 @@ export default function AdmissionFormSettings() {
 
               <div className="space-y-4">
                 {documentConfigs.map((doc, index) => (
-                  <Card key={doc._id || doc.documentName || index} className="p-4 border border-default-200">
+                  <Card key={doc._id || doc.documentName || index} className="p-4 border border-border-token">
                     <div className="space-y-4">
                       <div className="flex items-start justify-between gap-4">
                         <Input
@@ -543,7 +543,7 @@ export default function AdmissionFormSettings() {
                 ))}
 
                 {documentConfigs.length === 0 && (
-                  <div className="text-center py-12 text-default-400">
+                  <div className="text-center py-12 text-fg-faint">
                     <FileText size={48} className="mx-auto mb-3 opacity-50" />
                     <p>{t('pages.noDocumentsConfigured')}</p>
                     <p className="text-sm mt-1">Click "Add Document" to create a new document requirement</p>

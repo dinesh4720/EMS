@@ -9,7 +9,7 @@ const TRACK_SIZE = {
 };
 
 const COLOR_STYLES = {
-  primary: "bg-gray-900 dark:bg-zinc-100",
+  primary: "bg-fg",
   success: "bg-green-500",
   warning: "bg-amber-500",
   danger: "bg-red-500",
@@ -46,9 +46,9 @@ const LinearProgress = forwardRef(function LinearProgress(
     <div ref={ref} className={cn("w-full", className)} {...props}>
       {(label || showValue) && (
         <div className="flex items-center justify-between mb-1.5 text-xs">
-          {label && <span className="font-medium text-gray-700 dark:text-zinc-300">{label}</span>}
+          {label && <span className="font-medium text-fg">{label}</span>}
           {showValue && !indeterminate && (
-            <span className="text-gray-500 dark:text-zinc-400 tabular-nums">{formattedValue}</span>
+            <span className="text-fg-muted tabular-nums">{formattedValue}</span>
           )}
         </div>
       )}
@@ -59,7 +59,7 @@ const LinearProgress = forwardRef(function LinearProgress(
         aria-valuenow={indeterminate ? undefined : value}
         aria-label={typeof label === "string" ? label : undefined}
         className={cn(
-          "w-full overflow-hidden rounded-full bg-gray-100 dark:bg-zinc-800",
+          "w-full overflow-hidden rounded-full bg-surface-2",
           TRACK_SIZE[size],
           trackClassName
         )}
@@ -97,7 +97,7 @@ const CIRCULAR_SIZE = {
 };
 
 const CIRCULAR_COLOR = {
-  primary: "stroke-gray-900 dark:stroke-zinc-100",
+  primary: "stroke-fg",
   success: "stroke-green-500",
   warning: "stroke-amber-500",
   danger: "stroke-red-500",
@@ -145,7 +145,7 @@ function CircularProgress({
           r={radius}
           strokeWidth={stroke}
           fill="none"
-          className="stroke-gray-100 dark:stroke-zinc-800"
+          className="stroke-divider"
         />
         <circle
           cx={dimension / 2}
@@ -164,7 +164,7 @@ function CircularProgress({
         />
       </svg>
       {showValue && !indeterminate && (
-        <span className={cn("absolute font-medium text-gray-700 dark:text-zinc-200 tabular-nums", fontSize)}>
+        <span className={cn("absolute font-medium text-fg tabular-nums", fontSize)}>
           {Math.round(percent)}%
         </span>
       )}

@@ -12,10 +12,10 @@ import { useTranslation } from 'react-i18next';
 function InfoItem({ label, value, icon: Icon, className = '' }) {
   return (
     <div className={className}>
-      <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">{label}</p>
+      <p className="text-xs text-fg-muted mb-1">{label}</p>
       <div className="flex items-center gap-1.5">
-        {Icon && <Icon size={14} className="text-gray-400 dark:text-zinc-500" strokeWidth={2} />}
-        <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{value || 'N/A'}</p>
+        {Icon && <Icon size={14} className="text-fg-faint" strokeWidth={2} />}
+        <p className="text-sm font-medium text-fg">{value || 'N/A'}</p>
       </div>
     </div>
   );

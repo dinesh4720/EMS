@@ -42,6 +42,8 @@ export default function Timetable({ classId }) {
   const [schedule, setSchedule] = useState({});
   const [loading, setLoading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [view, setView] = useState('week'); // 'week' | 'day'
+  const [activeDay, setActiveDay] = useState(days[0]);
 
   // New state for conflict detection and available teachers
   const [availableTeachers, setAvailableTeachers] = useState([]);
@@ -545,18 +547,22 @@ export default function Timetable({ classId }) {
     navigate('/timetable-wizard');
   };
 
+  const handlePrint = () => {
+    if (typeof window !== 'undefined') window.print();
+  };
+
   const selectedClassData = classesWithTeachers.find(c => String(c.id) === String(selectedClass));
 
   if (classesWithTeachers.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500 dark:text-zinc-400">{t('pages.noClassesAvailable')}</p>
+        <p className="text-fg-muted">{t('pages.noClassesAvailable')}</p>
       </div>
     );
   }
 
   return (
-    <div className="w-full flex flex-col">
+    <div className="tt-page w-full">
       {/* Toolbar */}
       <TimetableToolbar
         classId={classId}
@@ -568,9 +574,14 @@ export default function Timetable({ classId }) {
         syncStatus={syncStatus}
         hasChanges={hasChanges}
         loading={loading}
+        view={view}
+        onViewChange={setView}
+        activeDay={activeDay}
+        onActiveDayChange={setActiveDay}
         onWizardClick={handleWizardClick}
         onPeriodsOpen={onPeriodsOpen}
         onSaveTimetable={handleSaveTimetable}
+        onPrint={handlePrint}
       />
 
       {loading && !hasChanges ? (
@@ -586,6 +597,8 @@ export default function Timetable({ classId }) {
           periods={periods}
           schedule={schedule}
           staff={staff}
+          view={view}
+          activeDay={activeDay}
           onSlotClick={handleSlotClick}
           onSlotSwap={handleSlotSwap}
         />

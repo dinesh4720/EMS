@@ -1,0 +1,265 @@
+/* ============================================================
+   EMS Revamp — Design Tokens
+   Superhuman-style: dense, calm, frosted, indigo accent.
+   ============================================================ */
+
+:root {
+  /* Type */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --fs-11: 11px;
+  --fs-13: 13px;
+  --fs-15: 15px;
+  --fs-18: 18px;
+  --fs-24: 24px;
+  --fs-32: 32px;
+
+  --lh-tight: 1.15;
+  --lh-snug: 1.35;
+  --lh-normal: 1.5;
+
+  --fw-regular: 420;
+  --fw-medium: 520;
+  --fw-semibold: 600;
+
+  /* Spacing — 4 px base */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+
+  /* Radii */
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 8px;
+  --r-xl: 12px;
+  --r-2xl: 16px;
+  --r-full: 999px;
+
+  /* Density / row heights */
+  --row-h: 36px;
+  --row-h-cozy: 44px;
+  --topbar-h: 44px;
+  --sidebar-w: 224px;
+  --sidebar-w-collapsed: 56px;
+
+  /* Color — Light (warm neutral) */
+  --bg: oklch(98.6% 0.003 80);
+  --surface: oklch(100% 0 0);
+  --surface-2: oklch(97% 0.003 80);
+  --surface-hover: oklch(95% 0.004 80);
+  --border: oklch(0% 0 0 / 0.08);
+  --border-strong: oklch(0% 0 0 / 0.14);
+  --divider: oklch(0% 0 0 / 0.05);
+  /* Aliased names — kept so `var(--border-token)` / `var(--danger-token)` /
+     `var(--info-token)` continue to resolve. Tailwind v4's `@theme inline`
+     block in index.css generates `--color-border-token` etc., but only the
+     `--color-` prefixed forms are exposed for utility classes — direct CSS
+     `var(--border-token)` references would otherwise resolve to nothing. */
+  --border-token: var(--border);
+  --danger-token: var(--danger);
+  --info-token: var(--info);
+
+  --fg: oklch(18% 0.01 280);
+  --fg-muted: oklch(45% 0.008 280);
+  --fg-subtle: oklch(60% 0.006 280);
+  --fg-faint: oklch(72% 0.004 280);
+
+  /* Accent — indigo */
+  --accent: oklch(56% 0.19 270);
+  --accent-hover: oklch(50% 0.2 270);
+  --accent-bg: oklch(56% 0.19 270 / 0.1);
+  --accent-fg: oklch(98% 0.01 270);
+  --accent-border: oklch(56% 0.19 270 / 0.25);
+
+  /* Status — used ONLY for status, never decoration */
+  --ok: oklch(58% 0.14 150);
+  --ok-bg: oklch(58% 0.14 150 / 0.1);
+  --warn: oklch(70% 0.15 75);
+  --warn-bg: oklch(70% 0.15 75 / 0.12);
+  --danger: oklch(58% 0.2 25);
+  --danger-bg: oklch(58% 0.2 25 / 0.1);
+  --info: oklch(60% 0.14 240);
+  --info-bg: oklch(60% 0.14 240 / 0.1);
+
+  /* Chart series palette — categorical, distinct hues that play well
+     with the warm-neutral surface and the indigo accent. Use these for
+     multi-series charts (Recharts dataKeys); for status-tinted charts
+     use --ok / --warn / --danger / --info instead. */
+  --chart-c1: oklch(56% 0.19 270); /* indigo (accent) */
+  --chart-c2: oklch(60% 0.14 240); /* blue */
+  --chart-c3: oklch(58% 0.14 150); /* green */
+  --chart-c4: oklch(70% 0.15 75);  /* amber */
+  --chart-c5: oklch(60% 0.18 320); /* magenta */
+  --chart-grid: oklch(94% 0.005 270);
+  --chart-axis: oklch(60% 0.005 270);
+
+  /* Frosted glass */
+  --glass-bg: rgba(255, 255, 255, 0.62);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-blur: saturate(160%) blur(24px);
+
+  /* Elevation — barely-there */
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.04);
+  --shadow-md: 0 4px 16px -4px rgb(0 0 0 / 0.08), 0 1px 2px rgb(0 0 0 / 0.04);
+  --shadow-lg: 0 24px 48px -16px rgb(0 0 0 / 0.18), 0 2px 4px rgb(0 0 0 / 0.06);
+  --shadow-glass: 0 32px 64px -24px rgb(0 0 0 / 0.24), 0 0 0 1px rgb(0 0 0 / 0.05);
+}
+
+/* Dark theme — also fires on .dark class so the new tokens stay in
+ * lockstep with next-themes (which toggles `.dark` on <html>).
+ * Phase 1 unifies on a single source of truth. */
+[data-theme="dark"],
+.dark {
+  --bg: oklch(15% 0.005 280);
+  --surface: oklch(18% 0.006 280);
+  --surface-2: oklch(20% 0.007 280);
+  --surface-hover: oklch(23% 0.008 280);
+  --border: oklch(100% 0 0 / 0.08);
+  --border-strong: oklch(100% 0 0 / 0.14);
+  --divider: oklch(100% 0 0 / 0.05);
+  --chart-grid: oklch(28% 0.005 270);
+  --chart-axis: oklch(60% 0.005 270);
+
+  --fg: oklch(96% 0.005 280);
+  --fg-muted: oklch(72% 0.006 280);
+  --fg-subtle: oklch(58% 0.005 280);
+  --fg-faint: oklch(40% 0.005 280);
+
+  --glass-bg: rgba(20, 20, 24, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.08);
+
+  --shadow-glass: 0 32px 64px -24px rgb(0 0 0 / 0.6), 0 0 0 1px rgb(255 255 255 / 0.06);
+}
+
+/* Density modifier */
+[data-density="compact"] {
+  --row-h: 32px;
+  --topbar-h: 40px;
+}
+
+/* ============================================================
+   Base reset / element styles
+   ============================================================ */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+  font-size: var(--fs-13);
+  line-height: var(--lh-normal);
+  color: var(--fg);
+  background: var(--bg);
+  font-feature-settings: "cv11", "ss01", "ss03";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Button reset lives in @layer base so @layer utilities (Tailwind classes
+ * like `bg-*`, `text-*`, `p-*`, `border-*`) win the cascade. Plus :where()
+ * keeps specificity at 0 so even unlayered component classes can override. */
+@layer base {
+  :where(button) {
+    font-family: inherit;
+    font-size: inherit;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: inherit;
+    padding: 0;
+  }
+}
+
+input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--fg-faint); }
+
+/* ============================================================
+   Reusable atoms
+   ============================================================ */
+
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--fg-subtle);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  line-height: 1;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 18px;
+  padding: 0 6px;
+  font-size: var(--fs-11);
+  font-weight: 500;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--fg-muted);
+  white-space: nowrap;
+}
+
+.chip--ok { background: var(--ok-bg); color: var(--ok); }
+.chip--warn { background: var(--warn-bg); color: var(--warn); }
+.chip--danger { background: var(--danger-bg); color: var(--danger); }
+.chip--info { background: var(--info-bg); color: var(--info); }
+.chip--accent { background: var(--accent-bg); color: var(--accent); }
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+/* Glass panel */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+}
+
+/* Tabular numerals */
+.tnum { font-variant-numeric: tabular-nums; }
+.mono { font-family: var(--font-mono); }
+
+/* Utility */
+.row { display: flex; align-items: center; }
+.col { display: flex; flex-direction: column; }
+.gap-1 { gap: 4px; } .gap-2 { gap: 8px; } .gap-3 { gap: 12px; } .gap-4 { gap: 16px; } .gap-6 { gap: 24px; }
+.muted { color: var(--fg-muted); }
+.subtle { color: var(--fg-subtle); }
+.faint { color: var(--fg-faint); }
+
+/* Anim */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: none; } }
+.fade-in { animation: fadeIn 200ms ease-out both; }

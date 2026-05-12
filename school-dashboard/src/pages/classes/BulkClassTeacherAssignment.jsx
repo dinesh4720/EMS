@@ -184,9 +184,9 @@ export default function BulkClassTeacherAssignment() {
   return (
     <div className="w-full flex flex-col pt-0 gap-6">
       {/* Header with Search */}
-      <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-background border-b border-default-200 py-4 -mx-6 -mt-6 px-6 mb-4">
+      <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-bg border-b border-divider py-4 -mx-6 -mt-6 px-6 mb-4">
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold text-default-800">{t('pages.classTeachers1')}</h2>
+          <h2 className="text-lg font-semibold text-fg">{t('pages.classTeachers1')}</h2>
           <Chip size="sm" variant="flat" color={stats.unassigned > 0 ? "warning" : "success"}>
             {stats.assigned} {t('classes.assigned', 'Assigned')} • {stats.unassigned} {t('classes.unassigned', 'Unassigned')}
           </Chip>
@@ -196,7 +196,7 @@ export default function BulkClassTeacherAssignment() {
           placeholder={t('pages.searchClassesOrTeachers')}
           value={searchQuery}
           onChange={setSearchQuery}
-          className="w-full sm:max-w-[350px] px-3 py-2 bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700 focus-within:border-gray-400 dark:focus-within:border-zinc-600 transition-all"
+          className="w-full sm:max-w-[350px] px-3 py-2 bg-surface rounded-lg border border-border-token hover:border-border-strong focus-within:border-fg-faint transition-all"
         />
       </div>
 
@@ -207,10 +207,10 @@ export default function BulkClassTeacherAssignment() {
         classNames={{
           base: "-mx-6 overflow-visible [&_table]:w-[calc(100%+3rem)] [&_table]:border-spacing-0 [&_table]:select-text",
           thead: "[&>tr]:first:shadow-none [&>tr>th:first-child]:pl-6 [&>tr>th:first-child]:pr-3 [&>tr>th:first-child]:w-12",
-          th: "bg-transparent text-default-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200 last:pr-6 hover:bg-default-100 transition-colors cursor-pointer [&_svg]:text-default-300 [&:hover_svg]:text-default-500 [&_svg]:opacity-100 first:hover:bg-transparent first:cursor-default select-none",
-          td: "py-0 border-b border-default-200 group-data-[last=true]:border-none last:pr-6 select-text",
+          th: "bg-transparent text-fg-faint font-medium text-xs uppercase tracking-wider h-12 border-b border-divider last:pr-6 hover:bg-surface-2 transition-colors cursor-pointer [&_svg]:text-fg-faint [&:hover_svg]:text-fg-muted [&_svg]:opacity-100 first:hover:bg-transparent first:cursor-default select-none",
+          td: "py-0 border-b border-divider group-data-[last=true]:border-none last:pr-6 select-text",
           tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-12 [&>tr:first-child>td]:pt-0",
-          tr: "hover:bg-default-50/50 transition-colors",
+          tr: "hover:bg-surface-2 transition-colors",
         }}
       >
         <TableHeader>
@@ -234,7 +234,7 @@ export default function BulkClassTeacherAssignment() {
                   <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center text-primary shrink-0">
                     <span className="font-semibold text-sm">{cls.name}</span>
                   </div>
-                  <span className="font-medium text-default-900">
+                  <span className="font-medium text-fg">
                     {t('classes.classLabel', 'Class')} {cls.name}-{cls.section}
                   </span>
                 </div>
@@ -248,7 +248,7 @@ export default function BulkClassTeacherAssignment() {
                       avatarProps={{
                         src: cls.teacherPhoto,
                         size: "sm",
-                        className: "bg-default-100"
+                        className: "bg-surface-2"
                       }}
                     />
                   ) : (
@@ -257,7 +257,7 @@ export default function BulkClassTeacherAssignment() {
                 </div>
               </TableCell>
               <TableCell>
-                <div className="py-4 text-sm text-default-600">
+                <div className="py-4 text-sm text-fg-muted">
                   {cls.studentCount || 0} {t('classes.students', 'students')}
                 </div>
               </TableCell>
@@ -297,7 +297,7 @@ export default function BulkClassTeacherAssignment() {
           <ModalHeader className="flex flex-col gap-1">
             {t('classes.assignClassTeacher', 'Assign Class Teacher')}
             {modal.targetClass && (
-              <span className="text-sm font-normal text-default-500">
+              <span className="text-sm font-normal text-fg-muted">
                 {t('classes.classLabel', 'Class')} {modal.targetClass.name}-{modal.targetClass.section}
               </span>
             )}
@@ -320,7 +320,7 @@ export default function BulkClassTeacherAssignment() {
                     <Avatar alt={t.name} className="flex-shrink-0" size="sm" src={t.picture} />
                     <div className="flex flex-col">
                       <span className="text-small">{t.name}</span>
-                      <span className="text-tiny text-default-400">{t.department || 'Teacher'}</span>
+                      <span className="text-tiny text-fg-faint">{t.department || 'Teacher'}</span>
                     </div>
                   </div>
                 </SelectItem>

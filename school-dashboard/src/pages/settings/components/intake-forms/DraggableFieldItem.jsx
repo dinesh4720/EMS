@@ -29,20 +29,20 @@ const DraggableFieldItem = ({
     >
       <div
         className={`p-4 rounded-xl transition-all duration-200 group relative border-2 ${isSelected
-          ? "border-primary bg-white dark:bg-zinc-950 shadow-lg shadow-primary/5 z-10"
-          : "border-transparent hover:border-gray-200 hover:bg-white bg-transparent"
+          ? "border-primary bg-surface shadow-lg shadow-primary/5 z-10"
+          : "border-transparent hover:border-border-token hover:bg-surface bg-transparent"
           }`}
         onClick={onSelect}
       >
-        <div className="flex items-center justify-between mb-4 opacity-0 group-hover:opacity-100 transition-opacity absolute -top-3 right-4 bg-white dark:bg-zinc-900 shadow-sm border border-gray-100 dark:border-zinc-700 rounded-full px-2 py-1 z-20">
+        <div className="flex items-center justify-between mb-4 opacity-0 group-hover:opacity-100 transition-opacity absolute -top-3 right-4 bg-surface shadow-sm border border-divider rounded-full px-2 py-1 z-20">
           <div className="flex items-center gap-1">
             <div
-              className="cursor-move p-1 text-gray-400 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-200 transition-colors"
+              className="cursor-move p-1 text-fg-faint hover:text-fg transition-colors"
               onPointerDown={(e) => controls.start(e)}
             >
               <GripVertical size={14} />
             </div>
-            <div className="h-4 w-px bg-gray-200 mx-1"></div>
+            <div className="h-4 w-px bg-surface-2 mx-1"></div>
             <Button
               isIconOnly
               size="sm"

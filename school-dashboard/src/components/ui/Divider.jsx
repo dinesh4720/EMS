@@ -32,11 +32,11 @@ export default function Divider({
         className={cn("flex items-center gap-3", SPACING_H[spacing], className)}
         {...props}
       >
-        <span className="flex-1 h-px bg-gray-100 dark:bg-zinc-800" aria-hidden="true" />
-        <span className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-zinc-500">
+        <span className="flex-1 h-px bg-divider" aria-hidden="true" />
+        <span className="text-xs font-medium uppercase tracking-wide text-fg-faint">
           {label}
         </span>
-        <span className="flex-1 h-px bg-gray-100 dark:bg-zinc-800" aria-hidden="true" />
+        <span className="flex-1 h-px bg-divider" aria-hidden="true" />
       </div>
     );
   }
@@ -47,7 +47,7 @@ export default function Divider({
         role="separator"
         aria-orientation="vertical"
         className={cn(
-          "inline-block w-px self-stretch bg-gray-100 dark:bg-zinc-800",
+          "inline-block w-px self-stretch bg-divider",
           SPACING_V[spacing],
           className
         )}
@@ -59,7 +59,7 @@ export default function Divider({
   return (
     <hr
       className={cn(
-        "border-0 h-px bg-gray-100 dark:bg-zinc-800",
+        "border-0 h-px bg-divider",
         SPACING_H[spacing],
         className
       )}

@@ -107,17 +107,17 @@ function SalaryComponents() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Earnings Card */}
-        <Card className="shadow-sm border border-default-200">
+        <Card className="shadow-sm border border-border-token">
           <CardHeader className="flex justify-between items-center px-6 pt-5 pb-0">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-success-50 rounded-lg">
                 <ArrowUpRight size={20} className="text-success-600" />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-default-800">
+                <h3 className="text-base font-semibold text-fg">
                   {t("pages.earningsComponents")}
                 </h3>
-                <p className="text-xs text-default-500">
+                <p className="text-xs text-fg-muted">
                   {t("pages.defineSalaryAdditions")}
                 </p>
               </div>
@@ -135,7 +135,7 @@ function SalaryComponents() {
           <Divider className="mt-4" />
           <CardBody className="px-6 py-4">
             {earnings.length === 0 ? (
-              <p className="text-sm text-default-400 text-center py-6">
+              <p className="text-sm text-fg-faint text-center py-6">
                 No earning components added yet
               </p>
             ) : (
@@ -143,11 +143,11 @@ function SalaryComponents() {
                 {earnings.map((item) => (
                   <div
                     key={item.id}
-                    className="flex justify-between items-center py-3 px-3 rounded-lg hover:bg-default-50 transition-colors group"
+                    className="flex justify-between items-center py-3 px-3 rounded-lg hover:bg-surface-2 transition-colors group"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-2 h-2 rounded-full bg-success-400" />
-                      <span className="text-sm font-medium text-default-700">
+                      <span className="text-sm font-medium text-fg">
                         {item.name}
                       </span>
                     </div>
@@ -170,17 +170,17 @@ function SalaryComponents() {
         </Card>
 
         {/* Deductions Card */}
-        <Card className="shadow-sm border border-default-200">
+        <Card className="shadow-sm border border-border-token">
           <CardHeader className="flex justify-between items-center px-6 pt-5 pb-0">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-danger-50 rounded-lg">
                 <ArrowDownRight size={20} className="text-danger-600" />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-default-800">
+                <h3 className="text-base font-semibold text-fg">
                   {t("pages.deductionsComponents")}
                 </h3>
-                <p className="text-xs text-default-500">
+                <p className="text-xs text-fg-muted">
                   {t("pages.defineSalaryDeductions")}
                 </p>
               </div>
@@ -198,7 +198,7 @@ function SalaryComponents() {
           <Divider className="mt-4" />
           <CardBody className="px-6 py-4">
             {deductions.length === 0 ? (
-              <p className="text-sm text-default-400 text-center py-6">
+              <p className="text-sm text-fg-faint text-center py-6">
                 No deduction components added yet
               </p>
             ) : (
@@ -206,11 +206,11 @@ function SalaryComponents() {
                 {deductions.map((item) => (
                   <div
                     key={item.id}
-                    className="flex justify-between items-center py-3 px-3 rounded-lg hover:bg-default-50 transition-colors group"
+                    className="flex justify-between items-center py-3 px-3 rounded-lg hover:bg-surface-2 transition-colors group"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-2 h-2 rounded-full bg-danger-400" />
-                      <span className="text-sm font-medium text-default-700">
+                      <span className="text-sm font-medium text-fg">
                         {item.name}
                       </span>
                     </div>
@@ -426,7 +426,7 @@ function GeneralPayrollSettings() {
         className={`shadow-sm border transition-all duration-200 ${
           editingSection === "schedule"
             ? "border-primary ring-1 ring-primary"
-            : "border-default-200"
+            : "border-border-token"
         }`}
       >
         <CardBody className="p-6">
@@ -442,10 +442,10 @@ function GeneralPayrollSettings() {
                 <Calendar size={22} />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-default-800">
+                <h3 className="text-base font-semibold text-fg">
                   Payroll Schedule
                 </h3>
-                <p className="text-xs text-default-500 mt-0.5">
+                <p className="text-xs text-fg-muted mt-0.5">
                   Set when salaries are disbursed each month
                 </p>
               </div>
@@ -496,10 +496,10 @@ function GeneralPayrollSettings() {
                 variant="bordered"
                 labelPlacement="outside"
                 classNames={{
-                  inputWrapper: "bg-white dark:bg-zinc-950",
+                  inputWrapper: "bg-surface",
                 }}
                 endContent={
-                  <span className="text-default-400 text-xs">day of month</span>
+                  <span className="text-fg-faint text-xs">day of month</span>
                 }
                 description="Enter a value between 1 and 31"
                 autoFocus
@@ -511,7 +511,7 @@ function GeneralPayrollSettings() {
                 variant="bordered"
                 labelPlacement="outside"
                 classNames={{
-                  trigger: "bg-white dark:bg-zinc-950",
+                  trigger: "bg-surface",
                 }}
               >
                 <SelectItem key="weekly">Weekly</SelectItem>
@@ -539,25 +539,25 @@ function GeneralPayrollSettings() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               <div>
-                <p className="text-xs text-default-400 uppercase tracking-wider mb-1">
+                <p className="text-xs text-fg-faint uppercase tracking-wider mb-1">
                   Disburse Date
                 </p>
-                <p className="text-sm font-medium text-default-800">
+                <p className="text-sm font-medium text-fg">
                   {disburseDate
                     ? `${getOrdinalSuffix(disburseDate)} of every month`
                     : "Not set"}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-default-400 uppercase tracking-wider mb-1">
+                <p className="text-xs text-fg-faint uppercase tracking-wider mb-1">
                   Payroll Cycle
                 </p>
-                <p className="text-sm font-medium text-default-800">
+                <p className="text-sm font-medium text-fg">
                   {{ weekly: "Weekly", biweekly: "Bi-weekly", monthly: "Monthly" }[payrollCycle] || "Monthly"}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-default-400 uppercase tracking-wider mb-1">
+                <p className="text-xs text-fg-faint uppercase tracking-wider mb-1">
                   Status
                 </p>
                 <Chip
@@ -578,7 +578,7 @@ function GeneralPayrollSettings() {
         className={`shadow-sm border transition-all duration-200 ${
           editingSection === "payment"
             ? "border-primary ring-1 ring-primary"
-            : "border-default-200"
+            : "border-border-token"
         }`}
       >
         <CardBody className="p-6">
@@ -594,10 +594,10 @@ function GeneralPayrollSettings() {
                 <Banknote size={22} />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-default-800">
+                <h3 className="text-base font-semibold text-fg">
                   Payment Method
                 </h3>
-                <p className="text-xs text-default-500 mt-0.5">
+                <p className="text-xs text-fg-muted mt-0.5">
                   Default method for salary disbursement
                 </p>
               </div>
@@ -646,7 +646,7 @@ function GeneralPayrollSettings() {
                 variant="bordered"
                 labelPlacement="outside"
                 classNames={{
-                  trigger: "bg-white dark:bg-zinc-950",
+                  trigger: "bg-surface",
                 }}
               >
                 <SelectItem key="bank_transfer">Bank Transfer</SelectItem>
@@ -671,23 +671,23 @@ function GeneralPayrollSettings() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               <div>
-                <p className="text-xs text-default-400 uppercase tracking-wider mb-1">
+                <p className="text-xs text-fg-faint uppercase tracking-wider mb-1">
                   Payment Method
                 </p>
-                <p className="text-sm font-medium text-default-800">
+                <p className="text-sm font-medium text-fg">
                   {paymentMethodLabels[paymentMethod]}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-default-400 uppercase tracking-wider mb-1">
+                <p className="text-xs text-fg-faint uppercase tracking-wider mb-1">
                   Processing
                 </p>
-                <p className="text-sm font-medium text-default-800">
+                <p className="text-sm font-medium text-fg">
                   Manual Approval
                 </p>
               </div>
               <div>
-                <p className="text-xs text-default-400 uppercase tracking-wider mb-1">
+                <p className="text-xs text-fg-faint uppercase tracking-wider mb-1">
                   Status
                 </p>
                 <Chip size="sm" color="success" variant="flat">
@@ -704,7 +704,7 @@ function GeneralPayrollSettings() {
         className={`shadow-sm border transition-all duration-200 ${
           editingSection === "reminders"
             ? "border-primary ring-1 ring-primary"
-            : "border-default-200"
+            : "border-border-token"
         }`}
       >
         <CardBody className="p-6">
@@ -720,10 +720,10 @@ function GeneralPayrollSettings() {
                 <Bell size={22} />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-default-800">
+                <h3 className="text-base font-semibold text-fg">
                   Reminders & Notifications
                 </h3>
-                <p className="text-xs text-default-500 mt-0.5">
+                <p className="text-xs text-fg-muted mt-0.5">
                   Automated alerts before payroll processing
                 </p>
               </div>
@@ -763,12 +763,12 @@ function GeneralPayrollSettings() {
 
           {editingSection === "reminders" ? (
             <div className="space-y-6">
-              <div className="flex items-center justify-between p-4 bg-default-50 rounded-xl">
+              <div className="flex items-center justify-between p-4 bg-surface-2 rounded-xl">
                 <div>
-                  <p className="text-sm font-medium text-default-800">
+                  <p className="text-sm font-medium text-fg">
                     Auto Payroll Reminder
                   </p>
-                  <p className="text-xs text-default-500 mt-0.5">
+                  <p className="text-xs text-fg-muted mt-0.5">
                     Send reminder notifications before payroll date
                   </p>
                 </div>
@@ -792,10 +792,10 @@ function GeneralPayrollSettings() {
                     variant="bordered"
                     labelPlacement="outside"
                     classNames={{
-                      inputWrapper: "bg-white dark:bg-zinc-950",
+                      inputWrapper: "bg-surface",
                     }}
                     endContent={
-                      <span className="text-default-400 text-xs">days</span>
+                      <span className="text-fg-faint text-xs">days</span>
                     }
                     description="How many days before payday to send reminders"
                   />
@@ -820,7 +820,7 @@ function GeneralPayrollSettings() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               <div>
-                <p className="text-xs text-default-400 uppercase tracking-wider mb-1">
+                <p className="text-xs text-fg-faint uppercase tracking-wider mb-1">
                   Auto Reminder
                 </p>
                 <Chip
@@ -832,18 +832,18 @@ function GeneralPayrollSettings() {
                 </Chip>
               </div>
               <div>
-                <p className="text-xs text-default-400 uppercase tracking-wider mb-1">
+                <p className="text-xs text-fg-faint uppercase tracking-wider mb-1">
                   Remind Before
                 </p>
-                <p className="text-sm font-medium text-default-800">
+                <p className="text-sm font-medium text-fg">
                   {autoReminder ? `${reminderDays} days` : "—"}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-default-400 uppercase tracking-wider mb-1">
+                <p className="text-xs text-fg-faint uppercase tracking-wider mb-1">
                   Notify
                 </p>
-                <p className="text-sm font-medium text-default-800">
+                <p className="text-sm font-medium text-fg">
                   Admins Only
                 </p>
               </div>
@@ -853,7 +853,7 @@ function GeneralPayrollSettings() {
       </Card>
 
       {/* Section 4: Access & Permissions (Read-only) */}
-      <Card className="shadow-sm border border-default-200">
+      <Card className="shadow-sm border border-border-token">
         <CardBody className="p-6">
           <div className="flex justify-between items-start mb-5">
             <div className="flex items-center gap-3">
@@ -861,10 +861,10 @@ function GeneralPayrollSettings() {
                 <Shield size={22} />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-default-800">
+                <h3 className="text-base font-semibold text-fg">
                   Access & Permissions
                 </h3>
-                <p className="text-xs text-default-500 mt-0.5">
+                <p className="text-xs text-fg-muted mt-0.5">
                   Who can view and manage payroll
                 </p>
               </div>
@@ -903,17 +903,17 @@ function GeneralPayrollSettings() {
             ].map((item) => (
               <div
                 key={item.role}
-                className="p-3.5 rounded-xl border border-default-100 bg-default-50/50"
+                className="p-3.5 rounded-xl border border-divider bg-surface-2/50"
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-default-800">
+                  <span className="text-sm font-semibold text-fg">
                     {item.role}
                   </span>
                   <Chip size="sm" color={item.color} variant="flat">
                     {item.access}
                   </Chip>
                 </div>
-                <p className="text-xs text-default-500">{item.desc}</p>
+                <p className="text-xs text-fg-muted">{item.desc}</p>
               </div>
             ))}
           </div>
@@ -929,10 +929,10 @@ export default function PayrollSettings() {
     <div className="w-full flex flex-col animate-fade-in">
       {/* Page Header */}
       <div className="mb-6">
-        <h2 className="text-lg font-semibold text-default-800">
+        <h2 className="text-lg font-semibold text-fg">
           {t("pages.payrollConfiguration")}
         </h2>
-        <p className="text-sm text-default-500 mt-1">
+        <p className="text-sm text-fg-muted mt-1">
           Manage payroll schedules, salary structures, templates, and
           components
         </p>
@@ -948,7 +948,7 @@ export default function PayrollSettings() {
           cursor: "w-full bg-primary",
           tab: "max-w-fit px-0 h-10",
           tabContent:
-            "group-data-[selected=true]:text-primary text-default-500 font-medium",
+            "group-data-[selected=true]:text-primary text-fg-muted font-medium",
         }}
       >
         <Tab

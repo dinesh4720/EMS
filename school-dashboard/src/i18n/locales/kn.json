@@ -728,7 +728,7 @@
       "pending": "ಬಾಕಿ",
       "approved": "ಅನುಮೋದಿತ",
       "rejected": "ತಿರಸ್ಕೃತ",
-      "needs_revision": "ಪರಿಷ್ಕರಣೆ ಅಗತ್ಯ",
+      "needsRevision": "ಪರಿಷ್ಕರಣೆ ಅಗತ್ಯ",
       "all": "ಎಲ್ಲಾ"
     }
   },

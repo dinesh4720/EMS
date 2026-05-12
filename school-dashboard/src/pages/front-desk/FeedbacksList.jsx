@@ -318,6 +318,7 @@ const FeedbacksList = forwardRef(({ onSave, ...props }, ref) => {
           New Feedback
         </Button>
       </div>
+      <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
       <Table aria-label={t('aria.tables.feedbacks')} removeWrapper>
         <TableHeader>
           <TableColumn scope="col">{t('pages.nAME')}</TableColumn>
@@ -393,6 +394,7 @@ const FeedbacksList = forwardRef(({ onSave, ...props }, ref) => {
           )}
         </TableBody>
       </Table>
+      </div>
 
       <Modal isOpen={isOpen} onClose={onClose} size="3xl" scrollBehavior="inside">
         <ModalContent>

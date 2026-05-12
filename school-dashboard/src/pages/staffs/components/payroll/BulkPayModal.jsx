@@ -1,8 +1,8 @@
 import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  Button, Input, Select, SelectItem, Textarea
+  Input, Select, SelectItem, Textarea
 } from "@heroui/react";
-import { CreditCard } from "lucide-react";
+import { CreditCard, AlertCircle } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 
 export default function BulkPayModal({
@@ -14,26 +14,33 @@ export default function BulkPayModal({
   onConfirm,
 }) {
   const { t } = useTranslation();
+  const count = pendingBulkPay?.count || 0;
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="md">
+    <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="md" className="payroll-modal">
       <ModalContent>
         {(onClose) => (
           <>
-            <ModalHeader className="flex gap-3">
-              <div className="p-2 bg-success-100 rounded-lg">
-                <CreditCard className="text-success-600" size={24} />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">{t('pages.logBulkPayments1')}</h3>
-                <p className="text-sm text-default-500">Processing {pendingBulkPay?.count || 0} records</p>
+            <ModalHeader>
+              <div className="payroll-modal__head">
+                <div className="payroll-modal__icon payroll-modal__icon--ok">
+                  <CreditCard size={18} aria-hidden />
+                </div>
+                <div>
+                  <h3 className="payroll-modal__title">{t('pages.logBulkPayments1')}</h3>
+                  <p className="payroll-modal__sub">
+                    Processing <span className="mono tnum">{count}</span> records
+                  </p>
+                </div>
               </div>
             </ModalHeader>
             <ModalBody className="gap-4">
-              <div className="bg-default-50 rounded-lg p-3 mb-2">
-                <p className="text-sm text-default-600">
-                  You are about to record payments for <strong>{pendingBulkPay?.count || 0}</strong> staff members.
-                </p>
+              <div className="payroll-modal__note payroll-modal__note--default">
+                <AlertCircle size={14} aria-hidden style={{ flexShrink: 0, marginTop: 1 }} />
+                <span>
+                  You're about to record payments for <strong className="mono tnum">{count}</strong>{' '}
+                  staff members. Any individual failures are reported in the result toast.
+                </span>
               </div>
 
               <Select
@@ -49,7 +56,7 @@ export default function BulkPayModal({
               </Select>
 
               <Input
-                label="Payment Reference / Batch ID"
+                label="Payment reference / batch ID"
                 placeholder={t('staff.payroll.batchIdPlaceholder')}
                 value={paymentForm.paymentReference}
                 onValueChange={(v) => setPaymentForm({ ...paymentForm, paymentReference: v })}
@@ -67,12 +74,17 @@ export default function BulkPayModal({
               />
             </ModalBody>
             <ModalFooter>
-              <Button variant="light" onPress={onClose}>
+              <button type="button" className="btn btn--ghost" onClick={onClose}>
                 Cancel
-              </Button>
-              <Button color="success" onPress={onConfirm}>
-                Log Payments
-              </Button>
+              </button>
+              <button
+                type="button"
+                className="btn btn--accent"
+                onClick={onConfirm}
+                style={{ background: 'var(--ok)', borderColor: 'var(--ok)' }}
+              >
+                Log <span className="mono tnum">{count}</span> payments
+              </button>
             </ModalFooter>
           </>
         )}

@@ -272,8 +272,8 @@ const HomeworkPage = () => {
                 <Card key={id} padding="sm" elevation="raised" className="space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-gray-900 dark:text-zinc-100 truncate">{hw.title}</h3>
-                      <p className="text-sm text-gray-700 dark:text-zinc-300 mt-0.5">{hw.subject}</p>
+                      <h3 className="font-medium text-fg truncate">{hw.title}</h3>
+                      <p className="text-sm text-fg mt-0.5">{hw.subject}</p>
                     </div>
                     <Chip size="sm" color={getStatusChipColor(hw)}>
                       {getStatusLabel(hw)}
@@ -281,11 +281,11 @@ const HomeworkPage = () => {
                   </div>
 
                   {hw.description && (
-                    <p className="text-sm text-gray-500 dark:text-zinc-400 line-clamp-2">{hw.description}</p>
+                    <p className="text-sm text-fg-muted line-clamp-2">{hw.description}</p>
                   )}
 
                   <div className="flex items-center gap-4 text-sm">
-                    <span className="flex items-center gap-1 text-gray-500 dark:text-zinc-400">
+                    <span className="flex items-center gap-1 text-fg-muted">
                       <Calendar size={14} />
                       {hw.dueDate ? formatShortDate(hw.dueDate, 'Invalid date') : 'No due date'}
                     </span>
@@ -301,8 +301,8 @@ const HomeworkPage = () => {
                     </button>
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-zinc-800">
-                    <span className="text-xs text-gray-500 dark:text-zinc-400">{className}</span>
+                  <div className="flex items-center justify-between pt-2 border-t border-divider">
+                    <span className="text-xs text-fg-muted">{className}</span>
                     <div className="flex items-center gap-1">
                       <IconButton
                         size="sm"

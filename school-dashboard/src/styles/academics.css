@@ -1,0 +1,133 @@
+/* Phase 11 — Academics
+ * Page chrome + 3-cell KPI strip + exam list grid.
+ * Reuses .frosted-overlay base for dialogs (when redesigned later).
+ */
+
+.academics-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 24px;
+}
+
+.academics-kpi {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.academics-kpi__cell {
+  background: var(--surface);
+  border: 1px solid var(--border-token);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+}
+.academics-kpi__label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-subtle);
+  font-weight: 500;
+}
+.academics-kpi__value {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+.academics-kpi__value--ok { color: var(--ok); }
+.academics-kpi__value--warn { color: var(--warn); }
+.academics-kpi__sub { font-size: 12px; color: var(--fg-muted); }
+
+.academics-table {
+  background: var(--surface);
+  border: 1px solid var(--border-token);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.academics-table__head,
+.academics-table__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 130px 110px 120px 110px;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 16px;
+}
+.academics-table__head {
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border-token);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-subtle);
+}
+.academics-table__row {
+  border-bottom: 1px solid var(--divider);
+  font-size: 13px;
+  color: var(--fg);
+}
+.academics-table__row:last-child { border-bottom: 0; }
+.academics-table__row:hover { background: var(--surface-2); }
+.academics-table__name { font-weight: 520; }
+.academics-table__sub { font-size: 11px; color: var(--fg-subtle); margin-top: 1px; }
+.academics-table__action { text-align: right; }
+.academics-table__empty {
+  padding: 64px 24px;
+  text-align: center;
+  color: var(--fg-subtle);
+  font-size: 13px;
+}
+
+/* Grade-book grid migration — token-only restyle for ResultsEntry cells */
+.gradebook {
+  background: var(--surface);
+  border: 1px solid var(--border-token);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.gradebook__head {
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border-token);
+  font-size: 11px;
+  color: var(--fg-subtle);
+  padding: 10px 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.gradebook__row {
+  border-bottom: 1px solid var(--divider);
+  padding: 8px 16px;
+}
+.gradebook__row:last-child { border-bottom: 0; }
+.gradebook__cell-input {
+  background: var(--surface);
+  border: 1px solid var(--border-token);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg);
+  width: 80px;
+}
+.gradebook__cell-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+@media (max-width: 1023px) {
+  .academics-kpi { grid-template-columns: 1fr; }
+}
+@media (max-width: 767px) {
+  .academics-table__head { display: none; }
+  .academics-table__row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding: 12px 16px;
+  }
+  .academics-table__action { text-align: left; }
+}

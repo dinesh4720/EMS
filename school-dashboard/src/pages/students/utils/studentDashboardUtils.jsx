@@ -11,13 +11,13 @@
 export const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-        <p className="text-xs font-medium text-gray-500 mb-1">{label}</p>
+      <div className="bg-surface p-3 rounded-lg border border-border-token shadow-sm">
+        <p className="text-xs font-medium text-fg-muted mb-1">{label}</p>
         {payload.map((entry, i) => (
           <div key={entry.name || `entry-${i}`} className="flex items-center gap-2 text-sm">
-            <div className="w-2 h-2 rounded-full bg-gray-500" />
-            <span className="text-gray-600">{entry.name}:</span>
-            <span className="font-medium text-gray-900">{entry.value}%</span>
+            <div className="w-2 h-2 rounded-full bg-gray-500 dark:bg-zinc-400" />
+            <span className="text-fg-muted">{entry.name}:</span>
+            <span className="font-medium text-fg">{entry.value}%</span>
           </div>
         ))}
       </div>

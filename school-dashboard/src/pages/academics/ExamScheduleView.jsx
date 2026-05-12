@@ -73,8 +73,8 @@ export default function ExamScheduleView({ exams, activeFiltersCount, onCreateEx
         return (
           <Card key={group.key} className="p-4">
             <div className="flex items-center gap-2 mb-3">
-              <Icon size={16} className="text-[var(--color-text-muted)]" aria-hidden="true" />
-              <h3 className="text-sm font-medium text-[var(--color-text-primary)]">
+              <Icon size={16} className="text-fg-muted" aria-hidden="true" />
+              <h3 className="text-sm font-medium text-fg">
                 {t(group.labelKey)} ({items.length})
               </h3>
             </div>
@@ -109,22 +109,22 @@ function ExamScheduleCard({ exam, badgeColor, onClick, onEnterResults }) {
     <button
       type="button"
       onClick={onClick}
-      className="text-left p-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)] hover:border-[var(--color-border-strong)] hover:shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
+      className="text-left p-3 rounded-lg bg-surface-2 border border-border-token hover:border-fg-faint hover:shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
     >
       <div className="flex justify-between items-start gap-2 mb-2">
-        <span className="font-medium text-[var(--color-text-primary)] text-sm truncate">
+        <span className="font-medium text-fg text-sm truncate">
           {exam.name}
         </span>
         <Badge color={badgeColor} size="sm" variant="solid">
           {statusLabel}
         </Badge>
       </div>
-      <p className="text-xs text-[var(--color-text-muted)] truncate">
+      <p className="text-xs text-fg-muted truncate">
         {(exam.className || exam.classId) ?? '—'}
         {exam.subjectName ? ` • ${exam.subjectName}` : ''}
       </p>
       {exam.startDate && (
-        <p className="text-xs text-[var(--color-text-muted)] mt-1">
+        <p className="text-xs text-fg-muted mt-1">
           {formatShortDate(exam.startDate)}
         </p>
       )}
@@ -133,7 +133,7 @@ function ExamScheduleCard({ exam, badgeColor, onClick, onEnterResults }) {
           <span
             role="link"
             tabIndex={0}
-            className="text-xs font-medium text-[var(--color-primary)] hover:underline focus-visible:outline-none focus-visible:underline"
+            className="text-xs font-medium text-accent hover:underline focus-visible:outline-none focus-visible:underline"
             onClick={(e) => {
               e.stopPropagation();
               onEnterResults();

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button, Card, CardBody, Chip, Divider, Input, Progress, Skeleton, Switch } from "@heroui/react";
 import {
   AlertTriangle,
   CreditCard,
@@ -15,7 +14,18 @@ import { useTranslation } from 'react-i18next';
 import InvoiceHistory from "../../components/billing/InvoiceHistory";
 import PlanComparisonMatrix from "../../components/billing/PlanComparisonMatrix";
 import CouponInput from "../../components/billing/CouponInput";
-
+import {
+  Alert,
+  Button,
+  Card,
+  Chip,
+  Divider,
+  Input,
+  Progress,
+  SectionHeading,
+  Skeleton,
+  Switch,
+} from "../../components/ui";
 
 export default function SubscriptionSettings() {
   const { t } = useTranslation();
@@ -109,7 +119,7 @@ export default function SubscriptionSettings() {
   };
 
   const getProgressColor = (metric) => {
-    if (!metric) return "default";
+    if (!metric) return "primary";
     if (metric.isExceeded) return "danger";
     if (metric.isNearLimit) return "warning";
     return "success";
@@ -142,7 +152,8 @@ export default function SubscriptionSettings() {
     }
   };
 
-  const handleAutoRenew = async (nextValue) => {
+  const handleAutoRenew = async (event) => {
+    const nextValue = event.target.checked;
     setAutoRenewLoading(true);
     try {
       await billingApi.updateAutoRenew(nextValue);
@@ -185,25 +196,27 @@ export default function SubscriptionSettings() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="bg-white dark:bg-zinc-950 rounded-xl border border-gray-200 dark:border-zinc-800 p-6 space-y-3">
-          <div className="h-5 w-40 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-          <div className="h-4 w-64 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-        </div>
-        <div className="bg-white dark:bg-zinc-950 rounded-xl border border-gray-200 dark:border-zinc-800 p-6 space-y-4">
-          <div className="h-5 w-32 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="space-y-6" aria-busy="true" aria-live="polite">
+        <Card padding="md">
+          <Skeleton variant="text" className="h-5 w-40" />
+          <Skeleton variant="text" className="h-4 w-64 mt-3" />
+        </Card>
+        <Card padding="md">
+          <Skeleton variant="text" className="h-5 w-32" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-48 bg-gray-200 dark:bg-zinc-700 rounded-lg animate-pulse" />
+              <Skeleton key={i} variant="rect" className="h-48" />
             ))}
           </div>
-        </div>
-        <div className="bg-white dark:bg-zinc-950 rounded-xl border border-gray-200 dark:border-zinc-800 p-6 space-y-3">
-          <div className="h-5 w-36 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-10 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-          ))}
-        </div>
+        </Card>
+        <Card padding="md">
+          <Skeleton variant="text" className="h-5 w-36 mb-4" />
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} variant="rect" className="h-10" />
+            ))}
+          </div>
+        </Card>
       </div>
     );
   }
@@ -214,240 +227,298 @@ export default function SubscriptionSettings() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">{t('pages.subscriptionBilling')}</h2>
-          <p className="text-sm text-gray-600 dark:text-zinc-400 mt-1">
+          <h2 className="text-2xl font-semibold text-fg">
+            {t('pages.subscriptionBilling')}
+          </h2>
+          <p className="text-sm text-fg-muted mt-1">
             Manage plan access, usage limits, invoices, and the school billing profile.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div
+          role="group"
+          aria-label="Billing cycle"
+          className="inline-flex items-center gap-1 rounded-lg border border-border-token p-1"
+        >
           <Button
-            variant={billingCycle === "monthly" ? "solid" : "flat"}
-            color="primary"
+            variant={billingCycle === "monthly" ? "primary" : "ghost"}
             size="sm"
-            onPress={() => setBillingCycle("monthly")}
+            onClick={() => setBillingCycle("monthly")}
+            aria-pressed={billingCycle === "monthly"}
           >
             Monthly
           </Button>
           <Button
-            variant={billingCycle === "annual" ? "solid" : "flat"}
-            color="primary"
+            variant={billingCycle === "annual" ? "primary" : "ghost"}
             size="sm"
-            onPress={() => setBillingCycle("annual")}
+            onClick={() => setBillingCycle("annual")}
+            aria-pressed={billingCycle === "annual"}
           >
             Annual
           </Button>
         </div>
       </div>
 
-      <Card className="rounded-lg">
-        <CardBody className="p-6">
-          <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
-            <div className="flex items-start gap-3">
-              <CreditCard size={24} className="text-primary-600 mt-1" />
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">
-                  {subscription?.effectivePlanName || "No plan"} plan
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-zinc-400">
-                  Base subscription: {subscription?.planName || "Starter"}.
-                  {subscription?.effectivePlanKey !== subscription?.planKey ? ` Trial access is currently unlocking ${subscription?.effectivePlanName}.` : ""}
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Chip color={subscription?.status === "active" ? "success" : "warning"} variant="flat">
-                    {subscription?.status}
-                  </Chip>
-                  <Chip color="primary" variant="flat">
-                    {formatMoney(
-                      plans.find((plan) => plan.key === subscription?.effectivePlanKey)?.price || 0
-                    )}/{billingCycle === "annual" ? "year" : "month"}
-                  </Chip>
-                  <Chip variant="flat">
-                    Next billing: {formatDate(subscription?.nextBillingAt || subscription?.trialEndsAt)}
-                  </Chip>
+      {(() => {
+        // Plan card — mirrors preview/settings_billing.html `.plan` pattern.
+        const studentSeats = summary?.usage?.students;
+        const seatsCurrent = studentSeats?.current ?? 0;
+        const seatsLimit = studentSeats?.limit;
+        const seatsPct = seatsLimit
+          ? Math.min(100, Math.round((seatsCurrent / seatsLimit) * 100))
+          : null;
+        const planPrice = plans.find(
+          (plan) => plan.key === subscription?.effectivePlanKey
+        )?.price || 0;
+        const cycleLabel = billingCycle === "annual" ? "year" : "month";
+        const nextBilling = formatDate(
+          subscription?.nextBillingAt || subscription?.trialEndsAt
+        );
+        return (
+          <div className="plan-card">
+            <div className="plan-card__main">
+              <span className="plan-card__badge">Current plan</span>
+              <div className="plan-card__name">
+                Edumaster {subscription?.effectivePlanName || "Starter"}{" "}
+                <span className="text-fg-faint font-medium">
+                  · {subscription?.billingCycle === "annual" ? "Annual" : "Monthly"}
+                </span>
+              </div>
+              <div className="plan-card__sub">
+                {formatMoney(planPrice)} / {cycleLabel}
+                {nextBilling !== "—" && ` · renews ${nextBilling}`}
+                {subscription?.effectivePlanKey !== subscription?.planKey &&
+                  ` · trial unlocking ${subscription?.effectivePlanName}`}
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Chip color={subscription?.status === "active" ? "success" : "warning"}>
+                  {subscription?.status}
+                </Chip>
+                <Switch
+                  checked={Boolean(subscription?.autoRenew)}
+                  disabled={autoRenewLoading}
+                  onChange={handleAutoRenew}
+                  size="sm"
+                  label={t('pages.autoRenew')}
+                />
+              </div>
+            </div>
+            {studentSeats ? (
+              <div className="plan-card__usage">
+                <div className="plan-card__num">
+                  {seatsCurrent.toLocaleString()}
+                  {seatsLimit && (
+                    <span className="plan-card__num-of">
+                      / {seatsLimit.toLocaleString()}
+                    </span>
+                  )}
                 </div>
+                <div className="plan-card__lab">student seats used</div>
+                {seatsPct != null && (
+                  <div
+                    className="plan-card__bar"
+                    role="progressbar"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={seatsPct}
+                  >
+                    <div
+                      className="plan-card__bar-fill"
+                      style={{ width: `${seatsPct}%` }}
+                    />
+                  </div>
+                )}
               </div>
-            </div>
-            <div className="flex flex-col items-start gap-3">
-              <Switch
-                isSelected={Boolean(subscription?.autoRenew)}
-                isDisabled={autoRenewLoading}
-                onValueChange={handleAutoRenew}
-                size="sm"
-              >
-                <span className="text-sm">{t('pages.autoRenew')}</span>
-              </Switch>
-              <div className="text-sm text-gray-500 dark:text-zinc-400">
-                Billing cycle: <span className="font-medium text-gray-700 dark:text-zinc-300 capitalize">{subscription?.billingCycle}</span>
-              </div>
-            </div>
+            ) : null}
+            <Button
+              variant="primary"
+              size="sm"
+              icon={<CreditCard size={14} />}
+              className="plan-card__cta"
+              onClick={() => {
+                document
+                  .getElementById("plans-comparison")
+                  ?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+            >
+              Upgrade
+            </Button>
           </div>
-        </CardBody>
-      </Card>
+        );
+      })()}
 
       {warnings.length > 0 && (
         <div className="space-y-2">
           {warnings.map((warning, index) => (
-            <div
+            <Alert
               key={`${warning.type}-${index}`}
-              className={`rounded-lg border px-4 py-3 text-sm ${
-                warning.severity === "high"
-                  ? "border-danger-200 bg-danger-50 text-danger-700"
-                  : "border-warning-200 bg-warning-50 text-warning-700"
-              }`}
+              variant={warning.severity === "high" ? "danger" : "warning"}
+              icon={<AlertTriangle size={18} />}
             >
-              <div className="flex items-center gap-2">
-                <AlertTriangle size={16} />
-                <span>{warning.message}</span>
-              </div>
-            </div>
+              {warning.message}
+            </Alert>
           ))}
         </div>
       )}
 
-      <Card className="rounded-lg">
-        <CardBody className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-4 flex items-center gap-2">
-            <TrendingUp size={18} />
-            Usage & Limits
-          </h3>
-          <div className="grid gap-4 md:grid-cols-2">
-            {usageCards.map((item) => {
-              const Icon = item.icon;
-              const metric = item.value;
+      <Card padding="md">
+        <SectionHeading icon={TrendingUp} className="mb-4">
+          Usage & Limits
+        </SectionHeading>
+        <div className="grid gap-4 md:grid-cols-2">
+          {usageCards.map((item) => {
+            const Icon = item.icon;
+            const metric = item.value;
 
-              return (
-                <div key={item.key} className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 p-4">
-                  <div className="mb-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Icon size={16} className="text-gray-500 dark:text-zinc-400" />
-                      <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{item.label}</span>
-                    </div>
-                    <span className="text-sm text-gray-500 dark:text-zinc-400">
-                      {item.format
-                        ? item.format(metric)
-                        : `${metric.current} / ${metric.limit ?? "∞"}`}
+            return (
+              <div
+                key={item.key}
+                className="rounded-xl border border-divider bg-surface-2 p-4"
+              >
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Icon
+                      size={16}
+                      className="text-fg-muted"
+                      aria-hidden="true"
+                    />
+                    <span className="text-sm font-medium text-fg">
+                      {item.label}
                     </span>
                   </div>
-                  <Progress value={metric.percentage} color={getProgressColor(metric)} size="sm" />
-                  <p className="mt-2 text-xs text-gray-500 dark:text-zinc-400">
-                    {metric.limit === null
-                      ? "No hard plan cap configured"
-                      : `${metric.remaining} ${item.unit} remaining before the limit is reached.`}
-                  </p>
+                  <span className="text-sm text-fg-muted tabular-nums">
+                    {item.format
+                      ? item.format(metric)
+                      : `${metric.current} / ${metric.limit ?? "∞"}`}
+                  </span>
                 </div>
-              );
-            })}
-          </div>
-        </CardBody>
+                <Progress
+                  value={metric.percentage}
+                  color={getProgressColor(metric)}
+                  size="sm"
+                  label={item.label}
+                  aria-label={`${item.label} usage`}
+                />
+                <p className="mt-2 text-xs text-fg-muted">
+                  {metric.limit === null
+                    ? "No hard plan cap configured"
+                    : `${metric.remaining} ${item.unit} remaining before the limit is reached.`}
+                </p>
+              </div>
+            );
+          })}
+        </div>
       </Card>
 
-      <Card className="rounded-lg">
-        <CardBody className="p-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{t('pages.plansComparison', 'Compare Plans')}</h3>
+      <Card padding="md" id="plans-comparison">
+        <SectionHeading
+          className="mb-6"
+          actions={
             <div className="flex items-center gap-3">
-              <span className="text-xs text-gray-500 dark:text-zinc-400">{t('billing.havePromoCode', 'Have a promo code?')}</span>
+              <span className="text-xs text-fg-muted">
+                {t('billing.havePromoCode', 'Have a promo code?')}
+              </span>
               <CouponInput onApply={setAppliedCoupon} />
             </div>
-          </div>
-          <PlanComparisonMatrix
-            plans={plans}
-            currentPlanKey={subscription?.effectivePlanKey}
-            billingCycle={billingCycle}
-            checkoutLoading={checkoutLoading}
-            onCheckout={handleCheckout}
+          }
+        >
+          {t('pages.plansComparison', 'Compare Plans')}
+        </SectionHeading>
+        <PlanComparisonMatrix
+          plans={plans}
+          currentPlanKey={subscription?.effectivePlanKey}
+          billingCycle={billingCycle}
+          checkoutLoading={checkoutLoading}
+          onCheckout={handleCheckout}
+        />
+      </Card>
+
+      <Card padding="md">
+        <InvoiceHistory formatMoney={formatMoney} />
+      </Card>
+
+      <Card padding="md">
+        <SectionHeading description="These contacts are used for invoices, billing requests, and provider checkout setup.">
+          {t('pages.schoolBillingAccount')}
+        </SectionHeading>
+
+        <Divider spacing="md" />
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <Input
+            label={t('pages.schoolContactEmail')}
+            value={accountForm.contactEmail}
+            onChange={(e) => handleAccountChange("contactEmail", e.target.value)}
+            type="email"
           />
-        </CardBody>
-      </Card>
+          <Input
+            label={t('pages.schoolContactPhone')}
+            value={accountForm.contactPhone}
+            onChange={(e) => handleAccountChange("contactPhone", e.target.value)}
+            type="tel"
+          />
+          <Input
+            label={t('pages.billingContactName')}
+            value={accountForm.billingContactName}
+            onChange={(e) => handleAccountChange("billingContactName", e.target.value)}
+          />
+          <Input
+            label={t('pages.billingEmail')}
+            value={accountForm.billingEmail}
+            onChange={(e) => handleAccountChange("billingEmail", e.target.value)}
+            type="email"
+          />
+          <Input
+            label={t('pages.billingPhone')}
+            value={accountForm.billingPhone}
+            onChange={(e) => handleAccountChange("billingPhone", e.target.value)}
+            type="tel"
+          />
+          <Input
+            label="GST / Tax ID"
+            value={accountForm.taxId}
+            onChange={(e) => handleAccountChange("taxId", e.target.value)}
+          />
+          <Input
+            label={t('pages.addressLine1')}
+            value={accountForm.billingAddress.line1}
+            onChange={(e) => handleAddressChange("line1", e.target.value)}
+            wrapperClassName="md:col-span-2"
+          />
+          <Input
+            label={t('pages.addressLine2')}
+            value={accountForm.billingAddress.line2}
+            onChange={(e) => handleAddressChange("line2", e.target.value)}
+            wrapperClassName="md:col-span-2"
+          />
+          <Input
+            label={t('pages.city1')}
+            value={accountForm.billingAddress.city}
+            onChange={(e) => handleAddressChange("city", e.target.value)}
+          />
+          <Input
+            label={t('pages.state1')}
+            value={accountForm.billingAddress.state}
+            onChange={(e) => handleAddressChange("state", e.target.value)}
+          />
+          <Input
+            label={t('pages.postalCode')}
+            value={accountForm.billingAddress.postalCode}
+            onChange={(e) => handleAddressChange("postalCode", e.target.value)}
+          />
+          <Input
+            label={t('pages.country')}
+            value={accountForm.billingAddress.country}
+            onChange={(e) => handleAddressChange("country", e.target.value)}
+          />
+        </div>
 
-      <Card className="rounded-lg">
-        <CardBody className="p-6">
-          <InvoiceHistory formatMoney={formatMoney} />
-        </CardBody>
-      </Card>
-
-      <Card className="rounded-lg">
-        <CardBody className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{t('pages.schoolBillingAccount')}</h3>
-          <p className="mt-1 text-sm text-gray-600 dark:text-zinc-400">
-            These contacts are used for invoices, billing requests, and provider checkout setup.
-          </p>
-
-          <Divider className="my-5" />
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <Input
-              label={t('pages.schoolContactEmail')}
-              value={accountForm.contactEmail}
-              onValueChange={(value) => handleAccountChange("contactEmail", value)}
-            />
-            <Input
-              label={t('pages.schoolContactPhone')}
-              value={accountForm.contactPhone}
-              onValueChange={(value) => handleAccountChange("contactPhone", value)}
-            />
-            <Input
-              label={t('pages.billingContactName')}
-              value={accountForm.billingContactName}
-              onValueChange={(value) => handleAccountChange("billingContactName", value)}
-            />
-            <Input
-              label={t('pages.billingEmail')}
-              value={accountForm.billingEmail}
-              onValueChange={(value) => handleAccountChange("billingEmail", value)}
-            />
-            <Input
-              label={t('pages.billingPhone')}
-              value={accountForm.billingPhone}
-              onValueChange={(value) => handleAccountChange("billingPhone", value)}
-            />
-            <Input
-              label="GST / Tax ID"
-              value={accountForm.taxId}
-              onValueChange={(value) => handleAccountChange("taxId", value)}
-            />
-            <Input
-              label={t('pages.addressLine1')}
-              value={accountForm.billingAddress.line1}
-              onValueChange={(value) => handleAddressChange("line1", value)}
-              className="md:col-span-2"
-            />
-            <Input
-              label={t('pages.addressLine2')}
-              value={accountForm.billingAddress.line2}
-              onValueChange={(value) => handleAddressChange("line2", value)}
-              className="md:col-span-2"
-            />
-            <Input
-              label={t('pages.city1')}
-              value={accountForm.billingAddress.city}
-              onValueChange={(value) => handleAddressChange("city", value)}
-            />
-            <Input
-              label={t('pages.state1')}
-              value={accountForm.billingAddress.state}
-              onValueChange={(value) => handleAddressChange("state", value)}
-            />
-            <Input
-              label={t('pages.postalCode')}
-              value={accountForm.billingAddress.postalCode}
-              onValueChange={(value) => handleAddressChange("postalCode", value)}
-            />
-            <Input
-              label={t('pages.country')}
-              value={accountForm.billingAddress.country}
-              onValueChange={(value) => handleAddressChange("country", value)}
-            />
-          </div>
-
-          <div className="mt-5">
-            <Button color="primary" isLoading={savingAccount} onPress={handleAccountSave}>
-              Save billing account
-            </Button>
-          </div>
-        </CardBody>
+        <div className="mt-5">
+          <Button variant="primary" loading={savingAccount} onClick={handleAccountSave}>
+            Save billing account
+          </Button>
+        </div>
       </Card>
     </div>
   );

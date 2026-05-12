@@ -13,15 +13,15 @@ import SkeletonTable from "../../../../components/skeletons/SkeletonTable";
 
 const FormsTable = ({ forms, loading, onPreview, onEdit, onDuplicate, onDelete, t }) => {
   return (
-    <div className="bg-white dark:bg-zinc-950 border border-default-200 rounded-xl overflow-hidden shadow-sm">
+    <div className="bg-surface border border-border-token rounded-xl overflow-hidden shadow-sm">
       <Table
         aria-label={t('aria.misc.intakeForms')}
         removeWrapper
         radius="none"
         classNames={{
           base: "overflow-visible",
-          th: "bg-default-50 text-default-500 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200",
-          td: "py-4 border-b border-default-100",
+          th: "bg-surface-2 text-fg-muted font-medium text-xs uppercase tracking-wider h-12 border-b border-border-token",
+          td: "py-4 border-b border-divider",
           tbody: "[&>tr:last-child>td]:border-none"
         }}
       >
@@ -42,7 +42,7 @@ const FormsTable = ({ forms, loading, onPreview, onEdit, onDuplicate, onDelete, 
           {(form) => (
             <TableRow key={form.id}>
               <TableCell>
-                <div className="font-medium text-gray-900 dark:text-zinc-100">
+                <div className="font-medium text-fg">
                   {form.name}
                 </div>
               </TableCell>
@@ -61,12 +61,12 @@ const FormsTable = ({ forms, loading, onPreview, onEdit, onDuplicate, onDelete, 
                 </Chip>
               </TableCell>
               <TableCell>
-                <span className="text-sm text-gray-700 dark:text-gray-300">
+                <span className="text-sm text-fg">
                   {form.fields} fields
                 </span>
               </TableCell>
               <TableCell>
-                <span className="text-sm text-gray-700 dark:text-gray-300">
+                <span className="text-sm text-fg">
                   {form.submissions}
                 </span>
               </TableCell>

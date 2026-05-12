@@ -33,13 +33,13 @@ export default function WorkingDaysForm({ settings, onSave, onCancel, saving }) 
             <div
               key={day.key}
               className={`flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-all ${
-                isActive ? 'bg-primary/5 border-primary' : 'bg-white dark:bg-zinc-950 border-default-200 hover:border-default-300'
+                isActive ? 'bg-primary/5 border-primary' : 'bg-surface border-border-token hover:border-border-token'
               }`}
               onClick={() => toggleDay(day.key)}
             >
-              <span className={`font-medium ${isActive ? 'text-primary' : 'text-default-700'}`}>{day.label}</span>
+              <span className={`font-medium ${isActive ? 'text-primary' : 'text-fg'}`}>{day.label}</span>
               <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                isActive ? 'bg-primary border-primary' : 'border-default-300'
+                isActive ? 'bg-primary border-primary' : 'border-border-token'
               }`}>
                 {isActive && <Check size={12} className="text-white" />}
               </div>

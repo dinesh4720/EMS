@@ -64,10 +64,10 @@ export default function EnrollmentFunnel() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">
+        <h2 className="text-2xl font-semibold text-fg">
           Enrollment Funnel
         </h2>
-        <p className="text-sm text-gray-600 dark:text-zinc-400 mt-1">
+        <p className="text-sm text-fg-muted mt-1">
           Track the progress of form assignments through each stage
         </p>
       </div>
@@ -77,15 +77,15 @@ export default function EnrollmentFunnel() {
         {FUNNEL_STAGES.map((stage) => {
           const Icon = stage.icon;
           return (
-            <Card key={stage.key} className="bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800">
+            <Card key={stage.key} className="bg-surface border border-divider">
               <CardBody className="p-4 text-center">
                 <div className={`w-10 h-10 rounded-lg ${stage.color} bg-opacity-10 dark:bg-opacity-20 flex items-center justify-center mx-auto mb-2`}>
                   <Icon size={20} className={stage.color.replace("bg-", "text-")} />
                 </div>
-                <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">
+                <p className="text-2xl font-bold text-fg">
                   {stats[stage.key]}
                 </p>
-                <p className="text-xs text-gray-600 dark:text-zinc-400 mt-1">
+                <p className="text-xs text-fg-muted mt-1">
                   {stage.label}
                 </p>
               </CardBody>
@@ -95,9 +95,9 @@ export default function EnrollmentFunnel() {
       </div>
 
       {/* Funnel Visualization */}
-      <Card className="bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800">
+      <Card className="bg-surface border border-divider">
         <CardBody className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-6">
+          <h3 className="text-lg font-semibold text-fg mb-6">
             Conversion Funnel
           </h3>
           <div className="space-y-3">
@@ -112,11 +112,11 @@ export default function EnrollmentFunnel() {
 
               return (
                 <div key={stage.key} className="flex items-center gap-4">
-                  <div className="w-28 text-sm font-medium text-gray-700 dark:text-zinc-300 text-right shrink-0">
+                  <div className="w-28 text-sm font-medium text-fg text-right shrink-0">
                     {stage.label}
                   </div>
                   <div className="flex-1 relative">
-                    <div className="h-10 bg-gray-50 dark:bg-zinc-900 rounded-lg overflow-hidden">
+                    <div className="h-10 bg-surface-2 rounded-lg overflow-hidden">
                       <div
                         className={`h-full ${stage.color} rounded-lg flex items-center justify-end pr-3 transition-all duration-500`}
                         style={{ width: `${width}%` }}
@@ -131,7 +131,7 @@ export default function EnrollmentFunnel() {
                     <Chip
                       size="sm"
                       variant="flat"
-                      className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300"
+                      className="bg-surface-2 text-fg"
                     >
                       {conversionRate}%
                     </Chip>
@@ -143,13 +143,13 @@ export default function EnrollmentFunnel() {
 
           {/* Rejected count */}
           {stats.rejected > 0 && (
-            <div className="mt-6 pt-4 border-t border-gray-200 dark:border-zinc-800">
+            <div className="mt-6 pt-4 border-t border-border-token">
               <div className="flex items-center gap-4">
-                <div className="w-28 text-sm font-medium text-gray-700 dark:text-zinc-300 text-right shrink-0">
+                <div className="w-28 text-sm font-medium text-fg text-right shrink-0">
                   Rejected
                 </div>
                 <div className="flex-1 relative">
-                  <div className="h-10 bg-gray-50 dark:bg-zinc-900 rounded-lg overflow-hidden">
+                  <div className="h-10 bg-surface-2 rounded-lg overflow-hidden">
                     <div
                       className="h-full bg-red-500 rounded-lg flex items-center justify-end pr-3 transition-all duration-500"
                       style={{

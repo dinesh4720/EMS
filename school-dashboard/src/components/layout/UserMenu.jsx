@@ -1,25 +1,28 @@
 import { memo, useState } from "react";
 import PropTypes from "prop-types";
-import { LogOut } from "lucide-react";
+import { LogOut, Settings, Building2, Lightbulb } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Popover, PopoverTrigger, PopoverContent } from "@heroui/react";
+import Popover from "../ui/Popover";
 import Avatar from "../ui/Avatar";
 import { useAuth } from "../../context/AuthContext";
 import { cn } from "../../utils/cn";
+import { resetCoachMarks } from "../ui/CoachMark";
 
 /**
  * UserMenu — avatar trigger + signed-in user popover for the nav shell.
  *
- * Displays the current user's avatar and (optionally) their name/role. The
- * popover shows the signed-in email, a Settings shortcut, and Log out.
- * Used primarily in the Sidebar bottom section.
+ * Renders a dense bare-button menu (no HeroUI Dropdown / Navbar). Designed
+ * to drop into the 44px topbar on the right and the sidebar foot on the
+ * left. Pass `showSchoolSwitcher` for super-admin accounts to surface the
+ * cross-tenant switcher entry.
  */
 const UserMenu = memo(function UserMenu({
   collapsed = false,
   placement,
   avatarSrc,
   className,
+  showSchoolSwitcher = false,
 }) {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -28,24 +31,27 @@ const UserMenu = memo(function UserMenu({
 
   const resolvedPlacement = placement || (collapsed ? "right" : "top-start");
 
+  const close = () => setIsOpen(false);
+
   return (
     <Popover
       placement={resolvedPlacement}
       isOpen={isOpen}
       onOpenChange={setIsOpen}
-      offset={8}
-      showArrow
-    >
-      <PopoverTrigger>
+      offset={6}
+      contentClassName="p-0 border-0 bg-transparent shadow-none"
+      trigger={
         <button
           type="button"
           aria-label={t("components.userMenu", "User menu")}
+          aria-haspopup="menu"
+          aria-expanded={isOpen}
           className={cn(
             "flex items-center transition-all focus:outline-none",
-            "focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30",
+            "focus-visible:ring-2 focus-visible:ring-[var(--accent)]/30 rounded-md",
             collapsed
-              ? "h-10 justify-center w-10 mx-auto rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800"
-              : "w-full py-2 px-2 gap-3 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg mt-1",
+              ? "h-9 justify-center w-9 mx-auto hover:bg-surface-hover"
+              : "h-7 px-1 gap-2 hover:bg-surface-hover",
             className
           )}
         >
@@ -56,53 +62,83 @@ const UserMenu = memo(function UserMenu({
             className="shrink-0"
           />
           {!collapsed && (
-            <div className="flex-1 flex flex-col items-start overflow-hidden">
-              <span className="text-sm font-medium text-gray-800 dark:text-zinc-200 truncate">
-                {user?.name || "User"}
-              </span>
-              <span className="text-xs text-gray-500 dark:text-zinc-400 truncate">
-                {user?.role || "Staff"}
-              </span>
-            </div>
+            <span className="text-[12.5px] font-medium text-fg truncate max-w-[120px] hidden md:inline">
+              {user?.name || "User"}
+            </span>
           )}
         </button>
-      </PopoverTrigger>
-      <PopoverContent className="p-0">
-        <div className="min-w-[200px] rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-sm">
-          <div className="px-4 py-3 border-b border-gray-200 dark:border-zinc-700">
-            <p className="text-xs text-gray-500 dark:text-zinc-400">
-              {t("components.signedInAs")}
-            </p>
-            <p className="text-sm font-medium text-gray-800 dark:text-zinc-200 truncate">
-              {user?.email}
-            </p>
-          </div>
-          <div className="py-1">
-            <button
-              type="button"
-              onClick={() => {
-                setIsOpen(false);
-                navigate("/settings");
-              }}
-              className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
-            >
-              {t("sidebar.mySettings", "My Settings")}
-            </button>
-            <div className="h-px bg-gray-200 dark:bg-zinc-700 my-1" />
-            <button
-              type="button"
-              onClick={() => {
-                setIsOpen(false);
-                logout();
-              }}
-              className="w-full text-left px-4 py-2 text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950 transition-colors flex items-center gap-2"
-            >
-              <LogOut size={14} />
-              {t("sidebar.logOut", "Log Out")}
-            </button>
+      }
+    >
+      <div className="usermenu" role="menu">
+        <div className="usermenu__head">
+          <Avatar src={avatarSrc} name={user?.name || "User"} size="sm" />
+          <div className="usermenu__head-text">
+            <span className="usermenu__head-name">{user?.name || "User"}</span>
+            <span className="usermenu__head-email">
+              {user?.email || t("components.signedInAs")}
+            </span>
           </div>
         </div>
-      </PopoverContent>
+
+        {showSchoolSwitcher && (
+          <>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                close();
+                navigate("/super-admin/schools");
+              }}
+              className="usermenu__item"
+            >
+              <Building2 size={13} aria-hidden />
+              {t("components.switchSchool", "Switch school")}
+            </button>
+            <div className="usermenu__sep" />
+          </>
+        )}
+
+        <button
+          type="button"
+          role="menuitem"
+          onClick={() => {
+            close();
+            navigate("/settings");
+          }}
+          className="usermenu__item"
+        >
+          <Settings size={13} aria-hidden />
+          {t("sidebar.mySettings", "My Settings")}
+        </button>
+
+        <button
+          type="button"
+          role="menuitem"
+          onClick={() => {
+            close();
+            resetCoachMarks();
+          }}
+          className="usermenu__item"
+        >
+          <Lightbulb size={13} aria-hidden />
+          {t("components.showProductTips", "Show product tips")}
+        </button>
+
+        <div className="usermenu__sep" />
+
+        <button
+          type="button"
+          role="menuitem"
+          onClick={() => {
+            close();
+            logout();
+          }}
+          className="usermenu__item usermenu__item--danger"
+        >
+          <LogOut size={13} aria-hidden />
+          {t("sidebar.logOut", "Log Out")}
+        </button>
+      </div>
     </Popover>
   );
 });
@@ -114,6 +150,7 @@ UserMenu.propTypes = {
   placement: PropTypes.string,
   avatarSrc: PropTypes.string,
   className: PropTypes.string,
+  showSchoolSwitcher: PropTypes.bool,
 };
 
 export default UserMenu;

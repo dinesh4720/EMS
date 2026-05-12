@@ -109,12 +109,12 @@ const VirtualizedTable = forwardRef(function VirtualizedTable(
             ))}
           </tr>
         </thead>
-        <tbody>
+        <tbody className="tabular-nums">
           {data.length === 0 ? (
             <tr>
               <td colSpan={colCount} className="text-center py-8">
                 {typeof emptyContent === "string" ? (
-                  <p className="text-gray-400 text-sm">{emptyContent}</p>
+                  <p className="text-fg-subtle text-sm">{emptyContent}</p>
                 ) : (
                   emptyContent
                 )}
@@ -144,8 +144,8 @@ const VirtualizedTable = forwardRef(function VirtualizedTable(
                     ref={rowVirtualizer.measureElement}
                     tabIndex={handleRowClick ? 0 : undefined}
                     role={handleRowClick ? "button" : undefined}
-                    className={`group transition-colors hover:bg-gray-50 dark:hover:bg-zinc-800 ${
-                      handleRowClick ? "cursor-pointer focus-visible:bg-gray-100 dark:focus-visible:bg-zinc-800 focus-visible:outline-none" : ""
+                    className={`group transition-colors hover:bg-surface-hover ${
+                      handleRowClick ? "cursor-pointer focus-visible:bg-surface-2 focus-visible:outline-none" : ""
                     } ${extraClass}`}
                     onClick={
                       handleRowClick

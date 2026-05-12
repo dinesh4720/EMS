@@ -1,20 +1,28 @@
 import { memo, useMemo, useCallback } from "react";
 import PropTypes from "prop-types";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@heroui/react";
 import { AlertTriangle, Trash2, AlertCircle, Info } from "lucide-react";
+import ModalBase from "./ModalBase";
 
 /**
- * Reusable confirmation dialog component
+ * ConfirmDialog — frosted "alertdialog" with Discard / Keep pattern.
  *
- * @param {boolean} isOpen - Whether the dialog is open
- * @param {function} onClose - Function to call when dialog is closed
- * @param {function} onConfirm - Function to call when user confirms
- * @param {string} title - Dialog title
- * @param {string} message - Dialog message
- * @param {string} confirmText - Text for confirm button (default: "Confirm")
- * @param {string} cancelText - Text for cancel button (default: "Cancel")
- * @param {string} variant - Dialog variant: "danger", "warning", "info" (default: "warning")
- * @param {boolean} isLoading - Whether the confirm action is loading
+ * Mirrors AddStaffComposer's "discard unsaved changes" sheet:
+ *   - 380px card on a dim backdrop, no glass blur (uses --surface)
+ *   - Title + body + actions (cancel left, confirm-destructive right)
+ *   - role="alertdialog" so screen readers announce immediately
+ *
+ * Variants colour the icon + the confirm button only; the body stays in
+ * neutral surface so the message keeps its weight.
+ *
+ *  @param {boolean}  isOpen
+ *  @param {function} onClose
+ *  @param {function} onConfirm
+ *  @param {string}   title
+ *  @param {string|node} message
+ *  @param {string}   confirmText  Default: "Confirm"
+ *  @param {string}   cancelText   Default: "Cancel"
+ *  @param {"danger"|"warning"|"info"} variant
+ *  @param {boolean}  isLoading
  */
 const ConfirmDialog = memo(function ConfirmDialog({
   isOpen,
@@ -26,104 +34,116 @@ const ConfirmDialog = memo(function ConfirmDialog({
   cancelText = "Cancel",
   variant = "warning",
   isLoading = false,
-  children = null
+  children = null,
 }) {
   const config = useMemo(() => {
     switch (variant) {
       case "danger":
         return {
-          icon: <Trash2 size={24} className="text-danger" />,
-          confirmColor: "danger",
-          headerClass: "border-b border-danger-200 bg-danger-50/50"
-        };
-      case "warning":
-        return {
-          icon: <AlertTriangle size={24} className="text-warning" />,
-          confirmColor: "warning",
-          headerClass: "border-b border-warning-200 bg-warning-50/50"
+          Icon: Trash2,
+          iconClass: "ds-confirm__title-icon--danger",
+          confirmClass: "btn btn--accent",
+          confirmStyle: {
+            background: "var(--danger)",
+            borderColor: "var(--danger)",
+          },
         };
       case "info":
         return {
-          icon: <Info size={24} className="text-primary" />,
-          confirmColor: "primary",
-          headerClass: "border-b border-primary-200 bg-primary-50/50"
+          Icon: Info,
+          iconClass: "ds-confirm__title-icon--info",
+          confirmClass: "btn btn--accent",
+        };
+      case "warning":
+        return {
+          Icon: AlertTriangle,
+          iconClass: "ds-confirm__title-icon--warning",
+          confirmClass: "btn btn--accent",
         };
       default:
         return {
-          icon: <AlertCircle size={24} className="text-default-500" />,
-          confirmColor: "primary",
-          headerClass: "border-b border-default-200"
+          Icon: AlertCircle,
+          iconClass: "",
+          confirmClass: "btn btn--accent",
         };
     }
   }, [variant]);
 
   const handleConfirm = useCallback(async () => {
-    if (onConfirm) {
-      try {
-        await onConfirm();
-      } catch {
-        onClose();
-      }
+    if (!onConfirm) return;
+    try {
+      await onConfirm();
+    } catch {
+      onClose();
     }
   }, [onConfirm, onClose]);
 
+  if (!isOpen) return null;
+
+  const { Icon } = config;
+
   return (
-    <Modal
+    <ModalBase
       isOpen={isOpen}
       onClose={onClose}
-      size="md"
-      classNames={{
-        backdrop: "bg-black/50",
-        base: "bg-white dark:bg-zinc-900"
-      }}
+      portalId="ds-confirm-root"
+      labelledBy="ds-confirm-title"
+      describedBy="ds-confirm-message"
+      role="alertdialog"
+      className="ds-backdrop"
+      closeOnBackdrop={!isLoading}
     >
-      <ModalContent>
-        <ModalHeader className={`flex items-center gap-3 ${config.headerClass}`}>
-          {config.icon}
-          <span className="text-lg font-semibold">{title}</span>
-        </ModalHeader>
-        <ModalBody className="py-6">
-          <p className="text-default-700 leading-relaxed">
-            {message}
-          </p>
-          {children && (
-            <div className="mt-4">
-              {children}
-            </div>
-          )}
-        </ModalBody>
-        <ModalFooter className="border-t border-default-200">
-          <Button
-            variant="light"
-            onPress={onClose}
-            isDisabled={isLoading}
+      <div
+        className="ds-confirm"
+        onClick={(e) => e.stopPropagation()}
+        role="document"
+      >
+        <h2 id="ds-confirm-title" className="ds-confirm__title">
+          <span className={`ds-confirm__title-icon ${config.iconClass}`} aria-hidden="true">
+            <Icon size={16} strokeWidth={2} />
+          </span>
+          {title}
+        </h2>
+        <p id="ds-confirm-message" className="ds-confirm__message">
+          {message}
+        </p>
+        {children ? <div className="ds-confirm__children">{children}</div> : null}
+        <div className="ds-confirm__actions">
+          <button
+            type="button"
+            className="btn"
+            onClick={onClose}
+            disabled={isLoading}
           >
             {cancelText}
-          </Button>
-          <Button
-            color={config.confirmColor}
-            onPress={handleConfirm}
-            isLoading={isLoading}
+          </button>
+          <button
+            type="button"
+            className={config.confirmClass}
+            style={config.confirmStyle}
+            onClick={handleConfirm}
+            disabled={isLoading}
+            aria-busy={isLoading || undefined}
           >
-            {confirmText}
-          </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+            {isLoading ? "Working…" : confirmText}
+          </button>
+        </div>
+      </div>
+    </ModalBase>
   );
 });
 
-ConfirmDialog.displayName = 'ConfirmDialog';
+ConfirmDialog.displayName = "ConfirmDialog";
 
 ConfirmDialog.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   onConfirm: PropTypes.func,
   title: PropTypes.string,
-  message: PropTypes.string,
+  message: PropTypes.node,
   confirmText: PropTypes.string,
   cancelText: PropTypes.string,
-  variant: PropTypes.oneOf(['danger', 'warning', 'info']),
+  variant: PropTypes.oneOf(["danger", "warning", "info"]),
   isLoading: PropTypes.bool,
   children: PropTypes.node,
 };

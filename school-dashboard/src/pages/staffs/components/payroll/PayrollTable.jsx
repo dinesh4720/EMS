@@ -1,12 +1,31 @@
-import {
-  Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
-  Button, Spinner, Chip
-} from "@heroui/react";
-import { Play, FileText, Wallet, Lock, RotateCcw } from "lucide-react";
+import { Spinner } from "@heroui/react";
+import { Play, FileText, Wallet, Lock, RotateCcw, CreditCard, Pencil } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import PhotoAvatar from "../../../../components/PhotoAvatar";
 import { TablePageSkeleton } from '../../../../components/skeletons/PageSkeletons';
 import logger from "../../../../utils/logger";
+
+/**
+ * REVAMP-17: Dense payroll table styled with the design-system
+ * `.payroll-table` atoms (mono tnum for money, status pills, chip
+ * for employment type, iconbtn for trailing actions). Horizontal
+ * scroll on narrow viewports preserves all 8 columns.
+ */
+
+const STATUS_TONE = {
+  paid: 'ok',
+  generated: 'info',
+  on_hold: 'warn',
+  failed: 'danger',
+};
+
+function statusLabel(status) {
+  if (status === 'paid') return 'Recorded';
+  return (status || '')
+    .split('_')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}
 
 export default function PayrollTable({
   loading,
@@ -14,15 +33,12 @@ export default function PayrollTable({
   staff,
   selectedKeys,
   setSelectedKeys,
-  setIsFilterDropdownOpen,
   setRunPayrollModalOpen,
   handleMarkAsPaid,
   handleReversePayment,
   setEditingRecord,
   setPaymentForm,
   setPaymentModalOpen,
-  getStatusColor,
-  getStatusLabel,
   formatCurrency,
   navigate,
   loaderRef,
@@ -36,178 +52,218 @@ export default function PayrollTable({
     return <TablePageSkeleton kpiCards={0} searchBar={false} rows={5} />;
   }
 
+  const allSelected = selectedKeys === 'all' ||
+    (visibleRecords.length > 0 && visibleRecords.every(r => selectedKeys?.has?.(r._id)));
+  const someSelected = selectedKeys !== 'all' && selectedKeys?.size > 0 && !allSelected;
+
+  const toggleAll = () => {
+    if (allSelected) {
+      setSelectedKeys(new Set([]));
+    } else {
+      setSelectedKeys(new Set(visibleRecords.map(r => r._id)));
+    }
+  };
+
+  const toggleOne = (id) => {
+    if (selectedKeys === 'all') {
+      const next = new Set(visibleRecords.map(r => r._id));
+      next.delete(id);
+      setSelectedKeys(next);
+      return;
+    }
+    const next = new Set(selectedKeys || []);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    setSelectedKeys(next);
+  };
+
+  const isChecked = (id) =>
+    selectedKeys === 'all' || (selectedKeys && selectedKeys.has && selectedKeys.has(id));
+
+  if (visibleRecords.length === 0) {
+    return (
+      <div className="payroll-table-wrap">
+        <div className="payroll-empty">
+          <div className="payroll-empty__icon">
+            <Wallet size={20} aria-hidden />
+          </div>
+          <div className="payroll-empty__title">No payroll records</div>
+          <div className="payroll-empty__sub">
+            No records found for this period. Run payroll to generate salary records for active staff.
+          </div>
+          <button
+            type="button"
+            className="btn btn--accent btn--sm"
+            style={{ marginTop: 8 }}
+            onClick={() => setRunPayrollModalOpen(true)}
+          >
+            <Play size={12} aria-hidden /> Run payroll
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
-      <Table
-        aria-label={t('aria.tables.payrollRecords')}
-        selectionMode="multiple"
-        selectedKeys={selectedKeys}
-        onSelectionChange={setSelectedKeys}
-        removeWrapper
-        radius="none"
-        onClick={() => setIsFilterDropdownOpen(false)}
-        classNames={{
-          base: "-mx-6 overflow-visible [&_table]:w-[calc(100%+3rem)] [&_table]:border-spacing-0",
-          thead: "[&>tr]:first:shadow-none [&>tr>th:first-child]:pl-6 [&>tr>th:first-child]:pr-3 [&>tr>th:first-child]:w-12",
-          th: "bg-transparent text-default-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200 last:pr-6",
-          td: "py-5 border-b border-default-200 group-data-[last=true]:border-none last:pr-6 transition-colors",
-          tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-12 [&>tr:first-child>td]:pt-5 [&>tr[data-selected=true]>td]:bg-primary-50",
-          tr: "transition-colors hover:bg-gray-50 dark:hover:bg-zinc-900 data-[selected=true]:bg-primary-50",
-        }}
-      >
-        <TableHeader>
-          <TableColumn scope="col">{t('pages.eMPLOYEE')}</TableColumn>
-          <TableColumn scope="col">{t('pages.tYPE')}</TableColumn>
-          <TableColumn scope="col">{t('pages.bASESalary')}</TableColumn>
-          <TableColumn scope="col">{t('pages.aLLOWANCES')}</TableColumn>
-          <TableColumn scope="col">{t('pages.dEDUCTIONS')}</TableColumn>
-          <TableColumn scope="col">{t('pages.nETPay')}</TableColumn>
-          <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
-          <TableColumn align="end" scope="col">{t('pages.aCTIONS')}</TableColumn>
-        </TableHeader>
-        <TableBody emptyContent={
-          <div className="flex flex-col items-center justify-center py-12">
-            <div className="w-14 h-14 rounded-full bg-default-100 flex items-center justify-center mb-3">
-              <Wallet size={24} className="text-default-400" />
-            </div>
-            <p className="text-base font-semibold text-default-700 mb-1">No Payroll Records</p>
-            <p className="text-sm text-default-500 text-center max-w-sm mb-4">
-              No payroll records found for this period. Run payroll to generate salary records for active staff.
-            </p>
-            <Button size="sm" color="primary" startContent={<Play size={14} />} onPress={() => setRunPayrollModalOpen(true)}>
-              Run Payroll
-            </Button>
-          </div>
-        }>
-          {visibleRecords.map((record) => {
-            const employee = staff.find(s => String(s._id || s.id) === String(record.employeeId));
-            if (!employee) {
-              logger.warn('⚠️ Employee not found for record:', {
-                employeeId: record.employeeId,
-                employeeIdType: typeof record.employeeId,
-                availableStaffIds: staff.map(s => s._id || s.id)
-              });
-              return null;
-            }
+      <div className="payroll-table-wrap">
+        <div className="payroll-table-scroll">
+          <table className="payroll-table" aria-label={t('aria.tables.payrollRecords')}>
+            <thead>
+              <tr>
+                <th className="payroll-table__checkbox" scope="col">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    ref={(el) => { if (el) el.indeterminate = someSelected; }}
+                    onChange={toggleAll}
+                    aria-label="Select all"
+                  />
+                </th>
+                <th scope="col">Employee</th>
+                <th scope="col">Type</th>
+                <th scope="col" className="is-num">Base salary</th>
+                <th scope="col" className="is-num">Allowances</th>
+                <th scope="col" className="is-num">Deductions</th>
+                <th scope="col" className="is-num">Net pay</th>
+                <th scope="col">Status</th>
+                <th scope="col" style={{ textAlign: 'right' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visibleRecords.map((record) => {
+                const employee = staff.find(
+                  s => String(s._id || s.id) === String(record.employeeId)
+                );
+                if (!employee) {
+                  logger.warn('⚠️ Employee not found for record:', {
+                    employeeId: record.employeeId,
+                  });
+                  return null;
+                }
+                const tone = STATUS_TONE[record.status] || 'info';
+                const selected = isChecked(record._id);
 
-            return (
-              <TableRow key={record._id}>
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <PhotoAvatar
-                      src={employee.photo}
-                      name={employee.name}
-                      alt={employee.name}
-                      type="staff"
-                      size="md"
-                    />
-                    <div className="flex flex-col">
-                      <span
-                        className="text-default-900 font-medium text-base hover:text-primary transition-colors cursor-pointer"
-                        onClick={() => navigate(`/staffs/${employee.id}`)}
-                      >
-                        {employee.name}
-                      </span>
-                      <span className="text-default-500 text-xs">{employee.code}</span>
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Chip size="sm" variant="flat" className="capitalize">
-                    {record.employmentType.replace(/_/g, ' ')}
-                  </Chip>
-                </TableCell>
-                <TableCell>
-                  <span className="font-mono text-sm text-default-600">{formatCurrency(record.baseSalary)}</span>
-                </TableCell>
-                <TableCell>
-                  <span className="font-mono text-sm text-success-600">
-                    +{formatCurrency(record.totalAllowances)}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <span className="font-mono text-sm text-danger-600">
-                    -{formatCurrency(record.totalDeductions)}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <span className="font-mono text-sm font-semibold text-default-900">
-                    {formatCurrency(record.netPay)}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <Chip color={getStatusColor(record.status)} size="sm" variant="flat">
-                    {getStatusLabel(record.status)}
-                  </Chip>
-                </TableCell>
-                <TableCell>
-                  <div className="flex justify-end gap-1 items-center">
-                    {record.isLocked && (
-                      <div className="flex items-center gap-1 text-xs text-warning-600 bg-warning-50 px-2 py-1 rounded-full border border-warning-200">
-                        <Lock size={12} />
-                        <span>{t('pages.locked1')}</span>
+                return (
+                  <tr key={record._id} className={selected ? 'is-selected' : ''}>
+                    <td className="payroll-table__checkbox">
+                      <input
+                        type="checkbox"
+                        checked={!!selected}
+                        onChange={() => toggleOne(record._id)}
+                        aria-label={`Select ${employee.name}`}
+                      />
+                    </td>
+                    <td>
+                      <div className="payroll-table__employee">
+                        <PhotoAvatar
+                          src={employee.photo}
+                          name={employee.name}
+                          alt={employee.name}
+                          type="staff"
+                          size="sm"
+                        />
+                        <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                          <span
+                            className="payroll-table__employee-name"
+                            onClick={() => navigate(`/staffs/${employee.id}`)}
+                          >
+                            {employee.name}
+                          </span>
+                          <span className="payroll-table__employee-code">{employee.code}</span>
+                        </div>
                       </div>
-                    )}
-                    {record.status === 'generated' && (
-                      <Button
-                        size="sm"
-                        color="success"
-                        variant="flat"
-                        onPress={() => handleMarkAsPaid(record._id)}
-                      >
-                        Log Payment
-                      </Button>
-                    )}
-                    {record.status === 'paid' && record.isLocked && (
-                      <Button
-                        size="sm"
-                        color="warning"
-                        variant="flat"
-                        onPress={() => handleReversePayment(record)}
-                        startContent={<RotateCcw size={14} />}
-                      >
-                        Reverse
-                      </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="flat"
-                      color="primary"
-                      onPress={() => {
-                        setEditingRecord(record);
-                        setPaymentForm({
-                          paymentMethod: 'bank_transfer',
-                          paymentReference: '',
-                          notes: ''
-                        });
-                        setPaymentModalOpen(true);
-                      }}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="light"
-                      isIconOnly
-                      className="text-default-400"
-                    >
-                      <FileText size={16} />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+                    </td>
+                    <td>
+                      <span className="chip" style={{ textTransform: 'capitalize' }}>
+                        {(record.employmentType || '').replace(/_/g, ' ')}
+                      </span>
+                    </td>
+                    <td className="is-num">{formatCurrency(record.baseSalary)}</td>
+                    <td className="is-num is-num--positive">
+                      +{formatCurrency(record.totalAllowances)}
+                    </td>
+                    <td className="is-num is-num--negative">
+                      −{formatCurrency(record.totalDeductions)}
+                    </td>
+                    <td className="is-num is-num--total">
+                      {formatCurrency(record.netPay)}
+                    </td>
+                    <td>
+                      <span className={`status status--${tone}`}>
+                        <span className="dot" />
+                        {statusLabel(record.status)}
+                      </span>
+                      {record.isLocked && (
+                        <span className="chip chip--warn" style={{ marginLeft: 6 }}>
+                          <Lock size={10} aria-hidden /> Locked
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      <div className="payroll-table__actions">
+                        {record.status === 'generated' && (
+                          <button
+                            type="button"
+                            className="btn btn--sm"
+                            onClick={() => handleMarkAsPaid(record._id)}
+                            style={{ color: 'var(--ok)' }}
+                          >
+                            <CreditCard size={12} aria-hidden /> Log
+                          </button>
+                        )}
+                        {record.status === 'paid' && record.isLocked && (
+                          <button
+                            type="button"
+                            className="btn btn--sm"
+                            onClick={() => handleReversePayment(record)}
+                            style={{ color: 'var(--warn)' }}
+                          >
+                            <RotateCcw size={12} aria-hidden /> Reverse
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="iconbtn"
+                          style={{ width: 24, height: 24 }}
+                          onClick={() => {
+                            setEditingRecord(record);
+                            setPaymentForm({
+                              paymentMethod: 'bank_transfer',
+                              paymentReference: '',
+                              notes: ''
+                            });
+                            setPaymentModalOpen(true);
+                          }}
+                          aria-label="Edit payment"
+                          title="Edit"
+                        >
+                          <Pencil size={13} aria-hidden />
+                        </button>
+                        <button
+                          type="button"
+                          className="iconbtn"
+                          style={{ width: 24, height: 24 }}
+                          aria-label="View payslip"
+                          title="View payslip"
+                        >
+                          <FileText size={13} aria-hidden />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-      {/* Lazy Loading Indicator */}
-      <div ref={loaderRef} className="flex justify-center py-4">
-        {isLoadingMore && (
-          <Spinner size="sm" color="primary" />
-        )}
+      <div ref={loaderRef} className="row" style={{ justifyContent: 'center', padding: '12px 0' }}>
+        {isLoadingMore && <Spinner size="sm" color="primary" />}
         {!hasMore && filteredRecords.length > 20 && (
-          <span className="text-default-400 text-sm">All {filteredRecords.length} records loaded</span>
+          <span className="subtle" style={{ fontSize: 12 }}>
+            All <span className="mono tnum">{filteredRecords.length}</span> records loaded
+          </span>
         )}
       </div>
     </>

@@ -1,131 +1,258 @@
-import { useState } from "react";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Select, SelectItem, Input, Textarea } from "@heroui/react";
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
+import { z } from "zod";
+import Modal from "../../../../components/ui/Modal";
 import { getAuthHeaders } from "../../../../utils/authSession";
-import { useTranslation } from 'react-i18next';
-import logger from '../../../../utils/logger';
+import logger from "../../../../utils/logger";
 
+const REMARK_TYPES = [
+  { value: "academic", label: "Academic" },
+  { value: "behavioral", label: "Behavioral" },
+  { value: "achievement", label: "Achievement" },
+  { value: "attendance", label: "Attendance" },
+  { value: "health", label: "Health" },
+  { value: "general", label: "General" },
+];
 
-/**
- * WriteRemarkModal - Modal for writing a remark for a student
- *
- * Props:
- * - isOpen: boolean - Whether modal is open
- * - onClose: function - Called when modal is closed
- * - student: object - The student to write remark for
- * - onSave: function - Called after successful save
- */
+const remarkSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(1, "Title is required")
+    .max(120, "Title must be at most 120 characters"),
+  description: z
+    .string()
+    .trim()
+    .min(1, "Description is required")
+    .max(2000, "Description must be at most 2000 characters"),
+  category: z.string().min(1),
+  sentToParent: z.boolean(),
+});
+
+const EMPTY_FORM = {
+  type: "general",
+  title: "",
+  description: "",
+  sendToParent: false,
+};
+
 export default function WriteRemarkModal({ isOpen, onClose, student, onSave }) {
   const { t } = useTranslation();
-  const [form, setForm] = useState({
-    type: "",
-    title: "",
-    description: "",
-    sendToParent: false
-  });
+  const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
   const [isSaving, setIsSaving] = useState(false);
 
-  const validate = () => {
-    const e = {};
-    if (!form.title.trim()) e.title = "Title is required";
-    if (!form.description.trim()) e.description = "Description is required";
-    setErrors(e);
-    return Object.keys(e).length === 0;
+  useEffect(() => {
+    if (!isOpen) {
+      setForm(EMPTY_FORM);
+      setErrors({});
+      setIsSaving(false);
+    }
+  }, [isOpen]);
+
+  const set = (key, value) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    if (errors[key]) setErrors((prev) => ({ ...prev, [key]: "" }));
   };
 
   const handleSave = async () => {
-    if (!validate()) return;
+    const parsed = remarkSchema.safeParse({
+      title: form.title,
+      description: form.description,
+      category: form.type || "general",
+      sentToParent: !!form.sendToParent,
+    });
+    if (!parsed.success) {
+      const next = {};
+      for (const issue of parsed.error.issues) {
+        const key = issue.path[0];
+        if (!next[key]) next[key] = issue.message;
+      }
+      setErrors({
+        title: next.title,
+        description: next.description,
+      });
+      return;
+    }
 
     setIsSaving(true);
-    const loadingToast = toast.loading(t('toast.loading.savingRemark'));
-
+    const loadingToast = toast.loading(t("toast.loading.savingRemark"));
     try {
       const { request } = await import("../../../../services/api");
-
       await request(`/students/${student.id}/remarks`, {
-        method: 'POST',
-        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({
-          title: form.title,
-          description: form.description,
-          category: form.type || "general",
-          sentToParent: form.sendToParent
-        })
+        method: "POST",
+        headers: getAuthHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(parsed.data),
       });
-
       toast.success("Remark saved successfully", { id: loadingToast });
-
-      if (onSave) {
-        onSave();
-      }
+      onSave?.();
       onClose();
-      setForm({ type: "", title: "", description: "", sendToParent: false });
-      setErrors({});
     } catch (error) {
       logger.error("Error saving remark:", error);
-      toast.error("Failed to save remark: " + (error.message || "Unknown error"), { id: loadingToast });
+      toast.error(
+        "Failed to save remark: " + (error.message || "Unknown error"),
+        { id: loadingToast }
+      );
     } finally {
       setIsSaving(false);
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={() => { setForm({ type: "", title: "", description: "", sendToParent: false }); setErrors({}); onClose(); }} size="md">
-      <ModalContent>
-        <ModalHeader>{t('pages.writeARemark')}</ModalHeader>
-        <ModalBody>
-          <div className="space-y-4">
-            <Select
-              label={t('pages.remarkType1')}
-              placeholder={t('pages.selectType1')}
-              selectedKeys={form.type ? [form.type] : []}
-              onSelectionChange={(keys) => setForm({ ...form, type: Array.from(keys)[0] })}
-              variant="bordered"
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={t("pages.writeARemark", "Write a remark")}
+      description={student?.name ? `For ${student.name}` : undefined}
+      size="md"
+      isDismissable={!isSaving}
+      footer={
+        <>
+          <button
+            type="button"
+            className="btn"
+            onClick={onClose}
+            disabled={isSaving}
+          >
+            {t("pages.cancel2", "Cancel")}
+          </button>
+          <button
+            type="button"
+            className="btn btn--accent"
+            onClick={handleSave}
+            disabled={isSaving}
+            aria-busy={isSaving || undefined}
+          >
+            {isSaving
+              ? t("common.saving", "Saving…")
+              : t("pages.saveRemark1", "Save Remark")}
+          </button>
+        </>
+      }
+    >
+      <div className="section" style={{ margin: 0 }}>
+        <div className="fgrid">
+          <div className="field">
+            <label className="field__label" htmlFor="remark-type">
+              {t("pages.remarkType1", "Type")}
+            </label>
+            <select
+              id="remark-type"
+              className="select"
+              value={form.type}
+              onChange={(e) => set("type", e.target.value)}
             >
-              <SelectItem key="academic">{t('pages.academic1')}</SelectItem>
-              <SelectItem key="behavioral">{t('pages.behavioral1')}</SelectItem>
-              <SelectItem key="achievement">{t('pages.achievement1')}</SelectItem>
-              <SelectItem key="attendance">{t('pages.attendance2')}</SelectItem>
-              <SelectItem key="health">Health</SelectItem>
-              <SelectItem key="general">{t('pages.general1')}</SelectItem>
-            </Select>
-
-            <Input
-              label={t('pages.title1')}
-              placeholder={t('students.profile.remarks.titlePlaceholder')}
-              value={form.title}
-              onChange={(e) => {
-                setForm({ ...form, title: e.target.value });
-                if (errors.title) setErrors((p) => ({ ...p, title: "" }));
-              }}
-              variant="bordered"
-              isRequired
-              isInvalid={!!errors.title}
-              errorMessage={errors.title}
-            />
-
-            <Textarea
-              label={t('pages.description1')}
-              placeholder={t('pages.enterDetailedRemark')}
-              minRows={4}
-              value={form.description}
-              onChange={(e) => {
-                setForm({ ...form, description: e.target.value });
-                if (errors.description) setErrors((p) => ({ ...p, description: "" }));
-              }}
-              variant="bordered"
-              isRequired
-              isInvalid={!!errors.description}
-              errorMessage={errors.description}
-            />
+              {REMARK_TYPES.map((r) => (
+                <option key={r.value} value={r.value}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
           </div>
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="bordered" className="border-gray-200 dark:border-zinc-800 text-gray-700 dark:text-zinc-300" onPress={onClose}>{t('pages.cancel2')}</Button>
-          <Button className="bg-gray-900 hover:bg-gray-800 text-white" onPress={handleSave} isLoading={isSaving}>{t('pages.saveRemark1')}</Button>
-        </ModalFooter>
-      </ModalContent>
+          <div className="field">
+            <label
+              className="field__label"
+              htmlFor="remark-send-to-parent"
+              style={{ marginBottom: 6 }}
+            >
+              Visibility
+            </label>
+            <label
+              htmlFor="remark-send-to-parent"
+              className="row gap-2"
+              style={{ cursor: "pointer", paddingTop: 4 }}
+            >
+              <input
+                id="remark-send-to-parent"
+                type="checkbox"
+                checked={form.sendToParent}
+                onChange={(e) => set("sendToParent", e.target.checked)}
+              />
+              <span style={{ fontSize: 13 }}>Send to parent</span>
+            </label>
+          </div>
+
+          <div className="field span-2">
+            <label className="field__label" htmlFor="remark-title">
+              {t("pages.title1", "Title")}
+              <span className="req" aria-hidden>
+                *
+              </span>
+            </label>
+            <input
+              id="remark-title"
+              className={`input ${errors.title ? "input--err" : ""}`}
+              value={form.title}
+              onChange={(e) => set("title", e.target.value)}
+              placeholder={t(
+                "students.profile.remarks.titlePlaceholder",
+                "Short summary"
+              )}
+              maxLength={120}
+              aria-invalid={errors.title ? "true" : undefined}
+              aria-describedby={errors.title ? "remark-title-err" : undefined}
+            />
+            {errors.title ? (
+              <span
+                id="remark-title-err"
+                className="field__hint"
+                style={{ color: "var(--danger)" }}
+              >
+                {errors.title}
+              </span>
+            ) : null}
+          </div>
+
+          <div className="field span-2">
+            <label className="field__label" htmlFor="remark-desc">
+              {t("pages.description1", "Description")}
+              <span className="req" aria-hidden>
+                *
+              </span>
+            </label>
+            <textarea
+              id="remark-desc"
+              className={`textarea ${errors.description ? "input--err" : ""}`}
+              value={form.description}
+              onChange={(e) => set("description", e.target.value)}
+              placeholder={t(
+                "pages.enterDetailedRemark",
+                "Enter a detailed remark…"
+              )}
+              rows={5}
+              maxLength={2000}
+              aria-invalid={errors.description ? "true" : undefined}
+              aria-describedby={
+                errors.description ? "remark-desc-err" : undefined
+              }
+            />
+            <div
+              className="row"
+              style={{ justifyContent: "space-between", gap: 8 }}
+            >
+              {errors.description ? (
+                <span
+                  id="remark-desc-err"
+                  className="field__hint"
+                  style={{ color: "var(--danger)" }}
+                >
+                  {errors.description}
+                </span>
+              ) : (
+                <span className="field__hint">
+                  {form.sendToParent
+                    ? "Parent will see this remark in their app."
+                    : "Visible to staff only."}
+                </span>
+              )}
+              <span className="field__hint mono tnum">
+                {form.description.length}/2000
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
     </Modal>
   );
 }

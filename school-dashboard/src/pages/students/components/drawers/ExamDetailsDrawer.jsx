@@ -34,13 +34,13 @@ export default function ExamDetailsDrawer({ isOpen, onOpenChange, selectedExam, 
             </DrawerHeader>
             <DrawerBody className="p-0">
               <div className="p-6 grid grid-cols-2 gap-4 bg-default-50 border-b border-default-200">
-                <div className="p-4 bg-white dark:bg-zinc-900 rounded-xl border border-default-200 text-center">
+                <div className="p-4 bg-surface rounded-xl border border-default-200 text-center">
                   <span className="text-xs text-default-500 uppercase">{t('students.profile.overview.totalScore', 'Total Score')}</span>
                   <div className="text-2xl font-bold text-default-900 mt-1">
                     {selectedExam?.percentage != null ? `${selectedExam.percentage}%` : selectedExam?.totalMarksObtained != null ? `${selectedExam.totalMarksObtained}/${selectedExam.totalMaxMarks}` : '—'}
                   </div>
                 </div>
-                <div className="p-4 bg-white dark:bg-zinc-900 rounded-xl border border-default-200 text-center">
+                <div className="p-4 bg-surface rounded-xl border border-default-200 text-center">
                   <span className="text-xs text-default-500 uppercase">{t('students.profile.overview.rank', 'Rank')}</span>
                   <div className="text-2xl font-bold text-primary mt-1">{selectedExam?.rank != null ? `#${selectedExam.rank}` : '—'}</div>
                 </div>

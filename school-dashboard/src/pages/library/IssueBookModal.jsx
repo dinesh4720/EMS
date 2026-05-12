@@ -95,7 +95,7 @@ export default function IssueBookModal({ isOpen, onClose, onSaved, book: presele
         <ModalBody className="gap-4">
           {/* Book selector */}
           <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1 block">Book *</label>
+            <label className="text-sm font-medium text-fg mb-1 block">Book *</label>
             {preselectedBook ? (
               <Input
                 value={`${preselectedBook.title} (${preselectedBook.isbn || "No ISBN"})`}
@@ -112,15 +112,15 @@ export default function IssueBookModal({ isOpen, onClose, onSaved, book: presele
                   size="sm"
                 />
                 {!form.bookId && books.length > 0 && bookSearch && (
-                  <div className="border border-gray-200 dark:border-zinc-700 rounded-lg mt-1 max-h-40 overflow-y-auto bg-white dark:bg-zinc-900">
+                  <div className="border border-border-token rounded-lg mt-1 max-h-40 overflow-y-auto bg-surface">
                     {books.map((b) => (
                       <button
                         key={b._id}
                         onClick={() => { setForm((f) => ({ ...f, bookId: b._id })); setBookSearch(""); }}
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-surface-2 transition-colors"
                       >
-                        <span className="font-medium text-gray-900 dark:text-zinc-100">{b.title}</span>
-                        <span className="text-gray-500 dark:text-zinc-400 ml-2">({b.availableCopies || 0} available)</span>
+                        <span className="font-medium text-fg">{b.title}</span>
+                        <span className="text-fg-muted ml-2">({b.availableCopies || 0} available)</span>
                       </button>
                     ))}
                   </div>
@@ -131,7 +131,7 @@ export default function IssueBookModal({ isOpen, onClose, onSaved, book: presele
 
           {/* Student selector */}
           <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1 block">Student *</label>
+            <label className="text-sm font-medium text-fg mb-1 block">Student *</label>
             <Input
               placeholder={t('pages.searchStudentsByNameOrAdmissionNo')}
               value={selectedStudentObj ? `${selectedStudentObj.name} (${selectedStudentObj.admissionNo || ""})` : studentSearch}
@@ -140,15 +140,15 @@ export default function IssueBookModal({ isOpen, onClose, onSaved, book: presele
               size="sm"
             />
             {!form.studentId && students.length > 0 && studentSearch && (
-              <div className="border border-gray-200 dark:border-zinc-700 rounded-lg mt-1 max-h-40 overflow-y-auto bg-white dark:bg-zinc-900">
+              <div className="border border-border-token rounded-lg mt-1 max-h-40 overflow-y-auto bg-surface">
                 {students.map((s) => (
                   <button
                     key={s._id}
                     onClick={() => { setSelectedStudentObj(s); setForm((f) => ({ ...f, studentId: s._id })); setStudentSearch(""); }}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-surface-2 transition-colors"
                   >
-                    <span className="font-medium text-gray-900 dark:text-zinc-100">{s.name}</span>
-                    <span className="text-gray-500 dark:text-zinc-400 ml-2">{s.admissionNo || ""}</span>
+                    <span className="font-medium text-fg">{s.name}</span>
+                    <span className="text-fg-muted ml-2">{s.admissionNo || ""}</span>
                   </button>
                 ))}
               </div>
@@ -173,7 +173,7 @@ export default function IssueBookModal({ isOpen, onClose, onSaved, book: presele
         </ModalBody>
         <ModalFooter>
           <Button variant="flat" onPress={onClose}>{t('pages.cancel2')}</Button>
-          <Button className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900" isLoading={saving} onPress={handleSubmit}>
+          <Button color="primary" isLoading={saving} onPress={handleSubmit}>
             Issue Book
           </Button>
         </ModalFooter>

@@ -1,10 +1,10 @@
 import { STAFF_ROLES } from "../../../../constants/roles";
 
 // Minimal design constants matching login page style
-export const minimalInputClasses = "bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 hover:border-teal-500 focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-all duration-200";
-export const minimalLabelClasses = "text-xs font-medium text-gray-700 dark:text-zinc-300 mb-1";
+export const minimalInputClasses = "bg-surface border border-border-token hover:border-teal-500 focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-all duration-200";
+export const minimalLabelClasses = "text-xs font-medium text-fg mb-1";
 export const minimalButtonPrimary = "bg-teal-600 hover:bg-teal-700 text-white transition-colors";
-export const minimalButtonSecondary = "bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 transition-colors";
+export const minimalButtonSecondary = "bg-surface-2 hover:bg-gray-200 dark:hover:bg-zinc-700 text-fg transition-colors";
 
 export const employmentTypes = [
   { label: "Full-Time", value: "Full-time" },

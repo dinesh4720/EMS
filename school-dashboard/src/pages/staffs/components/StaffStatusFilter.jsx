@@ -43,11 +43,11 @@ export default function StaffStatusFilter({
     return (
         <Dropdown placement="bottom-start" isOpen={isOpen} onOpenChange={onOpenChange}>
             <DropdownTrigger>
-                <button className="flex items-center gap-2 px-3 py-2.5 bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 hover:border-teal-500 focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap capitalize">
+                <button className="flex items-center gap-2 px-3 py-2.5 bg-surface rounded-lg border border-border-token hover:border-teal-500 focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap capitalize">
                     <span className={`w-2 h-2 rounded-full ${dotColor}`}></span>
-                    <span className="text-gray-700 dark:text-zinc-300">{statusFilter}</span>
-                    <span className="text-gray-500 dark:text-zinc-400">{statusCounts[statusFilter]}</span>
-                    <ChevronDown size={14} className="text-gray-400 dark:text-zinc-500" />
+                    <span className="text-fg">{statusFilter}</span>
+                    <span className="text-fg-muted">{statusCounts[statusFilter]}</span>
+                    <ChevronDown size={14} className="text-fg-faint" />
                 </button>
             </DropdownTrigger>
 

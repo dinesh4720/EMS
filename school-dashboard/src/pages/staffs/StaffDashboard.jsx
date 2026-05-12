@@ -8,8 +8,10 @@ import { useDisclosure } from "@heroui/react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useValidatedParams } from "../../hooks/useValidatedParams";
 import {
-  Users, Calendar, Briefcase, Edit, BookOpen, Clock
+  Users, Calendar, Briefcase, BookOpen, Clock,
+  User, CalendarDays, FileText, Wallet, ClipboardList, GraduationCap
 } from "lucide-react";
+import MinimalTabs from "../../components/ui/MinimalTabs";
 import { format } from "date-fns";
 import toast from "react-hot-toast";
 import { isObjectId } from "../../utils/objectIdHelper";
@@ -19,7 +21,7 @@ import PhotoEditorModal from "../../components/PhotoEditorModal";
 import CameraCaptureModal from "../../components/CameraCaptureModal";
 import StaffAssignmentPanel from "./StaffAssignmentPanel";
 import TeacherTimetableEditor from "./TeacherTimetableEditor";
-import AddStaff from "./AddStaff";
+import AddStaffComposer from "./AddStaffComposer";
 import AssignClassToStaffModal from "./components/AssignClassToStaffModal";
 
 // Tab Components
@@ -27,6 +29,7 @@ import StaffAboutTab from "./components/StaffAboutTab";
 import StaffAttendanceTab from "./components/StaffAttendanceTab";
 import StaffPayrollTab from "./components/StaffPayrollTab";
 import StaffDocumentsTab from "./components/StaffDocumentsTab";
+import StaffLeaveBalance from "./components/StaffLeaveBalance";
 
 import { DetailPageSkeleton } from "../../components/skeletons/PageSkeletons";
 
@@ -50,7 +53,6 @@ import StaffContactCard from "./components/staff-dashboard/StaffContactCard";
 import StaffDepartmentCard from "./components/staff-dashboard/StaffDepartmentCard";
 import StaffProfileHeader from "./components/staff-dashboard/StaffProfileHeader";
 import StaffPrintLayout from "./components/staff-dashboard/StaffPrintLayout";
-import StaffEditDrawer from "./components/staff-dashboard/StaffEditDrawer";
 import StaffOverviewStats from "./components/staff-dashboard/StaffOverviewStats";
 
 // Extracted hooks
@@ -123,19 +125,29 @@ export default function StaffDashboard() {
   const handleCloseAssignClassModal = useCallback(() => setIsAssignClassModalOpen(false), []);
 
   const [message, setMessage] = useState("");
-  const validTabs = ["overview", "attendance", "about", "timetable", "classes", "payroll", "documents"];
+  const validTabs = ["overview", "attendance", "about", "timetable", "classes", "payroll", "leave", "documents"];
   const tabFromUrl = searchParams.get("tab");
   const [activeTab, setActiveTabState] = useState(validTabs.includes(tabFromUrl) ? tabFromUrl : "overview");
 
-  // Clear the tab param from URL after initial consumption
-  useEffect(() => {
-    if (tabFromUrl) {
-      searchParams.delete("tab");
-      setSearchParams(searchParams, { replace: true });
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Keep URL ↔ tab state in sync (deep-linking + back/forward) — set ?tab=...
+  // on every change so the URL is shareable. `replace: true` avoids polluting
+  // history for every tab toggle.
+  const setActiveTab = useCallback((tab) => {
+    setActiveTabState(tab);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (tab === "overview") next.delete("tab");
+      else next.set("tab", tab);
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
 
-  const setActiveTab = (tab) => setActiveTabState(tab);
+  // Pick up URL changes from back/forward / external nav
+  useEffect(() => {
+    if (tabFromUrl && validTabs.includes(tabFromUrl) && tabFromUrl !== activeTab) {
+      setActiveTabState(tabFromUrl);
+    }
+  }, [tabFromUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch payroll records from backend when payroll tab is active
   useEffect(() => {
@@ -319,18 +331,30 @@ export default function StaffDashboard() {
     });
   };
 
-  // Tabs configuration
+  // Tabs configuration — segmented underline tabs match the StaffDetailPane
+  // treatment. Order follows REVAMP-16 spec: About, Attendance, Documents,
+  // Overview, Payroll, LeaveBalance — with Overview anchored first as the
+  // landing tab.
+  const isTeacherRole = Array.isArray(staff?.role)
+    ? staff?.role.includes('Teacher')
+    : staff?.role === 'Teacher';
+
   const tabs = [
-    { key: "overview", label: "Overview" },
-    { key: "attendance", label: "Attendance" },
-    { key: "about", label: "About" },
-    { key: "timetable", label: "Timetable" },
-    { key: "classes", label: "Classes & Subjects" },
-    { key: "payroll", label: "Payroll" },
-    { key: "documents", label: `Documents (${documents.length})` },
+    { key: "overview", title: "Overview", icon: <User size={14} aria-hidden /> },
+    { key: "about", title: "About", icon: <FileText size={14} aria-hidden /> },
+    { key: "attendance", title: "Attendance", icon: <CalendarDays size={14} aria-hidden /> },
+    ...(isTeacherRole
+      ? [
+          { key: "timetable", title: "Timetable", icon: <Calendar size={14} aria-hidden /> },
+          { key: "classes", title: "Classes", icon: <GraduationCap size={14} aria-hidden /> },
+        ]
+      : []),
+    { key: "payroll", title: "Payroll", icon: <Wallet size={14} aria-hidden /> },
+    { key: "leave", title: "Leave", icon: <ClipboardList size={14} aria-hidden /> },
+    { key: "documents", title: `Documents${documents.length ? ` (${documents.length})` : ''}`, icon: <BookOpen size={14} aria-hidden /> },
   ];
 
-  const isTeacher = Array.isArray(staff?.role) ? staff?.role.includes('Teacher') : staff?.role === 'Teacher';
+  const isTeacher = isTeacherRole;
   const stats = [
     { label: "Attendance", value: `${attendanceRate}%`, subtext: `${monthlyStats.present} present`, icon: Clock },
     { label: isTeacher ? "Students" : "Department", value: isTeacher ? totalStudents : staff?.department || "—", subtext: isTeacher ? `${classTeacherAssignments.length} classes` : "", icon: Users },
@@ -346,7 +370,7 @@ export default function StaffDashboard() {
     }
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <div className="text-gray-400 dark:text-zinc-500 text-sm">{t('pages.staffMemberNotFound1')}</div>
+        <div className="text-fg-faint text-sm">{t('pages.staffMemberNotFound1')}</div>
         <button onClick={() => navigate('/staffs')} className="text-sm text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300 underline">
           {t('pages.backToStaff')}
         </button>
@@ -364,15 +388,17 @@ export default function StaffDashboard() {
         classTeacherAssignments={classTeacherAssignments}
       />
 
-      <div className="w-full flex-1 bg-gray-50 dark:bg-zinc-900 p-6 min-h-screen">
+      <div className="page staff-dashboard">
         {/* Hidden file input for photo selection */}
         <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileSelect} />
 
-        {/* Profile Header Card */}
+        {/* Hero + dp-metric strip (detail-pane treatment) */}
         <StaffProfileHeader
           staff={staff}
           picturePreview={picturePreview}
           subjectAssignments={subjectAssignments}
+          attendanceRate={attendanceRate}
+          monthlyStats={monthlyStats}
           fileInputRef={fileInputRef}
           handleRemovePhoto={handleRemovePhoto}
           setIsCameraCaptureOpen={setIsCameraCaptureOpen}
@@ -382,27 +408,29 @@ export default function StaffDashboard() {
           t={t}
         />
 
-        {/* Tabs */}
-        <div className="mb-5">
-          <div className="flex items-center gap-1 border-b border-gray-200 dark:border-zinc-800 overflow-x-auto">
-            {tabs.map(tab => (
-              <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                className={`px-4 py-3 text-sm font-medium transition-colors relative whitespace-nowrap ${activeTab === tab.key ? 'text-gray-900 dark:text-zinc-100' : 'text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-400'}`}>
-                {tab.label}
-                {activeTab === tab.key && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900 dark:bg-zinc-100" />}
-              </button>
-            ))}
-          </div>
+        {/* Tabs (segmented underline) */}
+        <div className="staff-dashboard__tabs">
+          <MinimalTabs
+            tabs={tabs}
+            activeKey={activeTab}
+            onChange={setActiveTab}
+            variant="underline"
+            size="md"
+            ariaLabel="Staff detail tabs"
+          />
         </div>
 
-        {/* Content Area */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Main Content - 2/3 */}
-          <div className="lg:col-span-2 space-y-4">
-            {activeTab === "overview" && (
-              <>
+        {/* Tab panel */}
+        <div
+          id={`tabpanel-${activeTab}`}
+          role="tabpanel"
+          aria-labelledby={`tab-${activeTab}`}
+          className="staff-dashboard__panel"
+        >
+          {activeTab === "overview" && (
+            <div className="staff-dashboard__grid">
+              <div className="col gap-4">
                 <StaffOverviewStats stats={stats} />
-
                 <StaffClassTeacherSection
                   classTeacherAssignments={classTeacherAssignments}
                   onUnassignClass={handleUnassignClass}
@@ -412,71 +440,69 @@ export default function StaffDashboard() {
                   navigate={navigate}
                   staff={staff}
                 />
-
                 <StaffTodayStatusCard attendance={attendance} staffId={id} attendanceRate={attendanceRate} t={t} />
-
                 <StaffMonthlySummary monthlyStats={monthlyStats} t={t} />
-              </>
-            )}
-
-            {activeTab === "attendance" && (
-              <StaffAttendanceTab staffId={id} monthlyStats={monthlyStats} attendance={attendance[id]} />
-            )}
-
-            {activeTab === "about" && <StaffAboutTab staff={staff} />}
-
-            {activeTab === "timetable" && (
-              <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
-                <div className="p-5 border-b border-gray-200 dark:border-zinc-800 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Calendar size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-                  <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.weeklyTimetable')}</h3><p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.manageClassSchedulesAndAssignments')}</p></div>
-                </div>
-                <div className="p-5"><TeacherTimetableEditor teacherId={id} teacherName={staff?.name} /></div>
               </div>
-            )}
+              <div className="col gap-4">
+                <StaffQuickActions staff={staff} onEdit={handleEditClick} onMessage={onOpen} navigate={navigate} t={t} />
+                <StaffAlerts attendanceRate={attendanceRate} avgClassAttendance={avgClassAttendance} isTeacher={isTeacher} t={t} />
+                <StaffContactCard staff={staff} t={t} />
+                <StaffDepartmentCard staff={staff} t={t} />
+              </div>
+            </div>
+          )}
 
-            {activeTab === "classes" && (
-              <StaffAssignmentPanel staffId={id} onAssignClassTeacher={handleOpenAssignClassModal} />
-            )}
+          {activeTab === "about" && <StaffAboutTab staff={staff} />}
 
-            {activeTab === "payroll" && (
-              <StaffPayrollTab payrollHistory={payrollHistory} staffSalary={staffSalary} calculateTotals={calculateTotals} staff={staff} />
-            )}
+          {activeTab === "attendance" && (
+            <StaffAttendanceTab staffId={id} monthlyStats={monthlyStats} attendance={attendance[id]} />
+          )}
 
-            {activeTab === "documents" && (
-              <StaffDocumentsTab
-                documents={documents}
-                activeUploads={activeUploads}
-                documentInputRef={documentInputRef}
-                onDocumentUpload={handleDocumentUpload}
-                onDeleteDocument={handleDeleteDocument}
-                staffName={staff?.name}
-              />
-            )}
-          </div>
+          {activeTab === "timetable" && (
+            <div className="card">
+              <div className="card__head">
+                <span className="card__title">{t('pages.weeklyTimetable')}</span>
+              </div>
+              <div className="card__body">
+                <TeacherTimetableEditor teacherId={id} teacherName={staff?.name} />
+              </div>
+            </div>
+          )}
 
-          {/* Right Sidebar - 1/3 */}
-          <div className="lg:col-span-1 space-y-4">
-            <StaffQuickActions staff={staff} onEdit={handleEditClick} onMessage={onOpen} navigate={navigate} t={t} />
-            <StaffAlerts attendanceRate={attendanceRate} avgClassAttendance={avgClassAttendance} isTeacher={isTeacher} t={t} />
-            <StaffContactCard staff={staff} t={t} />
-            <StaffDepartmentCard staff={staff} t={t} />
-          </div>
+          {activeTab === "classes" && (
+            <StaffAssignmentPanel staffId={id} onAssignClassTeacher={handleOpenAssignClassModal} />
+          )}
+
+          {activeTab === "payroll" && (
+            <StaffPayrollTab payrollHistory={payrollHistory} staffSalary={staffSalary} calculateTotals={calculateTotals} staff={staff} />
+          )}
+
+          {activeTab === "leave" && <StaffLeaveBalance staffId={id} />}
+
+          {activeTab === "documents" && (
+            <StaffDocumentsTab
+              documents={documents}
+              activeUploads={activeUploads}
+              documentInputRef={documentInputRef}
+              onDocumentUpload={handleDocumentUpload}
+              onDeleteDocument={handleDeleteDocument}
+              staffName={staff?.name}
+            />
+          )}
         </div>
 
         {/* Send Message Modal */}
         <StaffSendMessageModal isOpen={isOpen} onClose={onClose} message={message} setMessage={setMessage} onSend={handleSendMessage} staff={staff} t={t} />
 
-        {/* AddStaff Drawer - Edit Mode */}
-        <StaffEditDrawer
-          isOpen={isAddStaffOpen}
-          shouldRender={shouldRenderAddStaff}
-          addStaffRef={addStaffRef}
-          onClose={handleCloseAddStaff}
-          onSave={handleSaveAddStaff}
-          staff={staff}
-          t={t}
-        />
+        {/* Edit Staff — single composer surface (REVAMP-15). */}
+        {shouldRenderAddStaff && isAddStaffOpen && (
+          <AddStaffComposer
+            ref={addStaffRef}
+            onClose={handleCloseAddStaff}
+            onSave={handleSaveAddStaff}
+            editingStaff={staff}
+          />
+        )}
 
         {/* Photo Editor Modal */}
         {selectedImageForEdit && (

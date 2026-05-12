@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 64" width="280" height="64" role="img" aria-label="Edumaster horizontal lockup">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="oklch(56% 0.19 270)"></stop>
+      <stop offset="100%" stop-color="oklch(50% 0.2 290)"></stop>
+    </linearGradient>
+  </defs>
+  <rect x="6" y="14" width="36" height="36" rx="10" fill="url(#g)"></rect>
+  <g transform="translate(24 32)" stroke="white" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" fill="none">
+    <path d="M-9 -1 L0 -7 L9 -1 L0 5 Z"></path>
+    <path d="M-6 1 V6 C-6 7 -3 8 0 8 C 3 8 6 7 6 6 V1"></path>
+    <path d="M9 -1 V5"></path>
+    <circle cx="9" cy="5.5" r="1" fill="white" stroke="none"></circle>
+  </g>
+  <text x="56" y="40" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="600" letter-spacing="-0.02em" fill="oklch(18% 0.01 280)">Edumaster</text>
+</svg>

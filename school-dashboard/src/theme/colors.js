@@ -109,7 +109,40 @@ export const toast = {
   undoButton: '#10b981',   // emerald-500
 };
 
-// --- Chart Colors ---
+// --- Chart series palette (design-system-aligned) ---
+// Mirrors the --chart-c1..c5 CSS variables in styles/tokens.css. Use this
+// array as Recharts <Line>/<Bar>/<Pie> stroke/fill props so all charts
+// share one categorical palette.
+export const chartSeries = [
+  'oklch(56% 0.19 270)', // indigo (accent)
+  'oklch(60% 0.14 240)', // blue
+  'oklch(58% 0.14 150)', // green
+  'oklch(70% 0.15 75)',  // amber
+  'oklch(60% 0.18 320)', // magenta
+];
+
+// CSS-variable form of the same palette — useful in styled JSX where
+// theme-aware tokens are preferred over baked oklch values.
+export const chartSeriesVars = [
+  'var(--chart-c1)',
+  'var(--chart-c2)',
+  'var(--chart-c3)',
+  'var(--chart-c4)',
+  'var(--chart-c5)',
+];
+
+// Status-tinted chart colors — use for charts where a series corresponds
+// to a status (paid/pending/overdue, present/absent, etc.).
+export const chartStatus = {
+  ok: 'oklch(58% 0.14 150)',
+  warn: 'oklch(70% 0.15 75)',
+  danger: 'oklch(58% 0.2 25)',
+  info: 'oklch(60% 0.14 240)',
+  accent: 'oklch(56% 0.19 270)',
+};
+
+// --- Chart Colors (legacy hex palette — keep for backwards compatibility
+// with existing Recharts callsites that import `chart.purple` etc.) ---
 export const chart = {
   purple: '#8b5cf6',      // violet-500 (students)
   pink: '#ec4899',        // pink-500 (staff)

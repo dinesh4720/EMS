@@ -1,74 +1,57 @@
 import { useState } from "react";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@heroui/react";
-import { AlertCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
-import { useTranslation } from 'react-i18next';
-import logger from '../../../../utils/logger';
-
+import ConfirmDialog from "../../../../components/ui/ConfirmDialog";
+import logger from "../../../../utils/logger";
 
 /**
- * MarkAlumniModal - Modal for marking a student as alumni
- *
- * Props:
- * - isOpen: boolean - Whether modal is open
- * - onClose: function - Called when modal is closed
- * - student: object - The student to mark as alumni
- * - onMark: function - Called after successful mark
+ * MarkAlumniModal — alertdialog-style confirm for moving a student to alumni.
+ * Uses the shared ConfirmDialog (frosted card, ESC closes, focus-trapped,
+ * .btn--accent primary).
  */
 export default function MarkAlumniModal({ isOpen, onClose, student, onMark }) {
   const { t } = useTranslation();
   const [isMarking, setIsMarking] = useState(false);
 
   const handleMarkAsAlumni = async () => {
+    if (!student?.id) return;
     setIsMarking(true);
-    const loadingToast = toast.loading(t('toast.loading.markingStudentAsAlumni'));
-
+    const loadingToast = toast.loading(t("toast.loading.markingStudentAsAlumni"));
     try {
       const { request } = await import("../../../../services/api");
-
       await request(`/students/${student.id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ status: "alumni" })
+        method: "PUT",
+        body: JSON.stringify({ status: "alumni" }),
       });
-
       toast.success(`${student.name} marked as alumni`, { id: loadingToast });
-
-      if (onMark) {
-        onMark();
-      }
+      onMark?.();
       onClose();
     } catch (error) {
       logger.error("Error marking as alumni:", error);
-      toast.error("Failed to mark as alumni: " + (error.message || "Unknown error"), { id: loadingToast });
+      toast.error(
+        "Failed to mark as alumni: " + (error.message || "Unknown error"),
+        { id: loadingToast }
+      );
+      throw error;
     } finally {
       setIsMarking(false);
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="sm">
-      <ModalContent>
-      <ModalHeader>{t('pages.markAsAlumni')}</ModalHeader>
-      <ModalBody>
-        <div className="space-y-4">
-          <div className="p-4 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="text-gray-600 dark:text-zinc-400 mt-0.5" size={20} />
-              <div>
-                <p className="font-semibold text-gray-900 dark:text-zinc-100">{t('pages.confirmAction1')}</p>
-                <p className="text-sm text-gray-600 dark:text-zinc-400 mt-1">
-                  {t('students.modals.markAlumniConfirmText', { name: student?.name, defaultValue: `This will change ${student?.name}'s status to "Alumni". The student will no longer appear in active student lists.` })}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </ModalBody>
-      <ModalFooter>
-        <Button variant="bordered" className="border-gray-200 dark:border-zinc-800 text-gray-700 dark:text-zinc-300" onPress={onClose}>{t('pages.cancel2')}</Button>
-        <Button className="bg-gray-900 dark:bg-zinc-100 hover:bg-gray-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-900" onPress={handleMarkAsAlumni} isLoading={isMarking}>{t('pages.confirm')}</Button>
-      </ModalFooter>
-      </ModalContent>
-    </Modal>
+    <ConfirmDialog
+      isOpen={isOpen}
+      onClose={onClose}
+      onConfirm={handleMarkAsAlumni}
+      title={t("pages.markAsAlumni", "Mark as Alumni")}
+      message={t("students.modals.markAlumniConfirmText", {
+        name: student?.name,
+        defaultValue: `This will change ${student?.name}'s status to "Alumni". The student will no longer appear in active student lists.`,
+      })}
+      confirmText={t("pages.confirm", "Confirm")}
+      cancelText={t("pages.cancel2", "Cancel")}
+      variant="warning"
+      isLoading={isMarking}
+    />
   );
 }

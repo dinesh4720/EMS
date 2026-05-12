@@ -142,8 +142,8 @@ export default function HolidaySettings() {
     <div className="w-full flex flex-col">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-lg font-semibold text-default-800">{t('pages.holidayManagement')}</h2>
-          <p className="text-sm text-default-500">{t('pages.manageSchoolHolidaysAndAcademicCalendar')}</p>
+          <h2 className="text-lg font-semibold text-fg">{t('pages.holidayManagement')}</h2>
+          <p className="text-sm text-fg-muted">{t('pages.manageSchoolHolidaysAndAcademicCalendar')}</p>
         </div>
         <Button 
           color="primary" 
@@ -175,12 +175,12 @@ export default function HolidaySettings() {
           </p>
         </div>
 
-        <div className="p-4 bg-default-50 rounded-lg border border-default-200">
+        <div className="p-4 bg-surface-2 rounded-lg border border-border-token">
           <div className="flex items-center gap-2 mb-2">
-            <Calendar size={18} className="text-default-500" />
-            <span className="text-xs text-default-500 uppercase tracking-wider">{t('pages.regional')}</span>
+            <Calendar size={18} className="text-fg-muted" />
+            <span className="text-xs text-fg-muted uppercase tracking-wider">{t('pages.regional')}</span>
           </div>
-          <p className="text-2xl font-semibold text-default-900">
+          <p className="text-2xl font-semibold text-fg">
             {holidays.filter(h => h.holidayType === "Regional").length}
           </p>
         </div>
@@ -196,15 +196,15 @@ export default function HolidaySettings() {
         </div>
       </div>
 
-      <Card className="shadow-sm border border-default-200 rounded-lg">
+      <Card className="shadow-sm border border-border-token rounded-lg">
         <CardBody className="p-0">
           <Table
             aria-label={t('aria.misc.holidays')}
             removeWrapper
             classNames={{
               base: "overflow-visible",
-              th: "bg-transparent text-default-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200",
-              td: "py-5 border-b border-default-100",
+              th: "bg-transparent text-fg-faint font-medium text-xs uppercase tracking-wider h-12 border-b border-border-token",
+              td: "py-5 border-b border-divider",
               tbody: "[&>tr:last-child>td]:border-none"
             }}
           >
@@ -221,8 +221,8 @@ export default function HolidaySettings() {
                 const dayName = date.toLocaleDateString(getDateLocale(), { weekday: 'short' });
                 return (
                   <TableRow key={holiday._id || holiday.id}>
-                    <TableCell className="font-medium text-default-700">{holiday.title}</TableCell>
-                    <TableCell className="text-sm text-default-600">
+                    <TableCell className="font-medium text-fg">{holiday.title}</TableCell>
+                    <TableCell className="text-sm text-fg-muted">
                       {date.toLocaleDateString(getDateLocale(), { day: 'numeric', month: 'short', year: 'numeric' })}
                     </TableCell>
                     <TableCell>
@@ -234,7 +234,7 @@ export default function HolidaySettings() {
                         {holiday.holidayType || "School"}
                       </Chip>
                     </TableCell>
-                    <TableCell className="text-sm text-default-500">{dayName}</TableCell>
+                    <TableCell className="text-sm text-fg-muted">{dayName}</TableCell>
                     <TableCell>
                       <div className="flex gap-2 justify-end">
                         <Button
@@ -271,7 +271,7 @@ export default function HolidaySettings() {
           <div ref={loaderRef} className="flex justify-center py-4">
             {isLoadingMore && <Spinner size="sm" color="primary" />}
             {!hasMore && sortedHolidays.length > ITEMS_PER_LOAD && (
-              <span className="text-default-400 text-sm">All {sortedHolidays.length} holidays loaded</span>
+              <span className="text-fg-faint text-sm">All {sortedHolidays.length} holidays loaded</span>
             )}
           </div>
         </CardBody>

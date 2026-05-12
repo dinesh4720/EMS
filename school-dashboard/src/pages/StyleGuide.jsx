@@ -1,226 +1,267 @@
+import { useEffect, useMemo, useState } from "react";
+import { useTheme } from "next-themes";
+import { Sun, Moon, Search, Palette, Layers, Layout, Smile, Accessibility } from "lucide-react";
+
 import TokensSection from "./styleguide/TokensSection";
 import PrimitivesSection from "./styleguide/PrimitivesSection";
-import DataPrimitivesSection from "./styleguide/DataPrimitivesSection";
-import DataTableSection from "./styleguide/DataTableSection";
-import SearchFilterSection from "./styleguide/SearchFilterSection";
-import LayoutFeedbackSection from "./styleguide/LayoutFeedbackSection";
-import DashboardWidgetsSection from "./styleguide/DashboardWidgetsSection";
-import CommandPaletteSection from "./styleguide/CommandPaletteSection";
 import PatternsSection from "./styleguide/PatternsSection";
+import IconsSection from "./styleguide/IconsSection";
+import AccessibilityResponsiveSection from "./styleguide/AccessibilityResponsiveSection";
+
+/* ──────────────────────────────────────────────────────────────────
+ * Style Guide — single source of truth for tokens, primitives, and
+ * patterns. Sticky TOC + theme/density toolbar + searchable content.
+ * ────────────────────────────────────────────────────────────────── */
 
 const TOC = [
   {
     title: "Tokens",
+    icon: Palette,
     items: [
-      { id: "tokens-colors", label: "Colors" },
-      { id: "tokens-chart", label: "Chart palette" },
+      { id: "tokens-color-surfaces", label: "Surfaces" },
+      { id: "tokens-color-foreground", label: "Foreground" },
+      { id: "tokens-color-borders-dividers", label: "Borders & dividers" },
+      { id: "tokens-color-accent", label: "Accent" },
+      { id: "tokens-color-semantic-success", label: "Semantic — Success" },
+      { id: "tokens-color-semantic-warning", label: "Semantic — Warning" },
+      { id: "tokens-color-semantic-danger", label: "Semantic — Danger" },
+      { id: "tokens-color-semantic-info", label: "Semantic — Info" },
+      { id: "tokens-color-glass", label: "Glass" },
       { id: "tokens-typography", label: "Typography" },
-      { id: "tokens-type-scale", label: "Type scale" },
-      { id: "tokens-weight", label: "Font weight" },
       { id: "tokens-radius", label: "Radius" },
-      { id: "tokens-shadows", label: "Shadows" },
+      { id: "tokens-shadow", label: "Elevation" },
       { id: "tokens-spacing", label: "Spacing" },
       { id: "tokens-motion", label: "Motion" },
+      { id: "tokens-zindex", label: "Z-index" },
+      { id: "tokens-density", label: "Density" },
     ],
   },
   {
     title: "Primitives",
+    icon: Layers,
     items: [
-      { id: "primitives-buttons", label: "Button" },
-      { id: "primitives-icon-button", label: "IconButton" },
-      { id: "primitives-card", label: "Card" },
-      { id: "primitives-tabs", label: "Tabs" },
-      { id: "primitives-statcard", label: "StatCard" },
-      { id: "primitives-status", label: "StatusBadge" },
-      { id: "primitives-badge", label: "Badge" },
-      { id: "primitives-avatar", label: "Avatar" },
-      { id: "primitives-chip", label: "Chip" },
-      { id: "primitives-tag", label: "Tag" },
-      { id: "primitives-divider", label: "Divider" },
-      { id: "primitives-alert", label: "Alert" },
-      { id: "primitives-progress", label: "Progress" },
-      { id: "primitives-minimalcard", label: "MinimalCard (legacy)" },
-      { id: "primitives-input", label: "Input" },
-      { id: "primitives-textarea", label: "Textarea" },
-      { id: "primitives-select", label: "Select" },
-      { id: "primitives-checkbox", label: "Checkbox" },
-      { id: "primitives-radio", label: "Radio" },
-      { id: "primitives-switch", label: "Switch" },
-      { id: "primitives-form-system", label: "Form system" },
-      { id: "primitives-file-upload", label: "FileUpload" },
-      { id: "primitives-image-upload", label: "ImageUpload" },
-      { id: "primitives-inputs", label: "Form inputs (legacy)" },
-      { id: "primitives-search", label: "SearchInput" },
-      { id: "primitives-pageheader", label: "PageHeader" },
-      { id: "primitives-sectionheading", label: "SectionHeading" },
-      { id: "primitives-modal", label: "Modal" },
-      { id: "primitives-dialog", label: "Dialog" },
-      { id: "primitives-drawer", label: "Drawer" },
-      { id: "primitives-tooltip", label: "Tooltip" },
-      { id: "primitives-popover", label: "Popover" },
-      { id: "primitives-dropdownmenu", label: "DropdownMenu" },
-      { id: "primitives-toast", label: "Toast" },
-      { id: "primitives-datatable", label: "DataTable" },
-    ],
-  },
-  {
-    title: "Search & filters",
-    items: [
-      { id: "primitives-searchbar", label: "SearchBar" },
-      { id: "primitives-combobox", label: "Combobox" },
-      { id: "primitives-multiselect", label: "MultiSelect" },
-      { id: "primitives-faceted", label: "FacetedFilter" },
-      { id: "primitives-daterange", label: "DateRangePicker" },
-      { id: "primitives-filterbar", label: "FilterBar" },
-    ],
-  },
-  {
-    title: "Dashboard widgets",
-    items: [
-      { id: "primitives-kpitile", label: "KpiTile" },
-      { id: "primitives-chartcard", label: "ChartCard" },
-      { id: "primitives-timeline", label: "Timeline" },
-      { id: "primitives-activityfeed", label: "ActivityFeed" },
-      { id: "primitives-quickaction", label: "QuickActionTile" },
-    ],
-  },
-  {
-    title: "Layout & feedback",
-    items: [
-      { id: "layout-pageshell", label: "PageShell" },
-      { id: "layout-breadcrumbs", label: "Breadcrumbs" },
-      { id: "layout-tabs", label: "Tabs" },
-      { id: "layout-empty", label: "EmptyState" },
-      { id: "layout-error", label: "ErrorState" },
-      { id: "layout-skeleton", label: "Skeleton" },
-      { id: "layout-states", label: "Composed states" },
-      { id: "layout-command-palette", label: "CommandPalette (⌘K)" },
+      { id: "prim-buttons", label: "Buttons" },
+      { id: "prim-forms", label: "Forms" },
+      { id: "prim-composer-atoms", label: "Composer atoms" },
+      { id: "prim-surfaces", label: "Surfaces" },
+      { id: "prim-feedback", label: "Feedback & state" },
+      { id: "prim-navigation", label: "Navigation" },
+      { id: "prim-overlays", label: "Overlays" },
+      { id: "prim-prop-tables", label: "Reference" },
     ],
   },
   {
     title: "Patterns",
+    icon: Layout,
     items: [
-      { id: "patterns-four-states", label: "Loading / empty / error / success" },
-      { id: "patterns-responsive", label: "Responsive grid" },
-      { id: "patterns-focus", label: "Focus states" },
+      { id: "pattern-two-pane", label: "Two-pane list" },
+      { id: "pattern-composer", label: "Composer overlay" },
+      { id: "pattern-detail-pane", label: "Detail pane" },
+      { id: "pattern-sticky", label: "Sticky head & foot" },
+      { id: "pattern-toolbar", label: "Toolbar + filter" },
+      { id: "pattern-tile", label: "KPI tile" },
+      { id: "pattern-kpi", label: "KPI strips" },
+      { id: "pattern-table", label: "Density table" },
+      { id: "pattern-period", label: "Period strip" },
+      { id: "pattern-class-tile", label: "Class tile" },
+      { id: "pattern-chat", label: "Chat" },
+      { id: "pattern-calendar", label: "Calendar grid" },
+      { id: "pattern-frosted", label: "Frosted overlay" },
+    ],
+  },
+  {
+    title: "Library",
+    icon: Smile,
+    items: [{ id: "icons", label: "Icons" }],
+  },
+  {
+    title: "Quality",
+    icon: Accessibility,
+    items: [
+      { id: "a11y", label: "Accessibility" },
+      { id: "responsive", label: "Responsive" },
     ],
   },
 ];
 
-function Toc() {
+function useActiveSection(ids) {
+  const [active, setActive] = useState(ids[0]);
+
+  useEffect(() => {
+    if (typeof IntersectionObserver === "undefined") return undefined;
+    const elements = ids
+      .map((id) => document.getElementById(id))
+      .filter(Boolean);
+    if (elements.length === 0) return undefined;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible[0]?.target?.id) {
+          setActive(visible[0].target.id);
+        }
+      },
+      { rootMargin: "-100px 0px -65% 0px", threshold: 0.01 }
+    );
+
+    elements.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [ids]);
+
+  return active;
+}
+
+function Toolbar({ search, onSearchChange, density, onDensityChange }) {
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
+
   return (
-    <nav
-      aria-label="Style guide table of contents"
-      className="hidden lg:block sticky top-6 self-start text-sm space-y-5"
-    >
-      {TOC.map((group) => (
-        <div key={group.title} className="space-y-2">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-zinc-500">
-            {group.title}
-          </h3>
-          <ul className="space-y-1 border-l border-gray-100 dark:border-zinc-800">
-            {group.items.map((item) => (
-              <li key={item.id}>
-                <a
-                  href={`#${item.id}`}
-                  className="block pl-3 -ml-px border-l border-transparent text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 hover:border-gray-300 dark:hover:border-zinc-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary rounded-r"
-                >
-                  {item.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
+    <div className="sg-toolbar">
+      <div style={{ minWidth: 0 }}>
+        <h1 className="sg-toolbar__title">Style guide</h1>
+        <p className="sg-toolbar__sub">Tokens · primitives · patterns · copy-paste reference</p>
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }} />
+
+      <div className="sg-toolbar__search">
+        <Search size={13} style={{ color: "var(--fg-subtle)" }} aria-hidden />
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
+          placeholder="Filter sections…"
+          aria-label="Filter style guide sections"
+        />
+      </div>
+
+      <div className="sg-toolbar__group" role="group" aria-label="Density">
+        <button
+          type="button"
+          className={`sg-toolbar__chip${density === "default" ? " is-active" : ""}`}
+          onClick={() => onDensityChange("default")}
+        >
+          Default
+        </button>
+        <button
+          type="button"
+          className={`sg-toolbar__chip${density === "compact" ? " is-active" : ""}`}
+          onClick={() => onDensityChange("compact")}
+        >
+          Compact
+        </button>
+      </div>
+
+      <div className="sg-toolbar__group" role="group" aria-label="Theme">
+        <button
+          type="button"
+          className={`sg-toolbar__chip${!isDark ? " is-active" : ""}`}
+          onClick={() => setTheme("light")}
+          aria-label="Light theme"
+        >
+          <Sun size={11} aria-hidden /> Light
+        </button>
+        <button
+          type="button"
+          className={`sg-toolbar__chip${isDark ? " is-active" : ""}`}
+          onClick={() => setTheme("dark")}
+          aria-label="Dark theme"
+        >
+          <Moon size={11} aria-hidden /> Dark
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Toc({ filter }) {
+  const allIds = useMemo(
+    () => TOC.flatMap((g) => g.items.map((i) => i.id)),
+    []
+  );
+  const active = useActiveSection(allIds);
+
+  const filtered = useMemo(() => {
+    const q = filter.trim().toLowerCase();
+    if (!q) return TOC;
+    return TOC.map((group) => ({
+      ...group,
+      items: group.items.filter(
+        (i) =>
+          i.label.toLowerCase().includes(q) ||
+          group.title.toLowerCase().includes(q)
+      ),
+    })).filter((g) => g.items.length > 0);
+  }, [filter]);
+
+  return (
+    <nav className="sg-toc" aria-label="Style guide sections">
+      {filtered.map((group) => {
+        const Icon = group.icon;
+        return (
+          <div key={group.title} className="sg-toc__group">
+            <h3 className="sg-toc__group-title">
+              <Icon
+                size={11}
+                aria-hidden
+                style={{ display: "inline-block", marginRight: 6, verticalAlign: "-1px" }}
+              />
+              {group.title}
+            </h3>
+            <ul className="sg-toc__list">
+              {group.items.map((item) => (
+                <li key={item.id}>
+                  <a
+                    href={`#${item.id}`}
+                    className={`sg-toc__link${active === item.id ? " is-active" : ""}`}
+                  >
+                    {item.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })}
+      {filtered.length === 0 && (
+        <p style={{ fontSize: 12, color: "var(--fg-subtle)", padding: "8px 12px" }}>
+          No sections match.
+        </p>
+      )}
     </nav>
   );
 }
 
-function SectionHeader({ id, title, description }) {
-  return (
-    <header id={id} className="space-y-2 scroll-mt-24">
-      <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">{title}</h2>
-      {description ? (
-        <p className="text-sm text-gray-500 dark:text-zinc-400 max-w-2xl">{description}</p>
-      ) : null}
-    </header>
-  );
-}
-
 export default function StyleGuide() {
+  const [search, setSearch] = useState("");
+  const [density, setDensity] = useState("default");
+
+  useEffect(() => {
+    const root = document.body;
+    if (density === "compact") root.setAttribute("data-density", "compact");
+    else root.removeAttribute("data-density");
+    return () => root.removeAttribute("data-density");
+  }, [density]);
+
   return (
-    <div className="animate-fade-in">
-      <div className="mx-auto max-w-7xl px-6 py-10 space-y-10">
-        <header className="space-y-2">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Design Style Guide</h1>
-          <p className="text-gray-500 dark:text-zinc-400 max-w-2xl">
-            Living documentation for the design system — tokens, primitives, and patterns used across
-            the school dashboard. All new UI should compose these pieces rather than style ad-hoc.
-          </p>
-        </header>
+    <div className="page" style={{ paddingBottom: 64 }}>
+      <Toolbar
+        search={search}
+        onSearchChange={setSearch}
+        density={density}
+        onDensityChange={setDensity}
+      />
 
-        <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-10">
-          <Toc />
-
-          <div className="space-y-16 min-w-0">
-            <div className="space-y-6">
-              <SectionHeader
-                id="tokens"
-                title="Tokens"
-                description="CSS custom properties in src/index.css and src/theme/colors.js. Reference these via Tailwind utilities or var(--token) in custom CSS."
-              />
-              <TokensSection />
-            </div>
-
-            <div className="space-y-6">
-              <SectionHeader
-                id="primitives"
-                title="Primitives"
-                description="Reusable building blocks exported from src/components/ui. Extend here — never duplicate."
-              />
-              <PrimitivesSection />
-              <DataPrimitivesSection />
-              <DataTableSection />
-            </div>
-
-            <div className="space-y-6">
-              <SectionHeader
-                id="search-filters"
-                title="Search & filters"
-                description="Composable primitives for list and table toolbars — search, combobox, multi-select, faceted filter, date range, and the FilterBar layout that ties them together."
-              />
-              <SearchFilterSection />
-            </div>
-
-            <div className="space-y-6">
-              <SectionHeader
-                id="dashboard-widgets"
-                title="Dashboard widgets"
-                description="Composable building blocks for dashboards and overview screens — metric tiles, chart containers, timelines, activity feeds, and quick-action entry points. All primitives handle the four data states where applicable."
-              />
-              <DashboardWidgetsSection />
-            </div>
-
-            <div className="space-y-6">
-              <SectionHeader
-                id="layout-feedback"
-                title="Layout & feedback"
-                description="Page-level structure and feedback primitives. Every data-fetching screen must render all four states — skeleton, empty, error, success — inside a PageShell."
-              />
-              <LayoutFeedbackSection />
-              <CommandPaletteSection />
-            </div>
-
-            <div className="space-y-6">
-              <SectionHeader
-                id="patterns"
-                title="Patterns"
-                description="Common compositions every data-fetching screen should implement."
-              />
-              <PatternsSection />
-            </div>
-          </div>
-        </div>
+      <div className="sg-shell">
+        <Toc filter={search} />
+        <main className="sg-content">
+          <TokensSection />
+          <PrimitivesSection />
+          <PatternsSection />
+          <IconsSection />
+          <AccessibilityResponsiveSection />
+        </main>
       </div>
     </div>
   );

@@ -36,7 +36,7 @@ export default function FeatureGate({ capability, children, fallback, inline = f
 
   if (inline) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-gray-400 cursor-not-allowed">
+      <span className="inline-flex items-center gap-1 text-xs text-fg-subtle cursor-not-allowed">
         <Lock size={12} />
         {t('billing.featureLocked', 'Upgrade required')}
       </span>
@@ -51,15 +51,15 @@ export default function FeatureGate({ capability, children, fallback, inline = f
       </div>
 
       {/* Lock overlay */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/70 dark:bg-zinc-900/70 backdrop-blur-[2px] rounded-xl">
+      <div className="absolute inset-0 flex flex-col items-center justify-center bg-surface/70 backdrop-blur-[2px] rounded-xl">
         <div className="flex flex-col items-center gap-3 p-6 text-center max-w-xs">
-          <div className="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center">
-            <Lock size={22} className="text-primary-600" />
+          <div className="w-12 h-12 rounded-full bg-accent-bg flex items-center justify-center">
+            <Lock size={22} className="text-accent" />
           </div>
-          <p className="text-sm font-semibold text-gray-800 dark:text-zinc-100">
+          <p className="text-sm font-semibold text-fg">
             {t('billing.featureNotOnPlan', 'This feature is not included in your current plan.')}
           </p>
-          <p className="text-xs text-gray-500 dark:text-zinc-400">
+          <p className="text-xs text-fg-muted">
             {t('billing.upgradeToUnlock', 'Upgrade your subscription to unlock this feature for your school.')}
           </p>
           <Button

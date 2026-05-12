@@ -38,8 +38,8 @@ function StatCard({ label, value, icon: Icon, color, sub }) {
       </div>
       <div>
         <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
-        <p className="text-sm text-gray-500 dark:text-zinc-400">{label}</p>
-        {sub && <p className="mt-0.5 text-xs text-gray-400 dark:text-zinc-500">{sub}</p>}
+        <p className="text-sm text-fg-muted">{label}</p>
+        {sub && <p className="mt-0.5 text-xs text-fg-faint">{sub}</p>}
       </div>
     </div>
   );
@@ -146,10 +146,10 @@ export default function CommunicationLogs() {
           {[0, 1, 2].map((i) => (
             <div key={i} className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-lg bg-gray-200 dark:bg-zinc-700 animate-pulse" />
+                <div className="w-10 h-10 rounded-lg bg-surface-2 animate-pulse" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-6 w-16 rounded bg-gray-200 dark:bg-zinc-700 animate-pulse" />
-                  <div className="h-4 w-24 rounded bg-gray-100 dark:bg-zinc-800 animate-pulse" />
+                  <div className="h-6 w-16 rounded bg-surface-2 animate-pulse" />
+                  <div className="h-4 w-24 rounded bg-surface-2 animate-pulse" />
                 </div>
               </div>
             </div>
@@ -172,7 +172,7 @@ export default function CommunicationLogs() {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Failed to load logs</h2>
-              <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400">{error}</p>
+              <p className="mt-1 text-sm text-fg-muted">{error}</p>
             </div>
             <button
               onClick={loadData}
@@ -262,7 +262,7 @@ export default function CommunicationLogs() {
             </button>
           )}
 
-          <span className="ml-auto text-xs text-gray-400 dark:text-zinc-500">
+          <span className="ml-auto text-xs text-fg-faint">
             {filtered.length} {filtered.length === 1 ? "entry" : "entries"}
           </span>
         </div>
@@ -270,13 +270,13 @@ export default function CommunicationLogs() {
         {/* List */}
         {paginated.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100 dark:bg-zinc-800">
-              <Send size={22} className="text-gray-400 dark:text-zinc-500" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-2">
+              <Send size={22} className="text-fg-faint" />
             </div>
-            <p className="text-sm font-medium text-gray-600 dark:text-zinc-300">
+            <p className="text-sm font-medium text-fg-muted">
               {hasFilters ? "No logs match your filters" : "No sent communications yet"}
             </p>
-            <p className="text-xs text-gray-400 dark:text-zinc-500 max-w-xs">
+            <p className="text-xs text-fg-faint max-w-xs">
               {hasFilters
                 ? "Try adjusting the search or filters above."
                 : "Sent announcements via email, SMS, WhatsApp, or in-app will appear here."}
@@ -288,9 +288,9 @@ export default function CommunicationLogs() {
             )}
           </div>
         ) : (
-          <ul className="divide-y divide-gray-100 dark:divide-zinc-800">
+          <ul className="divide-y divide-divider">
             {paginated.map((a) => (
-              <li key={a._id} className="flex flex-col gap-3 p-4 hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors sm:flex-row sm:items-start sm:gap-4">
+              <li key={a._id} className="flex flex-col gap-3 p-4 hover:bg-surface-2/50 transition-colors sm:flex-row sm:items-start sm:gap-4">
                 {/* Icon */}
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">
                   <Send size={15} />
@@ -303,7 +303,7 @@ export default function CommunicationLogs() {
                   </div>
 
                   {a.content && (
-                    <p className="text-xs text-gray-500 dark:text-zinc-400 line-clamp-1">{a.content}</p>
+                    <p className="text-xs text-fg-muted line-clamp-1">{a.content}</p>
                   )}
 
                   {/* Channels */}
@@ -316,7 +316,7 @@ export default function CommunicationLogs() {
                   )}
 
                   {/* Meta row */}
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-gray-400 dark:text-zinc-500">
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-fg-faint">
                     <span className="flex items-center gap-1">
                       <Users size={11} />
                       {getRecipientsLabel(a.recipients)}
@@ -347,7 +347,7 @@ export default function CommunicationLogs() {
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3 dark:border-zinc-800">
-            <p className="text-xs text-gray-400 dark:text-zinc-500">
+            <p className="text-xs text-fg-faint">
               Page {page} of {totalPages}
             </p>
             <div className="flex items-center gap-2">

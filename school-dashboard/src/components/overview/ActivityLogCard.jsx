@@ -3,7 +3,7 @@ import { Card, CardBody } from '@heroui/react';
 
 function ActivityLogCard({
   icon: Icon,
-  iconColor = 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400',
+  iconColor = 'bg-surface-2 text-fg-muted',
   title,
   subtitle,
   activities = [],
@@ -26,8 +26,8 @@ function ActivityLogCard({
           {activities.length > 0 ? (
             activities.map((item, i) => (
               <div key={item.title || `activity-${i}`} className="flex items-center gap-4 p-3 rounded-lg hover:bg-default-50 transition-colors">
-                <div className={`p-2 rounded-lg ${item.bgColor || 'bg-gray-50 dark:bg-zinc-900'}`}>
-                  {item.icon && <item.icon size={16} className={item.color || 'text-gray-600 dark:text-zinc-400'} />}
+                <div className={`p-2 rounded-lg ${item.bgColor || 'bg-surface-2'}`}>
+                  {item.icon && <item.icon size={16} className={item.color || 'text-fg-muted'} />}
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-default-900">{item.title}</p>

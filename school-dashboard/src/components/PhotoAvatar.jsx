@@ -23,72 +23,29 @@ function getInitials(personName) {
 }
 
 /**
- * Generate a hash from a string (0-100)
- * Uses the full name for consistent, unique results
+ * Build the avatar gradient for a given name.
+ *
+ * Verbatim recipe from the EMS Revamp design system
+ * (scripts/shell.jsx in the design handoff): two perceptually-uniform
+ * oklch stops at a 135° angle, each stop's hue derived from a different
+ * character of the name across the full 0–360° wheel. NO type-based
+ * hue bucketing — every avatar gets its own random gradient across the
+ * whole spectrum so the result is visually rich instead of monochromatic.
+ *
+ *   linear-gradient(135deg,
+ *     oklch(70% 0.14 [name[0] * 7  mod 360]),
+ *     oklch(55% 0.16 [name[1] * 11 mod 360]))
+ *
+ * The lightness/chroma values come straight from the design (70%/0.14
+ * and 55%/0.16); oklch keeps complementary hues vibrant instead of
+ * muddying through the RGB midpoint.
  */
-function generateNameHash(personName) {
-  if (!personName) return 50;
-  let hash = 0;
-  const str = personName.toLowerCase().trim();
-
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
-  }
-
-  // Normalize to 0-100 range (absolute value mod 101)
-  return Math.abs(hash % 101);
-}
-
-/**
- * Generate HSL color values with unique shades based on name hash
- * Staff: Purple/Pink spectrum (hue 220-280) - WIDER 60° range
- * Students: Cyan/Deep Blue spectrum (hue 170-250) - WIDER 80° range
- */
-function generateHSLColor(personName, personType) {
-  const hash = generateNameHash(personName);
-
-  let hue, saturation, lightness;
-
-  if (personType === "staff") {
-    // Purple/Pink spectrum: 220-280 (60° range - MUCH wider)
-    hue = 220 + (hash * 0.6); // Maps 0-100 to 220-280
-    saturation = 50 + (hash * 0.4); // 50-90% - WIDER variation
-    lightness = 40 + (hash * 0.25); // 40-65% - WIDER variation
-  } else if (personType === "student") {
-    // Cyan/Deep Blue spectrum: 170-250 (80° range - MUCH wider)
-    hue = 170 + (hash * 0.8); // Maps 0-100 to 170-250
-    saturation = 55 + (hash * 0.4); // 55-95% - WIDER variation
-    lightness = 40 + (hash * 0.25); // 40-65% - WIDER variation
-  } else {
-    // Default: Full spectrum for backwards compatibility
-    hue = hash * 3.6; // Maps 0-100 to 0-360
-    saturation = 50 + (hash * 0.4); // 50-90%
-    lightness = 40 + (hash * 0.25); // 40-65%
-  }
-
-  return { hue, saturation, lightness };
-}
-
-/**
- * Create gradient CSS from HSL values
- * Returns a gradient from base color to a slightly darker shade
- */
-function createGradient(hue, saturation, lightness) {
-  const color1 = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-  const color2 = `hsl(${hue}, ${saturation}%, ${Math.max(lightness - 12, 25)}%)`;
-  return { color1, color2 };
-}
-
-/**
- * Compute the gradient style for a name/type combination.
- */
-function getAvatarColor(personName, personType) {
-  const hsl = generateHSLColor(personName, personType);
-  const gradient = createGradient(hsl.hue, hsl.saturation, hsl.lightness);
+function getAvatarColor(personName) {
+  const safe = (personName || "?").trim() || "?";
+  const hue1 = (safe.charCodeAt(0) * 7) % 360;
+  const hue2 = (safe.charCodeAt(1 % safe.length) * 11) % 360;
   return {
-    background: `linear-gradient(135deg, ${gradient.color1}, ${gradient.color2})`,
+    background: `linear-gradient(135deg, oklch(70% 0.14 ${hue1}), oklch(55% 0.16 ${hue2}))`,
   };
 }
 
@@ -149,7 +106,7 @@ export default function PhotoAvatar({
   };
 
   // Memoize color calculations to prevent unnecessary recalculation
-  const avatarColor = useMemo(() => getAvatarColor(name, type), [name, type]);
+  const avatarColor = useMemo(() => getAvatarColor(name), [name]);
 
   const avatarSize = SIZE_CLASSES[size] || SIZE_CLASSES.md;
 

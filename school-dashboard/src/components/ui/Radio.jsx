@@ -77,13 +77,15 @@ const Radio = forwardRef(function Radio(
             "peer-hover:border-[var(--color-primary)]",
             "peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--color-primary)]/30 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-[var(--color-bg)]",
             "peer-checked:border-[var(--color-primary)]",
+            checked && "border-[var(--color-primary)]",
             SIZE_STYLES[size],
             className
           )}
         >
           <span
             className={cn(
-              "rounded-full bg-[var(--color-primary)] opacity-0 peer-checked:opacity-100 transition-opacity",
+              "rounded-full bg-[var(--color-primary)] transition-opacity",
+              checked ? "opacity-100" : "opacity-0",
               DOT_SIZE[size]
             )}
           />

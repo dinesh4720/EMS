@@ -78,19 +78,19 @@ export default function SubstitutionAlertPanel({ className = '' }) {
       if (data.type === 'new_alerts') {
         // Show notification toast
         toast.custom((toastInstance) => (
-          <div className={`flex items-center gap-3 p-4 bg-white dark:bg-zinc-950 rounded-lg shadow-lg border-l-4 border-danger-500 ${toastInstance.visible ? 'animate-enter' : 'animate-leave'}`}>
+          <div className={`flex items-center gap-3 p-4 bg-surface rounded-lg shadow-lg border-l-4 border-danger-500 ${toastInstance.visible ? 'animate-enter' : 'animate-leave'}`}>
             <div className="p-2 bg-danger-100 rounded-full">
               <AlertTriangle className="w-5 h-5 text-danger-600" />
             </div>
             <div>
-              <p className="font-semibold text-gray-900 dark:text-zinc-100">{t('components.teacherAbsent')}</p>
-              <p className="text-sm text-gray-600 dark:text-zinc-400">
+              <p className="font-semibold text-fg">{t('components.teacherAbsent')}</p>
+              <p className="text-sm text-fg-muted">
                 {data.teacherName} - {data.count} class{data.count > 1 ? 'es' : ''} need{data.count === 1 ? 's' : ''} substitute
               </p>
             </div>
             <button
               onClick={() => toast.dismiss(toastInstance.id)}
-              className="ml-2 text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300"
+              className="ml-2 text-fg-faint hover:text-gray-600 dark:hover:text-zinc-300"
             >
               ×
             </button>
@@ -250,9 +250,9 @@ export default function SubstitutionAlertPanel({ className = '' }) {
               onPress={() => setSoundEnabled(!soundEnabled)}
             >
               {soundEnabled ? (
-                <Bell className="w-4 h-4 text-default-500" />
+                <Bell className="w-4 h-4 text-fg-muted" />
               ) : (
-                <BellOff className="w-4 h-4 text-default-400" />
+                <BellOff className="w-4 h-4 text-fg-faint" />
               )}
             </Button>
             <Button
@@ -263,7 +263,7 @@ export default function SubstitutionAlertPanel({ className = '' }) {
               onPress={handleRefresh}
               isLoading={refreshing}
             >
-              <RefreshCw className="w-4 h-4 text-default-500" />
+              <RefreshCw className="w-4 h-4 text-fg-muted" />
             </Button>
           </div>
         </CardHeader>
@@ -274,8 +274,8 @@ export default function SubstitutionAlertPanel({ className = '' }) {
           {alerts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <CheckCircle className="w-12 h-12 text-success-400 mb-2" />
-              <p className="text-default-500 font-medium">{t('components.noPendingSubstitutions')}</p>
-              <p className="text-xs text-default-400">{t('components.allClassesAreCovered')}</p>
+              <p className="text-fg-muted font-medium">{t('components.noPendingSubstitutions')}</p>
+              <p className="text-xs text-fg-faint">{t('components.allClassesAreCovered')}</p>
             </div>
           ) : (
             <AnimatePresence>
@@ -288,7 +288,7 @@ export default function SubstitutionAlertPanel({ className = '' }) {
                   transition={{ delay: index * 0.05 }}
                 >
                   <button
-                    className="w-full p-3 hover:bg-default-100 transition-colors text-left border-b border-default-100 last:border-b-0"
+                    className="w-full p-3 hover:bg-surface-2 transition-colors text-left border-b border-divider last:border-b-0"
                     onClick={() => handleAlertClick(alert)}
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -302,27 +302,27 @@ export default function SubstitutionAlertPanel({ className = '' }) {
                           >
                             {getPriorityLabel(alert)}
                           </Chip>
-                          <span className="text-xs text-default-400">
+                          <span className="text-xs text-fg-faint">
                             Period {alert.period}
                           </span>
                         </div>
-                        <p className="font-medium text-sm text-default-800 truncate">
+                        <p className="font-medium text-sm text-fg truncate">
                           {alert.className}
                         </p>
-                        <p className="text-xs text-default-500">
+                        <p className="text-xs text-fg-muted">
                           {alert.subject} • {alert.absentTeacher?.name || 'Teacher absent'}
                         </p>
                         {alert.timeSlot && (
-                          <p className="text-xs text-default-400 mt-1">
+                          <p className="text-xs text-fg-faint mt-1">
                             {alert.timeSlot}
                           </p>
                         )}
                       </div>
                       <div className="flex flex-col items-end gap-1">
-                        <span className="text-xs font-medium text-default-500">
+                        <span className="text-xs font-medium text-fg-muted">
                           {getTimeUntil(alert.date, alert.period)}
                         </span>
-                        <ChevronRight className="w-4 h-4 text-default-400" />
+                        <ChevronRight className="w-4 h-4 text-fg-faint" />
                       </div>
                     </div>
                   </button>
@@ -363,11 +363,11 @@ export default function SubstitutionAlertPanel({ className = '' }) {
             {selectedAlert && (
               <>
                 {/* Alert Details */}
-                <div className="bg-default-50 rounded-lg p-4 space-y-2">
+                <div className="bg-surface-2 rounded-lg p-4 space-y-2">
                   <div className="flex justify-between items-start">
                     <div>
                       <p className="font-semibold text-lg">{selectedAlert.className}</p>
-                      <p className="text-sm text-default-500">{selectedAlert.subject}</p>
+                      <p className="text-sm text-fg-muted">{selectedAlert.subject}</p>
                     </div>
                     <Chip color={getPriorityColor(selectedAlert)} variant="flat">
                       {getPriorityLabel(selectedAlert)}
@@ -376,21 +376,21 @@ export default function SubstitutionAlertPanel({ className = '' }) {
                   <Divider />
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p className="text-default-400">{t('components.absentTeacher')}</p>
+                      <p className="text-fg-faint">{t('components.absentTeacher')}</p>
                       <p className="font-medium">{selectedAlert.absentTeacher?.name || 'Unknown'}</p>
                     </div>
                     <div>
-                      <p className="text-default-400">{t('components.period1')}</p>
+                      <p className="text-fg-faint">{t('components.period1')}</p>
                       <p className="font-medium">
                         {selectedAlert.periodName} ({selectedAlert.timeSlot || `Period ${selectedAlert.period}`})
                       </p>
                     </div>
                     <div>
-                      <p className="text-default-400">{t('components.date1')}</p>
+                      <p className="text-fg-faint">{t('components.date1')}</p>
                       <p className="font-medium">{selectedAlert.date ? new Date(selectedAlert.date).toLocaleDateString('en-IN') : '—'}</p>
                     </div>
                     <div>
-                      <p className="text-default-400">{t('components.day1')}</p>
+                      <p className="text-fg-faint">{t('components.day1')}</p>
                       <p className="font-medium">{getDayOfWeek(selectedAlert.date)}</p>
                     </div>
                   </div>
@@ -399,14 +399,14 @@ export default function SubstitutionAlertPanel({ className = '' }) {
                 {/* Available Teachers */}
                 <div className="space-y-2">
                   <h4 className="font-semibold text-sm">{t('components.availableTeachers')}</h4>
-                  <p className="text-xs text-default-500">
+                  <p className="text-xs text-fg-muted">
                     Teachers on free period during this slot
                   </p>
 
                   {loadingTeachers ? (
                     <div className="flex items-center justify-center py-8">
                       <Spinner color="primary" />
-                      <span className="ml-2 text-default-500">{t('components.findingAvailableTeachers')}</span>
+                      <span className="ml-2 text-fg-muted">{t('components.findingAvailableTeachers')}</span>
                     </div>
                   ) : availableTeachers.length === 0 ? (
                     <div className="bg-warning-50 rounded-lg p-4 text-center">
@@ -424,7 +424,7 @@ export default function SubstitutionAlertPanel({ className = '' }) {
                           className={`w-full p-3 rounded-lg border transition-all text-left ${
                             selectedTeacher === String(teacher.id)
                               ? 'border-primary bg-primary-50'
-                              : 'border-default-200 hover:border-primary-200 hover:bg-default-50'
+                              : 'border-border-token hover:border-primary-200 hover:bg-surface-2'
                           }`}
                           onClick={() => setSelectedTeacher(String(teacher.id))}
                         >
@@ -437,7 +437,7 @@ export default function SubstitutionAlertPanel({ className = '' }) {
                               />
                               <div>
                                 <p className="font-medium text-sm">{teacher.name}</p>
-                                <p className="text-xs text-default-500">
+                                <p className="text-xs text-fg-muted">
                                   {teacher.department || 'Teacher'} • {teacher.workload} periods today
                                 </p>
                               </div>

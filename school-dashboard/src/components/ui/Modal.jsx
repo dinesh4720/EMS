@@ -1,24 +1,44 @@
 import { memo } from "react";
 import PropTypes from "prop-types";
-import {
-  Modal as HeroModal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-} from "@heroui/react";
+import { X } from "lucide-react";
+import ModalBase from "./ModalBase";
 
 /**
- * Modal — design-system wrapper around HeroUI Modal.
+ * Modal — frosted-glass centered dialog (REVAMP-05).
  *
- * Provides standardised sizing, backdrop, and dark-mode classNames so every
- * modal across the app looks the same. Compose header/body/footer via the
- * attached subcomponents (Modal.Header, Modal.Body, Modal.Footer) or pass
- * `title` / `footer` props for the common case.
+ * Native portal + focus trap + body scroll lock + ESC close from ModalBase.
+ * Outside-click closes when `isDismissable` (default true). Glass surface
+ * uses --glass-bg / --glass-blur / --glass-border / --shadow-glass.
  *
- * For confirmation flows use `ConfirmDialog`. For lightweight alerts use
- * `Dialog`. For side-panel flows use `Drawer`.
+ * Use Modal.Header / .Body / .Footer for custom composition, or pass
+ * `title` / `description` / `footer` for the common case.
+ *
+ * Pre-revamp callers passed HeroUI sizes ("xs"…"5xl"); we map down to a
+ * small canonical set (unknown → md).
  */
+const SIZE_CLASS = {
+  xs: "ds-modal--xs",
+  sm: "ds-modal--sm",
+  md: "ds-modal--md",
+  lg: "ds-modal--lg",
+  xl: "ds-modal--xl",
+  "2xl": "ds-modal--xl",
+  "3xl": "ds-modal--xl",
+  "4xl": "ds-modal--xl",
+  "5xl": "ds-modal--xl",
+  full: "ds-modal--xl",
+};
+
+const ModalHeader = ({ children, className = "" }) => (
+  <div className={`ds-modal__head ${className}`.trim()}>{children}</div>
+);
+const ModalBody = ({ children, className = "" }) => (
+  <div className={`ds-modal__body ${className}`.trim()}>{children}</div>
+);
+const ModalFooter = ({ children, className = "" }) => (
+  <div className={`ds-modal__foot ${className}`.trim()}>{children}</div>
+);
+
 const Modal = memo(function Modal({
   isOpen,
   onClose,
@@ -26,57 +46,65 @@ const Modal = memo(function Modal({
   description,
   footer,
   size = "md",
-  scrollBehavior = "inside",
   isDismissable = true,
   hideCloseButton = false,
   children,
-  classNames: classNamesProp,
-  ...props
+  ariaLabel,
+  ariaDescribedBy,
+  className = "",
 }) {
-  const mergedClassNames = {
-    backdrop: "bg-black/50",
-    base: "bg-white dark:bg-zinc-900",
-    ...classNamesProp,
-  };
+  const sizeClass = SIZE_CLASS[size] || SIZE_CLASS.md;
 
   return (
-    <HeroModal
+    <ModalBase
       isOpen={isOpen}
       onClose={onClose}
-      size={size}
-      scrollBehavior={scrollBehavior}
-      isDismissable={isDismissable}
-      hideCloseButton={hideCloseButton}
-      classNames={mergedClassNames}
-      {...props}
+      portalId="ds-modal-root"
+      labelledBy={title ? "ds-modal-title" : undefined}
+      describedBy={ariaDescribedBy}
+      className="ds-backdrop"
+      closeOnBackdrop={isDismissable}
     >
-      <ModalContent>
-        {(close) => (
-          <>
-            {title ? (
-              <ModalHeader className="flex flex-col gap-1 border-b border-default-200">
-                <span className="text-lg font-semibold text-gray-900 dark:text-zinc-100">
+      <div
+        className={`ds-modal ${sizeClass} ${className}`.trim()}
+        onClick={(e) => e.stopPropagation()}
+        role="document"
+        aria-label={!title && ariaLabel ? ariaLabel : undefined}
+      >
+        {(title || !hideCloseButton) && (
+          <div className="ds-modal__head">
+            <div className="ds-modal__titles">
+              {title ? (
+                <span id="ds-modal-title" className="ds-modal__title">
                   {title}
                 </span>
-                {description ? (
-                  <span className="text-sm font-normal text-gray-500 dark:text-zinc-400">
-                    {description}
-                  </span>
-                ) : null}
-              </ModalHeader>
-            ) : null}
-            <ModalBody className="py-6">
-              {typeof children === "function" ? children(close) : children}
-            </ModalBody>
-            {footer ? (
-              <ModalFooter className="border-t border-default-200">
-                {typeof footer === "function" ? footer(close) : footer}
-              </ModalFooter>
-            ) : null}
-          </>
+              ) : null}
+              {description ? (
+                <span className="ds-modal__desc">{description}</span>
+              ) : null}
+            </div>
+            {!hideCloseButton && (
+              <button
+                type="button"
+                className="ds-modal__close"
+                onClick={onClose}
+                aria-label="Close"
+              >
+                <X size={13} aria-hidden="true" />
+              </button>
+            )}
+          </div>
         )}
-      </ModalContent>
-    </HeroModal>
+        <ModalBody>
+          {typeof children === "function" ? children(onClose) : children}
+        </ModalBody>
+        {footer ? (
+          <ModalFooter>
+            {typeof footer === "function" ? footer(onClose) : footer}
+          </ModalFooter>
+        ) : null}
+      </div>
+    </ModalBase>
   );
 });
 
@@ -104,11 +132,12 @@ Modal.propTypes = {
     "5xl",
     "full",
   ]),
-  scrollBehavior: PropTypes.oneOf(["inside", "outside", "normal"]),
   isDismissable: PropTypes.bool,
   hideCloseButton: PropTypes.bool,
   children: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
-  classNames: PropTypes.object,
+  ariaLabel: PropTypes.string,
+  ariaDescribedBy: PropTypes.string,
+  className: PropTypes.string,
 };
 
 export default Modal;

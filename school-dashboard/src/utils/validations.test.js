@@ -82,7 +82,10 @@ describe('validateFutureDate', () => {
   });
 
   it('returns true for today', () => {
-    const today = new Date().toISOString().split('T')[0];
+    // Build a local-day YYYY-MM-DD string (toISOString uses UTC and would
+    // skew this assertion when the user's local date != UTC date).
+    const d = new Date();
+    const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     expect(validateFutureDate(today)).toBe(true);
   });
 

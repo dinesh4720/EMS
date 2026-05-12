@@ -16,7 +16,9 @@
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "lighthouse": "npx --yes lighthouse@12 http://localhost:4173 --preset=desktop --only-categories=performance,accessibility,best-practices,seo --chrome-flags=\"--headless=new --no-sandbox\" --output=html --output-path=./lighthouse-report.html",
+    "lighthouse:ci": "npx --yes @lhci/cli@0.14.x autorun --config=./lighthouserc.cjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
@@ -29,6 +31,7 @@
     "@tanstack/react-query": "^5.90.21",
     "@tanstack/react-query-devtools": "^5.91.3",
     "@tanstack/react-virtual": "^3.11.3",
+    "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
     "framer-motion": "^11.15.0",
     "i18next": "^25.10.2",

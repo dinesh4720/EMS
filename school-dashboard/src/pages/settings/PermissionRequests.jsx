@@ -175,7 +175,7 @@ export default function PermissionRequests() {
       <div className="p-6">
         <Card>
           <CardBody className="text-center py-12">
-            <p className="text-gray-600 dark:text-zinc-400">
+            <p className="text-fg-muted">
               You don't have permission to view this page
             </p>
           </CardBody>
@@ -188,13 +188,13 @@ export default function PermissionRequests() {
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">Permission Requests</h2>
+          <h2 className="text-2xl font-semibold text-fg">Permission Requests</h2>
         </div>
         <Card>
           <CardBody className="flex flex-col items-center py-12 gap-4">
             <XCircle size={40} className="text-red-400" />
-            <p className="text-sm font-medium text-gray-800 dark:text-zinc-200">Failed to load permission requests</p>
-            <p className="text-xs text-gray-500 dark:text-zinc-400">{fetchError}</p>
+            <p className="text-sm font-medium text-fg">Failed to load permission requests</p>
+            <p className="text-xs text-fg-muted">{fetchError}</p>
             <Button size="sm" variant="flat" onPress={fetchRequests}>Retry</Button>
           </CardBody>
         </Card>
@@ -206,10 +206,10 @@ export default function PermissionRequests() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">
+        <h2 className="text-2xl font-semibold text-fg">
           Permission Requests
         </h2>
-        <p className="text-sm text-gray-600 dark:text-zinc-400 mt-1">
+        <p className="text-sm text-fg-muted mt-1">
           Review and manage permission requests from staff members
         </p>
       </div>
@@ -274,7 +274,7 @@ export default function PermissionRequests() {
             aria-label={t('aria.tables.permissionRequests')}
             removeWrapper
             classNames={{
-              th: "bg-gray-50 dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 font-semibold",
+              th: "bg-surface-2 text-fg font-semibold",
               td: "py-4",
             }}
           >
@@ -303,11 +303,11 @@ export default function PermissionRequests() {
                         className="flex-shrink-0"
                       />
                       <div>
-                        <p className="font-medium text-gray-900 dark:text-zinc-100">
+                        <p className="font-medium text-fg">
                           {request.userName}
                         </p>
                         {request.userEmail && (
-                          <p className="text-xs text-gray-500 dark:text-zinc-400">
+                          <p className="text-xs text-fg-muted">
                             {request.userEmail}
                           </p>
                         )}
@@ -329,12 +329,12 @@ export default function PermissionRequests() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <p className="text-sm text-gray-700 dark:text-zinc-300 max-w-xs truncate">
+                    <p className="text-sm text-fg max-w-xs truncate">
                       {request.reason}
                     </p>
                   </TableCell>
                   <TableCell>
-                    <p className="text-sm text-gray-600 dark:text-zinc-400">
+                    <p className="text-sm text-fg-muted">
                       {formatShortDate(request.requestedAt)}
                     </p>
                   </TableCell>
@@ -388,17 +388,17 @@ export default function PermissionRequests() {
             {selectedRequest && (
               <div className="space-y-6">
                 {/* User Info */}
-                <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg">
+                <div className="flex items-center gap-4 p-4 bg-surface-2 rounded-lg">
                   <Avatar
                     name={selectedRequest.userName}
                     size="lg"
                   />
                   <div>
-                    <p className="font-semibold text-gray-900 dark:text-zinc-100">
+                    <p className="font-semibold text-fg">
                       {selectedRequest.userName}
                     </p>
                     {selectedRequest.userEmail && (
-                      <p className="text-sm text-gray-600 dark:text-zinc-400">
+                      <p className="text-sm text-fg-muted">
                         {selectedRequest.userEmail}
                       </p>
                     )}
@@ -408,7 +408,7 @@ export default function PermissionRequests() {
                 {/* Request Details */}
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-700 dark:text-zinc-300">
+                    <label className="text-sm font-medium text-fg">
                       Module
                     </label>
                     <p className="mt-1">
@@ -419,7 +419,7 @@ export default function PermissionRequests() {
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-gray-700 dark:text-zinc-300">
+                    <label className="text-sm font-medium text-fg">
                       Requested Permissions
                     </label>
                     <div className="flex flex-wrap gap-2 mt-2">
@@ -432,21 +432,21 @@ export default function PermissionRequests() {
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-gray-700 dark:text-zinc-300">
+                    <label className="text-sm font-medium text-fg">
                       Reason
                     </label>
-                    <div className="mt-2 p-3 bg-gray-50 dark:bg-zinc-900 rounded-lg">
-                      <p className="text-sm text-gray-700 dark:text-zinc-300">
+                    <div className="mt-2 p-3 bg-surface-2 rounded-lg">
+                      <p className="text-sm text-fg">
                         {selectedRequest.reason}
                       </p>
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-gray-700 dark:text-zinc-300">
+                    <label className="text-sm font-medium text-fg">
                       Requested On
                     </label>
-                    <p className="mt-1 text-sm text-gray-600 dark:text-zinc-400">
+                    <p className="mt-1 text-sm text-fg-muted">
                       {formatDateTime(selectedRequest.requestedAt)}
                     </p>
                   </div>
@@ -454,10 +454,10 @@ export default function PermissionRequests() {
                   {selectedRequest.status !== 'pending' && (
                     <>
                       <div>
-                        <label className="text-sm font-medium text-gray-700 dark:text-zinc-300">
+                        <label className="text-sm font-medium text-fg">
                           Reviewed By
                         </label>
-                        <p className="mt-1 text-sm text-gray-600 dark:text-zinc-400">
+                        <p className="mt-1 text-sm text-fg-muted">
                           {selectedRequest.reviewerName} on{' '}
                           {formatDateTime(selectedRequest.reviewedAt)}
                         </p>
@@ -465,11 +465,11 @@ export default function PermissionRequests() {
 
                       {selectedRequest.reviewNotes && (
                         <div>
-                          <label className="text-sm font-medium text-gray-700 dark:text-zinc-300">
+                          <label className="text-sm font-medium text-fg">
                             Review Notes
                           </label>
-                          <div className="mt-2 p-3 bg-gray-50 dark:bg-zinc-900 rounded-lg">
-                            <p className="text-sm text-gray-700 dark:text-zinc-300">
+                          <div className="mt-2 p-3 bg-surface-2 rounded-lg">
+                            <p className="text-sm text-fg">
                               {selectedRequest.reviewNotes}
                             </p>
                           </div>

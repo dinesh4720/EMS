@@ -110,6 +110,14 @@ export const attendanceApi = {
     const queryString = params.toString();
     return request(`/attendance/student/${studentId}${queryString ? `?${queryString}` : ''}`);
   },
+  /** Fetch raw attendance records for a class within a date range — used for the calendar heatmap. */
+  getClassHistory: (classId, startDate, endDate) => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('start', startDate);
+    if (endDate) params.append('end', endDate);
+    const queryString = params.toString();
+    return request(`/attendance/history/${classId}${queryString ? `?${queryString}` : ''}`);
+  },
   notifyParents: (data) => request('/attendance/notify-parents', { method: 'POST', body: JSON.stringify(data) }),
 };
 

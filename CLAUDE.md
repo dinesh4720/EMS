@@ -97,6 +97,18 @@ Main schemas in `EMS-backend/database.js`, additional models in `EMS-backend/mod
 - **Config validation**: `src/config/api.js` validates env before React mounts — renders plain DOM error page if invalid
 - **Feature gates**: `FeatureGate` component enforces plan-based feature access
 
+### Dashboard Design System
+
+Built across UI-01..UI-47 revamp tasks. **Use these primitives — never style ad-hoc.** Full reference: `EMS/school-dashboard/DESIGN_SYSTEM.md`. Interactive guide: `/style-guide` (dev-only route).
+
+- **Tokens** — `src/index.css` (`@theme` block) and `src/theme/colors.js`. Reference via Tailwind utilities or CSS variables. No inline hex codes, no arbitrary Tailwind values like `w-[173px]`.
+- **Primitives** — `src/components/ui/` (buttons, cards, forms, modals, tables, skeletons, alerts, etc.). Layout pieces in `src/components/layout/` (sidebar, topbar, command palette, permission guards).
+- **Four-state rule** — every data-fetching screen renders skeleton, empty, error, and success. Use `PageShell` or compose `Skeleton` + `EmptyState` + `ErrorState`. No blank screens, no spinners.
+- **Responsive** — verify at 375px / 768px / 1280px+.
+- **Accessibility** — semantic HTML, visible focus rings, keyboard operable, WCAG AA contrast. Every primitive ships at this bar — preserve it when composing.
+- **Extending** — if a primitive is missing, add it to `src/components/ui/`, document it in the relevant `src/pages/styleguide/*Section.jsx`, and update `DESIGN_SYSTEM.md`. Never duplicate.
+- **Visual regression** — baseline at `tests/visual/styleguide.spec.ts` (Playwright snapshots at 3 breakpoints). Refresh with `--update-snapshots` only on intentional design changes.
+
 ### Health Endpoints
 
 - `GET /health` — full status (db, redis, memory)

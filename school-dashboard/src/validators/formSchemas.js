@@ -144,6 +144,73 @@ export const feeHeadSchema = z.object({
   description: z.string().max(500).optional(),
 });
 
+// Mirrors backend createFeePaymentSchema (EMS-backend/validators/feeSchema.js).
+export const PAYMENT_MODE_VALUES = ['cash', 'cheque', 'online', 'card', 'upi', 'bank_transfer'];
+const ONLINE_PAYMENT_MODES = ['online', 'card', 'upi', 'bank_transfer'];
+
+export const feePaymentSchema = z
+  .object({
+    studentId: z.string().min(1, 'Student is required'),
+    classId: z.string().min(1, 'Class is required'),
+    paymentDate: z.string().optional(),
+    amount: z.coerce
+      .number()
+      .min(1, 'Payment amount must be at least 1')
+      .max(10000000, 'Payment amount seems too large'),
+    paymentMode: z.enum(PAYMENT_MODE_VALUES, {
+      errorMap: () => ({ message: 'Invalid payment mode' }),
+    }),
+    feeHeads: z
+      .array(
+        z.object({
+          feeHeadId: z.string().optional(),
+          name: z.string().optional(),
+          amount: z.coerce.number().min(1, 'Fee head amount must be at least 1'),
+          month: z.string().optional(),
+        }),
+      )
+      .optional()
+      .default([]),
+    transactionId: z.string().max(100).optional().or(z.literal('')),
+    remarks: z.string().max(500).optional().or(z.literal('')),
+  })
+  .refine(
+    (d) => !ONLINE_PAYMENT_MODES.includes(d.paymentMode) || Boolean(d.transactionId),
+    {
+      message: 'Transaction ID is required for online, card, UPI, or bank transfer payments',
+      path: ['transactionId'],
+    },
+  )
+  .refine(
+    (d) => {
+      if (!Array.isArray(d.feeHeads) || d.feeHeads.length === 0) return true;
+      const sum = d.feeHeads.reduce((s, h) => s + (h.amount || 0), 0);
+      return Math.abs(sum - d.amount) < 0.01;
+    },
+    { message: 'Sum of selected fees must equal the total amount', path: ['amount'] },
+  );
+
+// Mirrors backend createRefundSchema (EMS-backend/validators/feeSchema.js).
+export const REFUND_MODE_VALUES = ['cash', 'cheque', 'bank_transfer'];
+
+export const createRefundSchema = z.object({
+  studentId: z.string().min(1, 'Please select a student'),
+  classId: z.string().min(1, 'Class is required'),
+  amount: z.coerce
+    .number()
+    .min(1, 'Refund amount must be at least 1')
+    .max(10000000, 'Refund amount seems too large'),
+  reason: z
+    .string()
+    .min(10, 'Refund reason must be at least 10 characters')
+    .max(500, 'Refund reason must not exceed 500 characters')
+    .trim(),
+  refundMode: z.enum(REFUND_MODE_VALUES, {
+    errorMap: () => ({ message: 'Invalid refund mode' }),
+  }),
+  remarks: z.string().max(500).optional().or(z.literal('')),
+});
+
 // ────────────────────────────────────────────────────────────
 // LIBRARY
 // ────────────────────────────────────────────────────────────
@@ -238,13 +305,23 @@ export const hostelSchema = z.object({
 });
 
 export const hostelRoomSchema = z.object({
+  hostelId: z.string().min(1, 'Hostel is required'),
   roomNumber: z.string().min(1, 'Room number is required').trim(),
-  floor: optNum(z.number().int().min(0)),
+  floor: z.coerce.number().int().min(0).optional(),
+  type: z.enum(['single', 'double', 'triple', 'dormitory']).optional(),
   capacity: z.coerce.number().int().min(1, 'Capacity must be at least 1'),
-  type: z.string().optional(),
-  status: z.enum(['available', 'occupied', 'maintenance', 'reserved']).optional(),
+  monthlyFee: z.coerce.number().min(0).optional(),
   amenities: z.array(z.string()).optional(),
-  monthlyFee: optNum(z.number().min(0)),
+  description: z.string().optional(),
+});
+
+export const hostelAllocationSchema = z.object({
+  hostelId: z.string().min(1, 'Hostel is required'),
+  roomId: z.string().min(1, 'Room is required'),
+  studentId: z.string().min(1, 'Student is required'),
+  bedNumber: z.string().optional(),
+  startDate: z.string().min(1, 'Start date is required'),
+  monthlyFee: z.coerce.number().min(0).optional(),
   notes: z.string().optional(),
 });
 
@@ -265,6 +342,45 @@ export const addStaffStep1Schema = z.object({
 });
 
 // ────────────────────────────────────────────────────────────
+// PTM (Parent–Teacher Meetings)
+// Mirrors EMS-backend/routes/ptm.js → createSessionSchema / addSlotSchema
+// ────────────────────────────────────────────────────────────
+
+const TIME_HHMM_REGEX = /^\d{2}:\d{2}$/;
+
+export const ptmSessionSchema = z
+  .object({
+    title: z.string().trim().min(2, 'Title must be at least 2 characters').max(200, 'Title too long'),
+    description: z.string().max(1000, 'Description too long').optional().default(''),
+    sessionDate: z
+      .string()
+      .min(1, 'Session date is required')
+      .refine((v) => !Number.isNaN(Date.parse(v)), { message: 'Invalid date' }),
+    startTime: z.string().regex(TIME_HHMM_REGEX, 'Use HH:MM format'),
+    endTime: z.string().regex(TIME_HHMM_REGEX, 'Use HH:MM format'),
+    slotDuration: z.coerce.number().int().min(5, 'Min 5 minutes').max(120, 'Max 120 minutes').default(15),
+    classId: z.string().length(24, 'Please select a class'),
+    staffId: z.string().length(24, 'Please select a teacher'),
+    venue: z.string().max(300, 'Venue too long').optional().default(''),
+  })
+  .refine((d) => d.startTime < d.endTime, {
+    message: 'Start time must be before end time',
+    path: ['endTime'],
+  });
+
+export const ptmSlotSchema = z.object({
+  studentId: z.string().length(24, 'Please select a student'),
+  parentName: z.string().trim().min(2, 'Parent name must be at least 2 characters').max(100, 'Parent name too long'),
+  parentPhone: z
+    .string()
+    .regex(/^[0-9]{10}$/, 'Enter a valid 10-digit phone number')
+    .optional()
+    .or(z.literal('')),
+  scheduledTime: z.string().regex(TIME_HHMM_REGEX, 'Use HH:MM format'),
+  notes: z.string().max(500, 'Notes too long').optional().default(''),
+});
+
+// ────────────────────────────────────────────────────────────
 // UTILITY
 // ────────────────────────────────────────────────────────────
 
@@ -276,6 +392,66 @@ export const addStaffStep1Schema = z.object({
  * @param {unknown} data
  * @returns {{ success: boolean, errors: Record<string, string> }}
  */
+// ────────────────────────────────────────────────────────────
+// AUTH (mirrors EMS-backend/middleware/validation/validation.js)
+// ────────────────────────────────────────────────────────────
+
+const passwordRules = z
+  .string()
+  .min(8, 'Password must be at least 8 characters')
+  .max(128, 'Password is too long')
+  .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+  .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+  .regex(/[0-9]/, 'Password must contain at least one number');
+
+const emailRule = z.string().min(1, 'Email is required').email('Invalid email address');
+const phoneRule = z.string().regex(/^\+?[0-9]{7,15}$/, 'Phone number must be 7–15 digits');
+
+export const loginSchema = z
+  .object({
+    emailOrPhone: z
+      .string()
+      .min(1, 'Email or phone is required')
+      .refine(
+        (value) =>
+          /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) || /^\+?[0-9]{7,15}$/.test(value),
+        'Enter a valid email or phone number'
+      ),
+    password: z.string().min(1, 'Password is required').max(128),
+  });
+
+export const signupSchema = z
+  .object({
+    fullName: z.string().min(2, 'Name must be at least 2 characters').max(100).trim(),
+    email: emailRule,
+    schoolName: z.string().min(2, 'School name must be at least 2 characters').max(200).trim(),
+    password: passwordRules,
+    confirmPassword: z.string().min(1, 'Please confirm your password'),
+    agreeToTerms: z
+      .boolean()
+      .refine((value) => value === true, {
+        message: 'You must agree to the privacy policy',
+      }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
+
+export const resetPasswordSchema = z
+  .object({
+    newPassword: passwordRules,
+    confirmPassword: z.string().min(1, 'Please confirm your password'),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
+
+export const forgotPasswordSchema = z.object({ email: emailRule });
+
+export { phoneRule };
+
 export function parseFormSchema(schema, data) {
   const result = schema.safeParse(data);
   if (result.success) return { success: true, errors: {} };

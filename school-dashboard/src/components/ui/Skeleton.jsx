@@ -25,7 +25,7 @@ const Skeleton = memo(function Skeleton({
     <span
       aria-hidden="true"
       className={cn(
-        "block bg-gray-200 dark:bg-zinc-800 animate-pulse",
+        "block animate-shimmer",
         VARIANT[variant],
         !width && variant === "text" && "w-full",
         !height && variant === "text" && "h-3",
@@ -73,7 +73,7 @@ function SkeletonCard({ className }) {
   return (
     <div
       className={cn(
-        "rounded-lg border border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 space-y-3",
+        "rounded-lg border border-divider bg-surface p-4 space-y-3",
         className,
       )}
       aria-busy="true"
@@ -91,13 +91,13 @@ function SkeletonTable({ rows = 5, columns = 4, className }) {
   return (
     <div
       className={cn(
-        "rounded-lg border border-gray-100 dark:border-zinc-800 overflow-hidden",
+        "rounded-lg border border-divider overflow-hidden",
         className,
       )}
       aria-busy="true"
       aria-live="polite"
     >
-      <div className="flex items-center gap-4 px-4 py-3 border-b border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-800/40">
+      <div className="flex items-center gap-4 px-4 py-3 border-b border-divider bg-surface-2">
         {Array.from({ length: columns }).map((_, i) => (
           <Skeleton key={i} variant="text" className="h-3 flex-1" />
         ))}
@@ -105,7 +105,7 @@ function SkeletonTable({ rows = 5, columns = 4, className }) {
       {Array.from({ length: rows }).map((_row, rowIdx) => (
         <div
           key={rowIdx}
-          className="flex items-center gap-4 px-4 py-3 border-b border-gray-100 dark:border-zinc-800 last:border-0"
+          className="flex items-center gap-4 px-4 py-3 border-b border-divider last:border-0"
         >
           {Array.from({ length: columns }).map((_col, colIdx) => (
             <Skeleton key={colIdx} variant="text" className="h-3 flex-1" />

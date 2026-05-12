@@ -15,12 +15,12 @@ export default function SchoolBuilding3D() {
             ))}
           </div>
           <div className="absolute bottom-0 left-1/2 h-20 w-28 -translate-x-1/2 rounded-t-3xl border-x border-t border-gray-300 bg-teal-600/90 dark:border-zinc-600 dark:bg-teal-700/80" />
-          <div className="absolute inset-x-0 bottom-0 h-5 bg-gray-100 dark:bg-zinc-800" />
+          <div className="absolute inset-x-0 bottom-0 h-5 bg-surface-2" />
         </div>
         <div className="mx-auto h-6 w-[92%] rounded-b-3xl bg-gray-200/80 dark:bg-zinc-700/80" />
       </div>
       <div className="absolute bottom-8 lg:bottom-24 left-0 right-0 text-center pointer-events-none px-4 lg:px-8">
-        <h2 className="text-lg lg:text-2xl font-bold text-gray-800 dark:text-zinc-200 mb-1 lg:mb-2">
+        <h2 className="text-lg lg:text-2xl font-bold text-fg mb-1 lg:mb-2">
           Building Excellence in Education
         </h2>
       </div>

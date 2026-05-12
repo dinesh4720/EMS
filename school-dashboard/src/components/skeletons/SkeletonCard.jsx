@@ -4,7 +4,7 @@
  */
 
 export const Bone = ({ className = "", style }) => (
-  <div className={`bg-gray-200 dark:bg-zinc-700 rounded animate-pulse ${className}`} style={style} />
+  <div className={`bg-surface-hover rounded animate-pulse ${className}`} style={style} />
 );
 
 const SkeletonCard = ({
@@ -15,9 +15,9 @@ const SkeletonCard = ({
   className = ""
 }) => {
   return (
-    <div role="status" aria-busy="true" aria-label="Loading card" className={`bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden ${className}`}>
+    <div role="status" aria-busy="true" aria-label="Loading card" className={`bg-surface rounded-lg border border-border-token overflow-hidden ${className}`}>
       {hasHeader && (
-        <div className="px-4 py-3 border-b border-gray-200 dark:border-zinc-800">
+        <div className="px-4 py-3 border-b border-border-token">
           <Bone className={`${headerHeight} w-1/3`} />
         </div>
       )}

@@ -1,6 +1,6 @@
 import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  Button, Spinner
+  Spinner
 } from "@heroui/react";
 import { AlertCircle } from "lucide-react";
 import { useTranslation } from 'react-i18next';
@@ -17,37 +17,56 @@ export default function RunPayrollModal({
   const { t } = useTranslation();
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="md">
+    <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="md" className="payroll-modal">
       <ModalContent>
-        <ModalHeader className="flex gap-3">
-          <div className="p-2 bg-warning-100 rounded-lg">
-            <AlertCircle className="text-warning-600" size={24} />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold">{t('pages.prepareSalaryRecords1')}</h3>
-            <p className="text-sm text-default-500">{t('pages.thisWillGeneratePayrollRecordsForAllActiveStaff')}</p>
+        <ModalHeader>
+          <div className="payroll-modal__head">
+            <div className="payroll-modal__icon payroll-modal__icon--warn">
+              <AlertCircle size={18} aria-hidden />
+            </div>
+            <div>
+              <h3 className="payroll-modal__title">{t('pages.prepareSalaryRecords1')}</h3>
+              <p className="payroll-modal__sub">
+                {t('pages.thisWillGeneratePayrollRecordsForAllActiveStaff')}
+              </p>
+            </div>
           </div>
         </ModalHeader>
         <ModalBody>
-          <div className="space-y-4">
-            <div className="bg-default-50 rounded-lg p-4">
-              <p className="text-sm text-default-600 mb-2">{t('pages.youAreAboutToGenerateRecordsFor')}</p>
-              <p className="text-lg font-semibold text-default-900">{months[selectedMonth - 1]} {selectedYear}</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div className="payroll-modal__cycle">
+              <span className="payroll-modal__cycle-label">
+                {t('pages.youAreAboutToGenerateRecordsFor')}
+              </span>
+              <span className="payroll-modal__cycle-value">
+                {months[selectedMonth - 1]} {selectedYear}
+              </span>
             </div>
-            <div className="bg-warning-50 rounded-lg p-4 border border-warning-200">
-              <p className="text-sm text-warning-800">
-                <strong>{t('pages.note1')}</strong> This step only generates the salary breakdown. You will need to manually log the payment status afterwards.
-              </p>
+            <div className="payroll-modal__note payroll-modal__note--warn">
+              <AlertCircle size={14} aria-hidden style={{ flexShrink: 0, marginTop: 1 }} />
+              <span>
+                <strong>{t('pages.note1')}</strong> This step only generates the salary breakdown.
+                You will need to manually log the payment status afterwards.
+              </span>
             </div>
           </div>
         </ModalBody>
         <ModalFooter>
-          <Button variant="light" onPress={() => onOpenChange(false)}>
+          <button
+            type="button"
+            className="btn btn--ghost"
+            onClick={() => onOpenChange(false)}
+          >
             Cancel
-          </Button>
-          <Button color="primary" onPress={onConfirm} isDisabled={preparingRecords}>
-            {preparingRecords ? <Spinner size="sm" color="white" /> : 'Confirm & Generate'}
-          </Button>
+          </button>
+          <button
+            type="button"
+            className="btn btn--accent"
+            onClick={onConfirm}
+            disabled={preparingRecords}
+          >
+            {preparingRecords ? <Spinner size="sm" color="white" /> : 'Confirm & generate'}
+          </button>
         </ModalFooter>
       </ModalContent>
     </Modal>

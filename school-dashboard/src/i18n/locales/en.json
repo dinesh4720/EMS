@@ -788,7 +788,7 @@
       "pending": "Pending",
       "approved": "Approved",
       "rejected": "Rejected",
-      "needs_revision": "Needs Revision",
+      "needsRevision": "Needs Revision",
       "all": "All"
     }
   },
@@ -4758,7 +4758,7 @@
       "quarterly": "Quarterly",
       "term": "Term-wise",
       "yearly": "Yearly (One-time)",
-      "one-time": "One-time (Admission)"
+      "oneTime": "One-time (Admission)"
     },
     "pendingAmount": "Pending Amount",
     "dueDate": "Due Date",

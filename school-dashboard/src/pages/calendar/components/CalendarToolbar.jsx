@@ -79,7 +79,7 @@ export default function CalendarToolbar({ currentDate, view, onViewChange, onNav
   const formatDateKey = (y, m, d) => `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 
   return (
-    <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-3 bg-background/95 backdrop-blur-sm border-b border-default-100">
+    <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-3 bg-bg/95 backdrop-blur-sm border-b border-divider">
       <div className="flex items-center gap-2">
         {/* Quick year navigation */}
         <Button
@@ -87,7 +87,7 @@ export default function CalendarToolbar({ currentDate, view, onViewChange, onNav
           size="sm"
           variant="light"
           aria-label="Previous year"
-          className="text-default-400 hover:bg-default-100"
+          className="text-fg-faint hover:bg-surface-2"
           onPress={() => {
             const targetYear = year - 1;
             const maxDay = new Date(targetYear, month + 1, 0).getDate();
@@ -97,10 +97,10 @@ export default function CalendarToolbar({ currentDate, view, onViewChange, onNav
         >
           <ChevronsLeft size={16} />
         </Button>
-        <Button isIconOnly size="sm" variant="light" aria-label="Previous month" className="text-default-500 hover:bg-default-100" onPress={() => onNavigate(-1)}>
+        <Button isIconOnly size="sm" variant="light" aria-label="Previous month" className="text-fg-muted hover:bg-surface-2" onPress={() => onNavigate(-1)}>
           <ChevronLeft size={18} />
         </Button>
-        <Button isIconOnly size="sm" variant="light" aria-label="Next month" className="text-default-500 hover:bg-default-100" onPress={() => onNavigate(1)}>
+        <Button isIconOnly size="sm" variant="light" aria-label="Next month" className="text-fg-muted hover:bg-surface-2" onPress={() => onNavigate(1)}>
           <ChevronRight size={18} />
         </Button>
         <Button
@@ -108,7 +108,7 @@ export default function CalendarToolbar({ currentDate, view, onViewChange, onNav
           size="sm"
           variant="light"
           aria-label="Next year"
-          className="text-default-400 hover:bg-default-100"
+          className="text-fg-faint hover:bg-surface-2"
           onPress={() => {
             const targetYear = year + 1;
             const maxDay = new Date(targetYear, month + 1, 0).getDate();
@@ -125,24 +125,24 @@ export default function CalendarToolbar({ currentDate, view, onViewChange, onNav
           onOpenChange={setShowDatePicker}
           placement="bottom"
           classNames={{
-            content: "p-0 bg-background border border-default-200 rounded-xl shadow-lg"
+            content: "p-0 bg-surface border border-border-token rounded-xl shadow-lg"
           }}
         >
           <PopoverTrigger>
-            <button className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-default-100 transition-colors">
-              <h2 className="text-base font-semibold tracking-tight text-foreground">
+            <button className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-surface-2 transition-colors">
+              <h2 className="text-base font-semibold tracking-tight text-fg">
                 {getHeaderTitle()}
               </h2>
-              <ChevronDown size={14} className="text-default-400" />
+              <ChevronDown size={14} className="text-fg-faint" />
             </button>
           </PopoverTrigger>
           <PopoverContent>
             <div className="w-72">
               {/* Picker Header */}
-              <div className="flex items-center justify-between p-3 border-b border-default-100">
+              <div className="flex items-center justify-between p-3 border-b border-divider">
                 <button
                   onClick={() => setPickerView("year")}
-                  className="flex items-center gap-1 text-sm font-semibold hover:text-default-600 transition-colors"
+                  className="flex items-center gap-1 text-sm font-semibold text-fg hover:text-fg-muted transition-colors"
                 >
                   {year}
                   <ChevronDown size={14} />
@@ -170,8 +170,8 @@ export default function CalendarToolbar({ currentDate, view, onViewChange, onNav
                       className={`
                         px-2 py-2 text-xs font-medium rounded-lg transition-colors
                         ${idx === month
-                          ? "bg-foreground text-background"
-                          : "text-default-600 hover:bg-default-100"
+                          ? "bg-accent text-accent-fg"
+                          : "text-fg-muted hover:bg-surface-2"
                         }
                       `}
                     >
@@ -192,8 +192,8 @@ export default function CalendarToolbar({ currentDate, view, onViewChange, onNav
                         className={`
                           px-2 py-2 text-xs font-medium rounded-lg transition-colors
                           ${y === year
-                            ? "bg-foreground text-background"
-                            : "text-default-600 hover:bg-default-100"
+                            ? "bg-accent text-accent-fg"
+                            : "text-fg-muted hover:bg-surface-2"
                           }
                         `}
                       >
@@ -210,40 +210,40 @@ export default function CalendarToolbar({ currentDate, view, onViewChange, onNav
 
       <div className="flex items-center gap-2">
         {/* View Switcher */}
-        <div className="bg-default-50 p-0.5 rounded-lg flex items-center border border-default-100">
+        <div className="bg-surface-2 p-0.5 rounded-lg flex items-center border border-divider">
           <button
             onClick={() => onViewChange("month")}
-            className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1 ${view === "month" ? "bg-background text-foreground shadow-sm" : "text-default-400 hover:text-default-600"}`}
+            className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1 ${view === "month" ? "bg-surface text-fg shadow-sm" : "text-fg-faint hover:text-fg-muted"}`}
           >
             <LayoutGrid size={12} />
             <span className="hidden sm:inline">{t('calendar.views.month', 'Month')}</span>
           </button>
           <button
             onClick={() => onViewChange("week")}
-            className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-all ${view === "week" ? "bg-background text-foreground shadow-sm" : "text-default-400 hover:text-default-600"}`}
+            className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-all ${view === "week" ? "bg-surface text-fg shadow-sm" : "text-fg-faint hover:text-fg-muted"}`}
           >
             {t('calendar.views.week', 'Week')}
           </button>
           <button
             onClick={() => onViewChange("day")}
-            className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-all ${view === "day" ? "bg-background text-foreground shadow-sm" : "text-default-400 hover:text-default-600"}`}
+            className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-all ${view === "day" ? "bg-surface text-fg shadow-sm" : "text-fg-faint hover:text-fg-muted"}`}
           >
             {t('calendar.views.day', 'Day')}
           </button>
           <button
             onClick={() => onViewChange("schedule")}
-            className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1 ${view === "schedule" ? "bg-background text-foreground shadow-sm" : "text-default-400 hover:text-default-600"}`}
+            className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1 ${view === "schedule" ? "bg-surface text-fg shadow-sm" : "text-fg-faint hover:text-fg-muted"}`}
           >
             <List size={12} />
             <span>{t('calendar.views.schedule', 'Schedule')}</span>
           </button>
         </div>
 
-        <Button size="sm" variant="bordered" className="font-medium text-default-600 border-default-200" onPress={onToday}>
+        <Button size="sm" variant="bordered" className="font-medium text-fg-muted border-border-token" onPress={onToday}>
           {t('calendar.toolbar.today', 'Today')}
         </Button>
 
-        <Button size="sm" className="bg-foreground text-background font-medium" startContent={<Plus size={14} />} onPress={() => onAddEvent(formatDateKey(year, month, currentDate.getDate()))}>
+        <Button size="sm" color="primary" className="font-medium" startContent={<Plus size={14} />} onPress={() => onAddEvent(formatDateKey(year, month, currentDate.getDate()))}>
           {t('calendar.toolbar.addEvent', 'Add Event')}
         </Button>
       </div>

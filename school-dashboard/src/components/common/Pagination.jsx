@@ -77,7 +77,7 @@ export default function Pagination({
   return (
     <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between py-3">
       {totalItems !== undefined && (
-        <span className="text-sm text-gray-500 dark:text-zinc-400">
+        <span className="text-sm text-fg-muted tabular-nums">
           {totalItems.toLocaleString()} {itemLabel}
         </span>
       )}
@@ -88,14 +88,14 @@ export default function Pagination({
           type="button"
           onClick={handlePrev}
           disabled={currentPage <= 1 || disabled}
-          className="flex items-center gap-1 px-3 py-1.5 text-sm border border-gray-200 dark:border-zinc-700 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-zinc-300 transition-colors"
+          className="flex items-center gap-1 px-3 py-1.5 text-sm border border-border-token rounded-lg hover:bg-surface-hover disabled:opacity-50 disabled:cursor-not-allowed text-fg transition-colors"
         >
           <ChevronLeft size={14} />
           Previous
         </button>
 
         {/* Page indicator */}
-        <span className="text-sm text-gray-600 dark:text-zinc-400 px-1 select-none">
+        <span className="text-sm text-fg-muted px-1 select-none tabular-nums">
           {currentPage} / {totalPages}
         </span>
 
@@ -104,7 +104,7 @@ export default function Pagination({
           type="button"
           onClick={handleNext}
           disabled={currentPage >= totalPages || disabled}
-          className="flex items-center gap-1 px-3 py-1.5 text-sm border border-gray-200 dark:border-zinc-700 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-zinc-300 transition-colors"
+          className="flex items-center gap-1 px-3 py-1.5 text-sm border border-border-token rounded-lg hover:bg-surface-hover disabled:opacity-50 disabled:cursor-not-allowed text-fg transition-colors"
         >
           Next
           <ChevronRight size={14} />
@@ -122,24 +122,24 @@ export default function Pagination({
               placeholder="Go to…"
               aria-label="Go to page number"
               disabled={disabled}
-              className={`w-20 px-2 py-1.5 text-sm border rounded-lg text-center bg-white dark:bg-zinc-950 text-gray-700 dark:text-zinc-300 disabled:opacity-50 transition-colors ${
+              className={`w-20 px-2 py-1.5 text-sm border rounded-lg text-center bg-surface text-fg disabled:opacity-50 transition-colors tabular-nums ${
                 inputError
-                  ? "border-red-400 dark:border-red-600 focus:outline-none focus:ring-1 focus:ring-red-400"
-                  : "border-gray-200 dark:border-zinc-700 focus:outline-none focus:ring-1 focus:ring-blue-400 dark:focus:ring-blue-600"
+                  ? "border-danger-token focus:outline-none focus:ring-1 focus:ring-danger-token"
+                  : "border-border-token focus:outline-none focus:ring-1 focus:ring-[var(--accent)]/50"
               }`}
             />
             <button
               type="button"
               onClick={handleGoToPage}
               disabled={disabled}
-              className="px-2 py-1.5 text-sm border border-gray-200 dark:border-zinc-700 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 disabled:opacity-50 text-gray-700 dark:text-zinc-300 transition-colors"
+              className="px-2 py-1.5 text-sm border border-border-token rounded-lg hover:bg-surface-hover disabled:opacity-50 text-fg transition-colors"
             >
               Go
             </button>
             {inputError && (
               <span
                 role="alert"
-                className="text-xs text-red-500 dark:text-red-400 whitespace-nowrap"
+                className="text-xs text-danger-token whitespace-nowrap"
               >
                 {inputError}
               </span>

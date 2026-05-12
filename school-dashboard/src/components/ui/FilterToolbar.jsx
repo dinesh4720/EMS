@@ -12,7 +12,7 @@
 export default function FilterToolbar({ left, right, className = "" }) {
     return (
         <div
-            className={`flex flex-col sm:flex-row justify-between gap-4 items-center border-b border-gray-200 dark:border-zinc-800 py-4 -mx-6 px-6 mb-6 ${className}`}
+            className={`flex flex-col sm:flex-row justify-between gap-4 items-center border-b border-border-token py-4 -mx-6 px-6 mb-6 ${className}`}
         >
             <div className="flex items-center gap-3 w-full sm:w-auto flex-wrap">
                 {left}

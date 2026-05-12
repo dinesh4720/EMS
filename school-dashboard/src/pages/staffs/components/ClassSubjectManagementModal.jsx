@@ -28,11 +28,11 @@ const ClassSubjectManagementModal = ({ isOpen, onClose, staffId, staffName }) =>
             <CheckCircle2 size={20} className="text-green-600 dark:text-green-400" />
           </div>
           <div>
-            <span className="text-lg font-semibold text-gray-900 dark:text-zinc-100">
+            <span className="text-lg font-semibold text-fg">
               {t('pages.staffCreatedSuccessfully')}
             </span>
-            <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1 font-normal">
-              <strong className="text-gray-700 dark:text-zinc-300">{staffName}</strong> has been added. You can now assign them as a class teacher and configure which subjects they teach.
+            <p className="text-sm text-fg-muted mt-1 font-normal">
+              <strong className="text-fg">{staffName}</strong> has been added. You can now assign them as a class teacher and configure which subjects they teach.
             </p>
           </div>
         </ModalHeader>

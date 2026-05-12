@@ -10,16 +10,24 @@ import { createPortal } from "react-dom";
  *  - Returning focus to the previously focused element on close
  *  - Auto-focusing the first focusable element when the modal opens
  *  - Closing on Escape key
+ *  - Optional outside-click (backdrop) close
  *  - Blocking body scroll while open
  *
- * @param {boolean}     isOpen    - Whether the modal is currently open
- * @param {function}    onClose   - Called when Escape is pressed or backdrop clicked
- * @param {ReactNode}   children  - Modal content (rendered inside the dialog element)
- * @param {string}      [id]      - Optional id for the dialog element
- * @param {string}      [labelledBy] - id of the heading element that labels the dialog
- * @param {string}      [describedBy] - id of the element that describes the dialog
- * @param {string}      [portalId]   - id of the portal root element (default: "modal-base-root")
- * @param {string}      [className]  - Extra class names for the dialog wrapper div
+ * @param {boolean}  isOpen
+ * @param {function} onClose
+ * @param {ReactNode} children
+ * @param {string}   [id]
+ * @param {string}   [labelledBy]
+ * @param {string}   [describedBy]
+ * @param {string}   [portalId="modal-base-root"]
+ * @param {string}   [className]      Classes on the outer dialog/backdrop element
+ * @param {string}   [role="dialog"]  ARIA role: "dialog" (default) or "alertdialog"
+ * @param {boolean}  [closeOnBackdrop=false] When true, click on the outer element
+ *                                            (the backdrop) triggers onClose.
+ *                                            Inner content must call stopPropagation
+ *                                            or live inside a child element so the
+ *                                            click target === currentTarget check
+ *                                            works.
  */
 export default function ModalBase({
   isOpen,
@@ -30,20 +38,19 @@ export default function ModalBase({
   describedBy,
   portalId = "modal-base-root",
   className = "",
+  role = "dialog",
+  closeOnBackdrop = false,
 }) {
   const dialogRef = useRef(null);
   const previousFocusRef = useRef(null);
 
-  // Selectors for all naturally focusable elements
   const FOCUSABLE =
     'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), area[href], details > summary';
 
-  // Save the element that had focus before the modal opened so we can restore it
   useEffect(() => {
     if (isOpen) {
       previousFocusRef.current = document.activeElement;
     } else {
-      // Restore focus when modal closes
       if (previousFocusRef.current && typeof previousFocusRef.current.focus === "function") {
         previousFocusRef.current.focus();
       }
@@ -51,26 +58,20 @@ export default function ModalBase({
     }
   }, [isOpen]);
 
-  // Auto-focus the first focusable element inside the dialog when it opens
   useEffect(() => {
     if (!isOpen || !dialogRef.current) return;
-
-    // Slight defer so the DOM is fully rendered (AnimatePresence, portals, etc.)
     const raf = requestAnimationFrame(() => {
       if (!dialogRef.current) return;
       const focusable = dialogRef.current.querySelectorAll(FOCUSABLE);
       if (focusable.length > 0) {
         focusable[0].focus();
       } else {
-        // Fall back to focusing the dialog container itself
         dialogRef.current.focus();
       }
     });
-
     return () => cancelAnimationFrame(raf);
-  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
-  // Prevent body scroll while the modal is open
   useEffect(() => {
     if (!isOpen) return;
     const original = document.body.style.overflow;
@@ -80,7 +81,6 @@ export default function ModalBase({
     };
   }, [isOpen]);
 
-  // ---------- Focus trap + Escape handler ----------  // line ~78
   const handleKeyDown = useCallback(
     (e) => {
       if (!isOpen || !dialogRef.current) return;
@@ -101,29 +101,26 @@ export default function ModalBase({
       const last = focusable[focusable.length - 1];
 
       if (e.shiftKey) {
-        // Shift+Tab: wrap backwards
         if (document.activeElement === first) {
           e.preventDefault();
           last.focus();
         }
       } else {
-        // Tab: wrap forwards
         if (document.activeElement === last) {
           e.preventDefault();
           first.focus();
         }
       }
     },
-    [isOpen, onClose] // eslint-disable-line react-hooks/exhaustive-deps
+    [isOpen, onClose]
   );
 
   useEffect(() => {
     if (!isOpen) return;
-    document.addEventListener("keydown", handleKeyDown, true); // capture phase
+    document.addEventListener("keydown", handleKeyDown, true);
     return () => document.removeEventListener("keydown", handleKeyDown, true);
   }, [isOpen, handleKeyDown]);
 
-  // Lazy-create a stable portal container
   const portalRef = useRef(null);
   if (!portalRef.current) {
     let el = document.getElementById(portalId);
@@ -135,20 +132,31 @@ export default function ModalBase({
     portalRef.current = el;
   }
 
+  const handleClick = useCallback(
+    (e) => {
+      if (closeOnBackdrop && e.target === e.currentTarget) {
+        onClose();
+      }
+      // No stopPropagation — the original behaviour blocked outside-click
+      // close in every consumer; the new behaviour delegates to the
+      // closeOnBackdrop flag and lets inner clicks bubble normally.
+    },
+    [closeOnBackdrop, onClose]
+  );
+
   if (!isOpen) return null;
 
   return createPortal(
     <div
       ref={dialogRef}
-      role="dialog"
+      role={role}
       aria-modal="true"
       id={id}
       aria-labelledby={labelledBy}
       aria-describedby={describedBy}
       tabIndex={-1}
       className={className}
-      // Prevent clicks inside the dialog from bubbling to any backdrop listener
-      onClick={(e) => e.stopPropagation()}
+      onClick={handleClick}
       style={{ outline: "none" }}
     >
       {children}

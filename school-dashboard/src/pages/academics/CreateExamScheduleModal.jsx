@@ -133,8 +133,8 @@ const CreateExamScheduleModal = ({ onClose, onSuccess }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div>
-        <h4 className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-3 flex items-center gap-2">
-          <Calendar size={16} className="text-gray-400 dark:text-zinc-500" />
+        <h4 className="text-sm font-medium text-fg mb-3 flex items-center gap-2">
+          <Calendar size={16} className="text-fg-faint" />
           Schedule Details
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

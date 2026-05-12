@@ -11,6 +11,8 @@ import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import StatCard from '../../components/ui/StatCard';
+import EmptyState from '../../components/ui/EmptyState';
+import ErrorState from '../../components/ui/ErrorState';
 import logger from '../../utils/logger';
 
 
@@ -22,6 +24,7 @@ export default function RoutesTab() {
   const [routes, setRoutes] = useState([]);
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -35,6 +38,7 @@ export default function RoutesTab() {
   const fetchData = async () => {
     try {
       setLoading(true);
+      setLoadError(null);
       const [routesRes, vehiclesRes] = await Promise.all([
         transportApi.getRoutes({ academicYear }),
         transportApi.getVehicles(),
@@ -43,6 +47,7 @@ export default function RoutesTab() {
       setVehicles(vehiclesRes?.data || []);
     } catch (error) {
       logger.error('Failed to load transport data:', error);
+      setLoadError(error);
       toast.error(t('toast.error.failedToLoadRoutes'));
     } finally {
       setLoading(false);
@@ -118,6 +123,15 @@ export default function RoutesTab() {
   }, [routes]);
 
   if (loading) return <TablePageSkeleton title={false} kpiCards={4} columns={5} rows={5} />;
+  if (loadError) {
+    return (
+      <ErrorState
+        title={t('pages.failedToLoadTransportData', { defaultValue: 'Failed to load transport data' })}
+        error={loadError}
+        onRetry={fetchData}
+      />
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -175,22 +189,39 @@ export default function RoutesTab() {
 
       {/* Route Cards */}
       {filtered.length === 0 ? (
-        <div className="text-center py-16 text-gray-500 dark:text-zinc-400">
-          <MapPin size={40} className="mx-auto mb-3 opacity-30" />
-          <p className="font-medium">{t('pages.noRoutesFound')}</p>
-          <p className="text-sm mt-1">{t('pages.createYourFirstTransportRouteToGetStarted')}</p>
-        </div>
+        <EmptyState
+          icon={MapPin}
+          size="lg"
+          title={t('pages.noRoutesFound')}
+          description={
+            routes.length === 0
+              ? t('pages.createYourFirstTransportRouteToGetStarted')
+              : t('pages.noResultsMatchYourFilters', { defaultValue: 'No results match your filters' })
+          }
+          action={
+            routes.length === 0 ? (
+              <Button
+                color="primary"
+                size="sm"
+                startContent={<Plus size={16} />}
+                onPress={() => { setEditingRoute(null); setIsRouteModalOpen(true); }}
+              >
+                {t('pages.addRoute')}
+              </Button>
+            ) : null
+          }
+        />
       ) : (
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map((route) => (
             <div
               key={route._id}
-              className="bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow"
+              className="bg-surface border border-divider rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow"
             >
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-zinc-100">{route.routeName}</h3>
-                  <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">#{route.routeNumber}</p>
+                  <h3 className="font-semibold text-fg">{route.routeName}</h3>
+                  <p className="text-xs text-fg-muted mt-0.5">#{route.routeNumber}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Chip size="sm" variant="flat" color={route.status === "active" ? "success" : "default"}>
@@ -211,7 +242,7 @@ export default function RoutesTab() {
 
               {/* Vehicle info */}
               {route.vehicleId && (
-                <p className="text-xs text-gray-500 dark:text-zinc-400 mb-2">
+                <p className="text-xs text-fg-muted mb-2">
                   Vehicle: {route.vehicleId.registrationNumber} ({route.vehicleId.make} {route.vehicleId.model})
                 </p>
               )}
@@ -225,11 +256,11 @@ export default function RoutesTab() {
                 return (
                   <>
                     <div className="flex gap-4 text-sm">
-                      <div className="flex items-center gap-1.5 text-gray-600 dark:text-zinc-300">
+                      <div className="flex items-center gap-1.5 text-fg">
                         <MapPin size={14} />
                         <span>{route.stops?.length || 0} stops</span>
                       </div>
-                      <div className={`flex items-center gap-1.5 ${isOverCapacity ? 'text-red-600 dark:text-red-400 font-medium' : isNearCapacity ? 'text-amber-600 dark:text-amber-400' : 'text-gray-600 dark:text-zinc-300'}`}>
+                      <div className={`flex items-center gap-1.5 ${isOverCapacity ? 'text-red-600 dark:text-red-400 font-medium' : isNearCapacity ? 'text-amber-600 dark:text-amber-400' : 'text-fg'}`}>
                         <Users size={14} />
                         <span>{studentCount}{capacity ? `/${capacity}` : ''} students</span>
                       </div>
@@ -250,15 +281,15 @@ export default function RoutesTab() {
 
               {/* Stops preview */}
               {route.stops?.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-gray-50 dark:border-zinc-800">
+                <div className="mt-3 pt-3 border-t border-divider">
                   <div className="flex flex-wrap gap-1.5">
                     {route.stops.slice(0, 4).map((stop) => (
-                      <span key={stop._id} className="text-xs px-2 py-0.5 rounded-full bg-gray-50 dark:bg-zinc-900 text-gray-600 dark:text-zinc-400">
+                      <span key={stop._id} className="text-xs px-2 py-0.5 rounded-full bg-surface-2 text-fg-muted">
                         {stop.name}
                       </span>
                     ))}
                     {route.stops.length > 4 && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-gray-50 dark:bg-zinc-900 text-gray-500 dark:text-zinc-400">
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-surface-2 text-fg-muted">
                         +{route.stops.length - 4} more
                       </span>
                     )}

@@ -113,7 +113,9 @@ describe('validateFutureDate', () => {
   });
 
   it('returns true for today\'s date', () => {
-    const today = new Date().toISOString().split('T')[0];
+    // Local-day string; toISOString would skew in non-UTC timezones.
+    const d = new Date();
+    const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     expect(validateFutureDate(today)).toBe(true);
   });
 

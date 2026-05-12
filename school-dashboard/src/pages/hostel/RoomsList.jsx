@@ -5,7 +5,8 @@ import { hostelApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
-import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import { ConfirmDialog, EmptyState, ErrorState } from '../../components/ui';
+import { hostelRoomSchema, parseFormSchema } from '../../validators/formSchemas';
 
 const INITIAL_FORM = {
   hostelId: "", roomNumber: "", floor: 0, type: "double",
@@ -26,6 +27,7 @@ export default function RoomsList() {
   const [rooms, setRooms] = useState([]);
   const [hostels, setHostels] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [hostelFilter, setHostelFilter] = useState("");
@@ -51,6 +53,7 @@ export default function RoomsList() {
   const fetchRooms = useCallback(async () => {
     try {
       setIsLoading(true);
+      setLoadError(null);
       const params = { page, limit: 20 };
       if (search) params.search = search;
       if (hostelFilter) params.hostelId = hostelFilter;
@@ -58,22 +61,20 @@ export default function RoomsList() {
       const data = await hostelApi.getRooms(params);
       setRooms(data.rooms || []);
       setTotalPages(data.pages || 1);
-    } catch {
+    } catch (err) {
+      setLoadError(err);
       toast.error(t('toast.error.failedToLoadRooms'));
     } finally {
       setIsLoading(false);
     }
-  }, [search, hostelFilter, typeFilter, page]);
+  }, [search, hostelFilter, typeFilter, page, t]);
 
   useEffect(() => { fetchRooms(); }, [fetchRooms]);
 
   const validateForm = () => {
-    const e = {};
-    if (!formData.hostelId) e.hostelId = "Hostel is required";
-    if (!formData.roomNumber.trim()) e.roomNumber = "Room number is required";
-    if (!formData.capacity || formData.capacity < 1) e.capacity = "Capacity must be at least 1";
-    setErrors(e);
-    return Object.keys(e).length === 0;
+    const { success, errors: zodErrors } = parseFormSchema(hostelRoomSchema, formData);
+    setErrors(zodErrors);
+    return success;
   };
 
   const handleSubmit = async (e) => {
@@ -160,6 +161,10 @@ export default function RoomsList() {
 
   if (isLoading) return <TablePageSkeleton title={false} kpiCards={0} columns={5} rows={6} />;
 
+  if (loadError) {
+    return <ErrorState error={loadError} onRetry={fetchRooms} />;
+  }
+
   return (
     <div className="space-y-4">
       {/* Filters */}
@@ -167,7 +172,7 @@ export default function RoomsList() {
         <div className="flex gap-3 flex-1 flex-wrap">
           <Input
             placeholder={t('pages.searchRooms')}
-            startContent={<Search size={16} className="text-gray-400 dark:text-zinc-500" />}
+            startContent={<Search size={16} className="text-fg-faint" />}
             value={searchInput}
             onValueChange={setSearchInput}
             className="max-w-xs"
@@ -199,31 +204,36 @@ export default function RoomsList() {
 
       {/* Rooms Table */}
       {rooms.length === 0 ? (
-        <div className="text-center py-12">
-          <DoorOpen size={40} className="mx-auto text-gray-400 dark:text-zinc-500 mb-3" />
-          <p className="text-gray-500 dark:text-zinc-400">{t('pages.noRoomsFound')}</p>
-        </div>
+        <EmptyState
+          icon={DoorOpen}
+          title={t('pages.noRoomsFound')}
+          action={
+            <Button color="primary" size="sm" startContent={<Plus size={14} />} onPress={handleAdd}>
+              Add Room
+            </Button>
+          }
+        />
       ) : (
         <>
-          <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-zinc-800">
+          <div className="overflow-x-auto rounded-lg border border-border-token">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-gray-50 dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800">
-                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">{t('pages.room')}</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">{t('pages.hostel1')}</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">{t('pages.floor')}</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">{t('pages.type1')}</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">{t('pages.occupancy')}</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">{t('pages.fee1')}</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">{t('pages.actions1')}</th>
+                <tr className="bg-surface-2 border-b border-border-token">
+                  <th className="text-left px-4 py-3 font-medium text-fg">{t('pages.room')}</th>
+                  <th className="text-left px-4 py-3 font-medium text-fg">{t('pages.hostel1')}</th>
+                  <th className="text-left px-4 py-3 font-medium text-fg">{t('pages.floor')}</th>
+                  <th className="text-left px-4 py-3 font-medium text-fg">{t('pages.type1')}</th>
+                  <th className="text-left px-4 py-3 font-medium text-fg">{t('pages.occupancy')}</th>
+                  <th className="text-left px-4 py-3 font-medium text-fg">{t('pages.fee1')}</th>
+                  <th className="text-right px-4 py-3 font-medium text-fg">{t('pages.actions1')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-zinc-800">
                 {rooms.map((room) => (
-                  <tr key={room._id} className="bg-white dark:bg-zinc-950 hover:bg-gray-50 dark:hover:bg-zinc-900 transition-colors">
-                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-zinc-100">{room.roomNumber}</td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-zinc-400">{room.hostelId?.name || "—"}</td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-zinc-400">{room.floor}</td>
+                  <tr key={room._id} className="bg-surface hover:bg-surface-hover transition-colors">
+                    <td className="px-4 py-3 font-medium text-fg">{room.roomNumber}</td>
+                    <td className="px-4 py-3 text-fg-muted">{room.hostelId?.name || "—"}</td>
+                    <td className="px-4 py-3 text-fg-muted">{room.floor}</td>
                     <td className="px-4 py-3">
                       <Chip size="sm" variant="flat" className="capitalize">{room.type}</Chip>
                     </td>
@@ -233,13 +243,13 @@ export default function RoomsList() {
                         {room.occupiedBeds}/{room.capacity}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-zinc-400">
+                    <td className="px-4 py-3 text-fg-muted">
                       {room.monthlyFee ? `₹${room.monthlyFee.toLocaleString()}` : "—"}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex gap-1 justify-end">
                         <Button isIconOnly size="sm" variant="light" aria-label="Edit room" onPress={() => handleEdit(room)}>
-                          <Edit2 size={14} className="text-gray-500 dark:text-zinc-400" />
+                          <Edit2 size={14} className="text-fg-muted" />
                         </Button>
                         <Button isIconOnly size="sm" variant="light" aria-label="Delete room" onPress={() => setDeleteTarget(room._id)}>
                           <Trash2 size={14} className="text-red-500" />
@@ -256,7 +266,7 @@ export default function RoomsList() {
           {totalPages > 1 && (
             <div className="flex justify-center gap-2">
               <Button size="sm" variant="flat" isDisabled={page <= 1} onPress={() => setPage(p => p - 1)}>{t('pages.previous')}</Button>
-              <span className="flex items-center text-sm text-gray-600 dark:text-zinc-400">Page {page} of {totalPages}</span>
+              <span className="flex items-center text-sm text-fg-muted">Page {page} of {totalPages}</span>
               <Button size="sm" variant="flat" isDisabled={page >= totalPages} onPress={() => setPage(p => p + 1)}>{t('pages.next')}</Button>
             </div>
           )}
@@ -266,7 +276,7 @@ export default function RoomsList() {
       {/* Add/Edit Room Modal */}
       <Modal isOpen={isOpen} onClose={handleClose} size="2xl" scrollBehavior="inside">
         <ModalContent>
-          <ModalHeader className="text-gray-900 dark:text-zinc-100">
+          <ModalHeader className="text-fg">
             {editingId ? "Edit Room" : "Add Room"}
           </ModalHeader>
           <ModalBody className="gap-4">
@@ -313,7 +323,7 @@ export default function RoomsList() {
               onValueChange={(v) => setFormData(p => ({ ...p, monthlyFee: v }))}
             />
             <div>
-              <p className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2">{t('pages.amenities')}</p>
+              <p className="text-sm font-medium text-fg mb-2">{t('pages.amenities')}</p>
               <div className="flex flex-wrap gap-2">
                 {AMENITY_OPTIONS.map(a => (
                   <Chip

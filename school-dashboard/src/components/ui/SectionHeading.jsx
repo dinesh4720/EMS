@@ -19,7 +19,7 @@ const SectionHeading = memo(function SectionHeading({
   className,
 }) {
   const titleClass = cn(
-    "font-semibold text-gray-900 dark:text-zinc-100 flex items-center gap-2",
+    "font-semibold text-fg flex items-center gap-2",
     SIZE_STYLES[size] || SIZE_STYLES.lg
   );
 
@@ -30,14 +30,14 @@ const SectionHeading = memo(function SectionHeading({
           {Icon ? (
             <Icon
               size={iconSize}
-              className="text-gray-500 dark:text-zinc-400 shrink-0"
+              className="text-fg-muted shrink-0"
               aria-hidden="true"
             />
           ) : null}
           <span className="truncate">{children}</span>
         </Tag>
         {description ? (
-          <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">
+          <p className="text-xs text-fg-muted mt-1">
             {description}
           </p>
         ) : null}

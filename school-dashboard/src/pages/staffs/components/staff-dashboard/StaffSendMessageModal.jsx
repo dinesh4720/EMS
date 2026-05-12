@@ -2,30 +2,52 @@ import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   Textarea
 } from "@heroui/react";
+import { getSafeDisplayName } from "../../../../utils/objectIdHelper";
 
 export default function StaffSendMessageModal({ isOpen, onClose, message, setMessage, onSend, staff, t }) {
+  const safeName = getSafeDisplayName(staff, "code");
   return (
-    <Modal isOpen={isOpen} onClose={onClose} backdrop="blur">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      backdrop="blur"
+      placement="center"
+      size="md"
+      classNames={{
+        base: "glass",
+        header: "border-b border-divider",
+        footer: "border-t border-divider",
+      }}
+    >
       <ModalContent>
-        <ModalHeader>Send Message to {staff?.name && /^[a-f\d]{24}$/i.test(staff.name) ? (staff?.code || 'Staff') : (staff?.name || 'Staff')}</ModalHeader>
-        <ModalBody>
+        <ModalHeader className="text-sm font-medium text-fg">
+          {t("pages.sendMessage", "Send message")}
+          <span className="subtle mono" style={{ marginLeft: 6, fontSize: 12 }}>
+            · {safeName}
+          </span>
+        </ModalHeader>
+        <ModalBody className="py-4">
           <Textarea
-            label={t('pages.message1')}
-            placeholder={t('pages.typeYourMessageHere')}
+            label={t('pages.message1', 'Message')}
+            placeholder={t('pages.typeYourMessageHere', 'Type your message here')}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            minRows={3}
+            minRows={4}
             variant="bordered"
+            autoFocus
           />
         </ModalBody>
         <ModalFooter>
-          <button className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300" onClick={onClose}>{t('pages.cancel2')}</button>
+          <button type="button" className="btn" onClick={onClose}>
+            {t('pages.cancel2', 'Cancel')}
+          </button>
           <button
-            className="px-4 py-2 text-sm font-medium text-white dark:text-zinc-900 bg-gray-900 dark:bg-zinc-100 rounded-lg hover:bg-gray-800 dark:hover:bg-zinc-200 disabled:opacity-50"
+            type="button"
+            className="btn btn--accent"
             onClick={onSend}
             disabled={!message.trim()}
           >
-            Send
+            {t('common.send', 'Send')}
           </button>
         </ModalFooter>
       </ModalContent>

@@ -72,11 +72,11 @@ const ErrorState = memo(function ErrorState({
         <Icon size={styles.iconInner} className="text-red-600 dark:text-red-400" />
       </div>
       <div className="space-y-1">
-        <p className={cn("font-medium text-gray-900 dark:text-zinc-100", styles.title)}>
+        <p className={cn("font-medium text-fg", styles.title)}>
           {title}
         </p>
         {resolvedDescription && (
-          <p className={cn("text-gray-500 dark:text-zinc-400 mx-auto", styles.description)}>
+          <p className={cn("text-fg-muted mx-auto", styles.description)}>
             {resolvedDescription}
           </p>
         )}

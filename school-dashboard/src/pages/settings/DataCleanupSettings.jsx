@@ -133,10 +133,10 @@ export default function DataCleanupSettings() {
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">
+          <h2 className="text-xl font-semibold text-fg">
             Remove All Data
           </h2>
-          <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">
+          <p className="text-sm text-fg-muted mt-1">
             Move selected data to trash for 30 days before permanent deletion
           </p>
         </div>
@@ -151,7 +151,7 @@ export default function DataCleanupSettings() {
                 Moved to Trash!
               </h3>
             </div>
-            <p className="text-sm text-gray-600 dark:text-zinc-400 mb-4">
+            <p className="text-sm text-fg-muted mb-4">
               {result.total} records have been moved to trash. They will be permanently deleted after 30 days.
             </p>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -160,12 +160,12 @@ export default function DataCleanupSettings() {
                 return (
                   <div
                     key={cat}
-                    className="bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-200 dark:border-zinc-700"
+                    className="bg-surface rounded-lg p-4 border border-border-token"
                   >
-                    <p className="text-sm text-gray-500 dark:text-zinc-400">
+                    <p className="text-sm text-fg-muted">
                       {def?.label || cat}
                     </p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">
+                    <p className="text-2xl font-bold text-fg">
                       {count}
                     </p>
                   </div>
@@ -194,10 +194,10 @@ export default function DataCleanupSettings() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">
+        <h2 className="text-xl font-semibold text-fg">
           Remove All Data
         </h2>
-        <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">
+        <p className="text-sm text-fg-muted mt-1">
           Move selected data to trash for 30 days before permanent deletion
         </p>
       </div>
@@ -237,7 +237,7 @@ export default function DataCleanupSettings() {
       {/* Select Data Section */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-medium text-gray-900 dark:text-zinc-100">
+          <h3 className="font-medium text-fg">
             Select data to remove
           </h3>
           <Button
@@ -261,7 +261,7 @@ export default function DataCleanupSettings() {
                 className={`border transition-all ${
                   isSelected
                     ? "border-danger-400 bg-danger-50/30 dark:bg-danger-900/20"
-                    : "border-gray-200 dark:border-zinc-700"
+                    : "border-border-token"
                 }`}
               >
                 <CardBody className="p-4">
@@ -273,7 +273,7 @@ export default function DataCleanupSettings() {
                     />
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
-                        <h4 className="font-medium text-gray-900 dark:text-zinc-100">
+                        <h4 className="font-medium text-fg">
                           {cat.label}
                         </h4>
                         <Chip size="sm" variant="flat" color={cat.color}>
@@ -313,15 +313,15 @@ export default function DataCleanupSettings() {
                   <AlertTriangle size={20} className="text-danger-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-zinc-400">
+                  <p className="text-sm text-fg-muted">
                     You are about to move <strong>{totalSelected}</strong> records
                     to trash across <strong>{selected.size}</strong> categories.
                   </p>
                 </div>
               </div>
 
-              <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-3">
-                <p className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2">
+              <div className="bg-surface-2 rounded-lg p-3">
+                <p className="text-sm font-medium text-fg mb-2">
                   Selected for removal:
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -337,7 +337,7 @@ export default function DataCleanupSettings() {
               </div>
 
               <div>
-                <p className="text-sm text-gray-600 dark:text-zinc-400 mb-2">
+                <p className="text-sm text-fg-muted mb-2">
                   Type <strong>REMOVE ALL DATA</strong> to confirm:
                 </p>
                 <Input
@@ -347,7 +347,7 @@ export default function DataCleanupSettings() {
                   variant="bordered"
                   size="sm"
                   classNames={{
-                    inputWrapper: "bg-white dark:bg-zinc-950",
+                    inputWrapper: "bg-surface",
                   }}
                 />
               </div>

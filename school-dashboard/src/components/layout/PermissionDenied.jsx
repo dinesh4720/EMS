@@ -95,19 +95,19 @@ export default function PermissionDenied({ module, action, onRequestSubmitted })
         <CardBody className="p-8 text-center space-y-6">
           {/* Icon */}
           <div className="flex justify-center">
-            <div className="p-4 bg-danger-100 dark:bg-danger-900/30 rounded-full">
-              <ShieldAlert size={48} className="text-danger-600 dark:text-danger-400" />
+            <div className="p-4 bg-danger-bg rounded-full">
+              <ShieldAlert size={48} className="text-danger-token" />
             </div>
           </div>
 
           {/* Title */}
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            <h2 className="text-2xl font-bold text-fg mb-2">
               Access Denied
             </h2>
-            <p className="text-gray-600 dark:text-zinc-400">
+            <p className="text-fg-muted">
               You don't have permission to {action ? `${ACTION_LABELS[action].toLowerCase()}` : 'access'} the{" "}
-              <span className="font-semibold text-gray-900 dark:text-white">
+              <span className="font-semibold text-fg">
                 {MODULE_LABELS[module] || module}
               </span>{" "}
               module
@@ -115,8 +115,8 @@ export default function PermissionDenied({ module, action, onRequestSubmitted })
           </div>
 
           {/* Message */}
-          <div className="bg-gray-50 dark:bg-zinc-800 rounded-lg p-4">
-            <p className="text-sm text-gray-700 dark:text-zinc-300">
+          <div className="bg-surface-2 rounded-lg p-4">
+            <p className="text-sm text-fg">
               If you believe you should have access to this module, you can request permission from your administrator.
               Your request will be reviewed and you'll be notified once it's processed.
             </p>
@@ -154,15 +154,15 @@ export default function PermissionDenied({ module, action, onRequestSubmitted })
             {submitted ? (
               <div className="py-8 text-center space-y-4">
                 <div className="flex justify-center">
-                  <div className="p-3 bg-success-100 dark:bg-success-900/30 rounded-full">
-                    <CheckCircle size={48} className="text-success-600 dark:text-success-400" />
+                  <div className="p-3 bg-ok-bg rounded-full">
+                    <CheckCircle size={48} className="text-ok" />
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  <h3 className="text-xl font-semibold text-fg mb-2">
                     Request Submitted!
                   </h3>
-                  <p className="text-gray-600 dark:text-zinc-400">
+                  <p className="text-fg-muted">
                     Your permission request has been sent to the administrator.
                     You'll be notified once it's reviewed.
                   </p>
@@ -171,15 +171,15 @@ export default function PermissionDenied({ module, action, onRequestSubmitted })
             ) : (
               <div className="space-y-6">
                 {/* Module Info */}
-                <div className="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-4">
-                  <p className="text-sm text-gray-700 dark:text-zinc-300">
+                <div className="bg-accent-bg rounded-lg p-4">
+                  <p className="text-sm text-fg">
                     <span className="font-semibold">Module:</span> {MODULE_LABELS[module]}
                   </p>
                 </div>
 
                 {/* Permissions Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-3">
+                  <label className="block text-sm font-medium text-fg mb-3">
                     Select Permissions Needed
                   </label>
                   <CheckboxGroup
@@ -207,7 +207,7 @@ export default function PermissionDenied({ module, action, onRequestSubmitted })
                     minRows={4}
                     isRequired
                   />
-                  <p className="text-xs text-gray-500 dark:text-zinc-400 mt-2">
+                  <p className="text-xs text-fg-muted mt-2">
                     Provide a clear explanation to help the administrator review your request
                   </p>
                 </div>

@@ -2,8 +2,8 @@ import { useRef, useEffect, useState, Suspense, useTransition } from "react";
 import logger from "../../utils/logger";
 import lazyWithRetry from "../../utils/lazyWithRetry";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
-import { Drawer, DrawerContent, DrawerHeader, DrawerBody, Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter as ModalFooterUI, Chip } from "@heroui/react";
-import { Plus, X, UserPlus, Send, FileText, CheckCircle2, ChevronDown, Mail, Phone, Eye, Check, GraduationCap } from "lucide-react";
+import { Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter as ModalFooterUI, Chip } from "@heroui/react";
+import { Plus, UserPlus, Send, FileText, CheckCircle2, ChevronDown, Mail, Phone, Eye, Check } from "lucide-react";
 import StudentsList from "./StudentsList";
 import StudentDashboard from "./StudentDashboard";
 import StudentAttendance from "./StudentAttendance";
@@ -13,7 +13,7 @@ import FormInput from "../../components/FormInput";
 import { useApp } from "../../context/AppContext";
 import { intakeFormsApi } from "../../services/api";
 import toast from "react-hot-toast";
-import { PageLayout, MinimalButton } from "../../components/ui";
+import { PageLayout } from "../../components/ui";
 import ErrorBoundary from "../../components/ui/ErrorBoundary";
 import { useTranslation } from 'react-i18next';
 
@@ -41,19 +41,7 @@ export default function StudentsPage() {
   const formDropdownRef = useRef(null);
   const addStudentRef = useRef(null);
 
-  // Handle backdrop click for unsaved changes check
-  useEffect(() => {
-    if (!isAddStudentOpen) return;
-    const handleBackdropClick = (e) => {
-      const backdrop = e.target.closest?.('[data-slot="backdrop"]') || (e.target.getAttribute?.('data-slot') === 'backdrop' ? e.target : null);
-      if (backdrop) {
-        if (addStudentRef.current) addStudentRef.current.attemptClose();
-        else handleCloseAddStudent();
-      }
-    };
-    document.addEventListener('click', handleBackdropClick, true);
-    return () => document.removeEventListener('click', handleBackdropClick, true);
-  }, [isAddStudentOpen]);
+  // Composer handles its own ESC + backdrop close internally.
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -242,23 +230,27 @@ export default function StudentsPage() {
         actions={activeTab === "list" && (
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={() => navigate('/students/promotion')}
-              className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
+              className="btn"
             >
               Promotion
             </button>
             <button
+              type="button"
               onClick={() => navigate('/students/transfer-certificate')}
-              className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
+              className="btn"
             >
               Transfer Certificate
             </button>
-            <MinimalButton
-              icon={<Plus size={16} />}
+            <button
+              type="button"
               onClick={handleOpenAddStudent}
+              className="btn btn--accent"
             >
+              <Plus size={13} aria-hidden />
               New Student
-            </MinimalButton>
+            </button>
           </div>
         )}
       >
@@ -279,57 +271,16 @@ export default function StudentsPage() {
         )}
       </PageLayout>
 
-      {/* Add Student Drawer - only mount when open */}
+      {/* Add Student composer — frosted overlay, renders via portal */}
       {isAddStudentOpen && (
-      <Suspense fallback={null}>
-      <Drawer
-        isOpen={isAddStudentOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            if (addStudentRef.current) addStudentRef.current.attemptClose();
-            else handleCloseAddStudent();
-          }
-        }}
-        placement="right"
-        size="xl"
-        hideCloseButton
-        classNames={{ base: "max-w-[900px]", wrapper: "z-[9999]", backdrop: "z-[9998]" }}
-      >
-        <DrawerContent>
-          {(onClose) => (
-            <>
-              <DrawerHeader className="border-b border-default-200/60 px-6 py-4 flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-xl">
-                    <GraduationCap size={20} className="text-primary" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-semibold text-default-900">{t('pages.addNewStudent')}</h2>
-                    <p className="text-xs text-default-500">{t('pages.registerANewStudentManually')}</p>
-                  </div>
-                </div>
-                <Button isIconOnly size="sm" variant="light" aria-label="Close" onPress={() => {
-                  if (addStudentRef.current) addStudentRef.current.attemptClose();
-                  else handleCloseAddStudent();
-                }}>
-                  <X size={20} className="text-default-400" />
-                </Button>
-              </DrawerHeader>
-              <DrawerBody className="p-0 overflow-hidden">
-                <Suspense fallback={<div className="p-6 space-y-4">{Array.from({ length: 6 }).map((_, i) => (<div key={i} className="space-y-2"><div className="h-4 w-1/4 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" /><div className="h-10 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" /></div>))}</div>}>
-                  <AddStudent
-                    ref={addStudentRef}
-                    onClose={handleCloseAddStudent}
-                    onSave={handleSaveStudent}
-                    classesWithTeachers={classesWithTeachers}
-                  />
-                </Suspense>
-              </DrawerBody>
-            </>
-          )}
-        </DrawerContent>
-      </Drawer>
-      </Suspense>
+        <Suspense fallback={null}>
+          <AddStudent
+            ref={addStudentRef}
+            onClose={handleCloseAddStudent}
+            onSave={handleSaveStudent}
+            classesWithTeachers={classesWithTeachers}
+          />
+        </Suspense>
       )}
 
       {/* Method Selection Modal */}
@@ -338,46 +289,46 @@ export default function StudentsPage() {
         onClose={() => setIsMethodModalOpen(false)}
         size="2xl"
         backdrop="opaque"
-        classNames={{ backdrop: "bg-black/50", base: "bg-white dark:bg-zinc-900" }}
+        classNames={{ backdrop: "bg-black/50", base: "bg-surface" }}
       >
         <ModalContent>
-          <ModalHeader className="border-b border-gray-100 dark:border-zinc-700 py-4">
+          <ModalHeader className="border-b border-divider py-4">
             <h3 className="text-lg font-medium">{t('pages.chooseAdmissionMethod')}</h3>
-            <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal mt-1">{t('pages.selectHowYouWantToAddTheNewStudent')}</p>
+            <p className="text-sm text-fg-muted font-normal mt-1">{t('pages.selectHowYouWantToAddTheNewStudent')}</p>
           </ModalHeader>
           <ModalBody className="py-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <button
                 onClick={() => handleSelectMethod('form')}
-                className="group p-6 rounded-lg border border-gray-200 dark:border-zinc-700 hover:border-gray-400 dark:hover:border-zinc-500 transition-colors text-left"
+                className="group p-6 rounded-lg border border-border-token hover:border-border-strong transition-colors text-left"
               >
                 <div className="flex flex-col items-center text-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
-                    <Send size={24} className="text-gray-600 dark:text-zinc-400" />
+                  <div className="w-12 h-12 rounded-full bg-surface-2 flex items-center justify-center">
+                    <Send size={24} className="text-fg-muted" />
                   </div>
                   <div>
-                    <h4 className="text-base font-medium text-gray-900 dark:text-zinc-100 mb-2">{t('pages.sendAdmissionForm')}</h4>
-                    <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.shareAFormLinkWithParentsViaEmailOrSms')}</p>
+                    <h4 className="text-base font-medium text-fg mb-2">{t('pages.sendAdmissionForm')}</h4>
+                    <p className="text-sm text-fg-muted">{t('pages.shareAFormLinkWithParentsViaEmailOrSms')}</p>
                   </div>
                 </div>
               </button>
               <button
                 onClick={() => handleSelectMethod('full')}
-                className="group p-6 rounded-lg border border-gray-200 dark:border-zinc-700 hover:border-gray-400 dark:hover:border-zinc-500 transition-colors text-left"
+                className="group p-6 rounded-lg border border-border-token hover:border-border-strong transition-colors text-left"
               >
                 <div className="flex flex-col items-center text-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
-                    <UserPlus size={24} className="text-gray-600 dark:text-zinc-400" />
+                  <div className="w-12 h-12 rounded-full bg-surface-2 flex items-center justify-center">
+                    <UserPlus size={24} className="text-fg-muted" />
                   </div>
                   <div>
-                    <h4 className="text-base font-medium text-gray-900 dark:text-zinc-100 mb-2">{t('pages.manualRegistration')}</h4>
-                    <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.addStudentDetailsDirectlyInTheAdminPanel')}</p>
+                    <h4 className="text-base font-medium text-fg mb-2">{t('pages.manualRegistration')}</h4>
+                    <p className="text-sm text-fg-muted">{t('pages.addStudentDetailsDirectlyInTheAdminPanel')}</p>
                   </div>
                 </div>
               </button>
             </div>
           </ModalBody>
-          <ModalFooter className="border-t border-gray-100 dark:border-zinc-700">
+          <ModalFooter className="border-t border-divider">
             <Button variant="light" onPress={() => setIsMethodModalOpen(false)}>{t('pages.cancel2')}</Button>
           </ModalFooter>
         </ModalContent>
@@ -396,34 +347,34 @@ export default function StudentsPage() {
         }}
         size="2xl"
         backdrop="opaque"
-        classNames={{ backdrop: "bg-black/50", base: "bg-white dark:bg-zinc-900" }}
+        classNames={{ backdrop: "bg-black/50", base: "bg-surface" }}
       >
         <ModalContent>
-          <ModalHeader className="border-b border-gray-100 dark:border-zinc-700 py-4">
+          <ModalHeader className="border-b border-divider py-4">
             <h3 className="text-lg font-medium">{t('pages.sendAdmissionForm')}</h3>
-            <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal mt-1">{t('pages.chooseAFormAndShareIt')}</p>
+            <p className="text-sm text-fg-muted font-normal mt-1">{t('pages.chooseAFormAndShareIt')}</p>
           </ModalHeader>
           <ModalBody className="py-6">
             <div className="space-y-4">
               <div className="relative" ref={formDropdownRef}>
-                <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2 block">{t('pages.selectForm')}</label>
+                <label className="text-sm font-medium text-fg mb-2 block">{t('pages.selectForm')}</label>
                 <button
                   type="button"
                   onClick={() => setIsFormDropdownOpen(!isFormDropdownOpen)}
-                  className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-gray-50 dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600 transition-colors"
+                  className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-surface-2 rounded-lg border border-border-token hover:border-border-strong transition-colors"
                 >
                   {selectedForm ? (
                     <div className="flex items-center gap-3">
-                      <FileText size={18} className="text-gray-500 dark:text-zinc-400" />
+                      <FileText size={18} className="text-fg-muted" />
                       <span className="text-sm">{availableForms.find(f => f.id === selectedForm)?.formName}</span>
                     </div>
                   ) : (
-                    <span className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.chooseAnAdmissionForm')}</span>
+                    <span className="text-sm text-fg-muted">{t('pages.chooseAnAdmissionForm')}</span>
                   )}
-                  <ChevronDown size={18} className={`text-gray-400 dark:text-zinc-500 transition-transform ${isFormDropdownOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown size={18} className={`text-fg-faint transition-transform ${isFormDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {isFormDropdownOpen && (
-                  <div className="absolute z-50 w-full mt-2 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg max-h-[320px] overflow-y-auto">
+                  <div className="absolute z-50 w-full mt-2 bg-surface border border-border-token rounded-lg max-h-[320px] overflow-y-auto">
                     <div className="p-2">
                       {availableForms.length > 0 ? (
                         availableForms.map((form) => (
@@ -431,18 +382,18 @@ export default function StudentsPage() {
                             key={form.id}
                             type="button"
                             onClick={() => { setSelectedForm(form.id); setIsFormDropdownOpen(false); }}
-                            className={`w-full p-3 rounded-lg text-left flex items-center gap-3 ${selectedForm === form.id ? 'bg-gray-100 dark:bg-zinc-800' : 'hover:bg-gray-50 dark:hover:bg-zinc-800/50'}`}
+                            className={`w-full p-3 rounded-lg text-left flex items-center gap-3 ${selectedForm === form.id ? 'bg-surface-2' : 'hover:bg-surface-2'}`}
                           >
-                            <FileText size={18} className="text-gray-500 dark:text-zinc-400" />
+                            <FileText size={18} className="text-fg-muted" />
                             <div className="flex-1">
                               <p className="text-sm font-medium">{form.formName}</p>
-                              <p className="text-xs text-gray-500 dark:text-zinc-400">{form.fields?.length || 0} fields</p>
+                              <p className="text-xs text-fg-muted">{form.fields?.length || 0} fields</p>
                             </div>
-                            {selectedForm === form.id && <CheckCircle2 size={16} className="text-gray-600 dark:text-zinc-400" />}
+                            {selectedForm === form.id && <CheckCircle2 size={16} className="text-fg-muted" />}
                           </button>
                         ))
                       ) : (
-                        <div className="text-center py-8 text-gray-500 dark:text-zinc-400">
+                        <div className="text-center py-8 text-fg-muted">
                           <p>{t('pages.noActiveAdmissionFormsAvailable')}</p>
                           <Button size="sm" variant="flat" className="mt-2" onPress={() => { setIsFormDropdownOpen(false); setIsFormSelectModalOpen(false); navigate('/settings/intake-forms'); }}>{t('pages.createAForm')}</Button>
                         </div>
@@ -453,7 +404,7 @@ export default function StudentsPage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2 block">{t('pages.parentEmail1')}</label>
+                <label className="text-sm font-medium text-fg mb-2 block">{t('pages.parentEmail1')}</label>
                 <div className="flex gap-2 mb-3">
                   <input
                     type="email"
@@ -461,7 +412,7 @@ export default function StudentsPage() {
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
                     onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddEmail(); }}}
-                    className="flex-1 px-4 py-2.5 bg-gray-50 dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 text-sm focus:outline-none focus:border-gray-400 dark:focus:border-zinc-500 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                    className="flex-1 px-4 py-2.5 bg-surface-2 rounded-lg border border-border-token text-sm focus:outline-none focus:border-border-strong text-fg placeholder:text-fg-faint"
                   />
                   <Button variant="flat" size="sm" onPress={handleAddEmail} isDisabled={!newEmail} startContent={<Mail size={14} />}>{t('pages.add1')}</Button>
                 </div>
@@ -475,7 +426,7 @@ export default function StudentsPage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2 block">{t('pages.parentMobileNumber')}</label>
+                <label className="text-sm font-medium text-fg mb-2 block">{t('pages.parentMobileNumber')}</label>
                 <div className="flex gap-2 mb-3">
                   <input
                     type="tel"
@@ -483,7 +434,7 @@ export default function StudentsPage() {
                     value={newPhone}
                     onChange={(e) => setNewPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                     onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddPhone(); }}}
-                    className="flex-1 px-4 py-2.5 bg-gray-50 dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 text-sm focus:outline-none focus:border-gray-400 dark:focus:border-zinc-500 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                    className="flex-1 px-4 py-2.5 bg-surface-2 rounded-lg border border-border-token text-sm focus:outline-none focus:border-border-strong text-fg placeholder:text-fg-faint"
                   />
                   <Button variant="flat" size="sm" onPress={handleAddPhone} isDisabled={!newPhone || newPhone.length !== 10} startContent={<Phone size={14} />}>{t('pages.add1')}</Button>
                 </div>
@@ -496,12 +447,12 @@ export default function StudentsPage() {
                 )}
               </div>
 
-              <div className="bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg p-4">
-                <p className="text-sm text-gray-600 dark:text-zinc-400">A form link will be sent to the parent. Review submissions in the Submissions tab.</p>
+              <div className="bg-surface-2 border border-border-token rounded-lg p-4">
+                <p className="text-sm text-fg-muted">A form link will be sent to the parent. Review submissions in the Submissions tab.</p>
               </div>
             </div>
           </ModalBody>
-          <ModalFooter className="border-t border-gray-100 dark:border-zinc-700">
+          <ModalFooter className="border-t border-divider">
             <Button variant="light" onPress={() => { setIsFormSelectModalOpen(false); setSelectedForm(null); setRecipientEmails([]); setRecipientPhones([]); }}>{t('pages.cancel2')}</Button>
             <Button color="primary" onPress={handleSendForm} isLoading={isSendingForm} isDisabled={!selectedForm || (recipientEmails.length === 0 && recipientPhones.length === 0)} startContent={!isSendingForm && <Send size={16} />}>{t('pages.sendForm')}</Button>
           </ModalFooter>
@@ -509,20 +460,20 @@ export default function StudentsPage() {
       </Modal>
 
       {/* Success Modal */}
-      <Modal isOpen={showSuccessModal} onClose={() => setShowSuccessModal(false)} size="md" backdrop="opaque" classNames={{ backdrop: "bg-black/50", base: "bg-white dark:bg-zinc-900" }}>
+      <Modal isOpen={showSuccessModal} onClose={() => setShowSuccessModal(false)} size="md" backdrop="opaque" classNames={{ backdrop: "bg-black/50", base: "bg-surface" }}>
         <ModalContent>
-          <ModalHeader className="border-b border-gray-100 dark:border-zinc-700 py-4">
+          <ModalHeader className="border-b border-divider py-4">
             <div className="flex flex-col items-center text-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-gray-900 dark:bg-zinc-100 flex items-center justify-center">
-                <Check size={24} className="text-white dark:text-zinc-900" />
+              <div className="w-12 h-12 rounded-full bg-fg flex items-center justify-center">
+                <Check size={24} className="text-bg" />
               </div>
               <h3 className="text-lg font-medium">{t('pages.formSentSuccessfully1')}</h3>
             </div>
           </ModalHeader>
           <ModalBody className="py-6">
-            <p className="text-sm text-gray-500 dark:text-zinc-400 text-center">The admission form has been sent. You can review the submission in the Form Submissions tab.</p>
+            <p className="text-sm text-fg-muted text-center">The admission form has been sent. You can review the submission in the Form Submissions tab.</p>
           </ModalBody>
-          <ModalFooter className="border-t border-gray-100 dark:border-zinc-700 gap-3">
+          <ModalFooter className="border-t border-divider gap-3">
             <Button variant="flat" onPress={() => { setShowSuccessModal(false); setIsFormSelectModalOpen(true); }} className="flex-1">{t('pages.sendAnother')}</Button>
             <Button color="primary" onPress={() => { setShowSuccessModal(false); setIsMethodModalOpen(true); }} className="flex-1" startContent={<UserPlus size={16} />}>{t('pages.manualRegistration')}</Button>
           </ModalFooter>

@@ -20,7 +20,7 @@ export default function SearchInput({
     name,
     isLoading = false,
     onKeyDown,
-    className = "w-full sm:max-w-[250px] px-3 py-2 bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700 focus-within:border-gray-400 dark:focus-within:border-zinc-600 transition-all",
+    className = "w-full sm:max-w-[250px] px-3 py-2 bg-surface rounded-lg border border-border-token hover:border-border-strong focus-within:border-gray-400 dark:focus-within:border-zinc-600 transition-all",
 }) {
     const location = useLocation();
 
@@ -36,13 +36,13 @@ export default function SearchInput({
             {isLoading ? (
                 <div className="w-4 h-4 border-2 border-gray-300 dark:border-zinc-600 border-t-teal-500 rounded-full animate-spin flex-shrink-0" />
             ) : (
-                <Search size={16} className="text-gray-400 dark:text-zinc-500 flex-shrink-0" />
+                <Search size={16} className="text-fg-faint flex-shrink-0" />
             )}
             <input
                 type="search"
                 name={name}
                 placeholder={placeholder}
-                className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-zinc-100 placeholder:text-gray-500 dark:placeholder:text-zinc-500"
+                className="flex-1 bg-transparent outline-none text-sm text-fg placeholder:text-gray-500 dark:placeholder:text-zinc-500"
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 onKeyDown={onKeyDown}
@@ -53,9 +53,9 @@ export default function SearchInput({
                 <button
                     onClick={() => onChange("")}
                     aria-label="Clear search"
-                    className="p-0.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded cursor-pointer"
+                    className="p-0.5 hover:bg-surface-2 rounded cursor-pointer"
                 >
-                    <X size={14} className="text-gray-400 dark:text-zinc-500" />
+                    <X size={14} className="text-fg-faint" />
                 </button>
             )}
         </div>

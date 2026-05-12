@@ -63,10 +63,12 @@ const DropdownMenu = memo(function DropdownMenu({
   return (
     <Dropdown placement={placement} isDisabled={isDisabled} {...props}>
       <DropdownTrigger>{trigger}</DropdownTrigger>
+      {/* REVAMP-05: .ds-menu provides the frosted-glass surface so the
+       * dropdown matches Modal/Drawer/Popover. */}
       <HeroDropdownMenu
         aria-label={ariaLabel}
         closeOnSelect={closeOnSelect}
-        className={menuClassName}
+        className={`ds-menu ${menuClassName || ""}`.trim()}
       >
         {sections
           ? sections.map((section, idx) => (

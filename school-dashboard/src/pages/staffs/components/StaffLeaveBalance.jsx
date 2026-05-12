@@ -48,11 +48,11 @@ export default function StaffLeaveBalance({ staffId }) {
 
   if (staffLeaveTypes.length === 0) {
     return (
-      <div className="bg-white dark:bg-zinc-950 rounded-xl border border-gray-200 dark:border-zinc-800 p-5">
-        <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider font-semibold mb-3">
+      <div className="bg-surface rounded-xl border border-border-token p-5">
+        <p className="text-xs text-fg-muted uppercase tracking-wider font-semibold mb-3">
           Leave Balance
         </p>
-        <p className="text-sm text-gray-400 dark:text-zinc-500">
+        <p className="text-sm text-fg-faint">
           No leave types configured. Ask your admin to set up leave types in Settings.
         </p>
       </div>
@@ -63,24 +63,24 @@ export default function StaffLeaveBalance({ staffId }) {
   const usedPercent = totalQuota > 0 ? Math.min(100, Math.round((leaveDaysUsedThisYear / totalQuota) * 100)) : 0;
 
   return (
-    <div className="bg-white dark:bg-zinc-950 rounded-xl border border-gray-200 dark:border-zinc-800 overflow-hidden">
-      <div className="p-5 border-b border-gray-100 dark:border-zinc-800">
-        <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider font-semibold">
+    <div className="bg-surface rounded-xl border border-border-token overflow-hidden">
+      <div className="p-5 border-b border-divider">
+        <p className="text-xs text-fg-muted uppercase tracking-wider font-semibold">
           Leave Balance (This Year)
         </p>
       </div>
 
       {/* Summary bar */}
-      <div className="p-5 border-b border-gray-100 dark:border-zinc-800">
+      <div className="p-5 border-b border-divider">
         <div className="flex justify-between text-sm mb-2">
-          <span className="text-gray-600 dark:text-zinc-400">
-            Used: <span className="font-semibold text-gray-900 dark:text-zinc-100">{leaveDaysUsedThisYear}</span> day{leaveDaysUsedThisYear !== 1 ? "s" : ""}
+          <span className="text-fg-muted">
+            Used: <span className="font-semibold text-fg">{leaveDaysUsedThisYear}</span> day{leaveDaysUsedThisYear !== 1 ? "s" : ""}
           </span>
-          <span className="text-gray-600 dark:text-zinc-400">
+          <span className="text-fg-muted">
             Remaining: <span className="font-semibold text-green-700 dark:text-green-400">{remaining}</span> / {totalQuota}
           </span>
         </div>
-        <div className="h-2 bg-gray-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+        <div className="h-2 bg-surface-2 rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all ${
               usedPercent >= 90 ? "bg-red-400" : usedPercent >= 70 ? "bg-yellow-400" : "bg-green-500"
@@ -91,7 +91,7 @@ export default function StaffLeaveBalance({ staffId }) {
       </div>
 
       {/* Per-type breakdown */}
-      <div className="divide-y divide-gray-50 dark:divide-zinc-800">
+      <div className="divide-y divide-divider">
         {staffLeaveTypes.map((lt) => {
           const quota = lt.quota || 0;
           // Proportional days used estimate per type (best-effort without per-type tracking)
@@ -105,18 +105,18 @@ export default function StaffLeaveBalance({ staffId }) {
               className="px-5 py-3 flex items-center justify-between"
             >
               <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 capitalize">
+                <p className="text-sm font-medium text-fg capitalize">
                   {lt.name}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-zinc-400">
+                <p className="text-xs text-fg-muted">
                   {lt.requiresApproval ? "Requires approval" : "Auto-approved"}
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">
-                  {typeRemaining} <span className="text-gray-400 dark:text-zinc-500 font-normal">/ {quota}</span>
+                <p className="text-sm font-semibold text-fg">
+                  {typeRemaining} <span className="text-fg-faint font-normal">/ {quota}</span>
                 </p>
-                <p className="text-xs text-gray-500 dark:text-zinc-400">days left</p>
+                <p className="text-xs text-fg-muted">days left</p>
               </div>
             </div>
           );

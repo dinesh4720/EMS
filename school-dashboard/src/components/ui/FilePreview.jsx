@@ -45,10 +45,10 @@ export default function FilePreview({ url, fileName, className = '' }) {
 
   if (status === 'loading') {
     return (
-      <div className={`flex items-center justify-center bg-gray-50 dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800 ${className}`}>
+      <div className={`flex items-center justify-center bg-surface-2 rounded-lg border border-border-token ${className}`}>
         <div className="flex flex-col items-center gap-3 p-8 text-center">
           <div className="w-10 h-10 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-          <p className="text-sm text-gray-500 dark:text-zinc-400">Loading preview…</p>
+          <p className="text-sm text-fg-muted">Loading preview…</p>
         </div>
       </div>
     );
@@ -56,16 +56,16 @@ export default function FilePreview({ url, fileName, className = '' }) {
 
   if (status === 'error' || !url) {
     return (
-      <div className={`flex items-center justify-center bg-gray-50 dark:bg-zinc-900 rounded-lg border border-dashed border-gray-300 dark:border-zinc-700 ${className}`}>
+      <div className={`flex items-center justify-center bg-surface-2 rounded-lg border border-dashed border-border-strong ${className}`}>
         <div className="flex flex-col items-center gap-3 p-8 text-center max-w-xs">
           <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center">
             <AlertTriangle size={22} className="text-red-500 dark:text-red-400" />
           </div>
           <div>
-            <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-1">
+            <p className="text-sm font-medium text-fg mb-1">
               Unable to load preview
             </p>
-            <p className="text-xs text-gray-500 dark:text-zinc-400">
+            <p className="text-xs text-fg-muted">
               {fileName ? `"${fileName}" could not be loaded.` : 'The file URL is broken or unavailable.'}
             </p>
           </div>
@@ -87,7 +87,7 @@ export default function FilePreview({ url, fileName, className = '' }) {
   // status === 'ready'
   if (isPdf) {
     return (
-      <div className={`relative rounded-lg overflow-hidden border border-gray-200 dark:border-zinc-800 ${className}`}>
+      <div className={`relative rounded-lg overflow-hidden border border-border-token ${className}`}>
         <iframe
           src={url}
           title={fileName || 'PDF Preview'}
@@ -98,10 +98,10 @@ export default function FilePreview({ url, fileName, className = '' }) {
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="absolute top-2 right-2 p-1.5 bg-white/80 dark:bg-zinc-900/80 rounded-lg shadow-sm hover:bg-white dark:hover:bg-zinc-900 transition-colors"
+          className="absolute top-2 right-2 p-1.5 bg-surface/80 rounded-lg shadow-sm hover:bg-surface transition-colors"
           title="Open in new tab"
         >
-          <ExternalLink size={14} className="text-gray-600 dark:text-zinc-400" />
+          <ExternalLink size={14} className="text-fg-muted" />
         </a>
       </div>
     );
@@ -109,16 +109,16 @@ export default function FilePreview({ url, fileName, className = '' }) {
 
   // Non-PDF file — show a card with open/download options
   return (
-    <div className={`flex items-center justify-center bg-gray-50 dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800 ${className}`}>
+    <div className={`flex items-center justify-center bg-surface-2 rounded-lg border border-border-token ${className}`}>
       <div className="flex flex-col items-center gap-3 p-8 text-center">
-        <div className="w-14 h-14 rounded-xl bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 flex items-center justify-center shadow-sm">
-          <FileText size={28} className="text-gray-500 dark:text-zinc-400" />
+        <div className="w-14 h-14 rounded-xl bg-surface border border-border-token flex items-center justify-center shadow-sm">
+          <FileText size={28} className="text-fg-muted" />
         </div>
         <div>
-          <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-1 truncate max-w-[200px]">
+          <p className="text-sm font-medium text-fg mb-1 truncate max-w-[200px]">
             {fileName || 'File'}
           </p>
-          <p className="text-xs text-gray-500 dark:text-zinc-400">
+          <p className="text-xs text-fg-muted">
             Preview not available for this file type
           </p>
         </div>

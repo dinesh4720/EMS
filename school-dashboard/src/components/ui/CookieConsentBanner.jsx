@@ -49,16 +49,16 @@ export default function CookieConsentBanner() {
     <div
       role="dialog"
       aria-label={t('aria.misc.cookieConsent')}
-      className="fixed bottom-0 left-0 right-0 z-[9999] bg-white dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-700 shadow-2xl"
+      className="fixed bottom-0 left-0 right-0 z-[9999] bg-surface border-t border-border-token shadow-2xl"
     >
       <div className="max-w-6xl mx-auto px-4 py-4">
         <div className="flex items-start gap-3">
           <Cookie size={20} className="text-teal-600 dark:text-teal-400 flex-shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm text-gray-800 dark:text-zinc-200 font-medium mb-1">
+            <p className="text-sm text-fg font-medium mb-1">
               We use cookies to keep you signed in
             </p>
-            <p className="text-xs text-gray-500 dark:text-zinc-400">
+            <p className="text-xs text-fg-muted">
               SchoolSync uses essential cookies for authentication and security. No tracking or marketing cookies are used.
               See our{' '}
               <Link to="/privacy" className="text-teal-600 hover:text-teal-700 dark:text-teal-400 underline">
@@ -78,7 +78,7 @@ export default function CookieConsentBanner() {
 
             <button
               onClick={handleAccept}
-              className="p-1 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded transition-colors text-gray-400"
+              className="p-1 hover:bg-surface-2 rounded transition-colors text-gray-400"
               aria-label={t('aria.buttons.dismiss')}
             >
               <X size={14} />

@@ -1,10 +1,15 @@
 import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  Button, Spinner
+  Spinner
 } from "@heroui/react";
 import { ShieldCheck, CheckCircle2, AlertTriangle, AlertCircle } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 
+/**
+ * REVAMP-17: Validation results render as three stacked groups
+ * (valid / invalid / warnings). Each row is a `.payroll-modal__list-item`
+ * with a chip on the right summarising the issue or the amount.
+ */
 export default function ValidationResultsModal({
   isOpen,
   onOpenChange,
@@ -15,85 +20,142 @@ export default function ValidationResultsModal({
   formatCurrency,
 }) {
   const { t } = useTranslation();
+  const valid = validationResults?.valid || [];
+  const invalid = validationResults?.invalid || [];
+  const warnings = validationResults?.warnings || [];
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="2xl" scrollBehavior="inside">
+    <Modal
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      size="2xl"
+      scrollBehavior="inside"
+      className="payroll-modal"
+    >
       <ModalContent>
-        <ModalHeader className="flex gap-3">
-          <div className="p-2 bg-info-100 rounded-lg">
-            <ShieldCheck className="text-info-600" size={24} />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold">{t('pages.payrollValidationResults')}</h3>
-            <p className="text-sm text-default-500">{t('pages.reviewBeforeGeneratingRecords')}</p>
+        <ModalHeader>
+          <div className="payroll-modal__head">
+            <div className="payroll-modal__icon payroll-modal__icon--info">
+              <ShieldCheck size={18} aria-hidden />
+            </div>
+            <div>
+              <h3 className="payroll-modal__title">{t('pages.payrollValidationResults')}</h3>
+              <p className="payroll-modal__sub">{t('pages.reviewBeforeGeneratingRecords')}</p>
+            </div>
           </div>
         </ModalHeader>
         <ModalBody>
           {validating ? (
-            <div className="flex justify-center py-8"><div className="animate-spin h-8 w-8 rounded-full border-2 border-gray-300 border-t-gray-900" /></div>
+            <div className="row" style={{ justifyContent: 'center', padding: 32 }}>
+              <Spinner size="md" />
+            </div>
           ) : validationResults && (
-            <div className="space-y-4">
-              {/* Valid Employees */}
-              <div className="bg-success-50 rounded-lg p-4 border border-success-200">
-                <h4 className="font-semibold text-success-900 mb-2 flex items-center gap-2">
-                  <CheckCircle2 size={18} />
-                  Ready to Process ({validationResults.valid?.length || 0})
-                </h4>
-                {validationResults.valid?.length > 0 && (
-                  <div className="max-h-40 overflow-y-auto text-sm">
-                    {validationResults.valid.slice(0, 5).map(emp => (
-                      <div key={emp.employeeId} className="py-1">{emp.name} - {formatCurrency(emp.salary)}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {/* Valid */}
+              <section>
+                <div className="row gap-2" style={{ marginBottom: 8 }}>
+                  <CheckCircle2 size={14} style={{ color: 'var(--ok)' }} aria-hidden />
+                  <span className="card__title" style={{ color: 'var(--fg)' }}>
+                    Ready to process
+                  </span>
+                  <span className="chip chip--ok mono tnum">{valid.length}</span>
+                </div>
+                {valid.length === 0 ? (
+                  <div className="subtle" style={{ fontSize: 12 }}>No employees ready.</div>
+                ) : (
+                  <div className="payroll-modal__list">
+                    {valid.slice(0, 8).map((emp) => (
+                      <div key={emp.employeeId} className="payroll-modal__list-item">
+                        <span>{emp.name}</span>
+                        <span className="mono tnum">{formatCurrency(emp.salary)}</span>
+                      </div>
                     ))}
-                    {validationResults.valid.length > 5 && (
-                      <div className="text-success-700 italic">...and {validationResults.valid.length - 5} more</div>
+                    {valid.length > 8 && (
+                      <div className="subtle" style={{ fontSize: 11.5, padding: '4px 8px' }}>
+                        …and <span className="mono tnum">{valid.length - 8}</span> more
+                      </div>
                     )}
                   </div>
                 )}
-              </div>
+              </section>
 
-              {/* Invalid Employees */}
-              {validationResults.invalid?.length > 0 && (
-                <div className="bg-danger-50 rounded-lg p-4 border border-danger-200">
-                  <h4 className="font-semibold text-danger-900 mb-2 flex items-center gap-2">
-                    <AlertTriangle size={18} />
-                    Will Be Excluded ({validationResults.invalid.length})
-                  </h4>
-                  <div className="max-h-40 overflow-y-auto text-sm space-y-1">
-                    {validationResults.invalid.map(emp => (
-                      <div key={emp.employeeId} className="text-danger-700">
-                        {emp.name}: {emp.reason}
+              {/* Invalid — excluded with field-level reason */}
+              {invalid.length > 0 && (
+                <section>
+                  <div className="row gap-2" style={{ marginBottom: 8 }}>
+                    <AlertTriangle size={14} style={{ color: 'var(--danger)' }} aria-hidden />
+                    <span className="card__title" style={{ color: 'var(--fg)' }}>
+                      Will be excluded
+                    </span>
+                    <span className="chip chip--danger mono tnum">{invalid.length}</span>
+                  </div>
+                  <div className="payroll-modal__list">
+                    {invalid.map((emp) => (
+                      <div key={emp.employeeId} className="payroll-modal__list-item">
+                        <span>{emp.name}</span>
+                        <span
+                          className="chip chip--danger"
+                          title={emp.reason}
+                          style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis' }}
+                        >
+                          {emp.reason}
+                        </span>
                       </div>
                     ))}
                   </div>
-                </div>
+                </section>
               )}
 
               {/* Warnings */}
-              {validationResults.warnings?.length > 0 && (
-                <div className="bg-warning-50 rounded-lg p-4 border border-warning-200">
-                  <h4 className="font-semibold text-warning-900 mb-2 flex items-center gap-2">
-                    <AlertCircle size={18} />
-                    Warnings ({validationResults.warnings.length})
-                  </h4>
-                  <div className="max-h-40 overflow-y-auto text-sm space-y-1">
-                    {validationResults.warnings.map((warning, idx) => (
-                      <div key={`warning-${idx}`} className="text-warning-700">
-                        {warning.name || warning.message || `Warning: ${warning.reason}`}
+              {warnings.length > 0 && (
+                <section>
+                  <div className="row gap-2" style={{ marginBottom: 8 }}>
+                    <AlertCircle size={14} style={{ color: 'var(--warn)' }} aria-hidden />
+                    <span className="card__title" style={{ color: 'var(--fg)' }}>
+                      Warnings
+                    </span>
+                    <span className="chip chip--warn mono tnum">{warnings.length}</span>
+                  </div>
+                  <div className="payroll-modal__list">
+                    {warnings.map((w, idx) => (
+                      <div key={`warning-${idx}`} className="payroll-modal__list-item">
+                        <span>{w.name || w.message || 'Warning'}</span>
+                        {w.reason && (
+                          <span
+                            className="chip chip--warn"
+                            style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis' }}
+                          >
+                            {w.reason}
+                          </span>
+                        )}
                       </div>
                     ))}
                   </div>
-                </div>
+                </section>
               )}
             </div>
           )}
         </ModalBody>
         <ModalFooter>
-          <Button variant="light" onPress={() => onOpenChange(false)}>
+          <button
+            type="button"
+            className="btn btn--ghost"
+            onClick={() => onOpenChange(false)}
+          >
             Cancel
-          </Button>
-          <Button color="primary" onPress={onConfirm} isDisabled={preparingRecords || !validationResults?.valid?.length}>
-            {preparingRecords ? <Spinner size="sm" color="white" /> : `Generate Records (${validationResults?.valid?.length || 0})`}
-          </Button>
+          </button>
+          <button
+            type="button"
+            className="btn btn--accent"
+            onClick={onConfirm}
+            disabled={preparingRecords || !valid.length}
+          >
+            {preparingRecords ? (
+              <Spinner size="sm" color="white" />
+            ) : (
+              <>Generate records (<span className="mono tnum">{valid.length}</span>)</>
+            )}
+          </button>
         </ModalFooter>
       </ModalContent>
     </Modal>

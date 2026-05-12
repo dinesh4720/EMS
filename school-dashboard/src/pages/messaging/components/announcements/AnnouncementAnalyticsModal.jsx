@@ -147,30 +147,30 @@ export default function AnnouncementAnalyticsModal({
       <Modal isOpen={isOpen} onClose={onClose} size="2xl">
         <ModalContent>
           <ModalHeader>
-            <div className="h-5 w-48 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+            <div className="h-5 w-48 bg-surface-2 rounded animate-pulse" />
           </ModalHeader>
           <ModalBody className="py-4 space-y-4">
             <div className="grid grid-cols-3 gap-4">
               {[...Array(3)].map((_, i) => (
                 <div key={i} className="p-4 rounded-xl border border-default-100 space-y-2 animate-pulse">
-                  <div className="h-3 w-16 bg-gray-200 dark:bg-zinc-700 rounded" />
-                  <div className="h-7 w-12 bg-gray-200 dark:bg-zinc-700 rounded" />
+                  <div className="h-3 w-16 bg-surface-2 rounded" />
+                  <div className="h-7 w-12 bg-surface-2 rounded" />
                 </div>
               ))}
             </div>
             <div className="space-y-2 animate-pulse">
-              <div className="h-4 w-32 bg-gray-200 dark:bg-zinc-700 rounded" />
-              <div className="h-2 w-full bg-gray-100 dark:bg-zinc-800 rounded-full" />
+              <div className="h-4 w-32 bg-surface-2 rounded" />
+              <div className="h-2 w-full bg-surface-2 rounded-full" />
             </div>
             <div className="space-y-3">
               {[...Array(4)].map((_, i) => (
                 <div key={i} className="flex items-center gap-3 animate-pulse">
-                  <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-zinc-700" />
+                  <div className="w-8 h-8 rounded-full bg-surface-2" />
                   <div className="flex-1 space-y-1">
-                    <div className="h-3 w-1/3 bg-gray-200 dark:bg-zinc-700 rounded" />
-                    <div className="h-2 w-1/2 bg-gray-100 dark:bg-zinc-800 rounded" />
+                    <div className="h-3 w-1/3 bg-surface-2 rounded" />
+                    <div className="h-2 w-1/2 bg-surface-2 rounded" />
                   </div>
-                  <div className="h-5 w-16 bg-gray-200 dark:bg-zinc-700 rounded-full" />
+                  <div className="h-5 w-16 bg-surface-2 rounded-full" />
                 </div>
               ))}
             </div>
@@ -212,7 +212,7 @@ export default function AnnouncementAnalyticsModal({
       <ModalContent>
         <ModalHeader>
           <div className="w-full">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{announcement.title}</h3>
+            <h3 className="text-lg font-semibold text-fg">{announcement.title}</h3>
             <p className="text-sm text-default-500 mt-1">{announcement.content}</p>
           </div>
         </ModalHeader>
@@ -259,7 +259,7 @@ export default function AnnouncementAnalyticsModal({
           <div className="space-y-3">
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">{t('pages.deliveryRate')}</span>
+                <span className="text-sm font-medium text-fg">{t('pages.deliveryRate')}</span>
                 <span className="text-sm text-default-500">{calculateDeliveryRate()}%</span>
               </div>
               <Progress
@@ -271,7 +271,7 @@ export default function AnnouncementAnalyticsModal({
 
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">{t('pages.readRate')}</span>
+                <span className="text-sm font-medium text-fg">{t('pages.readRate')}</span>
                 <span className="text-sm text-default-500">{calculateReadRate()}%</span>
               </div>
               <Progress
@@ -286,7 +286,7 @@ export default function AnnouncementAnalyticsModal({
 
           {/* Channel Breakdown */}
           <div>
-            <h4 className="text-sm font-semibold mb-3 text-gray-900 dark:text-zinc-100">{t('pages.channelBreakdown')}</h4>
+            <h4 className="text-sm font-semibold mb-3 text-fg">{t('pages.channelBreakdown')}</h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {channelBreakdown.map((channel) => (
                 <Card key={channel.channel} size="sm">
@@ -313,7 +313,7 @@ export default function AnnouncementAnalyticsModal({
           {announcement.attachments && announcement.attachments.length > 0 && (
             <>
               <div>
-                <h4 className="text-sm font-semibold mb-3 text-gray-900 dark:text-zinc-100">{t('pages.attachments')}</h4>
+                <h4 className="text-sm font-semibold mb-3 text-fg">{t('pages.attachments')}</h4>
                 <div className="space-y-2">
                   {announcement.attachments.map((attachment) => (
                     <Card key={attachment._id || attachment.name} size="sm">
@@ -343,7 +343,7 @@ export default function AnnouncementAnalyticsModal({
             <>
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.failedRecipients')}</h4>
+                  <h4 className="text-sm font-semibold text-fg">{t('pages.failedRecipients')}</h4>
                   <Button
                     size="sm"
                     color="primary"
@@ -366,7 +366,7 @@ export default function AnnouncementAnalyticsModal({
                               size="sm"
                             />
                             <div>
-                              <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{recipient.userType}</p>
+                              <p className="text-sm font-medium text-fg">{recipient.userType}</p>
                               {recipient.errors?.map((e, i) => (
                                 <p key={i} className="text-xs text-danger mt-0.5">
                                   {e.channel}: {e.error || 'Failed to deliver'}
@@ -390,11 +390,11 @@ export default function AnnouncementAnalyticsModal({
           {/* Sent By */}
           <div className="flex items-center justify-between text-sm">
             <span className="text-default-500">{t('pages.sentBy')}</span>
-            <span className="font-medium text-gray-900 dark:text-zinc-100">{announcement.createdBy?.name || 'Unknown'}</span>
+            <span className="font-medium text-fg">{announcement.createdBy?.name || 'Unknown'}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-default-500">{t('pages.sentOn')}</span>
-            <span className="font-medium text-gray-900 dark:text-zinc-100">
+            <span className="font-medium text-fg">
               {formatDateTime(announcement.sentAt)}
             </span>
           </div>

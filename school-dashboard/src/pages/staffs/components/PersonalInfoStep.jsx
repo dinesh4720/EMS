@@ -51,14 +51,14 @@ function PersonalInfoStep({
           />
         ) : (
           <div
-            className="w-16 h-16 rounded-full border-2 border-dashed border-gray-300 dark:border-zinc-600 bg-gray-50 dark:bg-zinc-800 flex items-center justify-center shrink-0 cursor-pointer hover:border-gray-400 transition-colors"
+            className="w-16 h-16 rounded-full border-2 border-dashed border-gray-300 dark:border-zinc-600 bg-surface-2 flex items-center justify-center shrink-0 cursor-pointer hover:border-gray-400 transition-colors"
             onClick={onOpenCameraCapture}
           >
             <User size={24} className="text-gray-300 dark:text-zinc-500" />
           </div>
         )}
         <div className="flex flex-col gap-1.5">
-          <p className="text-sm font-medium text-gray-800 dark:text-zinc-200">{t('staff.form.staffPhoto')}</p>
+          <p className="text-sm font-medium text-fg">{t('staff.form.staffPhoto')}</p>
           <div className="flex items-center gap-2">
             <button
               className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary-600 transition-colors px-2.5 py-1 rounded-md hover:bg-primary/5 cursor-pointer"
@@ -82,7 +82,7 @@ function PersonalInfoStep({
 
       {/* Employment Type */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-gray-600 dark:text-zinc-400">{t('staff.form.employmentType')}</label>
+        <label className="text-xs font-medium text-fg-muted">{t('staff.form.employmentType')}</label>
         <RadioGroup
           orientation="horizontal"
           value={formData.employmentType}
@@ -96,7 +96,7 @@ function PersonalInfoStep({
       </div>
 
       {/* Personal Information */}
-      <div className="space-y-3 pt-5 border-t border-gray-100 dark:border-zinc-800">
+      <div className="space-y-3 pt-5 border-t border-divider">
         <SectionHeader icon={User} title={t('staff.about.personalInformation')} />
         <div className="grid grid-cols-2 gap-4">
           <Input
@@ -149,7 +149,7 @@ function PersonalInfoStep({
 
         {/* Gender */}
         <div className="space-y-2">
-          <label className="text-xs font-medium text-gray-600 dark:text-zinc-400">{t('staff.about.gender')} <span className="text-red-500">*</span></label>
+          <label className="text-xs font-medium text-fg-muted">{t('staff.about.gender')} <span className="text-red-500">*</span></label>
           <RadioGroup
             orientation="horizontal"
             value={formData.gender}
@@ -208,7 +208,7 @@ function PersonalInfoStep({
       </div>
 
       {/* Contact Details */}
-      <div className="space-y-3 pt-5 border-t border-gray-100 dark:border-zinc-800">
+      <div className="space-y-3 pt-5 border-t border-divider">
         <SectionHeader icon={Phone} title={t('staff.about.contactDetails')} />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
@@ -286,7 +286,7 @@ function PersonalInfoStep({
       </div>
 
       {/* Address */}
-      <div className="space-y-3 pt-5 border-t border-gray-100 dark:border-zinc-800">
+      <div className="space-y-3 pt-5 border-t border-divider">
         <SectionHeader icon={MapPin} title={t('staff.about.address')} />
         <Textarea
           placeholder={t('staff.form.addressPlaceholder')}
@@ -302,11 +302,11 @@ function PersonalInfoStep({
       </div>
 
       {/* Emergency Contacts */}
-      <div className="space-y-3 pt-5 border-t border-gray-100 dark:border-zinc-800">
+      <div className="space-y-3 pt-5 border-t border-divider">
         <SectionHeader icon={ShieldAlert} title={t('staff.form.emergencyContacts')} />
-        <p className="text-xs text-gray-500 dark:text-zinc-400 -mt-1">{t('staff.form.emergencyContactsHint')}</p>
+        <p className="text-xs text-fg-muted -mt-1">{t('staff.form.emergencyContactsHint')}</p>
         {(formData.emergencyContacts || []).map((contact, index) => (
-          <div key={contact._key} className="p-3 border border-gray-200 dark:border-zinc-700 rounded-lg space-y-3 relative group hover:border-gray-300 dark:hover:border-zinc-600 transition-colors">
+          <div key={contact._key} className="p-3 border border-border-token rounded-lg space-y-3 relative group hover:border-gray-300 dark:hover:border-zinc-600 transition-colors">
             {(formData.emergencyContacts || []).length > 1 && (
               <button
                 className="absolute top-2 right-2 text-gray-400 hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity"

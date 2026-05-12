@@ -37,12 +37,12 @@ export default function EventDetailModal({ isOpen, onClose, event, eventTypes, o
         {/* Header with type */}
         <div className="flex items-center gap-2">
           <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-            eventType === 'appointment' ? 'bg-success-100 text-success-700' :
-            eventType === 'class' ? 'bg-default-100 text-default-700' :
-            eventType === 'meeting' ? 'bg-secondary-100 text-secondary-700' :
-            eventType === 'exam' ? 'bg-warning-100 text-warning-700' :
-            eventType === 'holiday' ? 'bg-danger-100 text-danger-700' :
-            'bg-primary-100 text-primary-700'
+            eventType === 'appointment' ? 'bg-ok-bg text-ok' :
+            eventType === 'class' ? 'bg-surface-2 text-fg' :
+            eventType === 'meeting' ? 'bg-warn-bg text-warn' :
+            eventType === 'exam' ? 'bg-danger-bg text-danger-token' :
+            eventType === 'holiday' ? 'bg-danger-bg text-danger-token' :
+            'bg-accent-bg text-accent'
           }`}>
             <Icon size={16} />
           </div>
@@ -55,14 +55,14 @@ export default function EventDetailModal({ isOpen, onClose, event, eventTypes, o
 
         {/* Title */}
         <div>
-          <h3 className="text-lg font-semibold text-foreground">{event.title}</h3>
-          <p className="text-sm text-default-500 mt-1">{formatDate(event.date)}</p>
+          <h3 className="text-lg font-semibold text-fg">{event.title}</h3>
+          <p className="text-sm text-fg-muted mt-1">{formatDate(event.date)}</p>
         </div>
 
         {/* Time */}
         {(event.startTime || event.allDay) && (
-          <div className="flex items-center gap-2 text-sm text-default-600">
-            <Clock size={14} className="text-default-400" />
+          <div className="flex items-center gap-2 text-sm text-fg-muted">
+            <Clock size={14} className="text-fg-faint" />
             {event.allDay ? (
               <span>{t('calendar.eventDetail.allDay', 'All Day')}</span>
             ) : (
@@ -80,48 +80,48 @@ export default function EventDetailModal({ isOpen, onClose, event, eventTypes, o
         {eventType === 'appointment' && event.rawAppointment && (
           <div className="space-y-3">
             <div className="flex items-start gap-2">
-              <User size={14} className="text-default-400 mt-0.5" />
+              <User size={14} className="text-fg-faint mt-0.5" />
               <div>
-                <span className="text-xs text-default-400 block">{t('calendar.eventDetail.visitor', 'Visitor')}</span>
-                <span className="text-sm font-medium">{event.visitorName}</span>
+                <span className="text-xs text-fg-faint block">{t('calendar.eventDetail.visitor', 'Visitor')}</span>
+                <span className="text-sm font-medium text-fg">{event.visitorName}</span>
               </div>
             </div>
 
             {event.phone && (
               <div className="flex items-start gap-2">
-                <Phone size={14} className="text-default-400 mt-0.5" />
+                <Phone size={14} className="text-fg-faint mt-0.5" />
                 <div>
-                  <span className="text-xs text-default-400 block">{t('calendar.eventDetail.phone', 'Phone')}</span>
-                  <span className="text-sm">{event.phone}</span>
+                  <span className="text-xs text-fg-faint block">{t('calendar.eventDetail.phone', 'Phone')}</span>
+                  <span className="text-sm text-fg">{event.phone}</span>
                 </div>
               </div>
             )}
 
             {event.purpose && (
               <div className="flex items-start gap-2">
-                <FileText size={14} className="text-default-400 mt-0.5" />
+                <FileText size={14} className="text-fg-faint mt-0.5" />
                 <div>
-                  <span className="text-xs text-default-400 block">{t('calendar.eventDetail.purpose', 'Purpose')}</span>
-                  <span className="text-sm">{event.purpose}</span>
+                  <span className="text-xs text-fg-faint block">{t('calendar.eventDetail.purpose', 'Purpose')}</span>
+                  <span className="text-sm text-fg">{event.purpose}</span>
                 </div>
               </div>
             )}
 
             {event.meetingWith && (
               <div className="flex items-start gap-2">
-                <Users size={14} className="text-default-400 mt-0.5" />
+                <Users size={14} className="text-fg-faint mt-0.5" />
                 <div>
-                  <span className="text-xs text-default-400 block">{t('calendar.eventDetail.meetingWith', 'Meeting With')}</span>
-                  <span className="text-sm">{event.meetingWith}</span>
+                  <span className="text-xs text-fg-faint block">{t('calendar.eventDetail.meetingWith', 'Meeting With')}</span>
+                  <span className="text-sm text-fg">{event.meetingWith}</span>
                 </div>
               </div>
             )}
 
             {event.status && (
               <div className="flex items-start gap-2">
-                <CheckCircle2 size={14} className="text-default-400 mt-0.5" />
+                <CheckCircle2 size={14} className="text-fg-faint mt-0.5" />
                 <div>
-                  <span className="text-xs text-default-400 block">{t('calendar.eventDetail.status', 'Status')}</span>
+                  <span className="text-xs text-fg-faint block">{t('calendar.eventDetail.status', 'Status')}</span>
                   <Chip size="sm" variant="flat" color={
                     event.status === 'completed' ? 'success' :
                     event.status === 'cancelled' ? 'danger' : 'primary'
@@ -133,9 +133,9 @@ export default function EventDetailModal({ isOpen, onClose, event, eventTypes, o
             )}
 
             {event.notes && (
-              <div className="p-3 bg-default-50 rounded-lg">
-                <span className="text-xs text-default-400 block mb-1">{t('calendar.eventDetail.notes', 'Notes')}</span>
-                <span className="text-sm">{event.notes}</span>
+              <div className="p-3 bg-surface-2 rounded-lg">
+                <span className="text-xs text-fg-faint block mb-1">{t('calendar.eventDetail.notes', 'Notes')}</span>
+                <span className="text-sm text-fg">{event.notes}</span>
               </div>
             )}
           </div>
@@ -144,37 +144,37 @@ export default function EventDetailModal({ isOpen, onClose, event, eventTypes, o
         {eventType === 'class' && (
           <div className="space-y-3">
             <div className="flex items-start gap-2">
-              <BookOpen size={14} className="text-default-400 mt-0.5" />
+              <BookOpen size={14} className="text-fg-faint mt-0.5" />
               <div>
-                <span className="text-xs text-default-400 block">{t('calendar.eventDetail.subject', 'Subject')}</span>
-                <span className="text-sm font-medium">{event.subject}</span>
+                <span className="text-xs text-fg-faint block">{t('calendar.eventDetail.subject', 'Subject')}</span>
+                <span className="text-sm font-medium text-fg">{event.subject}</span>
               </div>
             </div>
 
             <div className="flex items-start gap-2">
-              <MapPin size={14} className="text-default-400 mt-0.5" />
+              <MapPin size={14} className="text-fg-faint mt-0.5" />
               <div>
-                <span className="text-xs text-default-400 block">{t('calendar.eventDetail.class', 'Class')}</span>
-                <span className="text-sm font-medium">{getClassName(event.classId)}</span>
+                <span className="text-xs text-fg-faint block">{t('calendar.eventDetail.class', 'Class')}</span>
+                <span className="text-sm font-medium text-fg">{getClassName(event.classId)}</span>
               </div>
             </div>
 
             {event.periodIndex !== undefined && defaultPeriods[event.periodIndex] && (
               <div className="flex items-start gap-2">
-                <Clock size={14} className="text-default-400 mt-0.5" />
+                <Clock size={14} className="text-fg-faint mt-0.5" />
                 <div>
-                  <span className="text-xs text-default-400 block">{t('calendar.eventDetail.period', 'Period')}</span>
-                  <span className="text-sm">{getTranslatedPeriodName(defaultPeriods[event.periodIndex])} ({defaultPeriods[event.periodIndex].startTime} - {defaultPeriods[event.periodIndex].endTime})</span>
+                  <span className="text-xs text-fg-faint block">{t('calendar.eventDetail.period', 'Period')}</span>
+                  <span className="text-sm text-fg">{getTranslatedPeriodName(defaultPeriods[event.periodIndex])} ({defaultPeriods[event.periodIndex].startTime} - {defaultPeriods[event.periodIndex].endTime})</span>
                 </div>
               </div>
             )}
 
             {selectedStaff && (
               <div className="flex items-start gap-2">
-                <User size={14} className="text-default-400 mt-0.5" />
+                <User size={14} className="text-fg-faint mt-0.5" />
                 <div>
-                  <span className="text-xs text-default-400 block">{t('calendar.eventDetail.teacher', 'Teacher')}</span>
-                  <span className="text-sm">{selectedStaff.name}</span>
+                  <span className="text-xs text-fg-faint block">{t('calendar.eventDetail.teacher', 'Teacher')}</span>
+                  <span className="text-sm text-fg">{selectedStaff.name}</span>
                 </div>
               </div>
             )}
@@ -184,10 +184,10 @@ export default function EventDetailModal({ isOpen, onClose, event, eventTypes, o
         {eventType === 'meeting' && (
           <div className="space-y-3">
             <div className="flex items-start gap-2">
-              <Users size={14} className="text-default-400 mt-0.5" />
+              <Users size={14} className="text-fg-faint mt-0.5" />
               <div>
-                <span className="text-xs text-default-400 block">{t('calendar.eventDetail.meeting', 'Meeting')}</span>
-                <span className="text-sm">{event.title}</span>
+                <span className="text-xs text-fg-faint block">{t('calendar.eventDetail.meeting', 'Meeting')}</span>
+                <span className="text-sm text-fg">{event.title}</span>
               </div>
             </div>
           </div>
@@ -197,15 +197,15 @@ export default function EventDetailModal({ isOpen, onClose, event, eventTypes, o
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md" backdrop="blur" classNames={{ base: "bg-background border border-default-200 rounded-xl" }}>
+    <Modal isOpen={isOpen} onClose={onClose} size="md" backdrop="blur" classNames={{ base: "bg-surface border border-border-token rounded-xl" }}>
       <ModalContent>
-        <ModalHeader className="border-b border-default-100 pb-3">
-          <span className="text-base font-semibold">{t('calendar.eventDetail.title', 'Event Details')}</span>
+        <ModalHeader className="border-b border-divider pb-3">
+          <span className="text-base font-semibold text-fg">{t('calendar.eventDetail.title', 'Event Details')}</span>
         </ModalHeader>
         <ModalBody className="py-4">
           {renderEventDetail()}
         </ModalBody>
-        <ModalFooter className="border-t border-default-100 pt-3">
+        <ModalFooter className="border-t border-divider pt-3">
           {!event?.id?.toString().startsWith('apt-') && !event?.id?.toString().startsWith('tt-') && (
             <>
               <Button size="sm" variant="flat" color="danger" startContent={<Trash2 size={14} />} onPress={() => onDelete(event?.id)}>

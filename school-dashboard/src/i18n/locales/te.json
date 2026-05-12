@@ -728,7 +728,7 @@
       "pending": "పెండింగ్",
       "approved": "ఆమోదించబడింది",
       "rejected": "తిరస్కరించబడింది",
-      "needs_revision": "సవరణ అవసరం",
+      "needsRevision": "సవరణ అవసరం",
       "all": "అన్నీ"
     }
   },

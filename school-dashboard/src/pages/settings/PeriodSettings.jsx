@@ -264,14 +264,14 @@ export default function PeriodSettings() {
   return (
     <div className="space-y-6 pb-10">
       {/* Header */}
-      <div className="border-b border-gray-200 dark:border-zinc-800 pb-6">
+      <div className="border-b border-border-token pb-6">
         <div className="flex items-center gap-3 mb-2">
           <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
             <Clock size={22} />
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">Period Timings</h2>
-            <p className="text-sm text-gray-500 dark:text-zinc-400">
+            <h2 className="text-xl font-semibold text-fg">Period Timings</h2>
+            <p className="text-sm text-fg-muted">
               Configure the number of periods, duration, and breaks for each class
             </p>
           </div>
@@ -279,8 +279,8 @@ export default function PeriodSettings() {
       </div>
 
       {/* Class Selector */}
-      <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-5">
-        <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2 block">Select Class</label>
+      <div className="rounded-xl border border-border-token bg-surface p-5">
+        <label className="text-sm font-medium text-fg mb-2 block">Select Class</label>
         <Select
           selectedKeys={selectedClass ? [selectedClass] : []}
           onChange={handleClassChange}
@@ -303,9 +303,9 @@ export default function PeriodSettings() {
       {selectedClass && !loading && (
         <>
           {/* Configuration Card */}
-          <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-5">
+          <div className="rounded-xl border border-border-token bg-surface p-5">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wider">Schedule Configuration</h3>
+              <h3 className="text-sm font-semibold text-fg uppercase tracking-wider">Schedule Configuration</h3>
               <Button
                 size="sm"
                 color="primary"
@@ -430,27 +430,27 @@ export default function PeriodSettings() {
           )}
 
           {/* Editable Period List */}
-          <div className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-5">
+          <div className="rounded-xl border border-border-token bg-surface p-5">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 uppercase tracking-wider">Period Slots</h3>
+              <h3 className="text-sm font-semibold text-fg uppercase tracking-wider">Period Slots</h3>
               {hasExisting && (
                 <Chip size="sm" variant="flat" color="success">Saved</Chip>
               )}
             </div>
 
             {periods.length === 0 ? (
-              <div className="text-center py-10 text-gray-400 dark:text-zinc-500">
+              <div className="text-center py-10 text-fg-faint">
                 <Clock size={32} className="mx-auto mb-3 opacity-50" />
                 <p className="text-sm">No periods configured. Use "Generate Schedule" above or add manually.</p>
               </div>
             ) : (
               <div className="space-y-2">
                 {/* Header */}
-                <div className="hidden sm:grid grid-cols-[1fr_120px_120px_80px_40px] gap-2 px-1 pb-1 border-b border-gray-100 dark:border-zinc-800">
-                  <span className="text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Name</span>
-                  <span className="text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Start</span>
-                  <span className="text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">End</span>
-                  <span className="text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Type</span>
+                <div className="hidden sm:grid grid-cols-[1fr_120px_120px_80px_40px] gap-2 px-1 pb-1 border-b border-divider">
+                  <span className="text-xs font-medium text-fg-muted uppercase">Name</span>
+                  <span className="text-xs font-medium text-fg-muted uppercase">Start</span>
+                  <span className="text-xs font-medium text-fg-muted uppercase">End</span>
+                  <span className="text-xs font-medium text-fg-muted uppercase">Type</span>
                   <span />
                 </div>
 
@@ -460,7 +460,7 @@ export default function PeriodSettings() {
                     className={`grid grid-cols-1 sm:grid-cols-[1fr_120px_120px_80px_40px] gap-2 items-center p-2 rounded-lg transition-colors ${
                       period.isBreak
                         ? "bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900"
-                        : "hover:bg-gray-50 dark:hover:bg-zinc-900"
+                        : "hover:bg-surface-2"
                     }`}
                   >
                     <Input
@@ -477,7 +477,7 @@ export default function PeriodSettings() {
                             <Coffee size={14} className="text-amber-500" />
                           )
                         ) : (
-                          <span className="text-xs font-semibold text-gray-400 dark:text-zinc-500 w-4 text-center">
+                          <span className="text-xs font-semibold text-fg-faint w-4 text-center">
                             {periods.filter((p, j) => j <= i && !p.isBreak).length || ""}
                           </span>
                         )
@@ -504,7 +504,7 @@ export default function PeriodSettings() {
                       className={`text-xs px-2 py-1 rounded-md border transition-colors ${
                         period.isBreak
                           ? "bg-amber-100 dark:bg-amber-900 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300"
-                          : "bg-gray-50 dark:bg-zinc-900 border-gray-200 dark:border-zinc-700 text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800"
+                          : "bg-surface-2 border-border-token text-fg-muted hover:bg-surface-2"
                       }`}
                     >
                       {period.isBreak ? "Break" : "Class"}

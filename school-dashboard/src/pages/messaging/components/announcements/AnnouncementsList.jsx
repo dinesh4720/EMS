@@ -248,7 +248,7 @@ export default function AnnouncementsList({
           className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200
             ${active
               ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30'
-              : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-200 dark:hover:bg-zinc-700 border border-transparent'
+              : 'bg-surface-2 text-fg-muted hover:bg-gray-200 dark:hover:bg-zinc-700 border border-transparent'
             }`}
         >
           {Icon && <Icon size={14} />}
@@ -296,7 +296,7 @@ export default function AnnouncementsList({
         </div>
         <div className="text-center">
           <p className="text-lg font-semibold text-red-600 dark:text-red-400">{t('pages.failedToLoadAnnouncements')}</p>
-          <p className="text-sm text-gray-500 dark:text-zinc-400 max-w-md text-center mt-2">{error}</p>
+          <p className="text-sm text-fg-muted max-w-md text-center mt-2">{error}</p>
         </div>
         <Button
           color="primary"
@@ -326,18 +326,18 @@ export default function AnnouncementsList({
             <div
               className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all duration-200
                 ${searchFocused
-                  ? 'bg-white dark:bg-zinc-800 border-indigo-300 dark:border-indigo-500/50 shadow-sm ring-2 ring-indigo-500/10'
-                  : 'bg-gray-50 dark:bg-zinc-800/50 border-gray-200 dark:border-zinc-700'
+                  ? 'bg-surface border-accent-border shadow-sm ring-2 ring-accent/10'
+                  : 'bg-surface-2 border-border-token'
                 }`}
             >
               <Search
                 size={18}
-                className={`transition-colors duration-200 ${searchFocused ? 'text-indigo-500' : 'text-gray-400 dark:text-zinc-500'}`}
+                className={`transition-colors duration-200 ${searchFocused ? 'text-accent' : 'text-fg-faint'}`}
               />
               <input
                 type="text"
                 placeholder={t('pages.searchAnnouncements')}
-                className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500"
+                className="flex-1 bg-transparent outline-none text-sm text-fg placeholder-fg-muted"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => setSearchFocused(true)}
@@ -346,9 +346,9 @@ export default function AnnouncementsList({
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-zinc-600 transition-colors"
+                  className="p-1 rounded-full hover:bg-surface-hover transition-colors"
                 >
-                  <X size={14} className="text-gray-400 dark:text-zinc-500" />
+                  <X size={14} className="text-fg-faint" />
                 </button>
               )}
             </div>
@@ -400,7 +400,7 @@ export default function AnnouncementsList({
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium text-fg-muted hover:text-gray-700 dark:hover:text-zinc-200 hover:bg-surface-2 transition-colors"
               >
                 <X size={14} />
                 <span>{t('pages.clear1')}</span>
@@ -410,7 +410,7 @@ export default function AnnouncementsList({
         </div>
 
         {/* Results Count */}
-        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-zinc-400">
+        <div className="flex items-center gap-2 text-xs text-fg-muted">
           <Filter size={12} />
           <span>
             {filteredAnnouncements.length} of {announcements.length} announcements
@@ -420,13 +420,13 @@ export default function AnnouncementsList({
       </div>
 
       {/* Table */}
-      <div className="w-full overflow-x-auto rounded-xl border border-gray-100 dark:border-zinc-800">
+      <div className="w-full overflow-x-auto rounded-xl border border-divider">
         <Table
           aria-label={t('aria.misc.announcements')}
           removeWrapper
           classNames={{
-            th: "bg-gray-50 dark:bg-zinc-800/50 text-gray-600 dark:text-zinc-400 font-medium text-xs uppercase tracking-wider",
-            tr: "hover:bg-gray-50 dark:hover:bg-zinc-800/30 transition-colors border-b border-gray-100 dark:border-zinc-800/50 last:border-0",
+            th: "bg-surface-2 text-fg-muted font-medium text-xs uppercase tracking-wider",
+            tr: "hover:bg-surface-2 transition-colors border-b border-divider last:border-0",
             td: "py-4",
           }}
         >
@@ -441,9 +441,9 @@ export default function AnnouncementsList({
           <TableBody
             emptyContent={
               <div className="text-center py-16">
-                <Megaphone size={48} className="mx-auto mb-4 text-gray-300 dark:text-zinc-600" />
-                <p className="text-gray-500 dark:text-zinc-400 font-medium">{t('pages.noAnnouncementsFound')}</p>
-                <p className="text-sm text-gray-400 dark:text-zinc-500 mt-1">{t('pages.tryAdjustingYourFilters')}</p>
+                <Megaphone size={48} className="mx-auto mb-4 text-fg-faint" />
+                <p className="text-fg-muted font-medium">{t('pages.noAnnouncementsFound')}</p>
+                <p className="text-sm text-fg-faint mt-1">{t('pages.tryAdjustingYourFilters')}</p>
               </div>
             }
           >
@@ -459,21 +459,21 @@ export default function AnnouncementsList({
                 >
                   <TableCell>
                     <div className="max-w-md">
-                      <p className="font-medium text-gray-900 dark:text-white text-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                      <p className="font-medium text-fg text-sm group-hover:text-accent transition-colors">
                         {announcement.title}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-zinc-400 truncate mt-0.5">
+                      <p className="text-xs text-fg-muted truncate mt-0.5">
                         {announcement.content}
                       </p>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-zinc-800 text-xs font-medium text-gray-600 dark:text-zinc-300">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-surface-2 text-xs font-medium text-fg-muted">
                       {getRecipientsLabel(announcement.recipients)}
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className="text-xs text-gray-600 dark:text-zinc-300 font-medium">
+                    <span className="text-xs text-fg-muted font-medium">
                       {getChannelsLabel(announcement.channels)}
                     </span>
                   </TableCell>
@@ -487,7 +487,7 @@ export default function AnnouncementsList({
                   </TableCell>
                   <TableCell>
                     <div className="text-xs">
-                      <p className="text-gray-600 dark:text-zinc-300">
+                      <p className="text-fg-muted">
                         {formatDate(announcement.createdAt)}
                       </p>
                       {announcement.scheduledFor && (
@@ -503,7 +503,7 @@ export default function AnnouncementsList({
                       <Tooltip content="View Details" placement="top">
                         <button
                           onClick={() => onView(announcement)}
-                          className="p-2 rounded-lg text-gray-500 dark:text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
+                          className="p-2 rounded-lg text-fg-muted hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
                         >
                           <Eye size={16} />
                         </button>
@@ -513,7 +513,7 @@ export default function AnnouncementsList({
                         <Tooltip content="Edit" placement="top">
                           <button
                             onClick={() => onEdit(announcement)}
-                            className="p-2 rounded-lg text-gray-500 dark:text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
+                            className="p-2 rounded-lg text-fg-muted hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
                           >
                             <Edit size={16} />
                           </button>
@@ -524,7 +524,7 @@ export default function AnnouncementsList({
                         <Tooltip content="Resend" placement="top">
                           <button
                             onClick={() => handleResend(announcement._id)}
-                            className="p-2 rounded-lg text-gray-500 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
+                            className="p-2 rounded-lg text-fg-muted hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
                           >
                             <Send size={16} />
                           </button>
@@ -533,7 +533,7 @@ export default function AnnouncementsList({
 
                       <Dropdown>
                         <DropdownTrigger>
-                          <button className="p-2 rounded-lg text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors">
+                          <button className="p-2 rounded-lg text-fg-muted hover:text-gray-700 dark:hover:text-zinc-200 hover:bg-surface-2 transition-colors">
                             <MoreVertical size={16} />
                           </button>
                         </DropdownTrigger>
@@ -544,7 +544,7 @@ export default function AnnouncementsList({
                         >
                           <DropdownItem
                             key="view"
-                            startContent={<Eye size={16} className="text-gray-500 dark:text-zinc-400" />}
+                            startContent={<Eye size={16} className="text-fg-muted" />}
                             onPress={() => onView(announcement)}
                             className="hover:bg-gray-50 dark:hover:bg-zinc-700"
                           >
@@ -553,7 +553,7 @@ export default function AnnouncementsList({
                           {announcement.status === 'draft' && (
                             <DropdownItem
                               key="edit"
-                              startContent={<Edit size={16} className="text-gray-500 dark:text-zinc-400" />}
+                              startContent={<Edit size={16} className="text-fg-muted" />}
                               onPress={() => onEdit(announcement)}
                               className="hover:bg-gray-50 dark:hover:bg-zinc-700"
                             >
@@ -562,7 +562,7 @@ export default function AnnouncementsList({
                           )}
                           <DropdownItem
                             key="duplicate"
-                            startContent={<Copy size={16} className="text-gray-500 dark:text-zinc-400" />}
+                            startContent={<Copy size={16} className="text-fg-muted" />}
                             onPress={() => handleDuplicate(announcement)}
                             className="hover:bg-gray-50 dark:hover:bg-zinc-700"
                           >
@@ -571,7 +571,7 @@ export default function AnnouncementsList({
                           {announcement.status === 'sent' && (
                             <DropdownItem
                               key="resend"
-                              startContent={<Send size={16} className="text-gray-500 dark:text-zinc-400" />}
+                              startContent={<Send size={16} className="text-fg-muted" />}
                               onPress={() => handleResend(announcement._id)}
                               className="hover:bg-gray-50 dark:hover:bg-zinc-700"
                             >
@@ -601,10 +601,10 @@ export default function AnnouncementsList({
       {filteredAnnouncements.length === 0 && !loading && announcements.length > 0 && (
         <div className="text-center py-16 px-4">
           <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-zinc-800 dark:to-zinc-700 flex items-center justify-center">
-            <Search size={32} className="text-gray-400 dark:text-zinc-500" />
+            <Search size={32} className="text-fg-faint" />
           </div>
-          <p className="text-gray-600 dark:text-zinc-300 font-medium text-lg">{t('pages.noMatchingAnnouncements')}</p>
-          <p className="text-sm text-gray-400 dark:text-zinc-500 mt-2 max-w-sm mx-auto">
+          <p className="text-fg-muted font-medium text-lg">{t('pages.noMatchingAnnouncements')}</p>
+          <p className="text-sm text-fg-faint mt-2 max-w-sm mx-auto">
             We couldn't find any announcements matching your current filters. Try adjusting your search criteria.
           </p>
           <button
@@ -625,9 +625,9 @@ export default function AnnouncementsList({
           </div>
           <div className="flex items-center justify-center gap-2 mb-2">
             <Sparkles size={16} className="text-amber-500" />
-            <p className="text-gray-700 dark:text-zinc-200 font-semibold text-lg">{t('pages.noAnnouncementsYet')}</p>
+            <p className="text-fg font-semibold text-lg">{t('pages.noAnnouncementsYet')}</p>
           </div>
-          <p className="text-sm text-gray-500 dark:text-zinc-400 mt-2 max-w-sm mx-auto">
+          <p className="text-sm text-fg-muted mt-2 max-w-sm mx-auto">
             Create your first announcement to start communicating with your school community.
           </p>
         </div>

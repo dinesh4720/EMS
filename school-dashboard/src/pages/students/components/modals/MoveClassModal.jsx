@@ -1,27 +1,35 @@
-import { useState, useMemo } from "react";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Select, SelectItem } from "@heroui/react";
+import { useState, useMemo, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
-import { useTranslation } from 'react-i18next';
-import logger from '../../../../utils/logger';
+import { z } from "zod";
+import Modal from "../../../../components/ui/Modal";
+import logger from "../../../../utils/logger";
 
+const moveSchema = z.object({
+  newClass: z.string().min(1, "Please select a new class"),
+});
 
-/**
- * MoveClassModal - Modal for moving a student to another class/section
- *
- * Props:
- * - isOpen: boolean - Whether modal is open
- * - onClose: function - Called when modal is closed
- * - student: object - The student to move
- * - availableClasses: array - List of available classes
- * - onMove: function - Called after successful move with new class
- */
-export default function MoveClassModal({ isOpen, onClose, student, availableClasses = [], classObjects = [], onMove }) {
+export default function MoveClassModal({
+  isOpen,
+  onClose,
+  student,
+  availableClasses = [],
+  classObjects = [],
+  onMove,
+}) {
   const { t } = useTranslation();
   const [newClass, setNewClass] = useState("");
   const [classError, setClassError] = useState("");
   const [isMoving, setIsMoving] = useState(false);
 
-  // Build a mapping from display label to ObjectId
+  useEffect(() => {
+    if (!isOpen) {
+      setNewClass("");
+      setClassError("");
+      setIsMoving(false);
+    }
+  }, [isOpen]);
+
   const classIdMap = useMemo(() => {
     const map = {};
     for (const cls of classObjects) {
@@ -32,74 +40,124 @@ export default function MoveClassModal({ isOpen, onClose, student, availableClas
   }, [classObjects]);
 
   const handleMove = async () => {
-    if (!newClass) {
-      setClassError(t('toast.error.pleaseSelectANewClass', 'Please select a new class'));
+    const parsed = moveSchema.safeParse({ newClass });
+    if (!parsed.success) {
+      setClassError(parsed.error.issues[0]?.message || "Invalid input");
+      return;
+    }
+    if (parsed.data.newClass === student?.class) {
+      setClassError("Student is already in this class");
       return;
     }
 
     setIsMoving(true);
-    const loadingToast = toast.loading(t('toast.loading.movingStudentToNewClass'));
-
+    const loadingToast = toast.loading(t("toast.loading.movingStudentToNewClass"));
     try {
       const { request } = await import("../../../../services/api");
-
-      // Resolve to ObjectId from classObjects, fall back to the string
-      const classId = classIdMap[newClass] || newClass;
-
+      const classId = classIdMap[parsed.data.newClass] || parsed.data.newClass;
       await request(`/students/${student.id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ classId })
+        method: "PUT",
+        body: JSON.stringify({ classId }),
       });
-
-      toast.success(t('toast.success.studentMovedToClass', { className: newClass, defaultValue: `Student moved to ${newClass}` }), { id: loadingToast });
-
-      if (onMove) {
-        onMove(newClass);
-      }
+      toast.success(
+        t("toast.success.studentMovedToClass", {
+          className: parsed.data.newClass,
+          defaultValue: `Student moved to ${parsed.data.newClass}`,
+        }),
+        { id: loadingToast }
+      );
+      onMove?.(parsed.data.newClass);
       onClose();
     } catch (error) {
       logger.error("Error moving student:", error);
-      toast.error(t('toast.error.failedToMoveStudent', 'Failed to move student') + ": " + (error.message || t('common.unknownError', 'Unknown error')), { id: loadingToast });
+      toast.error(
+        t("toast.error.failedToMoveStudent", "Failed to move student") +
+          ": " +
+          (error.message || t("common.unknownError", "Unknown error")),
+        { id: loadingToast }
+      );
     } finally {
       setIsMoving(false);
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md">
-      <ModalContent>
-        <ModalHeader>{t('pages.moveToAnotherClass', 'Move to Another Class/Section')}</ModalHeader>
-        <ModalBody>
-          <div className="space-y-4">
-            <div className="p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg">
-              <p className="text-sm text-gray-600 dark:text-zinc-400">Current Class: <span className="font-semibold text-gray-900 dark:text-zinc-100">{student?.class || "N/A"}</span></p>
-            </div>
-
-            <Select
-              label={t('pages.selectNewClass')}
-              placeholder={t('pages.chooseAClass')}
-              selectedKeys={newClass ? [newClass] : []}
-              onSelectionChange={(keys) => {
-                setNewClass(Array.from(keys)[0]);
-                setClassError("");
-              }}
-              variant="bordered"
-              isInvalid={!!classError}
-              errorMessage={classError}
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={t("pages.moveToAnotherClass", "Move to Another Class/Section")}
+      description={
+        student?.name
+          ? `${student.name} · Current: ${student.class || "—"}`
+          : undefined
+      }
+      size="sm"
+      isDismissable={!isMoving}
+      footer={
+        <>
+          <button
+            type="button"
+            className="btn"
+            onClick={onClose}
+            disabled={isMoving}
+          >
+            {t("pages.cancel2", "Cancel")}
+          </button>
+          <button
+            type="button"
+            className="btn btn--accent"
+            onClick={handleMove}
+            disabled={isMoving || !newClass}
+            aria-busy={isMoving || undefined}
+          >
+            {isMoving
+              ? t("pages.moving", "Moving…")
+              : t("pages.moveStudent", "Move Student")}
+          </button>
+        </>
+      }
+    >
+      <div className="section" style={{ margin: 0 }}>
+        <div className="field">
+          <label className="field__label" htmlFor="move-class-select">
+            {t("pages.selectNewClass", "Select new class")}
+            <span className="req" aria-hidden>
+              *
+            </span>
+          </label>
+          <select
+            id="move-class-select"
+            className={`select ${classError ? "input--err" : ""}`}
+            value={newClass}
+            onChange={(e) => {
+              setNewClass(e.target.value);
+              if (classError) setClassError("");
+            }}
+            aria-invalid={classError ? "true" : undefined}
+            aria-describedby={classError ? "move-class-err" : undefined}
+          >
+            <option value="">{t("pages.chooseAClass", "Choose a class…")}</option>
+            {availableClasses.map((cls) => (
+              <option key={cls} value={cls}>
+                {cls}
+              </option>
+            ))}
+          </select>
+          {classError ? (
+            <span
+              id="move-class-err"
+              className="field__hint"
+              style={{ color: "var(--danger)" }}
             >
-              {availableClasses.map((cls) => (
-                <SelectItem key={cls} value={cls}>
-                  {cls}
-                </SelectItem>
-              ))}
-            </Select>
-          </div>
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="bordered" className="border-gray-200 dark:border-zinc-800 text-gray-700 dark:text-zinc-300" onPress={onClose}>{t('pages.cancel2')}</Button>
-          <Button className="bg-gray-900 hover:bg-gray-800 text-white" onPress={handleMove} isLoading={isMoving}>{t('pages.moveStudent')}</Button>
-        </ModalFooter>
-      </ModalContent>
+              {classError}
+            </span>
+          ) : (
+            <span className="field__hint">
+              The student&apos;s class assignment will update immediately.
+            </span>
+          )}
+        </div>
+      </div>
     </Modal>
   );
 }

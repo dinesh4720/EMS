@@ -1,12 +1,13 @@
 import { useState, useMemo, useEffect } from "react";
+import { Link } from "react-router-dom";
 import logger from "../../../utils/logger";
 import {
-  Search, Users, CheckCircle2, ChevronRight, ArrowUpDown,
+  Search, Users, CheckCircle2, ChevronRight, ArrowUpDown, Wallet,
 } from "lucide-react";
 import { useApp } from "../../../context/AppContext";
 import { useTranslation } from 'react-i18next';
 
-export function StudentsTab({ id, cls, navigate, classesEnhancedApi }) {
+export function StudentsTab({ id, cls, navigate, classesEnhancedApi, openStudent, activeStudentId }) {
   const { t } = useTranslation();
   const { students } = useApp();
   const [searchQuery, setSearchQuery] = useState("");
@@ -71,7 +72,7 @@ export function StudentsTab({ id, cls, navigate, classesEnhancedApi }) {
     <div className="space-y-4">
       {/* Summary chips */}
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 rounded-lg">
+        <span className="px-3 py-1.5 text-xs font-medium bg-surface-2 text-fg rounded-lg">
           {classStudents.length} {t('classes.students', 'Students')}
         </span>
         <span className="px-3 py-1.5 text-xs font-medium bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 rounded-lg">
@@ -83,17 +84,17 @@ export function StudentsTab({ id, cls, navigate, classesEnhancedApi }) {
       </div>
 
       {/* Search + Filter */}
-      <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-4">
+      <div className="bg-surface rounded-lg border border-divider p-4">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-faint" />
             <input type="text" placeholder={t('pages.searchStudents')} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:border-gray-400 dark:focus:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500" />
+              className="w-full pl-9 pr-4 py-2 text-sm border border-border-token rounded-lg focus:outline-none focus:border-fg-faint bg-surface text-fg placeholder:text-fg-faint" />
           </div>
-          <div className="flex items-center gap-1 bg-gray-100 dark:bg-zinc-800 p-1 rounded-lg">
+          <div className="flex items-center gap-1 bg-surface-2 p-1 rounded-lg">
             {["all", "paid", "pending"].map((f) => (
               <button key={f} onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${filter === f ? 'bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 shadow-sm' : 'text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300'}`}>
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${filter === f ? 'bg-surface text-fg shadow-sm' : 'text-fg-muted hover:text-fg'}`}>
                 {f === 'all' ? t('common.all', 'All') : f === 'paid' ? t('classes.paid', 'Paid') : t('classes.pending', 'Pending')}
               </button>
             ))}
@@ -102,9 +103,9 @@ export function StudentsTab({ id, cls, navigate, classesEnhancedApi }) {
       </div>
 
       {/* Students Table */}
-      <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
+      <div className="bg-surface rounded-lg border border-border-token overflow-hidden">
         {/* Table header */}
-        <div className="hidden sm:grid grid-cols-12 gap-2 px-5 py-3 bg-gray-50 dark:bg-zinc-900 border-b border-gray-100 dark:border-zinc-800 text-xs font-medium text-gray-500 dark:text-zinc-400">
+        <div className="hidden sm:grid grid-cols-12 gap-2 px-5 py-3 bg-surface-2 border-b border-divider text-xs font-medium text-fg-muted">
           <div className="col-span-1 cursor-pointer flex items-center gap-1" onClick={() => handleSort('rollNo')}>
             {t('classes.roll', 'Roll')} {sortBy === 'rollNo' && <ArrowUpDown size={10} />}
           </div>
@@ -122,29 +123,36 @@ export function StudentsTab({ id, cls, navigate, classesEnhancedApi }) {
         </div>
 
         {filteredStudents.length > 0 ? (
-          <div className="divide-y divide-gray-50 dark:divide-zinc-800">
+          <div className="divide-y divide-divider">
             {filteredStudents.map(student => {
               const academicPct = performanceMap[String(student.id || student._id)] || null;
               return (
-                <div key={student.id} className="sm:grid grid-cols-12 gap-2 px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-zinc-900 transition-colors cursor-pointer"
-                  onClick={() => navigate(`/students/${student.id}`)}>
+                <div
+                  key={student.id}
+                  className={`sm:grid grid-cols-12 gap-2 px-5 py-3 flex items-center justify-between hover:bg-surface-2 transition-colors cursor-pointer ${String(activeStudentId) === String(student.id) ? "bg-surface-2 ring-1 ring-inset ring-indigo-200 dark:ring-indigo-700" : ""}`}
+                  onClick={() =>
+                    openStudent
+                      ? openStudent(student.id)
+                      : navigate(`/students/${student.id}`)
+                  }
+                >
                   {/* Roll */}
-                  <div className="col-span-1 text-xs font-mono text-gray-500 dark:text-zinc-400 hidden sm:block">
+                  <div className="col-span-1 text-xs font-mono text-fg-muted hidden sm:block">
                     {student.rollNo || '-'}
                   </div>
                   {/* Student */}
                   <div className="col-span-4 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-md bg-gray-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    <div className="w-8 h-8 rounded-md bg-surface-2 flex items-center justify-center flex-shrink-0 overflow-hidden">
                       {student.photo ? (
                         <img src={student.photo} alt={student.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                       ) : (
-                        <span className="text-xs font-medium text-gray-600 dark:text-zinc-400">{student.name?.charAt(0)}</span>
+                        <span className="text-xs font-medium text-fg-muted">{student.name?.charAt(0)}</span>
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 truncate">{student.name}</p>
-                      <p className="text-xs text-gray-500 dark:text-zinc-400 truncate sm:hidden">{t('classes.roll', 'Roll')} {student.rollNo} · {student.parentName || t('classes.parent', 'Parent')}</p>
-                      <p className="text-xs text-gray-500 dark:text-zinc-400 truncate hidden sm:block">{student.parentName || t('classes.parent', 'Parent')}</p>
+                      <p className="text-sm font-medium text-fg truncate">{student.name}</p>
+                      <p className="text-xs text-fg-muted truncate sm:hidden">{t('classes.roll', 'Roll')} {student.rollNo} · {student.parentName || t('classes.parent', 'Parent')}</p>
+                      <p className="text-xs text-fg-muted truncate hidden sm:block">{student.parentName || t('classes.parent', 'Parent')}</p>
                     </div>
                   </div>
                   {/* Academic */}
@@ -154,34 +162,53 @@ export function StudentsTab({ id, cls, navigate, classesEnhancedApi }) {
                         {academicPct}%
                       </span>
                     ) : (
-                      <span className="text-xs text-gray-300 dark:text-zinc-600">—</span>
+                      <span className="text-xs text-fg-faint">—</span>
                     )}
                   </div>
                   {/* Attendance */}
                   <div className="col-span-2 hidden sm:flex items-center gap-1.5">
-                    <div className={`w-2 h-2 rounded-full ${student.attendanceStatus === 'present' ? "bg-green-500" : student.attendanceStatus === 'absent' ? "bg-red-400" : "bg-gray-300 dark:bg-zinc-600"}`} />
-                    <span className="text-xs text-gray-500 dark:text-zinc-400">
+                    <div className={`w-2 h-2 rounded-full ${student.attendanceStatus === 'present' ? "bg-green-500" : student.attendanceStatus === 'absent' ? "bg-red-400" : "bg-surface-2"}`} />
+                    <span className="text-xs text-fg-muted">
                       {student.attendanceStatus === 'present' ? t('classes.present', 'Present') : student.attendanceStatus === 'absent' ? t('classes.absent', 'Absent') : '—'}
                     </span>
                   </div>
                   {/* Fee */}
                   <div className="col-span-2 hidden sm:block">
-                    <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${
-                      student.feeStatus === 'paid' ? 'bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400' : 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400'
-                    }`}>
-                      {student.feeStatus === 'paid' ? t('classes.paid', 'Paid') : t('classes.pending', 'Pending')}
-                    </span>
+                    {student.feeStatus === 'paid' ? (
+                      <span className="text-xs px-2 py-0.5 rounded-md font-medium bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400">
+                        {t('classes.paid', 'Paid')}
+                      </span>
+                    ) : (
+                      <Link
+                        to={`/fees?student=${student.id || student._id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md font-medium bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40"
+                        title={t('classes.collectPayment', 'Collect payment')}
+                      >
+                        <Wallet size={11} aria-hidden /> {t('classes.pay', 'Pay')}
+                      </Link>
+                    )}
                   </div>
                   {/* Arrow */}
                   <div className="col-span-1 text-right hidden sm:block">
-                    <ChevronRight size={14} className="text-gray-300 dark:text-zinc-600 inline" />
+                    <ChevronRight size={14} className="text-fg-faint inline" />
                   </div>
                   {/* Mobile badges */}
                   <div className="flex items-center gap-2 sm:hidden">
-                    <span className={`text-xs px-2 py-0.5 rounded-md ${student.feeStatus === 'paid' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
-                      {student.feeStatus === 'paid' ? t('classes.paid', 'Paid') : t('classes.pending', 'Pending')}
-                    </span>
-                    <ChevronRight size={14} className="text-gray-300" />
+                    {student.feeStatus === 'paid' ? (
+                      <span className="text-xs px-2 py-0.5 rounded-md bg-green-50 text-green-700">
+                        {t('classes.paid', 'Paid')}
+                      </span>
+                    ) : (
+                      <Link
+                        to={`/fees?student=${student.id || student._id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md bg-amber-50 text-amber-700"
+                      >
+                        <Wallet size={11} aria-hidden /> {t('classes.pay', 'Pay')}
+                      </Link>
+                    )}
+                    <ChevronRight size={14} className="text-fg-faint" />
                   </div>
                 </div>
               );
@@ -189,8 +216,8 @@ export function StudentsTab({ id, cls, navigate, classesEnhancedApi }) {
           </div>
         ) : (
           <div className="px-5 py-12 text-center">
-            <Users size={32} className="mx-auto text-gray-200 dark:text-zinc-700 mb-3" />
-            <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.noStudentsFound')}</p>
+            <Users size={32} className="mx-auto text-fg-faint mb-3" />
+            <p className="text-sm text-fg-muted">{t('pages.noStudentsFound')}</p>
           </div>
         )}
       </div>

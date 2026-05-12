@@ -32,10 +32,16 @@ function NpsSurveyModal() {
       }
     };
 
-    checkEligibility();
+    // Delay the eligibility check so the dashboard's critical-path data load
+    // finishes first. Firing immediately on mount used to race against the
+    // KPI/attendance fetches and surface the survey before the page settled.
+    const timer = setTimeout(() => {
+      if (!cancelled) checkEligibility();
+    }, 4000);
 
     return () => {
       cancelled = true;
+      clearTimeout(timer);
     };
   }, []);
 
@@ -82,14 +88,14 @@ function NpsSurveyModal() {
         {submitted ? (
           <>
             <ModalHeader className="flex flex-col gap-1">
-              <span className="text-lg font-semibold text-gray-900 dark:text-zinc-100">
+              <span className="text-lg font-semibold text-fg">
                 Thank you!
               </span>
             </ModalHeader>
             <ModalBody>
               <div className="text-center py-6">
                 <div className="text-4xl mb-3">🎉</div>
-                <p className="text-gray-700 dark:text-zinc-300 text-base">
+                <p className="text-fg text-base">
                   Thank you for your feedback! Your response helps us improve SchoolSync.
                 </p>
               </div>
@@ -103,14 +109,14 @@ function NpsSurveyModal() {
         ) : (
           <>
             <ModalHeader className="flex flex-col gap-1">
-              <span className="text-lg font-semibold text-gray-900 dark:text-zinc-100">
+              <span className="text-lg font-semibold text-fg">
                 How likely are you to recommend SchoolSync?
               </span>
             </ModalHeader>
             <ModalBody>
               <div className="space-y-5">
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-zinc-400 mb-3">
+                  <p className="text-sm text-fg-muted mb-3">
                     On a scale of 0 to 10, how likely are you to recommend SchoolSync to a colleague?
                   </p>
                   <div className="flex flex-wrap gap-2 justify-center" data-testid="nps-score-buttons">
@@ -123,7 +129,7 @@ function NpsSurveyModal() {
                         className={`w-10 h-10 rounded-lg text-sm font-medium border transition-all ${
                           score === i
                             ? getScoreColor(i)
-                            : "border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-zinc-400 hover:border-gray-400 dark:hover:border-zinc-500 bg-white dark:bg-zinc-900"
+                            : "border-border-token text-fg-muted hover:border-gray-400 dark:hover:border-zinc-500 bg-surface"
                         }`}
                       >
                         {i}
@@ -131,8 +137,8 @@ function NpsSurveyModal() {
                     ))}
                   </div>
                   <div className="flex justify-between mt-2">
-                    <span className="text-xs text-gray-400 dark:text-zinc-500">Not likely</span>
-                    <span className="text-xs text-gray-400 dark:text-zinc-500">Very likely</span>
+                    <span className="text-xs text-fg-faint">Not likely</span>
+                    <span className="text-xs text-fg-faint">Very likely</span>
                   </div>
                 </div>
 

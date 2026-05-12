@@ -1,10 +1,15 @@
 import { safeGetItem, safeSetItem } from '../../utils/safeStorage';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
-  Tabs, Tab, Modal, ModalContent, ModalHeader, ModalBody, useDisclosure
+  Modal as HeroModal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  useDisclosure,
 } from "@heroui/react";
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { BookOpen, Calendar, GraduationCap } from "lucide-react";
+import { PageHeader, Tabs, ErrorState } from "../../components/ui";
 import { useApp } from "../../context/AppContext";
 import { useTranslation } from 'react-i18next';
 
@@ -25,7 +30,7 @@ import {
 
 export default function AcademicSettings() {
   const { t } = useTranslation();
-  const { schoolSettings, updateSchoolSettings, classes, loading } = useApp();
+  const { schoolSettings, classes, loading } = useApp();
 
   const [activeTab, setActiveTab] = useState(() => safeGetItem('academicSettingsTab') || "schedule");
   // AUDIT-132: Initialize with null to prevent race condition with stale data
@@ -83,16 +88,43 @@ export default function AcademicSettings() {
   // Class config derived from classes data
   const { classConfig, ALL_CLASSES } = useClassConfig(classes);
 
-  // Disable a class (delete all sections)
-  const handleDisableClass = async (classNum) => {
-    // This uses deleteClass from useApp — delegated here since it needs saving state
-    const { deleteClass } = require('../../context/AppContext');
-    // NOTE: handleDisableClass logic is in the hook via useAcademicSettingsHandlers
-    // but needs classConfig — kept here to avoid circular dependency
-  };
+  // Disable a class (delete all sections) — handled in hook; placeholder retained for prop wiring
+  const handleDisableClass = async (_classNum) => {};
 
-  if (loading || !localSettings) {
+  const tabs = useMemo(
+    () => [
+      {
+        key: 'schedule',
+        title: t('pages.scheduleTimings'),
+        icon: <Calendar size={16} />,
+      },
+      {
+        key: 'subjects',
+        title: t('pages.subjects1'),
+        icon: <BookOpen size={16} />,
+      },
+      {
+        key: 'classes',
+        title: t('pages.classesSections'),
+        icon: <GraduationCap size={16} />,
+      },
+    ],
+    [t]
+  );
+
+  if (loading) {
     return <TablePageSkeleton />;
+  }
+
+  if (!localSettings) {
+    return (
+      <div className="max-w-4xl mx-auto pb-10">
+        <ErrorState
+          title="Unable to load academic settings"
+          description="We couldn't load your academic settings. Please refresh the page."
+        />
+      </div>
+    );
   }
 
   // Calculate instructional time
@@ -109,32 +141,19 @@ export default function AcademicSettings() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto pb-10 space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-default-200 pb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-default-900">{t('pages.academicConfiguration')}</h2>
-          <p className="text-sm text-default-500 mt-1">{t('pages.manageAcademicSessionsTimingsSubjectsAndClassStructures')}</p>
-        </div>
-      </div>
+    <div className="max-w-4xl mx-auto pb-10 space-y-6">
+      <PageHeader
+        title={t('pages.academicConfiguration')}
+        description={t('pages.manageAcademicSessionsTimingsSubjectsAndClassStructures')}
+        bordered={false}
+        size="lg"
+        className="px-0"
+      />
 
-      <Tabs
-        selectedKey={activeTab}
-        onSelectionChange={setActiveTab}
-        variant="underlined"
-        classNames={{
-          tabList: "gap-6 border-b border-default-200 w-full p-0",
-          cursor: "w-full bg-primary",
-          tab: "max-w-fit px-0 h-10 pb-2",
-          tabContent: "group-data-[selected=true]:text-primary group-data-[selected=true]:font-semibold font-medium text-default-500"
-        }}
-      >
-        <Tab key="schedule" title={
-          <div className="flex items-center gap-2">
-            <Calendar size={18} />
-            <span>{t('pages.scheduleTimings')}</span>
-          </div>
-        }>
+      <Tabs tabs={tabs} activeKey={activeTab} onChange={setActiveTab} variant="underline" />
+
+      <div className="pt-2">
+        {activeTab === 'schedule' && (
           <ScheduleTimingsTab
             localSettings={localSettings}
             instructionalHours={instructionalHours}
@@ -145,14 +164,8 @@ export default function AcademicSettings() {
             onOpenPeriodConfig={periodConfigModal.onOpen}
             onOpenWorkingDays={workingDaysModal.onOpen}
           />
-        </Tab>
-
-        <Tab key="subjects" title={
-          <div className="flex items-center gap-2">
-            <BookOpen size={18} />
-            <span>{t('pages.subjects1')}</span>
-          </div>
-        }>
+        )}
+        {activeTab === 'subjects' && (
           <SubjectsTab
             localSettings={localSettings}
             onEditSubject={handleEditSubject}
@@ -161,14 +174,8 @@ export default function AcademicSettings() {
             setEditingSubject={setEditingSubject}
             setNewSubject={setNewSubject}
           />
-        </Tab>
-
-        <Tab key="classes" title={
-          <div className="flex items-center gap-2">
-            <GraduationCap size={18} />
-            <span>{t('pages.classesSections')}</span>
-          </div>
-        }>
+        )}
+        {activeTab === 'classes' && (
           <ClassesTab
             ALL_CLASSES={ALL_CLASSES}
             classConfig={classConfig}
@@ -180,12 +187,12 @@ export default function AcademicSettings() {
             setNewSection={setNewSection}
             onOpenClassModal={classModal.onOpen}
           />
-        </Tab>
-      </Tabs>
+        )}
+      </div>
 
       {/* ==================== MODALS ==================== */}
 
-      <Modal isOpen={academicYearModal.isOpen} onClose={academicYearModal.onClose} size="2xl">
+      <HeroModal isOpen={academicYearModal.isOpen} onClose={academicYearModal.onClose} size="2xl">
         <ModalContent>
           <ModalHeader>{t('pages.editAcademicSession')}</ModalHeader>
           <ModalBody>
@@ -197,9 +204,9 @@ export default function AcademicSettings() {
             />
           </ModalBody>
         </ModalContent>
-      </Modal>
+      </HeroModal>
 
-      <Modal isOpen={schoolTimingsModal.isOpen} onClose={schoolTimingsModal.onClose} size="2xl">
+      <HeroModal isOpen={schoolTimingsModal.isOpen} onClose={schoolTimingsModal.onClose} size="2xl">
         <ModalContent>
           <ModalHeader>{t('pages.editSchoolTimings')}</ModalHeader>
           <ModalBody>
@@ -211,9 +218,9 @@ export default function AcademicSettings() {
             />
           </ModalBody>
         </ModalContent>
-      </Modal>
+      </HeroModal>
 
-      <Modal isOpen={periodConfigModal.isOpen} onClose={periodConfigModal.onClose} size="2xl">
+      <HeroModal isOpen={periodConfigModal.isOpen} onClose={periodConfigModal.onClose} size="2xl">
         <ModalContent>
           <ModalHeader>{t('pages.editPeriodConfiguration')}</ModalHeader>
           <ModalBody>
@@ -225,9 +232,9 @@ export default function AcademicSettings() {
             />
           </ModalBody>
         </ModalContent>
-      </Modal>
+      </HeroModal>
 
-      <Modal isOpen={workingDaysModal.isOpen} onClose={workingDaysModal.onClose} size="2xl">
+      <HeroModal isOpen={workingDaysModal.isOpen} onClose={workingDaysModal.onClose} size="2xl">
         <ModalContent>
           <ModalHeader>{t('pages.editWorkingDays')}</ModalHeader>
           <ModalBody>
@@ -239,7 +246,7 @@ export default function AcademicSettings() {
             />
           </ModalBody>
         </ModalContent>
-      </Modal>
+      </HeroModal>
 
       <SubjectModal
         isOpen={subjectModal.isOpen}

@@ -194,8 +194,8 @@ const ExamScheduleConflict = ({ onCreateSchedule }) => {
       {/* Empty state */}
       {schedules.length === 0 ? (
         <div className="text-center py-16">
-          <CalendarRange size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-          <p className="text-gray-500 dark:text-zinc-400 mb-4">No exam schedules yet</p>
+          <CalendarRange size={40} className="mx-auto mb-3 text-fg-faint" />
+          <p className="text-fg-muted mb-4">No exam schedules yet</p>
           <Button color="primary" size="sm" onPress={onCreateSchedule}>
             Create First Schedule
           </Button>
@@ -217,7 +217,7 @@ const ExamScheduleConflict = ({ onCreateSchedule }) => {
                 className={`border ${
                   hasConflict
                     ? 'border-amber-300 dark:border-amber-700'
-                    : 'border-gray-100 dark:border-zinc-800'
+                    : 'border-divider'
                 }`}
               >
                 <CardBody className="p-4">
@@ -227,18 +227,18 @@ const ExamScheduleConflict = ({ onCreateSchedule }) => {
                         className={`p-2 rounded-lg flex-shrink-0 ${
                           hasConflict
                             ? 'bg-amber-100 dark:bg-amber-900'
-                            : 'bg-gray-100 dark:bg-zinc-800'
+                            : 'bg-surface-2'
                         }`}
                       >
                         {hasConflict ? (
                           <AlertTriangle size={16} className="text-amber-600 dark:text-amber-400" />
                         ) : (
-                          <CalendarRange size={16} className="text-gray-500 dark:text-zinc-400" />
+                          <CalendarRange size={16} className="text-fg-muted" />
                         )}
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium text-gray-900 dark:text-zinc-100 text-sm">
+                          <span className="font-medium text-fg text-sm">
                             {schedule.name}
                           </span>
                           <Chip
@@ -254,12 +254,12 @@ const ExamScheduleConflict = ({ onCreateSchedule }) => {
                             </Chip>
                           )}
                         </div>
-                        <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">{classNames}</p>
-                        <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-zinc-500 mt-1">
+                        <p className="text-xs text-fg-muted mt-1">{classNames}</p>
+                        <div className="flex items-center gap-1.5 text-xs text-fg-faint mt-1">
                           <Clock size={12} />
                           {formatShortDate(schedule.startDate)} – {formatShortDate(schedule.endDate)}
                           {schedule.type && (
-                            <span className="capitalize ml-1 text-gray-400 dark:text-zinc-600">
+                            <span className="capitalize ml-1 text-fg-faint">
                               · {schedule.type.replace(/_/g, ' ')}
                             </span>
                           )}
@@ -317,29 +317,29 @@ const ExamScheduleConflict = ({ onCreateSchedule }) => {
         isOpen={deleteModal.isOpen}
         onClose={() => !deleting && setDeleteModal({ isOpen: false, id: null, name: '' })}
         size="sm"
-        classNames={{ backdrop: 'bg-black/30', base: 'bg-white dark:bg-zinc-950' }}
+        classNames={{ backdrop: 'bg-black/30', base: 'bg-surface' }}
       >
         <ModalContent>
-          <ModalHeader className="border-b border-gray-100 dark:border-zinc-800 py-4">
+          <ModalHeader className="border-b border-divider py-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
                 <AlertTriangle size={18} className="text-red-500" />
               </div>
               <div>
                 <h3 className="text-base font-medium">Delete Schedule</h3>
-                <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal">
+                <p className="text-sm text-fg-muted font-normal">
                   This will also delete all generated exams and results.
                 </p>
               </div>
             </div>
           </ModalHeader>
           <ModalBody className="py-4">
-            <p className="text-sm text-gray-600 dark:text-zinc-400">
+            <p className="text-sm text-fg-muted">
               Are you sure you want to delete{' '}
               <span className="font-medium">{deleteModal.name}</span>?
             </p>
           </ModalBody>
-          <ModalFooter className="border-t border-gray-100 dark:border-zinc-800">
+          <ModalFooter className="border-t border-divider">
             <Button
               variant="light"
               onPress={() => setDeleteModal({ isOpen: false, id: null, name: '' })}

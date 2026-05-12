@@ -24,13 +24,13 @@ const CustomTooltip = ({ active, payload, label }) => {
   const { t } = useTranslation();
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white dark:bg-zinc-950 p-3 rounded-lg border border-gray-200 dark:border-zinc-700 shadow-sm">
-        <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mb-1">{label}</p>
+      <div className="bg-surface p-3 rounded-lg border border-border-token shadow-sm">
+        <p className="text-xs font-medium text-fg-muted mb-1">{label}</p>
         {payload.map((entry) => (
           <div key={entry.name} className="flex items-center gap-2 text-sm">
             <div className="w-2 h-2 rounded-full bg-gray-500" />
-            <span className="text-gray-600 dark:text-zinc-400">{entry.name}:</span>
-            <span className="font-medium text-gray-900 dark:text-zinc-100">{entry.value}%</span>
+            <span className="text-fg-muted">{entry.name}:</span>
+            <span className="font-medium text-fg">{entry.value}%</span>
           </div>
         ))}
       </div>
@@ -100,11 +100,11 @@ export default function StaffOverviewTab({
   return (
     <>
       {/* Attendance Chart */}
-      <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
-        <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
+      <div className="bg-surface rounded-lg border border-border-token overflow-hidden">
+        <div className="p-5 border-b border-border-token">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><TrendingUp size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-            <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.attendanceTrend')}</h3><p className="text-xs text-gray-500 dark:text-zinc-500">{t('pages.monthlyAttendanceOverview')}</p></div>
+            <div className="w-9 h-9 rounded-lg bg-surface-2 flex items-center justify-center"><TrendingUp size={16} className="text-fg-muted" /></div>
+            <div><h3 className="font-medium text-fg text-sm">{t('pages.attendanceTrend')}</h3><p className="text-xs text-fg-muted">{t('pages.monthlyAttendanceOverview')}</p></div>
           </div>
         </div>
         <div className="p-5">
@@ -132,11 +132,11 @@ export default function StaffOverviewTab({
 
       {/* Class-wise Attendance for Teachers */}
       {isTeacher && classTeacherAssignments.length > 0 && (
-        <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
-          <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
+        <div className="bg-surface rounded-lg border border-border-token overflow-hidden">
+          <div className="p-5 border-b border-border-token">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><BarChart3 size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-              <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.classWiseAttendance')}</h3><p className="text-xs text-gray-500 dark:text-zinc-500">{t('pages.attendanceByAssignedClasses')}</p></div>
+              <div className="w-9 h-9 rounded-lg bg-surface-2 flex items-center justify-center"><BarChart3 size={16} className="text-fg-muted" /></div>
+              <div><h3 className="font-medium text-fg text-sm">{t('pages.classWiseAttendance')}</h3><p className="text-xs text-fg-muted">{t('pages.attendanceByAssignedClasses')}</p></div>
             </div>
           </div>
           <div className="p-5">
@@ -153,7 +153,7 @@ export default function StaffOverviewTab({
                 </ResponsiveContainer>
               </div>
             ) : (
-              <div className="h-[200px] flex items-center justify-center text-gray-400 dark:text-zinc-500 text-sm">
+              <div className="h-[200px] flex items-center justify-center text-fg-faint text-sm">
                 No class data available
               </div>
             )}
@@ -163,29 +163,29 @@ export default function StaffOverviewTab({
 
       {/* Classes Handling Table for Teachers */}
       {isTeacher && classTeacherAssignments.length > 0 && (
-        <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
-          <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
+        <div className="bg-surface rounded-lg border border-border-token overflow-hidden">
+          <div className="p-5 border-b border-border-token">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><BookOpen size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-              <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.classesHandling')}</h3><p className="text-xs text-gray-500 dark:text-zinc-500">{classTeacherAssignments.length} class(es) assigned</p></div>
+              <div className="w-9 h-9 rounded-lg bg-surface-2 flex items-center justify-center"><BookOpen size={16} className="text-fg-muted" /></div>
+              <div><h3 className="font-medium text-fg text-sm">{t('pages.classesHandling')}</h3><p className="text-xs text-fg-muted">{classTeacherAssignments.length} class(es) assigned</p></div>
             </div>
           </div>
-          <div className="divide-y divide-gray-50 dark:divide-zinc-800">
+          <div className="divide-y divide-divider">
             {classTeacherAssignments.map((cls) => {
               const classAttendance = cls.averageAttendance || cls.attendance || 0;
               return (
                 <div key={cls.id || cls._id} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-zinc-800/50 transition-colors">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-sm font-semibold text-gray-700 dark:text-zinc-300">
+                    <div className="w-10 h-10 rounded-lg bg-surface-2 flex items-center justify-center text-sm font-semibold text-fg">
                       {cls.name}-{cls.section}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{cls.name} - {cls.section}</p>
-                      <p className="text-xs text-gray-500 dark:text-zinc-400">{cls.studentCount || cls.strength || 0} students</p>
+                      <p className="text-sm font-medium text-fg">{cls.name} - {cls.section}</p>
+                      <p className="text-xs text-fg-muted">{cls.studentCount || cls.strength || 0} students</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <div className="w-20 h-1.5 bg-gray-100 dark:bg-zinc-700 rounded-full overflow-hidden">
+                    <div className="w-20 h-1.5 bg-surface-2 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all ${classAttendance >= 90 ? 'bg-gray-800' :
                             classAttendance >= 75 ? 'bg-gray-600' : 'bg-gray-400'
@@ -193,8 +193,8 @@ export default function StaffOverviewTab({
                         style={{ width: `${classAttendance}%` }}
                       />
                     </div>
-                    <span className={`text-sm font-semibold w-12 text-right ${classAttendance >= 90 ? 'text-gray-900 dark:text-zinc-100' :
-                        classAttendance >= 75 ? 'text-gray-700 dark:text-zinc-300' : 'text-gray-500 dark:text-zinc-400'
+                    <span className={`text-sm font-semibold w-12 text-right ${classAttendance >= 90 ? 'text-fg' :
+                        classAttendance >= 75 ? 'text-fg' : 'text-fg-muted'
                       }`}>
                       {classAttendance}%
                     </span>
@@ -207,14 +207,14 @@ export default function StaffOverviewTab({
       )}
 
       {/* Recent Activity (computed from attendance records) */}
-      <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
-        <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
+      <div className="bg-surface rounded-lg border border-border-token overflow-hidden">
+        <div className="p-5 border-b border-border-token">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Activity size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-            <div><h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.recentActivity1')}</h3><p className="text-xs text-gray-500 dark:text-zinc-500">{t('pages.fromAttendanceRecords')}</p></div>
+            <div className="w-9 h-9 rounded-lg bg-surface-2 flex items-center justify-center"><Activity size={16} className="text-fg-muted" /></div>
+            <div><h3 className="font-medium text-fg text-sm">{t('pages.recentActivity1')}</h3><p className="text-xs text-fg-muted">{t('pages.fromAttendanceRecords')}</p></div>
           </div>
         </div>
-        <div className="divide-y divide-gray-50 dark:divide-zinc-800">
+        <div className="divide-y divide-divider">
           {(() => {
             const staffAtt = staffAttendance || {};
             const entries = Object.entries(staffAtt)
@@ -223,7 +223,7 @@ export default function StaffOverviewTab({
 
             if (entries.length === 0) {
               return (
-                <div className="px-5 py-8 text-center text-gray-400 dark:text-zinc-500 text-sm">
+                <div className="px-5 py-8 text-center text-fg-faint text-sm">
                   No recent activity recorded
                 </div>
               );
@@ -237,12 +237,12 @@ export default function StaffOverviewTab({
               const timeLabel = isToday ? 'Today' : dateObj.toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric' });
               return (
                 <div key={date} className="px-5 py-3 flex items-center gap-4 hover:bg-gray-50/50 dark:hover:bg-zinc-800/50 transition-colors">
-                  <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
-                    <IconComponent size={14} className="text-gray-500 dark:text-zinc-400" />
+                  <div className="w-8 h-8 rounded-lg bg-surface-2 flex items-center justify-center">
+                    <IconComponent size={14} className="text-fg-muted" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{statusText}</p>
-                    <p className="text-xs text-gray-500 dark:text-zinc-400">{timeLabel}{data.inTime && data.inTime !== '-' ? ` \u00b7 ${data.inTime}` : ''}</p>
+                    <p className="text-sm font-medium text-fg">{statusText}</p>
+                    <p className="text-xs text-fg-muted">{timeLabel}{data.inTime && data.inTime !== '-' ? ` \u00b7 ${data.inTime}` : ''}</p>
                   </div>
                 </div>
               );

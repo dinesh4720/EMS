@@ -1,7 +1,40 @@
-import { memo } from "react";
+import { memo, useEffect } from "react";
 import Breadcrumbs from "./Breadcrumbs";
 import MinimalTabs from "./MinimalTabs";
 import { cn } from "../../utils/cn";
+
+const SITE_NAME = "EMS";
+const DEFAULT_DESCRIPTION =
+  "EMS — Education Management System dashboard for schools.";
+
+function setMetaDescription(content) {
+  if (typeof document === "undefined") return;
+  let tag = document.querySelector('meta[name="description"]');
+  if (!tag) {
+    tag = document.createElement("meta");
+    tag.setAttribute("name", "description");
+    document.head.appendChild(tag);
+  }
+  tag.setAttribute("content", content);
+}
+
+function useDocumentMeta(title, description) {
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const previousTitle = document.title;
+    const previousMeta =
+      document.querySelector('meta[name="description"]')?.getAttribute("content") ||
+      DEFAULT_DESCRIPTION;
+
+    if (title) document.title = `${title} · ${SITE_NAME}`;
+    if (description) setMetaDescription(description);
+
+    return () => {
+      document.title = previousTitle;
+      setMetaDescription(previousMeta);
+    };
+  }, [title, description]);
+}
 
 const HEADER_PADDING = {
   sm: "py-3 px-4",
@@ -31,6 +64,8 @@ const BODY_PADDING = {
 const PageShell = memo(function PageShell({
   title,
   description,
+  documentTitle,
+  metaDescription,
   breadcrumbs,
   actions,
   tabs,
@@ -50,17 +85,23 @@ const PageShell = memo(function PageShell({
   const hasHeader = Boolean(title || description || actions || breadcrumbs);
   const hasTabs = tabs && tabs.length > 0;
 
+  useDocumentMeta(
+    documentTitle ?? (typeof title === "string" ? title : undefined),
+    metaDescription ??
+      (typeof description === "string" ? description : undefined),
+  );
+
   return (
     <div
       className={cn(
-        "bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-lg h-full flex flex-col min-w-0 overflow-hidden",
+        "bg-surface border border-divider rounded-lg h-full flex flex-col min-w-0 overflow-hidden",
         className,
       )}
     >
       {hasHeader && (
         <div
           className={cn(
-            "border-b border-gray-100 dark:border-zinc-800 shrink-0",
+            "border-b border-divider shrink-0",
             HEADER_PADDING[size],
             headerClassName,
           )}
@@ -79,7 +120,7 @@ const PageShell = memo(function PageShell({
               {title && (
                 <h1
                   className={cn(
-                    "font-medium text-gray-900 dark:text-zinc-100 truncate",
+                    "font-medium text-fg truncate",
                     TITLE_SIZE[size],
                   )}
                 >
@@ -89,7 +130,7 @@ const PageShell = memo(function PageShell({
               {description && (
                 <p
                   className={cn(
-                    "text-gray-500 dark:text-zinc-400 mt-1",
+                    "text-fg-muted mt-1",
                     DESCRIPTION_SIZE[size],
                   )}
                 >
@@ -105,7 +146,7 @@ const PageShell = memo(function PageShell({
       )}
 
       {hasTabs && (
-        <div className="px-4 sm:px-6 pt-3 border-b border-gray-100 dark:border-zinc-800 shrink-0">
+        <div className="px-4 sm:px-6 pt-3 border-b border-divider shrink-0">
           <MinimalTabs
             tabs={tabs}
             activeKey={activeTab}
@@ -116,7 +157,7 @@ const PageShell = memo(function PageShell({
       )}
 
       {toolbar && (
-        <div className="px-4 sm:px-6 py-3 border-b border-gray-100 dark:border-zinc-800 shrink-0">
+        <div className="px-4 sm:px-6 py-3 border-b border-divider shrink-0">
           {toolbar}
         </div>
       )}
@@ -133,7 +174,7 @@ const PageShell = memo(function PageShell({
           {children}
         </div>
         {aside && (
-          <aside className="w-72 shrink-0 border-l border-gray-100 dark:border-zinc-800 overflow-auto">
+          <aside className="w-72 shrink-0 border-l border-divider overflow-auto">
             {aside}
           </aside>
         )}

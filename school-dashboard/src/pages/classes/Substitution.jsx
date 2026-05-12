@@ -249,77 +249,71 @@ export default function Substitution() {
 
   return (
     <div className="w-full flex flex-col">
-      {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-background border-b border-default-200 py-4 -mx-6 -mt-6 px-6 mb-4">
-        {/* Left Side - Search & Filters */}
-        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto bg-background">
-          <Input
+      {/* Toolbar — dense, mirrors StaffList density */}
+      <div className="toolbar -mx-6 -mt-6 mb-4" style={{ flexWrap: 'wrap' }}>
+        <div className="toolbar__search" style={{ flex: '1 1 220px', width: 'auto' }}>
+          <Search size={13} aria-hidden />
+          <input
+            type="text"
             placeholder={t('pages.searchSubstitutions')}
-            size="sm"
-            startContent={<Search size={16} />}
             value={searchQuery}
-            onValueChange={setSearchQuery}
-            className="w-full sm:w-64"
-            variant="flat"
-            isClearable
-            onClear={() => setSearchQuery("")}
-            classNames={{
-              inputWrapper: "bg-default-100 data-[hover=true]:bg-default-200 group-data-[focus=true]:bg-default-100",
-            }}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            aria-label="Search substitutions"
           />
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Select
-              placeholder={t('pages.status2')}
-              selectedKeys={[statusFilter]}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-36"
-              size="sm"
-              variant="flat"
-              classNames={{
-                trigger: "bg-default-100 data-[hover=true]:bg-default-200",
-              }}
+          {searchQuery && (
+            <button
+              type="button"
+              className="btn btn--ghost btn--sm"
+              onClick={() => setSearchQuery('')}
+              aria-label="Clear search"
+              style={{ padding: '0 4px' }}
             >
-              <SelectItem key="all">{t('pages.allStatus1')}</SelectItem>
-              <SelectItem key="assigned">{t('pages.assigned1')}</SelectItem>
-              <SelectItem key="not_assigned">{t('pages.notAssigned1')}</SelectItem>
-              <SelectItem key="pending">Pending</SelectItem>
-              <SelectItem key="completed">{t('pages.completed')}</SelectItem>
-              <SelectItem key="cancelled">Cancelled</SelectItem>
-            </Select>
-
-            <Input
-              type="date"
-              size="sm"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full sm:w-36"
-              variant="flat"
-              classNames={{
-                inputWrapper: "bg-default-100 data-[hover=true]:bg-default-200 group-data-[focus=true]:bg-default-100",
-              }}
-            />
-          </div>
+              <X size={12} aria-hidden />
+            </button>
+          )}
         </div>
 
-        {/* Right Side - Actions */}
-        <div className="flex gap-2 w-full sm:w-auto justify-end">
-          <Button
-            size="sm"
-            color="primary"
-            startContent={<Plus size={16} />}
-            onPress={onOpen}
-          >
-            {t('classes.newSubstitution', 'New Substitution')}
-          </Button>
-          <Button
-            isIconOnly
-            size="sm"
-            variant="flat"
-            onPress={loadSubstitutions}
-          >
-            <RefreshCw size={16} />
-          </Button>
+        <div className="seg" role="tablist" aria-label="Filter status">
+          {[
+            { key: 'all', label: t('pages.allStatus1') },
+            { key: 'assigned', label: t('pages.assigned1') },
+            { key: 'not_assigned', label: t('pages.notAssigned1') },
+            { key: 'pending', label: 'Pending' },
+          ].map((f) => (
+            <button
+              key={f.key}
+              type="button"
+              role="tab"
+              aria-selected={statusFilter === f.key}
+              className={`seg__btn ${statusFilter === f.key ? 'is-active' : ''}`}
+              onClick={() => setStatusFilter(f.key)}
+            >
+              {f.label}
+            </button>
+          ))}
         </div>
+
+        <input
+          type="date"
+          value={selectedDate}
+          onChange={(e) => setSelectedDate(e.target.value)}
+          aria-label="Date"
+          className="attn-date-input"
+          style={{ width: 138 }}
+        />
+
+        <button
+          type="button"
+          className="btn btn--ghost btn--sm"
+          onClick={loadSubstitutions}
+          aria-label="Refresh"
+          style={{ marginLeft: 'auto' }}
+        >
+          <RefreshCw size={13} aria-hidden />
+        </button>
+        <button type="button" className="btn btn--accent btn--sm" onClick={onOpen}>
+          <Plus size={13} aria-hidden /> {t('classes.newSubstitution', 'New Substitution')}
+        </button>
       </div>
 
       {/* Filter Summary */}

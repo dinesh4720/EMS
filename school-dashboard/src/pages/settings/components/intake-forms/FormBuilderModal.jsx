@@ -116,20 +116,20 @@ const FormBuilderModal = ({
               </div>
 
               <div>
-                <h3 className="text-sm font-semibold mb-3 text-gray-700 dark:text-gray-200">
+                <h3 className="text-sm font-semibold mb-3 text-fg">
                   Form Components
                 </h3>
                 <div className="grid grid-cols-2 gap-2">
                   {FIELD_TYPES.map((fieldType) => (
                     <button
                       key={fieldType.key}
-                      className="flex flex-col items-center justify-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-primary-500 hover:bg-primary-50/50 dark:hover:bg-primary-900/20 transition-all duration-200 group"
+                      className="flex flex-col items-center justify-center p-3 rounded-xl border border-border-token bg-surface hover:border-primary-500 hover:bg-primary-50/50 dark:hover:bg-primary-900/20 transition-all duration-200 group"
                       onClick={() => handleAddField(fieldType.key)}
                     >
-                      <span className="text-2xl mb-2 text-gray-500 group-hover:text-primary-600 dark:text-gray-400 dark:group-hover:text-primary-400">
+                      <span className="text-2xl mb-2 text-fg-muted group-hover:text-primary-600 dark:group-hover:text-primary-400">
                         {fieldType.icon}
                       </span>
-                      <span className="text-xs font-medium text-gray-600 dark:text-gray-300 group-hover:text-primary-700 dark:group-hover:text-primary-300 text-center">
+                      <span className="text-xs font-medium text-fg-muted group-hover:text-primary-700 dark:group-hover:text-primary-300 text-center">
                         {fieldType.label}
                       </span>
                     </button>
@@ -139,35 +139,35 @@ const FormBuilderModal = ({
             </div>
 
             {/* Middle: Form Canvas */}
-            <div className="col-span-6 bg-gray-50 dark:bg-black/20 rounded-xl border border-gray-200 dark:border-gray-800 p-6 overflow-hidden flex flex-col">
+            <div className="col-span-6 bg-surface-2 dark:bg-surface-2 rounded-xl border border-border-token p-6 overflow-hidden flex flex-col">
               <div className="flex items-center justify-between mb-4 px-2">
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">{t('pages.canvas1')}</h3>
-                <span className="text-xs bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded-full text-gray-600 dark:text-gray-300">
+                <h3 className="text-sm font-semibold text-fg-muted uppercase tracking-wide">{t('pages.canvas1')}</h3>
+                <span className="text-xs bg-surface-2 px-2 py-1 rounded-full text-fg-muted">
                   {builderFields.length} Fields
                 </span>
               </div>
 
               <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                <div className="bg-white dark:bg-gray-900 shadow-sm border border-gray-200 dark:border-gray-800 min-h-[600px] rounded-xl p-8 max-w-2xl mx-auto">
+                <div className="bg-surface shadow-sm border border-border-token min-h-[600px] rounded-xl p-8 max-w-2xl mx-auto">
                   {/* Form Header Preview */}
-                  <div className="mb-8 border-b border-gray-100 dark:border-gray-800 pb-6 text-center">
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  <div className="mb-8 border-b border-divider pb-6 text-center">
+                    <h1 className="text-2xl font-bold text-fg">
                       {formData.name || "Untitled Form"}
                     </h1>
-                    <p className="text-gray-500 mt-2">
+                    <p className="text-fg-muted mt-2">
                       {formData.description || "Add a description to your form..."}
                     </p>
                   </div>
 
                   {builderFields.length === 0 ? (
-                    <div className="text-center py-24 border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-xl">
+                    <div className="text-center py-24 border-2 border-dashed border-divider rounded-xl">
                       <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-500">
                         <Plus size={24} />
                       </div>
-                      <h4 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
+                      <h4 className="text-base font-semibold text-fg mb-1">
                         Start Building
                       </h4>
-                      <p className="text-sm text-gray-500 max-w-[200px] mx-auto">
+                      <p className="text-sm text-fg-muted max-w-[200px] mx-auto">
                         Select a component from the left sidebar to add it to your form.
                       </p>
                     </div>
@@ -216,7 +216,7 @@ const FormBuilderModal = ({
                       variant="bordered"
                       size="sm"
                       labelPlacement="outside"
-                      classNames={{ inputWrapper: "bg-white dark:bg-gray-800" }}
+                      classNames={{ inputWrapper: "bg-surface" }}
                     />
 
                     <Input
@@ -231,7 +231,7 @@ const FormBuilderModal = ({
                       variant="bordered"
                       size="sm"
                       labelPlacement="outside"
-                      classNames={{ inputWrapper: "bg-white dark:bg-gray-800" }}
+                      classNames={{ inputWrapper: "bg-surface" }}
                     />
 
                     <Textarea
@@ -247,7 +247,7 @@ const FormBuilderModal = ({
                       size="sm"
                       labelPlacement="outside"
                       minRows={2}
-                      classNames={{ inputWrapper: "bg-white dark:bg-gray-800" }}
+                      classNames={{ inputWrapper: "bg-surface" }}
                     />
 
                     <div className="flex gap-4">
@@ -263,14 +263,14 @@ const FormBuilderModal = ({
                     </div>
 
                     <div className="pt-2">
-                      <label className="text-xs font-semibold text-gray-500 uppercase mb-2 block">
+                      <label className="text-xs font-semibold text-fg-muted uppercase mb-2 block">
                         Layout
                       </label>
-                      <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+                      <div className="flex bg-surface-2 p-1 rounded-lg">
                         <button
                           className={`flex-1 text-xs py-1.5 rounded-md transition-colors ${fieldConfig.width !== "half"
-                            ? "bg-white dark:bg-gray-700 shadow-sm font-medium"
-                            : "text-gray-500 hover:text-gray-700 dark:text-gray-400"
+                            ? "bg-surface shadow-sm font-medium"
+                            : "text-fg-muted hover:text-fg"
                             }`}
                           onClick={() => setFieldConfig({ ...fieldConfig, width: "full" })}
                         >
@@ -278,8 +278,8 @@ const FormBuilderModal = ({
                         </button>
                         <button
                           className={`flex-1 text-xs py-1.5 rounded-md transition-colors ${fieldConfig.width === "half"
-                            ? "bg-white dark:bg-gray-700 shadow-sm font-medium"
-                            : "text-gray-500 hover:text-gray-700 dark:text-gray-400"
+                            ? "bg-surface shadow-sm font-medium"
+                            : "text-fg-muted hover:text-fg"
                             }`}
                           onClick={() => setFieldConfig({ ...fieldConfig, width: "half" })}
                         >
@@ -289,8 +289,8 @@ const FormBuilderModal = ({
                     </div>
 
                     {/* Validation Rules Section */}
-                    <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                      <h4 className="text-xs font-semibold text-gray-500 uppercase mb-3">
+                    <div className="pt-4 border-t border-border-token">
+                      <h4 className="text-xs font-semibold text-fg-muted uppercase mb-3">
                         Validation Rules
                       </h4>
 
@@ -381,8 +381,8 @@ const FormBuilderModal = ({
                     {(fieldConfig.type === "select" ||
                       fieldConfig.type === "radio" ||
                       fieldConfig.type === "checkbox") && (
-                        <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                          <label className="text-xs font-semibold text-gray-500 uppercase mb-2 block">
+                        <div className="pt-4 border-t border-border-token">
+                          <label className="text-xs font-semibold text-fg-muted uppercase mb-2 block">
                             Options
                           </label>
                           {fieldConfig.options.map((opt, idx) => (
@@ -399,7 +399,7 @@ const FormBuilderModal = ({
                                 }}
                                 variant="bordered"
                                 size="sm"
-                                classNames={{ inputWrapper: "bg-white dark:bg-gray-800" }}
+                                classNames={{ inputWrapper: "bg-surface" }}
                               />
                               <Button
                                 isIconOnly
@@ -440,7 +440,7 @@ const FormBuilderModal = ({
                         </div>
                       )}
 
-                    <div className="pt-6 mt-6 border-t border-gray-200 dark:border-gray-700">
+                    <div className="pt-6 mt-6 border-t border-border-token">
                       <Button
                         color="primary"
                         className="w-full font-medium"
@@ -452,7 +452,7 @@ const FormBuilderModal = ({
                   </div>
                 </>
               ) : (
-                <div className="text-center py-12 text-gray-400">
+                <div className="text-center py-12 text-fg-faint">
                   <p className="text-sm">{t('pages.selectAFieldToConfigure')}</p>
                 </div>
               )}

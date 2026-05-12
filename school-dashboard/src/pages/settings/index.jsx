@@ -23,12 +23,14 @@ import {
   Users,
   Activity,
   Webhook,
+  Layers,
 } from "lucide-react";
 
 import InstitutionSettings from "./InstitutionSettings";
 import AcademicSettings from "./AcademicSettings";
 import AttendanceRules from "./AttendanceRules";
 import FeeManagementSettings from "./FeeManagementSettings";
+import FeeTemplatesPage from "./FeeTemplatesPage";
 import CommunicationSettings from "./CommunicationSettings";
 import PayrollSettings from "./PayrollSettings";
 import UserManagement from "./UserManagement";
@@ -43,6 +45,7 @@ import StaffIdSettings from "./StaffIdSettings";
 import PermissionRequests from "./PermissionRequests";
 import TrashSettings from "./TrashSettings";
 import TimetableCleanup from "../../components/TimetableCleanup";
+import WorkspaceSettings from "./WorkspaceSettings";
 import ParentManagement from "./ParentManagement";
 import WebhooksPage from "./WebhooksPage";
 import NPSAnalyticsPage from "./NPSAnalyticsPage";
@@ -101,6 +104,12 @@ export default function SettingsPage() {
   }, [owlinEnabled, navigate]);
 
   const menuCategories = useMemo(() => [
+    {
+      title: "Workspace",
+      items: [
+        { key: "workspace", label: "Workspace defaults", icon: Layers, path: "/settings/workspace", isNew: true },
+      ]
+    },
     {
       title: "General",
       items: [
@@ -190,26 +199,26 @@ export default function SettingsPage() {
   return (
     <SettingsNavigationContext.Provider value={{ setDirty: setIsDirty }}>
     <UnsavedChangesModal isOpen={isNavBlocked} onDiscard={proceedNavigation} onCancel={cancelNavigation} />
-    <div className="flex h-[calc(100vh-3rem)] overflow-hidden bg-gray-50 dark:bg-zinc-950">
+    <div className="flex h-[calc(100vh-3rem)] overflow-hidden bg-surface-2">
       {/* Settings Sidebar */}
-      <div className="w-[260px] flex-shrink-0 border-r border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col">
+      <div className="w-[260px] flex-shrink-0 border-r border-divider bg-surface flex flex-col">
         {/* Header & Search */}
-        <div className="p-4 space-y-3 sticky top-0 bg-white dark:bg-zinc-950 z-10">
-          <h1 className="text-lg font-medium text-gray-900 dark:text-zinc-100">{t('pages.settings2')}</h1>
+        <div className="p-4 space-y-3 sticky top-0 bg-surface z-10">
+          <h1 className="text-lg font-medium text-fg">{t('pages.settings2')}</h1>
 
-          <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-lg focus-within:border-gray-300 dark:focus-within:border-zinc-600 focus-within:ring-1 focus-within:ring-gray-300 dark:focus-within:ring-zinc-600 transition-colors">
-            <Search size={16} className="text-gray-400 dark:text-zinc-500" />
+          <div className="flex items-center gap-2 px-3 py-2 bg-surface-2 border border-divider rounded-lg focus-within:border-border-strong focus-within:ring-1 focus-within:ring-border-strong transition-colors">
+            <Search size={16} className="text-fg-faint" />
             <input
               type="search"
               placeholder={t('pages.searchSettings')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 bg-transparent outline-none text-gray-900 dark:text-zinc-100 placeholder:text-gray-500 dark:placeholder:text-zinc-500 text-sm"
+              className="flex-1 bg-transparent outline-none text-fg placeholder:text-fg-faint text-sm"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
-                className="text-gray-400 hover:text-gray-600 dark:text-zinc-500 dark:hover:text-zinc-300 text-xs"
+                className="text-fg-faint hover:text-fg-muted text-xs"
               >
                 Clear
               </button>
@@ -222,30 +231,30 @@ export default function SettingsPage() {
           <div className="space-y-4">
             {filteredCategories.length === 0 ? (
               <div className="text-center py-8 px-3">
-                <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.noSettingsFound')}</p>
+                <p className="text-sm text-fg-muted">{t('pages.noSettingsFound')}</p>
               </div>
             ) : (
               filteredCategories.map((category) => (
                 <div key={category.title}>
-                  <h3 className="text-[11px] font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider px-3 mb-1.5">
+                  <h3 className="text-[10.5px] font-semibold text-fg-faint uppercase tracking-[0.06em] px-2 pt-2.5 pb-1">
                     {category.title}
                   </h3>
-                  <ul className="space-y-0.5">
+                  <ul className="space-y-px">
                     {category.items.map((item) => {
                       const active = isActive(item.path);
                       return (
                         <li key={item.key}>
                           <button
                             onClick={() => item.isAction ? item.onClick() : guardedNavigate(item.path)}
-                            className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors
+                            className={`w-full flex items-center justify-between px-2 py-1.5 rounded-md text-[12.5px] transition-colors
                               ${!item.isAction && active
-                                ? "bg-gray-900 dark:bg-zinc-100 font-medium text-white dark:text-zinc-900"
-                                : "text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 hover:bg-gray-100 dark:hover:bg-zinc-800"}
+                                ? "bg-[var(--accent-bg)] text-[var(--accent)] font-semibold"
+                                : "text-fg-muted hover:text-fg hover:bg-surface-hover"}
                             `}
                           >
                             <span className="truncate">{item.label}</span>
                             {item.isNew && (
-                              <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 rounded font-medium">{t('pages.new')}</span>
+                              <span className="text-[10px] px-1.5 py-0.5 bg-surface-2 text-fg-muted rounded font-medium">{t('pages.new')}</span>
                             )}
                           </button>
                         </li>
@@ -259,26 +268,26 @@ export default function SettingsPage() {
         </div>
 
         {/* Owlin Tracker Toggle */}
-        <div className="border-t border-gray-100 dark:border-zinc-800 px-4 py-3 flex-shrink-0">
+        <div className="border-t border-divider px-4 py-3 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Activity size={14} className="text-gray-400 dark:text-zinc-500" />
-              <span className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.owlinTracker')}</span>
+              <Activity size={14} className="text-fg-faint" />
+              <span className="text-xs text-fg-muted">{t('pages.owlinTracker')}</span>
             </div>
             <button
               onClick={handleOwlinToggle}
               className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                owlinEnabled ? "bg-green-500" : "bg-gray-300 dark:bg-zinc-600"
+                owlinEnabled ? "bg-green-500" : "bg-surface-2 dark:bg-surface-2"
               }`}
             >
               <span
-                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-surface transition-transform ${
                   owlinEnabled ? "translate-x-[18px]" : "translate-x-[3px]"
                 }`}
               />
             </button>
           </div>
-          <p className="text-[10px] text-gray-400 dark:text-zinc-500 mt-1">
+          <p className="text-[10px] text-fg-faint mt-1">
             {owlinEnabled ? "Tracking active — console logs enabled" : "Tracking disabled — console clean"}
           </p>
         </div>
@@ -289,6 +298,7 @@ export default function SettingsPage() {
         <div className="max-w-[800px] mx-auto">
           <Routes>
             <Route index element={<InstitutionSettings />} />
+            <Route path="workspace" element={<WorkspaceSettings />} />
             <Route path="academics" element={<AcademicSettings />} />
             <Route path="admission-form" element={<AdmissionFormSettings />} />
             <Route path="users" element={<UserManagement />} />
@@ -299,6 +309,7 @@ export default function SettingsPage() {
             <Route path="intake-forms" element={<IntakeFormsSettings />} />
             <Route path="attendance-rules" element={<AttendanceRules />} />
             <Route path="fees" element={<FeeManagementSettings />} />
+            <Route path="fee-templates" element={<FeeTemplatesPage />} />
             <Route path="holidays" element={<HolidaySettings />} />
             <Route path="leaves" element={<LeaveSettings />} />
             <Route path="communication" element={<CommunicationSettings />} />
@@ -317,18 +328,18 @@ export default function SettingsPage() {
             <Route path="timetable-cleanup" element={
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">{t('pages.timetableDataCleanup1')}</h2>
-                  <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">
+                  <h2 className="text-xl font-semibold text-fg">{t('pages.timetableDataCleanup1')}</h2>
+                  <p className="text-sm text-fg-muted mt-1">
                     Clear all timetable-related data to start fresh
                   </p>
                 </div>
                 <TimetableCleanup />
               </div>
             } />
-            <Route path="*" element={<div className="flex flex-col items-center justify-center h-[50vh] text-gray-400 dark:text-zinc-500">
+            <Route path="*" element={<div className="flex flex-col items-center justify-center h-[50vh] text-fg-faint">
               <Puzzle size={48} className="mb-4 opacity-50" />
-              <h3 className="text-base font-medium text-gray-900 dark:text-zinc-100">{t('pages.settingModuleUnderDevelopment')}</h3>
-              <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.thisSectionWillBeAvailableInTheNextUpdate')}</p>
+              <h3 className="text-base font-medium text-fg">{t('pages.settingModuleUnderDevelopment')}</h3>
+              <p className="text-sm text-fg-muted">{t('pages.thisSectionWillBeAvailableInTheNextUpdate')}</p>
             </div>} />
           </Routes>
         </div>

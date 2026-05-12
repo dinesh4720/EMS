@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import logger from "../../utils/logger";
-import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+import { ErrorState } from "../../components/ui";
 import { useApp } from "../../context/AppContext";
 import { useAuth } from "../../context/AuthContext";
 import socketService from "../../services/socketServiceEnhanced";
@@ -12,6 +12,7 @@ import ForwardModal from "./components/ForwardModal";
 import ChatSidebar from "./components/ChatSidebar";
 import ChatMessageList from "./components/ChatMessageList";
 import ChatInputBar from "./components/ChatInputBar";
+import ChatSkeleton from "./components/ChatSkeleton";
 import { useVoiceRecording } from "./hooks/useVoiceRecording";
 import { useVoiceMessageHandler } from "./hooks/useVoiceMessageHandler";
 import { useSocketListeners } from "./hooks/useSocketListeners";
@@ -36,6 +37,7 @@ export default function ChatFull() {
   const [newMessage, setNewMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [sending, setSending] = useState(false);
 
   // Refs
@@ -262,6 +264,7 @@ export default function ChatFull() {
   const initializeChat = async () => {
     try {
       setLoading(true);
+      setLoadError(null);
       loadContacts();
 
       try {
@@ -282,6 +285,7 @@ export default function ChatFull() {
       }
     } catch (error) {
       logger.error('Error initializing chat:', error);
+      setLoadError(error);
       toast.error(t('toast.error.failedToLoadChatPleaseRefreshThePage'));
     } finally {
       setLoading(false);
@@ -289,7 +293,17 @@ export default function ChatFull() {
   };
 
   if (loading) {
-    return <TablePageSkeleton />;
+    return <ChatSkeleton />;
+  }
+
+  if (loadError) {
+    return (
+      <ErrorState
+        title={t('messaging.chat.failedToLoad', 'Failed to load chat')}
+        description={t('messaging.chat.failedToLoadDescription', 'There was a problem loading your conversations. Please try again.')}
+        onRetry={initializeChat}
+      />
+    );
   }
 
   return (

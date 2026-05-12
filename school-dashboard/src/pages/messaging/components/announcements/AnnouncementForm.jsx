@@ -1,15 +1,8 @@
 import { useState, useEffect } from 'react';
 import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Button,
   Input,
   Textarea,
-  Select,
-  SelectItem,
   Checkbox,
   Card,
   CardBody,
@@ -242,21 +235,30 @@ export default function AnnouncementForm({
     onClose();
   };
 
+  if (!isOpen) return null;
+
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={handleClose}
-      size="3xl"
-      scrollBehavior="inside"
-    >
-      <ModalContent>
-        <ModalHeader>
-          <h3 className="text-lg font-semibold">
+    <div className="frosted-overlay__backdrop" role="dialog" aria-modal="true">
+      <div className="frosted-overlay" style={{ width: 'min(820px, calc(100vw - 48px))' }}>
+        <button
+          type="button"
+          className="frosted-overlay__close"
+          onClick={handleClose}
+          aria-label="Close"
+        >
+          <X size={16} />
+        </button>
+
+        <div className="announce-overlay__hero">
+          <h3 className="announce-overlay__title">
             {editData ? 'Edit Announcement' : 'Create Announcement'}
           </h3>
-        </ModalHeader>
+          <p className="announce-overlay__subtitle">
+            Compose your message, select recipients, and pick delivery channels.
+          </p>
+        </div>
 
-        <ModalBody className="space-y-4">
+        <div className="frosted-overlay__body space-y-4">
           {/* Title */}
           <Input
             label={t('pages.title1')}
@@ -284,7 +286,7 @@ export default function AnnouncementForm({
 
           {/* Recipients */}
           <div>
-            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">{t('pages.recipients')}</label>
+            <label className="text-sm font-medium mb-2 block text-fg-muted">{t('pages.recipients')}</label>
             <div className="flex flex-wrap gap-2">
               {[
                 { key: 'all', label: 'Whole School' },
@@ -301,12 +303,12 @@ export default function AnnouncementForm({
                 </Checkbox>
               ))}
             </div>
-            {errors.recipients && <p className="text-xs text-red-500 mt-1">{errors.recipients}</p>}
+            {errors.recipients && <p className="text-xs text-danger-token mt-1">{errors.recipients}</p>}
           </div>
 
           {/* Channels */}
           <div>
-            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">{t('pages.sendVia')}</label>
+            <label className="text-sm font-medium mb-2 block text-fg-muted">{t('pages.sendVia')}</label>
             <div className="flex flex-wrap gap-2">
               {[
                 { key: 'inapp', label: 'In-App' },
@@ -323,7 +325,7 @@ export default function AnnouncementForm({
                 </Checkbox>
               ))}
             </div>
-            {errors.channels && <p className="text-xs text-red-500 mt-1">{errors.channels}</p>}
+            {errors.channels && <p className="text-xs text-danger-token mt-1">{errors.channels}</p>}
           </div>
 
           {/* Schedule */}
@@ -350,7 +352,7 @@ export default function AnnouncementForm({
 
           {/* Attachments */}
           <div>
-            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">{t('pages.attachments')}</label>
+            <label className="text-sm font-medium mb-2 block text-fg-muted">{t('pages.attachments')}</label>
             <div className="space-y-2">
               {formData.attachments.map((attachment, index) => (
                 <Card key={attachment.name || index} size="sm">
@@ -386,7 +388,7 @@ export default function AnnouncementForm({
                 >
                   <Upload size={16} />
                 </Button>
-                <span className="text-sm text-default-500">
+                <span className="text-sm text-fg-muted">
                   {uploadingFile ? `Uploading... ${uploadProgress}%` : 'Upload file'}
                 </span>
               </label>
@@ -395,9 +397,9 @@ export default function AnnouncementForm({
               )}
             </div>
           </div>
-        </ModalBody>
+        </div>
 
-        <ModalFooter>
+        <div className="frosted-overlay__footer">
           <Button
             variant="flat"
             onPress={handleClose}
@@ -405,27 +407,29 @@ export default function AnnouncementForm({
           >
             Cancel
           </Button>
-          <Button
-            color="default"
-            variant="flat"
-            onPress={() => handleSubmit(true)}
-            isDisabled={loading}
-            startContent={<Clock size={16} />}
-          >
-            {editData ? 'Update' : 'Save'} Draft
-          </Button>
-          {!editData && (
+          <div className="flex items-center gap-2">
             <Button
-              color="primary"
-              onPress={handleSendNow}
-              isLoading={loading}
-              startContent={<Send size={16} />}
+              color="default"
+              variant="flat"
+              onPress={() => handleSubmit(true)}
+              isDisabled={loading}
+              startContent={<Clock size={16} />}
             >
-              Send Now
+              {editData ? 'Update' : 'Save'} Draft
             </Button>
-          )}
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+            {!editData && (
+              <Button
+                color="primary"
+                onPress={handleSendNow}
+                isLoading={loading}
+                startContent={<Send size={16} />}
+              >
+                Send Now
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

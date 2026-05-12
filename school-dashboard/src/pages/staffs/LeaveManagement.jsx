@@ -1,28 +1,56 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Card, CardBody, Button, Chip, Modal, ModalContent, ModalHeader,
-  ModalBody, ModalFooter, Textarea, Spinner,
+  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea,
 } from "@heroui/react";
-import { ArrowLeft, Check, X } from "lucide-react";
+import { ArrowLeft, Check, X, AlertTriangle, CalendarRange } from "lucide-react";
 import { staffAttendanceApi } from "../../services/api/classes";
 import toast from "react-hot-toast";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import { TablePageSkeleton } from "../../components/skeletons/PageSkeletons";
+
+function safeFormat(dateStr) {
+  if (!dateStr) return "—";
+  try {
+    return format(parseISO(dateStr), "dd MMM yyyy");
+  } catch {
+    return dateStr;
+  }
+}
+
+function leaveBounds(leave) {
+  const app = leave?.leaveApplication || {};
+  const start = app.startDate || leave?.date || null;
+  const end = app.endDate || app.startDate || leave?.date || null;
+  return { start, end };
+}
+
+function rangesOverlap(aStart, aEnd, bStart, bEnd) {
+  if (!aStart || !aEnd || !bStart || !bEnd) return false;
+  try {
+    const aS = new Date(aStart).getTime();
+    const aE = new Date(aEnd).getTime();
+    const bS = new Date(bStart).getTime();
+    const bE = new Date(bEnd).getTime();
+    return aS <= bE && bS <= aE;
+  } catch {
+    return false;
+  }
+}
 
 export default function LeaveManagement() {
   const navigate = useNavigate();
   const [leaves, setLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
-  // processingId tracks which row is being acted on — keeps buttons disabled until refetch completes
   const [processingId, setProcessingId] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
   const [rejectModal, setRejectModal] = useState({ open: false, leaveId: null, reason: "" });
 
   const fetchLeaves = useCallback(async () => {
     try {
       const data = await staffAttendanceApi.getPendingLeaves();
       setLeaves(Array.isArray(data) ? data : []);
-    } catch (err) {
+    } catch {
       toast.error("Failed to load pending leave requests");
     } finally {
       setLoading(false);
@@ -33,11 +61,54 @@ export default function LeaveManagement() {
     fetchLeaves();
   }, [fetchLeaves]);
 
+  // Default-select the first row on desktop so the right pane is never blank.
+  useEffect(() => {
+    if (!selectedId && leaves.length > 0) {
+      setSelectedId(leaves[0]._id);
+    }
+  }, [leaves, selectedId]);
+
+  // Overlap detection: flag leaves for the same staff whose date ranges
+  // intersect any *other* pending request from the same staff. Used both to
+  // render a per-row marker and to show a banner inside the detail pane so
+  // approvers can act on a conflict without manually cross-referencing rows.
+  const overlapMap = useMemo(() => {
+    const map = new Map();
+    for (let i = 0; i < leaves.length; i++) {
+      const li = leaves[i];
+      const staffId = li.staffId?._id || li.staffId?.id;
+      const { start: aS, end: aE } = leaveBounds(li);
+      if (!staffId || !aS) continue;
+      for (let j = 0; j < leaves.length; j++) {
+        if (i === j) continue;
+        const lj = leaves[j];
+        const otherStaffId = lj.staffId?._id || lj.staffId?.id;
+        if (String(otherStaffId) !== String(staffId)) continue;
+        const { start: bS, end: bE } = leaveBounds(lj);
+        if (rangesOverlap(aS, aE, bS, bE)) {
+          if (!map.has(li._id)) map.set(li._id, []);
+          map.get(li._id).push(lj._id);
+        }
+      }
+    }
+    return map;
+  }, [leaves]);
+
+  const selected = useMemo(
+    () => leaves.find((l) => l._id === selectedId) || null,
+    [leaves, selectedId]
+  );
+
   const handleApprove = async (id) => {
+    if (!id) return;
     setProcessingId(id);
     try {
       await staffAttendanceApi.approveLeave(id, { approvalStatus: "approved" });
       toast.success("Leave request approved");
+      // Drop the actioned row locally so the pane updates immediately,
+      // then refetch to stay in sync with backend pagination/sort.
+      setLeaves((prev) => prev.filter((l) => l._id !== id));
+      setSelectedId(null);
       await fetchLeaves();
     } catch (err) {
       toast.error(err.message || "Failed to approve leave");
@@ -53,6 +124,7 @@ export default function LeaveManagement() {
   const handleReject = async () => {
     const { leaveId, reason } = rejectModal;
     setRejectModal((s) => ({ ...s, open: false }));
+    if (!leaveId) return;
     setProcessingId(leaveId);
     try {
       await staffAttendanceApi.approveLeave(leaveId, {
@@ -60,6 +132,8 @@ export default function LeaveManagement() {
         rejectionReason: reason,
       });
       toast.success("Leave request rejected");
+      setLeaves((prev) => prev.filter((l) => l._id !== leaveId));
+      setSelectedId(null);
       await fetchLeaves();
     } catch (err) {
       toast.error(err.message || "Failed to reject leave");
@@ -68,121 +142,231 @@ export default function LeaveManagement() {
     }
   };
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return "—";
-    try {
-      return format(parseISO(dateStr), "dd MMM yyyy");
-    } catch {
-      return dateStr;
-    }
-  };
-
   if (loading) return <TablePageSkeleton />;
 
   return (
-    <div className="w-full">
-      <div className="flex items-center gap-3 mb-6">
-        <Button isIconOnly variant="light" aria-label="Back to attendance" onPress={() => navigate("/staffs/attendance")}>
-          <ArrowLeft size={20} />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold text-default-900">Leave Requests</h1>
-          <p className="text-sm text-default-500 mt-1">Review and action pending staff leave applications</p>
+    <div className="page">
+      <div className="page__head">
+        <div className="row" style={{ alignItems: "center", gap: 8 }}>
+          <button
+            type="button"
+            className="iconbtn"
+            onClick={() => navigate("/staffs/attendance")}
+            aria-label="Back to attendance"
+          >
+            <ArrowLeft size={14} />
+          </button>
+          <div>
+            <h1 className="page__title">Leave Requests</h1>
+            <div className="page__sub">
+              <span className="mono tnum">{leaves.length}</span> pending
+              {overlapMap.size > 0 && (
+                <>
+                  {" · "}
+                  <span className="status status--warn" style={{ marginLeft: 4 }}>
+                    <span className="dot" />
+                    {overlapMap.size} overlap{overlapMap.size === 1 ? "" : "s"}
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
       {leaves.length === 0 ? (
-        <Card shadow="none" className="border border-default-200">
-          <CardBody className="p-12 text-center">
-            <Check size={48} className="text-success-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-default-900 mb-1">No pending requests</h3>
-            <p className="text-sm text-default-500">All leave applications have been reviewed.</p>
-          </CardBody>
-        </Card>
+        <div className="card" style={{ textAlign: "center", padding: 48 }}>
+          <Check
+            size={36}
+            className="text-success-500"
+            style={{ margin: "0 auto 12px", display: "block", color: "var(--ok)" }}
+          />
+          <div className="card__title" style={{ marginBottom: 4 }}>
+            No pending requests
+          </div>
+          <div className="subtle" style={{ fontSize: 13 }}>
+            All leave applications have been reviewed.
+          </div>
+        </div>
       ) : (
-        <Card shadow="none" className="border border-default-200">
-          <CardBody className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-default-200">
-                    <th className="text-left px-4 py-3 text-xs font-medium text-default-500 uppercase tracking-wider">Staff</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-default-500 uppercase tracking-wider">Leave Type</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-default-500 uppercase tracking-wider">Date(s)</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-default-500 uppercase tracking-wider">Reason</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-default-500 uppercase tracking-wider">Applied</th>
-                    <th className="text-right px-4 py-3 text-xs font-medium text-default-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {leaves.map((leave) => {
-                    const isProcessing = processingId === leave._id;
-                    const app = leave.leaveApplication || {};
-                    const staff = leave.staffId || {};
-                    const dateRange =
-                      app.startDate && app.endDate && app.startDate !== app.endDate
-                        ? `${formatDate(app.startDate)} – ${formatDate(app.endDate)}`
-                        : formatDate(app.startDate || leave.date);
-
-                    return (
-                      <tr key={leave._id} className="border-b border-default-100 last:border-none">
-                        <td className="px-4 py-4">
-                          <p className="font-medium text-default-800">{staff.name || "—"}</p>
-                          <p className="text-xs text-default-500">{staff.department || ""}</p>
-                        </td>
-                        <td className="px-4 py-4">
-                          <Chip size="sm" variant="flat" color="warning" className="capitalize">
-                            {app.leaveType || "—"}
-                          </Chip>
-                        </td>
-                        <td className="px-4 py-4 text-default-700">{dateRange}</td>
-                        <td className="px-4 py-4 text-default-600 max-w-[200px] truncate">
-                          {app.reason || "—"}
-                        </td>
-                        <td className="px-4 py-4 text-default-500 text-xs">
-                          {app.appliedAt ? formatDate(app.appliedAt) : "—"}
-                        </td>
-                        <td className="px-4 py-4">
-                          <div className="flex gap-2 justify-end">
-                            {isProcessing ? (
-                              <Spinner size="sm" color="primary" />
-                            ) : (
-                              <>
-                                <Button
-                                  size="sm"
-                                  color="success"
-                                  variant="flat"
-                                  startContent={<Check size={14} />}
-                                  onPress={() => handleApprove(leave._id)}
-                                  isDisabled={isProcessing}
-                                >
-                                  Approve
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  color="danger"
-                                  variant="flat"
-                                  startContent={<X size={14} />}
-                                  onPress={() => openRejectModal(leave._id)}
-                                  isDisabled={isProcessing}
-                                >
-                                  Reject
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+        <div className="twopane">
+          {/* Left list */}
+          <div className="twopane__list">
+            <div className="twopane__list-scroll" role="listbox" aria-label="Pending leave requests">
+              {leaves.map((leave) => {
+                const staff = leave.staffId || {};
+                const app = leave.leaveApplication || {};
+                const { start, end } = leaveBounds(leave);
+                const isActive = selectedId === leave._id;
+                const hasOverlap = overlapMap.has(leave._id);
+                const days =
+                  start && end ? Math.max(1, differenceInCalendarDays(new Date(end), new Date(start)) + 1) : 1;
+                return (
+                  <button
+                    key={leave._id}
+                    type="button"
+                    role="option"
+                    aria-selected={isActive}
+                    className={`leaverow ${isActive ? "is-active" : ""} ${hasOverlap ? "is-overlap" : ""}`}
+                    onClick={() => setSelectedId(leave._id)}
+                  >
+                    <div className="leaverow__main">
+                      <span className="leaverow__name">{staff.name || "—"}</span>
+                      <span className="leaverow__sub">
+                        <span className={`chip chip--warn`} style={{ textTransform: "capitalize" }}>
+                          {app.leaveType || "leave"}
+                        </span>
+                        {staff.department && <span className="subtle">{staff.department}</span>}
+                        {hasOverlap && (
+                          <span className="status status--warn" title="Overlaps with another pending request">
+                            <AlertTriangle size={11} />
+                            overlap
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    <div className="leaverow__right">
+                      <span className="mono tnum" style={{ fontSize: 12 }}>
+                        {start && end && start !== end
+                          ? `${safeFormat(start)} – ${safeFormat(end)}`
+                          : safeFormat(start)}
+                      </span>
+                      <span className="leaverow__days mono tnum">
+                        {days} day{days === 1 ? "" : "s"}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
-          </CardBody>
-        </Card>
+          </div>
+
+          {/* Right detail */}
+          <div className="twopane__detail">
+            {!selected ? (
+              <div className="subtle" style={{ padding: 32, fontSize: 13 }}>
+                Select a request to review.
+              </div>
+            ) : (() => {
+              const staff = selected.staffId || {};
+              const app = selected.leaveApplication || {};
+              const { start, end } = leaveBounds(selected);
+              const days =
+                start && end ? Math.max(1, differenceInCalendarDays(new Date(end), new Date(start)) + 1) : 1;
+              const overlaps = overlapMap.get(selected._id) || [];
+              const isProcessing = processingId === selected._id;
+
+              return (
+                <div className="leavedetail">
+                  <div className="leavedetail__head">
+                    <h2 className="leavedetail__title">{staff.name || "—"}</h2>
+                    <div className="leavedetail__meta">
+                      {[staff.department, staff.role && (Array.isArray(staff.role) ? staff.role[0] : staff.role)]
+                        .filter(Boolean)
+                        .join(" · ") || "Staff"}
+                    </div>
+                  </div>
+
+                  <div className="leavedetail__body">
+                    <div className="dp-metric" style={{ padding: 0, gap: 4 }}>
+                      <span className="dp-metric__label">
+                        <CalendarRange size={11} style={{ display: "inline", marginRight: 4 }} />
+                        Date range
+                      </span>
+                      <span className="dp-metric__value mono tnum" style={{ fontSize: 14 }}>
+                        {start && end && start !== end
+                          ? `${safeFormat(start)} – ${safeFormat(end)}`
+                          : safeFormat(start)}
+                        <span className="subtle" style={{ marginLeft: 8, fontSize: 12, fontWeight: 460 }}>
+                          ({days} day{days === 1 ? "" : "s"})
+                        </span>
+                      </span>
+                    </div>
+
+                    <dl className="leavedetail__kv">
+                      <dt>Leave type</dt>
+                      <dd style={{ textTransform: "capitalize" }}>{app.leaveType || "—"}</dd>
+                      <dt>Applied</dt>
+                      <dd className="mono tnum">{safeFormat(app.appliedAt)}</dd>
+                      <dt>Status</dt>
+                      <dd>
+                        <span className="status status--warn">
+                          <span className="dot" /> pending
+                        </span>
+                      </dd>
+                      {staff.email && (
+                        <>
+                          <dt>Email</dt>
+                          <dd className="mono tnum">{staff.email}</dd>
+                        </>
+                      )}
+                      {staff.phone && (
+                        <>
+                          <dt>Phone</dt>
+                          <dd className="mono tnum">{staff.phone}</dd>
+                        </>
+                      )}
+                    </dl>
+
+                    <div>
+                      <div className="card__title" style={{ fontSize: 11.5, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--fg-subtle)" }}>
+                        Reason
+                      </div>
+                      <div className="leavedetail__reason">{app.reason || "—"}</div>
+                    </div>
+
+                    {overlaps.length > 0 && (
+                      <div className="leavedetail__overlap" role="alert">
+                        <AlertTriangle size={14} />
+                        <div>
+                          <strong>Overlapping pending request{overlaps.length === 1 ? "" : "s"} detected</strong>
+                          <div style={{ marginTop: 2 }}>
+                            This staff member has {overlaps.length} other pending request
+                            {overlaps.length === 1 ? "" : "s"} whose dates intersect this one. Resolve one
+                            before approving to avoid double-counting leave days.
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="leavedetail__foot">
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => openRejectModal(selected._id)}
+                      disabled={isProcessing}
+                    >
+                      <X size={13} /> Reject
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn--accent"
+                      style={{ flex: 1 }}
+                      onClick={() => handleApprove(selected._id)}
+                      disabled={isProcessing}
+                    >
+                      {isProcessing ? (
+                        "Working…"
+                      ) : (
+                        <>
+                          <Check size={13} /> Approve
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
       )}
 
-      <Modal isOpen={rejectModal.open} onClose={() => setRejectModal((s) => ({ ...s, open: false }))} size="md">
+      <Modal
+        isOpen={rejectModal.open}
+        onClose={() => setRejectModal((s) => ({ ...s, open: false }))}
+        size="md"
+      >
         <ModalContent>
           <ModalHeader>Reject Leave Request</ModalHeader>
           <ModalBody>
@@ -196,12 +380,16 @@ export default function LeaveManagement() {
             />
           </ModalBody>
           <ModalFooter>
-            <Button variant="light" onPress={() => setRejectModal((s) => ({ ...s, open: false }))}>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => setRejectModal((s) => ({ ...s, open: false }))}
+            >
               Cancel
-            </Button>
-            <Button color="danger" onPress={handleReject}>
+            </button>
+            <button type="button" className="btn btn--primary" onClick={handleReject}>
               Reject
-            </Button>
+            </button>
           </ModalFooter>
         </ModalContent>
       </Modal>

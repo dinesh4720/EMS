@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   Input, Select, SelectItem, Textarea,
 } from "@heroui/react";
-import { Plus, Edit3, Trash2, ChevronDown, ChevronUp, X } from "lucide-react";
-import { MinimalButton } from "../../components/ui";
+import { Plus, Edit3, Trash2, ChevronDown, ChevronUp, X, ClipboardCheck } from "lucide-react";
+import { MinimalButton, Card, Badge, EmptyState, ErrorState, IconButton } from "../../components/ui";
 import { inventoryApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
@@ -15,10 +15,10 @@ import { formatShortDate } from '../../utils/dateFormatter';
 const STATUSES = ["PENDING", "IN_PROGRESS", "COMPLETED"];
 const CONDITIONS = ["GOOD", "FAIR", "POOR", "DAMAGED"];
 
-const statusColors = {
-  PENDING: "bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400",
-  IN_PROGRESS: "bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400",
-  COMPLETED: "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400",
+const statusBadgeColor = {
+  PENDING: 'warning',
+  IN_PROGRESS: 'info',
+  COMPLETED: 'success',
 };
 
 const emptyAuditItem = { assetId: "", expectedQuantity: "", actualQuantity: "", condition: "", notes: "" };
@@ -28,7 +28,9 @@ export default function Audits() {
   const { t } = useTranslation();
   const [audits, setAudits] = useState([]);
   const [assets, setAssets] = useState([]);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all");
   const [isOpen, setIsOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -38,20 +40,25 @@ export default function Audits() {
   const [errors, setErrors] = useState({});
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
+      setLoadError(null);
       const [data, assetData] = await Promise.all([
         inventoryApi.getAudits(filterStatus !== "all" ? filterStatus : undefined),
         inventoryApi.getAssets({}),
       ]);
       setAudits(Array.isArray(data) ? data : []);
       setAssets(assetData?.data || (Array.isArray(assetData) ? assetData : []));
-    } catch { toast.error(t('toast.error.failedToLoadAudits')); }
-    finally { setLoading(false); }
-  };
+    } catch (err) {
+      setLoadError(err);
+    } finally {
+      setLoading(false);
+      setInitialLoading(false);
+    }
+  }, [filterStatus]);
 
-  useEffect(() => { fetchData(); }, [filterStatus]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const openCreate = () => { setEditing(null); setForm(emptyForm); setErrors({}); setIsOpen(true); };
   const openEdit = (a) => {
@@ -138,92 +145,102 @@ export default function Audits() {
     });
   };
 
-  if (loading) return <TablePageSkeleton title={false} kpiCards={0} columns={4} rows={5} />;
+  if (initialLoading) return <TablePageSkeleton title={false} kpiCards={0} columns={4} rows={5} />;
 
   return (
     <div className="space-y-4">
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="text-sm rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 px-3 py-2"
+        <Select
+          selectedKeys={[filterStatus]}
+          onSelectionChange={(keys) => setFilterStatus([...keys][0] || "all")}
+          size="sm"
+          className="w-48"
+          aria-label="Filter by status"
         >
-          <option value="all">{t('pages.allStatuses')}</option>
-          {STATUSES.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
-        </select>
+          <SelectItem key="all">{t('pages.allStatuses')}</SelectItem>
+          {STATUSES.map((s) => <SelectItem key={s}>{s.replace(/_/g, " ")}</SelectItem>)}
+        </Select>
         <MinimalButton variant="primary" size="sm" icon={<Plus size={16} />} onClick={openCreate}>
           New Audit
         </MinimalButton>
       </div>
 
       {/* Audit List */}
-      {audits.length === 0 ? (
-        <p className="text-center py-12 text-gray-500 dark:text-zinc-400">{t('pages.noAuditsFound')}</p>
+      {loadError ? (
+        <ErrorState onRetry={fetchData} error={loadError} title={t('toast.error.failedToLoadAudits')} />
+      ) : audits.length === 0 ? (
+        <EmptyState
+          icon={ClipboardCheck}
+          title={t('pages.noAuditsFound')}
+          action={<MinimalButton variant="primary" size="sm" icon={<Plus size={14} />} onClick={openCreate}>New Audit</MinimalButton>}
+        />
       ) : (
-        <div className="space-y-3">
+        <div className={`space-y-3 ${loading ? 'opacity-50' : ''}`}>
           {audits.map((audit) => (
-            <div key={audit._id} className="bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 rounded-xl shadow-sm dark:shadow-zinc-900/50">
+            <Card key={audit._id} padding="none" elevation="raised">
               <div className="px-5 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-4 min-w-0 flex-1">
                   <div className="min-w-0">
-                    <h4 className="font-medium text-gray-900 dark:text-zinc-100 truncate">{audit.title}</h4>
+                    <h4 className="font-medium text-fg truncate">{audit.title}</h4>
                     <div className="flex items-center gap-3 mt-1">
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${statusColors[audit.status] || ""}`}>{audit.status?.replace(/_/g, " ")}</span>
+                      <Badge color={statusBadgeColor[audit.status] || 'neutral'} size="sm">
+                        {audit.status?.replace(/_/g, " ")}
+                      </Badge>
                       {audit.startDate && (
-                        <span className="text-xs text-gray-500 dark:text-zinc-400">Started: {formatShortDate(audit.startDate)}</span>
+                        <span className="text-xs text-fg-muted">Started: {formatShortDate(audit.startDate)}</span>
                       )}
-                      <span className="text-xs text-gray-500 dark:text-zinc-400">{audit.auditItems?.length || 0} items</span>
+                      <span className="text-xs text-fg-muted">{audit.auditItems?.length || 0} items</span>
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
                   {audit.auditItems?.length > 0 && (
-                    <button
+                    <IconButton
                       aria-label={expanded === audit._id ? "Collapse audit items" : "Expand audit items"}
+                      variant="ghost"
+                      size="sm"
+                      icon={expanded === audit._id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                       onClick={() => setExpanded(expanded === audit._id ? null : audit._id)}
-                      className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-500 dark:text-zinc-400"
-                    >
-                      {expanded === audit._id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                    </button>
+                    />
                   )}
-                  <button aria-label="Edit audit" onClick={() => openEdit(audit)} className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-500 dark:text-zinc-400"><Edit3 size={14} /></button>
-                  <button aria-label="Delete audit" onClick={() => setDeleteTarget(audit._id)} className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-950 text-gray-500 dark:text-zinc-400 hover:text-red-600"><Trash2 size={14} /></button>
+                  <IconButton aria-label="Edit audit" variant="ghost" size="sm" icon={<Edit3 size={14} />} onClick={() => openEdit(audit)} />
+                  <IconButton aria-label="Delete audit" variant="danger" size="sm" icon={<Trash2 size={14} />} onClick={() => setDeleteTarget(audit._id)} />
                 </div>
               </div>
 
               {/* Expanded Audit Items */}
               {expanded === audit._id && audit.auditItems?.length > 0 && (
-                <div className="border-t border-gray-100 dark:border-zinc-800 px-5 py-3">
+                <div className="border-t border-divider px-5 py-3">
                   <table className="w-full text-sm">
                     <thead>
                       <tr>
                         {["Asset", "Expected Qty", "Actual Qty", "Condition", "Notes"].map((h) => (
-                          <th key={h} className="text-left py-2 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">{h}</th>
+                          <th key={h} className="text-left py-2 text-xs font-medium text-fg-muted uppercase">{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {audit.auditItems.map((item, idx) => (
-                        <tr key={item._id || item.assetId?._id || `audit-item-${idx}`} className="border-t border-gray-50 dark:border-zinc-800">
-                          <td className="py-2 text-gray-900 dark:text-zinc-100">{item.assetId?.name || "Unknown"}</td>
-                          <td className="py-2 text-gray-600 dark:text-zinc-400">{item.expectedQuantity ?? "—"}</td>
-                          <td className="py-2 text-gray-600 dark:text-zinc-400">{item.actualQuantity ?? "—"}</td>
-                          <td className="py-2 text-gray-600 dark:text-zinc-400">{item.condition || "—"}</td>
-                          <td className="py-2 text-gray-500 dark:text-zinc-400 text-xs">{item.notes || "—"}</td>
+                        <tr key={item._id || item.assetId?._id || `audit-item-${idx}`} className="border-t border-divider">
+                          <td className="py-2 text-fg">{item.assetId?.name || "Unknown"}</td>
+                          <td className="py-2 text-fg-muted">{item.expectedQuantity ?? "—"}</td>
+                          <td className="py-2 text-fg-muted">{item.actualQuantity ?? "—"}</td>
+                          <td className="py-2 text-fg-muted">{item.condition || "—"}</td>
+                          <td className="py-2 text-fg-muted text-xs">{item.notes || "—"}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
               )}
-            </div>
+            </Card>
           ))}
         </div>
       )}
 
       {/* Create/Edit Modal */}
-      <Modal isOpen={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) setErrors({}); }} size="lg">
+      <Modal isOpen={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) setErrors({}); }} size="lg" scrollBehavior="inside">
         <ModalContent>
           <ModalHeader>{editing ? "Edit Audit" : "New Asset Audit"}</ModalHeader>
           <ModalBody>
@@ -239,26 +256,29 @@ export default function Audits() {
             {/* Audit Items Sub-form */}
             <div className="mt-4">
               <div className="flex items-center justify-between mb-2">
-                <h4 className="text-sm font-semibold text-gray-700 dark:text-zinc-300">Audit Items</h4>
+                <h4 className="text-sm font-semibold text-fg">Audit Items</h4>
                 <MinimalButton variant="ghost" size="sm" icon={<Plus size={14} />} onClick={addAuditItem}>
                   Add Item
                 </MinimalButton>
               </div>
               {(form.auditItems || []).length === 0 && (
-                <p className="text-xs text-gray-500 dark:text-zinc-400 text-center py-3 border border-dashed border-gray-200 dark:border-zinc-700 rounded-lg">
+                <p className="text-xs text-fg-muted text-center py-3 border border-dashed border-border-token rounded-lg">
                   No items added yet. Click "Add Item" to audit assets.
                 </p>
               )}
               <div className="space-y-3">
                 {(form.auditItems || []).map((item, idx) => (
-                  <div key={item.assetId || `form-audit-item-${idx}`} className="border border-gray-100 dark:border-zinc-800 rounded-lg p-3 relative">
-                    <button
-                      onClick={() => removeAuditItem(idx)}
-                      className="absolute top-2 right-2 p-1 rounded-md hover:bg-red-50 dark:hover:bg-red-950 text-gray-400 hover:text-red-600"
-                    >
-                      <X size={14} />
-                    </button>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pr-6">
+                  <div key={item.assetId || `form-audit-item-${idx}`} className="border border-divider rounded-lg p-3 relative">
+                    <div className="absolute top-2 right-2">
+                      <IconButton
+                        aria-label="Remove audit item"
+                        variant="danger"
+                        size="sm"
+                        icon={<X size={14} />}
+                        onClick={() => removeAuditItem(idx)}
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pr-8">
                       <Select
                         label="Asset"
                         selectedKeys={item.assetId ? [item.assetId] : []}

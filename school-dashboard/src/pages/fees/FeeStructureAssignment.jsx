@@ -1,187 +1,253 @@
-import { feesApi } from '../../services/api.js';
-import { useState, useEffect, useMemo } from "react";
-import { feeStructureAssignmentSchema, parseFormSchema } from '../../validators/formSchemas';
-import { Card, CardBody, Button, Select, SelectItem, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Divider, Textarea, Spinner, Chip, Badge, ButtonGroup } from "@heroui/react";
-import { Save, Users, CheckCircle, AlertCircle, IndianRupee, Info, FileText, Copy } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import PropTypes from "prop-types";
+import {
+  Save,
+  Users,
+  CheckCircle,
+  AlertCircle,
+  Info,
+  Trash2,
+} from "lucide-react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
+
+import { feesApi } from "../../services/api.js";
+import { feeStructureAssignmentSchema, parseFormSchema } from "../../validators/formSchemas";
 import { useApp } from "../../context/AppContext";
-import { useCurrency } from '../../context/hooks/useCurrency';
+import { useCurrency } from "../../context/hooks/useCurrency";
 import { getAcademicYearOptions } from "../../utils/constants";
-import { getDateLocale } from '../../i18n/index';
-import { useTranslation } from 'react-i18next';
-import ConfirmDialog from '../../components/ui/ConfirmDialog';
-import useConfirmDialog from '../../hooks/useConfirmDialog';
-import logger from '../../utils/logger';
+import { getDateLocale } from "../../i18n/index";
+import useConfirmDialog from "../../hooks/useConfirmDialog";
+import logger from "../../utils/logger";
+import {
+  Badge,
+  Button,
+  Card,
+  Chip,
+  ConfirmDialog,
+  EmptyState,
+  IconButton,
+  InlineEdit,
+  SectionHeading,
+  Select,
+  Skeleton,
+} from "../../components/ui";
 
-
-
+import StudentsPreviewModal from "./feeStructure/StudentsPreviewModal";
 
 const COLLECTION_MODES = [
-  { key: 'term', label: 'Term-wise' },
-  { key: 'monthly', label: 'Monthly' },
-  { key: 'quarterly', label: 'Quarterly' },
-  { key: 'yearly', label: 'Yearly (One-time)' }
+  { value: "term", label: "Term-wise" },
+  { value: "monthly", label: "Monthly" },
+  { value: "quarterly", label: "Quarterly" },
+  { value: "yearly", label: "Yearly (One-time)" },
 ];
 
 const getAcademicYearStart = (academicYear) => {
-  const parsedYear = Number.parseInt(String(academicYear || '').split('-')[0], 10);
+  const parsedYear = Number.parseInt(String(academicYear || "").split("-")[0], 10);
   return Number.isNaN(parsedYear) ? new Date().getFullYear() : parsedYear;
 };
 
 const buildAcademicYearDate = (academicYear, month, day, useNextYear = false) => {
   const startYear = getAcademicYearStart(academicYear);
   const year = useNextYear ? startYear + 1 : startYear;
-  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 };
+
+const calculateAnnualTotal = (feeHeads) =>
+  feeHeads.reduce((sum, head) => {
+    let annualAmount = head.amount || 0;
+    if (head.frequency === "monthly") annualAmount *= 12;
+    else if (head.frequency === "quarterly") annualAmount *= 4;
+    else if (head.frequency === "term" && head.applicableTerms) {
+      annualAmount *= head.applicableTerms.length;
+    }
+    return sum + annualAmount;
+  }, 0);
 
 export default function FeeStructureAssignment({ classes, onAssignmentComplete }) {
   const { t } = useTranslation();
-  const { fmt } = useCurrency();
+  const { fmt, currencySymbol } = useCurrency();
   const { currentAcademicYear } = useApp();
   const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
+
   const academicYearOptions = useMemo(
     () => getAcademicYearOptions(currentAcademicYear, { past: 2, future: 2 }),
-    [currentAcademicYear]
+    [currentAcademicYear],
   );
-  const [templates, setTemplates] = useState([]);
 
+  const [templates, setTemplates] = useState([]);
   const [templateError, setTemplateError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [applying, setApplying] = useState(false);
-  
-  const [selectedClass, setSelectedClass] = useState('');
-  const [selectedTemplate, setSelectedTemplate] = useState('');
+  const [selectedClass, setSelectedClass] = useState("");
+  const [selectedTemplate, setSelectedTemplate] = useState("");
   const [academicYearOverride, setAcademicYearOverride] = useState(null);
   const [existingStructure, setExistingStructure] = useState(null);
   const [structureLoading, setStructureLoading] = useState(false);
   const academicYear = academicYearOverride || currentAcademicYear;
-  
+
   const [formData, setFormData] = useState({
-    templateId: '',
+    templateId: "",
     feeHeads: [],
-    collectionSchedule: {
-      mode: 'term',
-      installments: []
-    },
-    totalAnnualFee: 0
+    collectionSchedule: { mode: "term", installments: [] },
+    totalAnnualFee: 0,
   });
 
   const [previewStudents, setPreviewStudents] = useState([]);
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const { isOpen: isPreviewOpen, onOpen: onPreviewOpen, onClose: onPreviewClose } = useDisclosure();
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
-  useEffect(() => {
-    fetchTemplates();
-  }, []);
+  const generateInstallments = useCallback(
+    (feeHeads, mode, totalAnnualFee = formData.totalAnnualFee) => {
+      const installments = [];
 
-  useEffect(() => {
-    // BUG-29: guard prevents API call with academicYear=undefined
-    // Debounce to prevent rapid API calls when switching classes quickly
-    if (selectedClass && academicYear) {
-      const timer = setTimeout(() => fetchExistingStructure(), 300);
-      return () => clearTimeout(timer);
-    }
-  }, [selectedClass, academicYear]);
+      if (mode === "term") {
+        installments.push(
+          { name: "Term 1", dueDate: buildAcademicYearDate(academicYear, 4, 15), amount: totalAnnualFee / 2, status: "pending" },
+          { name: "Term 2", dueDate: buildAcademicYearDate(academicYear, 10, 15), amount: totalAnnualFee / 2, status: "pending" },
+        );
+      } else if (mode === "monthly") {
+        const monthlyAmount = totalAnnualFee / 12;
+        const monthlySchedule = [
+          ["Apr", 4, false], ["May", 5, false], ["Jun", 6, false], ["Jul", 7, false],
+          ["Aug", 8, false], ["Sep", 9, false], ["Oct", 10, false], ["Nov", 11, false],
+          ["Dec", 12, false], ["Jan", 1, true], ["Feb", 2, true], ["Mar", 3, true],
+        ];
+        monthlySchedule.forEach(([label, month, useNextYear], index) => {
+          installments.push({
+            name: `${label} Fee`,
+            dueDate: buildAcademicYearDate(academicYear, month, 10, useNextYear),
+            amount: monthlyAmount,
+            status: "pending",
+            order: index + 1,
+          });
+        });
+      } else if (mode === "quarterly") {
+        installments.push(
+          { name: "Q1 (Apr-Jun)", dueDate: buildAcademicYearDate(academicYear, 4, 15), amount: totalAnnualFee / 4, status: "pending" },
+          { name: "Q2 (Jul-Sep)", dueDate: buildAcademicYearDate(academicYear, 7, 15), amount: totalAnnualFee / 4, status: "pending" },
+          { name: "Q3 (Oct-Dec)", dueDate: buildAcademicYearDate(academicYear, 10, 15), amount: totalAnnualFee / 4, status: "pending" },
+          { name: "Q4 (Jan-Mar)", dueDate: buildAcademicYearDate(academicYear, 1, 15, true), amount: totalAnnualFee / 4, status: "pending" },
+        );
+      } else if (mode === "yearly") {
+        installments.push({
+          name: "Annual",
+          dueDate: buildAcademicYearDate(academicYear, 4, 15),
+          amount: totalAnnualFee,
+          status: "pending",
+        });
+      }
 
-  const fetchTemplates = async () => {
+      return installments;
+    },
+    [academicYear, formData.totalAnnualFee],
+  );
+
+  const fetchTemplates = useCallback(async () => {
     setTemplateError(null);
     try {
       const data = await feesApi.getTemplates();
       setTemplates(Array.isArray(data) ? data : []);
     } catch (error) {
-      logger.error('Failed to fetch templates:', error);
-      setTemplateError(error.message || 'Failed to load fee templates');
-      toast.error(t('toast.error.failedToLoadTemplates'));
+      logger.error("Failed to fetch templates:", error);
+      setTemplateError(error.message || "Failed to load fee templates");
+      toast.error(t("toast.error.failedToLoadTemplates"));
     }
-  };
+  }, [t]);
 
-  const fetchExistingStructure = async () => {
+  const fetchExistingStructure = useCallback(async () => {
     if (!selectedClass) return;
-
     setStructureLoading(true);
     try {
       const data = await feesApi.getFeeStructure(selectedClass, academicYear);
       setExistingStructure(data);
       setFormData({
-        templateId: data.templateId?._id || data.templateId || '',
+        templateId: data.templateId?._id || data.templateId || "",
         feeHeads: data.feeHeads || [],
-        collectionSchedule: data.collectionSchedule || { mode: 'term', installments: [] },
-        totalAnnualFee: data.totalAnnualFee || 0
+        collectionSchedule: data.collectionSchedule || { mode: "term", installments: [] },
+        totalAnnualFee: data.totalAnnualFee || 0,
       });
       if (data.templateId?._id) {
         setSelectedTemplate(data.templateId._id);
       }
-    } catch (error) {
-      // 404 = no structure yet, that's fine
+    } catch {
       setExistingStructure(null);
-      setSelectedTemplate('');
+      setSelectedTemplate("");
       setFormData({
-        templateId: '',
+        templateId: "",
         feeHeads: [],
-        collectionSchedule: { mode: 'term', installments: [] },
-        totalAnnualFee: 0
+        collectionSchedule: { mode: "term", installments: [] },
+        totalAnnualFee: 0,
       });
     } finally {
       setStructureLoading(false);
     }
-  };
+  }, [selectedClass, academicYear]);
+
+  useEffect(() => {
+    fetchTemplates();
+  }, [fetchTemplates]);
+
+  useEffect(() => {
+    if (selectedClass && academicYear) {
+      const timer = setTimeout(() => fetchExistingStructure(), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedClass, academicYear, fetchExistingStructure]);
 
   const handleTemplateChange = (templateId) => {
     setSelectedTemplate(templateId);
-    const template = templates.find(t => t._id === templateId);
-    
+    const template = templates.find((tpl) => tpl._id === templateId);
     if (template) {
+      const annual = template.totalAnnualFee || 0;
       setFormData({
-        templateId: templateId,
+        templateId,
         feeHeads: template.feeHeads || [],
         collectionSchedule: {
-          mode: 'term',
-          installments: generateInstallments(template.feeHeads, 'term', template.totalAnnualFee || 0)
+          mode: "term",
+          installments: generateInstallments(template.feeHeads, "term", annual),
         },
-        totalAnnualFee: template.totalAnnualFee || 0
+        totalAnnualFee: annual,
       });
     }
   };
 
-  const generateInstallments = (feeHeads, mode, totalAnnualFee = formData.totalAnnualFee) => {
-    const installments = [];
+  const updateFeeHeadAmount = (index, amount) => {
+    const updatedHeads = [...formData.feeHeads];
+    updatedHeads[index] = { ...updatedHeads[index], amount: Math.max(0, parseFloat(amount) || 0) };
+    const newTotal = calculateAnnualTotal(updatedHeads);
+    setFormData({
+      ...formData,
+      feeHeads: updatedHeads,
+      totalAnnualFee: newTotal,
+      collectionSchedule: {
+        ...formData.collectionSchedule,
+        installments: generateInstallments(updatedHeads, formData.collectionSchedule.mode, newTotal),
+      },
+    });
+  };
 
-    if (mode === 'term') {
-      installments.push(
-        { name: 'Term 1', dueDate: buildAcademicYearDate(academicYear, 4, 15), amount: totalAnnualFee / 2, status: 'pending' },
-        { name: 'Term 2', dueDate: buildAcademicYearDate(academicYear, 10, 15), amount: totalAnnualFee / 2, status: 'pending' }
-      );
-    } else if (mode === 'monthly') {
-      const monthlyAmount = totalAnnualFee / 12;
-      const monthlySchedule = [
-        ['Apr', 4, false], ['May', 5, false], ['Jun', 6, false], ['Jul', 7, false],
-        ['Aug', 8, false], ['Sep', 9, false], ['Oct', 10, false], ['Nov', 11, false],
-        ['Dec', 12, false], ['Jan', 1, true], ['Feb', 2, true], ['Mar', 3, true]
-      ];
+  const removeFeeHead = (index) => {
+    const updatedHeads = formData.feeHeads.filter((_, i) => i !== index);
+    const newTotal = calculateAnnualTotal(updatedHeads);
+    setFormData({
+      ...formData,
+      feeHeads: updatedHeads,
+      totalAnnualFee: newTotal,
+      collectionSchedule: {
+        ...formData.collectionSchedule,
+        installments: generateInstallments(updatedHeads, formData.collectionSchedule.mode, newTotal),
+      },
+    });
+  };
 
-      monthlySchedule.forEach(([label, month, useNextYear], index) => {
-        installments.push({
-          name: `${label} Fee`,
-          dueDate: buildAcademicYearDate(academicYear, month, 10, useNextYear),
-          amount: monthlyAmount,
-          status: 'pending',
-          order: index + 1
-        });
-      });
-    } else if (mode === 'quarterly') {
-      installments.push(
-        { name: 'Q1 (Apr-Jun)', dueDate: buildAcademicYearDate(academicYear, 4, 15), amount: totalAnnualFee / 4, status: 'pending' },
-        { name: 'Q2 (Jul-Sep)', dueDate: buildAcademicYearDate(academicYear, 7, 15), amount: totalAnnualFee / 4, status: 'pending' },
-        { name: 'Q3 (Oct-Dec)', dueDate: buildAcademicYearDate(academicYear, 10, 15), amount: totalAnnualFee / 4, status: 'pending' },
-        { name: 'Q4 (Jan-Mar)', dueDate: buildAcademicYearDate(academicYear, 1, 15, true), amount: totalAnnualFee / 4, status: 'pending' }
-      );
-    } else if (mode === 'yearly') {
-      installments.push(
-        { name: 'Annual', dueDate: buildAcademicYearDate(academicYear, 4, 15), amount: totalAnnualFee, status: 'pending' }
-      );
-    }
-
-    return installments;
+  const handleCollectionModeChange = (newMode) => {
+    setFormData({
+      ...formData,
+      collectionSchedule: {
+        mode: newMode,
+        installments: generateInstallments(formData.feeHeads, newMode, formData.totalAnnualFee),
+      },
+    });
   };
 
   const handleSaveStructure = async () => {
@@ -191,29 +257,18 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
       academicYear,
     });
     if (!success) {
-      toast.error(Object.values(zodErrors)[0] || t('toast.error.pleaseSelectAClassAndAddFeeHeads'));
+      toast.error(Object.values(zodErrors)[0] || t("toast.error.pleaseSelectAClassAndAddFeeHeads"));
       return;
     }
-
     setSaving(true);
     try {
-      const payload = {
-        classId: selectedClass,
-        academicYear,
-        ...formData
-      };
-
-      await feesApi.saveFeeStructure(payload);
-
-      toast.success(t('toast.success.feeStructureSavedSuccessfully'));
+      await feesApi.saveFeeStructure({ classId: selectedClass, academicYear, ...formData });
+      toast.success(t("toast.success.feeStructureSavedSuccessfully"));
       fetchExistingStructure();
-      
-      if (onAssignmentComplete) {
-        onAssignmentComplete();
-      }
+      onAssignmentComplete?.();
     } catch (error) {
-      logger.error('Failed to save structure:', error);
-      toast.error(t('toast.error.failedToSaveFeeStructure'));
+      logger.error("Failed to save structure:", error);
+      toast.error(t("toast.error.failedToSaveFeeStructure"));
     } finally {
       setSaving(false);
     }
@@ -221,37 +276,38 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
 
   const handlePreviewStudents = async () => {
     if (!selectedClass) return;
-
     try {
       const data = await feesApi.getClassFeeStatus(selectedClass, academicYear);
       setPreviewStudents(Array.isArray(data) ? data : []);
-      onPreviewOpen();
+      setIsPreviewOpen(true);
     } catch (error) {
-      logger.error('Failed to fetch students:', error);
-      toast.error(t('toast.error.failedToLoadStudentList'));
+      logger.error("Failed to fetch students:", error);
+      toast.error(t("toast.error.failedToLoadStudentList"));
     }
   };
 
-  const handleApplyToStudents = async () => {
+  const handleApplyToStudents = () => {
     if (!selectedClass) {
-      toast.error(t('toast.error.pleaseSelectAClassFirst'));
+      toast.error(t("toast.error.pleaseSelectAClassFirst"));
       return;
     }
-
     showConfirm({
-      title: t('pages.applyFeeStructure', 'Apply Fee Structure'),
-      message: t('confirm.applyFeeStructure', 'Apply this fee structure to all students in the selected class? This cannot be undone.'),
-      variant: 'warning',
-      confirmText: t('pages.apply', 'Apply'),
+      title: t("pages.applyFeeStructure", "Apply Fee Structure"),
+      message: t(
+        "confirm.applyFeeStructure",
+        "Apply this fee structure to all students in the selected class? This cannot be undone.",
+      ),
+      variant: "warning",
+      confirmText: t("pages.apply", "Apply"),
       onConfirm: async () => {
         setApplying(true);
         try {
           const result = await feesApi.applyToStudents({ classId: selectedClass, academicYear });
-          toast.success(result.message || t('toast.success.feeStructureApplied'));
-          onPreviewClose();
+          toast.success(result.message || t("toast.success.feeStructureApplied"));
+          setIsPreviewOpen(false);
         } catch (error) {
-          logger.error('Failed to apply structure:', error);
-          toast.error(t('toast.error.failedToApplyFeeStructureToStudents'));
+          logger.error("Failed to apply structure:", error);
+          toast.error(t("toast.error.failedToApplyFeeStructureToStudents"));
         } finally {
           setApplying(false);
         }
@@ -259,354 +315,270 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
     });
   };
 
-  const updateFeeHeadAmount = (index, amount) => {
-    const updatedHeads = [...formData.feeHeads];
-    updatedHeads[index].amount = Math.max(0, parseFloat(amount) || 0);
-    
-    // Recalculate total
-    const newTotal = updatedHeads.reduce((sum, head) => {
-      let annualAmount = head.amount;
-      if (head.frequency === 'monthly') annualAmount *= 12;
-      else if (head.frequency === 'quarterly') annualAmount *= 4;
-      else if (head.frequency === 'term' && head.applicableTerms) annualAmount *= head.applicableTerms.length;
-      return sum + annualAmount;
-    }, 0);
+  const classOptions = useMemo(
+    () => (classes || []).map((cls) => ({ value: cls._id, label: `${cls.name} - ${cls.section}` })),
+    [classes],
+  );
 
-    setFormData({
-      ...formData,
-      feeHeads: updatedHeads,
-      totalAnnualFee: newTotal,
-      collectionSchedule: {
-        ...formData.collectionSchedule,
-        installments: generateInstallments(updatedHeads, formData.collectionSchedule.mode, newTotal)
-      }
-    });
-  };
+  const templateOptions = useMemo(
+    () => [
+      { value: "", label: t("pages.selectATemplateOptional", "Select a template (optional)") },
+      ...templates.map((tpl) => ({
+        value: tpl._id,
+        label: `${tpl.name} — ${tpl.section} • ${fmt(tpl.totalAnnualFee || 0)}/year`,
+      })),
+    ],
+    [templates, t, fmt],
+  );
 
   return (
-    <Card className="shadow-sm border border-default-200">
-      <CardBody className="p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-bold text-default-900">{t('pages.assignFeeStructureToClass')}</h3>
-            <p className="text-sm text-default-500">{t('pages.createOrUpdateFeeStructureForASpecificClass')}</p>
-          </div>
-          {existingStructure && (
-            <Chip color="success" variant="flat" startContent={<CheckCircle size={16} />}>
-              {t('pages.structureExists')}
-            </Chip>
+    <Card padding="md" elevation="raised" className="space-y-6">
+      <SectionHeading
+        description={t(
+          "pages.createOrUpdateFeeStructureForASpecificClass",
+          "Create or update fee structure for a specific class",
+        )}
+        actions={
+          existingStructure ? (
+            <Badge color="success" dot>
+              {t("pages.structureExists", "Structure exists")}
+            </Badge>
+          ) : null
+        }
+      >
+        {t("pages.assignFeeStructureToClass", "Assign Fee Structure to Class")}
+      </SectionHeading>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Select
+          label={t("pages.selectClass1", "Select Class")}
+          value={selectedClass}
+          onChange={(e) => setSelectedClass(e.target.value)}
+          options={[
+            { value: "", label: t("pages.chooseAClass", "Choose a class") },
+            ...classOptions,
+          ]}
+        />
+        <Select
+          label={t("pages.academicYear1", "Academic Year")}
+          value={academicYear}
+          onChange={(e) => {
+            const next = e.target.value;
+            setAcademicYearOverride(next === currentAcademicYear ? null : next);
+          }}
+          options={academicYearOptions.map((year) => ({ value: year, label: year }))}
+        />
+      </div>
+
+      {!selectedClass && (
+        <EmptyState
+          icon={Info}
+          size="md"
+          title={t("pages.pleaseSelectAClassToAssignFeeStructure", "Please select a class to assign a fee structure")}
+        />
+      )}
+
+      {selectedClass && (
+        <>
+          {structureLoading && (
+            <div className="space-y-3">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-20 w-full" />
+            </div>
           )}
-        </div>
 
-        <Divider />
-
-        {/* Class Selection */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Select
-            label={t('pages.selectClass1')}
-            placeholder={t('pages.chooseAClass')}
-            selectedKeys={selectedClass ? [selectedClass] : []}
-            onChange={(e) => setSelectedClass(e.target.value)}
-            variant="bordered"
-          >
-            {classes?.map((cls) => (
-              <SelectItem key={cls._id} value={cls._id}>
-                {cls.name} - {cls.section}
-              </SelectItem>
-            ))}
-          </Select>
-
-          <Select
-            label={t('pages.academicYear1')}
-            variant="bordered"
-            selectedKeys={[academicYear]}
-            onChange={(e) => {
-              const nextAcademicYear = e.target.value;
-              setAcademicYearOverride(nextAcademicYear === currentAcademicYear ? null : nextAcademicYear);
-            }}
-          >
-            {academicYearOptions.map(year => (
-              <SelectItem key={year} value={year}>{year}</SelectItem>
-            ))}
-          </Select>
-        </div>
-
-        {selectedClass && (
-          <>
-            <Divider />
-
-            {/* Structure loading indicator */}
-            {structureLoading && (
-              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400 py-2">
-                <span className="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
-                {t('pages.loadingFeeStructure', 'Loading fee structure...')}
+          {templateError && (
+            <div className="flex items-center gap-3 p-4 rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/30">
+              <AlertCircle size={18} className="text-red-500 shrink-0" aria-hidden="true" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-red-800 dark:text-red-200">
+                  {t("toast.error.failedToLoadFeeTemplates", "Failed to load fee templates")}
+                </p>
+                <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">{templateError}</p>
               </div>
-            )}
-
-            {/* Template load error */}
-            {templateError && (
-              <div className="flex items-center gap-3 p-4 rounded-lg bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800">
-                <AlertCircle size={18} className="text-red-500 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-red-800 dark:text-red-200">{t('toast.error.failedToLoadFeeTemplates')}</p>
-                  <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">{templateError}</p>
-                </div>
-                <Button size="sm" variant="flat" color="danger" onPress={fetchTemplates}>{t('pages.retry')}</Button>
-              </div>
-            )}
-
-            {/* Template Selection */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h4 className="font-semibold text-default-900">{t('pages.selectFeeTemplate')}</h4>
-                  <p className="text-xs text-default-500">{t('pages.chooseFromExistingTemplatesOrCreateCustomStructure')}</p>
-                </div>
-              </div>
-
-              <Select
-                placeholder={t('pages.selectATemplateOptional')}
-                selectedKeys={selectedTemplate ? [selectedTemplate] : []}
-                onChange={(e) => handleTemplateChange(e.target.value)}
-                variant="bordered"
-                classNames={{ trigger: "bg-white dark:bg-zinc-950 border-default-200" }}
-              >
-                {templates.map((template) => (
-                  <SelectItem key={template._id} value={template._id}>
-                    <div className="flex flex-col">
-                      <span className="font-medium">{template.name}</span>
-                      <span className="text-xs text-default-500">
-                        {template.section} • {fmt(template.totalAnnualFee || 0)}/year
-                      </span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </Select>
+              <Button size="sm" variant="outline" onClick={fetchTemplates}>
+                {t("pages.retry", "Retry")}
+              </Button>
             </div>
+          )}
 
-            {formData.feeHeads.length > 0 && (
-              <>
-                <Divider />
-
-                {/* Fee Heads Summary */}
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h4 className="font-semibold text-default-900">{t('pages.feeHeads1')}</h4>
-                      <p className="text-xs text-default-500">{t('pages.reviewAndCustomizeAmountsIfNeeded')}</p>
-                    </div>
-                    <Badge color="primary" variant="flat" size="lg">
-                      {fmt(formData.totalAnnualFee)}/year
-                    </Badge>
-                  </div>
-
-                  <div className="space-y-3">
-                    {formData.feeHeads.map((head, index) => (
-                      <div key={head._id || head.name || index} className="flex items-center justify-between p-4 bg-default-50 rounded-xl border border-default-200">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-default-900">{head.name}</span>
-                            <Chip size="sm" color={head.mandatory ? "success" : "warning"} variant="flat">
-                              {head.mandatory ? t('common.mandatory') : t('common.optional')}
-                            </Chip>
-                            <Chip size="sm" variant="flat">{head.frequency}</Chip>
-                          </div>
-                          <p className="text-xs text-default-500 mt-1">{head.category}</p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <Input
-                            type="number"
-                            label={t('pages.amount1')}
-                            value={head.amount}
-                            onValueChange={(v) => updateFeeHeadAmount(index, v)}
-                            variant="bordered"
-                            size="sm"
-                            min={0}
-                            startContent={<IndianRupee size={16} className="text-default-400" />}
-                            className="w-32"
-                          />
-                          <Button
-                            isIconOnly
-                            size="sm"
-                            variant="light"
-                            color="danger"
-                            onPress={() => {
-                              const updatedHeads = formData.feeHeads.filter((_, i) => i !== index);
-                              setFormData({ ...formData, feeHeads: updatedHeads });
-                            }}
-                          >
-                            ×
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Collection Schedule */}
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h4 className="font-semibold text-default-900">{t('pages.collectionSchedule')}</h4>
-                      <p className="text-xs text-default-500">{t('pages.configureHowFeesWillBeCollected')}</p>
-                    </div>
-                    <Select
-                      size="sm"
-                      variant="bordered"
-                      selectedKeys={[formData.collectionSchedule.mode]}
-                      onChange={(e) => {
-                        const newMode = e.target.value;
-                        setFormData({
-                          ...formData,
-                          collectionSchedule: {
-                            mode: newMode,
-                            installments: generateInstallments(formData.feeHeads, newMode, formData.totalAnnualFee)
-                          }
-                        });
-                      }}
-                      className="w-48"
-                    >
-                      {COLLECTION_MODES.map(mode => (
-                        <SelectItem key={mode.key} value={mode.key}>{t(`fees.collectionMode.${mode.key}`)}</SelectItem>
-                      ))}
-                    </Select>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {formData.collectionSchedule.installments.map((installment) => (
-                      <div key={installment._id || installment.name} className="p-4 bg-primary-50 rounded-xl border border-primary-200">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-semibold text-primary-900">{installment.name}</span>
-                          <Chip size="sm" color="primary" variant="flat">{t('fees.dueLabel', { date: installment.dueDate ? new Date(installment.dueDate).toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric' }) : '—' })}</Chip>
-                        </div>
-                        <p className="text-2xl font-bold text-primary-700">{fmt(installment.amount)}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex flex-wrap gap-3 justify-end">
-                  <Button
-                    variant="bordered"
-                    color="primary"
-                    startContent={<Users size={18} />}
-                    onPress={handlePreviewStudents}
-                    isDisabled={!existingStructure}
-                  >
-                    {t('pages.previewStudents')} ({previewStudents.length})
-                  </Button>
-                  
-                  <Button
-                    color="primary"
-                    variant="flat"
-                    startContent={<Save size={18} />}
-                    onPress={handleSaveStructure}
-                    isLoading={saving}
-                  >
-                    {t('pages.saveStructure')}
-                  </Button>
-
-                  {existingStructure && (
-                    <Button
-                      color="success"
-                      className="shadow-md"
-                      startContent={<CheckCircle size={18} />}
-                      onPress={handleApplyToStudents}
-                      isLoading={applying}
-                    >
-                      {t('pages.applyToStudents1')}
-                    </Button>
-                  )}
-                </div>
-              </>
-            )}
-          </>
-        )}
-
-        {!selectedClass && (
-          <div className="text-center py-12">
-            <Info size={48} className="mx-auto text-default-300 mb-4" />
-            <p className="text-default-500">{t('pages.pleaseSelectAClassToAssignFeeStructure')}</p>
-          </div>
-        )}
-      </CardBody>
-
-      {/* Students Preview Modal */}
-      <Modal isOpen={isPreviewOpen} onClose={onPreviewClose} size="4xl" scrollBehavior="inside">
-        <ModalContent>
-          <ModalHeader>
-            <div className="flex items-center gap-3">
-              <Users size={24} className="text-primary" />
+          {!structureLoading && (
+            <div className="space-y-3 border-t border-divider pt-5">
               <div>
-                <h3 className="text-lg font-bold">{t('pages.studentsInClass')}</h3>
-                <p className="text-xs text-default-500">{t('pages.reviewBeforeApplyingFeeStructure')}</p>
+                <h4 className="text-sm font-semibold text-fg">
+                  {t("pages.selectFeeTemplate", "Select Fee Template")}
+                </h4>
+                <p className="text-xs text-fg-muted">
+                  {t(
+                    "pages.chooseFromExistingTemplatesOrCreateCustomStructure",
+                    "Choose from existing templates or create a custom structure",
+                  )}
+                </p>
               </div>
+              <Select
+                value={selectedTemplate}
+                onChange={(e) => handleTemplateChange(e.target.value)}
+                options={templateOptions}
+              />
             </div>
-          </ModalHeader>
+          )}
 
-          <ModalBody className="py-4">
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              <div className="p-4 bg-default-50 rounded-xl text-center">
-                <p className="text-2xl font-bold text-default-900">{previewStudents.length}</p>
-                <p className="text-xs text-default-500 uppercase tracking-wider">{t('pages.totalStudents1')}</p>
-              </div>
-              <div className="p-4 bg-warning-50 rounded-xl text-center">
-                <p className="text-2xl font-bold text-warning-700">{previewStudents.filter(s => s.status === 'pending').length}</p>
-                <p className="text-xs text-warning-600 uppercase tracking-wider">{t('pages.pending2')}</p>
-              </div>
-              <div className="p-4 bg-success-50 rounded-xl text-center">
-                <p className="text-2xl font-bold text-success-700">{previewStudents.filter(s => s.status === 'paid').length}</p>
-                <p className="text-xs text-success-600 uppercase tracking-wider">{t('pages.fullyPaid')}</p>
-              </div>
-            </div>
+          {formData.feeHeads.length > 0 && (
+            <>
+              <div className="border-t border-divider pt-5">
+                <SectionHeading
+                  size="md"
+                  description={t("pages.reviewAndCustomizeAmountsIfNeeded", "Review and customize amounts if needed")}
+                  actions={
+                    <Badge color="primary">
+                      {fmt(formData.totalAnnualFee)}/{t("pages.year", "year")}
+                    </Badge>
+                  }
+                >
+                  {t("pages.feeHeads1", "Fee Heads")}
+                </SectionHeading>
 
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {previewStudents.map((student) => (
-                <div key={student.id} className="flex items-center justify-between p-3 bg-white dark:bg-zinc-950 border border-default-200 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-bold text-primary-700">{student.name?.charAt(0) || '?'}</span>
-                    </div>
-                    <div>
-                      <p className="font-medium text-default-900">{student.name}</p>
-                      <p className="text-xs text-default-500">{student.admissionId} • {t('fees.rollLabel', { rollNo: student.rollNo })}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-default-900">{fmt(student.balanceAmount)}</p>
-                    <Chip 
-                      size="sm" 
-                      color={student.status === 'paid' ? 'success' : student.status === 'partial' ? 'warning' : 'danger'}
-                      variant="flat"
-                      className="text-xs"
+                <ul className="mt-4 space-y-3">
+                  {formData.feeHeads.map((head, index) => (
+                    <li
+                      key={head._id || `${head.name}-${index}`}
+                      className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-lg border border-divider bg-surface-2"
                     >
-                      {student.status}
-                    </Chip>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </ModalBody>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium text-fg">{head.name}</span>
+                          <Badge color={head.mandatory ? "success" : "warning"} size="sm">
+                            {head.mandatory ? t("common.mandatory", "Mandatory") : t("common.optional", "Optional")}
+                          </Badge>
+                          <Chip size="sm" color="neutral">{head.frequency}</Chip>
+                        </div>
+                        <p className="text-xs text-fg-muted mt-1">{head.category}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-sm text-fg-muted">{currencySymbol}</span>
+                        <InlineEdit
+                          type="number"
+                          numeric
+                          ariaLabel={t("pages.amount1", "Amount")}
+                          value={head.amount}
+                          min={0}
+                          width="8rem"
+                          validate={(val) => (val < 0 ? t("common.mustBePositive", "Must be ≥ 0") : null)}
+                          display={(val) => fmt(val ?? 0)}
+                          onSave={(val) => updateFeeHeadAmount(index, val)}
+                        />
+                        <IconButton
+                          icon={<Trash2 size={14} />}
+                          aria-label={t("common.remove", "Remove")}
+                          size="sm"
+                          variant="danger"
+                          onClick={() => removeFeeHead(index)}
+                        />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
 
-          <ModalFooter>
-            <Button variant="light" onPress={onPreviewClose}>
-              {t('common.close')}
-            </Button>
-            <Button
-              color="success"
-              onPress={handleApplyToStudents}
-              isLoading={applying}
-              startContent={<CheckCircle size={18} />}
-            >
-              {t('pages.applyToAllStudents')}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+              <div className="border-t border-divider pt-5">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                  <div>
+                    <h4 className="text-sm font-semibold text-fg">
+                      {t("pages.collectionSchedule", "Collection Schedule")}
+                    </h4>
+                    <p className="text-xs text-fg-muted">
+                      {t("pages.configureHowFeesWillBeCollected", "Configure how fees will be collected")}
+                    </p>
+                  </div>
+                  <Select
+                    aria-label={t("pages.collectionSchedule", "Collection Schedule")}
+                    value={formData.collectionSchedule.mode}
+                    onChange={(e) => handleCollectionModeChange(e.target.value)}
+                    options={COLLECTION_MODES.map((mode) => ({
+                      value: mode.value,
+                      label: t(`fees.collectionMode.${mode.value}`, mode.label),
+                    }))}
+                    className="sm:w-56"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {formData.collectionSchedule.installments.map((installment) => (
+                    <div
+                      key={installment._id || installment.name}
+                      className="p-4 rounded-lg border border-divider bg-surface"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-semibold text-fg">
+                          {installment.name}
+                        </span>
+                        <Badge color="neutral" size="sm">
+                          {t("fees.dueLabel", {
+                            date: installment.dueDate
+                              ? new Date(installment.dueDate).toLocaleDateString(getDateLocale(), {
+                                  month: "short",
+                                  day: "numeric",
+                                })
+                              : "—",
+                            defaultValue: `Due ${installment.dueDate || "—"}`,
+                          })}
+                        </Badge>
+                      </div>
+                      <p className="text-xl font-semibold font-mono text-fg">
+                        {fmt(installment.amount)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-3 justify-end pt-4 border-t border-divider">
+                <Button
+                  variant="outline"
+                  icon={<Users size={16} />}
+                  onClick={handlePreviewStudents}
+                  disabled={!existingStructure}
+                >
+                  {t("pages.previewStudents", "Preview Students")} ({previewStudents.length})
+                </Button>
+                <Button
+                  variant="secondary"
+                  icon={<Save size={16} />}
+                  loading={saving}
+                  onClick={handleSaveStructure}
+                >
+                  {t("pages.saveStructure", "Save Structure")}
+                </Button>
+                {existingStructure && (
+                  <Button
+                    variant="primary"
+                    icon={<CheckCircle size={16} />}
+                    loading={applying}
+                    onClick={handleApplyToStudents}
+                  >
+                    {t("pages.applyToStudents1", "Apply to Students")}
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
+        </>
+      )}
+
+      <StudentsPreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        students={previewStudents}
+        applying={applying}
+        onApply={handleApplyToStudents}
+      />
 
       <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </Card>
   );
 }
+
+FeeStructureAssignment.propTypes = {
+  classes: PropTypes.array,
+  onAssignmentComplete: PropTypes.func,
+};
