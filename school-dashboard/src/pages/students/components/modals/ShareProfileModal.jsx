@@ -1,186 +1,258 @@
-import { useState } from "react";
-import { useAuth } from "../../../../context/AuthContext";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Avatar, Checkbox } from "@heroui/react";
-import { Share2, Search } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
-import { useTranslation } from 'react-i18next';
-import logger from '../../../../utils/logger';
+import { Share2, Search, Check } from "lucide-react";
+import Modal from "../../../../components/ui/Modal";
+import logger from "../../../../utils/logger";
 
+const SHARE_LINK_TTL_MIN = 60 * 24 * 7; // 7 days
 
-/**
- * ShareProfileModal - Modal for sharing student profile with staff members
- *
- * Props:
- * - isOpen: boolean - Whether modal is open
- * - onClose: function - Called when modal is closed
- * - student: object - The student whose profile will be shared
- * - staff: array - List of staff members to share with
- */
-export default function ShareProfileModal({ isOpen, onClose, student, staff = [] }) {
+export default function ShareProfileModal({
+  isOpen,
+  onClose,
+  student,
+  staff = [],
+}) {
   const { t } = useTranslation();
-  const { user } = useAuth();
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSharing, setIsSharing] = useState(false);
 
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedUsers([]);
+      setSearchQuery("");
+      setIsSharing(false);
+    }
+  }, [isOpen]);
+
+  const filteredStaff = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return staff;
+    return staff.filter(
+      (s) =>
+        s.name?.toLowerCase().includes(q) ||
+        s.email?.toLowerCase().includes(q) ||
+        s.role?.toLowerCase().includes(q)
+    );
+  }, [staff, searchQuery]);
+
+  const toggleUser = (id) =>
+    setSelectedUsers((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+
   const handleShare = async () => {
     if (selectedUsers.length === 0) {
-      toast.error(t('toast.error.pleaseSelectAtLeastOneUserToShareWith'));
+      toast.error(
+        t(
+          "toast.error.pleaseSelectAtLeastOneUserToShareWith",
+          "Select at least one staff member"
+        )
+      );
       return;
     }
-
     setIsSharing(true);
-    const loadingToast = toast.loading(t('toast.loading.sharingProfile', { count: selectedUsers.length, defaultValue: `Sharing profile with ${selectedUsers.length} user(s)...` }));
-
+    const loadingToast = toast.loading(
+      t("toast.loading.sharingProfile", {
+        count: selectedUsers.length,
+        defaultValue: `Sharing profile with ${selectedUsers.length} user(s)…`,
+      })
+    );
     try {
-      // Generate a shareable link to the student profile
-      const shareUrl = `${window.location.origin}/students/${student.id}`;
-      const message = `Student Profile: ${student.name}\n\nView profile: ${shareUrl}`;
-
+      const expiresAt = new Date(Date.now() + SHARE_LINK_TTL_MIN * 60_000);
+      const shareUrl = `${window.location.origin}/students/${student.id}?ref=share&exp=${expiresAt.getTime()}`;
+      const message = `Student profile: ${student.name}\n\nView profile (link expires ${expiresAt.toLocaleDateString()}): ${shareUrl}`;
       const { request } = await import("../../../../services/api");
 
-      // Send a notification to each selected staff member with the profile link
-      const sendPromises = selectedUsers.map(async (userId) => {
-        try {
-          // First, create or get a conversation with this user
-          const conversation = await request('/messages/conversations', {
-            method: 'POST',
+      await Promise.all(
+        selectedUsers.map(async (userId) => {
+          const conversation = await request("/messages/conversations", {
+            method: "POST",
             body: JSON.stringify({
               participantId: userId,
-              participantModel: 'Staff',
-            })
+              participantModel: "Staff",
+            }),
           });
-          // Then send the message in the conversation
-          await request('/messages', {
-            method: 'POST',
+          await request("/messages", {
+            method: "POST",
             body: JSON.stringify({
               conversationId: conversation._id || conversation.id,
               receiverId: userId,
-              receiverModel: 'Staff',
+              receiverModel: "Staff",
               content: message,
-              type: 'text',
-            })
+              type: "text",
+            }),
           });
-        } catch (error) {
-          logger.error(`Failed to send to user ${userId}:`, error);
-          throw error;
-        }
-      });
+        })
+      );
 
-      await Promise.all(sendPromises);
-
-      toast.success(t('toast.success.profileShared', { count: selectedUsers.length, defaultValue: `Profile shared successfully with ${selectedUsers.length} user(s)` }), { id: loadingToast });
-      handleClose();
+      toast.success(
+        t("toast.success.profileShared", {
+          count: selectedUsers.length,
+          defaultValue: `Profile shared with ${selectedUsers.length} user(s)`,
+        }),
+        { id: loadingToast }
+      );
+      onClose();
     } catch (error) {
       logger.error("Error sharing profile:", error);
-      toast.error(t('toast.error.failedToShareProfile', 'Failed to share profile') + ": " + (error.message || t('common.unknownError', 'Unknown error')), { id: loadingToast });
+      toast.error(
+        t("toast.error.failedToShareProfile", "Failed to share profile") +
+          ": " +
+          (error.message || t("common.unknownError", "Unknown error")),
+        { id: loadingToast }
+      );
     } finally {
       setIsSharing(false);
     }
   };
 
-  const handleClose = () => {
-    setSelectedUsers([]);
-    setSearchQuery("");
-    onClose();
-  };
-
-  const filteredStaff = staff.filter(staffMember =>
-    staffMember.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    staffMember.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    staffMember.role?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} size="md">
-      <ModalContent>
-      <ModalHeader>{t('pages.shareStudentProfile')}</ModalHeader>
-      <ModalBody>
-        <div className="space-y-4">
-          <p className="text-sm text-gray-600 dark:text-zinc-400">Select staff members to share {student?.name}'s profile with:</p>
-
-          {/* Search */}
-          <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-zinc-800 rounded-lg">
-            <Search size={18} className="text-gray-400 dark:text-zinc-500" />
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={t("pages.shareStudentProfile", "Share student profile")}
+      description={
+        student?.name
+          ? `Send ${student.name}'s profile to staff (link valid 7 days)`
+          : undefined
+      }
+      size="md"
+      isDismissable={!isSharing}
+      footer={
+        <>
+          <span className="field__hint" style={{ marginRight: "auto" }}>
+            {selectedUsers.length > 0
+              ? `${selectedUsers.length} selected`
+              : "Select staff members"}
+          </span>
+          <button
+            type="button"
+            className="btn"
+            onClick={onClose}
+            disabled={isSharing}
+          >
+            {t("pages.cancel2", "Cancel")}
+          </button>
+          <button
+            type="button"
+            className="btn btn--accent"
+            onClick={handleShare}
+            disabled={selectedUsers.length === 0 || isSharing}
+            aria-busy={isSharing || undefined}
+          >
+            <Share2 size={13} aria-hidden />
+            {isSharing
+              ? "Sharing…"
+              : t("pages.shareProfile", "Share Profile")}
+          </button>
+        </>
+      }
+    >
+      <div className="section" style={{ margin: 0 }}>
+        <div className="field" style={{ marginBottom: 12 }}>
+          <div className="field__icon-wrap">
+            <Search size={12} className="field__icon" aria-hidden />
             <input
               type="text"
-              placeholder={t('pages.searchStaffMembers')}
+              className="input input--with-icon"
+              placeholder={t(
+                "pages.searchStaffMembers",
+                "Search staff by name, role, email…"
+              )}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 bg-transparent outline-none text-sm placeholder:text-gray-500 dark:placeholder:text-zinc-500 dark:text-zinc-100"
+              aria-label="Search staff"
             />
           </div>
+        </div>
 
-          {/* Staff List */}
-          <div className="max-h-64 overflow-y-auto space-y-2">
-            {filteredStaff.length > 0 ? (
-              filteredStaff.map((staffMember) => (
-                <div
-                  key={staffMember.id}
-                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
-                    selectedUsers.includes(staffMember.id)
-                      ? 'bg-gray-100 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700'
-                      : 'hover:bg-gray-50 dark:hover:bg-zinc-900 border border-transparent'
-                  }`}
-                  onClick={() => {
-                    setSelectedUsers(prev => {
-                      if (prev.includes(staffMember.id)) {
-                        return prev.filter(id => id !== staffMember.id);
-                      } else {
-                        return [...prev, staffMember.id];
-                      }
-                    });
+        <div
+          role="listbox"
+          aria-multiselectable="true"
+          aria-label="Staff to share with"
+          style={{
+            maxHeight: 320,
+            overflowY: "auto",
+            border: "1px solid var(--border)",
+            borderRadius: 8,
+            background: "var(--surface)",
+          }}
+        >
+          {filteredStaff.length === 0 ? (
+            <p
+              className="muted"
+              style={{ textAlign: "center", padding: "32px 16px", fontSize: 13 }}
+            >
+              {t("pages.noStaffMembersAvailable", "No staff members available")}
+            </p>
+          ) : (
+            filteredStaff.map((s) => {
+              const selected = selectedUsers.includes(s.id);
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  role="option"
+                  aria-selected={selected}
+                  onClick={() => toggleUser(s.id)}
+                  className="row gap-3"
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderBottom: "1px solid var(--divider)",
+                    background: selected ? "var(--accent-bg)" : "transparent",
+                    color: selected ? "var(--accent)" : "var(--fg)",
+                    textAlign: "left",
+                    cursor: "pointer",
+                    transition: "background 120ms",
                   }}
                 >
-                  <Checkbox size="sm"
-                    isSelected={selectedUsers.includes(staffMember.id)}
-                    onValueChange={() => {
-                      setSelectedUsers(prev => {
-                        if (prev.includes(staffMember.id)) {
-                          return prev.filter(id => id !== staffMember.id);
-                        } else {
-                          return [...prev, staffMember.id];
-                        }
-                      });
-                    }}
-                  />
-                  <Avatar
-                    src={staffMember.photo}
-                    name={staffMember.name}
-                    size="sm"
-                    className="flex-shrink-0"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{staffMember.name}</p>
-                    <p className="text-xs text-gray-500 dark:text-zinc-400 truncate">{staffMember.role || staffMember.email}</p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-center text-gray-500 dark:text-zinc-400 py-8">{t('pages.noStaffMembersAvailable')}</p>
-            )}
-          </div>
-
-          {selectedUsers.length > 0 && (
-            <p className="text-sm text-gray-700 dark:text-zinc-300 font-medium">
-              {selectedUsers.length} user{selectedUsers.length !== 1 ? 's' : ''} selected
-            </p>
+                  <span
+                    className="opt__icon"
+                    style={{ width: 28, height: 28, borderRadius: 999 }}
+                    aria-hidden
+                  >
+                    {(s.name || "?").slice(0, 1).toUpperCase()}
+                  </span>
+                  <span className="col" style={{ flex: 1, minWidth: 0, gap: 1 }}>
+                    <span
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 520,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {s.name || "—"}
+                    </span>
+                    <span
+                      className="subtle"
+                      style={{
+                        fontSize: 11.5,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {s.role || s.email || ""}
+                    </span>
+                  </span>
+                  {selected ? (
+                    <Check
+                      size={14}
+                      aria-hidden
+                      style={{ color: "var(--accent)" }}
+                    />
+                  ) : null}
+                </button>
+              );
+            })
           )}
         </div>
-      </ModalBody>
-      <ModalFooter>
-        <Button variant="bordered" className="border-gray-200 dark:border-zinc-800 text-gray-700 dark:text-zinc-300" onPress={handleClose}>{t('pages.cancel2')}</Button>
-        <Button
-          className="bg-gray-900 hover:bg-gray-800 text-white"
-          startContent={<Share2 size={16} />}
-          onPress={handleShare}
-          isDisabled={selectedUsers.length === 0 || isSharing}
-          isLoading={isSharing}
-        >
-          {t('pages.shareProfile', 'Share Profile')}
-        </Button>
-      </ModalFooter>
-      </ModalContent>
+      </div>
     </Modal>
   );
 }

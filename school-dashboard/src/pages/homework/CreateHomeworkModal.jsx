@@ -154,8 +154,8 @@ const CreateHomeworkModal = ({ onClose, onSuccess, editingHomework, defaultClass
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <h4 className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-3 flex items-center gap-2">
-          <BookOpen size={16} className="text-gray-400 dark:text-zinc-500" aria-hidden="true" />
+        <h4 className="text-sm font-medium text-fg mb-3 flex items-center gap-2">
+          <BookOpen size={16} className="text-fg-faint" aria-hidden="true" />
           Assignment Details
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -226,8 +226,8 @@ const CreateHomeworkModal = ({ onClose, onSuccess, editingHomework, defaultClass
       />
 
       <div>
-        <h4 className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-3 flex items-center gap-2">
-          <Paperclip size={16} className="text-gray-400 dark:text-zinc-500" aria-hidden="true" />
+        <h4 className="text-sm font-medium text-fg mb-3 flex items-center gap-2">
+          <Paperclip size={16} className="text-fg-faint" aria-hidden="true" />
           Attachments
         </h4>
         {formData.attachments.map((attachment, index) => (

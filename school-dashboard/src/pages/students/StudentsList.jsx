@@ -1,3 +1,4 @@
+import { useMemo, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStudentsListData } from "./hooks/useStudentsListData";
 import EditStudentDrawer from "./EditStudentDrawer";
@@ -8,56 +9,43 @@ import StudentsFiltersBar from "./components/list/StudentsFiltersBar";
 import StudentsTableVirtualized from "./components/list/StudentsTableVirtualized";
 import StudentsBulkModals from "./components/list/StudentsBulkModals";
 import { StudentsTableProvider } from "./components/list/StudentsTableContext";
+import StudentOverlay from "../../components/students/StudentOverlay";
+import useStudentOverlay from "../../hooks/useStudentOverlay";
 
 function StudentsListSkeleton() {
   return (
-    <div className="w-full space-y-4" aria-busy="true" aria-live="polite">
-      <div className="flex items-center gap-3 px-2">
-        <Skeleton variant="rect" className="h-8 w-24" />
-        <Skeleton variant="rect" className="h-9 flex-1 max-w-xs" />
-        <Skeleton variant="rect" className="h-8 w-20" />
-        <Skeleton variant="rect" className="h-8 w-20" />
-      </div>
-      <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
-        <div className="flex items-center gap-4 px-4 py-3 border-b border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900">
-          <Skeleton variant="rect" className="h-5 w-5 shrink-0" />
-          <Skeleton variant="text" className="h-3 w-16" style={{ minWidth: 240 }} />
-          <Skeleton variant="text" className="h-3 w-10" style={{ minWidth: 100 }} />
-          <Skeleton variant="text" className="h-3 w-20" style={{ minWidth: 180 }} />
-          <Skeleton variant="text" className="h-3 w-20" style={{ minWidth: 110 }} />
-          <Skeleton variant="text" className="h-3 w-16" style={{ minWidth: 100 }} />
-          <Skeleton variant="text" className="h-3 w-8" style={{ minWidth: 60 }} />
+    <div className="w-full flex flex-col flex-1 min-h-0" aria-busy="true" aria-live="polite">
+      {/* Toolbar skeleton — matches .toolbar density */}
+      <div className="toolbar" role="presentation">
+        <Skeleton variant="rect" className="h-7" style={{ flex: "0 1 280px" }} />
+        <Skeleton variant="rect" className="h-7 w-56" />
+        <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
+          <Skeleton variant="rect" className="h-7 w-7" />
+          <Skeleton variant="rect" className="h-7 w-20" />
+          <Skeleton variant="rect" className="h-7 w-7" />
         </div>
-        {Array.from({ length: 10 }).map((_, i) => (
+      </div>
+      {/* Row skeletons — match .stafflist__row density */}
+      <div className="flex-1 min-h-0 overflow-hidden">
+        {Array.from({ length: 12 }).map((_, i) => (
           <div
             key={i}
-            className="flex items-center gap-4 px-4 py-3 border-b border-gray-100 dark:border-zinc-800 last:border-b-0"
+            className="flex items-center gap-3 px-4"
+            style={{
+              padding: "10px 16px",
+              borderBottom: "1px solid var(--divider)",
+            }}
           >
-            <Skeleton variant="rect" className="h-5 w-5 shrink-0" />
-            <div className="flex items-center gap-3" style={{ minWidth: 240 }}>
-              <Skeleton variant="circle" className="h-9 w-9 shrink-0" />
-              <div className="space-y-1.5">
-                <Skeleton variant="text" className="h-3.5" style={{ width: `${100 + (i % 3) * 30}px` }} />
-                <Skeleton variant="text" className="h-2.5 w-16" />
-              </div>
-            </div>
-            <div style={{ minWidth: 100 }}>
-              <Skeleton variant="text" className="h-3.5 w-14" />
-            </div>
-            <div className="space-y-1.5" style={{ minWidth: 180 }}>
-              <Skeleton variant="text" className="h-3.5" style={{ width: `${90 + (i % 4) * 20}px` }} />
+            <Skeleton variant="rect" className="shrink-0" style={{ width: 16, height: 16, borderRadius: 4 }} />
+            <Skeleton variant="circle" className="shrink-0" style={{ width: 28, height: 28 }} />
+            <div className="flex-1 min-w-0 space-y-1.5">
+              <Skeleton variant="text" className="h-3" style={{ width: `${120 + (i % 4) * 24}px` }} />
               <Skeleton variant="text" className="h-2.5 w-24" />
             </div>
-            <div className="space-y-1" style={{ minWidth: 110 }}>
-              <Skeleton variant="rect" className="h-2 w-full rounded-full" />
-              <Skeleton variant="text" className="h-2.5 w-8" />
-            </div>
-            <div style={{ minWidth: 100 }}>
-              <Skeleton variant="rect" className="h-6 w-16 rounded-full" />
-            </div>
-            <div style={{ minWidth: 60 }}>
-              <Skeleton variant="rect" className="h-7 w-7" />
-            </div>
+            <Skeleton variant="text" className="h-3 hidden lg:block" style={{ width: 64 }} />
+            <Skeleton variant="text" className="h-3 hidden lg:block" style={{ width: 100 }} />
+            <Skeleton variant="rect" className="hidden lg:block" style={{ width: 56, height: 18, borderRadius: 999 }} />
+            <Skeleton variant="rect" className="shrink-0" style={{ width: 24, height: 24, borderRadius: 6 }} />
           </div>
         ))}
       </div>
@@ -123,6 +111,64 @@ export default function StudentsList() {
     getClassOptions,
   } = useStudentsListData();
 
+  const studentOverlay = useStudentOverlay();
+  const visibleRowIds = useMemo(
+    () => (filteredItems || []).map((s) => String(s.id || s._id)),
+    [filteredItems]
+  );
+
+  // ── Keyboard nav (UI-revamp acceptance) ──────────────────────────────────
+  // "/" focuses search, "Esc" clears selection, ArrowUp/Down navigates rows
+  // (using studentOverlay when present, else the filtered list cursor).
+  const searchRef = useRef(null);
+  const cursorRef = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => {
+      const tag = document.activeElement?.tagName;
+      const isTyping = tag === "INPUT" || tag === "TEXTAREA" || document.activeElement?.isContentEditable;
+
+      if (e.key === "/" && !isTyping) {
+        e.preventDefault();
+        searchRef.current?.focus();
+        return;
+      }
+      if (e.key === "Escape" && !isTyping) {
+        if (selectedKeys && selectedKeys.size > 0) {
+          e.preventDefault();
+          setSelectedKeys(new Set([]));
+        }
+        return;
+      }
+      if ((e.key === "ArrowDown" || e.key === "ArrowUp") && !isTyping) {
+        const ids = visibleRowIds;
+        if (ids.length === 0) return;
+        const activeId = studentOverlay.studentId
+          ? String(studentOverlay.studentId)
+          : cursorRef.current;
+        const idx = activeId ? ids.indexOf(activeId) : -1;
+        const nextIdx =
+          e.key === "ArrowDown"
+            ? Math.min(ids.length - 1, idx + 1)
+            : Math.max(0, idx === -1 ? 0 : idx - 1);
+        const nextId = ids[nextIdx];
+        if (!nextId) return;
+        e.preventDefault();
+        cursorRef.current = nextId;
+        if (studentOverlay.studentId) {
+          studentOverlay.navigate?.(nextId);
+        }
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [selectedKeys, setSelectedKeys, visibleRowIds, studentOverlay]);
+
+  const handleClearSelection = useCallback(
+    () => setSelectedKeys(new Set([])),
+    [setSelectedKeys]
+  );
+
   const {
     csvFile, setCsvFile, csvDragActive, csvProcessing,
     validatedStudents, previewFilter, setPreviewFilter, importProgress,
@@ -138,6 +184,7 @@ export default function StudentsList() {
     <div className="w-full flex flex-col flex-1 min-h-0 overflow-hidden">
       {/* ── Toolbar ──────────────────────────────────────────────────────── */}
       <StudentsFiltersBar
+        ref={searchRef}
         statusFilter={statusFilter}
         setStatusFilter={setStatusFilter}
         statusDropdownOpen={statusDropdownOpen}
@@ -152,6 +199,7 @@ export default function StudentsList() {
         setBulkDropdownOpen={setBulkDropdownOpen}
         handleBulkAction={handleBulkAction}
         downloadSelectedStudents={downloadSelectedStudents}
+        onClearSelection={handleClearSelection}
         filtersConfig={filtersConfig}
         handleFilterChange={handleFilterChange}
         clearAllFilters={clearAllFilters}
@@ -213,12 +261,14 @@ export default function StudentsList() {
           phoneInput={phoneInput}
           searchQuery={deferredSearchQuery}
           hasActiveFilters={activeFiltersCount > 0}
+          openStudent={studentOverlay.open}
+          activeStudentId={studentOverlay.studentId}
         />
       </StudentsTableProvider>
 
       {/* ── Footer: row count ──────────────────────────────────────────────── */}
-      <div className="border-t border-gray-200 dark:border-zinc-700 px-6 py-3 shrink-0">
-        <span className="text-default-500 text-sm">
+      <div className="border-t border-border-token px-6 py-3 shrink-0">
+        <span className="text-fg-muted text-sm">
           {filteredItems.length === students.length
             ? t('pages.showingStudents', { count: students.length })
             : t('pages.showingFilteredStudents', { filtered: filteredItems.length, total: students.length })}
@@ -311,6 +361,13 @@ export default function StudentsList() {
       />
 
       <ScrollToTopButton />
+
+      <StudentOverlay
+        studentId={studentOverlay.studentId}
+        rowIds={visibleRowIds}
+        onClose={studentOverlay.close}
+        onNavigate={studentOverlay.navigate}
+      />
     </div>
   );
 }

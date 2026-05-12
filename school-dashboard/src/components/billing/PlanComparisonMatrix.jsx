@@ -1,8 +1,7 @@
-import { Button, Chip } from "@heroui/react";
 import { Check, IndianRupee, Minus } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { formatCurrency } from "../../utils/numberFormatter";
 import { getDateLocale } from "../../i18n/index";
+import { Button, Chip } from "../ui";
 
 const CAPABILITY_LABELS = {
   parentApp: "Parent Mobile App",
@@ -28,6 +27,8 @@ function formatLimit(key, value) {
   return value.toLocaleString(getDateLocale());
 }
 
+const HIGHLIGHT_CELL = "bg-surface-2";
+
 export default function PlanComparisonMatrix({
   plans = [],
   currentPlanKey,
@@ -45,10 +46,9 @@ export default function PlanComparisonMatrix({
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
-        {/* Header row with plan names & prices */}
         <thead>
           <tr>
-            <th className="text-left py-4 px-4 font-medium text-gray-500 w-1/4 min-w-[180px]">
+            <th className="text-left py-4 px-4 font-medium text-fg-muted w-1/4 min-w-[180px]">
               {t("settings.subscription.comparison.features", "Features")}
             </th>
             {plans.map((plan) => {
@@ -57,23 +57,23 @@ export default function PlanComparisonMatrix({
                 <th
                   key={plan.key}
                   className={`text-center py-4 px-4 min-w-[160px] ${
-                    isCurrent ? "bg-primary-50 rounded-t-xl" : ""
+                    isCurrent ? `${HIGHLIGHT_CELL} rounded-t-xl` : ""
                   }`}
                 >
                   <div className="flex flex-col items-center gap-1">
-                    <span className="text-base font-semibold text-gray-900">
+                    <span className="text-base font-semibold text-fg">
                       {plan.name}
                     </span>
                     {isCurrent && (
-                      <Chip size="sm" color="primary" variant="flat">
+                      <Chip size="sm" color="primary">
                         {t("settings.subscription.currentPlan", "Current plan")}
                       </Chip>
                     )}
-                    <div className="flex items-center gap-0.5 mt-1 text-lg font-bold text-gray-900">
-                      <IndianRupee size={16} />
+                    <div className="flex items-center gap-0.5 mt-1 text-lg font-bold text-fg tabular-nums">
+                      <IndianRupee size={16} aria-hidden="true" />
                       {plan.price.toLocaleString(getDateLocale())}
                     </div>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-fg-muted">
                       {plan.price === 0
                         ? t("settings.subscription.comparison.free", "Free forever")
                         : billingCycle === "annual"
@@ -88,18 +88,17 @@ export default function PlanComparisonMatrix({
         </thead>
 
         <tbody>
-          {/* Limits section */}
           <tr>
             <td
               colSpan={plans.length + 1}
-              className="pt-5 pb-2 px-4 text-xs font-semibold uppercase tracking-wider text-gray-400"
+              className="pt-5 pb-2 px-4 text-xs font-semibold uppercase tracking-wider text-fg-subtle"
             >
               {t("settings.subscription.comparison.limitsHeading", "Usage Limits")}
             </td>
           </tr>
           {allLimitKeys.map((limitKey) => (
-            <tr key={limitKey} className="border-t border-gray-100">
-              <td className="py-3 px-4 text-gray-700">
+            <tr key={limitKey} className="border-t border-border-token">
+              <td className="py-3 px-4 text-fg">
                 {t(`settings.subscription.comparison.limit_${limitKey}`, LIMIT_LABELS[limitKey])}
               </td>
               {plans.map((plan) => {
@@ -107,8 +106,8 @@ export default function PlanComparisonMatrix({
                 return (
                   <td
                     key={plan.key}
-                    className={`py-3 px-4 text-center font-medium text-gray-900 ${
-                      isCurrent ? "bg-primary-50/50" : ""
+                    className={`py-3 px-4 text-center font-medium text-fg tabular-nums ${
+                      isCurrent ? HIGHLIGHT_CELL : ""
                     }`}
                   >
                     {formatLimit(limitKey, plan.limits[limitKey])}
@@ -118,18 +117,17 @@ export default function PlanComparisonMatrix({
             </tr>
           ))}
 
-          {/* Capabilities section */}
           <tr>
             <td
               colSpan={plans.length + 1}
-              className="pt-6 pb-2 px-4 text-xs font-semibold uppercase tracking-wider text-gray-400"
+              className="pt-6 pb-2 px-4 text-xs font-semibold uppercase tracking-wider text-fg-subtle"
             >
               {t("settings.subscription.comparison.featuresHeading", "Features & Capabilities")}
             </td>
           </tr>
           {allCapabilityKeys.map((capKey) => (
-            <tr key={capKey} className="border-t border-gray-100">
-              <td className="py-3 px-4 text-gray-700">
+            <tr key={capKey} className="border-t border-border-token">
+              <td className="py-3 px-4 text-fg">
                 {t(`settings.subscription.comparison.cap_${capKey}`, CAPABILITY_LABELS[capKey] || capKey)}
               </td>
               {plans.map((plan) => {
@@ -138,14 +136,20 @@ export default function PlanComparisonMatrix({
                 return (
                   <td
                     key={plan.key}
-                    className={`py-3 px-4 text-center ${
-                      isCurrent ? "bg-primary-50/50" : ""
-                    }`}
+                    className={`py-3 px-4 text-center ${isCurrent ? HIGHLIGHT_CELL : ""}`}
                   >
                     {enabled ? (
-                      <Check size={18} className="inline-block text-success-600" />
+                      <Check
+                        size={18}
+                        className="inline-block text-ok"
+                        aria-label="Included"
+                      />
                     ) : (
-                      <Minus size={18} className="inline-block text-gray-300" />
+                      <Minus
+                        size={18}
+                        className="inline-block text-fg-faint"
+                        aria-label="Not included"
+                      />
                     )}
                   </td>
                 );
@@ -153,8 +157,7 @@ export default function PlanComparisonMatrix({
             </tr>
           ))}
 
-          {/* CTA row */}
-          <tr className="border-t border-gray-200">
+          <tr className="border-t border-border-strong">
             <td className="py-5 px-4" />
             {plans.map((plan) => {
               const isCurrent = currentPlanKey === plan.key;
@@ -162,16 +165,15 @@ export default function PlanComparisonMatrix({
                 <td
                   key={plan.key}
                   className={`py-5 px-4 text-center ${
-                    isCurrent ? "bg-primary-50/50 rounded-b-xl" : ""
+                    isCurrent ? `${HIGHLIGHT_CELL} rounded-b-xl` : ""
                   }`}
                 >
                   <Button
-                    color={isCurrent ? "default" : "primary"}
-                    variant={isCurrent ? "flat" : "solid"}
+                    variant={isCurrent ? "secondary" : "primary"}
                     size="sm"
-                    isDisabled={isCurrent || checkoutLoading === plan.key}
-                    isLoading={checkoutLoading === plan.key}
-                    onPress={() => onCheckout(plan.key)}
+                    disabled={isCurrent || checkoutLoading === plan.key}
+                    loading={checkoutLoading === plan.key}
+                    onClick={() => onCheckout(plan.key)}
                   >
                     {isCurrent
                       ? t("settings.subscription.currentPlan", "Current plan")

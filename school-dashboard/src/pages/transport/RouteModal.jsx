@@ -36,8 +36,8 @@ export default function RouteModal({ isOpen, onClose, route, vehicles, academicY
           vehicleId: route.vehicleId?._id || route.vehicleId || "",
           status: route.status || "active",
           notes: route.notes || "",
-          stops: route.stops?.map((s) => ({
-            _key: `stop-${++_stopCounter}`,
+          stops: route.stops?.map((s, i) => ({
+            _key: `stop-${s._id || `${Date.now()}-${i}-${Math.random().toString(36).slice(2)}`}`,
             name: s.name || "",
             address: s.address || "",
             pickupTime: s.pickupTime || "",
@@ -169,18 +169,18 @@ export default function RouteModal({ isOpen, onClose, route, vehicles, academicY
           {/* Stops */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.stops')}</h3>
+              <h3 className="text-sm font-semibold text-fg">{t('pages.stops')}</h3>
               <Button size="sm" variant="flat" startContent={<Plus size={14} />} onPress={addStop}>
                 Add Stop
               </Button>
             </div>
 
             {form.stops.length === 0 ? (
-              <p className="text-sm text-gray-400 dark:text-zinc-500 text-center py-4">{t('pages.noStopsAddedYet')}</p>
+              <p className="text-sm text-fg-faint text-center py-4">{t('pages.noStopsAddedYet')}</p>
             ) : (
               <div className="space-y-3">
                 {form.stops.map((stop, index) => (
-                  <div key={stop._key} className="flex gap-2 items-start bg-gray-50 dark:bg-zinc-900 rounded-lg p-3">
+                  <div key={stop._key} className="flex gap-2 items-start bg-surface-2 rounded-lg p-3">
                     <div className="pt-2 text-gray-400">
                       <GripVertical size={14} />
                     </div>

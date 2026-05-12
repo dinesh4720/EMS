@@ -26,20 +26,20 @@ export default function ClassesTab({
     <div className="pt-6 space-y-4 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h3 className="text-lg font-bold text-default-900">{t('pages.classesSections')}</h3>
-          <p className="text-sm text-default-500">{t('pages.enableClassesAndManageSections')}</p>
+          <h3 className="text-lg font-bold text-fg">{t('pages.classesSections')}</h3>
+          <p className="text-sm text-fg-muted">{t('pages.enableClassesAndManageSections')}</p>
         </div>
       </div>
 
       {/* List View */}
-      <div className="rounded-xl border border-default-200 bg-white dark:bg-zinc-950 overflow-hidden">
+      <div className="rounded-xl border border-border-token bg-surface overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-default-200 bg-default-50">
-              <th className="text-left px-4 py-3 text-xs font-semibold text-default-500 uppercase tracking-wider w-16">{t('pages.class1')}</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-default-500 uppercase tracking-wider">{t('pages.sections1')}</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-default-500 uppercase tracking-wider w-24">{t('pages.students1')}</th>
-              <th className="text-center px-4 py-3 text-xs font-semibold text-default-500 uppercase tracking-wider w-20">{t('pages.enabled')}</th>
+            <tr className="border-b border-border-token bg-surface-2">
+              <th className="text-left px-4 py-3 text-xs font-semibold text-fg-muted uppercase tracking-wider w-16">{t('pages.class1')}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-fg-muted uppercase tracking-wider">{t('pages.sections1')}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-fg-muted uppercase tracking-wider w-24">{t('pages.students1')}</th>
+              <th className="text-center px-4 py-3 text-xs font-semibold text-fg-muted uppercase tracking-wider w-20">{t('pages.enabled')}</th>
             </tr>
           </thead>
           <tbody>
@@ -47,10 +47,10 @@ export default function ClassesTab({
               const config = classConfig[classNum];
               const hasStudents = config.totalStrength > 0;
               return (
-                <tr key={classNum} className={`border-b border-default-100 last:border-b-0 ${config.enabled ? 'bg-primary/5' : ''}`}>
+                <tr key={classNum} className={`border-b border-divider last:border-b-0 ${config.enabled ? 'bg-primary/5' : ''}`}>
                   <td className="px-4 py-3">
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
-                      config.enabled ? 'bg-primary text-white' : 'bg-default-100 text-default-500'
+                      config.enabled ? 'bg-primary text-white' : 'bg-surface-2 text-fg-muted'
                     }`}>
                       {classNum}
                     </div>
@@ -101,11 +101,11 @@ export default function ClassesTab({
                         </Button>
                       </div>
                     ) : (
-                      <span className="text-default-400 text-sm">—</span>
+                      <span className="text-fg-faint text-sm">—</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`text-sm ${config.totalStrength > 0 ? 'text-default-700 font-medium' : 'text-default-400'}`}>
+                    <span className={`text-sm ${config.totalStrength > 0 ? 'text-fg font-medium' : 'text-fg-faint'}`}>
                       {config.totalStrength || 0}
                     </span>
                   </td>

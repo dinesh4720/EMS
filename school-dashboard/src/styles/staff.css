@@ -1,0 +1,1147 @@
+/* Staff list specific styles */
+
+/* ============================================================
+   Staffs page shell — full-bleed two-pane layout for the list
+   variant, plus a top tab strip used across all sub-routes.
+   ============================================================ */
+
+/* Fills the available flex space (parent chain is h-screen on this
+   route — see App.jsx isStaffListPage). The detail pane inside has
+   its own overflow:auto so long content scrolls internally instead of
+   pushing the View profile / Mark attendance buttons past the bottom. */
+.staffs-page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.staff-tabstrip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+
+/* The full-bleed list container — fills the viewport remainder so
+   the inner two-pane grid can size correctly (left list scrolls,
+   right detail stays pinned). NO card chrome (no border / radius /
+   surface fill) — the design wants the list to bleed to the page
+   edges, not float in a card. */
+.staffs-page__listframe {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.staffs-page__listframe > .page {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
+}
+
+/* Staff list (variation B) row */
+.stafflist__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--divider);
+  text-align: left;
+  transition: background 80ms;
+}
+.stafflist__row:hover { background: var(--surface-2); }
+.stafflist__row.is-active {
+  background: var(--surface);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+/* Detail pane — frosted glass */
+.detail-pane {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-left: 1px solid var(--glass-border);
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+.detail-pane__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--divider);
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.detail-pane__hero {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 20px 20px 16px;
+}
+
+.detail-pane__metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--divider);
+  margin: 0 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.dp-metric {
+  background: var(--surface);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dp-metric__label {
+  font-size: 10.5px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-subtle);
+}
+.dp-metric__value {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.detail-pane__section {
+  padding: 20px;
+  border-bottom: 1px solid var(--divider);
+}
+
+.dp-feed {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dp-feed li {
+  display: flex;
+  gap: 12px;
+  font-size: 12.5px;
+  align-items: baseline;
+}
+.dp-feed__time {
+  color: var(--fg-subtle);
+  font-size: 11px;
+  min-width: 84px;
+  flex-shrink: 0;
+}
+
+.dp-kv {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12.5px;
+  padding: 4px 0;
+}
+
+.detail-pane__foot {
+  margin-top: auto;
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--divider);
+  background: var(--surface);
+  /* Stick the primary actions to the visible bottom edge — when the
+     middle content scrolls, View profile / Mark attendance stay in
+     view instead of being scrolled past the bottom of the pane. */
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+}
+
+/* Same treatment for the top action row (close / mail / phone / more)
+   so it stays anchored when the user scrolls through the detail body. */
+.detail-pane__head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface);
+}
+
+/* ============================================================
+   Mobile slide-over drawer for the detail pane (< 1100px viewport)
+   ============================================================ */
+
+.stafflist__drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.32);
+  z-index: 200;
+  animation: fadeIn 140ms ease-out both;
+}
+
+.stafflist__drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(420px, 100vw);
+  display: flex;
+  flex-direction: column;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-left: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-glass);
+  /* IMPORTANT: do NOT add transform / filter / will-change here — they
+   * collapse the descendant .detail-pane's backdrop-filter into a no-op. */
+}
+
+.stafflist__drawer .detail-pane {
+  /* Inside the drawer the parent already provides the glass — flatten the
+   * inner pane to plain transparent so the blur isn't applied twice (which
+   * would make the layer too opaque and lose readability). */
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-left: none;
+  box-shadow: none;
+  flex: 1;
+}
+
+/* Keyboard-nav focus ring on the list scroller */
+[role="listbox"][aria-label="Staff list"]:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--accent-bg);
+}
+
+/* ============================================================
+   REVAMP-16 — Staff Dashboard (detail page treatment).
+   Mirrors student-dashboard__metrics + detail-pane__hero so the
+   per-staff route reads like a fuller-resolution StaffDetailPane.
+   ============================================================ */
+.staff-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-bottom: 24px;
+}
+
+.staff-dashboard__hero {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 20px 24px 16px;
+  flex-wrap: wrap;
+}
+.staff-dashboard__hero-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  flex: 1;
+  min-width: 260px;
+}
+.staff-dashboard__hero-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.staff-dashboard__hero-name {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+  margin: 0;
+}
+.staff-dashboard__hero-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 6px;
+}
+.staff-dashboard__hero-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.staff-dashboard__metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--divider);
+  margin: 0 24px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.staff-dashboard__metrics .dp-metric {
+  background: var(--surface);
+}
+
+.staff-dashboard__tabs {
+  padding: 16px 24px 0;
+  border-bottom: 1px solid var(--divider);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 5;
+}
+
+.staff-dashboard__panel {
+  padding: 16px 24px 0;
+}
+
+.staff-dashboard__grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 1023px) {
+  .staff-dashboard__metrics { grid-template-columns: repeat(2, 1fr); }
+  .staff-dashboard__grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .staff-dashboard__hero { padding: 16px 16px 12px; }
+  .staff-dashboard__metrics { grid-template-columns: 1fr 1fr; margin: 0 16px; }
+  .staff-dashboard__tabs { padding: 12px 16px 0; }
+  .staff-dashboard__panel { padding: 12px 16px 0; }
+  .staff-dashboard__hero-actions { width: 100%; justify-content: flex-end; }
+}
+
+/* ============================================================
+   REVAMP-17 — Staff Payroll
+   KPI strip + status banner + dense table + frosted modals.
+   Mirrors detail-pane__metrics for the KPI strip (dp-metric);
+   reuses .toolbar / .seg / .chip / .status atoms for filters
+   and pills. All money rendered with `mono tnum` so columns
+   align across rows.
+   ============================================================ */
+.payroll-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.payroll-page__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 0 4px;
+  flex-wrap: wrap;
+}
+
+/* KPI strip — same visual language as detail-pane__metrics so the
+   payroll dashboard reads like an extended StaffDetailPane. */
+.payroll-kpi {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--divider);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.payroll-kpi .dp-metric {
+  background: var(--surface);
+  padding: 14px 16px;
+  gap: 4px;
+}
+.payroll-kpi .dp-metric__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.payroll-kpi .dp-metric__value {
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+.payroll-kpi .dp-metric__sub {
+  font-size: 11px;
+  color: var(--fg-faint);
+  font-weight: 460;
+}
+@media (max-width: 900px) {
+  .payroll-kpi { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .payroll-kpi { grid-template-columns: 1fr; }
+}
+
+/* Status banner — calm 1px border with a status-tinted left rail.
+   Uses --warn / --danger / --ok / --info tokens for the rail so it
+   stays in lockstep with chip/status atoms. */
+.payroll-banner {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-left-color: var(--info);
+  border-radius: 8px;
+}
+.payroll-banner--ok { border-left-color: var(--ok); }
+.payroll-banner--warn { border-left-color: var(--warn); }
+.payroll-banner--danger { border-left-color: var(--danger); }
+.payroll-banner__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: var(--surface-2);
+  color: var(--fg-muted);
+}
+.payroll-banner__icon.is-ok { background: var(--ok-bg); color: var(--ok); }
+.payroll-banner__icon.is-warn { background: var(--warn-bg); color: var(--warn); }
+.payroll-banner__icon.is-danger { background: var(--danger-bg); color: var(--danger); }
+.payroll-banner__title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+}
+.payroll-banner__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--fg-muted);
+}
+.payroll-banner__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+/* Toolbar — same .toolbar layout as StaffList but fully justified
+   so the action cluster pins right and search/filters live left. */
+.payroll-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  flex-wrap: wrap;
+}
+.payroll-toolbar__cluster {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.payroll-toolbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+/* Cycle filter — month/year select wrapped to look like a single
+   pill-shaped control matching the .seg + .toolbar__search density. */
+.payroll-cycle {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  height: 28px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px;
+}
+.payroll-cycle select {
+  border: none;
+  background: transparent;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--fg);
+  padding: 0 8px;
+  height: 22px;
+  border-radius: 4px;
+  outline: none;
+  font-variant-numeric: tabular-nums;
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: none;
+}
+.payroll-cycle select:hover { background: var(--surface); color: var(--fg); }
+.payroll-cycle select:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent-bg);
+}
+
+/* Dense payroll table — mirrors .table from shell.css plus a few
+   payroll-specific column treatments (mono tnum for money, the
+   allowance/deduction +/- prefix coloring). */
+.payroll-table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.payroll-table-scroll {
+  overflow-x: auto;
+}
+.payroll-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 880px;
+}
+.payroll-table thead th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--fg-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 8px 12px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  height: 36px;
+  white-space: nowrap;
+}
+.payroll-table thead th.is-num { text-align: right; }
+.payroll-table tbody td {
+  padding: 0 12px;
+  height: 48px;
+  border-bottom: 1px solid var(--divider);
+  vertical-align: middle;
+}
+.payroll-table tbody tr { transition: background 80ms; }
+.payroll-table tbody tr:hover { background: var(--surface-2); }
+.payroll-table tbody tr.is-selected { background: var(--accent-bg); }
+.payroll-table tbody tr:last-child td { border-bottom: none; }
+.payroll-table td.is-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+}
+.payroll-table td.is-num--positive { color: var(--ok); }
+.payroll-table td.is-num--negative { color: var(--danger); }
+.payroll-table td.is-num--total { color: var(--fg); font-weight: 600; }
+
+.payroll-table__employee {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.payroll-table__employee-name {
+  font-weight: 520;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+  cursor: pointer;
+}
+.payroll-table__employee-name:hover { color: var(--accent); }
+.payroll-table__employee-code {
+  font-size: 11px;
+  color: var(--fg-subtle);
+  font-family: var(--font-mono);
+}
+
+.payroll-table__actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+}
+
+.payroll-table__checkbox {
+  width: 36px;
+  padding-left: 14px !important;
+  padding-right: 0 !important;
+}
+
+.payroll-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 48px 16px;
+  text-align: center;
+}
+.payroll-empty__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  display: grid;
+  place-items: center;
+  color: var(--fg-faint);
+  margin-bottom: 4px;
+}
+.payroll-empty__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg);
+}
+.payroll-empty__sub {
+  font-size: 12.5px;
+  color: var(--fg-subtle);
+  max-width: 360px;
+}
+
+/* Frosted modal — applied to the inner ModalContent so the dialog
+   reads like a small composer card without restructuring the whole
+   HeroUI Modal tree. */
+.payroll-modal :is(header, [data-slot="header"], .modal-header) {
+  border-bottom: 1px solid var(--border);
+}
+.payroll-modal :is(footer, [data-slot="footer"], .modal-footer) {
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.payroll-modal__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+}
+.payroll-modal__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.payroll-modal__icon--warn { background: var(--warn-bg); color: var(--warn); }
+.payroll-modal__icon--danger { background: var(--danger-bg); color: var(--danger); }
+.payroll-modal__icon--info { background: var(--info-bg); color: var(--info); }
+.payroll-modal__icon--ok { background: var(--ok-bg); color: var(--ok); }
+
+.payroll-modal__title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+  margin: 0;
+}
+.payroll-modal__sub {
+  font-size: 12.5px;
+  color: var(--fg-subtle);
+  margin: 2px 0 0;
+}
+
+.payroll-modal__note {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.payroll-modal__note--warn { background: var(--warn-bg); color: var(--warn); }
+.payroll-modal__note--danger { background: var(--danger-bg); color: var(--danger); }
+.payroll-modal__note--info { background: var(--info-bg); color: var(--info); }
+.payroll-modal__note--default {
+  background: var(--surface-2);
+  color: var(--fg-muted);
+  border: 1px solid var(--border);
+}
+
+.payroll-modal__cycle {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.payroll-modal__cycle-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--fg-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.payroll-modal__cycle-value {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+
+.payroll-modal__list {
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: 12.5px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.payroll-modal__list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+.payroll-modal__list-item:hover { background: var(--surface-2); }
+.payroll-modal__list-item .mono { font-size: 12px; }
+
+/* Print page-break safety for the staff print sheet — keep sections
+   together but allow new pages between major sections. Uses
+   --divider/--fg tokens so light + dark print render the same. */
+@media print {
+  .staff-print-section {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .staff-print-section + .staff-print-section {
+    page-break-before: auto;
+    break-before: auto;
+  }
+}
+
+/* ============================================================
+   REVAMP-18 — Secondary staff pages
+   LeaveManagement (two-pane), StaffAttendanceRegularize (toolbar
+   + calendar), StaffAssignmentPanel (cards + optgrid), Bulk
+   subject assignment (toolbar + dense list + preview), Teacher
+   timetable editor (grid + conflict highlight). All atoms here
+   reference shell.css tokens so light + dark match the canonical
+   StaffList/StaffDetailPane treatment.
+   ============================================================ */
+
+/* Shared two-pane shell (LeaveManagement) — copies the staffs-page
+   grid but is meant to sit inside the regular page chrome (not the
+   full-bleed listframe). */
+.twopane {
+  display: grid;
+  grid-template-columns: minmax(360px, 1fr) 420px;
+  gap: 0;
+  min-height: 540px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.twopane__list {
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.twopane__list-scroll {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+.twopane__detail {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--surface);
+}
+@media (max-width: 960px) {
+  .twopane { grid-template-columns: 1fr; }
+  .twopane__list { border-right: none; border-bottom: 1px solid var(--border); }
+}
+
+/* Leave request row — same density as stafflist__row */
+.leaverow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px 14px;
+  width: 100%;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--divider);
+  text-align: left;
+  background: transparent;
+  cursor: pointer;
+  transition: background 80ms;
+}
+.leaverow:hover { background: var(--surface-2); }
+.leaverow.is-active {
+  background: var(--surface);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.leaverow.is-overlap { border-left: 2px solid var(--warn); }
+.leaverow__main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.leaverow__name {
+  font-size: 13px;
+  font-weight: 520;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+}
+.leaverow__sub {
+  font-size: 12px;
+  color: var(--fg-subtle);
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.leaverow__right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.leaverow__days {
+  font-size: 11.5px;
+  color: var(--fg-muted);
+}
+
+/* Leave detail pane — composes detail-pane atoms but flatter */
+.leavedetail {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.leavedetail__head {
+  padding: 20px 20px 12px;
+  border-bottom: 1px solid var(--divider);
+}
+.leavedetail__title {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+  margin: 0;
+}
+.leavedetail__meta {
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: var(--fg-subtle);
+}
+.leavedetail__body {
+  flex: 1;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-size: 13px;
+}
+.leavedetail__kv {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 8px 12px;
+  font-size: 12.5px;
+}
+.leavedetail__kv dt {
+  color: var(--fg-subtle);
+  font-weight: 460;
+}
+.leavedetail__kv dd {
+  margin: 0;
+  color: var(--fg);
+}
+.leavedetail__reason {
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12.5px;
+  color: var(--fg-muted);
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+.leavedetail__foot {
+  margin-top: auto;
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--divider);
+  background: var(--surface);
+  position: sticky;
+  bottom: 0;
+}
+.leavedetail__overlap {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  background: var(--warn-bg);
+  color: var(--warn);
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Calendar grid (regularize page) */
+.regcal {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+.regcal__head {
+  font-size: 10.5px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-subtle);
+  text-align: center;
+  padding: 4px 0;
+}
+.regcal__day {
+  position: relative;
+  aspect-ratio: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 6px;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  transition: border-color 80ms, transform 80ms;
+}
+.regcal__day:hover:not(:disabled) {
+  border-color: var(--border-strong);
+}
+.regcal__day:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+.regcal__day.is-empty { visibility: hidden; }
+.regcal__day.is-today { box-shadow: inset 0 0 0 2px var(--accent); }
+.regcal__day.is-present { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); }
+.regcal__day.is-absent { background: var(--danger-bg); border-color: var(--danger); color: var(--danger); }
+.regcal__day.is-leave { background: var(--warn-bg); border-color: var(--warn); color: var(--warn); }
+.regcal__day.is-halfday { background: var(--info-bg); border-color: var(--info); color: var(--info); }
+.regcal__day__dot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+}
+
+/* Subject-assignment card sections */
+.assignsec {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.assignsec__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--divider);
+}
+.assignsec__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.assignsec__icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--fg-muted);
+  display: grid;
+  place-items: center;
+}
+.assignsec__body { padding: 12px 16px; }
+
+/* Subject chip row — reuse tagchip with a closer-spaced layout */
+.subjrow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--divider);
+  border-radius: 6px;
+  background: var(--surface);
+}
+.subjrow + .subjrow { margin-top: 6px; }
+.subjrow__name {
+  font-size: 13px;
+  font-weight: 520;
+  color: var(--fg);
+  letter-spacing: -0.01em;
+}
+.subjrow__classes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+.subjrow.is-pending-add { background: var(--ok-bg); border-color: var(--ok); }
+.subjrow.is-pending-remove {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+}
+.subjrow.is-pending-remove .subjrow__name { text-decoration: line-through; color: var(--danger); }
+
+/* Teacher timetable conflict / cell atoms */
+.ttgrid-cell {
+  width: 100%;
+  height: 80px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: var(--surface);
+  font-size: 11px;
+  cursor: pointer;
+  transition: border-color 80ms, box-shadow 80ms;
+}
+.ttgrid-cell:hover { border-color: var(--border-strong); }
+.ttgrid-cell.is-empty {
+  border-style: dashed;
+  color: var(--fg-faint);
+}
+.ttgrid-cell.is-empty:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+.ttgrid-cell.has-conflict {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+  box-shadow: inset 0 0 0 1px var(--danger);
+  color: var(--danger);
+}
+.ttgrid-cell.is-readonly { cursor: not-allowed; opacity: 0.85; }
+.ttgrid-cell__class {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-size: 11px;
+  text-align: center;
+}
+.ttgrid-cell__subject {
+  font-size: 10.5px;
+  color: var(--fg-muted);
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ttgrid-cell.has-conflict .ttgrid-cell__subject { color: var(--danger); }
+
+/* Section banner used across pages */
+.staff-banner {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-left-color: var(--info);
+  border-radius: 8px;
+}
+.staff-banner--warn { border-left-color: var(--warn); }
+.staff-banner--danger { border-left-color: var(--danger); }
+.staff-banner--ok { border-left-color: var(--ok); }
+.staff-banner__icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: var(--surface-2);
+  color: var(--fg-muted);
+}
+.staff-banner__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg);
+}
+.staff-banner__body {
+  font-size: 12.5px;
+  color: var(--fg-muted);
+  line-height: 1.5;
+}
+
+/* Pending changes strip (bulk assignment) */
+.pendingstrip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--accent-border);
+  background: var(--accent-bg);
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
+.pendingstrip__count {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+/* Inline empty state used inside assign sections */
+.assign-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 32px 16px;
+  gap: 8px;
+}
+.assign-empty__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  color: var(--fg-faint);
+}
+.assign-empty__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg);
+}
+.assign-empty__sub {
+  font-size: 12px;
+  color: var(--fg-subtle);
+  max-width: 280px;
+  line-height: 1.5;
+}

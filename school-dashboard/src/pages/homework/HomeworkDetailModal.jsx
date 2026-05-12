@@ -172,14 +172,14 @@ export default function HomeworkDetailModal({ homeworkId, onClose, onDataChanged
 
         {hw?.description && (
           <div>
-            <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">Description</p>
-            <MarkdownRenderer content={hw.description} className="text-sm text-gray-700 dark:text-zinc-300" />
+            <p className="text-xs text-fg-muted mb-1">Description</p>
+            <MarkdownRenderer content={hw.description} className="text-sm text-fg" />
           </div>
         )}
 
         {hw?.attachments?.length > 0 && (
           <div>
-            <p className="text-xs text-gray-500 dark:text-zinc-400 mb-2 flex items-center gap-1">
+            <p className="text-xs text-fg-muted mb-2 flex items-center gap-1">
               <Paperclip size={12} aria-hidden="true" /> Attachments ({hw.attachments.length})
             </p>
             <div className="space-y-1.5">
@@ -189,10 +189,10 @@ export default function HomeworkDetailModal({ homeworkId, onClose, onDataChanged
                   href={att.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
+                  className="flex items-center gap-2 px-3 py-2 bg-surface-2 border border-divider rounded-lg hover:bg-surface-2 transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
                 >
-                  <Paperclip size={14} className="text-gray-400 dark:text-zinc-500 shrink-0" aria-hidden="true" />
-                  <span className="text-sm text-gray-700 dark:text-zinc-300 truncate flex-1">
+                  <Paperclip size={14} className="text-fg-faint shrink-0" aria-hidden="true" />
+                  <span className="text-sm text-fg truncate flex-1">
                     {att.name || att.url}
                   </span>
                   {att.type && (
@@ -202,7 +202,7 @@ export default function HomeworkDetailModal({ homeworkId, onClose, onDataChanged
                   )}
                   <ExternalLink
                     size={13}
-                    className="text-gray-400 dark:text-zinc-500 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="text-fg-faint shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                     aria-hidden="true"
                   />
                 </a>
@@ -230,15 +230,15 @@ export default function HomeworkDetailModal({ homeworkId, onClose, onDataChanged
               )}
             </button>
             {showUnsubmitted && (
-              <div className="divide-y divide-gray-100 dark:divide-zinc-800 max-h-48 overflow-y-auto">
+              <div className="divide-y divide-divider max-h-48 overflow-y-auto">
                 {unsubmittedStudents.map((st) => (
                   <div
                     key={st._id}
-                    className="flex items-center justify-between px-4 py-2 bg-white dark:bg-zinc-950"
+                    className="flex items-center justify-between px-4 py-2 bg-surface"
                   >
                     <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{st.name}</p>
-                      <p className="text-xs text-gray-400 dark:text-zinc-500">Roll: {st.rollNo || '—'}</p>
+                      <p className="text-sm font-medium text-fg">{st.name}</p>
+                      <p className="text-xs text-fg-faint">Roll: {st.rollNo || '—'}</p>
                     </div>
                     <Button
                       size="sm"
@@ -256,7 +256,7 @@ export default function HomeworkDetailModal({ homeworkId, onClose, onDataChanged
         )}
 
         <div>
-          <p className="text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-3">Submissions</p>
+          <p className="text-sm font-semibold text-fg mb-3">Submissions</p>
           {!hw?.submissions?.length ? (
             <EmptyState icon={Clock} size="sm" title="No submissions yet" />
           ) : (
@@ -268,25 +268,25 @@ export default function HomeworkDetailModal({ homeworkId, onClose, onDataChanged
                 const isEditingThis = grading?.studentId === (student?._id || student);
 
                 return (
-                  <Card key={i} padding="sm" className="bg-gray-50 dark:bg-zinc-900">
+                  <Card key={i} padding="sm" className="bg-surface-2">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 truncate">
+                        <p className="text-sm font-medium text-fg truncate">
                           {student?.name || 'Student'}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-zinc-400">
+                        <p className="text-xs text-fg-muted">
                           Roll: {student?.rollNo || '—'} · Submitted {sub.submittedAt ? formatShortDate(sub.submittedAt) : '—'}
                           {isLate && <span className="ml-1 text-amber-600 dark:text-amber-400">(Late)</span>}
                         </p>
                         {sub.remarks && (
-                          <p className="text-xs text-gray-400 dark:text-zinc-500 mt-0.5 italic">&quot;{sub.remarks}&quot;</p>
+                          <p className="text-xs text-fg-faint mt-0.5 italic">&quot;{sub.remarks}&quot;</p>
                         )}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         {isGraded && (
                           <div className="flex items-center gap-1">
                             <Star size={13} className="text-amber-400 fill-amber-400" aria-hidden="true" />
-                            <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">
+                            <span className="text-sm font-medium text-fg">
                               {sub.marks}/{hw?.totalMarks ?? 100}
                             </span>
                           </div>
@@ -316,7 +316,7 @@ export default function HomeworkDetailModal({ homeworkId, onClose, onDataChanged
                     </div>
 
                     {isEditingThis && (
-                      <div className="mt-3 flex items-end gap-2 border-t border-gray-100 dark:border-zinc-800 pt-3">
+                      <div className="mt-3 flex items-end gap-2 border-t border-divider pt-3">
                         <Input
                           wrapperClassName="w-32"
                           label={`Marks (max ${hw?.totalMarks ?? 100})`}

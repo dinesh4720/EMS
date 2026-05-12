@@ -53,10 +53,10 @@ function Step1PersonalInfo({
           />
         ) : (
           <div
-            className="w-20 h-20 rounded-full border-2 border-default-200 bg-default-50 flex items-center justify-center cursor-pointer hover:border-primary-400 transition-colors"
+            className="w-20 h-20 rounded-full border-2 border-border-token bg-surface-2 flex items-center justify-center cursor-pointer hover:border-primary-400 transition-colors"
             onClick={() => pictureInputRef.current?.click()}
           >
-            <User size={32} className="text-default-400" />
+            <User size={32} className="text-fg-faint" />
           </div>
         )}
         <div className="flex flex-col gap-1 text-left">
@@ -69,7 +69,7 @@ function Step1PersonalInfo({
             </button>
             {formData.picture && (
               <>
-                <span className="text-default-300">|</span>
+                <span className="text-fg-faint">|</span>
                 <button
                   className="text-sm font-semibold text-danger hover:text-danger-600 transition-colors cursor-pointer"
                   onClick={() => updateField("picture", null)}
@@ -79,7 +79,7 @@ function Step1PersonalInfo({
               </>
             )}
           </div>
-          <p className="text-xs text-default-500 max-w-[250px]">
+          <p className="text-xs text-fg-muted max-w-[250px]">
             Take a photo or upload from device
           </p>
         </div>
@@ -87,7 +87,7 @@ function Step1PersonalInfo({
 
       {/* Personal Information - Full Name & Date of Birth in same row */}
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.personalInformation1')}</h3>
+        <h3 className="text-sm font-medium text-fg">{t('pages.personalInformation1')}</h3>
         <div className="grid grid-cols-2 gap-4">
           <div ref={fullNameRef}>
             <Input
@@ -101,13 +101,13 @@ function Step1PersonalInfo({
               variant="bordered"
               radius="sm"
               isRequired
-              classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+              classNames={{ inputWrapper: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
             />
           </div>
 
           {/* Date of Birth */}
           <div ref={dobRef} className="space-y-1">
-            <label className="text-xs font-medium text-default-600">Date of Birth <span className="text-danger">*</span></label>
+            <label className="text-xs font-medium text-fg-muted">Date of Birth <span className="text-danger">*</span></label>
 
             <div className="relative">
               <Input
@@ -286,7 +286,7 @@ function Step1PersonalInfo({
                 radius="sm"
                 isRequired
                 classNames={{
-                  inputWrapper: "bg-background border-1 border-default-200 hover:border-primary-400 hover:bg-default-50 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 h-10 pr-10 cursor-pointer"
+                  inputWrapper: "bg-bg border-1 border-border-token hover:border-primary-400 hover:bg-surface-2 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 h-10 pr-10 cursor-pointer"
                 }}
                 endContent={
                   <button
@@ -299,7 +299,7 @@ function Step1PersonalInfo({
                   >
                     <Calendar
                       size={18}
-                      className="text-default-500 cursor-pointer hover:text-primary transition-colors"
+                      className="text-fg-muted cursor-pointer hover:text-primary transition-colors"
                     />
                   </button>
                 }
@@ -330,7 +330,7 @@ function Step1PersonalInfo({
             </div>
 
             {dobValidation.message && (
-              <p className={`text-xs mt-1 ${dobValidation.isValid ? 'text-success' : dobValidation.warning ? 'text-warning' : 'text-default-500'}`}>
+              <p className={`text-xs mt-1 ${dobValidation.isValid ? 'text-success' : dobValidation.warning ? 'text-warning' : 'text-fg-muted'}`}>
                 {dobValidation.message}
               </p>
             )}
@@ -343,7 +343,7 @@ function Step1PersonalInfo({
 
       {/* Gender */}
       <div className="space-y-2" ref={genderRef}>
-        <label className="text-xs font-medium text-gray-600 dark:text-zinc-400">Gender <span className="text-red-500">*</span></label>
+        <label className="text-xs font-medium text-fg-muted">Gender <span className="text-red-500">*</span></label>
         <RadioGroup
           orientation="horizontal"
           value={formData.gender}
@@ -359,8 +359,8 @@ function Step1PersonalInfo({
       </div>
 
       {/* Class Info */}
-      <div className="space-y-3 pt-5 border-t border-gray-100 dark:border-zinc-700">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.classInformation')}</h3>
+      <div className="space-y-3 pt-5 border-t border-divider">
+        <h3 className="text-sm font-medium text-fg">{t('pages.classInformation')}</h3>
         <div className="grid grid-cols-2 gap-4">
           {/* Class Selection */}
           <div ref={classRef}>
@@ -380,7 +380,7 @@ function Step1PersonalInfo({
               errorMessage={errors.classGrade}
               variant="bordered"
               radius="sm"
-              classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+              classNames={{ trigger: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
             >
               {uniqueClassNames.map(className => (
                 <SelectItem key={className}>{className}</SelectItem>
@@ -402,7 +402,7 @@ function Step1PersonalInfo({
               errorMessage={errors.section}
               variant="bordered"
               radius="sm"
-              classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+              classNames={{ trigger: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
             >
               {availableSections.map(section => (
                 <SelectItem key={section}>{section}</SelectItem>
@@ -420,20 +420,20 @@ function Step1PersonalInfo({
             radius="sm"
             isReadOnly
             description="Auto-generated from roll number settings. Cannot be modified."
-            classNames={{ inputWrapper: "bg-default-50 border-1 border-default-200 h-10" }}
+            classNames={{ inputWrapper: "bg-surface-2 border-1 border-border-token h-10" }}
           />
         </div>
       </div>
 
       {/* Contact Info */}
-      <div className="space-y-3 pt-5 border-t border-gray-100 dark:border-zinc-700">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.contactDetails1')}</h3>
+      <div className="space-y-3 pt-5 border-t border-divider">
+        <h3 className="text-sm font-medium text-fg">{t('pages.contactDetails1')}</h3>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Input
               label={t('pages.mobileNumber')}
               labelPlacement="outside"
-              startContent={<span className="text-default-400 text-xs">+91</span>}
+              startContent={<span className="text-fg-faint text-xs">+91</span>}
               placeholder={t('pages.studentSMobileIfAny')}
               value={formData.mobile}
               onValueChange={val => {
@@ -443,10 +443,10 @@ function Step1PersonalInfo({
               variant="bordered"
               radius="sm"
               maxLength={10}
-              classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+              classNames={{ inputWrapper: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
             />
             <Checkbox size="sm" isSelected={formData.isWhatsapp} onValueChange={val => updateField("isWhatsapp", val)}
-              classNames={{ label: "text-xs text-default-500" }}>
+              classNames={{ label: "text-xs text-fg-muted" }}>
               Same for WhatsApp
             </Checkbox>
           </div>
@@ -458,19 +458,19 @@ function Step1PersonalInfo({
             onValueChange={val => updateField("email", val)}
             variant="bordered"
             radius="sm"
-            classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+            classNames={{ inputWrapper: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
           />
           {!formData.isWhatsapp && (
             <Input
               label={t('pages.whatsAppNumber')}
               labelPlacement="outside"
-              startContent={<span className="text-default-400 text-xs">+91</span>}
+              startContent={<span className="text-fg-faint text-xs">+91</span>}
               placeholder={t('pages.whatsAppNumber')}
               value={formData.whatsappNumber}
               onValueChange={val => updateField("whatsappNumber", val)}
               variant="bordered"
               radius="sm"
-              classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+              classNames={{ inputWrapper: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
             />
           )}
         </div>
@@ -484,7 +484,7 @@ function Step1PersonalInfo({
           radius="sm"
           isRequired
           minRows={2}
-          classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300" }}
+          classNames={{ inputWrapper: "bg-bg border-1 border-border-token hover:border-border-strong" }}
         />
         <div className="grid grid-cols-3 gap-4">
           <Input
@@ -499,7 +499,7 @@ function Step1PersonalInfo({
             variant="bordered"
             radius="sm"
             isRequired
-            classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+            classNames={{ inputWrapper: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
           />
           <div className="relative">
             <Select
@@ -514,7 +514,7 @@ function Step1PersonalInfo({
               }}
               variant="bordered"
               radius="sm"
-              classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+              classNames={{ trigger: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
             >
               {INDIAN_STATES.map(state => <SelectItem key={state}>{state}</SelectItem>)}
             </Select>
@@ -572,11 +572,11 @@ function Step1PersonalInfo({
               isRequired
               maxLength={6}
               isLoading={isZipLookupLoading}
-              classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+              classNames={{ inputWrapper: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
             />
             {/* Absolute positioned loading indicator to prevent layout shift */}
             {isZipLookupLoading && (
-              <div className="absolute -bottom-5 left-0 text-xs text-default-500 whitespace-nowrap">
+              <div className="absolute -bottom-5 left-0 text-xs text-fg-muted whitespace-nowrap">
                 Looking up location...
               </div>
             )}
@@ -585,9 +585,9 @@ function Step1PersonalInfo({
       </div>
 
       {/* Optional Fields */}
-      <div className="space-y-3 pt-5 border-t border-gray-100 dark:border-zinc-700">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.optionalInformation')}</h3>
-        <p className="text-xs text-gray-500 dark:text-zinc-400 -mt-1">{t('pages.theseFieldsAreOptionalAndCanBeFilledLater')}</p>
+      <div className="space-y-3 pt-5 border-t border-divider">
+        <h3 className="text-sm font-medium text-fg">{t('pages.optionalInformation')}</h3>
+        <p className="text-xs text-fg-muted -mt-1">{t('pages.theseFieldsAreOptionalAndCanBeFilledLater')}</p>
         <div className="grid grid-cols-2 gap-4">
           <Input
             label={t('pages.aadhaarNumber')}
@@ -598,7 +598,7 @@ function Step1PersonalInfo({
             variant="bordered"
             radius="sm"
             maxLength={12}
-            classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+            classNames={{ inputWrapper: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
           />
           <Select
             label={t('pages.bloodGroup1')}
@@ -608,7 +608,7 @@ function Step1PersonalInfo({
             onSelectionChange={keys => updateField("bloodGroup", Array.from(keys)[0])}
             variant="bordered"
             radius="sm"
-            classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+            classNames={{ trigger: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
           >
             {BLOOD_GROUPS.map(bg => <SelectItem key={bg}>{bg}</SelectItem>)}
           </Select>
@@ -620,7 +620,7 @@ function Step1PersonalInfo({
             onValueChange={val => updateField("nationality", val)}
             variant="bordered"
             radius="sm"
-            classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+            classNames={{ inputWrapper: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
           />
           <Select
             label={t('pages.religion1')}
@@ -630,7 +630,7 @@ function Step1PersonalInfo({
             onSelectionChange={keys => updateField("religion", Array.from(keys)[0])}
             variant="bordered"
             radius="sm"
-            classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+            classNames={{ trigger: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
           >
             {RELIGIONS.map(rel => <SelectItem key={rel}>{rel}</SelectItem>)}
           </Select>
@@ -642,7 +642,7 @@ function Step1PersonalInfo({
             onSelectionChange={keys => updateField("category", Array.from(keys)[0])}
             variant="bordered"
             radius="sm"
-            classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+            classNames={{ trigger: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
           >
             {CATEGORIES.map(cat => <SelectItem key={cat}>{cat}</SelectItem>)}
           </Select>
@@ -654,7 +654,7 @@ function Step1PersonalInfo({
             onSelectionChange={keys => updateField("motherTongue", Array.from(keys)[0])}
             variant="bordered"
             radius="sm"
-            classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+            classNames={{ trigger: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
           >
             {MOTHER_TONGUES.map(tongue => <SelectItem key={tongue}>{tongue}</SelectItem>)}
           </Select>
@@ -667,7 +667,7 @@ function Step1PersonalInfo({
             variant="bordered"
             radius="sm"
             className="col-span-2"
-            classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+            classNames={{ inputWrapper: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
           />
           <Input
             label={t('pages.transferCertificateNo')}
@@ -678,7 +678,7 @@ function Step1PersonalInfo({
             variant="bordered"
             radius="sm"
             className="col-span-2"
-            classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+            classNames={{ inputWrapper: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
           />
           <Input
             label={t('pages.mediumOfInstruction')}
@@ -689,7 +689,7 @@ function Step1PersonalInfo({
             variant="bordered"
             radius="sm"
             className="col-span-2"
-            classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+            classNames={{ inputWrapper: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
           />
           <Input
             label={t('pages.house')}
@@ -700,7 +700,7 @@ function Step1PersonalInfo({
             variant="bordered"
             radius="sm"
             className="col-span-2"
-            classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+            classNames={{ inputWrapper: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
           />
         </div>
       </div>

@@ -41,7 +41,7 @@ export default function PayrollFilters({
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-col sm:flex-row justify-between gap-4 items-start bg-white border-b border-default-200 py-4 -mx-6 -mt-6 px-6">
+    <div className="flex flex-col sm:flex-row justify-between gap-4 items-start bg-surface border-b border-default-200 py-4 -mx-6 -mt-6 px-6">
       <div className="flex flex-wrap gap-3 items-center w-full sm:w-auto">
         {/* Month/Year Selector */}
         <div className="flex gap-2 items-center">

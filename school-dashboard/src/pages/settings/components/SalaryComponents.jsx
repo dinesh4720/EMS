@@ -97,17 +97,17 @@ export default function SalaryComponents() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Earnings Card */}
-        <Card className="shadow-sm border border-default-200">
+        <Card className="shadow-sm border border-border-token">
           <CardHeader className="flex justify-between items-center px-6 pt-5 pb-0">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-success-50 rounded-lg">
                 <ArrowUpRight size={20} className="text-success-600" />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-default-800">
+                <h3 className="text-base font-semibold text-fg">
                   {t("pages.earningsComponents")}
                 </h3>
-                <p className="text-xs text-default-500">
+                <p className="text-xs text-fg-muted">
                   {t("pages.defineSalaryAdditions")}
                 </p>
               </div>
@@ -125,7 +125,7 @@ export default function SalaryComponents() {
           <Divider className="mt-4" />
           <CardBody className="px-6 py-4">
             {earnings.length === 0 ? (
-              <p className="text-sm text-default-400 text-center py-6">
+              <p className="text-sm text-fg-faint text-center py-6">
                 No earning components added yet
               </p>
             ) : (
@@ -133,11 +133,11 @@ export default function SalaryComponents() {
                 {earnings.map((item) => (
                   <div
                     key={item.id}
-                    className="flex justify-between items-center py-3 px-3 rounded-lg hover:bg-default-50 transition-colors group"
+                    className="flex justify-between items-center py-3 px-3 rounded-lg hover:bg-surface-2 transition-colors group"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-2 h-2 rounded-full bg-success-400" />
-                      <span className="text-sm font-medium text-default-700">
+                      <span className="text-sm font-medium text-fg">
                         {item.name}
                       </span>
                     </div>
@@ -160,17 +160,17 @@ export default function SalaryComponents() {
         </Card>
 
         {/* Deductions Card */}
-        <Card className="shadow-sm border border-default-200">
+        <Card className="shadow-sm border border-border-token">
           <CardHeader className="flex justify-between items-center px-6 pt-5 pb-0">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-danger-50 rounded-lg">
                 <ArrowDownRight size={20} className="text-danger-600" />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-default-800">
+                <h3 className="text-base font-semibold text-fg">
                   {t("pages.deductionsComponents")}
                 </h3>
-                <p className="text-xs text-default-500">
+                <p className="text-xs text-fg-muted">
                   {t("pages.defineSalaryDeductions")}
                 </p>
               </div>
@@ -188,7 +188,7 @@ export default function SalaryComponents() {
           <Divider className="mt-4" />
           <CardBody className="px-6 py-4">
             {deductions.length === 0 ? (
-              <p className="text-sm text-default-400 text-center py-6">
+              <p className="text-sm text-fg-faint text-center py-6">
                 No deduction components added yet
               </p>
             ) : (
@@ -196,11 +196,11 @@ export default function SalaryComponents() {
                 {deductions.map((item) => (
                   <div
                     key={item.id}
-                    className="flex justify-between items-center py-3 px-3 rounded-lg hover:bg-default-50 transition-colors group"
+                    className="flex justify-between items-center py-3 px-3 rounded-lg hover:bg-surface-2 transition-colors group"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-2 h-2 rounded-full bg-danger-400" />
-                      <span className="text-sm font-medium text-default-700">
+                      <span className="text-sm font-medium text-fg">
                         {item.name}
                       </span>
                     </div>

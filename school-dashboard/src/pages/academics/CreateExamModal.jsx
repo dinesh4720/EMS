@@ -195,8 +195,8 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Basic Information */}
       <div>
-        <h4 className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-3 flex items-center gap-2">
-          <BookOpen size={16} className="text-gray-400 dark:text-zinc-500" />
+        <h4 className="text-sm font-medium text-fg mb-3 flex items-center gap-2">
+          <BookOpen size={16} className="text-fg-faint" />
           Basic Information
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -210,7 +210,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
             errorMessage={errors.name}
             isRequired
             classNames={{
-              inputWrapper: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
+              inputWrapper: 'border-border-token hover:border-fg-faint',
             }}
           />
 
@@ -222,7 +222,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
             onSelectionChange={handleSelectionChange('type')}
             isRequired
             classNames={{
-              trigger: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
+              trigger: 'border-border-token hover:border-fg-faint',
             }}
           >
             {EXAM_TYPES.map((type) => (
@@ -244,7 +244,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
             isLoading={loadingData}
             isDisabled={loadingData}
             classNames={{
-              trigger: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
+              trigger: 'border-border-token hover:border-fg-faint',
             }}
           >
             {classes.map((cls) => (
@@ -266,7 +266,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
             isLoading={loadingData}
             isDisabled={loadingData}
             classNames={{
-              trigger: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
+              trigger: 'border-border-token hover:border-fg-faint',
             }}
           >
             {subjects.map((subject) => (
@@ -282,9 +282,9 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
             placeholder={`e.g., ${currentAcademicYear}`}
             value={formData.academicYear || currentAcademicYear}
             onValueChange={(value) => handleInputChange('academicYear', value)}
-            startContent={<Calendar size={16} className="text-gray-400 dark:text-zinc-500" />}
+            startContent={<Calendar size={16} className="text-fg-faint" />}
             classNames={{
-              inputWrapper: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
+              inputWrapper: 'border-border-token hover:border-fg-faint',
             }}
           />
         </div>
@@ -294,8 +294,8 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
 
       {/* Schedule */}
       <div>
-        <h4 className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-3 flex items-center gap-2">
-          <Calendar size={16} className="text-gray-400 dark:text-zinc-500" />
+        <h4 className="text-sm font-medium text-fg mb-3 flex items-center gap-2">
+          <Calendar size={16} className="text-fg-faint" />
           Schedule
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -309,7 +309,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
             errorMessage={errors.startDate}
             isRequired
             classNames={{
-              inputWrapper: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
+              inputWrapper: 'border-border-token hover:border-fg-faint',
             }}
           />
           <Input
@@ -322,7 +322,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
             errorMessage={errors.endDate}
             min={formData.startDate || undefined}
             classNames={{
-              inputWrapper: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
+              inputWrapper: 'border-border-token hover:border-fg-faint',
             }}
           />
 
@@ -333,7 +333,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
             selectedKeys={formData.term}
             onSelectionChange={handleSelectionChange('term')}
             classNames={{
-              trigger: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
+              trigger: 'border-border-token hover:border-fg-faint',
             }}
           >
             {TERM_OPTIONS.map((term) => (
@@ -352,7 +352,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
             onValueChange={(value) => handleInputChange('duration', value)}
             min={1}
             classNames={{
-              inputWrapper: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
+              inputWrapper: 'border-border-token hover:border-fg-faint',
             }}
           />
         </div>
@@ -362,8 +362,8 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
 
       {/* Marks Configuration */}
       <div>
-        <h4 className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-3 flex items-center gap-2">
-          <Award size={16} className="text-gray-400 dark:text-zinc-500" />
+        <h4 className="text-sm font-medium text-fg mb-3 flex items-center gap-2">
+          <Award size={16} className="text-fg-faint" />
           Marks Configuration
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -377,7 +377,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
             isInvalid={!!errors.maxMarks}
             errorMessage={errors.maxMarks}
             classNames={{
-              inputWrapper: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
+              inputWrapper: 'border-border-token hover:border-fg-faint',
             }}
           />
           <Input
@@ -390,7 +390,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
             isInvalid={!!errors.passingMarks}
             errorMessage={errors.passingMarks}
             classNames={{
-              inputWrapper: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
+              inputWrapper: 'border-border-token hover:border-fg-faint',
             }}
           />
           <Input
@@ -401,7 +401,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
             value={formData.weightage}
             onValueChange={(value) => handleInputChange('weightage', value)}
             classNames={{
-              inputWrapper: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
+              inputWrapper: 'border-border-token hover:border-fg-faint',
             }}
           />
         </div>
@@ -414,7 +414,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
             selectedKeys={formData.gradingType}
             onSelectionChange={handleSelectionChange('gradingType')}
             classNames={{
-              trigger: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
+              trigger: 'border-border-token hover:border-fg-faint',
             }}
           >
             {GRADING_TYPES.map((type) => (
@@ -438,7 +438,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
           onValueChange={(value) => handleInputChange('instructions', value)}
           minRows={3}
           classNames={{
-            inputWrapper: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700',
+            inputWrapper: 'border-border-token hover:border-fg-faint',
           }}
         />
       </div>
@@ -456,7 +456,7 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
           color="primary"
           type="submit"
           isLoading={loading}
-          className="bg-gray-900 dark:bg-zinc-100 dark:text-zinc-900"
+          className="bg-accent text-accent-fg"
         >
           Create Exam
         </Button>

@@ -42,6 +42,7 @@ const Alert = forwardRef(function Alert(
     icon,
     onClose,
     action,
+    frosted = false,
     className,
     ...props
   },
@@ -56,7 +57,10 @@ const Alert = forwardRef(function Alert(
       role={config.role}
       className={cn(
         "relative flex gap-3 rounded-lg border px-4 py-3 text-sm",
-        config.container,
+        /* REVAMP-05: `frosted` layers .ds-alert (glass tokens) over the
+         * coloured tailwind utilities so the alert reads like the other
+         * overlay primitives without losing variant tinting. */
+        frosted ? "ds-alert" : config.container,
         className
       )}
       {...props}
@@ -92,6 +96,7 @@ Alert.propTypes = {
   icon: PropTypes.node,
   onClose: PropTypes.func,
   action: PropTypes.node,
+  frosted: PropTypes.bool,
   className: PropTypes.string,
 };
 

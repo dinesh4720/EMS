@@ -11,7 +11,7 @@ export default defineConfig({
     alias: {
       '@owlin/tracker-sdk': path.resolve(__dirname, 'owlin-sdk/src/index.js'),
     },
-    dedupe: ['react', 'react-dom', 'three'],
+    dedupe: ['react', 'react-dom'],
   },
   server: {
     watch: {
@@ -35,9 +35,7 @@ export default defineConfig({
       'react',
       'react-dom',
       'react-router-dom',
-      'three',
-      '@react-three/fiber',
-      '@react-three/drei',
+      'cmdk',
     ],
     force: false, // Set to true if issues persist
   },

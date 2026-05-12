@@ -1,19 +1,42 @@
 import { memo } from "react";
 import PropTypes from "prop-types";
-import {
-  Drawer as HeroDrawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerBody,
-  DrawerFooter,
-} from "@heroui/react";
+import { X } from "lucide-react";
+import ModalBase from "./ModalBase";
 
 /**
- * Drawer — design-system wrapper around HeroUI Drawer.
+ * Drawer — frosted-glass side panel (REVAMP-05).
  *
- * Standardises placement, size, and dark-mode classNames for side-panel
- * experiences (filters, detail views, quick edits).
+ * Native portal + focus trap + body scroll lock + ESC close. Outside-click
+ * closes when `isDismissable` (default true). Slides in from the right
+ * (or left) using --glass-bg / --glass-blur / --glass-border / --shadow-glass.
+ *
+ * Pre-revamp callers passed HeroUI sizes ("xs"…"5xl"); unknown sizes map to
+ * "md". Top/bottom placements are not supported by the new primitive — they
+ * coerce to right.
  */
+const SIZE_CLASS = {
+  xs: "ds-drawer--xs",
+  sm: "ds-drawer--sm",
+  md: "ds-drawer--md",
+  lg: "ds-drawer--lg",
+  xl: "ds-drawer--xl",
+  "2xl": "ds-drawer--xl",
+  "3xl": "ds-drawer--xl",
+  "4xl": "ds-drawer--xl",
+  "5xl": "ds-drawer--xl",
+  full: "ds-drawer--full",
+};
+
+const DrawerHeader = ({ children, className = "" }) => (
+  <div className={`ds-drawer__head ${className}`.trim()}>{children}</div>
+);
+const DrawerBody = ({ children, className = "" }) => (
+  <div className={`ds-drawer__body ${className}`.trim()}>{children}</div>
+);
+const DrawerFooter = ({ children, className = "" }) => (
+  <div className={`ds-drawer__foot ${className}`.trim()}>{children}</div>
+);
+
 const Drawer = memo(function Drawer({
   isOpen,
   onClose,
@@ -25,53 +48,67 @@ const Drawer = memo(function Drawer({
   hideCloseButton = false,
   isDismissable = true,
   children,
-  classNames: classNamesProp,
-  ...props
+  ariaLabel,
+  ariaDescribedBy,
+  className = "",
 }) {
-  const mergedClassNames = {
-    backdrop: "bg-black/40",
-    base: "bg-white dark:bg-zinc-900",
-    ...classNamesProp,
-  };
+  const sizeClass = SIZE_CLASS[size] || SIZE_CLASS.md;
+  const isLeft = placement === "left";
+  const backdropClass = `ds-backdrop ds-backdrop--drawer ${
+    isLeft ? "ds-backdrop--drawer-left" : ""
+  }`.trim();
+  const placementClass = isLeft ? "ds-drawer--left" : "";
 
   return (
-    <HeroDrawer
+    <ModalBase
       isOpen={isOpen}
       onClose={onClose}
-      size={size}
-      placement={placement}
-      hideCloseButton={hideCloseButton}
-      isDismissable={isDismissable}
-      classNames={mergedClassNames}
-      {...props}
+      portalId="ds-drawer-root"
+      labelledBy={title ? "ds-drawer-title" : undefined}
+      describedBy={ariaDescribedBy}
+      className={backdropClass}
+      closeOnBackdrop={isDismissable}
     >
-      <DrawerContent>
-        {(close) => (
-          <>
-            {title ? (
-              <DrawerHeader className="flex flex-col gap-1 border-b border-default-200">
-                <span className="text-lg font-semibold text-gray-900 dark:text-zinc-100">
+      <div
+        className={`ds-drawer ${sizeClass} ${placementClass} ${className}`.trim()}
+        onClick={(e) => e.stopPropagation()}
+        role="document"
+        aria-label={!title && ariaLabel ? ariaLabel : undefined}
+      >
+        {(title || !hideCloseButton) && (
+          <div className="ds-drawer__head">
+            <div className="ds-modal__titles">
+              {title ? (
+                <span id="ds-drawer-title" className="ds-modal__title">
                   {title}
                 </span>
-                {description ? (
-                  <span className="text-sm font-normal text-gray-500 dark:text-zinc-400">
-                    {description}
-                  </span>
-                ) : null}
-              </DrawerHeader>
-            ) : null}
-            <DrawerBody className="py-5">
-              {typeof children === "function" ? children(close) : children}
-            </DrawerBody>
-            {footer ? (
-              <DrawerFooter className="border-t border-default-200">
-                {typeof footer === "function" ? footer(close) : footer}
-              </DrawerFooter>
-            ) : null}
-          </>
+              ) : null}
+              {description ? (
+                <span className="ds-modal__desc">{description}</span>
+              ) : null}
+            </div>
+            {!hideCloseButton && (
+              <button
+                type="button"
+                className="ds-modal__close"
+                onClick={onClose}
+                aria-label="Close"
+              >
+                <X size={13} aria-hidden="true" />
+              </button>
+            )}
+          </div>
         )}
-      </DrawerContent>
-    </HeroDrawer>
+        <DrawerBody>
+          {typeof children === "function" ? children(onClose) : children}
+        </DrawerBody>
+        {footer ? (
+          <DrawerFooter>
+            {typeof footer === "function" ? footer(onClose) : footer}
+          </DrawerFooter>
+        ) : null}
+      </div>
+    </ModalBase>
   );
 });
 
@@ -92,7 +129,9 @@ Drawer.propTypes = {
   hideCloseButton: PropTypes.bool,
   isDismissable: PropTypes.bool,
   children: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
-  classNames: PropTypes.object,
+  ariaLabel: PropTypes.string,
+  ariaDescribedBy: PropTypes.string,
+  className: PropTypes.string,
 };
 
 export default Drawer;

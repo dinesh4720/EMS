@@ -16,15 +16,15 @@ export function buildExamColumns(t) {
       label: t('pages.eXAM'),
       render: (exam) => (
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-md bg-[var(--color-bg-tertiary)]">
-            <FileText size={16} className="text-[var(--color-text-muted)]" aria-hidden="true" />
+          <div className="p-2 rounded-md bg-surface-hover">
+            <FileText size={16} className="text-fg-muted" aria-hidden="true" />
           </div>
           <div className="min-w-0">
-            <span className="font-medium text-[var(--color-text-primary)] block truncate">
+            <span className="font-medium text-fg block truncate">
               {exam.name}
             </span>
             {exam.academicYear && (
-              <p className="text-xs text-[var(--color-text-muted)] truncate">
+              <p className="text-xs text-fg-muted truncate">
                 {exam.academicYear}
               </p>
             )}
@@ -36,7 +36,7 @@ export function buildExamColumns(t) {
       key: 'type',
       label: t('pages.tYPE'),
       render: (exam) => (
-        <span className="capitalize text-[var(--color-text-secondary)]">
+        <span className="capitalize text-fg">
           {exam.type?.replace(/_/g, ' ')}
         </span>
       ),
@@ -45,7 +45,7 @@ export function buildExamColumns(t) {
       key: 'class',
       label: t('pages.cLASS'),
       render: (exam) => (
-        <span className="text-[var(--color-text-secondary)]">
+        <span className="text-fg">
           {exam.className || exam.classId || '—'}
         </span>
       ),
@@ -54,14 +54,14 @@ export function buildExamColumns(t) {
       key: 'subject',
       label: t('pages.sUBJECT'),
       render: (exam) => (
-        <span className="text-[var(--color-text-secondary)]">{exam.subjectName || '—'}</span>
+        <span className="text-fg">{exam.subjectName || '—'}</span>
       ),
     },
     {
       key: 'date',
       label: t('pages.dATE'),
       render: (exam) => (
-        <div className="inline-flex items-center gap-1.5 text-[var(--color-text-secondary)]">
+        <div className="inline-flex items-center gap-1.5 text-fg">
           <Calendar size={14} aria-hidden="true" />
           {exam.startDate
             ? formatShortDate(exam.startDate)

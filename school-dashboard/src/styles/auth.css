@@ -1,0 +1,476 @@
+/* ============================================================
+   Auth shell — Login / Signup / Reset
+   Split layout: solid form on the left, frosted visual rail on the right.
+   Reference: REVAMP-06.
+   ============================================================ */
+
+.auth-shell {
+  display: grid;
+  grid-template-columns: 1fr;
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+@media (min-width: 1024px) {
+  .auth-shell {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .auth-shell {
+    grid-template-columns: minmax(0, 560px) minmax(0, 1fr);
+  }
+}
+
+.auth-form {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  background: var(--bg);
+  min-height: 100vh;
+}
+
+.auth-form__inner {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.auth-form__brand {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.auth-form__head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.auth-form__title {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+  margin: 0;
+}
+.auth-form__sub {
+  font-size: 13px;
+  color: var(--fg-subtle);
+  margin: 0;
+}
+
+.auth-form__form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.auth-form__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: -4px;
+}
+
+.auth-form__link {
+  font-size: 12px;
+  font-weight: 520;
+  color: var(--accent);
+  border-radius: 4px;
+}
+.auth-form__link:hover { text-decoration: underline; }
+.auth-form__link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.auth-form__kbd-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--fg-faint);
+}
+
+.auth-form__notice {
+  font-size: 11.5px;
+  color: var(--fg-subtle);
+  padding: 8px 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.auth-form__alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.auth-form__alert--success {
+  background: var(--ok-bg);
+  color: var(--ok);
+  border: 1px solid oklch(58% 0.14 150 / 0.25);
+}
+.auth-form__alert--danger {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border: 1px solid oklch(58% 0.2 25 / 0.25);
+}
+
+.auth-form__lockout {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.auth-form__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--divider);
+  font-size: 11px;
+  color: var(--fg-faint);
+}
+.auth-form__foot a {
+  color: inherit;
+  border-radius: 4px;
+}
+.auth-form__foot a:hover { color: var(--fg-subtle); text-decoration: underline; }
+.auth-form__foot a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   Visual rail — frosted, hidden on small screens
+   ============================================================ */
+.auth-visual {
+  display: none;
+  position: relative;
+  overflow: hidden;
+  min-height: 100vh;
+  background:
+    radial-gradient(120% 80% at 100% 0%, var(--accent-bg), transparent 55%),
+    radial-gradient(80% 60% at 0% 100%, oklch(70% 0.14 200 / 0.18), transparent 60%),
+    linear-gradient(180deg, var(--surface-2), var(--bg));
+}
+
+@media (min-width: 1024px) {
+  .auth-visual { display: block; }
+}
+
+.auth-visual__inner {
+  position: absolute;
+  inset: 0;
+}
+
+.auth-visual__panel {
+  position: absolute;
+  inset: auto 32px 32px 32px;
+  padding: 18px 20px;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-glass);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 420px;
+}
+.auth-visual__panel-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg);
+  letter-spacing: -0.01em;
+}
+.auth-visual__panel-sub {
+  font-size: 12px;
+  color: var(--fg-subtle);
+  line-height: 1.5;
+}
+
+/* Input error state used by .input / .select / .textarea.
+   Lives here (auth.css) for now — referenced elsewhere too, but historically
+   missing from the base form atoms. Safe to promote into create.css later. */
+.input--err,
+.select--err,
+.textarea--err {
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 3px var(--danger-bg) !important;
+}
+.field__hint--danger { color: var(--danger); }
+
+/* Trailing affordance for show/hide-password buttons inside .field__icon-wrap. */
+.field__icon-wrap > .field__action {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  color: var(--fg-faint);
+  background: transparent;
+  transition: background 120ms, color 120ms;
+}
+.field__icon-wrap > .field__action:hover {
+  background: var(--surface-hover);
+  color: var(--fg-subtle);
+}
+.field__icon-wrap > .field__action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Reserve padding so the action button doesn't overlap the value. */
+.input--with-action { padding-right: 36px; }
+
+/* Slightly taller, denser inputs for auth. */
+.auth-form .input { height: 36px; font-size: 13px; }
+.auth-form .field__icon-wrap > .field__icon { left: 11px; }
+.auth-form .input--with-icon { padding-left: 34px; }
+
+/* Full-width accent submit button in auth. */
+.auth-form .btn--block {
+  width: 100%;
+  height: 36px;
+  font-size: 13px;
+}
+
+/* ============================================================
+   Signup-specific atoms (REVAMP-07)
+   ============================================================ */
+
+/* Terms checkbox row — accessible native checkbox with custom styling.
+   Kept here (not promoted) because the auth pages are the only place that
+   currently render a free-form terms checkbox; the rest of the app uses the
+   <Checkbox /> primitive. */
+.signup-terms {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+.signup-terms__input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: 2px;
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  background: var(--surface);
+  flex-shrink: 0;
+  position: relative;
+  cursor: pointer;
+  transition: border-color 120ms, background 120ms;
+}
+.signup-terms__input:hover { border-color: var(--accent); }
+.signup-terms__input:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.signup-terms__input:checked::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 0;
+  width: 4px;
+  height: 8px;
+  border: solid #fff;
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
+}
+.signup-terms__input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.signup-terms__text {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--fg-subtle);
+}
+
+/* ============================================================
+   Public form shell (REVAMP-08)
+   Embedded in iframes on school websites — must look right at any width
+   and not depend on the dashboard chrome. Uses the same dense aesthetic
+   as the auth shell but full-width single column.
+   ============================================================ */
+.public-form {
+  min-height: 100vh;
+  background: var(--bg);
+  padding: 24px 16px;
+  display: flex;
+  justify-content: center;
+}
+
+@media (min-width: 640px) {
+  .public-form { padding: 40px 24px; }
+}
+
+.public-form__inner {
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.public-form__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.public-form__head-icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  display: grid;
+  place-items: center;
+  color: #fff;
+}
+
+.public-form__head-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.public-form__title {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.public-form__sub {
+  font-size: 12.5px;
+  color: var(--fg-subtle);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.public-form__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.public-form__meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--fg-faint);
+}
+
+.public-form__card {
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.public-form__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--divider);
+}
+
+.public-form__required {
+  font-size: 11.5px;
+  color: var(--fg-faint);
+}
+.public-form__required-mark { color: var(--danger); }
+
+.public-form__notice {
+  font-size: 11.5px;
+  color: var(--fg-faint);
+  text-align: center;
+  margin: 8px 0 0;
+}
+
+.public-form__status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 36px 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.public-form__status-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+}
+.public-form__status-icon--ok {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.public-form__status-icon--danger {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.public-form__status-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--fg);
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.public-form__status-sub {
+  font-size: 13px;
+  color: var(--fg-subtle);
+  margin: 0;
+  max-width: 38ch;
+  line-height: 1.5;
+}
+
+/* Make the public form usable when embedded in a constrained iframe. */
+@media (max-width: 480px) {
+  .public-form__head { flex-direction: column; gap: 10px; }
+  .public-form__footer { flex-direction: column; align-items: stretch; }
+}

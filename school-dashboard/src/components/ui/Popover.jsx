@@ -7,8 +7,9 @@ import {
 } from "@heroui/react";
 
 /**
- * Popover — design-system wrapper around HeroUI Popover.
+ * Popover — frosted-glass floating surface (REVAMP-05).
  *
+ * Glass surface comes from .ds-popover in feedback-primitives.css.
  * Use for rich floating content that can include interactive controls
  * (mini-forms, filter pickers, date ranges). Prefer `Tooltip` for short
  * hints, `DropdownMenu` for menu items.
@@ -22,12 +23,14 @@ const Popover = memo(function Popover({
   showArrow = false,
   backdrop = "transparent",
   children,
-  contentClassName,
+  contentClassName = "",
   classNames: classNamesProp,
   ...props
 }) {
   const mergedClassNames = {
-    base: "bg-white dark:bg-zinc-900 shadow-lg rounded-lg",
+    // base wraps the floating element; content is the inner panel.
+    base: "ds-popover",
+    content: "p-0 bg-transparent border-none shadow-none",
     ...classNamesProp,
   };
 
@@ -43,11 +46,7 @@ const Popover = memo(function Popover({
       {...props}
     >
       <PopoverTrigger>{trigger}</PopoverTrigger>
-      <PopoverContent
-        className={`p-3 border border-default-200 ${contentClassName || ""}`.trim()}
-      >
-        {children}
-      </PopoverContent>
+      <PopoverContent className={contentClassName}>{children}</PopoverContent>
     </HeroPopover>
   );
 });

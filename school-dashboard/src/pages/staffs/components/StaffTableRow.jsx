@@ -71,11 +71,11 @@ export default function StaffTableRow({
                         <Link
                             to={`/staffs/${s.id}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="text-gray-800 dark:text-zinc-200 font-medium text-base hover:text-teal-600 transition-colors cursor-pointer"
+                            className="text-fg font-medium text-base hover:text-teal-600 transition-colors cursor-pointer"
                         >
                             {s.name}
                         </Link>
-                        <span className="text-gray-500 dark:text-zinc-400 text-xs">{s.code}</span>
+                        <span className="text-fg-muted text-xs">{s.code}</span>
                     </div>
                 </div>
             </TableCell>
@@ -85,12 +85,12 @@ export default function StaffTableRow({
                 <div className="flex flex-wrap gap-1">
                     {Array.isArray(s.role) ? (
                         s.role.map((r) => (
-                            <span key={r} className="px-2 py-1 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 text-xs rounded-md capitalize">
+                            <span key={r} className="px-2 py-1 bg-surface-2 text-fg text-xs rounded-md capitalize">
                                 {r}
                             </span>
                         ))
                     ) : (
-                        <span className="text-gray-800 dark:text-zinc-200 text-sm">{s.role}</span>
+                        <span className="text-fg text-sm">{s.role}</span>
                     )}
                 </div>
             </TableCell>
@@ -98,18 +98,18 @@ export default function StaffTableRow({
             {/* Contact */}
             <TableCell key="contact">
                 <div className="flex flex-col gap-1">
-                    <span className="text-gray-800 dark:text-zinc-200 text-xs">{s.phone || "N/A"}</span>
-                    <span className="text-gray-500 dark:text-zinc-400 text-xs">{s.email}</span>
+                    <span className="text-fg text-xs">{s.phone || "N/A"}</span>
+                    <span className="text-fg-muted text-xs">{s.email}</span>
                 </div>
             </TableCell>
 
             {/* Attendance */}
             <TableCell key="attendance">
                 <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-gray-200 dark:bg-zinc-700 rounded-full h-1.5 w-16">
+                    <div className="flex-1 bg-surface-2 rounded-full h-1.5 w-16">
                         <div className="bg-teal-500 h-1.5 rounded-full transition-all" style={{ width: `${attendance}%` }} />
                     </div>
-                    <span className="text-gray-800 dark:text-zinc-200 text-xs font-medium min-w-[35px]">{attendance}%</span>
+                    <span className="text-fg text-xs font-medium min-w-[35px]">{attendance}%</span>
                 </div>
             </TableCell>
 
@@ -143,7 +143,7 @@ export default function StaffTableRow({
                     <Button
                         isIconOnly size="sm" variant="light"
                         aria-label="Edit staff member"
-                        className="text-gray-400 dark:text-zinc-500 hover:text-teal-600"
+                        className="text-fg-faint hover:text-teal-600"
                         onPress={() => onStaffEdit ? onStaffEdit(s.id) : onStaffClick(s.id)}
                     >
                         <Edit size={16} />
@@ -151,7 +151,7 @@ export default function StaffTableRow({
                     <Button
                         isIconOnly size="sm" variant="light"
                         aria-label="Delete staff member"
-                        className="text-gray-400 dark:text-zinc-500 hover:text-red-600"
+                        className="text-fg-faint hover:text-red-600"
                         onPress={() => onDelete(s)}
                     >
                         <Trash2 size={16} />

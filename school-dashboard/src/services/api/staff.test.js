@@ -221,11 +221,13 @@ describe('trashApi', () => {
     });
   });
 
-  it('bulkDelete — sends DELETE to /trash/bulk-delete with trashItemIds', () => {
+  it('bulkDelete — POSTs to /trash/bulk-delete with trashItemIds', () => {
+    // Backend accepts POST for bulk operations (DELETE with body is unreliable
+    // across HTTP clients). Implementation uses POST.
     const ids = ['t1', 't2'];
     trashApi.bulkDelete(ids);
     expect(request).toHaveBeenCalledWith('/trash/bulk-delete', {
-      method: 'DELETE',
+      method: 'POST',
       body: JSON.stringify({ trashItemIds: ids }),
     });
   });

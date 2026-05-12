@@ -1,0 +1,64 @@
+/* Phase 5b — student-specific overlay layout
+ * Shared frosted chrome lives in `frosted-overlay.css`. This file only
+ * holds the student-specific hero/metric/body composition.
+ */
+
+.student-overlay__hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--divider);
+}
+.student-overlay__hero-text {
+  flex: 1;
+  min-width: 0;
+}
+.student-overlay__name {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--fg);
+  margin: 0;
+  line-height: 1.2;
+}
+.student-overlay__sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--fg-muted);
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+.student-overlay__hero-actions {
+  display: flex;
+  gap: 4px;
+}
+
+/* Overlay metric strip — reuses the canonical .detail-pane__metrics +
+ * .dp-metric primitives from staff.css, with margin reset because the
+ * overlay shell already provides side padding. */
+.student-overlay__metrics {
+  margin: 0 24px 16px;
+}
+@media (max-width: 640px) {
+  .student-overlay__metrics { margin: 0 16px 12px; }
+}
+
+.student-overlay__body-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.student-overlay__body-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+@media (max-width: 1023px) {
+  .student-overlay__body-grid {
+    grid-template-columns: 1fr;
+  }
+}

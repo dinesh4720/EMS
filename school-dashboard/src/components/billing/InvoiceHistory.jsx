@@ -1,24 +1,33 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button, Chip, Select, SelectItem, Skeleton } from "@heroui/react";
 import { ChevronLeft, ChevronRight, Download, FileText } from "lucide-react";
 import { billingApi } from "../../services/api";
 import { formatDate } from "../../utils/dateFormatter";
 import toast from "react-hot-toast";
+import {
+  Alert,
+  Button,
+  Chip,
+  EmptyState,
+  IconButton,
+  SectionHeading,
+  Select,
+  Skeleton,
+} from "../ui";
 
 const STATUS_OPTIONS = [
-  { key: "all", label: "All statuses" },
-  { key: "draft", label: "Draft" },
-  { key: "issued", label: "Issued" },
-  { key: "paid", label: "Paid" },
-  { key: "failed", label: "Failed" },
-  { key: "void", label: "Void" },
+  { value: "all", label: "All statuses" },
+  { value: "draft", label: "Draft" },
+  { value: "issued", label: "Issued" },
+  { value: "paid", label: "Paid" },
+  { value: "failed", label: "Failed" },
+  { value: "void", label: "Void" },
 ];
 
 const STATUS_COLOR_MAP = {
   paid: "success",
-  issued: "primary",
-  draft: "default",
+  issued: "info",
+  draft: "neutral",
   failed: "danger",
   void: "warning",
 };
@@ -33,6 +42,7 @@ export default function InvoiceHistory({ formatMoney }) {
   const [total, setTotal] = useState(0);
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [downloadingId, setDownloadingId] = useState(null);
   const [markingPaidId, setMarkingPaidId] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -40,6 +50,7 @@ export default function InvoiceHistory({ formatMoney }) {
   useEffect(() => {
     let ignore = false;
     setLoading(true);
+    setError(null);
     const params = { page, limit: PAGE_SIZE };
     if (statusFilter !== "all") params.status = statusFilter;
     billingApi.getInvoices(params)
@@ -49,8 +60,10 @@ export default function InvoiceHistory({ formatMoney }) {
         setTotalPages(data.pages || 1);
         setTotal(data.total || 0);
       })
-      .catch((error) => {
-        if (!ignore) toast.error(error.message || "Failed to load invoices");
+      .catch((err) => {
+        if (ignore) return;
+        setError(err.message || "Failed to load invoices");
+        toast.error(err.message || "Failed to load invoices");
       })
       .finally(() => {
         if (!ignore) setLoading(false);
@@ -58,18 +71,12 @@ export default function InvoiceHistory({ formatMoney }) {
     return () => { ignore = true; };
   }, [page, statusFilter, refreshKey]);
 
-  const handleFilterChange = (keys) => {
-    const value = Array.from(keys)[0] || "all";
-    setStatusFilter(value);
-    setPage(1);
-  };
-
   const handleDownloadPdf = async (invoiceNumber) => {
     setDownloadingId(invoiceNumber);
     try {
       await billingApi.downloadInvoicePdf(invoiceNumber);
-    } catch (error) {
-      toast.error(error.message || "Failed to download PDF");
+    } catch (err) {
+      toast.error(err.message || "Failed to download PDF");
     } finally {
       setDownloadingId(null);
     }
@@ -81,135 +88,135 @@ export default function InvoiceHistory({ formatMoney }) {
       await billingApi.markInvoicePaid(invoiceNumber);
       toast.success("Invoice marked as paid");
       setRefreshKey((k) => k + 1);
-    } catch (error) {
-      toast.error(error.message || "Failed to mark invoice as paid");
+    } catch (err) {
+      toast.error(err.message || "Failed to mark invoice as paid");
     } finally {
       setMarkingPaidId(null);
     }
   };
 
-  if (loading && invoices.length === 0) {
-    return (
-      <div className="space-y-3">
-        <Skeleton className="h-8 w-48 rounded-lg" />
-        {[...Array(3)].map((_, i) => (
-          <Skeleton key={`skeleton-${i}`} className="h-20 rounded-lg" />
-        ))}
-      </div>
-    );
-  }
-
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <FileText size={18} />
-          <h3 className="text-lg font-semibold text-gray-900">
-            {t("settings.subscription.invoiceHistory", "Invoice History")}
-          </h3>
-          <Chip size="sm" variant="flat">{total}</Chip>
-        </div>
-        <Select
-          size="sm"
-          className="w-40"
-          selectedKeys={new Set([statusFilter])}
-          onSelectionChange={handleFilterChange}
-          aria-label={t('aria.menus.filterByStatus')}
-        >
-          {STATUS_OPTIONS.map((opt) => (
-            <SelectItem key={opt.key}>{opt.label}</SelectItem>
-          ))}
-        </Select>
-      </div>
+      <SectionHeading
+        icon={FileText}
+        className="mb-4"
+        actions={
+          <Select
+            size="sm"
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
+            options={STATUS_OPTIONS}
+            wrapperClassName="w-40"
+            aria-label={t('aria.menus.filterByStatus')}
+          />
+        }
+      >
+        <span className="inline-flex items-center gap-2">
+          {t("settings.subscription.invoiceHistory", "Invoice History")}
+          <Chip size="sm" color="neutral">{total}</Chip>
+        </span>
+      </SectionHeading>
 
-      {invoices.length === 0 ? (
-        <div className="rounded-lg border border-gray-100 bg-gray-50 p-8 text-center">
-          <FileText size={32} className="mx-auto mb-2 text-gray-300" />
-          <p className="text-sm text-gray-500">
-            {statusFilter !== "all"
-              ? t("settings.subscription.noFilteredInvoices", "No invoices match the selected filter.")
-              : t("settings.subscription.noInvoices", "No invoices yet. A record will appear here after checkout is created.")}
-          </p>
+      {loading && invoices.length === 0 ? (
+        <div className="space-y-3" aria-busy="true" aria-live="polite">
+          {[...Array(3)].map((_, i) => (
+            <Skeleton key={i} variant="rect" className="h-20" />
+          ))}
         </div>
+      ) : error ? (
+        <Alert variant="danger" title="Couldn't load invoices">{error}</Alert>
+      ) : invoices.length === 0 ? (
+        <EmptyState
+          icon={FileText}
+          title={statusFilter !== "all"
+            ? t("settings.subscription.noFilteredInvoices", "No invoices match the selected filter.")
+            : t("settings.subscription.noInvoices", "No invoices yet")}
+          description={statusFilter === "all"
+            ? "A record will appear here after a checkout is created."
+            : undefined}
+          size="md"
+        />
       ) : (
-        <div className="space-y-3">
+        <ul className="space-y-3">
           {invoices.map((invoice) => (
-            <div key={invoice.id} className="rounded-lg border border-gray-100 bg-white p-4">
+            <li
+              key={invoice.id}
+              className="rounded-lg border border-border-token bg-surface p-4"
+            >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-900">{invoice.invoiceNumber}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">
+                  <p className="text-sm font-medium text-fg tabular-nums">
+                    {invoice.invoiceNumber}
+                  </p>
+                  <p className="text-xs text-fg-muted mt-0.5 tabular-nums">
                     {invoice.planKey} &middot; {invoice.billingCycle} &middot; {formatDate(invoice.createdAt)}
                   </p>
                   {invoice.periodStartsAt && invoice.periodEndsAt && (
-                    <p className="text-xs text-gray-400 mt-0.5">
+                    <p className="text-xs text-fg-subtle mt-0.5 tabular-nums">
                       Period: {formatDate(invoice.periodStartsAt)} &ndash; {formatDate(invoice.periodEndsAt)}
                     </p>
                   )}
                 </div>
-                <Chip size="sm" variant="flat" color={STATUS_COLOR_MAP[invoice.status] || "default"}>
+                <Chip size="sm" color={STATUS_COLOR_MAP[invoice.status] || "neutral"}>
                   {invoice.status}
                 </Chip>
               </div>
-              <div className="mt-3 flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">
+              <div className="mt-3 flex items-center justify-between gap-2 flex-wrap">
+                <span className="text-sm font-medium text-fg tabular-nums">
                   {formatMoney(invoice.amount, invoice.currency)}
                 </span>
                 <div className="flex items-center gap-2">
                   {invoice.status === "issued" && (
                     <Button
                       size="sm"
-                      variant="flat"
-                      color="success"
-                      isLoading={markingPaidId === invoice.invoiceNumber}
-                      onPress={() => handleMarkPaid(invoice.invoiceNumber)}
+                      variant="secondary"
+                      loading={markingPaidId === invoice.invoiceNumber}
+                      onClick={() => handleMarkPaid(invoice.invoiceNumber)}
                     >
                       Mark paid
                     </Button>
                   )}
                   <Button
                     size="sm"
-                    variant="flat"
-                    color="primary"
-                    startContent={<Download size={14} />}
-                    isLoading={downloadingId === invoice.invoiceNumber}
-                    onPress={() => handleDownloadPdf(invoice.invoiceNumber)}
+                    variant="outline"
+                    icon={<Download size={14} />}
+                    loading={downloadingId === invoice.invoiceNumber}
+                    onClick={() => handleDownloadPdf(invoice.invoiceNumber)}
                   >
                     PDF
                   </Button>
                 </div>
               </div>
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
 
       {totalPages > 1 && (
         <div className="mt-4 flex items-center justify-between">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-fg-muted tabular-nums">
             Page {page} of {totalPages} ({total} invoices)
           </p>
           <div className="flex items-center gap-1">
-            <Button
-              size="sm"
-              variant="flat"
-              isIconOnly
+            <IconButton
               aria-label="Previous page"
-              isDisabled={page <= 1}
-              onPress={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              <ChevronLeft size={16} />
-            </Button>
-            <Button
+              icon={<ChevronLeft size={16} />}
+              variant="outline"
               size="sm"
-              variant="flat"
-              isIconOnly
+              disabled={page <= 1}
+              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+            />
+            <IconButton
               aria-label="Next page"
-              isDisabled={page >= totalPages}
-              onPress={() => setPage((p) => Math.min(totalPages, p + 1))}
-            >
-              <ChevronRight size={16} />
-            </Button>
+              icon={<ChevronRight size={16} />}
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+            />
           </div>
         </div>
       )}

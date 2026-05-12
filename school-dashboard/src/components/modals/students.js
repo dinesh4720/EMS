@@ -15,4 +15,3 @@ export { default as PaymentRecordingModal } from '../../pages/students/component
 export { default as ProgressCardModal } from '../../pages/students/components/modals/ProgressCardModal';
 export { StudentCsvUploadModal, StudentCsvPreviewModal } from '../../pages/students/components/modals/StudentImportModals';
 export { default as TCGeneratorModal } from '../../pages/students/TCGeneratorModal';
-export { default as InvoicePrintModal } from '../../pages/students/components/InvoicePrintModal';

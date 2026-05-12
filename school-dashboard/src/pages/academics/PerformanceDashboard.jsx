@@ -362,13 +362,13 @@ const PerformanceDashboard = ({ onCreateExam }) => {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Class-wise Performance Comparison */}
-        <Card shadow="none" className="border border-gray-100 dark:border-zinc-800">
-          <CardHeader className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-zinc-800">
+        <Card shadow="none" className="border border-divider">
+          <CardHeader className="px-6 pt-6 pb-4 border-b border-divider">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 rounded-lg">
+              <div className="p-2.5 bg-surface-2 text-fg-muted rounded-lg">
                 <BarChart3 size={20} />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">{t('pages.classWisePerformance')}</h3>
+              <h3 className="text-lg font-medium text-fg">{t('pages.classWisePerformance')}</h3>
             </div>
           </CardHeader>
           <CardBody className="p-6">
@@ -383,7 +383,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-[250px] flex items-center justify-center text-gray-400 dark:text-zinc-500">
+              <div className="h-[250px] flex items-center justify-center text-fg-faint">
                 No data available
               </div>
             )}
@@ -391,13 +391,13 @@ const PerformanceDashboard = ({ onCreateExam }) => {
         </Card>
 
         {/* Subject-wise Averages */}
-        <Card shadow="none" className="border border-gray-100 dark:border-zinc-800">
-          <CardHeader className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-zinc-800">
+        <Card shadow="none" className="border border-divider">
+          <CardHeader className="px-6 pt-6 pb-4 border-b border-divider">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 rounded-lg">
+              <div className="p-2.5 bg-surface-2 text-fg-muted rounded-lg">
                 <BookOpen size={20} />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">{t('pages.subjectAverages')}</h3>
+              <h3 className="text-lg font-medium text-fg">{t('pages.subjectAverages')}</h3>
             </div>
           </CardHeader>
           <CardBody className="p-6">
@@ -412,7 +412,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-[250px] flex items-center justify-center text-gray-400 dark:text-zinc-500">
+              <div className="h-[250px] flex items-center justify-center text-fg-faint">
                 No data available
               </div>
             )}
@@ -423,20 +423,20 @@ const PerformanceDashboard = ({ onCreateExam }) => {
       {/* Bottom Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Top Performers */}
-        <Card shadow="none" className="border border-gray-100 dark:border-zinc-800">
-          <CardHeader className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-zinc-800">
+        <Card shadow="none" className="border border-divider">
+          <CardHeader className="px-6 pt-6 pb-4 border-b border-divider">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 rounded-lg">
+              <div className="p-2.5 bg-surface-2 text-fg-muted rounded-lg">
                 <Trophy size={20} />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">{t('pages.topPerformers')}</h3>
+              <h3 className="text-lg font-medium text-fg">{t('pages.topPerformers')}</h3>
             </div>
           </CardHeader>
           <CardBody className="p-6">
             {filteredTopPerformers.length > 0 ? (
               <div className="space-y-3">
                 {filteredTopPerformers.slice(0, 5).map((student, idx) => (
-                  <div key={student.studentId || idx} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-zinc-900">
+                  <div key={student.studentId || idx} className="flex items-center justify-between p-3 rounded-lg bg-surface-2">
                     <div className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
                         idx === 0 ? 'bg-yellow-500' : idx === 1 ? 'bg-gray-400' : idx === 2 ? 'bg-amber-600' : 'bg-gray-300'
@@ -444,8 +444,8 @@ const PerformanceDashboard = ({ onCreateExam }) => {
                         {idx + 1}
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900 dark:text-zinc-100">{student.name}</p>
-                        <p className="text-xs text-gray-500 dark:text-zinc-400">{student.class}</p>
+                        <p className="font-medium text-fg">{student.name}</p>
+                        <p className="text-xs text-fg-muted">{student.class}</p>
                       </div>
                     </div>
                     <Chip size="sm" color="success" variant="flat">
@@ -455,7 +455,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-8 text-gray-400 dark:text-zinc-500">
+              <div className="flex flex-col items-center justify-center py-8 text-fg-faint">
                 <Trophy size={36} className="mb-2 opacity-40" />
                 <p className="text-sm">{t('pages.noPerformanceDataYet')}</p>
               </div>
@@ -464,13 +464,13 @@ const PerformanceDashboard = ({ onCreateExam }) => {
         </Card>
 
         {/* Grade Distribution */}
-        <Card shadow="none" className="border border-gray-100 dark:border-zinc-800">
-          <CardHeader className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-zinc-800">
+        <Card shadow="none" className="border border-divider">
+          <CardHeader className="px-6 pt-6 pb-4 border-b border-divider">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 rounded-lg">
+              <div className="p-2.5 bg-surface-2 text-fg-muted rounded-lg">
                 <Award size={20} />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">{t('pages.gradeDistribution')}</h3>
+              <h3 className="text-lg font-medium text-fg">{t('pages.gradeDistribution')}</h3>
             </div>
           </CardHeader>
           <CardBody className="p-6">
@@ -498,13 +498,13 @@ const PerformanceDashboard = ({ onCreateExam }) => {
                   {gradeDistributionData.map((item) => (
                     <div key={`legend-${item.name}`} className="flex items-center gap-1.5 text-xs">
                       <div className="w-3 h-3 rounded" style={{ backgroundColor: item.color }} />
-                      <span className="text-gray-600 dark:text-zinc-400">{item.name}</span>
+                      <span className="text-fg-muted">{item.name}</span>
                     </div>
                   ))}
                 </div>
               </>
             ) : (
-              <div className="h-[250px] flex items-center justify-center text-gray-400 dark:text-zinc-500">
+              <div className="h-[250px] flex items-center justify-center text-fg-faint">
                 No data available
               </div>
             )}
@@ -512,51 +512,51 @@ const PerformanceDashboard = ({ onCreateExam }) => {
         </Card>
 
         {/* Quick Actions */}
-        <Card shadow="none" className="border border-gray-100 dark:border-zinc-800">
-          <CardHeader className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-zinc-800">
+        <Card shadow="none" className="border border-divider">
+          <CardHeader className="px-6 pt-6 pb-4 border-b border-divider">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 rounded-lg">
+              <div className="p-2.5 bg-surface-2 text-fg-muted rounded-lg">
                 <FileText size={20} />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">{t('pages.quickActions1')}</h3>
+              <h3 className="text-lg font-medium text-fg">{t('pages.quickActions1')}</h3>
             </div>
           </CardHeader>
           <CardBody className="p-6">
             <div className="space-y-3">
               <div
-                className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 cursor-pointer transition-colors"
+                className="p-4 border border-border-token rounded-lg hover:bg-surface-2 cursor-pointer transition-colors"
                 onClick={() => onCreateExam?.() || navigate('/academics/exams')}
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-medium text-gray-900 dark:text-zinc-100">{t('pages.createNewExam')}</div>
-                    <div className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.scheduleANewExamForAnyClass')}</div>
+                    <div className="font-medium text-fg">{t('pages.createNewExam')}</div>
+                    <div className="text-sm text-fg-muted">{t('pages.scheduleANewExamForAnyClass')}</div>
                   </div>
-                  <ArrowRight size={18} className="text-gray-400 dark:text-zinc-500" />
+                  <ArrowRight size={18} className="text-fg-faint" />
                 </div>
               </div>
               <div
-                className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 cursor-pointer transition-colors"
+                className="p-4 border border-border-token rounded-lg hover:bg-surface-2 cursor-pointer transition-colors"
                 onClick={() => navigate('/academics/exams')}
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-medium text-gray-900 dark:text-zinc-100">{t('pages.enterResults')}</div>
-                    <div className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.enterMarksForCompletedExams')}</div>
+                    <div className="font-medium text-fg">{t('pages.enterResults')}</div>
+                    <div className="text-sm text-fg-muted">{t('pages.enterMarksForCompletedExams')}</div>
                   </div>
-                  <ArrowRight size={18} className="text-gray-400 dark:text-zinc-500" />
+                  <ArrowRight size={18} className="text-fg-faint" />
                 </div>
               </div>
               <div
-                className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 cursor-pointer transition-colors"
+                className="p-4 border border-border-token rounded-lg hover:bg-surface-2 cursor-pointer transition-colors"
                 onClick={() => navigate('/academics/exams')}
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-medium text-gray-900 dark:text-zinc-100">{t('pages.viewResults')}</div>
-                    <div className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.reviewAndPublishResults')}</div>
+                    <div className="font-medium text-fg">{t('pages.viewResults')}</div>
+                    <div className="text-sm text-fg-muted">{t('pages.reviewAndPublishResults')}</div>
                   </div>
-                  <ArrowRight size={18} className="text-gray-400 dark:text-zinc-500" />
+                  <ArrowRight size={18} className="text-fg-faint" />
                 </div>
               </div>
             </div>
@@ -565,13 +565,13 @@ const PerformanceDashboard = ({ onCreateExam }) => {
       </div>
 
       {/* Recent Exams */}
-      <Card shadow="none" className="border border-gray-100 dark:border-zinc-800">
-        <CardHeader className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center">
+      <Card shadow="none" className="border border-divider">
+        <CardHeader className="px-6 pt-6 pb-4 border-b border-divider flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 rounded-lg">
+            <div className="p-2.5 bg-surface-2 text-fg-muted rounded-lg">
               <Calendar size={20} />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">{t('pages.recentExams')}</h3>
+            <h3 className="text-lg font-medium text-fg">{t('pages.recentExams')}</h3>
           </div>
           <Button
             size="sm"
@@ -584,7 +584,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
         </CardHeader>
         <CardBody className="p-6">
           {exams.length === 0 ? (
-            <div className="text-center py-8 text-gray-500 dark:text-zinc-400">
+            <div className="text-center py-8 text-fg-muted">
               <FileText size={40} className="mx-auto mb-3 opacity-50" />
               <p>{t('pages.noExamsCreatedYet')}</p>
               <MinimalButton className="mt-4" onClick={() => onCreateExam?.()}>
@@ -598,12 +598,12 @@ const PerformanceDashboard = ({ onCreateExam }) => {
                   key={exam.id || exam._id}
                   isPressable
                   shadow="none"
-                  className="border border-gray-200 dark:border-zinc-700 hover:shadow-md transition-all"
+                  className="border border-border-token hover:shadow-md transition-all"
                   onPress={() => navigate(`/academics/exams/${exam._id || exam.id}`)}
                 >
                   <CardBody className="p-4">
                     <div className="flex justify-between items-start mb-3">
-                      <div className="p-2 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 rounded-lg">
+                      <div className="p-2 bg-surface-2 text-fg-muted rounded-lg">
                         <FileText size={18} />
                       </div>
                       <Chip
@@ -618,9 +618,9 @@ const PerformanceDashboard = ({ onCreateExam }) => {
                         {exam.status?.replace(/_/g, ' ')}
                       </Chip>
                     </div>
-                    <h4 className="font-medium text-gray-900 dark:text-zinc-100 mb-1">{exam.name}</h4>
-                    <p className="text-sm text-gray-500 dark:text-zinc-400">{exam.classId} - {exam.subjectName}</p>
-                    <p className="text-xs text-gray-400 dark:text-zinc-500 mt-2">
+                    <h4 className="font-medium text-fg mb-1">{exam.name}</h4>
+                    <p className="text-sm text-fg-muted">{exam.classId} - {exam.subjectName}</p>
+                    <p className="text-xs text-fg-faint mt-2">
                       {exam.date ? formatShortDate(exam.date) : 'No date'}
                     </p>
                   </CardBody>

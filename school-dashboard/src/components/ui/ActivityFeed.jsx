@@ -1,10 +1,16 @@
-import { memo } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
-import { useNavigate } from "react-router-dom";
+import { ChevronDown } from "lucide-react";
+
 import { cn } from "../../utils/cn";
+import {
+  formatRelativeTime,
+  formatDateTime,
+  formatShortDate,
+} from "../../utils/dateFormatter";
+import { getDateLocale } from "../../i18n/index";
 import Skeleton from "./Skeleton";
 import EmptyState from "./EmptyState";
-import Avatar from "./Avatar";
 
 const ICON_TONE = {
   neutral: "bg-gray-100 text-gray-700 dark:bg-zinc-800 dark:text-zinc-300",
@@ -15,154 +21,389 @@ const ICON_TONE = {
   info: "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400",
 };
 
-function FeedSkeleton({ rows = 4 }) {
-  return (
-    <ul className="divide-y divide-gray-100 dark:divide-zinc-800" aria-busy="true" aria-live="polite">
-      {Array.from({ length: rows }).map((_, idx) => (
-        <li key={idx} className="flex items-start gap-3 py-3">
-          <Skeleton variant="circle" className="h-8 w-8 shrink-0" />
-          <div className="flex-1 space-y-2 min-w-0">
-            <Skeleton variant="text" className="h-3 w-3/4" />
-            <Skeleton variant="text" className="h-3 w-1/3" />
-          </div>
-        </li>
-      ))}
-    </ul>
-  );
+const DOT_TONE = {
+  neutral: "bg-gray-300 dark:bg-zinc-600",
+  primary: "bg-blue-500",
+  success: "bg-green-500",
+  warning: "bg-amber-500",
+  danger: "bg-red-500",
+  info: "bg-blue-500",
+};
+
+function startOfDay(value) {
+  const d = new Date(value);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
 }
 
-function FeedItem({ item }) {
-  const navigate = useNavigate();
-  const { icon: Icon, tone = "neutral", actor, title, description, time, href, onClick } = item;
-  const interactive = !!(href || onClick);
+function dayLabel(timestamp) {
+  const todayStart = startOfDay(new Date());
+  const dayStart = startOfDay(timestamp);
+  const diffDays = Math.round((todayStart - dayStart) / 86400000);
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  try {
+    return new Intl.DateTimeFormat(getDateLocale(), {
+      weekday: "long",
+      day: "numeric",
+      month: "short",
+      year:
+        new Date(timestamp).getFullYear() === new Date().getFullYear()
+          ? undefined
+          : "numeric",
+    }).format(new Date(timestamp));
+  } catch {
+    return formatShortDate(timestamp);
+  }
+}
 
-  const handleClick = () => {
-    if (onClick) return onClick(item);
-    if (href) navigate(href);
-  };
+function dedupeByKey(events, keyFn) {
+  const seen = new Set();
+  const out = [];
+  for (const ev of events) {
+    const key = keyFn(ev);
+    if (key == null) {
+      out.push(ev);
+      continue;
+    }
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(ev);
+  }
+  return out;
+}
 
-  const content = (
-    <div className="flex items-start gap-3 py-3">
-      {actor ? (
-        <Avatar
-          name={actor.name}
-          src={actor.avatar}
-          size="sm"
-          className="shrink-0"
-        />
-      ) : Icon ? (
+function groupByDay(events) {
+  const buckets = new Map();
+  for (const ev of events) {
+    const ts = ev.timestamp ? new Date(ev.timestamp).getTime() : NaN;
+    if (Number.isNaN(ts)) continue;
+    const key = startOfDay(ts);
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key).push(ev);
+  }
+  return Array.from(buckets.entries())
+    .sort((a, b) => b[0] - a[0])
+    .map(([key, items]) => ({
+      key,
+      label: dayLabel(key),
+      items: items.sort((a, b) => {
+        const ta = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+        const tb = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+        return tb - ta;
+      }),
+    }));
+}
+
+function ActivityFeedSkeleton({ rows = 4 }) {
+  return (
+    <div className="space-y-6" aria-busy="true" aria-live="polite">
+      <Skeleton variant="text" className="h-3 w-24" />
+      <ol className="relative space-y-5 pl-9">
         <span
           aria-hidden="true"
-          className={cn(
-            "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
-            ICON_TONE[tone] ?? ICON_TONE.neutral
-          )}
-        >
-          <Icon size={14} strokeWidth={2} />
-        </span>
-      ) : null}
-      <div className="min-w-0 flex-1">
-        <p className="text-sm text-gray-900 dark:text-zinc-100">
-          {actor?.name ? (
-            <span className="font-medium">{actor.name} </span>
-          ) : null}
-          <span className="text-gray-600 dark:text-zinc-400">{title}</span>
-        </p>
-        {description ? (
-          <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5 truncate">
-            {description}
-          </p>
-        ) : null}
-      </div>
-      {time ? (
-        <time className="shrink-0 text-xs text-gray-400 dark:text-zinc-500 pt-0.5">
-          {time}
-        </time>
-      ) : null}
+          className="absolute left-[11px] top-2 bottom-2 w-px bg-surface-2"
+        />
+        {Array.from({ length: rows }).map((_, idx) => (
+          <li key={idx} className="relative">
+            <Skeleton
+              variant="circle"
+              className="absolute -left-9 top-0.5 h-6 w-6"
+            />
+            <Skeleton variant="text" className="h-3 w-1/3 mb-2" />
+            <Skeleton variant="text" className="h-3 w-3/4" />
+          </li>
+        ))}
+      </ol>
     </div>
   );
-
-  if (interactive) {
-    return (
-      <li>
-        <button
-          type="button"
-          onClick={handleClick}
-          className="w-full text-left px-2 -mx-2 rounded-md hover:bg-gray-50 dark:hover:bg-zinc-800/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
-        >
-          {content}
-        </button>
-      </li>
-    );
-  }
-
-  return <li>{content}</li>;
 }
 
-FeedItem.propTypes = {
-  item: PropTypes.object.isRequired,
+function ActivityItem({ event, defaultExpanded }) {
+  const {
+    icon: Icon,
+    tone = "neutral",
+    title,
+    description,
+    actor,
+    timestamp,
+    content,
+    meta,
+  } = event;
+
+  const [expanded, setExpanded] = useState(Boolean(defaultExpanded));
+  const expandable = Boolean(content);
+
+  const relative = useMemo(
+    () => (timestamp ? formatRelativeTime(timestamp, "") : ""),
+    [timestamp]
+  );
+  const absolute = useMemo(
+    () => (timestamp ? formatDateTime(timestamp, "") : ""),
+    [timestamp]
+  );
+
+  const handleToggle = useCallback(() => {
+    if (!expandable) return;
+    setExpanded((v) => !v);
+  }, [expandable]);
+
+  const handleKey = useCallback(
+    (e) => {
+      if (!expandable) return;
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        setExpanded((v) => !v);
+      }
+    },
+    [expandable]
+  );
+
+  return (
+    <li className="relative pl-9">
+      <span
+        aria-hidden="true"
+        className="absolute left-[11px] top-6 -bottom-3 w-px bg-surface-2"
+      />
+      <span
+        aria-hidden="true"
+        className={cn(
+          "absolute left-0 top-0.5 flex h-6 w-6 items-center justify-center rounded-full ring-4 ring-white dark:ring-zinc-900",
+          Icon ? ICON_TONE[tone] ?? ICON_TONE.neutral : null
+        )}
+      >
+        {Icon ? (
+          <Icon size={12} strokeWidth={2.25} />
+        ) : (
+          <span
+            className={cn(
+              "h-2.5 w-2.5 rounded-full",
+              DOT_TONE[tone] ?? DOT_TONE.neutral
+            )}
+          />
+        )}
+      </span>
+
+      <div
+        className={cn(
+          "rounded-md",
+          expandable
+            ? "cursor-pointer hover:bg-surface-hover focus-visible:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg-faint -mx-1.5 px-1.5 py-1"
+            : null
+        )}
+        role={expandable ? "button" : undefined}
+        tabIndex={expandable ? 0 : undefined}
+        aria-expanded={expandable ? expanded : undefined}
+        onClick={handleToggle}
+        onKeyDown={handleKey}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            {title ? (
+              <p className="text-sm font-medium text-fg break-words">{title}</p>
+            ) : null}
+            {description ? (
+              <p className="text-xs text-fg-muted mt-0.5 break-words">
+                {description}
+              </p>
+            ) : null}
+            {actor ? (
+              <p className="text-[11px] text-fg-faint mt-1">{actor}</p>
+            ) : null}
+          </div>
+          <div className="flex shrink-0 items-center gap-1">
+            {timestamp ? (
+              <time
+                dateTime={new Date(timestamp).toISOString()}
+                title={absolute}
+                className="mono tnum text-[11px] text-fg-faint"
+              >
+                {relative}
+              </time>
+            ) : null}
+            {expandable ? (
+              <ChevronDown
+                size={14}
+                aria-hidden="true"
+                className={cn(
+                  "text-fg-faint transition-transform",
+                  expanded ? "rotate-180" : null
+                )}
+              />
+            ) : null}
+          </div>
+        </div>
+
+        {expandable && expanded ? (
+          <div className="mt-2 text-xs text-fg-muted">{content}</div>
+        ) : null}
+
+        {meta ? (
+          <div className="mt-1.5 text-[11px] text-fg-faint">{meta}</div>
+        ) : null}
+      </div>
+    </li>
+  );
+}
+
+ActivityItem.propTypes = {
+  event: PropTypes.object.isRequired,
+  defaultExpanded: PropTypes.bool,
 };
 
 function ActivityFeed({
-  items,
+  events,
   isLoading = false,
+  isLoadingMore = false,
+  hasMore = false,
+  onLoadMore,
   skeletonRows = 4,
   emptyTitle = "No activity yet",
   emptyDescription,
-  footer,
+  errorState,
+  groupByDay: shouldGroup = true,
+  getKey,
   className,
   ...props
 }) {
+  const sentinelRef = useRef(null);
+  const requestedRef = useRef(false);
+
+  const safeEvents = useMemo(() => {
+    const arr = Array.isArray(events) ? events : [];
+    const keyFn = getKey || ((e, i) => e?.id ?? e?._id ?? i);
+    return dedupeByKey(arr, keyFn);
+  }, [events, getKey]);
+
+  const groups = useMemo(
+    () => (shouldGroup ? groupByDay(safeEvents) : null),
+    [safeEvents, shouldGroup]
+  );
+
+  useEffect(() => {
+    if (!onLoadMore || !hasMore) return undefined;
+    const el = sentinelRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return undefined;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting) return;
+        if (requestedRef.current || isLoadingMore) return;
+        requestedRef.current = true;
+        onLoadMore();
+      },
+      { rootMargin: "120px" }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [onLoadMore, hasMore, isLoadingMore]);
+
+  useEffect(() => {
+    if (!isLoadingMore) requestedRef.current = false;
+  }, [isLoadingMore, safeEvents.length]);
+
+  if (errorState) {
+    return <div className={cn("", className)}>{errorState}</div>;
+  }
+
   if (isLoading) {
     return (
-      <div className={cn("", className)} {...props}>
-        <FeedSkeleton rows={skeletonRows} />
+      <div className={cn(className)} {...props}>
+        <ActivityFeedSkeleton rows={skeletonRows} />
       </div>
     );
   }
 
-  if (!items || items.length === 0) {
-    return <EmptyState title={emptyTitle} description={emptyDescription} size="sm" />;
+  if (!safeEvents.length) {
+    return (
+      <EmptyState
+        title={emptyTitle}
+        description={emptyDescription}
+        size="sm"
+      />
+    );
+  }
+
+  if (shouldGroup) {
+    return (
+      <div className={cn("space-y-6", className)} {...props}>
+        {groups.map((group) => (
+          <section key={group.key} aria-label={group.label}>
+            <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-fg-faint">
+              {group.label}
+            </h4>
+            <ol className="relative space-y-5">
+              {group.items.map((event, idx) => (
+                <ActivityItem
+                  key={event.id ?? event._id ?? `${group.key}-${idx}`}
+                  event={event}
+                />
+              ))}
+            </ol>
+          </section>
+        ))}
+        {hasMore ? (
+          <div ref={sentinelRef} className="h-6 w-full" aria-hidden="true" />
+        ) : null}
+        {isLoadingMore ? <ActivityFeedSkeleton rows={2} /> : null}
+      </div>
+    );
   }
 
   return (
-    <div className={className} {...props}>
-      <ul className="divide-y divide-gray-100 dark:divide-zinc-800">
-        {items.map((item, idx) => (
-          <FeedItem key={item.id ?? idx} item={item} />
+    <div className={cn(className)} {...props}>
+      <ol className="relative space-y-5">
+        {safeEvents.map((event, idx) => (
+          <ActivityItem
+            key={event.id ?? event._id ?? idx}
+            event={event}
+          />
         ))}
-      </ul>
-      {footer ? (
-        <div className="pt-3 mt-1 border-t border-gray-100 dark:border-zinc-800 text-xs text-gray-500 dark:text-zinc-400">
-          {footer}
-        </div>
+      </ol>
+      {hasMore ? (
+        <div ref={sentinelRef} className="h-6 w-full" aria-hidden="true" />
       ) : null}
+      {isLoadingMore ? <ActivityFeedSkeleton rows={2} /> : null}
     </div>
   );
 }
 
 ActivityFeed.propTypes = {
-  items: PropTypes.arrayOf(
+  events: PropTypes.arrayOf(
     PropTypes.shape({
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-      actor: PropTypes.shape({
-        name: PropTypes.string,
-        avatar: PropTypes.string,
-      }),
-      icon: PropTypes.elementType,
-      tone: PropTypes.oneOf(["neutral", "primary", "success", "warning", "danger", "info"]),
+      _id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+      timestamp: PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.number,
+        PropTypes.instanceOf(Date),
+      ]),
       title: PropTypes.node,
       description: PropTypes.node,
-      time: PropTypes.node,
-      href: PropTypes.string,
-      onClick: PropTypes.func,
+      actor: PropTypes.node,
+      content: PropTypes.node,
+      meta: PropTypes.node,
+      icon: PropTypes.elementType,
+      tone: PropTypes.oneOf([
+        "neutral",
+        "primary",
+        "success",
+        "warning",
+        "danger",
+        "info",
+      ]),
     })
   ),
   isLoading: PropTypes.bool,
+  isLoadingMore: PropTypes.bool,
+  hasMore: PropTypes.bool,
+  onLoadMore: PropTypes.func,
   skeletonRows: PropTypes.number,
   emptyTitle: PropTypes.string,
   emptyDescription: PropTypes.string,
-  footer: PropTypes.node,
+  errorState: PropTypes.node,
+  groupByDay: PropTypes.bool,
+  getKey: PropTypes.func,
   className: PropTypes.string,
 };
 

@@ -35,7 +35,6 @@ const TransportPage = lazyWithRetry(() => import("./pages/transport"));
 const LibraryPage = lazyWithRetry(() => import("./pages/library"));
 const AiAssistantPage = lazyWithRetry(() => import("./pages/AiAssistantPage"));
 const PrivacyPolicy = lazyWithRetry(() => import("./pages/PrivacyPolicy"));
-const StyleGuide = isDev ? lazyWithRetry(() => import("./pages/StyleGuide")) : null;
 const TimetableWizardPage = lazyWithRetry(() => import("./components/TimetableWizardPage"));
 const Login = lazyWithRetry(() => import("./pages/Login"));
 const Signup = lazyWithRetry(() => import("./pages/Signup"));
@@ -55,11 +54,36 @@ const StudentPromotionPage = lazyWithRetry(() => import("./pages/students/Studen
 const TransferCertificatePage = lazyWithRetry(() => import("./pages/students/TransferCertificatePage"));
 const ReportsPage = lazyWithRetry(() => import("./pages/reports"));
 const DataToolsPage = lazyWithRetry(() => import("./pages/data-tools"));
+const StyleGuidePage = lazyWithRetry(() => import("./pages/StyleGuide"));
 
 // Lazy load components that aren't needed on initial render
 const PublicFormSubmission = lazyWithRetry(() => import("./pages/PublicFormSubmission"));
 const OnboardingFlow = lazyWithRetry(() => import("./components/onboarding/OnboardingFlow"));
 const PayrollReminder = lazyWithRetry(() => import("./components/PayrollReminder"));
+const CoachMarks = lazy(() => import("./components/ui/CoachMark"));
+
+// REVAMP-107: First-run coach marks for the app shell. Keeps to the 3-mark
+// max per surface; bulk action coach mark lives inside BulkActionBar.
+const SHELL_COACH_MARKS = [
+  {
+    target: '[data-coach="topbar-search"]',
+    title: 'Find anything fast',
+    body: 'Press / or ⌘K to open the command palette and jump to any student, page, or action.',
+    placement: 'bottom',
+  },
+  {
+    target: '[data-coach="sidebar-pin"]',
+    title: 'Pin what you use most',
+    body: 'Pin a class, report, or filter here for one-click access from the sidebar.',
+    placement: 'right',
+  },
+  {
+    target: '[data-coach="topbar-pin"]',
+    title: 'Save the current view',
+    body: 'Use Pin on any page to add it to your sidebar shortcuts.',
+    placement: 'bottom',
+  },
+];
 
 // Loading fallback component
 function PageLoader() {
@@ -95,19 +119,19 @@ function BeforeSchoolAlert() {
   if (!isBeforeSchoolHours || dismissed) return null;
 
   return (
-    <div className="bg-warning-50 border-b border-warning-200 px-4 py-2 flex items-center justify-between sticky top-12 z-20">
+    <div className="bg-warn-bg border-b border-warn/20 px-4 py-2 flex items-center justify-between sticky top-11 z-20">
       <div className="flex items-center gap-2">
-        <AlertCircle size={16} className="text-warning-600" />
-        <span className="text-sm text-warning-700">
+        <AlertCircle size={16} className="text-warn" />
+        <span className="text-sm text-warn">
           You're accessing the system before school hours. School starts at {schoolSettings.schoolStartTime}.
         </span>
       </div>
       <button
         onClick={() => setDismissed(true)}
-        className="p-1 hover:bg-warning-100 rounded-full transition-colors"
+        className="p-1 hover:bg-warn-bg rounded-full transition-colors"
         aria-label="Dismiss alert"
       >
-        <X size={14} className="text-warning-600" />
+        <X size={14} className="text-warn" />
       </button>
     </div>
   );
@@ -181,7 +205,13 @@ function AuthenticatedApp() {
   }, [location.pathname]);
 
   const isSettingsPage = location.pathname.startsWith("/settings");
-  const isFullWidthPage = isSettingsPage || location.pathname === "/timetable-wizard";
+  // Staff list (the design's two-pane B variant) goes full-bleed too —
+  // there's no max-width gutter when the right detail pane is meant to
+  // sit flush against the viewport edge.
+  const isStaffListPage =
+    location.pathname === "/staffs" || location.pathname === "/staffs/" || location.pathname === "/staffs/list";
+  const isFullWidthPage =
+    isSettingsPage || location.pathname === "/timetable-wizard" || isStaffListPage;
 
   return (
     <>
@@ -193,7 +223,7 @@ function AuthenticatedApp() {
         Skip to main content
       </a>
       <StructuredData />
-      <div className="flex min-h-screen bg-background font-sans text-foreground">
+      <div className="flex min-h-screen bg-bg font-sans text-fg">
         {showOnboarding && (
           <Suspense fallback={null}>
             <OnboardingFlow onComplete={() => setShowOnboarding(false)} />
@@ -203,13 +233,18 @@ function AuthenticatedApp() {
         <ErrorBoundary message="The sidebar encountered an error.">
           <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
         </ErrorBoundary>
+        {!showOnboarding && (
+          <Suspense fallback={null}>
+            <CoachMarks surface="shell" autoStart marks={SHELL_COACH_MARKS} />
+          </Suspense>
+        )}
         <AiAssistantLayout>
-          <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${isSidebarOpen ? 'ml-[var(--sidebar-width)]' : 'ml-0 lg:ml-[var(--sidebar-width-collapsed)]'} relative z-10 bg-gray-50 dark:bg-zinc-950`}>
+          <div className={`flex-1 flex flex-col ${isStaffListPage ? 'h-screen overflow-hidden' : 'min-h-screen'} transition-all duration-300 ${isSidebarOpen ? 'ml-[var(--sidebar-width)]' : 'ml-0 lg:ml-[var(--sidebar-width-collapsed)]'} relative z-10 bg-bg`}>
             <Topbar
               isSidebarOpen={isSidebarOpen}
               onOpenMobileNav={() => setIsSidebarOpen(true)}
             />
-            <div className="mt-14 flex-1 flex flex-col min-h-0">
+            <div className="mt-11 flex-1 flex flex-col min-h-0">
               <Suspense fallback={null}>
                 <TrialBanner />
               </Suspense>
@@ -422,9 +457,6 @@ function AuthenticatedApp() {
                         </Suspense>
                       </RouteEB>
                     } />
-                    {isDev && StyleGuide ? (
-                      <Route path="/style-guide" element={<RouteEB><StyleGuide /></RouteEB>} />
-                    ) : null}
                     <Route path="/timetable-wizard" element={
                       <RouteEB>
                         <PermissionGuard module="timetable">
@@ -439,17 +471,22 @@ function AuthenticatedApp() {
                         </PermissionGuard>
                       </RouteEB>
                     } />
+                    <Route path="/style-guide" element={
+                      <RouteEB>
+                        <StyleGuidePage />
+                      </RouteEB>
+                    } />
                     {/* 404 catch-all for authenticated users */}
                     <Route path="*" element={
                       <div className="flex flex-col items-center justify-center py-24 gap-4">
-                        <div className="text-6xl font-bold text-gray-200 dark:text-zinc-700">404</div>
-                        <h2 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">Page Not Found</h2>
-                        <p className="text-sm text-gray-500 dark:text-zinc-400 max-w-md text-center">
+                        <div className="text-6xl font-bold text-fg-faint">404</div>
+                        <h2 className="text-xl font-semibold text-fg">Page Not Found</h2>
+                        <p className="text-sm text-fg-muted max-w-md text-center">
                           The page you are looking for does not exist or has been moved.
                         </p>
                         <Link
                           to="/"
-                          className="mt-2 px-4 py-2 bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+                          className="mt-2 px-4 py-2 bg-fg text-bg rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
                         >
                           Back to Dashboard
                         </Link>

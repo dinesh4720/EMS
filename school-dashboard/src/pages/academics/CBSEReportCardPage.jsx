@@ -84,11 +84,11 @@ function MarkEntryModal({ isOpen, onClose, student, classId, academicYear, term,
       <ModalContent>
         <ModalHeader>
           Enter Marks — {student?.name}
-          <span className="text-sm font-normal text-gray-500 ml-2">({term?.replace(/_/g, ' ')} · {academicYear})</span>
+          <span className="text-sm font-normal text-fg-muted ml-2">({term?.replace(/_/g, ' ')} · {academicYear})</span>
         </ModalHeader>
         <ModalBody>
           <div className="space-y-3">
-            <div className="grid grid-cols-12 gap-2 text-xs font-medium text-gray-500 dark:text-zinc-400 px-1">
+            <div className="grid grid-cols-12 gap-2 text-xs font-medium text-fg-muted px-1">
               <span className="col-span-5">Subject</span>
               <span className="col-span-3 text-center">Theory Marks</span>
               <span className="col-span-3 text-center">Practical Marks</span>
@@ -102,7 +102,7 @@ function MarkEntryModal({ isOpen, onClose, student, classId, academicYear, term,
                   value={s.subjectName}
                   onChange={e => updateSubject(i, 'subjectName', e.target.value)}
                   variant="bordered"
-                  classNames={{ input: 'dark:text-zinc-100', inputWrapper: 'dark:border-zinc-700' }}
+                  classNames={{ input: 'text-fg', inputWrapper: 'border-border-token' }}
                   className="col-span-5"
                 />
                 <Input
@@ -113,7 +113,7 @@ function MarkEntryModal({ isOpen, onClose, student, classId, academicYear, term,
                   value={s.theoryMarks}
                   onChange={e => updateSubject(i, 'theoryMarks', e.target.value)}
                   variant="bordered"
-                  classNames={{ input: 'dark:text-zinc-100 text-center', inputWrapper: 'dark:border-zinc-700' }}
+                  classNames={{ input: 'text-fg text-center', inputWrapper: 'border-border-token' }}
                   className="col-span-3"
                 />
                 <Input
@@ -124,13 +124,13 @@ function MarkEntryModal({ isOpen, onClose, student, classId, academicYear, term,
                   value={s.practicalMarks}
                   onChange={e => updateSubject(i, 'practicalMarks', e.target.value)}
                   variant="bordered"
-                  classNames={{ input: 'dark:text-zinc-100 text-center', inputWrapper: 'dark:border-zinc-700' }}
+                  classNames={{ input: 'text-fg text-center', inputWrapper: 'border-border-token' }}
                   className="col-span-3"
                 />
                 <button
                   type="button"
                   onClick={() => removeSubject(i)}
-                  className="col-span-1 text-gray-400 hover:text-red-500 text-lg leading-none text-center"
+                  className="col-span-1 text-fg-faint hover:text-red-500 text-lg leading-none text-center"
                 >×</button>
               </div>
             ))}
@@ -244,7 +244,7 @@ function BulkMarkEntryModal({ isOpen, onClose, term, academicYear }) {
       <ModalContent>
         <ModalHeader>
           Bulk Mark Entry
-          <span className="text-sm font-normal text-gray-500 ml-2">({term?.replace(/_/g, ' ')} · {academicYear})</span>
+          <span className="text-sm font-normal text-fg-muted ml-2">({term?.replace(/_/g, ' ')} · {academicYear})</span>
         </ModalHeader>
         <ModalBody>
           <div className="space-y-4">
@@ -265,7 +265,7 @@ function BulkMarkEntryModal({ isOpen, onClose, term, academicYear }) {
                 onSelectionChange={keys => setSelectedClassId([...keys][0] || '')}
                 variant="bordered"
                 className="flex-1"
-                classNames={{ trigger: 'dark:border-zinc-700' }}
+                classNames={{ trigger: 'border-border-token' }}
                 isDisabled={classesError}
               >
                 {classes.map(c => (
@@ -286,7 +286,7 @@ function BulkMarkEntryModal({ isOpen, onClose, term, academicYear }) {
 
             {/* Subject list editor */}
             <div>
-              <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mb-2">Subjects (edit to customize)</p>
+              <p className="text-xs font-medium text-fg-muted mb-2">Subjects (edit to customize)</p>
               <div className="flex flex-wrap gap-2 items-center">
                 {subjects.map((s, i) => (
                   <div key={i} className="flex items-center gap-1">
@@ -300,7 +300,7 @@ function BulkMarkEntryModal({ isOpen, onClose, term, academicYear }) {
                     <button
                       type="button"
                       onClick={() => setSubjects(prev => prev.filter((_, j) => j !== i))}
-                      className="text-gray-400 hover:text-red-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 rounded"
+                      className="text-fg-faint hover:text-red-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30 rounded"
                       aria-label={`Remove subject ${i + 1}`}
                     >×</button>
                   </div>
@@ -308,30 +308,30 @@ function BulkMarkEntryModal({ isOpen, onClose, term, academicYear }) {
                 <button
                   type="button"
                   onClick={() => setSubjects(prev => [...prev, ''])}
-                  className="text-xs text-[var(--color-primary)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 rounded px-1"
+                  className="text-xs text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30 rounded px-1"
                 >+ Add</button>
               </div>
             </div>
 
             {/* Bulk entry table */}
             {students.length > 0 && (
-              <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-zinc-700">
+              <div className="overflow-x-auto rounded-lg border border-border-token">
                 <table className="w-full text-xs">
-                  <thead className="bg-gray-50 dark:bg-zinc-900">
+                  <thead className="bg-surface-2">
                     <tr>
-                      <th className="text-left px-3 py-2 font-medium text-gray-500 dark:text-zinc-400 sticky left-0 bg-gray-50 dark:bg-zinc-900">Student</th>
+                      <th className="text-left px-3 py-2 font-medium text-fg-muted sticky left-0 bg-surface-2">Student</th>
                       {subjects.filter(s => s.trim()).map(subj => (
-                        <th key={subj} colSpan={2} className="text-center px-2 py-2 font-medium text-gray-500 dark:text-zinc-400 border-l border-gray-100 dark:border-zinc-800">
+                        <th key={subj} colSpan={2} className="text-center px-2 py-2 font-medium text-fg-muted border-l border-divider">
                           {subj}
                         </th>
                       ))}
                     </tr>
-                    <tr className="border-b border-gray-200 dark:border-zinc-700">
-                      <th className="sticky left-0 bg-gray-50 dark:bg-zinc-900" />
+                    <tr className="border-b border-border-token">
+                      <th className="sticky left-0 bg-surface-2" />
                       {subjects.filter(s => s.trim()).map(subj => (
                         <Fragment key={subj}>
-                          <th className="text-center px-2 py-1 text-gray-400 dark:text-zinc-500 font-normal border-l border-gray-100 dark:border-zinc-800">Theory</th>
-                          <th className="text-center px-2 py-1 text-gray-400 dark:text-zinc-500 font-normal">Practical</th>
+                          <th className="text-center px-2 py-1 text-fg-faint font-normal border-l border-divider">Theory</th>
+                          <th className="text-center px-2 py-1 text-fg-faint font-normal">Practical</th>
                         </Fragment>
                       ))}
                     </tr>
@@ -340,14 +340,14 @@ function BulkMarkEntryModal({ isOpen, onClose, term, academicYear }) {
                     {students.map((s, si) => {
                       const sid = s._id || s.id;
                       return (
-                        <tr key={sid} className={`border-b border-gray-100 dark:border-zinc-800 ${si % 2 === 0 ? 'bg-white dark:bg-zinc-950' : 'bg-gray-50/50 dark:bg-zinc-900/50'}`}>
-                          <td className="px-3 py-1.5 font-medium text-gray-900 dark:text-zinc-100 sticky left-0 bg-inherit">
+                        <tr key={sid} className={`border-b border-divider ${si % 2 === 0 ? 'bg-surface' : 'bg-surface-2'}`}>
+                          <td className="px-3 py-1.5 font-medium text-fg sticky left-0 bg-inherit">
                             {s.name}
-                            <span className="text-gray-400 dark:text-zinc-500 ml-1">({s.rollNo || s.admissionId})</span>
+                            <span className="text-fg-faint ml-1">({s.rollNo || s.admissionId})</span>
                           </td>
                           {subjects.filter(subj => subj.trim()).map(subj => (
                             <Fragment key={`${sid}-${subj}`}>
-                              <td className="px-1 py-1 border-l border-gray-100 dark:border-zinc-800">
+                              <td className="px-1 py-1 border-l border-divider">
                                 <DSInput
                                   size="sm"
                                   type="number" min={0} max={100}
@@ -475,7 +475,7 @@ export default function CBSEReportCardPage() {
       >
         <div className="p-6 space-y-6">
           {/* Search */}
-          <Card shadow="sm" className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800">
+          <Card shadow="sm" className="bg-surface border border-border-token">
             <CardBody className="p-4">
               <div className="flex flex-col sm:flex-row gap-3">
                 <Input
@@ -485,8 +485,8 @@ export default function CBSEReportCardPage() {
                   onChange={e => setAdmissionNo(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSearch()}
                   variant="bordered"
-                  startContent={<Search size={16} className="text-gray-400" />}
-                  classNames={{ input: 'dark:text-zinc-100', inputWrapper: 'dark:border-zinc-700' }}
+                  startContent={<Search size={16} className="text-fg-faint" />}
+                  classNames={{ input: 'text-fg', inputWrapper: 'border-border-token' }}
                   className="flex-1"
                 />
                 <Select
@@ -495,13 +495,13 @@ export default function CBSEReportCardPage() {
                   onSelectionChange={keys => setTerm([...keys][0] || 'term_1')}
                   variant="bordered"
                   className="w-40"
-                  classNames={{ trigger: 'dark:border-zinc-700' }}
+                  classNames={{ trigger: 'border-border-token' }}
                 >
                   <SelectItem key="term_1" value="term_1">Term 1</SelectItem>
                   <SelectItem key="term_2" value="term_2">Term 2</SelectItem>
                 </Select>
                 <Button
-                  className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900 self-end"
+                  className="bg-accent text-accent-fg self-end"
                   onPress={handleSearch}
                   isLoading={loading}
                 >
@@ -518,12 +518,12 @@ export default function CBSEReportCardPage() {
           {!loading && result && (
             <div className="space-y-4" ref={printRef}>
               {/* Student Header */}
-              <Card shadow="sm" className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800">
+              <Card shadow="sm" className="bg-surface border border-border-token">
                 <CardBody className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">{result.student?.name}</h2>
-                      <p className="text-sm text-gray-500 dark:text-zinc-400">
+                      <h2 className="text-lg font-semibold text-fg">{result.student?.name}</h2>
+                      <p className="text-sm text-fg-muted">
                         Adm: {result.student?.admissionNo} · Roll: {result.student?.rollNo} · Class: {result.student?.className}
                         {(result.student?.fatherName || result.student?.guardianName) && ` · Parent: ${result.student?.fatherName || result.student?.guardianName}`}
                       </p>
@@ -535,7 +535,7 @@ export default function CBSEReportCardPage() {
                         color="primary"
                         startContent={<Plus size={14} />}
                         onPress={markEntryDisclosure.onOpen}
-                        className="dark:border-zinc-600 dark:text-zinc-300"
+                        className="border-border-token text-fg"
                       >
                         Enter Marks
                       </Button>
@@ -543,7 +543,7 @@ export default function CBSEReportCardPage() {
                         variant="bordered"
                         size="sm"
                         startContent={<Printer size={14} />}
-                        className="dark:border-zinc-600 dark:text-zinc-300"
+                        className="border-border-token text-fg"
                         onPress={handlePrint}
                         isDisabled={!reportCard}
                       >
@@ -574,34 +574,34 @@ export default function CBSEReportCardPage() {
                 <>
                   {/* Scholastic */}
                   {reportCard.scholasticGrades?.length > 0 && (
-                    <Card shadow="sm" className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800">
+                    <Card shadow="sm" className="bg-surface border border-border-token">
                       <CardBody className="p-4">
-                        <h3 className="text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-3">Scholastic Areas</h3>
+                        <h3 className="text-sm font-semibold text-fg mb-3">Scholastic Areas</h3>
                         <div className="overflow-x-auto">
                           <table className="w-full text-sm">
                             <thead>
-                              <tr className="border-b border-gray-100 dark:border-zinc-800">
-                                <th className="text-left py-2 text-gray-500 dark:text-zinc-400 font-medium">Subject</th>
-                                <th className="text-center py-2 text-gray-500 dark:text-zinc-400 font-medium">Theory</th>
-                                <th className="text-center py-2 text-gray-500 dark:text-zinc-400 font-medium">Practical</th>
-                                <th className="text-center py-2 text-gray-500 dark:text-zinc-400 font-medium">Total</th>
-                                <th className="text-center py-2 text-gray-500 dark:text-zinc-400 font-medium">Grade</th>
-                                <th className="text-center py-2 text-gray-500 dark:text-zinc-400 font-medium">Grade Pt</th>
+                              <tr className="border-b border-divider">
+                                <th className="text-left py-2 text-fg-muted font-medium">Subject</th>
+                                <th className="text-center py-2 text-fg-muted font-medium">Theory</th>
+                                <th className="text-center py-2 text-fg-muted font-medium">Practical</th>
+                                <th className="text-center py-2 text-fg-muted font-medium">Total</th>
+                                <th className="text-center py-2 text-fg-muted font-medium">Grade</th>
+                                <th className="text-center py-2 text-fg-muted font-medium">Grade Pt</th>
                               </tr>
                             </thead>
                             <tbody>
                               {reportCard.scholasticGrades.map((subj, i) => (
-                                <tr key={i} className="border-b border-gray-50 dark:border-zinc-900">
-                                  <td className="py-2.5 text-gray-900 dark:text-zinc-100">{subj.subjectName}</td>
-                                  <td className="py-2.5 text-center text-gray-700 dark:text-zinc-300">{subj.theoryMarks ?? '—'}</td>
-                                  <td className="py-2.5 text-center text-gray-700 dark:text-zinc-300">{subj.practicalMarks ?? '—'}</td>
-                                  <td className="py-2.5 text-center font-medium text-gray-900 dark:text-zinc-100">{subj.totalMarks ?? '—'}</td>
+                                <tr key={i} className="border-b border-divider">
+                                  <td className="py-2.5 text-fg">{subj.subjectName}</td>
+                                  <td className="py-2.5 text-center text-fg">{subj.theoryMarks ?? '—'}</td>
+                                  <td className="py-2.5 text-center text-fg">{subj.practicalMarks ?? '—'}</td>
+                                  <td className="py-2.5 text-center font-medium text-fg">{subj.totalMarks ?? '—'}</td>
                                   <td className="py-2.5 text-center">
-                                    <span className={`px-2 py-0.5 rounded text-xs font-semibold ${GRADE_COLORS[subj.grade] || 'bg-gray-100 text-gray-700'}`}>
+                                    <span className={`px-2 py-0.5 rounded text-xs font-semibold ${GRADE_COLORS[subj.grade] || 'bg-surface-2 text-fg'}`}>
                                       {subj.grade || '—'}
                                     </span>
                                   </td>
-                                  <td className="py-2.5 text-center text-gray-700 dark:text-zinc-300">{subj.gradePoint ?? '—'}</td>
+                                  <td className="py-2.5 text-center text-fg">{subj.gradePoint ?? '—'}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -609,8 +609,8 @@ export default function CBSEReportCardPage() {
                         </div>
                         {reportCard.cgpa != null && (
                           <div className="mt-3 flex items-center justify-end gap-3">
-                            <span className="text-sm text-gray-500 dark:text-zinc-400">CGPA:</span>
-                            <span className="text-xl font-bold text-gray-900 dark:text-zinc-100">{reportCard.cgpa}</span>
+                            <span className="text-sm text-fg-muted">CGPA:</span>
+                            <span className="text-xl font-bold text-fg">{reportCard.cgpa}</span>
                           </div>
                         )}
                       </CardBody>
@@ -619,14 +619,14 @@ export default function CBSEReportCardPage() {
 
                   {/* Co-scholastic */}
                   {reportCard.coScholasticGrades?.length > 0 && (
-                    <Card shadow="sm" className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800">
+                    <Card shadow="sm" className="bg-surface border border-border-token">
                       <CardBody className="p-4">
-                        <h3 className="text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-3">Co-Scholastic Areas</h3>
+                        <h3 className="text-sm font-semibold text-fg mb-3">Co-Scholastic Areas</h3>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                           {reportCard.coScholasticGrades.map((item, i) => (
-                            <div key={i} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-zinc-900 rounded-lg">
-                              <span className="text-xs text-gray-600 dark:text-zinc-400">{item.area}{item.activity ? ` — ${item.activity}` : ''}</span>
-                              <span className={`text-xs font-semibold px-2 py-0.5 rounded ${GRADE_COLORS[item.grade] || 'bg-gray-100 text-gray-700'}`}>
+                            <div key={i} className="flex items-center justify-between p-2 bg-surface-2 rounded-lg">
+                              <span className="text-xs text-fg-muted">{item.area}{item.activity ? ` — ${item.activity}` : ''}</span>
+                              <span className={`text-xs font-semibold px-2 py-0.5 rounded ${GRADE_COLORS[item.grade] || 'bg-surface-2 text-fg'}`}>
                                 {item.grade || '—'}
                               </span>
                             </div>
@@ -638,21 +638,21 @@ export default function CBSEReportCardPage() {
 
                   {/* Attendance */}
                   {reportCard.attendance && (
-                    <Card shadow="sm" className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800">
+                    <Card shadow="sm" className="bg-surface border border-border-token">
                       <CardBody className="p-4">
-                        <h3 className="text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-3">Attendance</h3>
+                        <h3 className="text-sm font-semibold text-fg mb-3">Attendance</h3>
                         <div className="flex gap-6 text-sm">
                           <div>
-                            <p className="text-xs text-gray-500 dark:text-zinc-400">Working Days</p>
-                            <p className="font-semibold text-gray-900 dark:text-zinc-100">{reportCard.attendance.workingDays}</p>
+                            <p className="text-xs text-fg-muted">Working Days</p>
+                            <p className="font-semibold text-fg">{reportCard.attendance.workingDays}</p>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-500 dark:text-zinc-400">Days Present</p>
-                            <p className="font-semibold text-gray-900 dark:text-zinc-100">{reportCard.attendance.daysPresent}</p>
+                            <p className="text-xs text-fg-muted">Days Present</p>
+                            <p className="font-semibold text-fg">{reportCard.attendance.daysPresent}</p>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-500 dark:text-zinc-400">Percentage</p>
-                            <p className="font-semibold text-gray-900 dark:text-zinc-100">
+                            <p className="text-xs text-fg-muted">Percentage</p>
+                            <p className="font-semibold text-fg">
                               {reportCard.attendance.workingDays
                                 ? `${Math.round((reportCard.attendance.daysPresent / reportCard.attendance.workingDays) * 100)}%`
                                 : '—'}

@@ -2,24 +2,21 @@ import { memo } from "react";
 import PropTypes from "prop-types";
 import { Tooltip as HeroTooltip } from "@heroui/react";
 
-const VARIANT_CLASSES = {
-  default:
-    "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-xs px-2.5 py-1.5 rounded-md font-medium shadow-sm",
-  warning:
-    "bg-warning-600 text-white dark:bg-warning-500 text-xs px-2.5 py-1.5 rounded-md font-medium shadow-sm",
-  danger:
-    "bg-danger text-white text-xs px-2.5 py-1.5 rounded-md font-medium shadow-sm",
-  primary:
-    "bg-primary text-white text-xs px-2.5 py-1.5 rounded-md font-medium shadow-sm",
-};
-
 /**
- * Tooltip — design-system wrapper around HeroUI Tooltip.
+ * Tooltip — frosted-glass variant (REVAMP-05).
  *
+ * Glass surface comes from .ds-tooltip in feedback-primitives.css.
  * Use for short contextual hints (< ~8 words). For rich content, prefer
  * `Popover`. Always render around an interactive trigger so it remains
  * keyboard-focusable.
  */
+const VARIANT_CLASS = {
+  default: "ds-tooltip",
+  warning: "ds-tooltip ds-tooltip--warning",
+  danger: "ds-tooltip ds-tooltip--danger",
+  primary: "ds-tooltip ds-tooltip--primary",
+};
+
 const Tooltip = memo(function Tooltip({
   content,
   placement = "top",
@@ -33,7 +30,7 @@ const Tooltip = memo(function Tooltip({
 }) {
   if (!content) return children;
 
-  const variantClass = VARIANT_CLASSES[variant] || VARIANT_CLASSES.default;
+  const variantClass = VARIANT_CLASS[variant] || VARIANT_CLASS.default;
   const mergedClassNames = {
     content: variantClass,
     ...classNamesProp,

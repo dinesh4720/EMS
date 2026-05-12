@@ -34,7 +34,7 @@ const TemplateSelectionModal = ({ isOpen, onClose, formTemplates, onSelectTempla
                       <h3 className="text-lg font-semibold mb-1">
                         {template.name}
                       </h3>
-                      <p className="text-sm text-gray-600 dark:text-zinc-400 mb-3">
+                      <p className="text-sm text-fg-muted mb-3">
                         {template.description}
                       </p>
                       {template.id !== "blank" && (

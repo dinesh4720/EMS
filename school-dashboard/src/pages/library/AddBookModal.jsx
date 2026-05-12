@@ -73,7 +73,7 @@ export default function AddBookModal({ isOpen, onClose, book, onSaved }) {
     const payload = {
       title: form.title.trim(),
       author: form.author.trim(),
-      totalCopies: copies,
+      totalCopies: parseInt(form.totalCopies, 10),
     };
     if (form.isbn.trim()) payload.isbn = form.isbn.trim();
     if (form.publisher.trim()) payload.publisher = form.publisher.trim();
@@ -134,7 +134,7 @@ export default function AddBookModal({ isOpen, onClose, book, onSaved }) {
         </ModalBody>
         <ModalFooter>
           <Button variant="flat" onPress={onClose}>{t('pages.cancel2')}</Button>
-          <Button className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900" isLoading={saving} onPress={handleSubmit}>
+          <Button color="primary" isLoading={saving} onPress={handleSubmit}>
             {isEdit ? "Update" : "Add Book"}
           </Button>
         </ModalFooter>

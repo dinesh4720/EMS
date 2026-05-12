@@ -38,10 +38,10 @@ export default function PeriodConfigForm({ settings, onSave, onCancel, saving })
           max={15}
         />
       </div>
-      <div className="p-4 bg-default-50 rounded-lg">
-        <p className="text-sm text-default-600">
+      <div className="p-4 bg-surface-2 rounded-lg">
+        <p className="text-sm text-fg-muted">
           <span className="font-medium">{t('pages.instructionalTime')}</span> {hours}h {minutes}m
-          <span className="text-default-400 ml-2">({formData.periodsPerDay} periods × {formData.periodDuration} minutes)</span>
+          <span className="text-fg-faint ml-2">({formData.periodsPerDay} periods × {formData.periodDuration} minutes)</span>
         </p>
       </div>
       <div className="flex justify-end gap-2 pt-4">

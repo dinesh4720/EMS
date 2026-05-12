@@ -3,9 +3,12 @@
  * Extracted from useStudentsListData.js — manages all filter state,
  * filter presets, filter counts, and persistence to sessionStorage.
  */
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+
+const VALID_STATUSES = new Set(['all', 'active', 'inactive', 'alumni', 'graduated', 'transferred']);
 
 /**
  * @param {Array} students - Current list of student objects
@@ -14,11 +17,47 @@ import { useTranslation } from 'react-i18next';
  */
 export function useStudentsListFilters(students, classes, currentAcademicYear) {
   const { t } = useTranslation();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  // ── Filter state (restored from sessionStorage) ──
+  // ── Filter state ──
+  // Status filter is derived from the URL (`?status=`) so back/forward
+  // navigation preserves the filter — REVAMP-102 bug-fix license.
+  // On first mount we seed the URL from sessionStorage if present so
+  // returning users still see their last selection.
   const [classFilter, setClassFilter] = useState(() => sessionStorage.getItem('students-filter-class') || 'all');
   const [feeStatusFilter, setFeeStatusFilter] = useState(() => sessionStorage.getItem('students-filter-feeStatus') || 'all');
-  const [statusFilter, setStatusFilter] = useState(() => sessionStorage.getItem('students-filter-status') || 'active');
+
+  useEffect(() => {
+    const fromUrl = searchParams.get('status');
+    if (fromUrl) return;
+    const persisted = sessionStorage.getItem('students-filter-status');
+    if (!persisted || persisted === 'active' || !VALID_STATUSES.has(persisted)) return;
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('status', persisted);
+        return next;
+      },
+      { replace: true }
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const urlStatus = searchParams.get('status');
+  const statusFilter = urlStatus && VALID_STATUSES.has(urlStatus) ? urlStatus : 'active';
+  const setStatusFilter = useCallback((value) => {
+    sessionStorage.setItem('students-filter-status', value);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        // Treat 'active' as the default; omit from URL to keep it clean.
+        if (value && value !== 'active') next.set('status', value);
+        else next.delete('status');
+        return next;
+      },
+      { replace: true }
+    );
+  }, [setSearchParams]);
   const [academicYearFilter, setAcademicYearFilter] = useState(() => sessionStorage.getItem('students-filter-academicYear') || 'all');
   const [academicPerformanceFilter, setAcademicPerformanceFilter] = useState(() => sessionStorage.getItem('students-filter-academicPerformance') || 'all');
   const [attendanceFilter, setAttendanceFilter] = useState(() => sessionStorage.getItem('students-filter-attendance') || 'all');
@@ -128,7 +167,7 @@ export function useStudentsListFilters(students, classes, currentAcademicYear) {
       k => sessionStorage.removeItem(`students-filter-${k}`)
     );
     toast.success(t('toast.success.allFiltersCleared'));
-  }, [t]);
+  }, [t, setStatusFilter]);
 
   // ── Filter presets ──
   const filterPresets = [

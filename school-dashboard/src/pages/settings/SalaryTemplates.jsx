@@ -132,7 +132,7 @@ export default function SalaryTemplates() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-medium">{t('pages.salaryTemplates')}</h2>
-          <p className="text-sm text-default-500 mt-1">{t('pages.manageSalaryTemplatesForDifferentStaffRoles')}</p>
+          <p className="text-sm text-fg-muted mt-1">{t('pages.manageSalaryTemplatesForDifferentStaffRoles')}</p>
         </div>
         <Button color="primary" startContent={<Plus size={16} />} onPress={handleNew}>
           New Template
@@ -143,7 +143,7 @@ export default function SalaryTemplates() {
         {templates.map(template => {
           const total = calculateTotal(template.breakdown);
           return (
-            <Card key={template._id} className="shadow-sm border border-default-200">
+            <Card key={template._id} className="shadow-sm border border-border-token">
               <CardHeader className="flex justify-between items-center pb-3">
                 <div className="flex items-center gap-2">
                   <div className="p-2 bg-primary/10 rounded-lg">
@@ -165,7 +165,7 @@ export default function SalaryTemplates() {
                 <div className="space-y-2 mb-4">
                   {template.breakdown.map((item, i) => (
                     <div key={`${template._id}-${item.component}`} className="flex justify-between text-sm">
-                      <span className="text-default-600">{item.component}</span>
+                      <span className="text-fg-muted">{item.component}</span>
                       <span className="font-medium">{fmt(item.amount)}</span>
                     </div>
                   ))}
@@ -215,7 +215,7 @@ export default function SalaryTemplates() {
                       </div>
 
                       {editingTemplate.breakdown.map((item, i) => (
-                        <div key={`edit-breakdown-${i}`} className="p-3 bg-default-50 rounded-lg border border-default-200">
+                        <div key={`edit-breakdown-${i}`} className="p-3 bg-surface-2 rounded-lg border border-border-token">
                           <div className="flex gap-3 items-start">
                             <Input
                               size="sm"

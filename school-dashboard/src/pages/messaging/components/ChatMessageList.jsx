@@ -1,12 +1,19 @@
-import { Avatar, ScrollShadow, Button, Textarea } from "@heroui/react";
+import { ScrollShadow } from "@heroui/react";
 import { Search, Phone, Video, MoreVertical, Pin, Check, CheckCheck, Forward, Download, Mic, MessageCircle, Plus } from "lucide-react";
-import { Tooltip } from "@heroui/react";
 import MessageActionsMenu from "./MessageActionsMenu";
 import MessageReactions from "./MessageReactions";
 import EmojiPicker from "./EmojiPicker";
 import VoiceWaveform from "./VoiceWaveform";
 import { formatTime, formatLastSeen, getFileIcon, formatFileSize } from "../utils/chatUtils";
 import { useTranslation } from 'react-i18next';
+import {
+  Avatar,
+  Button,
+  IconButton,
+  Tooltip,
+  Textarea,
+  EmptyState,
+} from "../../../components/ui";
 
 export default function ChatMessageList({
   selectedConversation,
@@ -40,132 +47,104 @@ export default function ChatMessageList({
 
   if (!selectedConversation) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-default-50 to-default-100 dark:from-zinc-900 dark:to-zinc-950">
-        <div className="text-center max-w-md px-8">
-          <div className="relative mx-auto mb-6">
-            <div className="w-24 h-24 mx-auto rounded-3xl bg-gradient-to-br from-primary/10 to-primary/20 dark:from-primary/20 dark:to-primary/10 flex items-center justify-center shadow-xl shadow-primary/10">
-              <div className="w-16 h-16 rounded-2xl bg-white dark:bg-zinc-800 flex items-center justify-center shadow-lg">
-                <MessageCircle size={32} className="text-primary" />
-              </div>
-            </div>
-            <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-success/20 flex items-center justify-center">
-              <div className="w-3 h-3 rounded-full bg-success animate-pulse" />
-            </div>
-            <div className="absolute -bottom-1 -left-3 w-6 h-6 rounded-full bg-primary/20" />
-          </div>
-          <h3 className="text-xl font-semibold text-default-900 dark:text-zinc-100 mb-2">
-            Select a conversation
-          </h3>
-          <p className="text-default-500 dark:text-zinc-500 text-sm leading-relaxed">
-            Choose from your existing conversations or start a new one to begin messaging with colleagues and students
-          </p>
-          <Button
-            color="primary"
-            variant="flat"
-            onPress={onOpenNewChatModal}
-            className="mt-6 rounded-xl"
-            startContent={<Plus size={18} />}
-          >
-            Start new conversation
-          </Button>
-        </div>
+      <div className="flex-1 flex items-center justify-center bg-[var(--color-bg-secondary)]">
+        <EmptyState
+          icon={MessageCircle}
+          size="lg"
+          title={t('messaging.chat.selectConversation', 'Select a conversation')}
+          description={t(
+            'messaging.chat.selectConversationDescription',
+            'Choose from your existing conversations or start a new one to begin messaging with colleagues and students'
+          )}
+          action={(
+            <Button
+              variant="primary"
+              icon={<Plus size={16} />}
+              onClick={onOpenNewChatModal}
+            >
+              {t('messaging.chat.startNewConversation', 'Start New Conversation')}
+            </Button>
+          )}
+        />
       </div>
     );
   }
 
   return (
-    <div className="flex-1 bg-background dark:bg-zinc-950 h-full flex flex-col overflow-hidden">
+    <div className="flex-1 bg-[var(--color-bg)] h-full flex flex-col overflow-hidden">
       {/* Chat Header */}
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-default-200 dark:border-zinc-800 shrink-0 bg-background dark:bg-zinc-950">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--color-border)] shrink-0 bg-[var(--color-bg)]">
         <div className="flex items-center gap-3">
-          <div className="relative">
-            <Avatar
-              src={selectedConversation.otherParticipant?.avatar}
-              name={selectedConversation.otherParticipant?.name}
-              size="md"
-              className="ring-2 ring-default-100 dark:ring-zinc-800"
-            />
-            {selectedConversation.otherParticipant?.online && (
-              <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-success-500 rounded-full border-2 border-white dark:border-zinc-950 shadow-lg shadow-success/30">
-                <span className="absolute inset-0 rounded-full bg-success-500 animate-ping opacity-75" />
-              </span>
-            )}
-          </div>
+          <Avatar
+            src={selectedConversation.otherParticipant?.avatar}
+            name={selectedConversation.otherParticipant?.name}
+            size="md"
+            status={selectedConversation.otherParticipant?.online ? 'online' : undefined}
+          />
           <div>
-            <p className="text-sm font-semibold text-default-900 dark:text-zinc-100">
+            <p className="text-sm font-semibold text-[var(--color-text-primary)]">
               {selectedConversation.otherParticipant?.name}
             </p>
-            <p className={`text-xs font-medium flex items-center gap-1 ${selectedConversation.otherParticipant?.online ? 'text-success-600 dark:text-success-500' : 'text-default-500 dark:text-zinc-500'}`}>
-              {selectedConversation.otherParticipant?.online ? (
-                <>
-                  <span className="w-1.5 h-1.5 rounded-full bg-success-500" />
-                  Online
-                </>
-              ) : (
-                formatLastSeen(selectedConversation.otherParticipant?.lastSeen)
-              )}
+            <p className={`text-xs font-medium flex items-center gap-1 ${
+              selectedConversation.otherParticipant?.online
+                ? 'text-green-600 dark:text-green-500'
+                : 'text-[var(--color-text-muted)]'
+            }`}>
+              {selectedConversation.otherParticipant?.online
+                ? t('messaging.chat.online', 'Online')
+                : formatLastSeen(selectedConversation.otherParticipant?.lastSeen)}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <Tooltip content="Search Messages" placement="top">
-            <Button
-              isIconOnly
-              variant="light"
-              size="sm"
-              onPress={() => document.getElementById('chat-search-input')?.focus()}
-              className="text-default-500 hover:text-primary hover:bg-primary/10 dark:hover:bg-primary/20 rounded-xl transition-all duration-200"
+          <Tooltip content={t('messaging.chat.searchMessages', 'Search Messages')}>
+            <IconButton
+              variant="ghost"
+              onClick={() => document.getElementById('chat-search-input')?.focus()}
+              aria-label={t('messaging.chat.searchMessages', 'Search Messages')}
             >
               <Search size={18} />
-            </Button>
+            </IconButton>
           </Tooltip>
           {pinnedMessages && pinnedMessages.length > 0 && (
-            <Tooltip content="View Pinned Messages" placement="top">
-              <Button
-                isIconOnly
-                variant="light"
-                size="sm"
-                onPress={() => {
+            <Tooltip content={t('messaging.chat.viewPinnedMessages', 'View Pinned Messages')}>
+              <IconButton
+                variant="ghost"
+                onClick={() => {
                   const pinnedSection = document.querySelector('[data-pinned-messages]');
                   pinnedSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }}
-                className="text-default-500 hover:text-primary hover:bg-primary/10 dark:hover:bg-primary/20 rounded-xl transition-all duration-200"
+                aria-label={t('messaging.chat.viewPinnedMessages', 'View Pinned Messages')}
               >
                 <Pin size={18} />
-              </Button>
+              </IconButton>
             </Tooltip>
           )}
-          <Tooltip content="Voice Call" placement="top">
-            <Button
-              isIconOnly
-              variant="light"
-              size="sm"
-              onPress={() => onVideoCall('audio')}
-              className="text-default-500 hover:text-success-600 hover:bg-success/10 dark:hover:bg-success/20 rounded-xl transition-all duration-200"
+          <Tooltip content={t('messaging.chat.voiceCall', 'Voice Call')}>
+            <IconButton
+              variant="ghost"
+              onClick={() => onVideoCall('audio')}
+              aria-label={t('messaging.chat.voiceCall', 'Voice Call')}
             >
               <Phone size={18} />
-            </Button>
+            </IconButton>
           </Tooltip>
-          <Tooltip content="Video Call" placement="top">
-            <Button
-              isIconOnly
-              variant="light"
-              size="sm"
-              onPress={() => onVideoCall('video')}
-              className="text-default-500 hover:text-primary hover:bg-primary/10 dark:hover:bg-primary/20 rounded-xl transition-all duration-200"
+          <Tooltip content={t('messaging.chat.videoCall', 'Video Call')}>
+            <IconButton
+              variant="ghost"
+              onClick={() => onVideoCall('video')}
+              aria-label={t('messaging.chat.videoCall', 'Video Call')}
             >
               <Video size={18} />
-            </Button>
+            </IconButton>
           </Tooltip>
-          <Tooltip content="More options" placement="top">
-            <Button
-              isIconOnly
-              variant="light"
-              size="sm"
-              className="text-default-500 hover:text-default-700 dark:hover:text-zinc-300 hover:bg-default-100 dark:hover:bg-zinc-800 rounded-xl transition-all duration-200"
+          <Tooltip content={t('common.moreOptions', 'More options')}>
+            <IconButton
+              variant="ghost"
+              aria-label={t('common.moreOptions', 'More options')}
             >
               <MoreVertical size={18} />
-            </Button>
+            </IconButton>
           </Tooltip>
         </div>
       </div>
@@ -192,7 +171,7 @@ export default function ChatMessageList({
                       }, 2000);
                     }
                   }}
-                  className="flex-shrink-0 max-w-xs px-3 py-2 bg-white dark:bg-zinc-950 rounded-xl border border-default-200 dark:border-zinc-700 hover:border-primary hover:shadow-md dark:hover:shadow-zinc-900/50 hover:shadow-primary/10 cursor-pointer transition-all duration-200 group"
+                  className="flex-shrink-0 max-w-xs px-3 py-2 bg-surface rounded-xl border border-default-200 dark:border-zinc-700 hover:border-primary hover:shadow-md dark:hover:shadow-zinc-900/50 hover:shadow-primary/10 cursor-pointer transition-all duration-200 group"
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs font-semibold text-primary truncate group-hover:text-primary-600">
@@ -244,7 +223,7 @@ export default function ChatMessageList({
                   <div className={`absolute top-1 ${isMe ? '-left-9' : '-right-9'} opacity-0 group-hover:opacity-100 transition-opacity duration-200`}>
                     <button
                       onClick={() => onMessageAction('react', { message: msg })}
-                      className="w-7 h-7 flex items-center justify-center rounded-full bg-white dark:bg-zinc-950 hover:bg-primary/10 dark:hover:bg-primary/20 text-default-500 hover:text-primary transition-all duration-200 border border-default-200 dark:border-zinc-700 shrink-0 shadow-sm hover:shadow-md dark:shadow-zinc-900/50"
+                      className="w-7 h-7 flex items-center justify-center rounded-full bg-surface hover:bg-primary/10 dark:hover:bg-primary/20 text-default-500 hover:text-primary transition-all duration-200 border border-default-200 dark:border-zinc-700 shrink-0 shadow-sm hover:shadow-md dark:shadow-zinc-900/50"
                       title={t('pages.addReaction')}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -282,10 +261,7 @@ export default function ChatMessageList({
 
                 {/* Message Bubble */}
                 <div
-                  className={`px-4 py-2.5 rounded-2xl overflow-hidden transition-all duration-200 hover:shadow-md dark:hover:shadow-zinc-900/50 ${isMe
-                      ? "bg-primary text-white rounded-br-md shadow-sm shadow-primary/20"
-                      : "bg-default-100 dark:bg-zinc-800 text-default-900 dark:text-zinc-100 rounded-bl-md shadow-sm dark:shadow-zinc-900/30"
-                    }`}
+                  className={`chat-bubble ${isMe ? 'chat-bubble--me' : 'chat-bubble--them'} overflow-hidden transition-all duration-200 hover:shadow-md dark:hover:shadow-zinc-900/50`}
                 >
                   {/* Forwarded indicator */}
                   {msg.forwardedFrom && (
@@ -338,25 +314,15 @@ export default function ChatMessageList({
                           }
                         }}
                         autoFocus
-                        minRows={2}
-                        maxRows={4}
-                        className="w-full"
-                        classNames={{
-                          base: "w-full max-w-full",
-                          input: `text-sm break-words ${isMe ? 'text-white' : 'text-default-900 dark:text-zinc-100'}`,
-                          inputWrapper: `${isMe
-                            ? 'bg-white/20 border-white/30'
-                            : 'bg-white dark:bg-zinc-700 border-default-300 dark:border-zinc-600'
-                          } shadow-none w-full`
-                        }}
-                        variant="bordered"
+                        rows={2}
+                        aria-label={t('messaging.chat.editMessage', 'Edit message')}
                       />
                       <div className="flex gap-2">
-                        <Button size="sm" color="primary" onPress={onEditSave} className="rounded-lg">
-                          Save
+                        <Button size="sm" variant="primary" onClick={onEditSave}>
+                          {t('common.save', 'Save')}
                         </Button>
-                        <Button size="sm" variant="light" onPress={onEditCancel} className="rounded-lg">
-                          Cancel
+                        <Button size="sm" variant="ghost" onClick={onEditCancel}>
+                          {t('common.cancel', 'Cancel')}
                         </Button>
                       </div>
                     </div>
@@ -417,7 +383,7 @@ export default function ChatMessageList({
                             edited
                           </span>
                         )}
-                        <p className={`text-[11px] ${isMe ? 'text-white/70' : 'text-default-400 dark:text-zinc-500'}`}>
+                        <p className="chat-bubble__time">
                           {formatTime(msg.createdAt)}
                         </p>
                         {getMessageStatus(msg)}

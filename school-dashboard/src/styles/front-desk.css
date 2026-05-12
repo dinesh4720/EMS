@@ -1,0 +1,163 @@
+/* Phase 9 — Front Desk
+ * Page chrome + 5-cell KPI strip + activity row chrome.
+ * Reuses .frosted-overlay base for VisitorSheet/GatePassSheet.
+ */
+
+.fd-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 24px;
+}
+
+.fd-kpi {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+.fd-kpi__cell {
+  background: var(--surface);
+  border: 1px solid var(--border-token);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+  text-align: left;
+}
+.fd-kpi__cell:hover { background: var(--surface-2); }
+.fd-kpi__cell.is-active {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+.fd-kpi__label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-subtle);
+  font-weight: 500;
+}
+.fd-kpi__value {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+.fd-kpi__value--ok { color: var(--ok); }
+.fd-kpi__value--warn { color: var(--warn); }
+.fd-kpi__sub {
+  font-size: 12px;
+  color: var(--fg-muted);
+}
+
+.fd-table {
+  background: var(--surface);
+  border: 1px solid var(--border-token);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.fd-table__head,
+.fd-table__row {
+  display: grid;
+  grid-template-columns: 80px 1fr 1fr 100px 110px 110px;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 16px;
+}
+.fd-table__head {
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border-token);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-subtle);
+}
+.fd-table__row {
+  border-bottom: 1px solid var(--divider);
+  font-size: 13px;
+  color: var(--fg);
+}
+.fd-table__row:last-child { border-bottom: 0; }
+.fd-table__row:hover { background: var(--surface-2); }
+.fd-table__name { font-weight: 520; }
+.fd-table__sub { font-size: 11px; color: var(--fg-subtle); margin-top: 1px; }
+.fd-table__action { text-align: right; }
+.fd-table__empty {
+  padding: 64px 24px;
+  text-align: center;
+  color: var(--fg-subtle);
+  font-size: 13px;
+}
+
+/* Frosted sheets — visitor + gate pass — reuse .frosted-overlay base */
+.fd-overlay__hero {
+  padding: 20px 24px 12px;
+  border-bottom: 1px solid var(--divider);
+}
+.fd-overlay__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--fg);
+  margin: 0;
+}
+.fd-overlay__subtitle {
+  font-size: 12px;
+  color: var(--fg-muted);
+  margin-top: 2px;
+}
+.fd-overlay__form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 24px;
+}
+.fd-overlay__field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.fd-overlay__label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-subtle);
+  margin-bottom: 4px;
+}
+.fd-overlay__field input,
+.fd-overlay__field select,
+.fd-overlay__field textarea {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border-token);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--fg);
+  font-family: inherit;
+}
+.fd-overlay__field input:focus,
+.fd-overlay__field select:focus,
+.fd-overlay__field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--surface-2);
+}
+
+@media (max-width: 1023px) {
+  .fd-kpi { grid-template-columns: repeat(2, 1fr); }
+  .fd-overlay__field-row { grid-template-columns: 1fr; }
+}
+@media (max-width: 767px) {
+  .fd-table__head { display: none; }
+  .fd-table__row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding: 12px 16px;
+  }
+  .fd-table__action { text-align: left; }
+}

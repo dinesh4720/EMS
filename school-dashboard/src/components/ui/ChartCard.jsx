@@ -27,7 +27,7 @@ function ChartCard({
     <section
       aria-busy={isLoading ? "true" : undefined}
       className={cn(
-        "bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-xl overflow-hidden",
+        "bg-surface border border-divider rounded-xl overflow-hidden",
         className
       )}
       {...props}
@@ -36,12 +36,12 @@ function ChartCard({
         <header className="flex items-start justify-between gap-3 px-5 pt-5">
           <div className="min-w-0 flex-1">
             {title ? (
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 truncate">
+              <h3 className="text-sm font-semibold text-fg truncate">
                 {title}
               </h3>
             ) : null}
             {description ? (
-              <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
+              <p className="text-xs text-fg-muted mt-0.5">
                 {description}
               </p>
             ) : null}
@@ -51,7 +51,7 @@ function ChartCard({
       )}
 
       {legend ? (
-        <div className="px-5 pt-3 flex flex-wrap items-center gap-3 text-xs text-gray-600 dark:text-zinc-400">
+        <div className="px-5 pt-3 flex flex-wrap items-center gap-3 text-xs text-fg-muted">
           {legend}
         </div>
       ) : null}
@@ -84,7 +84,7 @@ function ChartCard({
       </div>
 
       {footer ? (
-        <footer className="border-t border-gray-100 dark:border-zinc-800 bg-gray-50/60 dark:bg-zinc-800/30 px-5 py-3 text-xs text-gray-600 dark:text-zinc-400">
+        <footer className="border-t border-divider bg-surface-2 px-5 py-3 text-xs text-fg-muted">
           {footer}
         </footer>
       ) : null}

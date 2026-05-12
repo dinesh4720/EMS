@@ -29,19 +29,19 @@ const SchoolSwitcher = memo(function SchoolSwitcher({
         onClick: onSwitch,
         "aria-label": `Switch school. Current: ${name}`,
         className:
-          "flex items-center gap-2 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 transition-colors hover:bg-gray-50 dark:hover:bg-zinc-800 px-1 -mx-1",
+          "flex items-center gap-2 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/30 transition-colors hover:bg-surface-hover px-1 -mx-1",
       }
     : { className: "flex items-center gap-2" };
 
   return (
     <div
       className={cn(
-        "flex items-center h-14 border-b border-gray-100 dark:border-zinc-800",
+        "flex items-center h-14 border-b border-border-token",
         collapsed ? "justify-center" : "px-4 justify-between"
       )}
     >
       <Brand {...brandProps}>
-        <div className="w-8 h-8 rounded-lg bg-gray-900 dark:bg-zinc-100 flex items-center justify-center overflow-hidden shrink-0">
+        <div className="w-8 h-8 rounded-lg bg-fg flex items-center justify-center overflow-hidden shrink-0">
           {logo ? (
             <img
               src={logo}
@@ -49,13 +49,13 @@ const SchoolSwitcher = memo(function SchoolSwitcher({
               className="w-full h-full object-cover"
             />
           ) : (
-            <span className="text-white dark:text-zinc-900 font-bold text-sm">
+            <span className="text-bg font-bold text-sm">
               {initial}
             </span>
           )}
         </div>
         {!collapsed && (
-          <span className="font-semibold text-sm text-gray-900 dark:text-zinc-100 truncate max-w-[140px]">
+          <span className="font-semibold text-sm text-fg truncate max-w-[140px]">
             {name}
           </span>
         )}
@@ -66,7 +66,7 @@ const SchoolSwitcher = memo(function SchoolSwitcher({
           type="button"
           onClick={onToggleCollapsed}
           aria-label="Collapse sidebar"
-          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-zinc-500 dark:hover:text-zinc-300 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
+          className="p-1.5 rounded-lg text-fg-subtle hover:text-fg hover:bg-surface-hover transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/30"
         >
           <ChevronsLeft size={16} />
         </button>

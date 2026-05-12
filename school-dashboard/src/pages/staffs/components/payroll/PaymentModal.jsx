@@ -1,7 +1,8 @@
 import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  Button, Input, Select, SelectItem, Textarea
+  Input, Select, SelectItem, Textarea
 } from "@heroui/react";
+import { CreditCard } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 
 export default function PaymentModal({
@@ -14,11 +15,21 @@ export default function PaymentModal({
   const { t } = useTranslation();
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="md">
+    <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="md" className="payroll-modal">
       <ModalContent>
         {(onClose) => (
           <>
-            <ModalHeader>{t('pages.logPaymentDetails1')}</ModalHeader>
+            <ModalHeader>
+              <div className="payroll-modal__head">
+                <div className="payroll-modal__icon payroll-modal__icon--ok">
+                  <CreditCard size={18} aria-hidden />
+                </div>
+                <div>
+                  <h3 className="payroll-modal__title">{t('pages.logPaymentDetails1')}</h3>
+                  <p className="payroll-modal__sub">Record how this payment was settled.</p>
+                </div>
+              </div>
+            </ModalHeader>
             <ModalBody className="gap-4">
               <Select
                 label={t('pages.paymentMethod1')}
@@ -48,10 +59,17 @@ export default function PaymentModal({
               />
             </ModalBody>
             <ModalFooter>
-              <Button variant="light" onPress={onClose}>{t('pages.cancel2')}</Button>
-              <Button color="success" onPress={onConfirm}>
-                Record Payment
-              </Button>
+              <button type="button" className="btn btn--ghost" onClick={onClose}>
+                {t('pages.cancel2')}
+              </button>
+              <button
+                type="button"
+                className="btn btn--accent"
+                onClick={onConfirm}
+                style={{ background: 'var(--ok)', borderColor: 'var(--ok)' }}
+              >
+                Record payment
+              </button>
             </ModalFooter>
           </>
         )}

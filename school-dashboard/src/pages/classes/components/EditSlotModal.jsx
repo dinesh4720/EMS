@@ -49,9 +49,9 @@ export function EditSlotModal({
 
             {/* Show loading state while fetching teachers */}
             {loadingTeachers && slotForm.subject && (
-              <div className="flex items-center justify-center gap-2 p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg">
+              <div className="flex items-center justify-center gap-2 p-4 bg-surface-2 rounded-lg">
                 <Spinner size="sm" />
-                <span className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.loadingAvailableTeachers')}</span>
+                <span className="text-sm text-fg-muted">{t('pages.loadingAvailableTeachers')}</span>
               </div>
             )}
 

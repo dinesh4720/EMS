@@ -1,18 +1,27 @@
 import { useEffect, useState } from 'react';
-import { BarChart3, TrendingDown, TrendingUp, Minus } from 'lucide-react';
-import { superAdminApi } from '../../services/api';
+import { BarChart3, Minus, TrendingDown, TrendingUp } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import {
+  Button,
+  Card,
+  Chip,
+  EmptyState,
+  ErrorState,
+  SkeletonTable,
+  SkeletonText,
+} from '../../components/ui';
+import { superAdminApi } from '../../services/api';
 
-const RISK_BG = {
-  low: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-  medium: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-  high: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+const RISK_CHIP_COLOR = {
+  low: 'success',
+  medium: 'warning',
+  high: 'danger',
 };
 
 const TREND_ICON = {
-  improving: <TrendingUp size={14} className="text-emerald-500" />,
-  declining: <TrendingDown size={14} className="text-red-500" />,
-  stable: <Minus size={14} className="text-gray-400 dark:text-zinc-500" />,
+  improving: <TrendingUp size={14} className="text-emerald-500" aria-hidden="true" />,
+  declining: <TrendingDown size={14} className="text-red-500" aria-hidden="true" />,
+  stable: <Minus size={14} className="text-fg-faint" aria-hidden="true" />,
 };
 
 function FunnelBar({ label, value, max }) {
@@ -20,12 +29,18 @@ function FunnelBar({ label, value, max }) {
   return (
     <div>
       <div className="mb-1 flex items-center justify-between text-xs">
-        <span className="text-gray-600 dark:text-zinc-400">{label}</span>
-        <span className="font-medium text-gray-900 dark:text-zinc-100">{value}</span>
+        <span className="text-fg-muted">{label}</span>
+        <span className="font-medium text-fg">{value}</span>
       </div>
-      <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-zinc-700">
+      <div
+        className="h-2 w-full rounded-full bg-surface-2"
+        role="progressbar"
+        aria-valuenow={value}
+        aria-valuemin={0}
+        aria-valuemax={max}
+      >
         <div
-          className="h-2 rounded-full bg-sky-500 transition-all dark:bg-sky-400"
+          className="h-2 rounded-full bg-blue-500 transition-all dark:bg-blue-400"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -61,110 +76,119 @@ export default function GrowthAnalyticsPanel() {
 
   const schools = report?.schools || [];
   const funnelSteps = funnel?.funnel || [];
-  const maxFunnel = funnelSteps.length > 0 ? Math.max(...funnelSteps.map((s) => s.count)) : 0;
+  const maxFunnel = funnelSteps.length > 0 ? Math.max(...funnelSteps.map((step) => step.count)) : 0;
 
   return (
     <div className="space-y-5">
-      {/* Funnel card */}
-      <div className="rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
+      <Card padding="md" radius="lg">
         <div className="mb-4 flex items-center gap-2">
-          <BarChart3 size={18} className="text-sky-600 dark:text-sky-400" />
-          <h2 className="text-lg font-semibold text-slate-950 dark:text-zinc-100">{t('pages.featureActivationFunnel')}</h2>
+          <BarChart3 size={16} aria-hidden="true" className="text-fg-muted" />
+          <h2 className="text-base font-semibold text-fg">
+            {t('pages.featureActivationFunnel')}
+          </h2>
         </div>
 
         {loading ? (
-          <div className="rounded-2xl border border-dashed border-gray-200 px-4 py-8 text-center text-sm text-gray-500 dark:border-zinc-700 dark:text-zinc-400">
-            Loading funnel...
-          </div>
-        ) : funnelSteps.length > 0 ? (
+          <SkeletonText lines={5} />
+        ) : error ? (
+          <ErrorState error={error} onRetry={load} />
+        ) : funnelSteps.length === 0 ? (
+          <EmptyState
+            icon={BarChart3}
+            size="sm"
+            title={t('pages.noFunnelDataAvailable')}
+            description="Activation data will appear once schools start adopting features."
+          />
+        ) : (
           <div className="space-y-3">
             {funnelSteps.map((step) => (
               <FunnelBar key={step.feature} label={step.feature} value={step.count} max={maxFunnel} />
             ))}
           </div>
-        ) : (
-          <div className="py-6 text-center text-sm text-gray-400 dark:text-zinc-500">{t('pages.noFunnelDataAvailable')}</div>
         )}
-      </div>
+      </Card>
 
-      {/* Schools growth table */}
-      <div className="rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-950 dark:text-zinc-100">{t('pages.schoolGrowthScores')}</h2>
-          <button
-            type="button"
-            onClick={load}
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600"
-          >
+      <Card padding="md" radius="lg">
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <h2 className="text-base font-semibold text-fg">
+            {t('pages.schoolGrowthScores')}
+          </h2>
+          <Button variant="outline" size="sm" onClick={load} loading={loading}>
             Refresh
-          </button>
+          </Button>
         </div>
 
-        {error && (
-          <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300">
-            {error}
-          </div>
-        )}
-
         {loading ? (
-          <div className="rounded-2xl border border-dashed border-gray-200 px-4 py-10 text-center text-sm text-gray-500 dark:border-zinc-700 dark:text-zinc-400">
-            Loading growth data...
-          </div>
+          <SkeletonTable rows={5} columns={7} />
+        ) : error ? (
+          <ErrorState error={error} onRetry={load} />
+        ) : schools.length === 0 ? (
+          <EmptyState
+            icon={BarChart3}
+            title={t('pages.noGrowthDataAvailable')}
+            description="School-level growth metrics will appear here once usage is tracked."
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-gray-200 text-gray-500 dark:border-zinc-800 dark:text-zinc-400">
-                  <th className="pb-3 font-medium">{t('pages.school1')}</th>
-                  <th className="pb-3 font-medium">{t('pages.healthScore')}</th>
-                  <th className="pb-3 font-medium">{t('pages.churnRisk')}</th>
-                  <th className="pb-3 font-medium">{t('pages.trend')}</th>
-                  <th className="pb-3 font-medium">{t('pages.dAU7d')}</th>
-                  <th className="pb-3 font-medium">{t('pages.featuresUsed')}</th>
-                  <th className="pb-3 font-medium">{t('pages.activated')}</th>
+                <tr className="border-b border-divider text-fg-muted">
+                  <th className="pb-3 text-xs font-medium uppercase tracking-wide">{t('pages.school1')}</th>
+                  <th className="pb-3 text-xs font-medium uppercase tracking-wide">{t('pages.healthScore')}</th>
+                  <th className="pb-3 text-xs font-medium uppercase tracking-wide">{t('pages.churnRisk')}</th>
+                  <th className="pb-3 text-xs font-medium uppercase tracking-wide">{t('pages.trend')}</th>
+                  <th className="pb-3 text-xs font-medium uppercase tracking-wide">{t('pages.dAU7d')}</th>
+                  <th className="pb-3 text-xs font-medium uppercase tracking-wide">{t('pages.featuresUsed')}</th>
+                  <th className="pb-3 text-xs font-medium uppercase tracking-wide">{t('pages.activated')}</th>
                 </tr>
               </thead>
               <tbody>
                 {schools.map((school) => (
-                  <tr key={school.schoolId} className="border-b border-gray-100 dark:border-zinc-800">
-                    <td className="py-3 pr-4 font-medium text-gray-900 dark:text-zinc-100">
+                  <tr
+                    key={school.schoolId}
+                    className="border-b border-divider last:border-0"
+                  >
+                    <td className="py-3 pr-4 font-medium text-fg">
                       {school.schoolName || school.schoolId}
                     </td>
                     <td className="py-3 pr-4">
-                      <span className="font-semibold text-gray-900 dark:text-zinc-100">
+                      <span className="font-semibold text-fg">
                         {school.healthScore ?? '—'}
                       </span>
                     </td>
                     <td className="py-3 pr-4">
-                      <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium capitalize ${RISK_BG[school.churnRisk] || 'bg-gray-100 text-gray-500 dark:bg-zinc-800 dark:text-zinc-400'}`}>
-                        {school.churnRisk || '—'}
-                      </span>
+                      {school.churnRisk ? (
+                        <Chip size="sm" color={RISK_CHIP_COLOR[school.churnRisk] || 'neutral'}>
+                          <span className="capitalize">{school.churnRisk}</span>
+                        </Chip>
+                      ) : (
+                        <span className="text-xs text-fg-faint">—</span>
+                      )}
                     </td>
                     <td className="py-3 pr-4">
                       <div className="flex items-center gap-1">
                         {TREND_ICON[school.trend] || TREND_ICON.stable}
-                        <span className="text-xs capitalize text-gray-600 dark:text-zinc-400">{school.trend || '—'}</span>
+                        <span className="text-xs capitalize text-fg-muted">
+                          {school.trend || '—'}
+                        </span>
                       </div>
                     </td>
-                    <td className="py-3 pr-4 text-gray-700 dark:text-zinc-300">{school.dauLast7d ?? '—'}</td>
-                    <td className="py-3 pr-4 text-gray-700 dark:text-zinc-300">{school.featuresUsedCount ?? '—'}</td>
+                    <td className="py-3 pr-4 text-fg">{school.dauLast7d ?? '—'}</td>
+                    <td className="py-3 pr-4 text-fg">{school.featuresUsedCount ?? '—'}</td>
                     <td className="py-3 pr-4">
                       {school.isFullyActivated ? (
-                        <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">{t('pages.yes1')}</span>
+                        <Chip size="sm" color="success">{t('pages.yes1')}</Chip>
                       ) : (
-                        <span className="text-xs text-gray-400 dark:text-zinc-500">No</span>
+                        <span className="text-xs text-fg-faint">No</span>
                       )}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            {schools.length === 0 && (
-              <div className="py-8 text-center text-sm text-gray-400 dark:text-zinc-500">{t('pages.noGrowthDataAvailable')}</div>
-            )}
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

@@ -728,7 +728,7 @@
       "pending": "زیر التواء",
       "approved": "منظور شدہ",
       "rejected": "مسترد شدہ",
-      "needs_revision": "نظرثانی ضروری",
+      "needsRevision": "نظرثانی ضروری",
       "all": "تمام"
     }
   },

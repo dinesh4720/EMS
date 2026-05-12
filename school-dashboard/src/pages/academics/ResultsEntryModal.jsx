@@ -201,16 +201,16 @@ const ResultsEntryModal = ({ examId, onClose }) => {
     return (
       <div className="space-y-4 py-4 px-2">
         <div className="flex items-center gap-3">
-          <div className="h-6 w-48 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-          <div className="h-5 w-20 bg-gray-200 dark:bg-zinc-700 rounded-full animate-pulse" />
+          <div className="h-6 w-48 bg-surface-hover rounded animate-pulse" />
+          <div className="h-5 w-20 bg-surface-hover rounded-full animate-pulse" />
         </div>
-        <div className="h-10 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+        <div className="h-10 bg-surface-hover rounded animate-pulse" />
         <div className="space-y-2">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="flex gap-4 items-center">
-              <div className="h-10 flex-1 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-              <div className="h-10 w-24 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-              <div className="h-10 w-24 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+              <div className="h-10 flex-1 bg-surface-hover rounded animate-pulse" />
+              <div className="h-10 w-24 bg-surface-hover rounded animate-pulse" />
+              <div className="h-10 w-24 bg-surface-hover rounded animate-pulse" />
             </div>
           ))}
         </div>
@@ -221,8 +221,8 @@ const ResultsEntryModal = ({ examId, onClose }) => {
   if (!exam) {
     return (
       <div className="text-center py-12">
-        <FileText size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-        <p className="text-gray-500 dark:text-zinc-400">{t('pages.examNotFound')}</p>
+        <FileText size={40} className="mx-auto mb-3 text-fg-faint" />
+        <p className="text-fg-muted">{t('pages.examNotFound')}</p>
         <MinimalButton className="mt-4" onClick={onClose}>{t('pages.close2')}</MinimalButton>
       </div>
     );
@@ -230,15 +230,15 @@ const ResultsEntryModal = ({ examId, onClose }) => {
 
   return (
     <>
-      <ModalHeader className="border-b border-gray-100 dark:border-zinc-800 py-4 px-6">
+      <ModalHeader className="border-b border-divider py-4 px-6">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg">
-              <Award size={20} className="text-gray-600 dark:text-zinc-400" />
+            <div className="p-2 bg-surface-2 rounded-lg">
+              <Award size={20} className="text-fg-muted" />
             </div>
             <div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">Enter Results: {exam.name}</h3>
-              <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal">
+              <h3 className="text-lg font-medium text-fg">Enter Results: {exam.name}</h3>
+              <p className="text-sm text-fg-muted font-normal">
                 {exam.className || exam.classId} - {exam.subjectName} | Max: {exam.maxMarks || 100} | Pass: {exam.passingMarks || 35}
               </p>
             </div>
@@ -258,9 +258,9 @@ const ResultsEntryModal = ({ examId, onClose }) => {
         <div className="space-y-4">
           {/* Stats Summary */}
           <div className="grid grid-cols-3 gap-4">
-            <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-3 border border-gray-100 dark:border-zinc-800">
-              <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.totalStudents1')}</p>
-              <p className="text-xl font-semibold text-gray-900 dark:text-zinc-100">{students.length}</p>
+            <div className="bg-surface-2 rounded-lg p-3 border border-divider">
+              <p className="text-xs text-fg-muted">{t('pages.totalStudents1')}</p>
+              <p className="text-xl font-semibold text-fg">{students.length}</p>
             </div>
             <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-3 border border-blue-100 dark:border-blue-800">
               <p className="text-xs text-blue-600 dark:text-blue-400">{t('pages.resultsEntered')}</p>
@@ -278,35 +278,35 @@ const ResultsEntryModal = ({ examId, onClose }) => {
               placeholder={t('pages.searchStudents')}
               value={searchQuery}
               onValueChange={setSearchQuery}
-              startContent={<Search size={16} className="text-gray-400 dark:text-zinc-500" />}
+              startContent={<Search size={16} className="text-fg-faint" />}
               className="max-w-xs"
               classNames={{
-                inputWrapper: 'border-gray-200 hover:border-gray-300 dark:border-zinc-800 dark:hover:border-zinc-700'
+                inputWrapper: 'border-border-token hover:border-fg-faint'
               }}
             />
           )}
 
           {/* Results Table */}
-          <div className="border border-gray-100 dark:border-zinc-800 rounded-lg overflow-hidden">
+          <div className="gradebook">
             {students.length === 0 ? (
               <div className="text-center py-12">
-                <Users size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-                <p className="text-gray-500 dark:text-zinc-400">{t('pages.noStudentsFoundInThisClass')}</p>
+                <Users size={40} className="mx-auto mb-3 text-fg-faint" />
+                <p className="text-fg-muted">{t('pages.noStudentsFoundInThisClass')}</p>
               </div>
             ) : (
               <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-zinc-900">
+                <thead className="gradebook__head">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">{t('pages.student')}</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">{t('pages.rollNo1')}</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Absent</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase w-28">{t('pages.marks')}</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">{t('pages.grade2')}</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">{t('pages.status2')}</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">{t('pages.remarks')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-fg-muted uppercase">{t('pages.student')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-fg-muted uppercase">{t('pages.rollNo1')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-fg-muted uppercase">Absent</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-fg-muted uppercase w-28">{t('pages.marks')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-fg-muted uppercase">{t('pages.grade2')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-fg-muted uppercase">{t('pages.status2')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-fg-muted uppercase">{t('pages.remarks')}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-zinc-800">
+                <tbody>
                   {filteredStudents.map((student) => {
                     const studentId = student.id || student._id;
                     const isAbsent = results[studentId]?.status === 'absent';
@@ -315,19 +315,19 @@ const ResultsEntryModal = ({ examId, onClose }) => {
                     const status = getStatus(studentId, marks);
 
                     return (
-                      <tr key={studentId} className="hover:bg-gray-50 dark:hover:bg-zinc-900">
+                      <tr key={studentId} className="gradebook__row hover:bg-surface-hover">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
-                              <span className="text-sm font-medium text-gray-600 dark:text-zinc-400">
+                            <div className="w-8 h-8 rounded-full bg-surface-2 flex items-center justify-center">
+                              <span className="text-sm font-medium text-fg-muted">
                                 {student.name?.charAt(0)?.toUpperCase() || 'S'}
                               </span>
                             </div>
-                            <span className="font-medium text-gray-900 dark:text-zinc-100">{student.name}</span>
+                            <span className="font-medium text-fg">{student.name}</span>
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className="text-sm text-gray-600 dark:text-zinc-400">{student.rollNo || studentId}</span>
+                          <span className="text-sm text-fg-muted">{student.rollNo || studentId}</span>
                         </td>
                         <td className="px-4 py-3">
                           <Checkbox
@@ -344,7 +344,7 @@ const ResultsEntryModal = ({ examId, onClose }) => {
                             min={0}
                             max={exam.maxMarks || 100}
                             disabled={isAbsent}
-                            className={`w-20 px-3 py-2 bg-gray-50 dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 focus:border-green-500 dark:focus:border-green-400 focus:ring-2 focus:ring-green-100 dark:focus:ring-green-900 outline-none text-sm dark:text-zinc-100 ${isAbsent ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`gradebook__cell-input ${isAbsent ? 'opacity-50 cursor-not-allowed' : ''}`}
                             placeholder={t('academics.marksInputPlaceholder')}
                           />
                         </td>
@@ -371,7 +371,7 @@ const ResultsEntryModal = ({ examId, onClose }) => {
                               {status}
                             </Chip>
                           ) : (
-                            <span className="text-sm text-gray-400 dark:text-zinc-500">-</span>
+                            <span className="text-sm text-fg-faint">-</span>
                           )}
                         </td>
                         <td className="px-4 py-3">
@@ -380,7 +380,7 @@ const ResultsEntryModal = ({ examId, onClose }) => {
                             value={results[studentId]?.remarks || ''}
                             onChange={(e) => handleRemarksChange(studentId, e.target.value)}
                             placeholder={t('pages.addRemarks')}
-                            className="w-32 px-3 py-2 bg-gray-50 dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700 focus:border-gray-400 dark:focus:border-zinc-500 focus:ring-2 focus:ring-gray-100 dark:focus:ring-zinc-800 outline-none text-sm dark:text-zinc-100"
+                            className="gradebook__cell-input w-32"
                           />
                         </td>
                       </tr>
@@ -392,10 +392,10 @@ const ResultsEntryModal = ({ examId, onClose }) => {
           </div>
 
           {/* Footer Actions */}
-          <div className="flex justify-between items-center pt-4 border-t border-gray-100 dark:border-zinc-800">
+          <div className="flex justify-between items-center pt-4 border-t border-divider">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors"
+              className="px-4 py-2 text-fg-muted hover:text-fg transition-colors"
             >
               Cancel
             </button>

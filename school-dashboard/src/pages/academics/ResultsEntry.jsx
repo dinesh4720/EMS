@@ -22,7 +22,7 @@ import {
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { FileText, Users, ArrowLeft, Save, AlertCircle, Award, CheckCircle2, Search, UserX, GraduationCap } from 'lucide-react';
 import { examsApi, resultsApi, classesApi } from '../../services/api';
-import { MinimalButton, Input as DSInput, StatCard, ErrorState, EmptyState } from '../../components/ui';
+import { MinimalButton, InlineEdit, StatCard, ErrorState, EmptyState } from '../../components/ui';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { calculateGrade as calculateGradeUtil } from '../../utils/grading';
@@ -41,7 +41,7 @@ const ResultsTable = ({
   handleRemarksChange,
   t
 }) => (
-  <Card shadow="none" className="border border-gray-100 dark:border-zinc-800 dark:bg-zinc-950">
+  <Card shadow="none" className="gradebook">
     <CardBody className="p-0">
       {students.length === 0 ? (
         <EmptyState
@@ -51,7 +51,7 @@ const ResultsTable = ({
         />
       ) : (
         <Table aria-label={t('aria.tables.resultsEntry')} removeWrapper>
-          <TableHeader>
+          <TableHeader className="gradebook__head">
             <TableColumn scope="col">{t('pages.sTUDENT')}</TableColumn>
             <TableColumn scope="col">{t('pages.rOLLNo')}</TableColumn>
             <TableColumn scope="col">ABSENT</TableColumn>
@@ -69,19 +69,19 @@ const ResultsTable = ({
               const status = getStatus(studentId, marks);
 
               return (
-                <TableRow key={studentId} className="hover:bg-gray-50 dark:hover:bg-zinc-900">
+                <TableRow key={studentId} className="gradebook__row hover:bg-surface-hover">
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
-                        <span className="text-sm font-medium text-gray-600 dark:text-zinc-400">
+                      <div className="w-8 h-8 rounded-full bg-surface-2 flex items-center justify-center">
+                        <span className="text-sm font-medium text-fg-muted">
                           {student.name?.charAt(0)?.toUpperCase() || 'S'}
                         </span>
                       </div>
-                      <span className="font-medium text-gray-900 dark:text-zinc-100">{student.name}</span>
+                      <span className="font-medium text-fg">{student.name}</span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className="text-sm text-gray-600 dark:text-zinc-400">{student.rollNo || studentId}</span>
+                    <span className="text-sm text-fg-muted">{student.rollNo || studentId}</span>
                   </TableCell>
                   <TableCell>
                     <Checkbox
@@ -91,17 +91,23 @@ const ResultsTable = ({
                     />
                   </TableCell>
                   <TableCell>
-                    <DSInput
-                      size="sm"
+                    <InlineEdit
                       type="number"
+                      numeric
                       value={marks}
-                      onChange={(e) => handleMarksChange(studentId, e.target.value)}
                       min={0}
                       max={exam.maxMarks}
                       disabled={isAbsent}
-                      placeholder={t('academics.marksInputPlaceholder')}
-                      wrapperClassName="w-24"
-                      aria-label={t('pages.mARKS')}
+                      placeholder="0"
+                      width="6rem"
+                      ariaLabel={t('pages.mARKS')}
+                      validate={(val) => {
+                        if (val === '' || Number.isNaN(val)) return 'Required';
+                        if (val < 0) return t('toast.error.marksCannotBeNegative');
+                        if (val > exam.maxMarks) return t('toast.error.marksExceedMaximum', { maxMarks: exam.maxMarks });
+                        return null;
+                      }}
+                      onSave={(val) => handleMarksChange(studentId, String(val))}
                     />
                   </TableCell>
                   <TableCell>
@@ -122,18 +128,17 @@ const ResultsTable = ({
                         {status}
                       </Chip>
                     ) : (
-                      <span className="text-sm text-gray-400 dark:text-zinc-500">-</span>
+                      <span className="text-sm text-fg-faint">-</span>
                     )}
                   </TableCell>
                   <TableCell>
-                    <DSInput
-                      size="sm"
+                    <InlineEdit
                       type="text"
                       value={results[studentId]?.remarks || ''}
-                      onChange={(e) => handleRemarksChange(studentId, e.target.value)}
                       placeholder={t('pages.addRemarks')}
-                      wrapperClassName="w-40"
-                      aria-label={t('pages.rEMARKS')}
+                      width="10rem"
+                      ariaLabel={t('pages.rEMARKS')}
+                      onSave={(val) => handleRemarksChange(studentId, val)}
                     />
                   </TableCell>
                 </TableRow>
@@ -472,7 +477,7 @@ const ResultsEntry = ({ standalone = false }) => {
             onSelectionChange={setSelectedExamId}
             className="max-w-xs"
             classNames={{
-              trigger: 'border-gray-200 hover:border-gray-300 dark:border-zinc-700 dark:hover:border-zinc-600'
+              trigger: 'border-border-token hover:border-fg-faint'
             }}
           >
             {exams.map((exam) => (
@@ -510,15 +515,15 @@ const ResultsEntry = ({ standalone = false }) => {
         {exam && !loadingStudents && (
           <>
             {/* Exam Info */}
-            <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
+            <div className="bg-surface-2 rounded-lg p-4 border border-divider">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-medium text-gray-900 dark:text-zinc-100">{exam.name}</h3>
-                  <p className="text-sm text-gray-500 dark:text-zinc-400">{exam.className || exam.classId} - {exam.subjectName}</p>
+                  <h3 className="font-medium text-fg">{exam.name}</h3>
+                  <p className="text-sm text-fg-muted">{exam.className || exam.classId} - {exam.subjectName}</p>
                 </div>
                 <div className="flex items-center gap-4 text-sm">
-                  <span className="text-gray-500 dark:text-zinc-400">Max: <span className="font-medium text-gray-900 dark:text-zinc-100">{exam.maxMarks}</span></span>
-                  <span className="text-gray-500 dark:text-zinc-400">Pass: <span className="font-medium text-gray-900 dark:text-zinc-100">{exam.passingMarks}</span></span>
+                  <span className="text-fg-muted">Max: <span className="font-medium text-fg">{exam.maxMarks}</span></span>
+                  <span className="text-fg-muted">Pass: <span className="font-medium text-fg">{exam.passingMarks}</span></span>
                 </div>
               </div>
             </div>
@@ -551,10 +556,10 @@ const ResultsEntry = ({ standalone = false }) => {
                 placeholder={t('pages.searchStudents')}
                 value={searchQuery}
                 onValueChange={setSearchQuery}
-                startContent={<Search size={16} className="text-gray-400 dark:text-zinc-500" />}
+                startContent={<Search size={16} className="text-fg-faint" />}
                 className="max-w-xs"
                 classNames={{
-                  inputWrapper: 'border-gray-200 hover:border-gray-300 dark:border-zinc-700 dark:hover:border-zinc-600'
+                  inputWrapper: 'border-border-token hover:border-fg-faint'
                 }}
               />
             )}
@@ -596,21 +601,21 @@ const ResultsEntry = ({ standalone = false }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 rounded-lg">
+      <div className="bg-surface border border-divider rounded-lg">
         <div className="flex items-center justify-between p-6">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigateSafe(`/academics/exams/${examId}`)}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+              className="p-2 rounded-lg hover:bg-surface-2 transition-colors"
             >
-              <ArrowLeft size={20} className="text-gray-500 dark:text-zinc-400" />
+              <ArrowLeft size={20} className="text-fg-muted" />
             </button>
-            <div className="p-3 bg-gray-100 dark:bg-zinc-800 rounded-lg">
-              <Award size={24} className="text-gray-600 dark:text-zinc-400" />
+            <div className="p-3 bg-surface-2 rounded-lg">
+              <Award size={24} className="text-fg-muted" />
             </div>
             <div>
-              <h1 className="text-xl font-medium text-gray-900 dark:text-zinc-100">Enter Results: {exam.name}</h1>
-              <p className="text-sm text-gray-500 dark:text-zinc-400 mt-0.5">
+              <h1 className="text-xl font-medium text-fg">Enter Results: {exam.name}</h1>
+              <p className="text-sm text-fg-muted mt-0.5">
                 {exam.className || exam.classId} - {exam.subjectName} | Max: {exam.maxMarks} | Pass: {exam.passingMarks}
               </p>
             </div>

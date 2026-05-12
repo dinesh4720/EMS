@@ -366,10 +366,10 @@ export default function IntakeFormsSettings() {
   return (
     <div className="max-w-4xl mx-auto pb-10 space-y-8">
       {/* Unified Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-default-200 pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border-token pb-6">
         <div>
-          <h2 className="text-2xl font-bold text-default-900">{t('pages.intakeForms1')}</h2>
-          <p className="text-sm text-default-500 mt-1">{t('pages.createAndManageCustomIntakeFormsForAdmissionsAndApplications')}</p>
+          <h2 className="text-2xl font-bold text-fg">{t('pages.intakeForms1')}</h2>
+          <p className="text-sm text-fg-muted mt-1">{t('pages.createAndManageCustomIntakeFormsForAdmissionsAndApplications')}</p>
         </div>
         <Button color="primary" radius="full" className="shadow-md font-medium px-6" startContent={<Plus size={18} />} onPress={handleOpenTemplateModal}>{t('pages.createForm')}</Button>
       </div>

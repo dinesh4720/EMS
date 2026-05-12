@@ -5,7 +5,7 @@ import { hostelApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
-import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import { ConfirmDialog, EmptyState, ErrorState } from '../../components/ui';
 import { hostelSchema, parseFormSchema } from '../../validators/formSchemas';
 
 const INITIAL_FORM = {
@@ -17,6 +17,7 @@ export default function HostelList() {
   const { t } = useTranslation();
   const [hostels, setHostels] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
@@ -35,17 +36,19 @@ export default function HostelList() {
   const fetchHostels = useCallback(async () => {
     try {
       setIsLoading(true);
+      setLoadError(null);
       const params = {};
       if (search) params.search = search;
       if (typeFilter) params.type = typeFilter;
       const data = await hostelApi.getHostels(params);
       setHostels(data.hostels || []);
-    } catch {
+    } catch (err) {
+      setLoadError(err);
       toast.error(t('toast.error.failedToLoadHostels'));
     } finally {
       setIsLoading(false);
     }
-  }, [search, typeFilter]);
+  }, [search, typeFilter, t]);
 
   useEffect(() => { fetchHostels(); }, [fetchHostels]);
 
@@ -119,6 +122,10 @@ export default function HostelList() {
 
   if (isLoading) return <CardGridPageSkeleton title={false} cards={6} columns="grid-cols-1 md:grid-cols-2 lg:grid-cols-3" />;
 
+  if (loadError) {
+    return <ErrorState error={loadError} onRetry={fetchHostels} />;
+  }
+
   return (
     <div className="space-y-4">
       {/* Filters */}
@@ -126,7 +133,7 @@ export default function HostelList() {
         <div className="flex gap-3 flex-1">
           <Input
             placeholder={t('pages.searchHostels')}
-            startContent={<Search size={16} className="text-gray-400 dark:text-zinc-500" />}
+            startContent={<Search size={16} className="text-fg-faint" />}
             value={searchInput}
             onValueChange={setSearchInput}
             className="max-w-xs"
@@ -151,24 +158,29 @@ export default function HostelList() {
 
       {/* Hostel Cards */}
       {hostels.length === 0 ? (
-        <div className="text-center py-12">
-          <Building2 size={40} className="mx-auto text-gray-400 dark:text-zinc-500 mb-3" />
-          <p className="text-gray-500 dark:text-zinc-400">{t('pages.noHostelsFound')}</p>
-        </div>
+        <EmptyState
+          icon={Building2}
+          title={t('pages.noHostelsFound')}
+          action={
+            <Button color="primary" size="sm" startContent={<Plus size={14} />} onPress={handleAdd}>
+              Add Hostel
+            </Button>
+          }
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {hostels.map((hostel) => (
-            <div key={hostel._id} className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 p-5 hover:shadow-md transition-shadow">
+            <div key={hostel._id} className="bg-surface rounded-lg border border-border-token p-5 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-zinc-100">{hostel.name}</h3>
+                  <h3 className="font-semibold text-fg">{hostel.name}</h3>
                   <Chip size="sm" color={typeColors[hostel.type]} variant="flat" className="mt-1 capitalize">
                     {hostel.type}
                   </Chip>
                 </div>
                 <div className="flex gap-1">
                   <Button isIconOnly size="sm" variant="light" aria-label="Edit hostel" onPress={() => handleEdit(hostel)}>
-                    <Edit2 size={14} className="text-gray-500 dark:text-zinc-400" />
+                    <Edit2 size={14} className="text-fg-muted" />
                   </Button>
                   <Button isIconOnly size="sm" variant="light" aria-label="Delete hostel" onPress={() => setDeleteTarget(hostel._id)}>
                     <Trash2 size={14} className="text-red-500" />
@@ -177,16 +189,16 @@ export default function HostelList() {
               </div>
 
               <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2 text-gray-600 dark:text-zinc-400">
+                <div className="flex items-center gap-2 text-fg-muted">
                   <DoorOpen size={14} />
                   <span>{hostel.totalRooms || 0} rooms</span>
                 </div>
-                <div className="flex items-center gap-2 text-gray-600 dark:text-zinc-400">
+                <div className="flex items-center gap-2 text-fg-muted">
                   <Users size={14} />
                   <span>{hostel.occupiedBeds || 0} / {hostel.totalCapacity || 0} beds occupied</span>
                 </div>
                 {hostel.wardenName && (
-                  <p className="text-gray-500 dark:text-zinc-400">Warden: {hostel.wardenName}</p>
+                  <p className="text-fg-muted">Warden: {hostel.wardenName}</p>
                 )}
               </div>
             </div>
@@ -208,7 +220,7 @@ export default function HostelList() {
       {/* Add/Edit Hostel Modal */}
       <Modal isOpen={isOpen} onClose={handleClose} size="2xl" scrollBehavior="inside">
         <ModalContent>
-          <ModalHeader className="text-gray-900 dark:text-zinc-100">
+          <ModalHeader className="text-fg">
             {editingId ? "Edit Hostel" : "Add Hostel"}
           </ModalHeader>
           <ModalBody className="gap-4">

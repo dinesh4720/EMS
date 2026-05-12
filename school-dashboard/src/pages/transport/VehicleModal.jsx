@@ -83,6 +83,7 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
 
     setSaving(true);
     try {
+      const capNum = form.capacity ? Number(form.capacity) : NaN;
       const payload = {
         registrationNumber: form.registrationNumber.trim(),
         make: form.make.trim() || undefined,
@@ -174,7 +175,7 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
 
           {/* Driver */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-3">{t('pages.driverDetails')}</h3>
+            <h3 className="text-sm font-semibold text-fg mb-3">{t('pages.driverDetails')}</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input label={t('pages.driverName')} value={form.driver.name} onValueChange={(v) => updateDriver("name", v)} />
               <Input label={t('pages.phone1')} value={form.driver.phone} onValueChange={(v) => updateDriver("phone", v)} />
@@ -187,7 +188,7 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
 
           {/* Conductor */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-3">{t('pages.conductorDetails')}</h3>
+            <h3 className="text-sm font-semibold text-fg mb-3">{t('pages.conductorDetails')}</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input label={t('pages.conductorName')} value={form.conductor.name} onValueChange={(v) => updateConductor("name", v)} />
               <Input label={t('pages.phone1')} value={form.conductor.phone} onValueChange={(v) => updateConductor("phone", v)} />

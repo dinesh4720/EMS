@@ -487,7 +487,7 @@ const StudentAttendance = memo(function StudentAttendance() {
                     th: "bg-transparent text-default-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200 last:pr-6 first:hover:bg-transparent first:cursor-default",
                     td: "py-5 border-b border-default-200 group-data-[last=true]:border-none last:pr-6 transition-colors",
                     tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-12 [&>tr:first-child>td]:pt-5 [&>tr[data-selected=true]>td]:bg-primary-50",
-                    tr: "transition-colors hover:bg-gray-50 dark:hover:bg-zinc-800/50 data-[selected=true]:bg-primary-50",
+                    tr: "transition-colors hover:bg-surface-2/50 data-[selected=true]:bg-primary-50",
                 }}
             >
                 <TableHeader>

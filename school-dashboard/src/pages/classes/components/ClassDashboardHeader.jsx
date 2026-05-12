@@ -1,9 +1,9 @@
 import {
-  Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem,
+  Dropdown, DropdownTrigger, DropdownMenu, DropdownItem,
 } from "@heroui/react";
 import {
-  MessageSquare, Users, AlertCircle,
-  Download, MoreVertical, Send, Clock, GraduationCap,
+  MessageSquare, AlertCircle,
+  Download, MoreVertical, Send, Clock, GraduationCap, Settings as SettingsIcon,
 } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 
@@ -16,82 +16,108 @@ export function ClassDashboardHeader({
   handleSendNotice,
   setActiveTab,
   setIsAssignTeacherModalOpen,
+  openSettings,
 }) {
   const { t } = useTranslation();
 
+  const initials = `${(cls?.name || '').replace(/Class\s*/i, '').trim() || 'C'}${cls?.section || ''}`;
+  const hasTeacher = Boolean(cls?.classTeacherId);
+
   return (
-    <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-100 dark:border-zinc-800 p-5">
-      {/* Top row: class info + actions */}
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-5">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-xl bg-gray-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0">
-            <span className="text-lg font-bold text-gray-600 dark:text-zinc-400">
-              {cls?.name?.replace("Class ", "")}{cls?.section}
-            </span>
+    <>
+      {/* Hero — class identity + actions */}
+      <div className="class-dashboard__hero">
+        <div className="class-dashboard__hero-main">
+          <div className="class-dashboard__hero-avatar" aria-hidden>
+            {initials}
           </div>
-          <div>
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">
-              {cls?.name || 'N/A'} - {t('classes.section', 'Section')} {cls?.section || 'N/A'}
+          <div className="class-dashboard__hero-info">
+            <h1 className="class-dashboard__hero-name">
+              {cls?.name || 'N/A'} · {t('classes.section', 'Section')} {cls?.section || 'N/A'}
             </h1>
-            <div className="flex items-center gap-2 mt-1 text-sm text-gray-500 dark:text-zinc-400 flex-wrap">
-              <span>{studentCount ?? cls?.studentCount ?? 0} {t('classes.students', 'Students')}</span>
-              <span className="text-gray-300 dark:text-zinc-600">·</span>
-              <span>{cls?.strengthLimit?.current || 40} {t('classes.capacity', 'Capacity')}</span>
-              {cls?.room && (<><span className="text-gray-300 dark:text-zinc-600">·</span><span>{t('classes.room', 'Room')} {cls.room}</span></>)}
+            <div className="row gap-2 subtle" style={{ fontSize: 13, flexWrap: 'wrap' }}>
+              <span className="mono tnum">
+                {studentCount ?? cls?.studentCount ?? 0}/{cls?.strengthLimit?.current || 40}
+              </span>
+              <span>{t('classes.students', 'Students')}</span>
+              {cls?.room && (
+                <>
+                  <span>·</span>
+                  <span>{t('classes.room', 'Room')} {cls.room}</span>
+                </>
+              )}
             </div>
-            {cls?.classTeacherId ? (
-              <div className="flex items-center gap-2 mt-1.5">
-                <Users size={12} className="text-gray-400 dark:text-zinc-500" />
-                <span
-                  className="text-xs text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300 cursor-pointer"
-                  onClick={() => navigate(`/staffs/${cls.classTeacherId}`)}
-                >
-                  {cls?.teacher || t('classes.classTeacher', 'Class Teacher')}
+
+            <div className="class-dashboard__hero-meta">
+              {hasTeacher ? (
+                <span className="status status--ok">
+                  <span className="dot" />
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/staffs/${cls.classTeacherId}`)}
+                    style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', cursor: 'pointer', font: 'inherit' }}
+                  >
+                    {cls?.teacher || t('classes.classTeacher', 'Class Teacher')}
+                  </button>
                 </span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 mt-1.5">
-                <AlertCircle size={12} className="text-amber-500" />
-                <span className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.noClassTeacherAssigned')}</span>
-                <button onClick={() => setIsAssignTeacherModalOpen(true)} className="text-xs font-medium text-blue-600 hover:text-blue-800 underline">
-                  {t('classes.assign', 'Assign')}
-                </button>
-              </div>
-            )}
+              ) : (
+                <span className="status status--warn">
+                  <AlertCircle size={11} />
+                  <button
+                    type="button"
+                    onClick={() => setIsAssignTeacherModalOpen(true)}
+                    style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', cursor: 'pointer', font: 'inherit', textDecoration: 'underline' }}
+                  >
+                    {t('classes.assignTeacher', 'Assign teacher')}
+                  </button>
+                </span>
+              )}
+              {cls?.code && <span className="chip mono tnum">{cls.code}</span>}
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <Button size="sm" variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300" startContent={<MessageSquare size={14} />}
-            onPress={() => navigate('/messaging')}>{t('pages.message1')}</Button>
-          <Dropdown>
+        <div className="class-dashboard__hero-actions">
+          <button type="button" className="btn" onClick={() => navigate('/messaging')}>
+            <MessageSquare size={13} aria-hidden /> {t('pages.message1', 'Message')}
+          </button>
+          <button type="button" className="btn" onClick={openSettings}>
+            <SettingsIcon size={13} aria-hidden /> {t('common.settings', 'Settings')}
+          </button>
+          <Dropdown placement="bottom-end">
             <DropdownTrigger>
-              <Button isIconOnly size="sm" variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400"><MoreVertical size={16} /></Button>
+              <button type="button" className="iconbtn" style={{ width: 32, height: 32 }} aria-label="More actions">
+                <MoreVertical size={16} />
+              </button>
             </DropdownTrigger>
-            <DropdownMenu className="min-w-[180px]">
-              <DropdownItem key="export" startContent={<Download size={14} className="text-gray-400" />} onPress={handleExportReport}>{t('pages.exportReport')}</DropdownItem>
-              <DropdownItem key="notice" startContent={<Send size={14} className="text-gray-400" />} onPress={handleSendNotice}>{t('pages.sendNotice')}</DropdownItem>
-              <DropdownItem key="timetable" startContent={<Clock size={14} className="text-gray-400" />} onPress={() => setActiveTab("timetable")}>{t('pages.viewTimetable')}</DropdownItem>
-              <DropdownItem key="settings" startContent={<GraduationCap size={14} className="text-gray-400" />} onPress={() => setActiveTab("settings")}>{t('common.settings', 'Settings')}</DropdownItem>
+            <DropdownMenu aria-label="Class admin actions" className="min-w-[180px]">
+              <DropdownItem key="export" startContent={<Download size={14} aria-hidden />} onPress={handleExportReport}>
+                {t('pages.exportReport', 'Export report')}
+              </DropdownItem>
+              <DropdownItem key="notice" startContent={<Send size={14} aria-hidden />} onPress={handleSendNotice}>
+                {t('pages.sendNotice', 'Send notice')}
+              </DropdownItem>
+              <DropdownItem key="timetable" startContent={<Clock size={14} aria-hidden />} onPress={() => setActiveTab('timetable')}>
+                {t('pages.viewTimetable', 'View timetable')}
+              </DropdownItem>
+              <DropdownItem key="settings" startContent={<GraduationCap size={14} aria-hidden />} onPress={openSettings}>
+                {t('common.settings', 'Settings')}
+              </DropdownItem>
             </DropdownMenu>
           </Dropdown>
         </div>
       </div>
 
-      {/* KPI stat cards row — always visible */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* Metric strip — dp-metric atoms; mono tnum so values align */}
+      <div className="class-dashboard__metrics">
         {headerStats.map((stat) => (
-          <div key={stat.label} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800">
-            <div className={`w-9 h-9 rounded-lg bg-white dark:bg-zinc-800 flex items-center justify-center flex-shrink-0`}>
-              <stat.icon size={16} className={stat.color} />
-            </div>
-            <div className="min-w-0">
-              <p className="text-lg font-semibold text-gray-900 dark:text-zinc-100 leading-tight">{stat.value}</p>
-              <p className="text-[11px] text-gray-500 dark:text-zinc-400 truncate">{stat.subtext}</p>
-            </div>
+          <div className="dp-metric" key={stat.label}>
+            <span className="dp-metric__label">{stat.label}</span>
+            <span className="dp-metric__value mono tnum">{stat.value}</span>
+            {stat.subtext && <span className="dp-metric__sub subtle">{stat.subtext}</span>}
           </div>
         ))}
       </div>
-    </div>
+    </>
   );
 }

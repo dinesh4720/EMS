@@ -1,8 +1,8 @@
 import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  Button, Spinner, Textarea
+  Spinner, Textarea
 } from "@heroui/react";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, AlertTriangle } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 
 export default function ReversePaymentModal({
@@ -16,26 +16,33 @@ export default function ReversePaymentModal({
   const { t } = useTranslation();
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="md">
+    <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="md" className="payroll-modal">
       <ModalContent>
-        <ModalHeader className="flex gap-3">
-          <div className="p-2 bg-warning-100 rounded-lg">
-            <RotateCcw className="text-warning-600" size={24} />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold">{t('pages.reversePayment1')}</h3>
-            <p className="text-sm text-default-500">{t('pages.unlockAndResetPaymentStatus')}</p>
+        <ModalHeader>
+          <div className="payroll-modal__head">
+            <div className="payroll-modal__icon payroll-modal__icon--danger">
+              <RotateCcw size={18} aria-hidden />
+            </div>
+            <div>
+              <h3 className="payroll-modal__title">{t('pages.reversePayment1')}</h3>
+              <p className="payroll-modal__sub">
+                {t('pages.unlockAndResetPaymentStatus')}
+              </p>
+            </div>
           </div>
         </ModalHeader>
         <ModalBody>
-          <div className="space-y-4">
-            <div className="bg-warning-50 rounded-lg p-4 border border-warning-200">
-              <p className="text-sm text-warning-800">
-                <strong>{t('pages.warning')}</strong> This will unlock the record and reset its status to "Generated". You will need to log the payment again.
-              </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div className="payroll-modal__note payroll-modal__note--danger">
+              <AlertTriangle size={14} aria-hidden style={{ flexShrink: 0, marginTop: 1 }} />
+              <span>
+                <strong>{t('pages.warning')}</strong> This unlocks the record and resets its
+                status to <span className="chip chip--info">Generated</span>. You will need
+                to log the payment again. The reversal is captured in the audit trail.
+              </span>
             </div>
             <Textarea
-              label="Reason for Reversal *"
+              label="Reason for reversal *"
               placeholder={t('pages.pleaseExplainWhyThisPaymentIsBeingReversed')}
               value={reverseReason}
               onValueChange={setReverseReason}
@@ -46,12 +53,22 @@ export default function ReversePaymentModal({
           </div>
         </ModalBody>
         <ModalFooter>
-          <Button variant="light" onPress={() => onOpenChange(false)}>
+          <button
+            type="button"
+            className="btn btn--ghost"
+            onClick={() => onOpenChange(false)}
+          >
             Cancel
-          </Button>
-          <Button color="warning" onPress={onConfirm} isDisabled={reversing || !reverseReason.trim()}>
-            {reversing ? <Spinner size="sm" color="white" /> : 'Confirm Reversal'}
-          </Button>
+          </button>
+          <button
+            type="button"
+            className="btn btn--accent"
+            onClick={onConfirm}
+            disabled={reversing || !reverseReason.trim()}
+            style={{ background: 'var(--danger)', borderColor: 'var(--danger)' }}
+          >
+            {reversing ? <Spinner size="sm" color="white" /> : 'Confirm reversal'}
+          </button>
         </ModalFooter>
       </ModalContent>
     </Modal>

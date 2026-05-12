@@ -303,6 +303,7 @@ const AppointmentsList = forwardRef(({ onSave, ...props }, ref) => {
           New Appointment
         </Button>
       </div>
+      <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
       <Table aria-label={t('aria.tables.appointments')} removeWrapper>
         <TableHeader>
           <TableColumn scope="col">{t('pages.vISITORName')}</TableColumn>
@@ -364,6 +365,7 @@ const AppointmentsList = forwardRef(({ onSave, ...props }, ref) => {
           )}
         </TableBody>
       </Table>
+      </div>
 
       <Modal isOpen={isOpen} onClose={onClose} size="2xl">
         <ModalContent>

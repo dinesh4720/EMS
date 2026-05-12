@@ -241,6 +241,7 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
           Log New Call
         </Button>
       </div>
+      <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
       <Table aria-label={t('aria.tables.callLogs')} removeWrapper>
         <TableHeader>
           <TableColumn scope="col">{t('pages.cALLERName')}</TableColumn>
@@ -311,6 +312,7 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
           )}
         </TableBody>
       </Table>
+      </div>
 
       {/* Add/Edit Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">

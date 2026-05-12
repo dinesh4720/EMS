@@ -1,6 +1,6 @@
 import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  Button, Spinner
+  Spinner
 } from "@heroui/react";
 import { AlertTriangle } from "lucide-react";
 import { useTranslation } from 'react-i18next';
@@ -14,29 +14,45 @@ export default function FixSalariesModal({
   const { t } = useTranslation();
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="md">
+    <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="md" className="payroll-modal">
       <ModalContent>
-        <ModalHeader className="flex gap-3">
-          <div className="p-2 bg-warning-100 rounded-lg">
-            <AlertTriangle className="text-warning-600" size={24} />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold">{t('pages.fixSalaries1')}</h3>
-            <p className="text-sm text-default-500">{t('confirm.setDefaultSalary')}</p>
+        <ModalHeader>
+          <div className="payroll-modal__head">
+            <div className="payroll-modal__icon payroll-modal__icon--warn">
+              <AlertTriangle size={18} aria-hidden />
+            </div>
+            <div>
+              <h3 className="payroll-modal__title">{t('pages.fixSalaries1')}</h3>
+              <p className="payroll-modal__sub">{t('confirm.setDefaultSalary')}</p>
+            </div>
           </div>
         </ModalHeader>
         <ModalBody>
-          <div className="bg-warning-50 rounded-lg p-4 border border-warning-200">
-            <p className="text-sm text-warning-800">
-              This will set default salary values for staff members who do not have salary information configured.
-            </p>
+          <div className="payroll-modal__note payroll-modal__note--warn">
+            <AlertTriangle size={14} aria-hidden style={{ flexShrink: 0, marginTop: 1 }} />
+            <span>
+              This will set default salary values for staff members who do not have
+              salary information configured. Existing salaries are not changed.
+            </span>
           </div>
         </ModalBody>
         <ModalFooter>
-          <Button variant="light" onPress={() => onOpenChange(false)}>Cancel</Button>
-          <Button color="warning" onPress={onConfirm} isDisabled={fixingSalaries}>
-            {fixingSalaries ? <Spinner size="sm" color="white" /> : 'Confirm Fix Salaries'}
-          </Button>
+          <button
+            type="button"
+            className="btn btn--ghost"
+            onClick={() => onOpenChange(false)}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="btn btn--accent"
+            onClick={onConfirm}
+            disabled={fixingSalaries}
+            style={{ background: 'var(--warn)', borderColor: 'var(--warn)' }}
+          >
+            {fixingSalaries ? <Spinner size="sm" color="white" /> : 'Confirm fix'}
+          </button>
         </ModalFooter>
       </ModalContent>
     </Modal>

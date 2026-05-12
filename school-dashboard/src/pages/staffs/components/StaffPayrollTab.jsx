@@ -129,18 +129,18 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:
       <div className="bg-white rounded-lg border border-gray-200 p-5 dark:bg-zinc-950 dark:border-zinc-800">
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.salaryOverview')}</h3>
+            <h3 className="text-sm font-semibold text-fg">{t('pages.salaryOverview')}</h3>
             <p className="text-xs text-gray-500 mt-0.5 dark:text-zinc-400">{currentMonth}</p>
           </div>
           <div className="text-right">
-            <p className="text-3xl font-bold text-gray-900 dark:text-zinc-100">{fmt(netSalary)}</p>
-            <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.netSalary')}</p>
+            <p className="text-3xl font-bold text-fg">{fmt(netSalary)}</p>
+            <p className="text-xs text-fg-muted">{t('pages.netSalary')}</p>
           </div>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-gray-100 dark:divide-zinc-800">
+        <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-divider">
           {summaryCards.map((card) => (
             <div key={card.label} className="p-4 text-center first:pt-0 sm:first:pt-4 last:pb-0 sm:last:pb-4">
-              <p className="text-xs text-gray-500 dark:text-zinc-400">{card.label}</p>
+              <p className="text-xs text-fg-muted">{card.label}</p>
               <p className="text-lg font-bold text-gray-900 mt-1 dark:text-zinc-100">{card.value}</p>
             </div>
           ))}
@@ -151,7 +151,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden dark:bg-zinc-950 dark:border-zinc-800">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between dark:border-zinc-800">
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.payrollHistory')}</h3>
+            <h3 className="text-sm font-semibold text-fg">{t('pages.payrollHistory')}</h3>
             <p className="text-xs text-gray-500 mt-0.5 dark:text-zinc-400">{payrollHistory?.length || 0} transactions</p>
           </div>
           <Button size="sm" variant="bordered" className="border-gray-200 text-gray-700 dark:border-zinc-700 dark:text-zinc-300" startContent={<Download size={14} />} onPress={() => generatePayslipPDF(payrollHistory?.[0] || {})}>
@@ -174,23 +174,23 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:
                 <div key={record._id || record.id || i} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 transition-colors dark:hover:bg-zinc-800/50">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center dark:bg-zinc-800">
-                      <CheckCircle2 size={14} className="text-gray-500 dark:text-zinc-400" />
+                      <CheckCircle2 size={14} className="text-fg-muted" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{monthLabel}</p>
-                      <p className="text-xs text-gray-500 dark:text-zinc-400">{dateLabel}</p>
+                      <p className="text-sm font-medium text-fg">{monthLabel}</p>
+                      <p className="text-xs text-fg-muted">{dateLabel}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <p className="text-sm font-bold text-gray-900 dark:text-zinc-100">{fmt(net)}</p>
+                      <p className="text-sm font-bold text-fg">{fmt(net)}</p>
                       <span className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400">{record.status || 'Paid'}</span>
                     </div>
                     <button
                       className="p-2 hover:bg-gray-100 rounded-lg dark:hover:bg-zinc-700"
                       onClick={() => generatePayslipPDF({ ...record, month: monthLabel, netSalary: net })}
                     >
-                      <Download size={14} className="text-gray-400 dark:text-zinc-500" />
+                      <Download size={14} className="text-fg-faint" />
                     </button>
                   </div>
                 </div>
@@ -200,7 +200,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:
         ) : (
           <div className="px-5 py-8 text-center">
             <IndianRupee size={24} className="mx-auto text-gray-200 mb-2 dark:text-zinc-600" />
-            <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.noPayrollRecordsFound')}</p>
+            <p className="text-sm text-fg-muted">{t('pages.noPayrollRecordsFound')}</p>
           </div>
         )}
       </div>
@@ -217,64 +217,64 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Earnings */}
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden dark:bg-zinc-950 dark:border-zinc-800">
-            <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
+            <div className="p-5 border-b border-border-token">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center dark:bg-zinc-800"><TrendingUp size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+                <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center dark:bg-zinc-800"><TrendingUp size={16} className="text-fg-muted" /></div>
                 <h3 className="font-medium text-gray-900 text-sm dark:text-zinc-100">{t('pages.earnings')}</h3>
               </div>
             </div>
             <div className="p-5 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.basicSalary')}</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{fmt(safeSalary.basic || 0)}</span>
+                <span className="text-sm text-fg-muted">{t('pages.basicSalary')}</span>
+                <span className="text-sm font-medium text-fg">{fmt(safeSalary.basic || 0)}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.hRA')}</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{fmt(safeSalary.hra || 0)}</span>
+                <span className="text-sm text-fg-muted">{t('pages.hRA')}</span>
+                <span className="text-sm font-medium text-fg">{fmt(safeSalary.hra || 0)}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500 dark:text-zinc-400">DA</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{fmt(safeSalary.da || 0)}</span>
+                <span className="text-sm text-fg-muted">DA</span>
+                <span className="text-sm font-medium text-fg">{fmt(safeSalary.da || 0)}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.specialAllowance')}</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{fmt(safeSalary.specialAllowance || 0)}</span>
+                <span className="text-sm text-fg-muted">{t('pages.specialAllowance')}</span>
+                <span className="text-sm font-medium text-fg">{fmt(safeSalary.specialAllowance || 0)}</span>
               </div>
-              <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-zinc-800">
-                <span className="text-sm font-semibold text-gray-700 dark:text-zinc-300">{t('pages.totalEarnings')}</span>
-                <span className="text-sm font-bold text-gray-900 dark:text-zinc-100">{fmt(totalEarnings)}</span>
+              <div className="flex items-center justify-between pt-3 border-t border-divider">
+                <span className="text-sm font-semibold text-fg">{t('pages.totalEarnings')}</span>
+                <span className="text-sm font-bold text-fg">{fmt(totalEarnings)}</span>
               </div>
             </div>
           </div>
 
           {/* Deductions */}
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden dark:bg-zinc-950 dark:border-zinc-800">
-            <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
+            <div className="p-5 border-b border-border-token">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center dark:bg-zinc-800"><IndianRupee size={16} className="text-gray-600 dark:text-zinc-400" /></div>
+                <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center dark:bg-zinc-800"><IndianRupee size={16} className="text-fg-muted" /></div>
                 <h3 className="font-medium text-gray-900 text-sm dark:text-zinc-100">{t('pages.deductions')}</h3>
               </div>
             </div>
             <div className="p-5 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500 dark:text-zinc-400">PF</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{fmt(safeSalary.pf || 0)}</span>
+                <span className="text-sm text-fg-muted">PF</span>
+                <span className="text-sm font-medium text-fg">{fmt(safeSalary.pf || 0)}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.eSI')}</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{fmt(safeSalary.esi || 0)}</span>
+                <span className="text-sm text-fg-muted">{t('pages.eSI')}</span>
+                <span className="text-sm font-medium text-fg">{fmt(safeSalary.esi || 0)}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.professionalTax')}</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{fmt(safeSalary.professionalTax || 0)}</span>
+                <span className="text-sm text-fg-muted">{t('pages.professionalTax')}</span>
+                <span className="text-sm font-medium text-fg">{fmt(safeSalary.professionalTax || 0)}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.tDS')}</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{fmt(safeSalary.tds || 0)}</span>
+                <span className="text-sm text-fg-muted">{t('pages.tDS')}</span>
+                <span className="text-sm font-medium text-fg">{fmt(safeSalary.tds || 0)}</span>
               </div>
-              <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-zinc-800">
-                <span className="text-sm font-semibold text-gray-700 dark:text-zinc-300">{t('pages.totalDeductions')}</span>
-                <span className="text-sm font-bold text-gray-900 dark:text-zinc-100">{fmt(totalDeductions)}</span>
+              <div className="flex items-center justify-between pt-3 border-t border-divider">
+                <span className="text-sm font-semibold text-fg">{t('pages.totalDeductions')}</span>
+                <span className="text-sm font-bold text-fg">{fmt(totalDeductions)}</span>
               </div>
             </div>
           </div>

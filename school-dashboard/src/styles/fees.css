@@ -1,0 +1,288 @@
+/* Phase 7 — Fees page chrome
+ * KPI strip + payments table + collection sheet specifics.
+ * Frosted overlay base lives in `frosted-overlay.css`.
+ */
+
+.fees-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 24px;
+}
+
+/* ── KPI strip ────────────────────────────────────────────────────────────── */
+.fees-kpi {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.fees-kpi__cell {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border-token);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+  overflow: hidden;
+}
+.fees-kpi__cell::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: transparent;
+  transition: background 120ms ease;
+}
+.fees-kpi__cell:hover {
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+}
+.fees-kpi__cell.is-active {
+  border-color: var(--border-strong);
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+}
+.fees-kpi__cell.is-active::before {
+  background: var(--accent);
+}
+.fees-kpi__cell:disabled,
+.fees-kpi__cell[aria-disabled="true"] {
+  cursor: default;
+}
+.fees-kpi__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.fees-kpi__label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-subtle);
+  font-weight: 500;
+}
+.fees-kpi__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--fg-muted);
+}
+.fees-kpi__icon--ok     { background: var(--ok-bg);     color: var(--ok); }
+.fees-kpi__icon--warn   { background: var(--warn-bg);   color: var(--warn); }
+.fees-kpi__icon--danger { background: var(--danger-bg); color: var(--danger); }
+.fees-kpi__value {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+.fees-kpi__value--ok     { color: var(--ok); }
+.fees-kpi__value--warn   { color: var(--warn); }
+.fees-kpi__value--danger { color: var(--danger); }
+.fees-kpi__sub {
+  font-size: 12px;
+  color: var(--fg-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.fees-kpi__delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.fees-kpi__delta--up { color: var(--ok); background: var(--ok-bg); }
+.fees-kpi__delta--down { color: var(--danger); background: var(--danger-bg); }
+
+/* ── Payments table ────────────────────────────────────────────────────────── */
+.fees-table {
+  background: var(--surface);
+  border: 1px solid var(--border-token);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.fees-table__head,
+.fees-table__row {
+  display: grid;
+  grid-template-columns: 36px 60px 1fr 140px 120px 120px 120px;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 16px;
+}
+.fees-table__head {
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border-token);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-subtle);
+}
+.fees-table__row {
+  border-bottom: 1px solid var(--divider);
+  font-size: 13px;
+  color: var(--fg);
+}
+.fees-table__row:last-child {
+  border-bottom: 0;
+}
+.fees-table__row:hover {
+  background: var(--surface-2);
+}
+.fees-table__row.is-selected {
+  background: var(--accent-bg);
+}
+.fees-table__name {
+  font-weight: 520;
+  color: var(--fg);
+}
+.fees-table__sub {
+  font-size: 11px;
+  color: var(--fg-subtle);
+  margin-top: 1px;
+}
+.fees-table__amount {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.fees-table__action {
+  text-align: right;
+}
+
+/* ── Bulk action chip (when rows selected) ────────────────────────────────── */
+.fees-bulk {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 14px;
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--fg);
+  font-weight: 520;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+}
+.fees-bulk__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--fg-muted);
+}
+.fees-bulk__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--accent-fg);
+  background: var(--accent);
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+}
+.fees-bulk__divider {
+  width: 1px;
+  height: 20px;
+  background: var(--accent-border);
+}
+
+/* ── Empty state inside table ─────────────────────────────────────────────── */
+.fees-table__empty {
+  padding: 64px 24px;
+  text-align: center;
+  color: var(--fg-subtle);
+  font-size: 13px;
+}
+
+/* ── Collection sheet — uses .frosted-overlay base + these specifics ──────── */
+.fees-overlay__hero {
+  padding: 20px 24px 12px;
+  border-bottom: 1px solid var(--divider);
+}
+.fees-overlay__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--fg);
+  margin: 0;
+}
+.fees-overlay__subtitle {
+  font-size: 12px;
+  color: var(--fg-muted);
+  margin-top: 2px;
+}
+.fees-overlay__form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 24px;
+}
+.fees-overlay__field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.fees-overlay__label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-subtle);
+  margin-bottom: 4px;
+}
+.fees-overlay__field input,
+.fees-overlay__field select,
+.fees-overlay__field textarea {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border-token);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--fg);
+  font-family: inherit;
+}
+.fees-overlay__field input:focus,
+.fees-overlay__field select:focus,
+.fees-overlay__field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--surface-2);
+}
+
+/* Mobile — stack KPI + form rows */
+@media (max-width: 1023px) {
+  .fees-kpi { grid-template-columns: 1fr; }
+  .fees-overlay__field-row { grid-template-columns: 1fr; }
+}
+
+/* Mobile — collapse table to card-stack */
+@media (max-width: 767px) {
+  .fees-table__head { display: none; }
+  .fees-table__row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding: 12px 16px;
+  }
+  .fees-table__amount,
+  .fees-table__action {
+    text-align: left;
+  }
+}

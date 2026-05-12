@@ -166,14 +166,14 @@ export default function ClassTeacherAssignmentModal({
         scrollBehavior="inside"
         classNames={{
           backdrop: "bg-black/50 backdrop-blur-sm",
-          base: "bg-white dark:bg-zinc-950"
+          base: "bg-surface"
         }}
       >
         <ModalContent>
-          <ModalHeader className="flex flex-col gap-1 border-b border-default-200">
+          <ModalHeader className="flex flex-col gap-1 border-b border-divider">
             <div>
               <h3 className="text-xl font-semibold">{t('pages.assignClassTeacher1')}</h3>
-              <p className="text-sm text-default-500 font-normal">
+              <p className="text-sm text-fg-muted font-normal">
                 {t('classes.classLabel', 'Class')}: <span className="font-medium text-primary">{className}-{section}</span>
               </p>
             </div>
@@ -186,7 +186,7 @@ export default function ClassTeacherAssignmentModal({
                 placeholder={t('pages.searchTeachersByNameCodeOrDepartment')}
                 value={searchQuery}
                 onValueChange={setSearchQuery}
-                startContent={<Search size={16} className="text-default-400" />}
+                startContent={<Search size={16} className="text-fg-faint" />}
                 isClearable
                 onClear={() => setSearchQuery("")}
                 variant="bordered"
@@ -201,11 +201,11 @@ export default function ClassTeacherAssignmentModal({
             <div className="space-y-2">
               {filteredTeachers.length === 0 ? (
                 <div className="text-center py-8 px-4">
-                  <GraduationCap size={32} className="text-default-300 mx-auto mb-2" />
-                  <p className="text-sm text-default-500 mb-1">
+                  <GraduationCap size={32} className="text-fg-faint mx-auto mb-2" />
+                  <p className="text-sm text-fg-muted mb-1">
                     {searchQuery ? t('classes.noTeachersFoundSearch', 'No teachers found matching your search') : t('classes.noTeachersAvailable', 'No teachers available')}
                   </p>
-                  <p className="text-xs text-default-400">
+                  <p className="text-xs text-fg-faint">
                     {searchQuery ? t('classes.tryDifferentSearch', 'Try a different search term') : t('classes.addTeachersFirst', 'Add teachers first to assign as class teacher')}
                   </p>
                 </div>
@@ -214,11 +214,11 @@ export default function ClassTeacherAssignmentModal({
                   const isCurrentTeacher = String(teacher.id) === String(currentTeacherId);
                   const currentClassDisplayName = section ? `${className}-${section}` : className;
                   const hasOtherClass = teacher.classTeacherOf && teacher.classTeacherOf !== currentClassDisplayName;
-                  
+
                   return (
                     <div
                       key={teacher.id}
-                      className="flex items-center justify-between p-4 rounded-lg border border-default-200 hover:border-default-300 hover:bg-default-50 transition-all"
+                      className="flex items-center justify-between p-4 rounded-lg border border-divider hover:border-border-token hover:bg-surface-2 transition-all"
                     >
                       {/* Left: Teacher Info */}
                       <div className="flex items-center gap-3 flex-1">
@@ -229,13 +229,13 @@ export default function ClassTeacherAssignmentModal({
                           className="flex-shrink-0"
                         />
                         <div>
-                          <p className="text-sm font-medium text-default-700">
+                          <p className="text-sm font-medium text-fg">
                             {teacher.name}
                           </p>
                           <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-default-500">{teacher.code}</span>
-                            <span className="text-default-300">|</span>
-                            <span className="text-xs text-default-500">{teacher.department || "—"}</span>
+                            <span className="text-xs text-fg-muted">{teacher.code}</span>
+                            <span className="text-fg-faint">|</span>
+                            <span className="text-xs text-fg-muted">{teacher.department || "—"}</span>
                           </div>
                         </div>
                       </div>
@@ -246,8 +246,8 @@ export default function ClassTeacherAssignmentModal({
                           <div className="flex items-center gap-2">
                             <Check size={16} className="text-success-600" />
                             <div>
-                              <p className="text-sm font-medium text-default-700">{t('pages.current')}</p>
-                              <p className="text-xs text-default-400">{t('pages.alreadyAssigned')}</p>
+                              <p className="text-sm font-medium text-fg">{t('pages.current')}</p>
+                              <p className="text-xs text-fg-faint">{t('pages.alreadyAssigned')}</p>
                             </div>
                           </div>
                         ) : hasOtherClass ? (
@@ -282,7 +282,7 @@ export default function ClassTeacherAssignmentModal({
 
             {/* Stats footer */}
             {filteredTeachers.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-default-200 flex items-center justify-between text-xs text-default-500">
+              <div className="mt-4 pt-4 border-t border-divider flex items-center justify-between text-xs text-fg-muted">
                 <span>
                   {t('classes.showingTeachers', 'Showing {{count}} teacher(s)', { count: filteredTeachers.length })}
                 </span>
@@ -293,7 +293,7 @@ export default function ClassTeacherAssignmentModal({
             )}
           </ModalBody>
 
-          <ModalFooter className="border-t border-default-200">
+          <ModalFooter className="border-t border-divider">
             <Button
               variant="flat"
               onPress={handleClose}

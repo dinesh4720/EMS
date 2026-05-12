@@ -44,25 +44,27 @@ export default function TrialBanner() {
 
   const styles = {
     critical: {
-      bg: "bg-red-50 border-red-200",
-      text: "text-red-700",
-      icon: "text-red-600",
-      btn: "bg-red-600 hover:bg-red-700 text-white",
-      dismiss: "hover:bg-red-100 text-red-600",
+      bg: "bg-danger-bg border-danger-token/20",
+      text: "text-danger-token",
+      icon: "text-danger-token",
+      btn: "bg-danger-token hover:bg-danger-token/90 text-white",
+      dismiss: "hover:bg-danger-bg text-danger-token",
     },
     warning: {
-      bg: "bg-amber-50 border-amber-200",
-      text: "text-amber-700",
-      icon: "text-amber-600",
-      btn: "bg-amber-600 hover:bg-amber-700 text-white",
-      dismiss: "hover:bg-amber-100 text-amber-600",
+      bg: "bg-warn-bg border-warn/20",
+      text: "text-warn",
+      icon: "text-warn",
+      btn: "bg-warn hover:bg-warn/90 text-white",
+      dismiss: "hover:bg-warn-bg text-warn",
     },
+    // info trial state — bg/text are status-info, but the CTA is the brand
+    // accent because "Upgrade" is a primary brand action, not informational.
     info: {
-      bg: "bg-blue-50 border-blue-200",
-      text: "text-blue-700",
-      icon: "text-blue-600",
-      btn: "bg-primary-600 hover:bg-primary-700 text-white",
-      dismiss: "hover:bg-blue-100 text-blue-600",
+      bg: "bg-info-bg border-info-token/20",
+      text: "text-info-token",
+      icon: "text-info-token",
+      btn: "bg-accent hover:bg-accent-hover text-white",
+      dismiss: "hover:bg-info-bg text-info-token",
     },
   };
 
@@ -90,7 +92,7 @@ export default function TrialBanner() {
       });
 
   return (
-    <div className={`${s.bg} border-b px-4 py-2 flex items-center justify-between sticky top-12 z-20`}>
+    <div className={`${s.bg} border-b px-4 py-2 flex items-center justify-between sticky top-11 z-20`}>
       <div className="flex items-center gap-2 min-w-0">
         <Clock size={16} className={`${s.icon} flex-shrink-0`} />
         <span className={`text-sm ${s.text} truncate`}>{message}</span>

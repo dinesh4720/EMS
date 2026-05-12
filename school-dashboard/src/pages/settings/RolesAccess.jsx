@@ -1,73 +1,54 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
+import { Plus, Edit, Shield, Lock, Trash2 } from "lucide-react";
 import {
+  PageHeader,
   Card,
-  CardBody,
-  CardHeader,
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-  Chip,
   Button,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  useDisclosure,
-  Input,
-  Checkbox,
-  Tabs,
-  Tab,
-  Select,
-  SelectItem,
-} from "@heroui/react";
-import { Plus, Edit, Shield, Lock, Unlock, Copy, Trash2 } from "lucide-react";
+  IconButton,
+  Badge,
+  Skeleton,
+  EmptyState,
+} from "../../components/ui";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
-import { STAFF_ROLES } from "../../constants/roles";
 import { useTranslation } from 'react-i18next';
-import SkeletonTable from '../../components/skeletons/SkeletonTable';
 import { permissionsApi } from '../../services/api';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
 import logger from '../../utils/logger';
-import { MODULES_CONFIG, PERMISSION_TEMPLATES } from '../../constants/permissionConfig';
-import { permissionsArrayToObject, permissionsObjectToArray, countPermissions } from '../../utils/permissionsTransform';
+import { PERMISSION_TEMPLATES } from '../../constants/permissionConfig';
+import {
+  permissionsArrayToObject,
+  permissionsObjectToArray,
+  countPermissions,
+} from '../../utils/permissionsTransform';
+import RoleFormModal from './components/RoleFormModal';
 
 export default function RolesAccess() {
   const { t } = useTranslation();
-  const MODULES = useMemo(() => MODULES_CONFIG.map(m => ({
-    ...m,
-    label: t(`constants.permissions.modules.${m.key}`, m.key),
-  })), [t]);
-  const navigate = useNavigate();
-  const { staff } = useApp();
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  // staff context retained for future per-role user counts
+  useApp();
   const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
-  // activeTab state removed - was unused
+  const [isOpen, setIsOpen] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
   const [loading, setLoading] = useState(false);
   const [fetchingRoles, setFetchingRoles] = useState(true);
   const [roles, setRoles] = useState([]);
   const [originalFormData, setOriginalFormData] = useState(null);
+  const [formData, setFormData] = useState({ name: '', permissions: {}, locked: {} });
 
-  // Fetch custom roles from backend API
   const fetchRoles = useCallback(async () => {
     setFetchingRoles(true);
     try {
       const data = await permissionsApi.getCustomRoles();
-      const customRoles = (data?.roles || data || []).map(r => ({
-        id: r._id,
-        name: r.name,
-        description: r.description || '',
-        permissions: permissionsArrayToObject(r.permissions),
-        locked: r.locked || {},
-        isSystem: r.isSystem || false,
-        userCount: r.userCount || 0,
+      const customRoles = (data?.roles || data || []).map((item) => ({
+        id: item._id,
+        name: item.name,
+        description: item.description || '',
+        permissions: permissionsArrayToObject(item.permissions),
+        locked: item.locked || {},
+        isSystem: item.isSystem || false,
+        userCount: item.userCount || 0,
       }));
       setRoles(customRoles);
     } catch (error) {
@@ -78,15 +59,7 @@ export default function RolesAccess() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchRoles();
-  }, [fetchRoles]);
-
-  const [formData, setFormData] = useState({
-    name: "",
-    permissions: {},
-    locked: {},
-  });
+  useEffect(() => { fetchRoles(); }, [fetchRoles]);
 
   const handleOpenModal = (role = null) => {
     if (role) {
@@ -100,12 +73,14 @@ export default function RolesAccess() {
       setOriginalFormData(initial);
     } else {
       setEditingRole(null);
-      const initial = { name: "", permissions: {}, locked: {} };
+      const initial = { name: '', permissions: {}, locked: {} };
       setFormData(initial);
       setOriginalFormData(initial);
     }
-    onOpen();
+    setIsOpen(true);
   };
+
+  const handleClose = () => setIsOpen(false);
 
   const handleResetChanges = () => {
     if (originalFormData) {
@@ -113,52 +88,10 @@ export default function RolesAccess() {
     }
   };
 
-  const isPermissionChanged = (moduleKey, action) => {
-    if (!originalFormData || !editingRole) return false;
-    const orig = originalFormData.permissions[moduleKey]?.[action] || false;
-    const curr = formData.permissions[moduleKey]?.[action] || false;
-    return orig !== curr;
-  };
-
-  const changedCount = useMemo(() => {
-    if (!originalFormData || !editingRole) return 0;
-    let count = 0;
-    MODULES_CONFIG.forEach(({ key, actions }) => {
-      actions.forEach(action => {
-        const orig = originalFormData.permissions[key]?.[action] || false;
-        const curr = formData.permissions[key]?.[action] || false;
-        if (orig !== curr) count++;
-      });
-    });
-    return count;
-  }, [formData.permissions, originalFormData, editingRole]);
-
-  const handlePermissionChange = (moduleKey, action, value) => {
-    setFormData(prev => ({
-      ...prev,
-      permissions: {
-        ...prev.permissions,
-        [moduleKey]: {
-          ...prev.permissions[moduleKey],
-          [action]: value,
-        },
-      },
-    }));
-  };
-
-  const handleLockToggle = (moduleKey, action) => {
-    setFormData(prev => {
-      const newLocked = { ...prev.locked };
-      if (!newLocked[moduleKey]) newLocked[moduleKey] = {};
-      newLocked[moduleKey][action] = !newLocked[moduleKey]?.[action];
-      return { ...prev, locked: newLocked };
-    });
-  };
-
   const handleApplyTemplate = (templateKey) => {
     const template = PERMISSION_TEMPLATES[templateKey];
     if (template) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         permissions: JSON.parse(JSON.stringify(template.permissions)),
       }));
@@ -167,9 +100,9 @@ export default function RolesAccess() {
   };
 
   const handleCopyFromRole = (roleId) => {
-    const role = roles.find(r => r.id === roleId);
+    const role = roles.find((item) => item.id === roleId);
     if (role) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         permissions: JSON.parse(JSON.stringify(role.permissions)),
         locked: JSON.parse(JSON.stringify(role.locked || {})),
@@ -178,13 +111,11 @@ export default function RolesAccess() {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e?.preventDefault?.();
+  const handleSubmit = async () => {
     if (!formData.name.trim()) {
       toast.error(t('toast.error.roleNameIsRequired'));
       return;
     }
-
     setLoading(true);
     try {
       const payload = {
@@ -192,7 +123,6 @@ export default function RolesAccess() {
         permissions: permissionsObjectToArray(formData.permissions),
         locked: formData.locked,
       };
-
       if (editingRole) {
         await permissionsApi.updateCustomRole(editingRole.id, payload);
         toast.success(t('toast.success.roleUpdatedSuccessfully'));
@@ -200,7 +130,7 @@ export default function RolesAccess() {
         await permissionsApi.createCustomRole(payload);
         toast.success(t('toast.success.roleCreatedSuccessfully'));
       }
-      onClose();
+      handleClose();
       await fetchRoles();
     } catch (error) {
       logger.error('Failed to save role:', error);
@@ -211,7 +141,7 @@ export default function RolesAccess() {
   };
 
   const handleDelete = (roleId) => {
-    const role = roles.find(r => r.id === roleId);
+    const role = roles.find((item) => item.id === roleId);
     if (role?.userCount > 0) {
       toast.error(`Cannot delete role "${role.name}". ${role.userCount} user(s) are currently assigned to it. Please reassign them first.`);
       return;
@@ -234,297 +164,124 @@ export default function RolesAccess() {
     });
   };
 
-  const isPermissionLocked = (moduleKey, action) => {
-    return formData.locked?.[moduleKey]?.[action] || false;
-  };
-
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">{t('pages.rolesPermissions')}</h2>
-          <p className="text-sm text-gray-600 dark:text-zinc-400 mt-1">
-            Manage user roles and granular permissions
-          </p>
-        </div>
-        <Button
-          color="primary"
-          startContent={<Plus size={16} />}
-          onPress={() => handleOpenModal()}
-          className="transition-all duration-200"
-        >
-          Add Role
-        </Button>
-      </div>
+      <PageHeader
+        title={t('pages.rolesPermissions')}
+        description="Manage user roles and granular permissions"
+        bordered={false}
+        size="lg"
+        className="px-0"
+        actions={
+          <Button variant="primary" icon={<Plus size={16} />} onClick={() => handleOpenModal()}>
+            Add role
+          </Button>
+        }
+      />
 
-      {/* Roles Table */}
       {fetchingRoles ? (
-        <SkeletonTable rows={5} columns={5} />
+        <Skeleton.Table rows={5} columns={5} />
+      ) : roles.length === 0 ? (
+        <Card padding="lg">
+          <EmptyState
+            icon={Shield}
+            title="No custom roles yet"
+            description="Create custom roles with granular permissions to control what users can see and do."
+            action={
+              <Button variant="primary" icon={<Plus size={16} />} onClick={() => handleOpenModal()}>
+                Create your first role
+              </Button>
+            }
+          />
+        </Card>
       ) : (
-      <Card className="rounded-lg">
-        <CardBody className="p-0">
-          <Table
-            aria-label={t('aria.tables.roles')}
-            removeWrapper
-            classNames={{
-              th: "bg-gray-50 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 font-semibold",
-              td: "py-4",
-            }}
-          >
-            <TableHeader>
-              <TableColumn scope="col">{t('pages.rOLEName')}</TableColumn>
-              <TableColumn scope="col">{t('pages.pERMISSIONS')}</TableColumn>
-              <TableColumn scope="col">{t('pages.lOCKEDPermissions')}</TableColumn>
-              <TableColumn scope="col">{t('pages.uSERS')}</TableColumn>
-              <TableColumn scope="col">{t('pages.aCTIONS')}</TableColumn>
-            </TableHeader>
-            <TableBody
-              items={roles}
-              emptyContent="No roles found"
-              loadingContent={<SkeletonTable columns={5} rows={5} />}
-            >
-              {(role) => {
-                const permCount = countPermissions(role.permissions);
-                const lockedCount = countPermissions(role.locked || {});
-
-                return (
-                  <TableRow key={role.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="p-1.5 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
-                          <Shield size={16} className="text-primary-600 dark:text-primary-400" />
-                        </div>
-                        <span className="font-medium text-gray-900 dark:text-zinc-100">
-                          {role.name}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Chip size="sm" variant="flat" color="primary">
-                        {permCount} permissions
-                      </Chip>
-                    </TableCell>
-                    <TableCell>
-                      {lockedCount > 0 ? (
+        <Card padding="none" radius="lg">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm" aria-label={t('aria.tables.roles')}>
+              <thead className="bg-surface-2 text-xs font-semibold text-fg uppercase tracking-wider">
+                <tr>
+                  <th scope="col" className="text-left px-4 py-3">{t('pages.rOLEName')}</th>
+                  <th scope="col" className="text-left px-4 py-3">{t('pages.pERMISSIONS')}</th>
+                  <th scope="col" className="text-left px-4 py-3">{t('pages.lOCKEDPermissions')}</th>
+                  <th scope="col" className="text-left px-4 py-3">{t('pages.uSERS')}</th>
+                  <th scope="col" className="text-right px-4 py-3">{t('pages.aCTIONS')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {roles.map((role) => {
+                  const permCount = countPermissions(role.permissions);
+                  const lockedCount = countPermissions(role.locked || {});
+                  return (
+                    <tr key={role.id} className="border-t border-divider">
+                      <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <Lock size={14} className="text-warning-600" />
-                          <span className="text-sm text-gray-700 dark:text-zinc-300">
-                            {lockedCount} locked
+                          <div className="p-1.5 bg-[var(--color-primary)]/10 rounded-lg">
+                            <Shield size={16} className="text-[var(--color-primary)]" />
+                          </div>
+                          <span className="font-medium text-fg">
+                            {role.name}
                           </span>
                         </div>
-                      ) : (
-                        <span className="text-gray-400 dark:text-zinc-500 text-sm">{t('pages.none1')}</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm text-gray-700 dark:text-zinc-300">
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge color="info" size="sm">{permCount} permissions</Badge>
+                      </td>
+                      <td className="px-4 py-3">
+                        {lockedCount > 0 ? (
+                          <span className="inline-flex items-center gap-1.5 text-sm text-amber-600 dark:text-amber-400">
+                            <Lock size={14} />
+                            {lockedCount} locked
+                          </span>
+                        ) : (
+                          <span className="text-fg-faint text-sm">{t('pages.none1')}</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-fg">
                         {role.userCount} users
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          isIconOnly
-                          size="sm"
-                          variant="light"
-                          aria-label="Edit role"
-                          onPress={() => handleOpenModal(role)}
-                          className="transition-all duration-200"
-                        >
-                          <Edit size={16} />
-                        </Button>
-                        <Button
-                          isIconOnly
-                          size="sm"
-                          variant="light"
-                          color="danger"
-                          aria-label="Delete role"
-                          onPress={() => handleDelete(role.id)}
-                          className="transition-all duration-200"
-                        >
-                          <Trash2 size={16} />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              }}
-            </TableBody>
-          </Table>
-        </CardBody>
-      </Card>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-1">
+                          <IconButton
+                            size="sm"
+                            variant="ghost"
+                            aria-label="Edit role"
+                            onClick={() => handleOpenModal(role)}
+                          >
+                            <Edit size={16} />
+                          </IconButton>
+                          <IconButton
+                            size="sm"
+                            variant="danger"
+                            aria-label="Delete role"
+                            onClick={() => handleDelete(role.id)}
+                          >
+                            <Trash2 size={16} />
+                          </IconButton>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Card>
       )}
 
-      {/* Add/Edit Role Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} size="5xl" scrollBehavior="inside">
-        <ModalContent>
-          <ModalHeader>
-            {editingRole ? "Edit Role" : "Add New Role"}
-          </ModalHeader>
-          <ModalBody>
-            <div className="space-y-6">
-              {/* Role Name */}
-              <Input
-                label={t('pages.roleName')}
-                placeholder={t('settings.roleNamePlaceholder')}
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                variant="bordered"
-                isRequired
-              />
-
-              {/* Quick Actions */}
-              <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-zinc-800 rounded-lg">
-                <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">
-                  Quick Actions:
-                </span>
-                <div className="flex gap-2">
-                  <Select
-                    placeholder={t('pages.applyTemplate')}
-                    size="sm"
-                    variant="bordered"
-                    className="w-48"
-                    onChange={(e) => handleApplyTemplate(e.target.value)}
-                  >
-                    {Object.entries(PERMISSION_TEMPLATES).map(([key, template]) => (
-                      <SelectItem key={key} value={key}>
-                        {template.name}
-                      </SelectItem>
-                    ))}
-                  </Select>
-                  <Select
-                    placeholder={t('pages.copyFromRole')}
-                    size="sm"
-                    variant="bordered"
-                    className="w-48"
-                    onChange={(e) => handleCopyFromRole(e.target.value)}
-                  >
-                    {roles.map((role) => (
-                      <SelectItem key={role.id} value={role.id}>
-                        {role.name}
-                      </SelectItem>
-                    ))}
-                  </Select>
-                </div>
-              </div>
-
-              {/* Permission Matrix */}
-              <div>
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-4">
-                  Permission Matrix
-                </h3>
-                <div className="border border-gray-200 dark:border-zinc-700 rounded-lg overflow-hidden">
-                  <Table
-                    removeWrapper
-                    aria-label={t('aria.inputs.permissionMatrix')}
-                    classNames={{
-                      th: "bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 font-semibold text-xs",
-                      td: "py-3 border-b border-gray-100 dark:border-zinc-800",
-                    }}
-                  >
-                    <TableHeader>
-                      <TableColumn scope="col">{t('pages.mODULE')}</TableColumn>
-                      <TableColumn align="center" scope="col">{t('pages.vIEW')}</TableColumn>
-                      <TableColumn align="center" scope="col">{t('pages.cREATE')}</TableColumn>
-                      <TableColumn align="center" scope="col">{t('pages.eDIT')}</TableColumn>
-                      <TableColumn align="center" scope="col">{t('pages.dELETE')}</TableColumn>
-                      <TableColumn align="center" scope="col">{t('pages.pUBLISH')}</TableColumn>
-                    </TableHeader>
-                    <TableBody>
-                      {MODULES.map((module) => (
-                        <TableRow key={module.key}>
-                          <TableCell>
-                            <span className="font-medium text-gray-900 dark:text-zinc-100">
-                              {module.label}
-                            </span>
-                          </TableCell>
-                          {["view", "create", "edit", "delete", "publish"].map((action) => {
-                            const hasAction = module.actions.includes(action);
-                            const isChecked = formData.permissions[module.key]?.[action] || false;
-                            const isLocked = isPermissionLocked(module.key, action);
-                            const isChanged = isPermissionChanged(module.key, action);
-
-                            return (
-                              <TableCell key={action} className={`text-center${isChanged ? " bg-warning-50 dark:bg-warning-900/10" : ""}`}>
-                                {hasAction ? (
-                                  <div className="flex items-center justify-center gap-2">
-                                    <Checkbox
-                                      size="sm"
-                                      isSelected={isChecked}
-                                      onValueChange={(value) =>
-                                        handlePermissionChange(module.key, action, value)
-                                      }
-                                      isDisabled={isLocked}
-                                      color={isChanged ? "warning" : "primary"}
-                                    />
-                                    <Button
-                                      isIconOnly
-                                      size="sm"
-                                      variant="light"
-                                      aria-label={isLocked ? "Unlock permission" : "Lock permission"}
-                                      onPress={() => handleLockToggle(module.key, action)}
-                                      className="min-w-6 w-6 h-6"
-                                    >
-                                      {isLocked ? (
-                                        <Lock size={12} className="text-warning-600" />
-                                      ) : (
-                                        <Unlock size={12} className="text-gray-400 dark:text-zinc-500" />
-                                      )}
-                                    </Button>
-                                  </div>
-                                ) : (
-                                  <span className="text-gray-300 dark:text-zinc-600">-</span>
-                                )}
-                              </TableCell>
-                            );
-                          })}
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-                <p className="text-xs text-gray-500 dark:text-zinc-400 mt-2">
-                  <Lock size={12} className="inline mr-1" />
-                  Locked permissions cannot be changed by users with this role
-                </p>
-              </div>
-            </div>
-          </ModalBody>
-          <ModalFooter className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {changedCount > 0 && (
-                <>
-                  <span className="text-sm text-warning-600 dark:text-warning-400 font-medium">
-                    {changedCount} unsaved change{changedCount !== 1 ? "s" : ""}
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="flat"
-                    color="warning"
-                    onPress={handleResetChanges}
-                  >
-                    Revert
-                  </Button>
-                </>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <Button variant="light" onPress={onClose}>
-                Cancel
-              </Button>
-              <Button
-                color="primary"
-                onPress={handleSubmit}
-                isLoading={loading}
-                className="transition-all duration-200"
-              >
-                {editingRole ? "Update" : "Create"} Role
-              </Button>
-            </div>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <RoleFormModal
+        isOpen={isOpen}
+        onClose={handleClose}
+        editingRole={editingRole}
+        formData={formData}
+        setFormData={setFormData}
+        originalFormData={originalFormData}
+        roles={roles}
+        loading={loading}
+        onSubmit={handleSubmit}
+        onApplyTemplate={handleApplyTemplate}
+        onCopyFromRole={handleCopyFromRole}
+        onResetChanges={handleResetChanges}
+      />
 
       <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </div>

@@ -4,8 +4,8 @@ import { useTranslation } from "react-i18next";
 
 const DataField = ({ label, value }) => (
   <div className="space-y-1">
-    <span className="text-xs font-semibold text-default-500 uppercase tracking-wider">{label}</span>
-    <p className="font-medium text-default-900">{value || "—"}</p>
+    <span className="text-xs font-semibold text-fg-muted uppercase tracking-wider">{label}</span>
+    <p className="font-medium text-fg">{value || "—"}</p>
   </div>
 );
 
@@ -25,7 +25,7 @@ export default function ScheduleTimingsTab({
     <div className="pt-6 space-y-8 animate-fade-in">
 
       {/* Academic Session Card */}
-      <div className="rounded-xl border border-default-200 bg-white dark:bg-zinc-950 hover:border-default-300 transition-colors">
+      <div className="rounded-xl border border-border-token bg-surface hover:border-border-token transition-colors">
         <div className="p-6">
           <div className="flex justify-between items-start mb-6">
             <div className="flex items-center gap-3">
@@ -33,8 +33,8 @@ export default function ScheduleTimingsTab({
                 <Calendar size={24} />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-default-900">{t('pages.academicSession')}</h3>
-                <p className="text-xs text-default-500">{t('pages.currentAcademicYearConfiguration')}</p>
+                <h3 className="text-lg font-bold text-fg">{t('pages.academicSession')}</h3>
+                <p className="text-xs text-fg-muted">{t('pages.currentAcademicYearConfiguration')}</p>
               </div>
             </div>
             <Button
@@ -57,7 +57,7 @@ export default function ScheduleTimingsTab({
       </div>
 
       {/* School Timings Card */}
-      <div className="rounded-xl border border-default-200 bg-white dark:bg-zinc-950 hover:border-default-300 transition-colors">
+      <div className="rounded-xl border border-border-token bg-surface hover:border-border-token transition-colors">
         <div className="p-6">
           <div className="flex justify-between items-start mb-6">
             <div className="flex items-center gap-3">
@@ -65,8 +65,8 @@ export default function ScheduleTimingsTab({
                 <Clock size={24} />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-default-900">{t('pages.schoolTimings')}</h3>
-                <p className="text-xs text-default-500">{t('pages.dailySchoolStartAndEndTimes')}</p>
+                <h3 className="text-lg font-bold text-fg">{t('pages.schoolTimings')}</h3>
+                <p className="text-xs text-fg-muted">{t('pages.dailySchoolStartAndEndTimes')}</p>
               </div>
             </div>
             <Button
@@ -89,7 +89,7 @@ export default function ScheduleTimingsTab({
       </div>
 
       {/* Period Configuration Card */}
-      <div className="rounded-xl border border-default-200 bg-white dark:bg-zinc-950 hover:border-default-300 transition-colors">
+      <div className="rounded-xl border border-border-token bg-surface hover:border-border-token transition-colors">
         <div className="p-6">
           <div className="flex justify-between items-start mb-6">
             <div className="flex items-center gap-3">
@@ -97,8 +97,8 @@ export default function ScheduleTimingsTab({
                 <Clock size={24} />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-default-900">{t('pages.periodConfiguration')}</h3>
-                <p className="text-xs text-default-500">{t('pages.periodDurationAndCountPerDay')}</p>
+                <h3 className="text-lg font-bold text-fg">{t('pages.periodConfiguration')}</h3>
+                <p className="text-xs text-fg-muted">{t('pages.periodDurationAndCountPerDay')}</p>
               </div>
             </div>
             <Button
@@ -118,11 +118,11 @@ export default function ScheduleTimingsTab({
             <DataField label={t('pages.instructionalTime1')} value={`${instructionalHours}h ${instructionalMins}m`} />
           </div>
 
-          <div className="mt-4 p-4 bg-default-50 rounded-lg">
+          <div className="mt-4 p-4 bg-surface-2 rounded-lg">
             <div className="flex items-start gap-3">
-              <AlertCircle size={16} className="text-default-500 mt-0.5 shrink-0" />
-              <p className="text-xs text-default-500 leading-relaxed">
-                Total instructional time: <span className="font-bold text-default-700">{instructionalHours}h {instructionalMins}m</span>.
+              <AlertCircle size={16} className="text-fg-muted mt-0.5 shrink-0" />
+              <p className="text-xs text-fg-muted leading-relaxed">
+                Total instructional time: <span className="font-bold text-fg">{instructionalHours}h {instructionalMins}m</span>.
                 Ensure this fits within school hours, including breaks.
               </p>
             </div>
@@ -131,7 +131,7 @@ export default function ScheduleTimingsTab({
       </div>
 
       {/* Working Days Card */}
-      <div className="rounded-xl border border-default-200 bg-white dark:bg-zinc-950 hover:border-default-300 transition-colors">
+      <div className="rounded-xl border border-border-token bg-surface hover:border-border-token transition-colors">
         <div className="p-6">
           <div className="flex justify-between items-start mb-6">
             <div className="flex items-center gap-3">
@@ -139,8 +139,8 @@ export default function ScheduleTimingsTab({
                 <Calendar size={24} />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-default-900">{t('pages.workingDays')}</h3>
-                <p className="text-xs text-default-500">{t('pages.daysTheSchoolOperates')}</p>
+                <h3 className="text-lg font-bold text-fg">{t('pages.workingDays')}</h3>
+                <p className="text-xs text-fg-muted">{t('pages.daysTheSchoolOperates')}</p>
               </div>
             </div>
             <Button

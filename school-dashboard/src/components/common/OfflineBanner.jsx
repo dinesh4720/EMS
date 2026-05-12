@@ -16,9 +16,9 @@ export default function OfflineBanner() {
     <div
       role="status"
       aria-live="assertive"
-      className="sticky top-14 z-30 bg-gray-900 text-white px-4 py-2 flex items-center justify-center gap-2 text-sm shadow-md"
+      className="sticky top-11 z-30 bg-fg text-bg px-4 py-2 flex items-center justify-center gap-2 text-sm shadow-md"
     >
-      <WifiOff size={15} className="flex-shrink-0 text-red-400" />
+      <WifiOff size={15} className="flex-shrink-0 text-danger-token" />
       <span>
         {t('common.offlineBanner', "You're offline. Some features may be unavailable until your connection is restored.")}
       </span>

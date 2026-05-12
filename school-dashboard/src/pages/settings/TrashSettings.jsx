@@ -366,10 +366,10 @@ export default function TrashSettings() {
   return (
     <div className="w-full flex flex-col space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center border-b border-default-200 pb-6">
+      <div className="flex justify-between items-center border-b border-border-token pb-6">
         <div>
-          <h2 className="text-2xl font-bold text-default-900">{t('pages.trashManagement')}</h2>
-          <p className="text-sm text-default-500 mt-1">
+          <h2 className="text-2xl font-bold text-fg">{t('pages.trashManagement')}</h2>
+          <p className="text-sm text-fg-muted mt-1">
             View and manage deleted items. Items are permanently deleted after 30 days.
           </p>
         </div>
@@ -389,17 +389,17 @@ export default function TrashSettings() {
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Total Items */}
-        <Card className="shadow-sm border border-default-200 rounded-lg">
+        <Card className="shadow-sm border border-border-token rounded-lg">
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-default-100 rounded-lg">
-                <Trash2 size={20} className="text-default-600" />
+              <div className="p-3 bg-surface-2 rounded-lg">
+                <Trash2 size={20} className="text-fg-muted" />
               </div>
               <div>
-                <p className="text-xs text-default-500 uppercase tracking-wider font-medium">
+                <p className="text-xs text-fg-muted uppercase tracking-wider font-medium">
                   Total Items
                 </p>
-                <p className="text-2xl font-semibold text-default-900">
+                <p className="text-2xl font-semibold text-fg">
                   {stats.total}
                 </p>
               </div>
@@ -431,19 +431,19 @@ export default function TrashSettings() {
           .sort(([, a], [, b]) => (b.count || 0) - (a.count || 0))
           .slice(0, 2)
           .map(([typeName, typeStats]) => (
-            <Card key={typeName} className="shadow-sm border border-default-200 rounded-lg">
+            <Card key={typeName} className="shadow-sm border border-border-token rounded-lg">
               <CardBody className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-default-100 rounded-lg">
+                  <div className="p-3 bg-surface-2 rounded-lg">
                     <Chip size="sm" variant="flat" color={getTypeColor(typeName)} className="min-w-0">
                       {(TYPE_LABELS[typeName] || typeName).charAt(0)}
                     </Chip>
                   </div>
                   <div>
-                    <p className="text-xs text-default-500 uppercase tracking-wider font-medium">
+                    <p className="text-xs text-fg-muted uppercase tracking-wider font-medium">
                       {TYPE_LABELS[typeName] || typeName}
                     </p>
-                    <p className="text-2xl font-semibold text-default-900">
+                    <p className="text-2xl font-semibold text-fg">
                       {typeStats.count || 0}
                     </p>
                   </div>
@@ -454,20 +454,20 @@ export default function TrashSettings() {
       </div>
 
       {/* Filters Card */}
-      <Card className="shadow-sm border border-default-200 rounded-lg">
+      <Card className="shadow-sm border border-border-token rounded-lg">
         <CardBody className="p-4">
           <div className="flex flex-col sm:flex-row gap-4">
             {/* Search Input */}
             <Input
               size="sm"
               placeholder={t('pages.searchByNameOrDeletedBy')}
-              startContent={<Search size={16} className="text-default-400" />}
+              startContent={<Search size={16} className="text-fg-faint" />}
               value={searchTerm}
               onValueChange={setSearchTerm}
               variant="bordered"
               classNames={{
                 base: "flex-1",
-                inputWrapper: "bg-white dark:bg-zinc-950",
+                inputWrapper: "bg-surface",
               }}
             />
 
@@ -480,7 +480,7 @@ export default function TrashSettings() {
               variant="bordered"
               className="max-w-xs"
               classNames={{
-                trigger: "bg-white dark:bg-zinc-950",
+                trigger: "bg-surface",
               }}
             >
               <SelectItem key="all" value="all">
@@ -489,7 +489,7 @@ export default function TrashSettings() {
               {TYPE_GROUPS.flatMap((group) =>
                 group.types.map((type) => (
                   <SelectItem key={type} value={type} textValue={TYPE_LABELS[type] || type}>
-                    <span className="text-xs text-default-400 mr-1">{group.label}:</span>
+                    <span className="text-xs text-fg-faint mr-1">{group.label}:</span>
                     {TYPE_LABELS[type] || type}
                   </SelectItem>
                 ))
@@ -547,7 +547,7 @@ export default function TrashSettings() {
       )}
 
       {/* Main Table */}
-      <Card className="shadow-sm border border-default-200 rounded-lg">
+      <Card className="shadow-sm border border-border-token rounded-lg">
         <CardBody className="p-0">
           <Table
             aria-label={t('aria.tables.trashItems')}
@@ -557,10 +557,10 @@ export default function TrashSettings() {
             removeWrapper
             classNames={{
               base: "overflow-visible",
-              th: "bg-default-50 text-default-500 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200",
-              td: "py-4 border-b border-default-100 transition-colors",
+              th: "bg-surface-2 text-fg-muted font-medium text-xs uppercase tracking-wider h-12 border-b border-border-token",
+              td: "py-4 border-b border-divider transition-colors",
               tbody: "[&>tr:last-child>td]:border-none [&>tr[data-selected=true]>td]:bg-primary-50",
-              tr: "transition-colors hover:bg-gray-50 dark:hover:bg-zinc-900 data-[selected=true]:bg-primary-50 dark:data-[selected=true]:bg-primary-950",
+              tr: "transition-colors hover:bg-surface-2 data-[selected=true]:bg-primary-50 dark:data-[selected=true]:bg-primary-950",
             }}
           >
             <TableHeader>
@@ -589,11 +589,11 @@ export default function TrashSettings() {
                   <TableRow key={itemId}>
                     <TableCell>
                       <div>
-                        <p className="font-medium text-default-900">
+                        <p className="font-medium text-fg">
                           {itemName}
                         </p>
                         {item.description && (
-                          <p className="text-xs text-default-500 mt-0.5">
+                          <p className="text-xs text-fg-muted mt-0.5">
                             {item.description}
                           </p>
                         )}
@@ -609,12 +609,12 @@ export default function TrashSettings() {
                       </Chip>
                     </TableCell>
                     <TableCell>
-                      <p className="text-sm text-default-700">
+                      <p className="text-sm text-fg">
                         {deletedByName}
                       </p>
                     </TableCell>
                     <TableCell>
-                      <p className="text-sm text-default-600">
+                      <p className="text-sm text-fg-muted">
                         {formatDate(item.deletedAt)}
                       </p>
                     </TableCell>
@@ -670,8 +670,8 @@ export default function TrashSettings() {
           
           {/* Pagination Controls */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-default-200">
-              <div className="text-sm text-default-500">
+            <div className="flex items-center justify-between px-4 py-3 border-t border-border-token">
+              <div className="text-sm text-fg-muted">
                 Page {page} of {totalPages}
               </div>
               <div className="flex gap-2">
@@ -713,10 +713,10 @@ export default function TrashSettings() {
                     <RotateCcw size={20} className="text-primary-600" />
                   </div>
                   <div>
-                    <p className="font-medium text-default-900">
+                    <p className="font-medium text-fg">
                       Restore {selectedItems.size} item(s)
                     </p>
-                    <p className="text-sm text-default-600 mt-1">
+                    <p className="text-sm text-fg-muted mt-1">
                       These items will be restored to their original location
                       and will no longer appear in trash.
                     </p>
@@ -728,10 +728,10 @@ export default function TrashSettings() {
                     <AlertTriangle size={20} className="text-danger-600" />
                   </div>
                   <div>
-                    <p className="font-medium text-default-900">
+                    <p className="font-medium text-fg">
                       Permanently delete {selectedItems.size} item(s)
                     </p>
-                    <p className="text-sm text-default-600 mt-1">
+                    <p className="text-sm text-fg-muted mt-1">
                       <strong className="text-danger-600">
                         This action cannot be undone.
                       </strong>{" "}
@@ -741,8 +741,8 @@ export default function TrashSettings() {
                 </div>
               )}
 
-              <div className="bg-default-100 rounded-lg p-3">
-                <p className="text-xs text-default-600 font-medium mb-2">
+              <div className="bg-surface-2 rounded-lg p-3">
+                <p className="text-xs text-fg-muted font-medium mb-2">
                   Selected items:
                 </p>
                 <div className="space-y-1">
@@ -754,14 +754,14 @@ export default function TrashSettings() {
                       return item ? (
                         <p
                           key={id}
-                          className="text-xs text-default-700"
+                          className="text-xs text-fg"
                         >
                           • {itemName}
                         </p>
                       ) : null;
                     })}
                   {selectedItems.size > 5 && (
-                    <p className="text-xs text-default-500 italic">
+                    <p className="text-xs text-fg-muted italic">
                       ... and {selectedItems.size - 5} more
                     </p>
                   )}

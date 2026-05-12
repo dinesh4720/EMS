@@ -26,7 +26,7 @@ function Step2ParentsHealth({
     <div className="space-y-5 animate-fade-in text-left">
       {/* Parent Details */}
       <div className="space-y-4">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.parentDetails')}</h3>
+        <h3 className="text-sm font-medium text-fg">{t('pages.parentDetails')}</h3>
 
         {parents.map((parent, idx) => {
           const index = formData.parents.findIndex(entry => entry === parent);
@@ -136,8 +136,8 @@ function Step2ParentsHealth({
       {/* Guardian Details */}
       <div className="space-y-4 pt-5 border-t border-gray-100 dark:border-zinc-700">
         <div className="flex items-center gap-2">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.guardianDetails')}</h3>
-          <span className="text-xs text-gray-400 dark:text-zinc-500">(Optional)</span>
+          <h3 className="text-sm font-medium text-fg">{t('pages.guardianDetails')}</h3>
+          <span className="text-xs text-fg-faint">(Optional)</span>
         </div>
 
         {guardians.map((guardian, idx) => {
@@ -237,8 +237,8 @@ function Step2ParentsHealth({
       {/* Sibling Details */}
       <div className="space-y-4 pt-5 border-t border-gray-100 dark:border-zinc-700">
         <div className="flex items-center gap-2">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.siblingDetails')}</h3>
-          <span className="text-xs text-gray-400 dark:text-zinc-500">(Siblings in same school only)</span>
+          <h3 className="text-sm font-medium text-fg">{t('pages.siblingDetails')}</h3>
+          <span className="text-xs text-fg-faint">(Siblings in same school only)</span>
         </div>
 
         {formData.siblings.map((sibling, idx) => (
@@ -305,7 +305,7 @@ function Step2ParentsHealth({
 
       {/* Health & Safety */}
       <div className="space-y-3 pt-5 border-t border-gray-100 dark:border-zinc-700">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.healthSafety')}</h3>
+        <h3 className="text-sm font-medium text-fg">{t('pages.healthSafety')}</h3>
         <Textarea
           label={t('pages.medicalConditions1')}
           labelPlacement="outside"
@@ -321,7 +321,7 @@ function Step2ParentsHealth({
 
       {/* Transport & Hostel */}
       <div className="space-y-4 pt-5 border-t border-gray-100 dark:border-zinc-700">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.additionalRequirements')}</h3>
+        <h3 className="text-sm font-medium text-fg">{t('pages.additionalRequirements')}</h3>
         <div className="grid grid-cols-2 gap-4">
           <div className={cn(
             "cursor-pointer rounded-xl border-2 p-4 flex items-center gap-3 transition-all",

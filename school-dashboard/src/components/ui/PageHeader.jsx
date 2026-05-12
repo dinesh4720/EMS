@@ -36,7 +36,7 @@ const PageHeader = memo(function PageHeader({
   return (
     <div
       className={cn(
-        bordered && "border-b border-gray-100 dark:border-zinc-800",
+        bordered && "border-b border-divider",
         styles.padding,
         className
       )}
@@ -46,11 +46,11 @@ const PageHeader = memo(function PageHeader({
       )}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className={cn("font-medium text-gray-900 dark:text-zinc-100", styles.title)}>
+          <h1 className={cn("font-medium text-fg", styles.title)}>
             {title}
           </h1>
           {description && (
-            <p className={cn("text-gray-500 dark:text-zinc-400 mt-1", styles.description)}>
+            <p className={cn("text-fg-muted mt-1", styles.description)}>
               {description}
             </p>
           )}

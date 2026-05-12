@@ -7,6 +7,12 @@ import IconButton from "../IconButton";
 import Checkbox from "../Checkbox";
 import Popover from "../Popover";
 
+const DENSITY_LABELS = [
+  { value: "compact", label: "Compact" },
+  { value: "normal", label: "Normal" },
+  { value: "detailed", label: "Detailed" },
+];
+
 export function DataTableToolbar({
   searchable,
   search,
@@ -22,13 +28,23 @@ export function DataTableToolbar({
   onClearFilters,
   showFilters,
   toolbarActions,
+  densityToggle,
+  density,
+  onDensityChange,
 }) {
   const filterableColumns = columns.filter((col) => col.filterable);
   const hasActiveFilters =
     Object.keys(columnFilters).length > 0 || (search && search.length > 0);
   const activeFilterCount = Object.keys(columnFilters).length;
 
-  if (!searchable && !showColumnConfig && !showFilters && !toolbarActions) return null;
+  if (
+    !searchable &&
+    !showColumnConfig &&
+    !showFilters &&
+    !toolbarActions &&
+    !densityToggle
+  )
+    return null;
 
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between px-4 py-3 border-b border-[var(--color-border)]">
@@ -96,6 +112,9 @@ export function DataTableToolbar({
 
       <div className="flex items-center gap-2 flex-wrap">
         {toolbarActions}
+        {densityToggle ? (
+          <DensitySegmented value={density} onChange={onDensityChange} />
+        ) : null}
         {showColumnConfig ? (
           <Popover
             placement="bottom-end"
@@ -142,6 +161,43 @@ export function DataTableToolbar({
     </div>
   );
 }
+
+function DensitySegmented({ value, onChange }) {
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Row density"
+      className="inline-flex items-center gap-0.5 p-0.5 h-7 rounded-md bg-[var(--color-bg-secondary)] border border-[var(--color-border)]"
+    >
+      {DENSITY_LABELS.map((opt) => {
+        const active = opt.value === value;
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            onClick={() => onChange?.(opt.value)}
+            className={cn(
+              "h-6 px-2.5 rounded text-xs font-medium transition-colors",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30",
+              active
+                ? "bg-[var(--color-bg)] text-[var(--color-text-primary)] shadow-[0_1px_2px_rgb(0_0_0/0.04)]"
+                : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+            )}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+DensitySegmented.propTypes = {
+  value: PropTypes.oneOf(["compact", "normal", "detailed"]),
+  onChange: PropTypes.func,
+};
 
 function ColumnFilterControl({ column, value, onChange }) {
   const label = column.label || column.key;
@@ -255,4 +311,7 @@ DataTableToolbar.propTypes = {
   onClearFilters: PropTypes.func.isRequired,
   showFilters: PropTypes.bool,
   toolbarActions: PropTypes.node,
+  densityToggle: PropTypes.bool,
+  density: PropTypes.oneOf(["compact", "normal", "detailed"]),
+  onDensityChange: PropTypes.func,
 };

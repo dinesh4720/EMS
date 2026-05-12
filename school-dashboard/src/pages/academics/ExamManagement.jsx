@@ -337,7 +337,7 @@ const ExamManagement = ({ onCreateExam }) => {
           ariaLabel={t('aria.tables.exams')}
           density="normal"
           emptyState={{
-            icon: <FileText size={20} className="text-[var(--color-text-muted)]" />,
+            icon: <FileText size={20} className="text-fg-muted" />,
             title: t('pages.noExamsFound'),
             description: t('pages.noExamsFoundDesc', {
               defaultValue: 'Create an exam to start tracking results.',

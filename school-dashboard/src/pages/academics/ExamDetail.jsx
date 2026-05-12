@@ -158,8 +158,8 @@ const ExamDetail = () => {
   if (!exam) {
     return (
       <div className="text-center py-20">
-        <FileText size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-        <p className="text-gray-500 dark:text-zinc-400">{t('pages.examNotFound')}</p>
+        <FileText size={40} className="mx-auto mb-3 text-fg-faint" />
+        <p className="text-fg-muted">{t('pages.examNotFound')}</p>
         <MinimalButton className="mt-4" onClick={() => navigate('/academics/exams')}>
           Back to Exams
         </MinimalButton>
@@ -172,26 +172,26 @@ const ExamDetail = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 rounded-xl">
+      <div className="bg-surface border border-divider rounded-xl">
         <div className="flex items-center justify-between p-6">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate('/academics/exams')}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+              className="p-2 rounded-lg hover:bg-surface-2 transition-colors"
             >
-              <ArrowLeft size={20} className="text-gray-500 dark:text-zinc-400" />
+              <ArrowLeft size={20} className="text-fg-muted" />
             </button>
-            <div className="p-3 bg-gray-100 dark:bg-zinc-800 rounded-lg">
-              <FileText size={24} className="text-gray-600 dark:text-zinc-400" />
+            <div className="p-3 bg-surface-2 rounded-lg">
+              <FileText size={24} className="text-fg-muted" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-medium text-gray-900 dark:text-zinc-100">{exam.name}</h1>
+                <h1 className="text-xl font-medium text-fg">{exam.name}</h1>
                 <Chip size="sm" color={getStatusColor(exam.status)} variant="flat" className="capitalize">
                   {getStatusLabel(exam.status)}
                 </Chip>
               </div>
-              <p className="text-sm text-gray-500 dark:text-zinc-400 mt-0.5">
+              <p className="text-sm text-fg-muted mt-0.5">
                 {className} · {exam.subjectName} · {exam.academicYear}
               </p>
             </div>
@@ -226,32 +226,32 @@ const ExamDetail = () => {
 
       {/* Info Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card shadow="none" className="border border-gray-100 dark:border-zinc-800">
+        <Card shadow="none" className="border border-divider">
           <CardBody className="p-4">
-            <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">Type</p>
-            <p className="font-medium text-gray-900 dark:text-zinc-100 capitalize">
+            <p className="text-xs text-fg-muted mb-1">Type</p>
+            <p className="font-medium text-fg capitalize">
               {exam.type?.replace(/_/g, ' ')}
             </p>
           </CardBody>
         </Card>
-        <Card shadow="none" className="border border-gray-100 dark:border-zinc-800">
+        <Card shadow="none" className="border border-divider">
           <CardBody className="p-4">
-            <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">Date</p>
-            <p className="font-medium text-gray-900 dark:text-zinc-100">
+            <p className="text-xs text-fg-muted mb-1">Date</p>
+            <p className="font-medium text-fg">
               {exam.startDate ? formatShortDate(exam.startDate) : 'Not set'}
             </p>
           </CardBody>
         </Card>
-        <Card shadow="none" className="border border-gray-100 dark:border-zinc-800">
+        <Card shadow="none" className="border border-divider">
           <CardBody className="p-4">
-            <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">Max Marks</p>
-            <p className="font-medium text-gray-900 dark:text-zinc-100">{exam.maxMarks || 100}</p>
+            <p className="text-xs text-fg-muted mb-1">Max Marks</p>
+            <p className="font-medium text-fg">{exam.maxMarks || 100}</p>
           </CardBody>
         </Card>
-        <Card shadow="none" className="border border-gray-100 dark:border-zinc-800">
+        <Card shadow="none" className="border border-divider">
           <CardBody className="p-4">
-            <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">Passing Marks</p>
-            <p className="font-medium text-gray-900 dark:text-zinc-100">{exam.passingMarks ?? 35}</p>
+            <p className="text-xs text-fg-muted mb-1">Passing Marks</p>
+            <p className="font-medium text-fg">{exam.passingMarks ?? 35}</p>
           </CardBody>
         </Card>
       </div>
@@ -275,17 +275,17 @@ const ExamDetail = () => {
       )}
 
       {/* Results Summary */}
-      <Card shadow="none" className="border border-gray-100 dark:border-zinc-800">
+      <Card shadow="none" className="border border-divider">
         <CardBody className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg">
-                <Users size={18} className="text-gray-600 dark:text-zinc-400" />
+              <div className="p-2 bg-surface-2 rounded-lg">
+                <Users size={18} className="text-fg-muted" />
               </div>
               <div>
-                <h3 className="font-medium text-gray-900 dark:text-zinc-100">{t('pages.resultsSummary')}</h3>
+                <h3 className="font-medium text-fg">{t('pages.resultsSummary')}</h3>
                 {results.length > 0 && (
-                  <p className="text-xs text-gray-400 dark:text-zinc-500">Class avg: {stats.avg}%</p>
+                  <p className="text-xs text-fg-faint">Class avg: {stats.avg}%</p>
                 )}
               </div>
             </div>
@@ -301,8 +301,8 @@ const ExamDetail = () => {
 
           {results.length === 0 ? (
             <div className="text-center py-10">
-              <Eye size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-              <p className="text-gray-500 dark:text-zinc-400 mb-4">{t('pages.noResultsEnteredYet')}</p>
+              <Eye size={40} className="mx-auto mb-3 text-fg-faint" />
+              <p className="text-fg-muted mb-4">{t('pages.noResultsEnteredYet')}</p>
               <MinimalButton onClick={() => navigate(`/academics/exams/${examId}/results`)}>
                 Enter Results
               </MinimalButton>
@@ -311,14 +311,14 @@ const ExamDetail = () => {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-100 dark:border-zinc-800">
-                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Rank</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Student</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Roll No</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Marks</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">% / Percentile</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Grade</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase">Status</th>
+                  <tr className="border-b border-divider">
+                    <th className="text-left py-3 px-4 text-xs font-medium text-fg-muted uppercase">Rank</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-fg-muted uppercase">Student</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-fg-muted uppercase">Roll No</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-fg-muted uppercase">Marks</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-fg-muted uppercase">% / Percentile</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-fg-muted uppercase">Grade</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-fg-muted uppercase">Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -338,45 +338,45 @@ const ExamDetail = () => {
                     const resultId = String(result._id || result.id);
                     const percentile = percentileMap[resultId];
                     return (
-                      <tr key={result.id || result._id} className="border-b border-gray-50 dark:border-zinc-800/50 hover:bg-gray-50 dark:hover:bg-zinc-900">
+                      <tr key={result.id || result._id} className="border-b border-divider hover:bg-surface-2">
                         <td className="py-3 px-4">
                           {rank != null ? (
                             <div className="flex items-center gap-1.5">
                               {rank === 1 && <Trophy size={14} className="text-yellow-500 shrink-0" />}
-                              {rank === 2 && <Award size={14} className="text-gray-400 shrink-0" />}
+                              {rank === 2 && <Award size={14} className="text-fg-faint shrink-0" />}
                               {rank === 3 && <Award size={14} className="text-amber-600 shrink-0" />}
-                              <span className={`text-sm font-semibold ${rank === 1 ? 'text-yellow-600 dark:text-yellow-400' : rank <= 3 ? 'text-gray-700 dark:text-zinc-300' : 'text-gray-500 dark:text-zinc-400'}`}>
+                              <span className={`text-sm font-semibold ${rank === 1 ? 'text-yellow-600 dark:text-yellow-400' : rank <= 3 ? 'text-fg' : 'text-fg-muted'}`}>
                                 #{rank}
                               </span>
                             </div>
                           ) : (
-                            <span className="text-sm text-gray-400 dark:text-zinc-500">—</span>
+                            <span className="text-sm text-fg-faint">—</span>
                           )}
                         </td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center shrink-0">
-                              <span className="text-xs font-medium text-gray-600 dark:text-zinc-400">
+                            <div className="w-7 h-7 rounded-full bg-surface-2 flex items-center justify-center shrink-0">
+                              <span className="text-xs font-medium text-fg-muted">
                                 {getStudentName(result)?.charAt(0)?.toUpperCase() || 'S'}
                               </span>
                             </div>
-                            <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">
+                            <span className="text-sm font-medium text-fg">
                               {getStudentName(result)}
                             </span>
                           </div>
                         </td>
-                        <td className="py-3 px-4 text-sm text-gray-500 dark:text-zinc-400">
+                        <td className="py-3 px-4 text-sm text-fg-muted">
                           {getStudentRollNo(result) || '—'}
                         </td>
-                        <td className="py-3 px-4 text-sm text-gray-700 dark:text-zinc-300 font-medium">
+                        <td className="py-3 px-4 text-sm text-fg font-medium">
                           {result.marksObtained}/{exam.maxMarks || 100}
                         </td>
                         <td className="py-3 px-4">
-                          <div className="text-sm text-gray-600 dark:text-zinc-400">
+                          <div className="text-sm text-fg-muted">
                             {Math.max(0, Math.min(100, result.percentage ?? 0)).toFixed(1)}%
                           </div>
                           {percentile != null && status !== 'absent' && (
-                            <div className="text-xs text-gray-400 dark:text-zinc-500">
+                            <div className="text-xs text-fg-faint">
                               Beats {percentile}% of class
                             </div>
                           )}
@@ -409,22 +409,22 @@ const ExamDetail = () => {
         isOpen={publishModal}
         onClose={() => setPublishModal(false)}
         size="sm"
-        classNames={{ backdrop: 'bg-black/30', base: 'bg-white dark:bg-zinc-950' }}
+        classNames={{ backdrop: 'bg-black/30', base: 'bg-surface' }}
       >
         <ModalContent>
-          <ModalHeader className="border-b border-gray-100 dark:border-zinc-800 py-4">
+          <ModalHeader className="border-b border-divider py-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
                 <Send size={20} className="text-green-600 dark:text-green-400" />
               </div>
               <div>
                 <h3 className="text-lg font-medium">{t('pages.publishResults')}</h3>
-                <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal">{t('pages.makeResultsVisibleToStudents')}</p>
+                <p className="text-sm text-fg-muted font-normal">{t('pages.makeResultsVisibleToStudents')}</p>
               </div>
             </div>
           </ModalHeader>
           <ModalBody className="py-4">
-            <p className="text-sm text-gray-600 dark:text-zinc-400">
+            <p className="text-sm text-fg-muted">
               Publishing results for <span className="font-medium">{exam.name}</span> will make them visible to all students and parents.
             </p>
             <div className="mt-3 grid grid-cols-2 gap-3">
@@ -437,9 +437,9 @@ const ExamDetail = () => {
                 <p className="text-xs text-red-600 dark:text-red-400">Failing</p>
               </div>
             </div>
-            <p className="text-xs text-gray-400 dark:text-zinc-500 mt-3">{t('pages.thisActionCannotBeUndone2')}</p>
+            <p className="text-xs text-fg-faint mt-3">{t('pages.thisActionCannotBeUndone2')}</p>
           </ModalBody>
-          <ModalFooter className="border-t border-gray-100 dark:border-zinc-800">
+          <ModalFooter className="border-t border-divider">
             <Button variant="light" onPress={() => setPublishModal(false)} isDisabled={publishing}>
               Cancel
             </Button>

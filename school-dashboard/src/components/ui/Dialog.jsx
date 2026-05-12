@@ -1,14 +1,13 @@
 import { memo } from "react";
 import PropTypes from "prop-types";
-import { Button } from "@heroui/react";
 import Modal from "./Modal";
 
 /**
- * Dialog — lightweight alert / notice dialog built on top of Modal.
+ * Dialog — lightweight alert / notice built on top of Modal (REVAMP-05).
  *
- * Use when you need to tell the user something (e.g. "Invite sent", "Session
- * expired") rather than ask them to confirm a destructive action. For
- * destructive confirmations use `ConfirmDialog`.
+ * Use when you need to tell the user something (e.g. "Invite sent",
+ * "Session expired") rather than ask them to confirm a destructive action.
+ * For destructive confirmations use `ConfirmDialog`.
  */
 const Dialog = memo(function Dialog({
   isOpen,
@@ -32,13 +31,15 @@ const Dialog = memo(function Dialog({
       size={size}
       title={title}
       footer={
-        <Button color="primary" onPress={handleAction}>
+        <button type="button" className="btn btn--accent" onClick={handleAction}>
           {actionText}
-        </Button>
+        </button>
       }
     >
       {message ? (
-        <p className="text-default-700 leading-relaxed">{message}</p>
+        <p style={{ color: "var(--fg-muted)", margin: 0, lineHeight: 1.5 }}>
+          {message}
+        </p>
       ) : null}
       {children}
     </Modal>

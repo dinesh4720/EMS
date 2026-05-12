@@ -14,7 +14,7 @@ const FieldPreviewRenderer = ({ field }) => {
   const widthClass = field.width === "half" ? "w-[48%] inline-block align-top mr-[4%]" : "w-full";
 
   // Common Props matching HeroUI style
-  const labelClass = "text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-1.5";
+  const labelClass = "text-sm font-semibold text-fg mb-1.5";
 
   const commonProps = {
     label: field.label,
@@ -27,7 +27,7 @@ const FieldPreviewRenderer = ({ field }) => {
     radius: "lg",
     classNames: {
       label: labelClass,
-      inputWrapper: "bg-white dark:bg-zinc-950",
+      inputWrapper: "bg-surface",
     }
   };
 
@@ -43,7 +43,7 @@ const FieldPreviewRenderer = ({ field }) => {
       component = (
         <Input
           type="tel"
-          startContent={<span className="text-gray-400 dark:text-zinc-500 text-xs">+91</span>}
+          startContent={<span className="text-fg-faint text-xs">+91</span>}
           {...commonProps}
         />
       );
@@ -58,7 +58,7 @@ const FieldPreviewRenderer = ({ field }) => {
           minRows={3}
           classNames={{
             ...commonProps.classNames,
-            inputWrapper: "bg-white dark:bg-zinc-950 py-2"
+            inputWrapper: "bg-surface py-2"
           }}
         />
       );
@@ -69,7 +69,7 @@ const FieldPreviewRenderer = ({ field }) => {
           {...commonProps}
           classNames={{
             label: labelClass,
-            trigger: "bg-white dark:bg-zinc-950",
+            trigger: "bg-surface",
           }}
         >
           {field.options?.map((opt, idx) => (
@@ -91,16 +91,16 @@ const FieldPreviewRenderer = ({ field }) => {
             {field.options?.map((opt, idx) => (
               <div
                 key={`radio-${opt}`}
-                className="cursor-pointer rounded-xl border border-gray-200 dark:border-zinc-700 p-3 flex items-center gap-3 bg-white dark:bg-zinc-950 hover:bg-gray-50 dark:hover:bg-zinc-900 transition-all min-w-[120px]"
+                className="cursor-pointer rounded-xl border border-border-token p-3 flex items-center gap-3 bg-surface hover:bg-surface-2 transition-all min-w-[120px]"
               >
-                <div className="w-4 h-4 rounded-full border border-gray-300 dark:border-zinc-600 flex items-center justify-center">
+                <div className="w-4 h-4 rounded-full border border-border-token flex items-center justify-center">
                 </div>
-                <span className="text-sm font-medium text-gray-600 dark:text-zinc-300">{opt}</span>
+                <span className="text-sm font-medium text-fg-muted">{opt}</span>
               </div>
             ))}
           </div>
           {field.description && (
-            <p className="text-xs text-gray-400 dark:text-zinc-500">{field.description}</p>
+            <p className="text-xs text-fg-faint">{field.description}</p>
           )}
         </div>
       );
@@ -114,13 +114,13 @@ const FieldPreviewRenderer = ({ field }) => {
           </label>
           <div className="space-y-2">
             {field.options?.map((opt, idx) => (
-              <Checkbox key={`checkbox-${opt}`} size="sm" isDisabled classNames={{ label: "text-gray-700 dark:text-zinc-300" }}>
+              <Checkbox key={`checkbox-${opt}`} size="sm" isDisabled classNames={{ label: "text-fg" }}>
                 {opt}
               </Checkbox>
             ))}
           </div>
           {field.description && (
-            <p className="text-xs text-gray-400 dark:text-zinc-500">{field.description}</p>
+            <p className="text-xs text-fg-faint">{field.description}</p>
           )}
         </div>
       );
@@ -132,11 +132,11 @@ const FieldPreviewRenderer = ({ field }) => {
             {field.label}
             {field.required && <span className="text-danger ml-1">*</span>}
           </label>
-          <div className="border border-dashed border-gray-300 dark:border-zinc-600 rounded-lg p-4 flex items-center justify-center gap-3 bg-gray-50/50 dark:bg-zinc-900/50">
-            <Upload size={16} className="text-gray-400 dark:text-zinc-500" />
+          <div className="border border-dashed border-border-token rounded-lg p-4 flex items-center justify-center gap-3 bg-surface-2/50 /50">
+            <Upload size={16} className="text-fg-faint" />
             <div className="text-center">
-              <p className="text-xs text-gray-600 dark:text-zinc-400 font-medium">{t('pages.clickToUploadOrDragAndDrop')}</p>
-              {field.description && <p className="text-[10px] text-gray-400 dark:text-zinc-500 mt-1">{field.description}</p>}
+              <p className="text-xs text-fg-muted font-medium">{t('pages.clickToUploadOrDragAndDrop')}</p>
+              {field.description && <p className="text-[10px] text-fg-faint mt-1">{field.description}</p>}
             </div>
           </div>
         </div>

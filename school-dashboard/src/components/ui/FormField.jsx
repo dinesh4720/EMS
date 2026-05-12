@@ -16,6 +16,8 @@ export default function FormField({
   error,
   required = false,
   htmlFor,
+  name,
+  registerField,
   children,
   className,
 }) {
@@ -36,7 +38,10 @@ export default function FormField({
     : children;
 
   return (
-    <div className={cn("space-y-1.5", className)}>
+    <div
+      ref={name && registerField ? registerField(name) : undefined}
+      className={cn("space-y-1.5", className)}
+    >
       {label && (
         <label
           htmlFor={fieldId}
@@ -73,6 +78,8 @@ FormField.propTypes = {
   error: PropTypes.node,
   required: PropTypes.bool,
   htmlFor: PropTypes.string,
+  name: PropTypes.string,
+  registerField: PropTypes.func,
   children: PropTypes.node,
   className: PropTypes.string,
 };

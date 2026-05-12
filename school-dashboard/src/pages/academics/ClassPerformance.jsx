@@ -184,7 +184,7 @@ const ClassPerformance = () => {
     switch (trend) {
       case 'improving': return <ArrowUpRight className="text-success" size={14} />;
       case 'declining': return <ArrowDownRight className="text-danger" size={14} />;
-      default: return <Minus className="text-default-400" size={14} />;
+      default: return <Minus className="text-fg-faint" size={14} />;
     }
   };
 
@@ -202,8 +202,8 @@ const ClassPerformance = () => {
         <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-950 flex items-center justify-center">
           <FileText size={24} className="text-red-500" />
         </div>
-        <p className="text-sm font-medium text-gray-800 dark:text-zinc-200">Failed to load performance data</p>
-        <p className="text-xs text-gray-500 dark:text-zinc-400 max-w-xs text-center">{error}</p>
+        <p className="text-sm font-medium text-fg">Failed to load performance data</p>
+        <p className="text-xs text-fg-muted max-w-xs text-center">{error}</p>
         <Button size="sm" variant="flat" onPress={() => fetchData()}>Retry</Button>
       </div>
     );
@@ -214,10 +214,10 @@ const ClassPerformance = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-default-900">
+          <h1 className="text-2xl font-bold text-fg">
             {classInfo?.name || classId?.replace('-', ' ')} - Performance
           </h1>
-          <p className="text-default-500">Academic Year {selectedYear}</p>
+          <p className="text-fg-muted">Academic Year {selectedYear}</p>
         </div>
         <div className="flex items-center gap-3">
           <Select
@@ -246,54 +246,54 @@ const ClassPerformance = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="border border-default-200">
+        <Card className="border border-border-token">
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-lg">
                 <Users size={20} />
               </div>
               <div>
-                <p className="text-xs text-default-500">{t('pages.totalStudents1')}</p>
-                <p className="text-xl font-bold text-default-900">{classStats.totalStudents}</p>
+                <p className="text-xs text-fg-muted">{t('pages.totalStudents1')}</p>
+                <p className="text-xl font-bold text-fg">{classStats.totalStudents}</p>
               </div>
             </div>
           </CardBody>
         </Card>
-        <Card className="border border-default-200">
+        <Card className="border border-border-token">
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded-lg">
                 <TrendingUp size={20} />
               </div>
               <div>
-                <p className="text-xs text-default-500">{t('pages.averageScore')}</p>
-                <p className="text-xl font-bold text-default-900">{classStats.averageScore}%</p>
+                <p className="text-xs text-fg-muted">{t('pages.averageScore')}</p>
+                <p className="text-xl font-bold text-fg">{classStats.averageScore}%</p>
               </div>
             </div>
           </CardBody>
         </Card>
-        <Card className="border border-default-200">
+        <Card className="border border-border-token">
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400 rounded-lg">
                 <Trophy size={20} />
               </div>
               <div>
-                <p className="text-xs text-default-500">{t('pages.topScore')}</p>
-                <p className="text-xl font-bold text-default-900">{classStats.topScore}%</p>
+                <p className="text-xs text-fg-muted">{t('pages.topScore')}</p>
+                <p className="text-xl font-bold text-fg">{classStats.topScore}%</p>
               </div>
             </div>
           </CardBody>
         </Card>
-        <Card className="border border-default-200">
+        <Card className="border border-border-token">
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400 rounded-lg">
                 <Award size={20} />
               </div>
               <div>
-                <p className="text-xs text-default-500">{t('pages.passRate')}</p>
-                <p className="text-xl font-bold text-default-900">{classStats.passingRate}</p>
+                <p className="text-xs text-fg-muted">{t('pages.passRate')}</p>
+                <p className="text-xl font-bold text-fg">{classStats.passingRate}</p>
               </div>
             </div>
           </CardBody>
@@ -303,21 +303,21 @@ const ClassPerformance = () => {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Student Performance Distribution */}
-        <Card shadow="none" className="border border-default-200">
-          <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100">
+        <Card shadow="none" className="border border-border-token">
+          <CardHeader className="px-6 pt-6 pb-4 border-b border-divider">
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-lg">
                 <BarChart3 size={20} />
               </div>
-              <h3 className="text-lg font-semibold text-default-900">{t('pages.scoreDistribution')}</h3>
+              <h3 className="text-lg font-semibold text-fg">{t('pages.scoreDistribution')}</h3>
             </div>
           </CardHeader>
           <CardBody className="p-6">
             {filteredStudents.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-[250px] gap-2 text-center">
-                <BarChart3 size={32} className="text-default-300" />
-                <p className="text-sm text-default-500">No performance data available</p>
-                <p className="text-xs text-default-400">Publish exam results to see score distribution</p>
+                <BarChart3 size={32} className="text-fg-faint" />
+                <p className="text-sm text-fg-muted">No performance data available</p>
+                <p className="text-xs text-fg-faint">Publish exam results to see score distribution</p>
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={250}>
@@ -343,21 +343,21 @@ const ClassPerformance = () => {
         </Card>
 
         {/* Subject-wise Breakdown */}
-        <Card shadow="none" className="border border-default-200">
-          <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100">
+        <Card shadow="none" className="border border-border-token">
+          <CardHeader className="px-6 pt-6 pb-4 border-b border-divider">
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded-lg">
                 <BookOpen size={20} />
               </div>
-              <h3 className="text-lg font-semibold text-default-900">{t('pages.subjectAverages')}</h3>
+              <h3 className="text-lg font-semibold text-fg">{t('pages.subjectAverages')}</h3>
             </div>
           </CardHeader>
           <CardBody className="p-6">
             {subjectBreakdown.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-[250px] gap-2 text-center">
-                <BookOpen size={32} className="text-default-300" />
-                <p className="text-sm text-default-500">No subject data available</p>
-                <p className="text-xs text-default-400">Subject averages appear once results are published</p>
+                <BookOpen size={32} className="text-fg-faint" />
+                <p className="text-sm text-fg-muted">No subject data available</p>
+                <p className="text-xs text-fg-faint">Subject averages appear once results are published</p>
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={250}>
@@ -375,21 +375,21 @@ const ClassPerformance = () => {
       </div>
 
       {/* Student Ranking Table */}
-      <Card shadow="none" className="border border-default-200">
-        <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100">
+      <Card shadow="none" className="border border-border-token">
+        <CardHeader className="px-6 pt-6 pb-4 border-b border-divider">
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-yellow-100 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-400 rounded-lg">
                 <Trophy size={20} />
               </div>
-              <h3 className="text-lg font-semibold text-default-900">{t('pages.studentRankings1')}</h3>
+              <h3 className="text-lg font-semibold text-fg">{t('pages.studentRankings1')}</h3>
             </div>
             <Input
               size="sm"
               placeholder={t('pages.searchStudents')}
               value={searchQuery}
               onValueChange={setSearchQuery}
-              startContent={<Search size={16} className="text-default-400" />}
+              startContent={<Search size={16} className="text-fg-faint" />}
               className="w-64"
             />
           </div>
@@ -399,7 +399,7 @@ const ClassPerformance = () => {
             aria-label={t('aria.tables.studentRankings')}
             removeWrapper
             classNames={{
-              th: "bg-default-50 text-default-600",
+              th: "bg-surface-2 text-fg-muted",
               td: "py-3"
             }}
           >
@@ -422,18 +422,18 @@ const ClassPerformance = () => {
                   <TableCell>
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
                       student.rank === 1 ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300' :
-                      student.rank === 2 ? 'bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300' :
+                      student.rank === 2 ? 'bg-surface-2 text-fg' :
                       student.rank === 3 ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300' :
-                      'bg-default-100 text-default-600'
+                      'bg-surface-2 text-fg-muted'
                     }`}>
                       {student.rank != null ? student.rank : '—'}
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className="font-medium text-default-900">{student.name}</span>
+                    <span className="font-medium text-fg">{student.name}</span>
                   </TableCell>
                   <TableCell>
-                    <span className="text-default-500">{student.rollNo}</span>
+                    <span className="text-fg-muted">{student.rollNo}</span>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -484,13 +484,13 @@ const ClassPerformance = () => {
       </Card>
 
       {/* Subject Details Table */}
-      <Card shadow="none" className="border border-default-200">
-        <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100">
+      <Card shadow="none" className="border border-border-token">
+        <CardHeader className="px-6 pt-6 pb-4 border-b border-divider">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400 rounded-lg">
               <BookOpen size={20} />
             </div>
-            <h3 className="text-lg font-semibold text-default-900">{t('pages.subjectWiseDetails')}</h3>
+            <h3 className="text-lg font-semibold text-fg">{t('pages.subjectWiseDetails')}</h3>
           </div>
         </CardHeader>
         <CardBody className="p-0">
@@ -498,7 +498,7 @@ const ClassPerformance = () => {
             aria-label={t('aria.tables.subjectBreakdown')}
             removeWrapper
             classNames={{
-              th: "bg-default-50 text-default-600",
+              th: "bg-surface-2 text-fg-muted",
               td: "py-3"
             }}
           >
@@ -513,7 +513,7 @@ const ClassPerformance = () => {
               {subjectBreakdown.map((subject, idx) => (
                 <TableRow key={subject.subjectId || idx}>
                   <TableCell>
-                    <span className="font-medium text-default-900">{subject.subjectName}</span>
+                    <span className="font-medium text-fg">{subject.subjectName}</span>
                   </TableCell>
                   <TableCell>
                     <span className={`font-medium ${
@@ -534,7 +534,7 @@ const ClassPerformance = () => {
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className="text-sm text-default-500">
+                    <span className="text-sm text-fg-muted">
                       {subject.passRate != null ? `${subject.passRate}%` : '—'}
                     </span>
                   </TableCell>

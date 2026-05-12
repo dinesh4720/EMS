@@ -250,25 +250,32 @@ export default function Subjects() {
 
   return (
     <div className="w-full flex flex-col">
-      {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-background border-b border-default-200 py-4 -mx-6 -mt-6 px-6 mb-4">
-        {/* Left Side */}
-        <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold text-default-800">{t('pages.subjectsTeachers')}</h2>
-          <Chip size="sm" variant="flat">{subjects.length} {t('classes.subjects', 'Subjects')}</Chip>
-        </div>
-
-        {/* Right Side - Actions */}
-        <div className="flex gap-2 w-full sm:w-auto justify-end">
-          <Button
-            size="sm"
-            color="primary"
-            startContent={<Plus size={16} />}
-            onPress={() => setAddSubjectModal(true)}
-          >
-            {t('classes.addSubject', 'Add Subject')}
-          </Button>
-        </div>
+      {/* Toolbar — dense, mirrors StaffList */}
+      <div className="toolbar -mx-6 -mt-6 mb-4">
+        <span style={{ fontSize: 13, fontWeight: 520, letterSpacing: '-0.01em', color: 'var(--fg)' }}>
+          {t('pages.subjectsTeachers')}
+        </span>
+        <span className="status">
+          <span className="mono tnum">{subjects.length}</span>&nbsp;{t('classes.subjects', 'Subjects')}
+        </span>
+        {subjects.length > 0 && (
+          <>
+            <span className="status status--ok">
+              <span className="mono tnum">{onTrackCount}</span>&nbsp;on track
+            </span>
+            <span className="status status--warn">
+              <span className="mono tnum">{behindCount}</span>&nbsp;behind
+            </span>
+          </>
+        )}
+        <button
+          type="button"
+          className="btn btn--accent btn--sm"
+          onClick={() => setAddSubjectModal(true)}
+          style={{ marginLeft: 'auto' }}
+        >
+          <Plus size={13} aria-hidden /> {t('classes.addSubject', 'Add Subject')}
+        </button>
       </div>
 
       {/* Curriculum Health Summary */}

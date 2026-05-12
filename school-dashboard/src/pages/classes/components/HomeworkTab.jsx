@@ -112,9 +112,9 @@ export default function HomeworkTab({ id: classId, cls }) {
     <div className="space-y-4">
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-3 border border-gray-100 dark:border-zinc-800">
-          <p className="text-xs text-gray-500 dark:text-zinc-400">Total</p>
-          <p className="text-xl font-semibold text-gray-900 dark:text-zinc-100">{stats.total}</p>
+        <div className="bg-surface-2 rounded-lg p-3 border border-divider">
+          <p className="text-xs text-fg-muted">Total</p>
+          <p className="text-xl font-semibold text-fg">{stats.total}</p>
         </div>
         <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-3 border border-blue-100 dark:border-blue-900">
           <p className="text-xs text-blue-600 dark:text-blue-400">Active</p>
@@ -135,13 +135,13 @@ export default function HomeworkTab({ id: classId, cls }) {
         <div className="flex items-center gap-2 flex-wrap">
           {/* Search */}
           <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-faint" />
             <input
               type="text"
               placeholder="Search homework..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-3 py-1.5 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 focus:outline-none focus:border-gray-400 dark:focus:border-zinc-600 w-48"
+              className="pl-9 pr-3 py-1.5 text-sm border border-border-token rounded-lg bg-surface text-fg focus:outline-none focus:border-fg-faint w-48"
             />
           </div>
 
@@ -153,8 +153,8 @@ export default function HomeworkTab({ id: classId, cls }) {
                 onClick={() => setStatusFilter(sf.key)}
                 className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all ${
                   statusFilter === sf.key
-                    ? 'bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900'
-                    : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-200 dark:hover:bg-zinc-700'
+                    ? 'bg-accent text-accent-fg'
+                    : 'bg-surface-2 text-fg-muted hover:bg-surface-hover'
                 }`}
               >
                 {sf.label}
@@ -171,8 +171,8 @@ export default function HomeworkTab({ id: classId, cls }) {
       {/* Homework Cards */}
       {filteredHomework.length === 0 ? (
         <div className="text-center py-12">
-          <ClipboardList size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-          <p className="text-gray-500 dark:text-zinc-400 mb-4">
+          <ClipboardList size={40} className="mx-auto mb-3 text-fg-faint" />
+          <p className="text-fg-muted mb-4">
             {homework.length === 0 ? 'No homework assigned yet' : 'No homework matches your filters'}
           </p>
           {homework.length === 0 && (
@@ -192,14 +192,14 @@ export default function HomeworkTab({ id: classId, cls }) {
               <Card
                 key={hwId}
                 shadow="sm"
-                className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow"
+                className="bg-surface border border-border-token shadow-sm hover:shadow-md transition-shadow"
               >
                 <CardBody className="p-4 space-y-3">
                   {/* Header */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-gray-900 dark:text-zinc-100 truncate">{hw.title}</h3>
-                      <p className="text-sm text-gray-700 dark:text-zinc-300 mt-0.5">{hw.subject}</p>
+                      <h3 className="font-medium text-fg truncate">{hw.title}</h3>
+                      <p className="text-sm text-fg mt-0.5">{hw.subject}</p>
                     </div>
                     <Chip
                       size="sm"
@@ -220,18 +220,18 @@ export default function HomeworkTab({ id: classId, cls }) {
 
                   {/* Description */}
                   {hw.description && (
-                    <p className="text-sm text-gray-500 dark:text-zinc-400 line-clamp-2">{hw.description}</p>
+                    <p className="text-sm text-fg-muted line-clamp-2">{hw.description}</p>
                   )}
 
                   {/* Meta */}
                   <div className="flex items-center gap-4 text-sm">
-                    <span className="flex items-center gap-1 text-gray-500 dark:text-zinc-400">
+                    <span className="flex items-center gap-1 text-fg-muted">
                       <Calendar size={14} />
                       {hw.dueDate ? formatShortDate(hw.dueDate, 'Invalid date') : 'No due date'}
                     </span>
                     <button
                       onClick={() => setDetailId(hwId)}
-                      className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 text-xs hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
+                      className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-2 text-fg text-xs hover:bg-surface-hover transition-colors"
                       title="View submissions"
                     >
                       <Users size={12} />
@@ -240,14 +240,14 @@ export default function HomeworkTab({ id: classId, cls }) {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center justify-end pt-2 border-t border-gray-100 dark:border-zinc-800">
+                  <div className="flex items-center justify-end pt-2 border-t border-divider">
                     <div className="flex items-center gap-1">
                       <button
-                        className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                        className="p-1.5 rounded-lg hover:bg-surface-2 transition-colors"
                         onClick={() => setDetailId(hwId)}
                         title="View Details"
                       >
-                        <Eye size={15} className="text-gray-500 dark:text-zinc-400" />
+                        <Eye size={15} className="text-fg-muted" />
                       </button>
                       <button
                         className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors"
@@ -278,19 +278,19 @@ export default function HomeworkTab({ id: classId, cls }) {
         onClose={() => { setCreateModalOpen(false); setEditingHomework(null); }}
         size="2xl"
         scrollBehavior="inside"
-        classNames={{ backdrop: 'bg-black/30', base: 'bg-white dark:bg-zinc-950 max-h-[90vh]', body: 'py-0' }}
+        classNames={{ backdrop: 'bg-black/30', base: 'bg-surface max-h-[90vh]', body: 'py-0' }}
       >
         <ModalContent>
-          <ModalHeader className="border-b border-gray-100 dark:border-zinc-800 py-4 px-6">
+          <ModalHeader className="border-b border-divider py-4 px-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg">
-                <ClipboardList size={20} className="text-gray-600 dark:text-zinc-300" />
+              <div className="p-2 bg-surface-2 rounded-lg">
+                <ClipboardList size={20} className="text-fg-muted" />
               </div>
               <div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">
+                <h3 className="text-lg font-medium text-fg">
                   {editingHomework ? 'Edit Homework' : 'Create Homework'}
                 </h3>
-                <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal">
+                <p className="text-sm text-fg-muted font-normal">
                   {cls?.name} - {cls?.section}
                 </p>
               </div>
@@ -324,27 +324,27 @@ export default function HomeworkTab({ id: classId, cls }) {
         isOpen={deleteModal.isOpen}
         onClose={() => setDeleteModal({ isOpen: false, id: null, title: '' })}
         size="sm"
-        classNames={{ backdrop: 'bg-black/30', base: 'bg-white dark:bg-zinc-950' }}
+        classNames={{ backdrop: 'bg-black/30', base: 'bg-surface' }}
       >
         <ModalContent>
-          <ModalHeader className="border-b border-gray-100 dark:border-zinc-800 py-4">
+          <ModalHeader className="border-b border-divider py-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-red-100 dark:bg-red-950 rounded-lg">
                 <AlertTriangle size={20} className="text-red-500" />
               </div>
               <div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">Delete Homework</h3>
-                <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal">This action cannot be undone</p>
+                <h3 className="text-lg font-medium text-fg">Delete Homework</h3>
+                <p className="text-sm text-fg-muted font-normal">This action cannot be undone</p>
               </div>
             </div>
           </ModalHeader>
           <ModalBody className="py-4">
-            <p className="text-sm text-gray-600 dark:text-zinc-300">
+            <p className="text-sm text-fg">
               Are you sure you want to delete <span className="font-medium">{deleteModal.title}</span>?
               All student submissions will also be removed.
             </p>
           </ModalBody>
-          <ModalFooter className="border-t border-gray-100 dark:border-zinc-800">
+          <ModalFooter className="border-t border-divider">
             <Button variant="light" onPress={() => setDeleteModal({ isOpen: false, id: null, title: '' })}>Cancel</Button>
             <Button color="danger" onPress={handleConfirmDelete}>Delete Homework</Button>
           </ModalFooter>

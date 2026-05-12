@@ -128,17 +128,17 @@ const TimetableWizardPage = () => {
 
   const getClassStatus = (cls) => {
     const timetable = getTimetableForClass(cls.id || cls._id);
-    if (!timetable) return { status: 'not-created', label: 'Not Created', color: 'text-gray-500 dark:text-zinc-400', bgColor: 'bg-gray-100 dark:bg-zinc-800', icon: AlertTriangle };
+    if (!timetable) return { status: 'not-created', label: 'Not Created', color: 'text-fg-muted', bgColor: 'bg-surface-2', icon: AlertTriangle };
     if (!cls.subjects || cls.subjects.length === 0) return { status: 'missing-subjects', label: 'Missing Subjects', color: 'text-orange-500', bgColor: 'bg-orange-100 dark:bg-orange-950', icon: AlertTriangle };
     return { status: 'created', label: 'Created', color: 'text-green-600 dark:text-green-400', bgColor: 'bg-green-100 dark:bg-green-950', icon: CheckCircle };
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 flex items-center justify-center">
+      <div className="min-h-screen bg-bg flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          <p className="text-sm text-gray-500 dark:text-zinc-400">Loading timetable wizard...</p>
+          <p className="text-sm text-fg-muted">Loading timetable wizard...</p>
         </div>
       </div>
     );
@@ -196,30 +196,30 @@ const TimetableWizardPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 flex flex-col">
+    <div className="min-h-screen bg-bg flex flex-col">
 
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800 shrink-0">
+      <div className="flex items-center justify-between px-6 py-4 bg-surface border-b border-border-token shrink-0">
         <div className="flex items-center gap-4">
           <Button
             isIconOnly
             variant="light"
             aria-label="Go back"
             onPress={() => navigate(-1)}
-            className="text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100"
+            className="text-fg-muted hover:text-gray-900 dark:hover:text-zinc-100"
           >
             <ChevronLeft size={20} />
           </Button>
-          <div className="h-6 w-px bg-gray-200 dark:bg-zinc-700" />
+          <div className="h-6 w-px bg-surface-2" />
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-lg">
               <Calendar size={22} className="text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-bold font-outfit text-gray-900 dark:text-zinc-100 leading-tight">
+              <h1 className="text-xl font-bold font-outfit text-fg leading-tight">
                 {t('components.masterTimetableWizard')}
               </h1>
-              <p className="text-xs text-gray-500 dark:text-zinc-500">
+              <p className="text-xs text-fg-muted">
                 Configure subjects, assign teachers, and generate timetables for the entire school.
               </p>
             </div>
@@ -229,18 +229,18 @@ const TimetableWizardPage = () => {
         {/* Quick stats */}
         <div className="hidden md:flex items-center gap-6">
           <div className="text-center">
-            <p className="text-lg font-bold text-gray-900 dark:text-zinc-100">{classes.length}</p>
-            <p className="text-xs text-gray-500 dark:text-zinc-500">Total Classes</p>
+            <p className="text-lg font-bold text-fg">{classes.length}</p>
+            <p className="text-xs text-fg-muted">Total Classes</p>
           </div>
-          <div className="h-8 w-px bg-gray-200 dark:bg-zinc-700" />
+          <div className="h-8 w-px bg-surface-2" />
           <div className="text-center">
             <p className="text-lg font-bold text-green-600 dark:text-green-400">{timetables.length}</p>
-            <p className="text-xs text-gray-500 dark:text-zinc-500">Created</p>
+            <p className="text-xs text-fg-muted">Created</p>
           </div>
-          <div className="h-8 w-px bg-gray-200 dark:bg-zinc-700" />
+          <div className="h-8 w-px bg-surface-2" />
           <div className="text-center">
             <p className="text-lg font-bold text-orange-500">{classes.length - timetables.length}</p>
-            <p className="text-xs text-gray-500 dark:text-zinc-500">Missing</p>
+            <p className="text-xs text-fg-muted">Missing</p>
           </div>
         </div>
       </div>
@@ -248,8 +248,8 @@ const TimetableWizardPage = () => {
       <div className="flex flex-1 overflow-hidden">
 
         {/* Left Sidebar */}
-        <div className="w-72 bg-white dark:bg-zinc-900 border-r border-gray-200 dark:border-zinc-800 shrink-0 flex flex-col pt-6 pb-6 px-4 gap-2 overflow-y-auto">
-          <p className="text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-2 px-2">
+        <div className="w-72 bg-surface border-r border-border-token shrink-0 flex flex-col pt-6 pb-6 px-4 gap-2 overflow-y-auto">
+          <p className="text-xs font-semibold text-fg-faint uppercase tracking-wider mb-2 px-2">
             {t('components.wizardSteps')}
           </p>
 
@@ -262,17 +262,17 @@ const TimetableWizardPage = () => {
                 onClick={() => !tab.disabled && setActiveTab(tab.key)}
                 disabled={tab.disabled}
                 className={`flex items-start gap-4 p-4 rounded-xl transition-all duration-200 border-2 text-left
-                  ${isActive ? tab.activeColor : 'border-transparent hover:bg-gray-50 dark:hover:bg-zinc-800'}
+                  ${isActive ? tab.activeColor : 'border-transparent hover:bg-surface-2'}
                   ${tab.disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
               >
-                <div className={`mt-0.5 shrink-0 ${isActive ? tab.activeIcon : 'text-gray-400 dark:text-zinc-500'}`}>
+                <div className={`mt-0.5 shrink-0 ${isActive ? tab.activeIcon : 'text-fg-faint'}`}>
                   <Icon size={22} />
                 </div>
                 <div>
-                  <h3 className={`font-semibold text-sm ${isActive ? tab.activeLabel : 'text-gray-700 dark:text-zinc-300'}`}>
+                  <h3 className={`font-semibold text-sm ${isActive ? tab.activeLabel : 'text-fg'}`}>
                     {tab.label}
                   </h3>
-                  <p className="text-xs text-gray-500 dark:text-zinc-500 mt-1 line-clamp-2">{tab.desc}</p>
+                  <p className="text-xs text-fg-muted mt-1 line-clamp-2">{tab.desc}</p>
                   {tab.badge && (
                     <span className={`inline-block mt-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${tab.badge.cls}`}>
                       {tab.badge.text}
@@ -290,9 +290,9 @@ const TimetableWizardPage = () => {
           {/* Step 1 — Missing Subjects */}
           {activeTab === "missing-subjects" && (
             <div className="max-w-4xl mx-auto p-8 space-y-6">
-              <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-orange-200 dark:border-orange-900 overflow-hidden">
+              <div className="bg-surface rounded-2xl shadow-sm border border-orange-200 dark:border-orange-900 overflow-hidden">
                 <div className="bg-orange-50 dark:bg-orange-950/40 border-b border-orange-100 dark:border-orange-900 p-6 flex items-start gap-4">
-                  <div className="p-3 bg-white dark:bg-zinc-800 shadow-sm text-orange-500 rounded-full mt-1 shrink-0">
+                  <div className="p-3 bg-surface shadow-sm text-orange-500 rounded-full mt-1 shrink-0">
                     <AlertTriangle size={26} />
                   </div>
                   <div>
@@ -311,13 +311,13 @@ const TimetableWizardPage = () => {
                     return (
                       <div
                         key={classIdStr || index}
-                        className="flex flex-col md:flex-row md:items-center gap-4 p-5 bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl hover:border-orange-300 dark:hover:border-orange-700 transition-colors"
+                        className="flex flex-col md:flex-row md:items-center gap-4 p-5 bg-surface-2 border border-border-token rounded-xl hover:border-orange-300 dark:hover:border-orange-700 transition-colors"
                       >
                         <div className="flex-shrink-0 w-48">
-                          <p className="font-semibold text-gray-900 dark:text-zinc-100 text-lg">
+                          <p className="font-semibold text-fg text-lg">
                             {cls.className || `${cls.name}-${cls.section}`}
                           </p>
-                          <p className="text-sm text-gray-500 dark:text-zinc-400">{t('components.unassigned')}</p>
+                          <p className="text-sm text-fg-muted">{t('components.unassigned')}</p>
                         </div>
                         <div className="flex-1">
                           <Select
@@ -347,8 +347,8 @@ const TimetableWizardPage = () => {
                   })}
                 </div>
 
-                <div className="p-6 bg-gray-50 dark:bg-zinc-800/50 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-between">
-                  <p className="text-sm text-gray-500 dark:text-zinc-400">
+                <div className="p-6 bg-surface-2 border-t border-divider flex items-center justify-between">
+                  <p className="text-sm text-fg-muted">
                     {missingSubjectsClasses.length} class{missingSubjectsClasses.length !== 1 ? 'es' : ''} need subject assignments
                   </p>
                   <Button
@@ -369,7 +369,7 @@ const TimetableWizardPage = () => {
           {/* Step 2 — Teachers */}
           {activeTab === "teachers" && (
             <div className="p-8">
-              <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-gray-200 dark:border-zinc-800 p-8 min-h-[70vh]">
+              <div className="bg-surface rounded-2xl shadow-sm border border-border-token p-8 min-h-[70vh]">
                 <BulkClassTeacherAssignment />
               </div>
             </div>
@@ -379,17 +379,17 @@ const TimetableWizardPage = () => {
           {activeTab === "generate" && (
             <div className="max-w-3xl mx-auto p-8 space-y-6">
               {/* Rules config */}
-              <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-gray-200 dark:border-zinc-800 overflow-hidden">
-                <div className="p-5 border-b border-gray-100 dark:border-zinc-800 flex items-center gap-3">
-                  <Settings2 size={18} className="text-gray-500 dark:text-zinc-400" />
-                  <h3 className="font-semibold text-gray-900 dark:text-zinc-100">Generation Rules</h3>
-                  <span className="text-xs bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 px-2 py-0.5 rounded-full ml-auto">
+              <div className="bg-surface rounded-2xl shadow-sm border border-border-token overflow-hidden">
+                <div className="p-5 border-b border-divider flex items-center gap-3">
+                  <Settings2 size={18} className="text-fg-muted" />
+                  <h3 className="font-semibold text-fg">Generation Rules</h3>
+                  <span className="text-xs bg-surface-2 text-fg-muted px-2 py-0.5 rounded-full ml-auto">
                     Optional
                   </span>
                 </div>
                 <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-3">
+                    <label className="block text-sm font-medium text-fg mb-3">
                       Max periods per subject / day
                     </label>
                     <div className="flex items-center gap-3">
@@ -409,7 +409,7 @@ const TimetableWizardPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-3">
+                    <label className="block text-sm font-medium text-fg mb-3">
                       Max periods per subject / week
                     </label>
                     <div className="flex items-center gap-3">
@@ -428,10 +428,10 @@ const TimetableWizardPage = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-zinc-800 rounded-xl">
+                  <div className="flex items-center justify-between p-4 bg-surface-2 rounded-xl">
                     <div>
-                      <p className="text-sm font-medium text-gray-700 dark:text-zinc-300">No consecutive same subject</p>
-                      <p className="text-xs text-gray-500 dark:text-zinc-500 mt-0.5">Avoid back-to-back periods of the same subject</p>
+                      <p className="text-sm font-medium text-fg">No consecutive same subject</p>
+                      <p className="text-xs text-fg-muted mt-0.5">Avoid back-to-back periods of the same subject</p>
                     </div>
                     <Switch
                       isSelected={periodRules.noConsecutiveSame}
@@ -441,10 +441,10 @@ const TimetableWizardPage = () => {
                     />
                   </div>
 
-                  <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-zinc-800 rounded-xl">
+                  <div className="flex items-center justify-between p-4 bg-surface-2 rounded-xl">
                     <div>
-                      <p className="text-sm font-medium text-gray-700 dark:text-zinc-300">Prefer morning for core subjects</p>
-                      <p className="text-xs text-gray-500 dark:text-zinc-500 mt-0.5">Schedule Maths / Science in earlier slots</p>
+                      <p className="text-sm font-medium text-fg">Prefer morning for core subjects</p>
+                      <p className="text-xs text-fg-muted mt-0.5">Schedule Maths / Science in earlier slots</p>
                     </div>
                     <Switch
                       isSelected={periodRules.preferMorningForCore}
@@ -457,16 +457,16 @@ const TimetableWizardPage = () => {
               </div>
 
               {/* Generate action */}
-              <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-sm border border-gray-200 dark:border-zinc-800 p-12 text-center">
+              <div className="bg-surface rounded-3xl shadow-sm border border-border-token p-12 text-center">
                 <div className="w-20 h-20 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
                   <Wand2 size={42} />
                 </div>
-                <h2 className="text-2xl font-bold font-outfit text-gray-900 dark:text-zinc-100 mb-3">
+                <h2 className="text-2xl font-bold font-outfit text-fg mb-3">
                   {t('components.autoGenerateTimetables')}
                 </h2>
-                <p className="text-gray-500 dark:text-zinc-400 mb-2 leading-relaxed max-w-lg mx-auto">
+                <p className="text-fg-muted mb-2 leading-relaxed max-w-lg mx-auto">
                   Generate clash-free timetables for all{' '}
-                  <strong className="text-gray-700 dark:text-zinc-300">{classes.length} classes</strong>{' '}
+                  <strong className="text-fg">{classes.length} classes</strong>{' '}
                   simultaneously based on your subjects and teacher assignments.
                 </p>
                 {missingSubjectsClasses.length > 0 && (
@@ -499,14 +499,14 @@ const TimetableWizardPage = () => {
               {/* Stats */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                  { value: classes.length, label: t('components.totalClasses'), color: 'text-gray-900 dark:text-zinc-100' },
+                  { value: classes.length, label: t('components.totalClasses'), color: 'text-fg' },
                   { value: timetables.length, label: t('components.timetablesCreated'), color: 'text-green-600 dark:text-green-400' },
                   { value: classes.length - timetables.length, label: t('components.missingTimetables'), color: 'text-orange-600' },
                   { value: classes.filter(c => !c.subjects || c.subjects.length === 0).length, label: t('components.missingSubjects'), color: 'text-red-500' },
                 ].map((stat, i) => (
-                  <div key={i} className="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-gray-200 dark:border-zinc-800 p-6 flex flex-col items-center justify-center text-center">
+                  <div key={i} className="bg-surface rounded-2xl shadow-sm border border-border-token p-6 flex flex-col items-center justify-center text-center">
                     <span className={`text-3xl font-bold mb-1 ${stat.color}`}>{stat.value}</span>
-                    <span className="text-sm text-gray-500 dark:text-zinc-400 font-medium">{stat.label}</span>
+                    <span className="text-sm text-fg-muted font-medium">{stat.label}</span>
                   </div>
                 ))}
               </div>
@@ -521,15 +521,15 @@ const TimetableWizardPage = () => {
                   return (
                     <div
                       key={cls.id || cls._id}
-                      className="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-gray-200 dark:border-zinc-800 hover:border-primary/50 transition-all hover:shadow-md overflow-hidden flex flex-col"
+                      className="bg-surface rounded-2xl shadow-sm border border-border-token hover:border-primary/50 transition-all hover:shadow-md overflow-hidden flex flex-col"
                     >
                       <div className="p-6 flex-1">
                         <div className="flex items-start justify-between mb-4">
                           <div>
-                            <h3 className="text-xl font-bold text-gray-900 dark:text-zinc-100">
+                            <h3 className="text-xl font-bold text-fg">
                               {cls.name} - {cls.section}
                             </h3>
-                            <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">
+                            <p className="text-sm text-fg-muted mt-1">
                               {cls.students?.length || 0} students enrolled
                             </p>
                           </div>
@@ -539,15 +539,15 @@ const TimetableWizardPage = () => {
                           </span>
                         </div>
 
-                        <div className="space-y-3 mb-4 bg-gray-50 dark:bg-zinc-800 rounded-xl p-4">
+                        <div className="space-y-3 mb-4 bg-surface-2 rounded-xl p-4">
                           <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-500 dark:text-zinc-400">{t('components.totalSubjects')}</span>
-                            <span className="font-semibold text-gray-900 dark:text-zinc-100">{cls.subjects?.length || 0}</span>
+                            <span className="text-fg-muted">{t('components.totalSubjects')}</span>
+                            <span className="font-semibold text-fg">{cls.subjects?.length || 0}</span>
                           </div>
                           {timetable && (
                             <div className="flex items-center justify-between text-sm">
-                              <span className="text-gray-500 dark:text-zinc-400">{t('components.periodsPerWeek')}</span>
-                              <span className="font-semibold text-gray-900 dark:text-zinc-100">
+                              <span className="text-fg-muted">{t('components.periodsPerWeek')}</span>
+                              <span className="font-semibold text-fg">
                                 {timetable.periods?.length || 0} base periods
                               </span>
                             </div>
@@ -555,7 +555,7 @@ const TimetableWizardPage = () => {
                         </div>
                       </div>
 
-                      <div className="bg-gray-50 dark:bg-zinc-800/50 px-6 py-4 border-t border-gray-100 dark:border-zinc-800">
+                      <div className="bg-surface-2 px-6 py-4 border-t border-divider">
                         <Button
                           onPress={() => navigate(`/classes/timetable?classId=${cls.id || cls._id}`)}
                           color="primary"

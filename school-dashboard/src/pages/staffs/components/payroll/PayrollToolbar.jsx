@@ -1,14 +1,32 @@
+import { useState, useRef, useEffect } from "react";
 import {
-  Spinner, Chip,
-  Dropdown, DropdownTrigger, DropdownMenu, DropdownItem,
-  Select, SelectItem
-} from "@heroui/react";
-import {
-  Filter, Search, Play, Wallet, CreditCard, X, CheckCircle2, ChevronDown,
-  Download
+  Filter, Search, Play, Wallet, CreditCard, X, ChevronDown, Download
 } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import toast from "react-hot-toast";
+
+/**
+ * REVAMP-17: Toolbar follows the StaffList toolbar pattern —
+ * search + seg-style cycle pill + filter dropdown on the left,
+ * action cluster (Run / Bulk / Export / Fix) on the right.
+ *
+ * Cycle filter renders two native <select> elements inside a
+ * .payroll-cycle pill so the month/year switcher has the same
+ * density as .seg pills used elsewhere.
+ */
+
+const STATUS_OPTIONS = [
+  { key: 'all', label: 'All status' },
+  { key: 'generated', label: 'Generated' },
+  { key: 'paid', label: 'Recorded' },
+];
+
+const EMPLOYMENT_OPTIONS = [
+  { key: 'all', label: 'All types' },
+  { key: 'full_time', label: 'Full-time' },
+  { key: 'part_time', label: 'Part-time' },
+  { key: 'contractor', label: 'Contractor' },
+];
 
 export default function PayrollToolbar({
   selectedMonth,
@@ -24,8 +42,6 @@ export default function PayrollToolbar({
   setStatusFilter,
   employmentFilter,
   setEmploymentFilter,
-  isFilterDropdownOpen,
-  setIsFilterDropdownOpen,
   isAnySelected,
   selectedCount,
   handleBulkPay,
@@ -35,212 +51,212 @@ export default function PayrollToolbar({
   preparingRecords,
 }) {
   const { t } = useTranslation();
+  const [filterOpen, setFilterOpen] = useState(false);
+  const filterRef = useRef(null);
+
+  // Click-outside to close filter dropdown
+  useEffect(() => {
+    if (!filterOpen) return;
+    const onDocClick = (e) => {
+      if (filterRef.current && !filterRef.current.contains(e.target)) {
+        setFilterOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [filterOpen]);
+
+  const activeFilterCount =
+    (statusFilter !== 'all' ? 1 : 0) + (employmentFilter !== 'all' ? 1 : 0);
+
+  const clearFilters = () => {
+    setStatusFilter('all');
+    setEmploymentFilter('all');
+    setSearchQuery('');
+    toast.success(t('toast.success.filtersCleared'));
+  };
 
   return (
-    <div className="flex flex-col sm:flex-row justify-between gap-4 items-start bg-white dark:bg-zinc-950 border-b border-default-200 py-4 -mx-6 -mt-6 px-6">
-      <div className="flex flex-wrap gap-3 items-center w-full sm:w-auto">
-        {/* Month/Year Selector */}
-        <div className="flex gap-2 items-center">
-          <Select
-            label={t('pages.month1')}
-            selectedKeys={new Set([selectedMonth.toString()])}
-            onSelectionChange={(keys) => setSelectedMonth(parseInt(Array.from(keys)[0]))}
-            className="w-36"
-            size="sm"
-            variant="bordered"
-            classNames={{
-              label: "text-xs",
-              trigger: "min-h-unit-8"
-            }}
+    <div className="payroll-toolbar">
+      <div className="payroll-toolbar__cluster">
+        {/* Cycle: month + year as a single .seg-flavored pill */}
+        <div className="payroll-cycle" aria-label="Payroll cycle">
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(parseInt(e.target.value, 10))}
+            aria-label={t('pages.month1')}
           >
             {availableMonths.map((month) => {
-              const actualMonthIndex = months.indexOf(month) + 1;
+              const idx = months.indexOf(month) + 1;
               return (
-                <SelectItem key={actualMonthIndex.toString()} textValue={month} className="text-sm">{month}</SelectItem>
+                <option key={idx} value={idx}>{month}</option>
               );
             })}
-          </Select>
-          <Select
-            label={t('pages.year1')}
-            selectedKeys={new Set([selectedYear.toString()])}
-            onSelectionChange={(keys) => setSelectedYear(parseInt(Array.from(keys)[0]))}
-            className="w-28"
-            size="sm"
-            variant="bordered"
-            classNames={{
-              label: "text-xs",
-              trigger: "min-h-unit-8"
-            }}
+          </select>
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(parseInt(e.target.value, 10))}
+            aria-label={t('pages.year1')}
           >
-            {years.map(year => (
-              <SelectItem key={year.toString()} textValue={year.toString()} className="text-sm">{year}</SelectItem>
+            {years.map((y) => (
+              <option key={y} value={y}>{y}</option>
             ))}
-          </Select>
+          </select>
         </div>
 
         {/* Search */}
-        <div className="flex items-center gap-2 w-full sm:max-w-[250px] px-3 py-2 bg-default-100 rounded-lg border border-default-200 hover:border-primary hover:bg-default-50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200">
-          <Search size={16} className="text-default-400" />
+        <div className="toolbar__search" style={{ width: 240 }}>
+          <Search size={13} aria-hidden style={{ color: 'var(--fg-faint)' }} />
           <input
             type="text"
             placeholder={t('pages.searchEmployee1')}
-            className="flex-1 bg-transparent outline-none text-sm"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            aria-label="Search staff"
           />
           {searchQuery && (
-            <button onClick={() => setSearchQuery("")} className="p-0.5 hover:bg-default-200 rounded cursor-pointer">
-              <X size={14} className="text-default-400" />
+            <button
+              type="button"
+              className="iconbtn"
+              style={{ width: 20, height: 20 }}
+              onClick={() => setSearchQuery('')}
+              aria-label="Clear search"
+            >
+              <X size={11} aria-hidden />
             </button>
           )}
         </div>
 
-        {/* Unified Filter Dropdown */}
-        <Dropdown isOpen={isFilterDropdownOpen} onOpenChange={setIsFilterDropdownOpen}>
-          <DropdownTrigger>
-            <div className="flex items-center gap-2">
-              <button className="flex items-center gap-2 px-3 py-2 bg-default-100 rounded-lg border border-default-300 hover:border-primary transition-all duration-200 cursor-pointer text-sm">
-                <Filter size={16} className="text-default-400" />
-                <span className="text-default-600">{t('pages.filters2')}</span>
-                {(statusFilter !== 'all' || employmentFilter !== 'all') && (
-                  <Chip size="sm" color="primary" variant="solid" className="h-5 min-w-5 px-1">
-                    {(statusFilter !== 'all' ? 1 : 0) + (employmentFilter !== 'all' ? 1 : 0)}
-                  </Chip>
-                )}
-                <ChevronDown size={14} className="text-default-400" />
-              </button>
-              {(statusFilter !== 'all' || employmentFilter !== 'all') && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setStatusFilter('all');
-                    setEmploymentFilter('all');
-                    setSearchQuery('');
-                    toast.success(t('toast.success.filtersCleared'));
-                  }}
-                  className="flex items-center justify-center w-8 h-8 bg-danger-100 text-danger-600 rounded-lg border border-danger-200 hover:bg-danger-200 transition-all duration-200 cursor-pointer"
-                  title={t('pages.clearAllFilters')}
-                >
-                  <X size={14} />
-                </button>
-              )}
+        {/* Filter dropdown */}
+        <div ref={filterRef} style={{ position: 'relative' }}>
+          <button
+            type="button"
+            className="btn btn--sm"
+            onClick={() => setFilterOpen((v) => !v)}
+            aria-expanded={filterOpen}
+            aria-haspopup="menu"
+          >
+            <Filter size={12} aria-hidden />
+            <span>Filters</span>
+            {activeFilterCount > 0 && (
+              <span className="chip chip--accent mono tnum" style={{ height: 16, padding: '0 5px' }}>
+                {activeFilterCount}
+              </span>
+            )}
+            <ChevronDown size={12} aria-hidden />
+          </button>
+          {filterOpen && (
+            <div
+              className="glass"
+              role="menu"
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 4px)',
+                left: 0,
+                width: 220,
+                borderRadius: 8,
+                padding: 8,
+                zIndex: 20,
+                boxShadow: 'var(--shadow-lg)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+              }}
+            >
+              <div>
+                <div className="card__title" style={{ marginBottom: 4 }}>Status</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  {STATUS_OPTIONS.map((o) => (
+                    <button
+                      key={o.key}
+                      type="button"
+                      className="cnav"
+                      style={{ height: 26, fontSize: 12.5 }}
+                      onClick={() => { setStatusFilter(o.key); setFilterOpen(false); }}
+                    >
+                      <span style={{ flex: 1, textAlign: 'left' }}>{o.label}</span>
+                      {statusFilter === o.key && (
+                        <span className="chip chip--accent">on</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ height: 1, background: 'var(--divider)' }} />
+              <div>
+                <div className="card__title" style={{ marginBottom: 4 }}>Employment</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  {EMPLOYMENT_OPTIONS.map((o) => (
+                    <button
+                      key={o.key}
+                      type="button"
+                      className="cnav"
+                      style={{ height: 26, fontSize: 12.5 }}
+                      onClick={() => { setEmploymentFilter(o.key); setFilterOpen(false); }}
+                    >
+                      <span style={{ flex: 1, textAlign: 'left' }}>{o.label}</span>
+                      {employmentFilter === o.key && (
+                        <span className="chip chip--accent">on</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
-          </DropdownTrigger>
-          <DropdownMenu aria-label={t('aria.menus.filters')} className="w-64 max-h-[400px] overflow-y-auto">
-            <DropdownItem key="status-header" isReadOnly className="opacity-100 font-semibold text-default-500 text-xs uppercase">
-              Status
-            </DropdownItem>
-            <DropdownItem
-              key="status-all"
-              onClick={() => setStatusFilter('all')}
-              className={statusFilter === 'all' ? 'bg-primary-50' : ''}
-            >
-              <div className="flex items-center justify-between w-full">
-                <span>{t('pages.allStatus1')}</span>
-                {statusFilter === 'all' && <CheckCircle2 size={14} className="text-primary" />}
-              </div>
-            </DropdownItem>
-            <DropdownItem
-              key="status-generated"
-              onClick={() => setStatusFilter('generated')}
-              className={statusFilter === 'generated' ? 'bg-primary-50' : ''}
-            >
-              <div className="flex items-center justify-between w-full">
-                <span>{t('pages.generated1')}</span>
-                {statusFilter === 'generated' && <CheckCircle2 size={14} className="text-primary" />}
-              </div>
-            </DropdownItem>
-            <DropdownItem
-              key="status-paid"
-              onClick={() => setStatusFilter('paid')}
-              className={statusFilter === 'paid' ? 'bg-primary-50' : ''}
-            >
-              <div className="flex items-center justify-between w-full">
-                <span>{t('pages.paid2')}</span>
-                {statusFilter === 'paid' && <CheckCircle2 size={14} className="text-primary" />}
-              </div>
-            </DropdownItem>
-            <DropdownItem key="divider1" isReadOnly className="opacity-100">
-              <div className="h-px bg-default-200 my-1" />
-            </DropdownItem>
-            <DropdownItem key="employment-header" isReadOnly className="opacity-100 font-semibold text-default-500 text-xs uppercase">
-              Employment Type
-            </DropdownItem>
-            <DropdownItem
-              key="employment-all"
-              onClick={() => setEmploymentFilter('all')}
-              className={employmentFilter === 'all' ? 'bg-primary-50' : ''}
-            >
-              <div className="flex items-center justify-between w-full">
-                <span>{t('pages.allTypes1')}</span>
-                {employmentFilter === 'all' && <CheckCircle2 size={14} className="text-primary" />}
-              </div>
-            </DropdownItem>
-            <DropdownItem
-              key="full_time"
-              onClick={() => setEmploymentFilter('full_time')}
-              className={employmentFilter === 'full_time' ? 'bg-primary-50' : ''}
-            >
-              <div className="flex items-center justify-between w-full">
-                <span>{t('pages.fullTime1')}</span>
-                {employmentFilter === 'full_time' && <CheckCircle2 size={14} className="text-primary" />}
-              </div>
-            </DropdownItem>
-            <DropdownItem
-              key="part_time"
-              onClick={() => setEmploymentFilter('part_time')}
-              className={employmentFilter === 'part_time' ? 'bg-primary-50' : ''}
-            >
-              <div className="flex items-center justify-between w-full">
-                <span>{t('pages.partTime1')}</span>
-                {employmentFilter === 'part_time' && <CheckCircle2 size={14} className="text-primary" />}
-              </div>
-            </DropdownItem>
-            <DropdownItem
-              key="contractor"
-              onClick={() => setEmploymentFilter('contractor')}
-              className={employmentFilter === 'contractor' ? 'bg-primary-50' : ''}
-            >
-              <div className="flex items-center justify-between w-full">
-                <span>{t('pages.contractor1')}</span>
-                {employmentFilter === 'contractor' && <CheckCircle2 size={14} className="text-primary" />}
-              </div>
-            </DropdownItem>
-          </DropdownMenu>
-        </Dropdown>
+          )}
+        </div>
+
+        {(statusFilter !== 'all' || employmentFilter !== 'all' || searchQuery) && (
+          <button
+            type="button"
+            className="btn btn--ghost btn--sm"
+            onClick={clearFilters}
+            style={{ color: 'var(--fg-muted)' }}
+          >
+            Clear
+          </button>
+        )}
       </div>
 
-      <div className="flex gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap">
+      <div className="payroll-toolbar__actions">
         {isAnySelected && (
           <button
-            className="flex items-center gap-2 px-3 py-2 bg-success text-white rounded-lg border border-success hover:bg-success-600 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap"
+            type="button"
+            className="btn btn--sm"
             onClick={handleBulkPay}
+            style={{ color: 'var(--ok)' }}
           >
-            <CreditCard size={16} />
-            <span>Log Selected ({selectedCount})</span>
+            <CreditCard size={12} aria-hidden />
+            Log selected (<span className="mono tnum">{selectedCount}</span>)
           </button>
         )}
         <button
-          className="flex items-center gap-2 px-3 py-2 bg-primary text-white rounded-lg border border-primary hover:bg-primary-600 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+          type="button"
+          className="btn btn--accent btn--sm"
           onClick={handlePrepareRecords}
           disabled={preparingRecords}
         >
-          {preparingRecords ? <Spinner size="sm" color="white" /> : <Play size={16} />}
-          <span>{preparingRecords ? 'Processing...' : 'Run Payroll'}</span>
+          <Play size={12} aria-hidden />
+          {preparingRecords ? 'Processing…' : 'Run payroll'}
         </button>
+        {handleExportPayroll && (
+          <button
+            type="button"
+            className="btn btn--sm"
+            onClick={handleExportPayroll}
+          >
+            <Download size={12} aria-hidden />
+            Export
+          </button>
+        )}
         <button
-          className="flex items-center gap-2 px-3 py-2 bg-default-100 text-default-700 rounded-lg border border-default-300 hover:bg-default-200 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap"
-          onClick={handleExportPayroll}
-        >
-          <Download size={16} />
-          <span>{t('pages.exportCsv1')}</span>
-        </button>
-        <button
-          className="flex items-center gap-2 px-3 py-2 bg-warning-500 text-white rounded-lg border border-warning-600 hover:bg-warning-600 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap"
+          type="button"
+          className="btn btn--sm"
           onClick={() => setFixSalariesConfirmOpen(true)}
+          style={{ color: 'var(--warn)' }}
         >
-          <Wallet size={16} />
-          <span>{t('pages.fixSalaries1')}</span>
+          <Wallet size={12} aria-hidden />
+          Fix salaries
         </button>
       </div>
     </div>

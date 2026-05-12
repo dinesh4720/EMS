@@ -26,6 +26,17 @@ const SIZE = {
   },
 };
 
+// Status-tinted icon containers (matches bundle's state taxonomy: empty,
+// loading, error, no-permission, first-run, all-done).
+const KIND = {
+  default: "bg-surface-2 text-fg-faint",
+  ok: "bg-[var(--ok-bg)] text-[var(--ok)]",
+  warn: "bg-[var(--warn-bg)] text-[var(--warn)]",
+  danger: "bg-[var(--danger-bg)] text-[var(--danger)]",
+  info: "bg-[var(--info-bg)] text-[var(--info)]",
+  accent: "bg-[var(--accent-bg)] text-[var(--accent)]",
+};
+
 const EmptyState = memo(function EmptyState({
   icon: Icon = Inbox,
   illustration,
@@ -34,10 +45,12 @@ const EmptyState = memo(function EmptyState({
   action,
   secondaryAction,
   size = "md",
+  kind = "default",
   className,
   children,
 }) {
   const styles = SIZE[size] || SIZE.md;
+  const tone = KIND[kind] || KIND.default;
 
   return (
     <div
@@ -51,20 +64,25 @@ const EmptyState = memo(function EmptyState({
       {illustration ?? (
         <div
           className={cn(
-            "rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center",
+            "flex items-center justify-center",
+            // Status-tinted variants get a square-ish chip per the design
+            // system; the default keeps the legacy round bubble for
+            // backwards compatibility.
+            kind === "default" ? "rounded-full" : "rounded-xl",
             styles.icon,
+            tone,
           )}
           aria-hidden="true"
         >
-          <Icon size={styles.iconInner} className="text-gray-400 dark:text-zinc-500" />
+          <Icon size={styles.iconInner} />
         </div>
       )}
       <div className="space-y-1">
-        <p className={cn("font-medium text-gray-900 dark:text-zinc-100", styles.title)}>
+        <p className={cn("font-medium text-fg", styles.title)}>
           {title}
         </p>
         {description && (
-          <p className={cn("text-gray-500 dark:text-zinc-400 mx-auto", styles.description)}>
+          <p className={cn("text-fg-muted mx-auto", styles.description)}>
             {description}
           </p>
         )}

@@ -28,7 +28,7 @@ const Breadcrumbs = memo(function Breadcrumbs({
   const sep = separator ?? (
     <ChevronRight
       size={14}
-      className="text-gray-400 dark:text-zinc-600 shrink-0"
+      className="text-fg-faint shrink-0"
       aria-hidden="true"
     />
   );
@@ -66,7 +66,7 @@ const Breadcrumbs = memo(function Breadcrumbs({
               )}
               {isFirstCollapsed && (
                 <>
-                  <li className="text-gray-400 dark:text-zinc-600 px-1">…</li>
+                  <li className="text-fg-faint px-1">…</li>
                   <li aria-hidden="true" className="flex items-center px-1">
                     {sep}
                   </li>
@@ -79,8 +79,8 @@ const Breadcrumbs = memo(function Breadcrumbs({
                     className={cn(
                       "truncate inline-block max-w-[16rem]",
                       isLast
-                        ? "font-medium text-gray-900 dark:text-zinc-100"
-                        : "text-gray-500 dark:text-zinc-400",
+                        ? "font-medium text-fg"
+                        : "text-fg-muted",
                     )}
                   >
                     {label}
@@ -89,14 +89,14 @@ const Breadcrumbs = memo(function Breadcrumbs({
                   <button
                     type="button"
                     onClick={item.onClick}
-                    className="truncate inline-block max-w-[16rem] text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary rounded"
+                    className="truncate inline-block max-w-[16rem] text-fg-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary rounded"
                   >
                     {label}
                   </button>
                 ) : (
                   <Link
                     to={item.href}
-                    className="truncate inline-block max-w-[16rem] text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary rounded"
+                    className="truncate inline-block max-w-[16rem] text-fg-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary rounded"
                   >
                     {label}
                   </Link>

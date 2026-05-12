@@ -176,12 +176,12 @@ export default function CCEGradingPage() {
         ) : config ? (
           <div className="p-6 space-y-6">
             {/* Enable Toggle */}
-            <Card shadow="sm" className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800">
+            <Card shadow="sm" className="bg-surface border border-border-token">
               <CardBody className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-gray-900 dark:text-zinc-100">Enable CCE Grading</p>
-                    <p className="text-sm text-gray-500 dark:text-zinc-400">
+                    <p className="font-medium text-fg">Enable CCE Grading</p>
+                    <p className="text-sm text-fg-muted">
                       {config._initialized === false ? 'Using default CBSE scale' : `Academic Year: ${config.academicYear}`}
                     </p>
                   </div>
@@ -191,10 +191,10 @@ export default function CCEGradingPage() {
             </Card>
 
             {/* Grading Scale */}
-            <Card shadow="sm" className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800">
+            <Card shadow="sm" className="bg-surface border border-border-token">
               <CardBody className="p-4">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-semibold text-gray-700 dark:text-zinc-300">Grading Scale</h3>
+                  <h3 className="text-sm font-semibold text-fg">Grading Scale</h3>
                   {!editingScale ? (
                     <Button
                       size="sm"
@@ -233,18 +233,18 @@ export default function CCEGradingPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-gray-100 dark:border-zinc-800">
-                        <th className="text-left py-2 text-gray-500 dark:text-zinc-400 font-medium">Grade</th>
-                        <th className="text-center py-2 text-gray-500 dark:text-zinc-400 font-medium">Grade Point</th>
-                        <th className="text-center py-2 text-gray-500 dark:text-zinc-400 font-medium">Min %</th>
-                        <th className="text-center py-2 text-gray-500 dark:text-zinc-400 font-medium">Max %</th>
-                        <th className="text-left py-2 text-gray-500 dark:text-zinc-400 font-medium">Description</th>
+                      <tr className="border-b border-divider">
+                        <th className="text-left py-2 text-fg-muted font-medium">Grade</th>
+                        <th className="text-center py-2 text-fg-muted font-medium">Grade Point</th>
+                        <th className="text-center py-2 text-fg-muted font-medium">Min %</th>
+                        <th className="text-center py-2 text-fg-muted font-medium">Max %</th>
+                        <th className="text-left py-2 text-fg-muted font-medium">Description</th>
                       </tr>
                     </thead>
                     <tbody>
                       {editingScale
                         ? draftScale.map((row, i) => (
-                          <tr key={i} className="border-b border-gray-50 dark:border-zinc-900">
+                          <tr key={i} className="border-b border-divider">
                             <td className="py-2">
                               <span className={`px-2 py-0.5 rounded text-xs font-bold ${GRADE_COLOR(row.grade)}`}>
                                 {row.grade}
@@ -271,16 +271,16 @@ export default function CCEGradingPage() {
                           </tr>
                         ))
                         : (config.gradingScale || []).map((row, i) => (
-                          <tr key={i} className="border-b border-gray-50 dark:border-zinc-900">
+                          <tr key={i} className="border-b border-divider">
                             <td className="py-2.5">
                               <span className={`px-2 py-0.5 rounded text-xs font-bold ${GRADE_COLOR(row.grade)}`}>
                                 {row.grade}
                               </span>
                             </td>
-                            <td className="py-2.5 text-center text-gray-700 dark:text-zinc-300 font-medium">{row.gradePoint}</td>
-                            <td className="py-2.5 text-center text-gray-600 dark:text-zinc-400">{row.minPercentage}%</td>
-                            <td className="py-2.5 text-center text-gray-600 dark:text-zinc-400">{row.maxPercentage}%</td>
-                            <td className="py-2.5 text-gray-600 dark:text-zinc-400">{row.description}</td>
+                            <td className="py-2.5 text-center text-fg font-medium">{row.gradePoint}</td>
+                            <td className="py-2.5 text-center text-fg-muted">{row.minPercentage}%</td>
+                            <td className="py-2.5 text-center text-fg-muted">{row.maxPercentage}%</td>
+                            <td className="py-2.5 text-fg-muted">{row.description}</td>
                           </tr>
                         ))
                       }
@@ -291,10 +291,10 @@ export default function CCEGradingPage() {
             </Card>
 
             {/* Assessment Types */}
-            <Card shadow="sm" className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800">
+            <Card shadow="sm" className="bg-surface border border-border-token">
               <CardBody className="p-4">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-semibold text-gray-700 dark:text-zinc-300">Assessment Types</h3>
+                  <h3 className="text-sm font-semibold text-fg">Assessment Types</h3>
                   {(() => {
                     const total = (config.assessmentTypes || []).reduce((s, at) => s + (Number(at.weightage) || 0), 0);
                     return (
@@ -315,11 +315,11 @@ export default function CCEGradingPage() {
                   {(config.assessmentTypes || []).map((at, i) => (
                     <div
                       key={i}
-                      className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800"
+                      className="flex items-center justify-between p-3 rounded-lg bg-surface-2 border border-divider"
                     >
                       <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{at.name}</p>
-                        <p className="text-xs text-gray-500 dark:text-zinc-400 capitalize">
+                        <p className="text-sm font-medium text-fg">{at.name}</p>
+                        <p className="text-xs text-fg-muted capitalize">
                           {at.type} · {at.term?.replace(/_/g, ' ')} · {at.weightage}% weightage · {at.maxMarks} marks
                         </p>
                       </div>
@@ -328,7 +328,7 @@ export default function CCEGradingPage() {
                         variant="flat"
                         className={at.isActive
                           ? 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300'
-                          : 'bg-gray-100 text-gray-500 dark:bg-zinc-800 dark:text-zinc-400'
+                          : 'bg-surface-2 text-fg-muted'
                         }
                       >
                         {at.isActive ? 'Active' : 'Inactive'}
@@ -340,11 +340,11 @@ export default function CCEGradingPage() {
             </Card>
 
             {/* Co-Scholastic Areas */}
-            <Card shadow="sm" className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800">
+            <Card shadow="sm" className="bg-surface border border-border-token">
               <CardBody className="p-4">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-semibold text-gray-700 dark:text-zinc-300">Co-Scholastic Areas</h3>
-                  <p className="text-xs text-gray-400 dark:text-zinc-500">Toggle to activate/deactivate</p>
+                  <h3 className="text-sm font-semibold text-fg">Co-Scholastic Areas</h3>
+                  <p className="text-xs text-fg-faint">Toggle to activate/deactivate</p>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                   {(config.coScholasticAreas || []).map((area, i) => (
@@ -352,15 +352,15 @@ export default function CCEGradingPage() {
                       key={i}
                       type="button"
                       onClick={() => handleCoScholasticToggle(i, !area.isActive)}
-                      className={`flex items-center justify-between p-2.5 rounded-lg border text-left transition-colors cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 ${
+                      className={`flex items-center justify-between p-2.5 rounded-lg border text-left transition-colors cursor-pointer hover:bg-surface-hover ${
                         area.isActive
                           ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800'
-                          : 'bg-gray-50 dark:bg-zinc-900 border-gray-100 dark:border-zinc-800'
+                          : 'bg-surface-2 border-divider'
                       }`}
                     >
                       <div>
-                        <p className="text-xs font-medium text-gray-800 dark:text-zinc-200">{area.name}</p>
-                        <p className="text-xs text-gray-400 dark:text-zinc-500 capitalize">{area.category?.replace(/_/g, ' ')}</p>
+                        <p className="text-xs font-medium text-fg">{area.name}</p>
+                        <p className="text-xs text-fg-faint capitalize">{area.category?.replace(/_/g, ' ')}</p>
                       </div>
                       <Switch
                         isSelected={area.isActive}

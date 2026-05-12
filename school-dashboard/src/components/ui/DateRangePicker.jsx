@@ -80,13 +80,13 @@ export default function DateRangePicker({
           className={[
             'flex items-center gap-2 px-3 py-2 rounded-lg border',
             'border-gray-300 dark:border-zinc-700',
-            'bg-white dark:bg-zinc-900',
-            'text-sm text-gray-800 dark:text-zinc-200',
+            'bg-surface',
+            'text-sm text-fg',
             'hover:border-primary transition-colors',
             className,
           ].join(' ')}
         >
-          <CalendarDays size={15} className="text-gray-400 dark:text-zinc-500 flex-shrink-0" />
+          <CalendarDays size={15} className="text-fg-faint flex-shrink-0" />
           <span>{label}</span>
         </button>
       </PopoverTrigger>

@@ -27,7 +27,7 @@ function StepperHeader({ currentStep }) {
               {i < STEPS.length - 1 && (
                 <div className={cn(
                   "absolute top-4 h-0.5 -translate-y-1/2 transition-all duration-300 left-1/2 w-[calc(100%-36px)]",
-                  isActive ? "bg-gray-900 dark:bg-zinc-100" : "bg-gray-200 dark:bg-zinc-700"
+                  isActive ? "bg-gray-900 dark:bg-zinc-100" : "bg-surface-2"
                 )} />
               )}
               <div className={cn(
@@ -45,7 +45,7 @@ function StepperHeader({ currentStep }) {
               </div>
               <span className={cn(
                 "text-[11px] font-medium mt-2 uppercase tracking-wide transition-colors duration-200",
-                isCurrent || isCompleted ? "text-gray-900 dark:text-zinc-100" : "text-gray-400 dark:text-zinc-500"
+                isCurrent || isCompleted ? "text-fg" : "text-fg-faint"
               )}>
                 {stepItem.title}
               </span>

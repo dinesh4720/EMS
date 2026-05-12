@@ -1,21 +1,20 @@
 import { useState, useRef, useEffect } from "react";
 import logger from "../../utils/logger";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
-import { Button, Drawer, DrawerContent, DrawerHeader, DrawerBody, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
-import { Plus, X, Mail, Phone, Send, UserPlus, FileText, CheckCircle2, ChevronDown, Briefcase, CalendarDays, BookOpen, ClipboardList } from "lucide-react";
+import { Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
+import { Mail, Phone, Send, UserPlus, FileText, CheckCircle2, ChevronDown } from "lucide-react";
 import StaffList from "./StaffList";
-import StaffAttendance from "./StaffAttendance";
 import StaffAttendanceRegularize from "./StaffAttendanceRegularize";
 import LeaveManagement from "./LeaveManagement";
 import StaffPayroll from "./StaffPayroll";
 import StaffDashboard from "./StaffDashboard";
-import AddStaff from "./AddStaff";
+import AddStaffComposer from "./AddStaffComposer";
 import BulkSubjectAssignment from "./BulkSubjectAssignment";
 import FormInput from "../../components/FormInput";
 import { useApp } from "../../context/AppContext";
 import { intakeFormsApi, classesApi } from "../../services/api";
 import toast from "react-hot-toast";
-import { PageLayout, MinimalButton } from "../../components/ui";
+import { PageLayout } from "../../components/ui";
 import { useTranslation } from 'react-i18next';
 
 export default function StaffsPage() {
@@ -86,11 +85,11 @@ export default function StaffsPage() {
     return staff.find(s => s.id === editingStaffId || s._id === editingStaffId);
   };
 
-  const activeTab = location.pathname.includes("/staffs/") && location.pathname !== "/staffs/attendance" && location.pathname !== "/staffs/payroll" && location.pathname !== "/staffs/bulk-subjects" && location.pathname !== "/staffs" && location.pathname !== "/staffs/"
+  const activeTab = location.pathname.includes("/staffs/") && location.pathname !== "/staffs/payroll" && location.pathname !== "/staffs/bulk-subjects" && location.pathname !== "/staffs" && location.pathname !== "/staffs/"
     ? "profile"
-    : (location.pathname === "/staffs/attendance" ? "overview" : location.pathname === "/staffs/payroll" ? "payroll" : location.pathname === "/staffs/bulk-subjects" ? "subjects" : "list");
+    : (location.pathname === "/staffs/payroll" ? "payroll" : location.pathname === "/staffs/bulk-subjects" ? "subjects" : "list");
 
-  const isProfileView = location.pathname !== "/staffs" && location.pathname !== "/staffs/" && location.pathname !== "/staffs/attendance" && location.pathname !== "/staffs/payroll" && location.pathname !== "/staffs/bulk-subjects" && !location.pathname.endsWith("/staffs");
+  const isProfileView = location.pathname !== "/staffs" && location.pathname !== "/staffs/" && location.pathname !== "/staffs/payroll" && location.pathname !== "/staffs/bulk-subjects" && !location.pathname.endsWith("/staffs");
   const isRegularizeView = location.pathname.includes("/attendance/regularize");
   const isLeaveView = location.pathname.includes("/attendance/leave");
 
@@ -166,13 +165,13 @@ export default function StaffsPage() {
         }
       }
 
-      // For new staff, return the saved staff so AddStaff can show the timetable modal
-      // AddStaff will call onClose when it's done (after timetable modal is dismissed)
+      // For new staff, return the saved staff so the composer can show the
+      // class/subject management modal. The composer will call onClose itself.
       if (!editingStaffId && savedStaff) {
         return savedStaff;
       }
 
-      // For edits, close the drawer immediately
+      // For edits, close the composer immediately
       setIsAddStaffOpen(false);
       setEditingStaffId(null);
       setTimeout(() => setShouldRenderAddStaff(false), 300);
@@ -246,25 +245,11 @@ export default function StaffsPage() {
     if (location.state?.returnTo) navigate(location.state.returnTo);
   };
 
+  // Header copy used by the Subjects/Payroll routes (rendered via PageLayout
+  // below). The list view owns its own header inside the StaffList card.
   const tabHeaderInfo = {
-    list: { title: t('staff.tabs.allStaff', 'All Staff'), description: t('staff.tabs.allStaffDesc', 'Manage staff members and roles') },
-    overview: { title: t('staff.tabs.attendance', 'Staff Attendance'), description: t('staff.tabs.attendanceDesc', 'Track attendance and statistics') },
     payroll: { title: t('staff.tabs.payroll', 'Staff Salary & Payroll'), description: t('staff.tabs.payrollDesc', 'Manage salaries and payments') },
     subjects: { title: t('staff.tabs.subjects', 'Subject Assignments'), description: t('staff.tabs.subjectsDesc', 'Assign subjects and classes to teachers') }
-  };
-
-  const tabs = [
-    { key: "list", title: t('staff.tabs.allStaff', 'All Staff') },
-    { key: "subjects", title: t('staff.tabs.subjectsShort', 'Subjects') },
-    { key: "overview", title: t('staff.tabs.attendanceShort', 'Attendance') },
-    { key: "payroll", title: t('staff.tabs.payrollShort', 'Payroll') }
-  ];
-
-  const handleTabChange = (key) => {
-    if (key === "list") navigate("/staffs");
-    else if (key === "payroll") navigate("/staffs/payroll");
-    else if (key === "overview") navigate("/staffs/attendance");
-    else if (key === "subjects") navigate("/staffs/bulk-subjects");
   };
 
   if (isProfileView || isRegularizeView || isLeaveView) {
@@ -280,145 +265,109 @@ export default function StaffsPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in pb-8">
-      <PageLayout
-        tabs={tabs}
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-        header={tabHeaderInfo[activeTab]}
-        actions={
-          activeTab === "list" ? (
-            <MinimalButton icon={<Plus size={16} />} onClick={handleOpenAddStaff}>{t('pages.createStaff')}</MinimalButton>
-          ) : activeTab === "overview" ? (
-            <div className="flex gap-2">
-              <MinimalButton icon={<ClipboardList size={16} />} onClick={() => navigate("/staffs/attendance/leave")}>Leave Requests</MinimalButton>
-              <MinimalButton icon={<CalendarDays size={16} />} onClick={() => navigate("/staffs/attendance/regularize")}>{t('pages.regularize')}</MinimalButton>
-            </div>
-          ) : null
-        }
-      >
-        <div className="min-h-[500px]">
+    <div className="staffs-page animate-fade-in">
+      {activeTab === "list" ? (
+        <div className="staffs-page__listframe">
           <Routes>
-            <Route index element={<StaffList onStaffClick={handleOpenStaffProfile} onStaffEdit={handleEditStaff} />} />
-            <Route path="list" element={<StaffList onStaffClick={handleOpenStaffProfile} onStaffEdit={handleEditStaff} />} />
-            <Route path="bulk-subjects" element={<BulkSubjectAssignment />} />
-            <Route path="attendance" element={<StaffAttendance onStaffClick={handleOpenStaffProfile} />} />
-            <Route path="payroll" element={<StaffPayroll onStaffClick={handleOpenStaffProfile} />} />
+            <Route index element={<StaffList onStaffClick={handleOpenStaffProfile} onAddStaff={handleOpenAddStaff} />} />
+            <Route path="list" element={<StaffList onStaffClick={handleOpenStaffProfile} onAddStaff={handleOpenAddStaff} />} />
           </Routes>
         </div>
-      </PageLayout>
-
-      {/* Add Staff Drawer */}
-      {shouldRenderAddStaff && (
-        <Drawer
-          isOpen={isAddStaffOpen}
-          onOpenChange={(open) => { if (!open) handleCloseAddStaff(); }}
-          isDismissable={false}
-          placement="right"
-          hideCloseButton
-          classNames={{ wrapper: "justify-end", base: "w-[720px] max-w-[95vw]", backdrop: "bg-black/30" }}
+      ) : (
+        <PageLayout
+          header={tabHeaderInfo[activeTab]}
         >
-          <DrawerContent>
-            {(onClose) => (
-              <>
-                <DrawerHeader className="border-b border-gray-100 dark:border-zinc-800 px-6 py-4 flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg">
-                      <Briefcase size={20} className="text-gray-600 dark:text-zinc-400" />
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-medium text-gray-900 dark:text-zinc-100">{editingStaffId ? 'Edit Staff Member' : 'Create New Staff'}</h2>
-                      <p className="text-xs text-gray-500 dark:text-zinc-400">{editingStaffId ? 'Update staff details' : 'Fill in the staff details below'}</p>
-                    </div>
-                  </div>
-                  <Button isIconOnly size="sm" variant="light" aria-label="Close" onPress={() => {
-                    if (addStaffRef.current) addStaffRef.current.attemptClose();
-                    else handleCloseAddStaff();
-                  }}>
-                    <X size={20} className="text-gray-400 dark:text-zinc-500" />
-                  </Button>
-                </DrawerHeader>
-                <DrawerBody className="p-0 overflow-hidden">
-                  <AddStaff ref={addStaffRef} onClose={handleCloseAddStaff} onSave={handleSaveStaff} editingStaff={getEditingStaff()} />
-                </DrawerBody>
-              </>
-            )}
-          </DrawerContent>
-        </Drawer>
+          <div className="min-h-[500px]">
+            <Routes>
+              <Route path="bulk-subjects" element={<BulkSubjectAssignment />} />
+              <Route path="payroll" element={<StaffPayroll onStaffClick={handleOpenStaffProfile} />} />
+            </Routes>
+          </div>
+        </PageLayout>
+      )}
+
+      {/* Add / Edit Staff — single composer surface for both create and edit. */}
+      {shouldRenderAddStaff && isAddStaffOpen && (
+        <AddStaffComposer
+          ref={addStaffRef}
+          onClose={handleCloseAddStaff}
+          onSave={handleSaveStaff}
+          editingStaff={editingStaffId ? getEditingStaff() : null}
+        />
       )}
 
       {/* Method Selection Modal */}
-      <Modal isOpen={isMethodModalOpen} onClose={() => setIsMethodModalOpen(false)} size="2xl" classNames={{ backdrop: "bg-black/30", base: "bg-white dark:bg-zinc-950" }}>
+      <Modal isOpen={isMethodModalOpen} onClose={() => setIsMethodModalOpen(false)} size="2xl" classNames={{ backdrop: "bg-black/30", base: "bg-surface" }}>
         <ModalContent>
-          <ModalHeader className="border-b border-gray-100 dark:border-zinc-800 py-4">
+          <ModalHeader className="border-b border-border-token py-4">
             <h3 className="text-lg font-medium">{t('pages.chooseRegistrationMethod')}</h3>
-            <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal mt-1">{t('pages.selectHowToAddTheNewStaffMember')}</p>
+            <p className="text-sm text-fg-muted font-normal mt-1">{t('pages.selectHowToAddTheNewStaffMember')}</p>
           </ModalHeader>
           <ModalBody className="py-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button onClick={() => handleSelectMethod('form')} className="p-6 rounded-lg border border-gray-200 dark:border-zinc-800 hover:border-gray-400 dark:hover:border-zinc-600 transition-colors text-left">
+              <button onClick={() => handleSelectMethod('form')} className="p-6 rounded-lg border border-border-token hover:border-border-strong transition-colors text-left">
                 <div className="flex flex-col items-center text-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
-                    <Send size={24} className="text-gray-600 dark:text-zinc-400" />
+                  <div className="w-12 h-12 rounded-full bg-surface-2 flex items-center justify-center">
+                    <Send size={24} className="text-fg-muted" />
                   </div>
                   <div>
-                    <h4 className="text-base font-medium text-gray-900 dark:text-zinc-100 mb-2">{t('pages.sendFillingForm')}</h4>
-                    <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.sendAnIntakeFormForThemToFillOut')}</p>
+                    <h4 className="text-base font-medium text-fg mb-2">{t('pages.sendFillingForm')}</h4>
+                    <p className="text-sm text-fg-muted">{t('pages.sendAnIntakeFormForThemToFillOut')}</p>
                   </div>
                 </div>
               </button>
-              <button onClick={() => handleSelectMethod('full')} className="p-6 rounded-lg border border-gray-200 dark:border-zinc-800 hover:border-gray-400 dark:hover:border-zinc-600 transition-colors text-left">
+              <button onClick={() => handleSelectMethod('full')} className="p-6 rounded-lg border border-border-token hover:border-border-strong transition-colors text-left">
                 <div className="flex flex-col items-center text-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
-                    <UserPlus size={24} className="text-gray-600 dark:text-zinc-400" />
+                  <div className="w-12 h-12 rounded-full bg-surface-2 flex items-center justify-center">
+                    <UserPlus size={24} className="text-fg-muted" />
                   </div>
                   <div>
-                    <h4 className="text-base font-medium text-gray-900 dark:text-zinc-100 mb-2">{t('pages.fullRegistration')}</h4>
-                    <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.fillOutAllStaffDetailsDirectly')}</p>
+                    <h4 className="text-base font-medium text-fg mb-2">{t('pages.fullRegistration')}</h4>
+                    <p className="text-sm text-fg-muted">{t('pages.fillOutAllStaffDetailsDirectly')}</p>
                   </div>
                 </div>
               </button>
             </div>
           </ModalBody>
-          <ModalFooter className="border-t border-gray-100 dark:border-zinc-800">
+          <ModalFooter className="border-t border-border-token">
             <Button variant="light" onPress={() => setIsMethodModalOpen(false)}>{t('pages.cancel2')}</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
 
       {/* Form Selection Modal */}
-      <Modal isOpen={isFormSelectModalOpen} onClose={() => { setIsFormSelectModalOpen(false); setSelectedForm(null); setRecipientEmail(''); setRecipientPhone(''); }} size="2xl" classNames={{ backdrop: "bg-black/30", base: "bg-white dark:bg-zinc-950" }}>
+      <Modal isOpen={isFormSelectModalOpen} onClose={() => { setIsFormSelectModalOpen(false); setSelectedForm(null); setRecipientEmail(''); setRecipientPhone(''); }} size="2xl" classNames={{ backdrop: "bg-black/30", base: "bg-surface" }}>
         <ModalContent>
-          <ModalHeader className="border-b border-gray-100 dark:border-zinc-800 py-4">
+          <ModalHeader className="border-b border-border-token py-4">
             <h3 className="text-lg font-medium">{t('pages.sendIntakeForm')}</h3>
-            <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal mt-1">{t('pages.selectAFormAndEnterRecipientDetails')}</p>
+            <p className="text-sm text-fg-muted font-normal mt-1">{t('pages.selectAFormAndEnterRecipientDetails')}</p>
           </ModalHeader>
           <ModalBody className="py-6">
             <div className="space-y-4">
               <div className="relative" ref={formDropdownRef}>
-                <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2 block">{t('pages.selectForm')}</label>
-                <button type="button" onClick={() => setIsFormDropdownOpen(!isFormDropdownOpen)} className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-gray-50 dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700 transition-colors">
+                <label className="text-sm font-medium text-fg mb-2 block">{t('pages.selectForm')}</label>
+                <button type="button" onClick={() => setIsFormDropdownOpen(!isFormDropdownOpen)} className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-surface-2 rounded-lg border border-border-token hover:border-border-strong transition-colors">
                   {selectedForm ? (
                     <div className="flex items-center gap-3">
-                      <FileText size={18} className="text-gray-500 dark:text-zinc-400" />
+                      <FileText size={18} className="text-fg-muted" />
                       <span className="text-sm">{availableForms.find(f => f.id === selectedForm)?.formName}</span>
                     </div>
                   ) : (
-                    <span className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.chooseAnIntakeForm')}</span>
+                    <span className="text-sm text-fg-muted">{t('pages.chooseAnIntakeForm')}</span>
                   )}
-                  <ChevronDown size={18} className={`text-gray-400 dark:text-zinc-500 transition-transform ${isFormDropdownOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown size={18} className={`text-fg-subtle transition-transform ${isFormDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {isFormDropdownOpen && availableForms.length > 0 && (
-                  <div className="absolute z-50 w-full mt-2 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-lg max-h-[320px] overflow-y-auto">
+                  <div className="absolute z-50 w-full mt-2 bg-surface border border-border-token rounded-lg max-h-[320px] overflow-y-auto">
                     <div className="p-2">
                       {availableForms.map((form) => (
-                        <button key={form.id} type="button" onClick={() => { setSelectedForm(form.id); setIsFormDropdownOpen(false); }} className={`w-full p-3 rounded-lg text-left flex items-center gap-3 ${selectedForm === form.id ? 'bg-gray-100 dark:bg-zinc-800' : 'hover:bg-gray-50 dark:hover:bg-zinc-900'}`}>
-                          <FileText size={18} className="text-gray-500 dark:text-zinc-400" />
+                        <button key={form.id} type="button" onClick={() => { setSelectedForm(form.id); setIsFormDropdownOpen(false); }} className={`w-full p-3 rounded-lg text-left flex items-center gap-3 ${selectedForm === form.id ? 'bg-surface-2' : 'hover:bg-surface-hover'}`}>
+                          <FileText size={18} className="text-fg-muted" />
                           <div className="flex-1">
                             <p className="text-sm font-medium">{form.formName}</p>
-                            <p className="text-xs text-gray-500 dark:text-zinc-400">{form.fields?.length || 0} fields</p>
+                            <p className="text-xs text-fg-muted">{form.fields?.length || 0} fields</p>
                           </div>
-                          {selectedForm === form.id && <CheckCircle2 size={16} className="text-gray-600 dark:text-zinc-400" />}
+                          {selectedForm === form.id && <CheckCircle2 size={16} className="text-fg-muted" />}
                         </button>
                       ))}
                     </div>
@@ -426,19 +375,19 @@ export default function StaffsPage() {
                 )}
               </div>
               {availableForms.length === 0 && (
-                <div className="text-center py-8 text-gray-500 dark:text-zinc-400">
+                <div className="text-center py-8 text-fg-muted">
                   <p>{t('pages.noActiveStaffFormsAvailable')}</p>
                   <Button size="sm" variant="flat" className="mt-2" onPress={() => { setIsFormSelectModalOpen(false); navigate('/settings/intake-forms'); }}>{t('pages.createAForm')}</Button>
                 </div>
               )}
               <FormInput label={t('pages.email1')} type="email" placeholder={t('pages.enterEmailAddress')} value={recipientEmail} onChange={(e) => setRecipientEmail(e.target.value)} startContent={<Mail size={18} />} />
               <FormInput label={t('pages.phoneNumber')} type="tel" placeholder={t('pages.enterPhoneNumber')} value={recipientPhone} onChange={(e) => setRecipientPhone(e.target.value)} startContent={<Phone size={18} />} />
-              <div className="bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-4">
-                <p className="text-sm text-gray-600 dark:text-zinc-400">{t('pages.theRecipientWillReceiveALinkToFillOutTheForm')}</p>
+              <div className="bg-surface-2 border border-border-token rounded-lg p-4">
+                <p className="text-sm text-fg-muted">{t('pages.theRecipientWillReceiveALinkToFillOutTheForm')}</p>
               </div>
             </div>
           </ModalBody>
-          <ModalFooter className="border-t border-gray-100 dark:border-zinc-800">
+          <ModalFooter className="border-t border-border-token">
             <Button variant="light" onPress={() => { setIsFormSelectModalOpen(false); setSelectedForm(null); setRecipientEmail(''); setRecipientPhone(''); }}>{t('pages.cancel2')}</Button>
             <Button color="primary" onPress={handleSendForm} isLoading={isSendingForm} isDisabled={!selectedForm || (!recipientEmail && !recipientPhone)} startContent={!isSendingForm && <Send size={16} />}>{t('pages.sendForm')}</Button>
           </ModalFooter>

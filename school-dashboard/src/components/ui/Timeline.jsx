@@ -27,7 +27,7 @@ function TimelineSkeleton({ rows = 3 }) {
     <ol className="relative space-y-6" aria-busy="true" aria-live="polite">
       <span
         aria-hidden="true"
-        className="absolute left-[11px] top-2 bottom-2 w-px bg-gray-100 dark:bg-zinc-800"
+        className="absolute left-[11px] top-2 bottom-2 w-px bg-surface-2"
       />
       {Array.from({ length: rows }).map((_, idx) => (
         <li key={idx} className="relative pl-9">
@@ -47,7 +47,7 @@ function TimelineItem({ item, isLast }) {
       {!isLast ? (
         <span
           aria-hidden="true"
-          className="absolute left-[11px] top-6 -bottom-4 w-px bg-gray-100 dark:bg-zinc-800"
+          className="absolute left-[11px] top-6 -bottom-4 w-px bg-surface-2"
         />
       ) : null}
       <span
@@ -67,18 +67,18 @@ function TimelineItem({ item, isLast }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           {title ? (
-            <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{title}</p>
+            <p className="text-sm font-medium text-fg">{title}</p>
           ) : null}
           {description ? (
-            <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">{description}</p>
+            <p className="text-xs text-fg-muted mt-0.5">{description}</p>
           ) : null}
           {content ? <div className="mt-2">{content}</div> : null}
           {meta ? (
-            <div className="mt-1.5 text-xs text-gray-500 dark:text-zinc-400">{meta}</div>
+            <div className="mt-1.5 text-xs text-fg-muted">{meta}</div>
           ) : null}
         </div>
         {time ? (
-          <time className="shrink-0 text-xs text-gray-400 dark:text-zinc-500">{time}</time>
+          <time className="shrink-0 text-xs text-fg-faint">{time}</time>
         ) : null}
       </div>
     </li>

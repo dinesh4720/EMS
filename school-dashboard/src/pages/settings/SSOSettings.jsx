@@ -167,7 +167,7 @@ export default function SSOSettings() {
     return (
       <div className="max-w-2xl space-y-4">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-24 rounded-xl bg-gray-100 dark:bg-zinc-800 animate-pulse" />
+          <div key={i} className="h-24 rounded-xl bg-surface-2 animate-pulse" />
         ))}
       </div>
     );
@@ -181,8 +181,8 @@ export default function SSOSettings() {
           <Shield size={18} className="text-indigo-600 dark:text-indigo-400" />
         </div>
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">SSO Configuration</h2>
-          <p className="text-sm text-gray-500 dark:text-zinc-400">
+          <h2 className="text-lg font-semibold text-fg">SSO Configuration</h2>
+          <p className="text-sm text-fg-muted">
             Configure Google, Microsoft, or SAML single sign-on for staff login
           </p>
         </div>
@@ -312,7 +312,7 @@ export default function SSOSettings() {
 
       {/* General SSO settings */}
       <div className="space-y-4">
-        <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">General Settings</p>
+        <p className="text-sm font-medium text-fg">General Settings</p>
 
         {/* Allowed Domains */}
         <Textarea
@@ -326,10 +326,10 @@ export default function SSOSettings() {
         />
 
         {/* Auto Provision */}
-        <div className="flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800/50">
+        <div className="flex items-center justify-between p-4 rounded-xl border border-border-token bg-surface-2">
           <div>
-            <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Auto-provision new staff</p>
-            <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
+            <p className="text-sm font-medium text-fg">Auto-provision new staff</p>
+            <p className="text-xs text-fg-muted mt-0.5">
               Automatically create a staff account when an SSO user logs in for the first time
             </p>
           </div>
@@ -359,7 +359,7 @@ export default function SSOSettings() {
           <div className="flex items-start gap-2 flex-1 min-w-0">
             <Lock size={15} className="text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
             <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">SSO-Only Mode</p>
+              <p className="text-sm font-medium text-fg">SSO-Only Mode</p>
               <p className="text-xs text-red-700 dark:text-red-400 mt-0.5">
                 <strong>High risk:</strong> Disables password login for all staff. Anyone without an active SSO account
                 will be permanently locked out. Disable SSO-Only before removing an SSO provider.
@@ -427,7 +427,7 @@ function Section({ title, icon, enabled, onToggle, children }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           {icon}
-          <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{title}</p>
+          <p className="text-sm font-medium text-fg">{title}</p>
         </div>
         <Switch isSelected={enabled} onValueChange={onToggle} color="success" size="sm" />
       </div>

@@ -6,7 +6,7 @@ import { cn } from "../../utils/cn";
 import Badge from "./Badge";
 
 const ICON_TONE = {
-  neutral: "bg-gray-100 text-gray-700 dark:bg-zinc-800 dark:text-zinc-300",
+  neutral: "bg-surface-2 text-fg",
   primary: "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400",
   success: "bg-green-50 text-green-600 dark:bg-green-950 dark:text-green-400",
   warning: "bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400",
@@ -22,16 +22,16 @@ const LAYOUT = {
     icon: "h-10 w-10",
     iconSize: 18,
     body: "min-w-0 flex-1",
-    labelClass: "text-sm font-medium text-gray-900 dark:text-zinc-100 truncate",
-    descClass: "text-xs text-gray-500 dark:text-zinc-400 truncate",
+    labelClass: "text-sm font-medium text-fg truncate",
+    descClass: "text-xs text-fg-muted truncate",
   },
   stacked: {
     root: "flex flex-col items-start gap-3 p-4",
     icon: "h-10 w-10",
     iconSize: 20,
     body: "space-y-0.5",
-    labelClass: "text-sm font-medium text-gray-900 dark:text-zinc-100",
-    descClass: "text-xs text-gray-500 dark:text-zinc-400",
+    labelClass: "text-sm font-medium text-fg",
+    descClass: "text-xs text-fg-muted",
   },
 };
 
@@ -84,7 +84,7 @@ function QuickActionTile({
       {chevron ? (
         <ChevronRight
           size={16}
-          className="shrink-0 text-gray-400 dark:text-zinc-500"
+          className="shrink-0 text-fg-faint"
           aria-hidden="true"
         />
       ) : null}
@@ -92,9 +92,9 @@ function QuickActionTile({
   );
 
   const base = cn(
-    "group w-full text-left bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-lg transition-colors",
+    "group w-full text-left bg-surface border border-divider rounded-lg transition-colors",
     !disabled &&
-      "hover:border-gray-200 dark:hover:border-zinc-700 hover:bg-gray-50/60 dark:hover:bg-zinc-800/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:ring-offset-2",
+      "hover:border-border-token hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:ring-offset-2",
     disabled && "opacity-60 cursor-not-allowed",
     styles.root,
     className

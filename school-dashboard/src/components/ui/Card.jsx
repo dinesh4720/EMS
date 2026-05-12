@@ -34,13 +34,13 @@ const Card = memo(function Card({
   return (
     <Component
       className={cn(
-        "bg-white dark:bg-zinc-900",
+        "bg-surface",
         RADIUS[radius],
         PADDING[padding],
         ELEVATION[elevation],
-        border && "border border-gray-100 dark:border-zinc-800",
+        border && "border border-divider",
         interactive &&
-          "transition-colors hover:bg-gray-50 dark:hover:bg-zinc-800/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:ring-offset-2",
+          "transition-colors hover:bg-surface-2/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:ring-offset-2",
         className
       )}
       {...props}
@@ -55,7 +55,7 @@ Card.displayName = "Card";
 Card.Header = function CardHeader({ children, className, ...props }) {
   return (
     <div
-      className={cn("pb-4 border-b border-gray-100 dark:border-zinc-800 mb-4", className)}
+      className={cn("pb-4 border-b border-divider mb-4", className)}
       {...props}
     >
       {children}
@@ -74,7 +74,7 @@ Card.Content = function CardContent({ children, className, ...props }) {
 Card.Footer = function CardFooter({ children, className, ...props }) {
   return (
     <div
-      className={cn("pt-4 border-t border-gray-100 dark:border-zinc-800 mt-4", className)}
+      className={cn("pt-4 border-t border-divider mt-4", className)}
       {...props}
     >
       {children}

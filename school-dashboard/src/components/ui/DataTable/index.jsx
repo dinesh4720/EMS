@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import PropTypes from "prop-types";
 import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, Inbox, RefreshCw } from "lucide-react";
 import { cn } from "../../../utils/cn";
@@ -16,8 +16,9 @@ const ALIGN_STYLES = {
 };
 
 const DENSITY_STYLES = {
-  compact: { row: "py-2", cell: "px-3 text-xs", header: "px-3 py-2 text-[11px]" },
+  compact: { row: "py-1.5", cell: "px-3 text-xs", header: "px-3 py-2 text-[11px]" },
   normal: { row: "py-3", cell: "px-4 text-sm", header: "px-4 py-3 text-xs" },
+  detailed: { row: "py-4", cell: "px-4 text-sm", header: "px-4 py-3 text-xs" },
 };
 
 export default function DataTable({
@@ -54,9 +55,24 @@ export default function DataTable({
   onRowClick,
   ariaLabel = "Data table",
   density = "normal",
+  densityToggle = false,
+  onDensityChange,
   stickyHeader = false,
   className,
 }) {
+  const [internalDensity, setInternalDensity] = useState(density);
+  useEffect(() => {
+    setInternalDensity(density);
+  }, [density]);
+  const activeDensity = densityToggle ? internalDensity : density;
+  const handleDensityChange = useCallback(
+    (next) => {
+      setInternalDensity(next);
+      onDensityChange?.(next);
+    },
+    [onDensityChange]
+  );
+
   const table = useDataTable({
     data: data || [],
     columns,
@@ -78,7 +94,7 @@ export default function DataTable({
 
   const selection = useSelectionModel({ selectedKeys, onSelectionChange });
 
-  const densityStyles = DENSITY_STYLES[density];
+  const densityStyles = DENSITY_STYLES[activeDensity] || DENSITY_STYLES.normal;
   const visibleRowKeys = useMemo(
     () => table.rows.map((row, i) => table.getRowKey(row, i)),
     [table]
@@ -122,6 +138,9 @@ export default function DataTable({
         onClearFilters={table.clearFilters}
         showFilters={filterable}
         toolbarActions={toolbarActions}
+        densityToggle={densityToggle}
+        density={activeDensity}
+        onDensityChange={handleDensityChange}
       />
 
       {bulkActions?.length && selection.size > 0 ? (
@@ -527,7 +546,9 @@ DataTable.propTypes = {
   rowActions: PropTypes.func,
   onRowClick: PropTypes.func,
   ariaLabel: PropTypes.string,
-  density: PropTypes.oneOf(["compact", "normal"]),
+  density: PropTypes.oneOf(["compact", "normal", "detailed"]),
+  densityToggle: PropTypes.bool,
+  onDensityChange: PropTypes.func,
   stickyHeader: PropTypes.bool,
   className: PropTypes.string,
 };

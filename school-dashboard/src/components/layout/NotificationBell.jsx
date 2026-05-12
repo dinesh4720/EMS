@@ -34,26 +34,19 @@ const NotificationBell = memo(function NotificationBell({ className }) {
       placement="bottom-end"
       offset={8}
       shouldBlockScroll={false}
-      contentClassName="p-0 w-[380px]"
+      contentClassName="p-0 w-[calc(100vw-2rem)] sm:w-[380px]"
       trigger={
         <button
           type="button"
           data-tour="notifications"
           aria-label={ariaLabel}
-          className={cn(
-            "relative h-9 w-9 flex items-center justify-center rounded-lg transition-colors",
-            "text-gray-500 hover:text-gray-700 hover:bg-gray-100",
-            "dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:ring-offset-2",
-            className
-          )}
+          className={cn("iconbtn", className)}
         >
-          <Bell size={16} />
+          <Bell size={15} />
           {unreadCount > 0 && (
-            <span
-              aria-hidden="true"
-              className="absolute top-1.5 right-1.5 w-2 h-2 bg-gray-900 dark:bg-zinc-100 rounded-full"
-            />
+            <span aria-hidden="true" className="topbar__bell-chip">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
           )}
         </button>
       }

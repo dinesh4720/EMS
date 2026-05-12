@@ -10,7 +10,7 @@ const FileUploadItem = ({ file, onRemove, onChange }) => {
     const sizeString = `${(file.size * (file.progress / 100)).toFixed(1)} MB of ${file.size} MB`;
 
     return (
-        <Card className="w-full max-w-md shadow-sm border border-default-200 mb-3 bg-white dark:bg-zinc-950">
+        <Card className="w-full max-w-md shadow-sm border border-default-200 mb-3 bg-surface">
             <CardBody className="p-4">
                 <div className="flex gap-4 items-start">
                     {/* File Icon */}

@@ -1,14 +1,12 @@
 import { useState } from 'react';
-import { Input, Button, Chip } from '@heroui/react';
-import { Tag, CheckCircle2, X } from 'lucide-react';
+import { Tag, CheckCircle2 } from 'lucide-react';
 import { billingApi } from '../../services/api';
 import { useTranslation } from 'react-i18next';
+import { Button, Chip, Input } from '../ui';
 
 /**
  * Coupon / promo-code input with inline validation.
  * Calls onApply(coupon) once a valid code is confirmed.
- *
- * @param {function} onApply - Receives the validated coupon object from the API
  */
 export default function CouponInput({ onApply }) {
   const { t } = useTranslation();
@@ -41,49 +39,38 @@ export default function CouponInput({ onApply }) {
 
   if (applied) {
     return (
-      <div className="flex items-center gap-2">
-        <Chip
-          color="success"
-          variant="flat"
-          startContent={<CheckCircle2 size={14} />}
-          onClose={handleRemove}
-        >
-          {applied.code} — {applied.discountLabel || `${applied.percentOff ?? applied.amountOff}% off`}
-        </Chip>
-      </div>
+      <Chip
+        color="success"
+        startContent={<CheckCircle2 size={14} aria-hidden="true" />}
+        onRemove={handleRemove}
+      >
+        {applied.code} — {applied.discountLabel || `${applied.percentOff ?? applied.amountOff}% off`}
+      </Chip>
     );
   }
 
   return (
-    <div className="space-y-1">
-      <div className="flex items-center gap-2">
-        <Input
-          size="sm"
-          placeholder={t('billing.couponPlaceholder', 'Enter promo code')}
-          value={code}
-          onValueChange={(v) => { setCode(v); setError(''); }}
-          startContent={<Tag size={14} className="text-gray-400" />}
-          className="max-w-xs"
-          isInvalid={Boolean(error)}
-          onKeyDown={(e) => { if (e.key === 'Enter') handleApply(); }}
-          aria-label={t('billing.couponCode', 'Coupon code')}
-        />
-        <Button
-          size="sm"
-          variant="flat"
-          color="primary"
-          isLoading={loading}
-          isDisabled={!code.trim() || loading}
-          onPress={handleApply}
-        >
-          {t('billing.applyCode', 'Apply')}
-        </Button>
-      </div>
-      {error && (
-        <p className="text-xs text-danger flex items-center gap-1">
-          <X size={12} /> {error}
-        </p>
-      )}
+    <div className="flex items-start gap-2">
+      <Input
+        size="sm"
+        placeholder={t('billing.couponPlaceholder', 'Enter promo code')}
+        value={code}
+        onChange={(e) => { setCode(e.target.value); setError(''); }}
+        startContent={<Tag size={14} aria-hidden="true" />}
+        wrapperClassName="max-w-xs"
+        error={error || undefined}
+        onKeyDown={(e) => { if (e.key === 'Enter') handleApply(); }}
+        aria-label={t('billing.couponCode', 'Coupon code')}
+      />
+      <Button
+        size="sm"
+        variant="outline"
+        loading={loading}
+        disabled={!code.trim() || loading}
+        onClick={handleApply}
+      >
+        {t('billing.applyCode', 'Apply')}
+      </Button>
     </div>
   );
 }
