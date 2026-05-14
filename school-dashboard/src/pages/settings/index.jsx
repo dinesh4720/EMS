@@ -52,6 +52,7 @@ import PeriodSettings from "./PeriodSettings";
 import SeedDataSettings from "./SeedDataSettings";
 import DataCleanupSettings from "./DataCleanupSettings";
 import ActiveSessions from "./ActiveSessions";
+import RequirePermission from "../../components/RequirePermission";
 import { useTranslation } from 'react-i18next';
 
 export default function SettingsPage() {
@@ -260,9 +261,9 @@ export default function SettingsPage() {
             <Route index element={<InstitutionSettings />} />
             <Route path="academics" element={<AcademicSettings />} />
             <Route path="admission-form" element={<AdmissionFormSettings />} />
-            <Route path="users" element={<UserManagement />} />
+            <Route path="users" element={<RequirePermission module="settings" action="edit"><UserManagement /></RequirePermission>} />
             <Route path="staff-id" element={<StaffIdSettings />} />
-            <Route path="roles" element={<RolesAccess />} />
+            <Route path="roles" element={<RequirePermission module="settings" action="edit"><RolesAccess /></RequirePermission>} />
             <Route path="permission-requests" element={<PermissionRequests />} />
             <Route path="parents" element={<ParentManagement />} />
             <Route path="intake-forms" element={<IntakeFormsSettings />} />
@@ -275,12 +276,12 @@ export default function SettingsPage() {
             <Route path="subscription" element={<SubscriptionSettings />} />
             <Route path="trash" element={<TrashSettings />} />
             <Route path="webhooks" element={<WebhooksPage />} />
-            <Route path="scim" element={<SCIMSettings />} />
+            <Route path="scim" element={<RequirePermission adminOnly><SCIMSettings /></RequirePermission>} />
             <Route path="periods" element={<PeriodSettings />} />
             <Route path="promotion-rules" element={<PromotionRulesSettings />} />
             <Route path="nps" element={<NPSAnalyticsPage />} />
-            <Route path="seed-data" element={<SeedDataSettings />} />
-            <Route path="data-cleanup" element={<DataCleanupSettings />} />
+            <Route path="seed-data" element={<RequirePermission adminOnly><SeedDataSettings /></RequirePermission>} />
+            <Route path="data-cleanup" element={<RequirePermission adminOnly><DataCleanupSettings /></RequirePermission>} />
             <Route path="sessions" element={<ActiveSessions />} />
             <Route path="timetable-cleanup" element={
               <div className="space-y-6">
