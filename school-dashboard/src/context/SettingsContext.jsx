@@ -110,9 +110,9 @@ export function SettingsProvider({ children }) {
   }, [getIsBeforeSchoolHours]);
 
   // School Settings functions
-  const updateSchoolSettings = async (updates) => {
+  const updateSchoolSettings = async (updates, options = {}) => {
     try {
-      const updated = await settingsApi.updateSchoolSettings(updates);
+      const updated = await settingsApi.updateSchoolSettings(updates, options);
       setSchoolSettings((prev) => ({ ...prev, ...updated }));
       void invalidateSettingsData();
       toast.success(t('toast.success.schoolSettingsUpdatedSuccessfully', 'School settings updated successfully'));
@@ -124,9 +124,9 @@ export function SettingsProvider({ children }) {
     }
   };
 
-  const addSubject = async (subject) => {
+  const addSubject = async (subject, options = {}) => {
     try {
-      const result = await settingsApi.createSubject(subject);
+      const result = await settingsApi.createSubject(subject, options);
       // Backend now returns { subjects, classesUpdated }
       const subjects = Array.isArray(result) ? result : result.subjects || result;
       const classesUpdated = result.classesUpdated || 0;
@@ -151,9 +151,9 @@ export function SettingsProvider({ children }) {
     }
   };
 
-  const updateSubject = async (id, updates) => {
+  const updateSubject = async (id, updates, options = {}) => {
     try {
-      const result = await settingsApi.updateSubject(id, updates);
+      const result = await settingsApi.updateSubject(id, updates, options);
       const subjects = Array.isArray(result) ? result : result.subjects || result;
       const classesUpdated = result.classesUpdated || 0;
       setSchoolSettings((prev) => ({ ...prev, subjects }));
@@ -177,9 +177,9 @@ export function SettingsProvider({ children }) {
     }
   };
 
-  const deleteSubject = async (id) => {
+  const deleteSubject = async (id, options = {}) => {
     try {
-      const result = await settingsApi.deleteSubject(id);
+      const result = await settingsApi.deleteSubject(id, options);
       const subjects = Array.isArray(result) ? result : result.subjects || result;
       const classesUpdated = result.classesUpdated || 0;
       setSchoolSettings((prev) => ({ ...prev, subjects }));
@@ -196,7 +196,7 @@ export function SettingsProvider({ children }) {
   };
 
   // Event functions
-  const addEvent = async (newEvent) => {
+  const addEvent = async (newEvent, options = {}) => {
     if (newEvent.type === "holiday") {
       try {
         const holidayData = {
@@ -204,7 +204,7 @@ export function SettingsProvider({ children }) {
           date: newEvent.date,
           type: newEvent.holidayType || "National",
         };
-        const created = await settingsApi.createHoliday(holidayData);
+        const created = await settingsApi.createHoliday(holidayData, options);
         const eventWithId = {
           id: created.id,
           title: created.name,
@@ -245,7 +245,7 @@ export function SettingsProvider({ children }) {
           startTime: newEvent.startTime || "",
           endTime: newEvent.endTime || "",
           allDay: newEvent.allDay || false,
-        });
+        }, options);
         // Replace temp event with the real one from API
         setEvents((prev) => prev.map((e) => (e.id === localEvent.id ? created : e)));
         void invalidateSettingsData();
@@ -259,7 +259,7 @@ export function SettingsProvider({ children }) {
     }
   };
 
-  const updateEvent = async (id, updates) => {
+  const updateEvent = async (id, updates, options = {}) => {
     const event = events.find((e) => e.id === id);
     if (event && event.type === "holiday") {
       try {
@@ -268,7 +268,7 @@ export function SettingsProvider({ children }) {
           date: updates.date || event.date,
           type: updates.holidayType || event.holidayType,
         };
-        await settingsApi.updateHoliday(id, holidayData);
+        await settingsApi.updateHoliday(id, holidayData, options);
         setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, ...updates } : e)));
         void invalidateSettingsData();
         toast.success(t('toast.success.holidayUpdatedSuccessfully', 'Holiday updated successfully'));
@@ -279,7 +279,7 @@ export function SettingsProvider({ children }) {
       }
     } else {
       try {
-        await calendarEventsApi.update(id, updates);
+        await calendarEventsApi.update(id, updates, options);
         setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, ...updates } : e)));
         void invalidateSettingsData();
         toast.success(t('toast.success.eventUpdatedSuccessfully', 'Event updated successfully'));
@@ -291,11 +291,11 @@ export function SettingsProvider({ children }) {
     }
   };
 
-  const deleteEvent = async (id) => {
+  const deleteEvent = async (id, options = {}) => {
     const event = events.find((e) => e.id === id);
     if (event && event.type === "holiday") {
       try {
-        await settingsApi.deleteHoliday(id);
+        await settingsApi.deleteHoliday(id, options);
         setEvents((prev) => prev.filter((e) => e.id !== id));
         void invalidateSettingsData();
         toast.success(t('toast.success.holidayDeletedSuccessfully', 'Holiday deleted successfully'));
@@ -306,7 +306,7 @@ export function SettingsProvider({ children }) {
       }
     } else {
       try {
-        await calendarEventsApi.delete(id);
+        await calendarEventsApi.delete(id, options);
         setEvents((prev) => prev.filter((e) => e.id !== id));
         void invalidateSettingsData();
         toast.success(t('toast.success.eventDeletedSuccessfully', 'Event deleted successfully'));
@@ -322,11 +322,11 @@ export function SettingsProvider({ children }) {
     Array.isArray(events) ? events.filter((e) => e.date === date) : [];
 
   // Fee functions
-  const addFeePayment = async (payment) => {
+  const addFeePayment = async (payment, options = {}) => {
     const localPayment = { ...payment, id: payment.id || `temp-${Date.now()}` };
     setFeePayments((prev) => [...prev, localPayment]);
     try {
-      const created = await feesApi.createPayment(payment);
+      const created = await feesApi.createPayment(payment, options);
       setFeePayments((prev) => prev.map((p) => (p.id === localPayment.id ? created : p)));
       void invalidateSettingsData();
       return created;
@@ -348,11 +348,11 @@ export function SettingsProvider({ children }) {
       : [];
 
   // Announcement functions
-  const addAnnouncement = async (announcement) => {
+  const addAnnouncement = async (announcement, options = {}) => {
     const localAnnouncement = { ...announcement, id: `temp-${Date.now()}` };
     setAnnouncements((prev) => [...prev, localAnnouncement]);
     try {
-      const created = await announcementsApi.create(announcement);
+      const created = await announcementsApi.create(announcement, options);
       setAnnouncements((prev) => prev.map((a) => (a.id === localAnnouncement.id ? created : a)));
       void invalidateSettingsData();
       return created;
