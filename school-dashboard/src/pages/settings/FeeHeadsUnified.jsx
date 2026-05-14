@@ -655,7 +655,7 @@ export default function FeeHeadsUnified({ embedded = false }) {
                         type="number"
                         placeholder={t('fees.amountPlaceholder')}
                         value={formData.amount || ""}
-                        onChange={(e) => setFormData({ ...formData, amount: parseInt(e.target.value) || 0 })}
+                        onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
                         className="w-full pl-7 pr-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-lg focus:outline-none focus:border-gray-400 dark:bg-zinc-950 dark:text-zinc-100"
                       />
                     </div>

@@ -26,6 +26,7 @@ function SalaryComponents() {
   const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
   const [modalType, setModalType] = useState("earnings");
   const [itemName, setItemName] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const handleOpenAdd = (type) => {
     setModalType(type);
@@ -33,10 +34,17 @@ function SalaryComponents() {
     onOpen();
   };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!itemName.trim()) return;
-    updateSalarySettings(modalType, "add", { name: itemName });
-    onClose();
+    setSaving(true);
+    try {
+      await updateSalarySettings(modalType, "add", { name: itemName });
+      onClose();
+    } catch {
+      // Error toast already shown by useSalaryState; keep modal open on failure
+    } finally {
+      setSaving(false);
+    }
   };
 
   // [AUDIT-557] Added confirmation before removing salary components
@@ -47,7 +55,11 @@ function SalaryComponents() {
       variant: 'danger',
       confirmText: 'Remove',
       onConfirm: async () => {
-        updateSalarySettings(type, "remove", { id });
+        try {
+          await updateSalarySettings(type, "remove", { id });
+        } catch {
+          // Error toast already shown by useSalaryState
+        }
       },
     });
   };
@@ -261,6 +273,7 @@ function SalaryComponents() {
               color="primary"
               onPress={handleAdd}
               isDisabled={!itemName.trim()}
+              isLoading={saving}
             >
               {t("pages.add1")}
             </Button>
