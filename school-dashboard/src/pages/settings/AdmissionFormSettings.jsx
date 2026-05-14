@@ -142,20 +142,11 @@ export default function AdmissionFormSettings() {
     }
   };
 
-  // AUDIT-134: Fixed save logic to handle mix of new and existing document configs
+  // DK-12: Atomic save — send the complete document config set in one API call
   const handleSaveDocumentConfig = async () => {
     setSaving(true);
     try {
-      const existingDocs = documentConfigs.filter(doc => doc._id || doc.id);
-      const newDocs = documentConfigs.filter(doc => !doc._id && !doc.id);
-
-      if (existingDocs.length > 0) {
-        await settingsApi.bulkUpdateDocumentConfig(existingDocs);
-      }
-      for (const doc of newDocs) {
-        await settingsApi.createDocumentConfig(doc);
-      }
-
+      await settingsApi.saveDocumentConfigAtomic(documentConfigs);
       toast.success(t('toast.success.documentConfigurationSavedSuccessfully'));
       await loadConfigurations();
     } catch (error) {
