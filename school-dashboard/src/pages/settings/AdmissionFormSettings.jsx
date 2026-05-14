@@ -61,7 +61,9 @@ export default function AdmissionFormSettings() {
   const [documentConfigs, setDocumentConfigs] = useState([]);
 
   useEffect(() => {
-    loadConfigurations();
+    const controller = new AbortController();
+    loadConfigurations(controller.signal);
+    return () => controller.abort();
   }, []);
 
   // Generate preview locally (client-side only, no API call)
@@ -80,23 +82,25 @@ export default function AdmissionFormSettings() {
     setPreviewId(preview);
   }, [admissionIdConfig]);
 
-  const loadConfigurations = async () => {
+  const loadConfigurations = async (signal) => {
     setLoading(true);
     try {
       const [idConfig, rollConfig, docConfigs] = await Promise.all([
-        settingsApi.getAdmissionIdConfig(),
-        settingsApi.getRollNumberConfig(),
-        settingsApi.getDocumentConfig()
+        settingsApi.getAdmissionIdConfig({ signal }),
+        settingsApi.getRollNumberConfig({ signal }),
+        settingsApi.getDocumentConfig({ signal })
       ]);
-      
+
+      if (signal?.aborted) return;
+
       if (idConfig) {
         setAdmissionIdConfig(idConfig);
       }
-      
+
       if (rollConfig) {
         setRollNumberConfig(rollConfig);
       }
-      
+
       if (docConfigs && docConfigs.length > 0) {
         setDocumentConfigs(docConfigs);
       } else {
@@ -109,10 +113,13 @@ export default function AdmissionFormSettings() {
         ]);
       }
     } catch (error) {
+      if (error.name === 'AbortError') return;
       logger.error('Error loading configurations:', error);
       toast.error(t('toast.error.failedToLoadConfigurations'));
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
   };
 
