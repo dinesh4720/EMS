@@ -1617,7 +1617,7 @@ ${studentResults.length > 0 ? `
                   min={1}
                   max={studentFeeStructure?.totalBalance || 0}
                   description={`Outstanding: ₹${formatCurrency(studentFeeStructure?.totalBalance)}`}
-                  isInvalid={!!paymentForm.amount && parseInt(paymentForm.amount, 10) > (studentFeeStructure?.totalBalance || 0)}
+                  isInvalid={!!paymentForm.amount && parseFloat(paymentForm.amount) > (studentFeeStructure?.totalBalance || 0)}
                   errorMessage={`Max payable: ₹${formatCurrency(studentFeeStructure?.totalBalance)}`}
                   isRequired
                 />
@@ -1650,8 +1650,8 @@ ${studentResults.length > 0 ? `
                   isDisabled={
                     !paymentForm.amount ||
                     !paymentForm.paymentMode ||
-                    parseInt(paymentForm.amount, 10) <= 0 ||
-                    parseInt(paymentForm.amount, 10) > (studentFeeStructure?.totalBalance || 0)
+                    parseFloat(paymentForm.amount) <= 0 ||
+                    parseFloat(paymentForm.amount) > (studentFeeStructure?.totalBalance || 0)
                   }
                 >{t('pages.reviewPayment', 'Review Payment')}</Button>
               </>

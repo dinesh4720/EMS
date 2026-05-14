@@ -41,6 +41,10 @@ export const settingsApi = {
   updatePayrollSettings: (data) => request('/settings/payroll', { method: 'PUT', body: JSON.stringify(data) }),
   getPayrollReminder: () => request('/settings/payroll/reminder'),
 
+  // Salary Components
+  getSalaryComponents: () => request('/settings/salary-components'),
+  updateSalaryComponents: (data) => request('/settings/salary-components', { method: 'PUT', body: JSON.stringify(data) }),
+
   // Admission Form Configuration
   getAdmissionFormConfig: (fieldType) => request(`/settings/admission-form-config${fieldType ? `?fieldType=${fieldType}` : ''}`),
   createAdmissionFormConfig: (data) => request('/settings/admission-form-config', { method: 'POST', body: JSON.stringify(data) }),
