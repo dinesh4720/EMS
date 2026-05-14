@@ -62,6 +62,7 @@ export const settingsApi = {
   updateDocumentConfig: (id, data) => request(`/settings/document-config/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   bulkUpdateDocumentConfig: (configs) => request('/settings/document-config/bulk', { method: 'PUT', body: JSON.stringify({ configs }) }),
   deleteDocumentConfig: (id) => request(`/settings/document-config/${id}`, { method: 'DELETE' }),
+  saveDocumentConfigAtomic: (configs) => request('/settings/document-config/atomic', { method: 'PUT', body: JSON.stringify({ configs }) }),
 
   // Communication Settings
   getCommunicationSettings: () => request('/settings/communication'),
