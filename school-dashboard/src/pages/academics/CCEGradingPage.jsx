@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Card, CardBody, Button, Switch,
-  Breadcrumbs, BreadcrumbItem, Chip, Divider,
+  Breadcrumbs, BreadcrumbItem,
 } from '@heroui/react';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { Home, Save, RefreshCw, Edit2, X, Check } from 'lucide-react';
@@ -11,12 +11,14 @@ import { PageLayout, MinimalButton, Input as DSInput, ErrorState } from '../../c
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 
-const GRADE_COLOR = (g) => {
-  if (['A1', 'A2'].includes(g)) return 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300';
-  if (['B1', 'B2'].includes(g)) return 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300';
-  if (['C1', 'C2'].includes(g)) return 'bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300';
-  if (g === 'D') return 'bg-orange-50 text-orange-600 dark:bg-orange-950 dark:text-orange-300';
-  return 'bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-300';
+// Token-driven grade pill — uses --ok/--info/--warn/--danger tokens
+// so the scale visualization is dark-mode aware out of the box.
+const gradePillClass = (g) => {
+  if (!g) return 'grade-pill grade-pill--muted';
+  if (g === 'A1' || g === 'A2') return 'grade-pill grade-pill--ok';
+  if (g === 'B1' || g === 'B2') return 'grade-pill grade-pill--info';
+  if (g === 'C1' || g === 'C2') return 'grade-pill grade-pill--warn';
+  return 'grade-pill grade-pill--danger';
 };
 
 function NumInput({ value, onChange, min, max, ariaLabel }) {
@@ -246,7 +248,7 @@ export default function CCEGradingPage() {
                         ? draftScale.map((row, i) => (
                           <tr key={i} className="border-b border-divider">
                             <td className="py-2">
-                              <span className={`px-2 py-0.5 rounded text-xs font-bold ${GRADE_COLOR(row.grade)}`}>
+                              <span className={gradePillClass(row.grade)}>
                                 {row.grade}
                               </span>
                             </td>
@@ -273,13 +275,13 @@ export default function CCEGradingPage() {
                         : (config.gradingScale || []).map((row, i) => (
                           <tr key={i} className="border-b border-divider">
                             <td className="py-2.5">
-                              <span className={`px-2 py-0.5 rounded text-xs font-bold ${GRADE_COLOR(row.grade)}`}>
+                              <span className={gradePillClass(row.grade)}>
                                 {row.grade}
                               </span>
                             </td>
-                            <td className="py-2.5 text-center text-fg font-medium">{row.gradePoint}</td>
-                            <td className="py-2.5 text-center text-fg-muted">{row.minPercentage}%</td>
-                            <td className="py-2.5 text-center text-fg-muted">{row.maxPercentage}%</td>
+                            <td className="py-2.5 text-center text-fg font-medium tnum">{row.gradePoint}</td>
+                            <td className="py-2.5 text-center text-fg-muted tnum">{row.minPercentage}%</td>
+                            <td className="py-2.5 text-center text-fg-muted tnum">{row.maxPercentage}%</td>
                             <td className="py-2.5 text-fg-muted">{row.description}</td>
                           </tr>
                         ))
@@ -298,16 +300,9 @@ export default function CCEGradingPage() {
                   {(() => {
                     const total = (config.assessmentTypes || []).reduce((s, at) => s + (Number(at.weightage) || 0), 0);
                     return (
-                      <Chip
-                        size="sm"
-                        variant="flat"
-                        className={total === 100
-                          ? 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300'
-                          : 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300'
-                        }
-                      >
-                        Total: {total}%{total !== 100 ? ' (must be 100%)' : ''}
-                      </Chip>
+                      <span className={`grade-pill tnum ${total === 100 ? 'grade-pill--ok' : 'grade-pill--danger'}`}>
+                        Total: {total}%{total !== 100 ? ' · must be 100%' : ''}
+                      </span>
                     );
                   })()}
                 </div>
@@ -323,16 +318,9 @@ export default function CCEGradingPage() {
                           {at.type} · {at.term?.replace(/_/g, ' ')} · {at.weightage}% weightage · {at.maxMarks} marks
                         </p>
                       </div>
-                      <Chip
-                        size="sm"
-                        variant="flat"
-                        className={at.isActive
-                          ? 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300'
-                          : 'bg-surface-2 text-fg-muted'
-                        }
-                      >
+                      <span className={`grade-pill ${at.isActive ? 'grade-pill--ok' : 'grade-pill--muted'}`}>
                         {at.isActive ? 'Active' : 'Inactive'}
-                      </Chip>
+                      </span>
                     </div>
                   ))}
                 </div>

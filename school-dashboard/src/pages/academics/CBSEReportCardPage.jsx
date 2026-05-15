@@ -2,9 +2,9 @@ import { useState, useCallback, useRef, useEffect, Fragment } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   Card, CardBody, Input, Button, Select, SelectItem,
-  Breadcrumbs, BreadcrumbItem, Chip,
+  Breadcrumbs, BreadcrumbItem,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  Tab, Tabs, useDisclosure,
+  useDisclosure,
 } from '@heroui/react';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { Search, FileText, Home, Plus, Users, Printer } from 'lucide-react';
@@ -17,16 +17,14 @@ import { useTranslation } from 'react-i18next';
 import logger from '../../utils/logger';
 
 
-const GRADE_COLORS = {
-  A1: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200',
-  A2: 'bg-green-50 text-green-700 dark:bg-green-900 dark:text-green-300',
-  B1: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
-  B2: 'bg-blue-50 text-blue-600 dark:bg-blue-900 dark:text-blue-400',
-  C1: 'bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300',
-  C2: 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-400',
-  D: 'bg-orange-50 text-orange-600 dark:bg-orange-950 dark:text-orange-300',
-  E1: 'bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-300',
-  E2: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200',
+// Token-driven grade pill class — maps CBSE grade bands to the
+// status semantics defined in academics.css (.grade-pill--*).
+const gradePillClass = (grade) => {
+  if (!grade) return 'grade-pill grade-pill--muted';
+  if (grade === 'A1' || grade === 'A2') return 'grade-pill grade-pill--ok';
+  if (grade === 'B1' || grade === 'B2') return 'grade-pill grade-pill--info';
+  if (grade === 'C1' || grade === 'C2') return 'grade-pill grade-pill--warn';
+  return 'grade-pill grade-pill--danger';
 };
 
 // ── Mark Entry Modal (single student) ─────────────────────────────────────────
@@ -393,7 +391,7 @@ function BulkMarkEntryModal({ isOpen, onClose, term, academicYear }) {
 export default function CBSEReportCardPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { currentAcademicYear } = useApp();
+  const { currentAcademicYear, schoolSettings } = useApp();
   const [admissionNo, setAdmissionNo] = useState('');
   const [term, setTerm] = useState('term_1');
   const [loading, setLoading] = useState(false);
@@ -422,35 +420,23 @@ export default function CBSEReportCardPage() {
     }
   };
 
+  // Rely on @media print rules in academics.css — much cleaner than
+  // a popup window since print styles already hide chrome (.no-print)
+  // and reformat the report card to A4 portrait.
   const handlePrint = useCallback(() => {
     if (!printRef.current) return;
-    // printContent is React-rendered innerHTML (already escaped by React)
-    const printContent = printRef.current.innerHTML;
-    const w = window.open('', '_blank', 'width=800,height=600');
-    if (!w) { toast.error('Pop-up blocked. Allow pop-ups to print report card.'); return; }
-    w.document.write(`
-      <html><head><title>CBSE Report Card</title>
-      <style>
-        body { font-family: Arial, sans-serif; margin: 24px; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        th, td { border: 1px solid #ddd; padding: 6px 10px; }
-        th { background: #f5f5f5; font-weight: 600; }
-        .grade-badge { padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 11px; }
-        @media print { button { display: none; } }
-      </style></head>
-      <body>${printContent}</body></html>
-    `);
-    w.document.close();
-    w.focus();
-    w.print();
-    w.close();
+    window.print();
   }, []);
 
   const reportCard = result?.reportCards?.[0] || result?.reportCard;
+  const attendancePct =
+    reportCard?.attendance?.workingDays
+      ? Math.round((reportCard.attendance.daysPresent / reportCard.attendance.workingDays) * 100)
+      : null;
 
   return (
     <div className="animate-fade-in">
-      <div className="mb-4">
+      <div className="mb-4 no-print">
         <Breadcrumbs size="sm">
           <BreadcrumbItem startContent={<Home size={14} />} onPress={() => navigate('/')}>Home</BreadcrumbItem>
           <BreadcrumbItem onPress={() => navigate('/academics')}>Academics</BreadcrumbItem>
@@ -475,7 +461,7 @@ export default function CBSEReportCardPage() {
       >
         <div className="p-6 space-y-6">
           {/* Search */}
-          <Card shadow="sm" className="bg-surface border border-border-token">
+          <Card shadow="sm" className="bg-surface border border-border-token no-print">
             <CardBody className="p-4">
               <div className="flex flex-col sm:flex-row gap-3">
                 <Input
@@ -516,43 +502,37 @@ export default function CBSEReportCardPage() {
 
           {/* Results */}
           {!loading && result && (
-            <div className="space-y-4" ref={printRef}>
-              {/* Student Header */}
-              <Card shadow="sm" className="bg-surface border border-border-token">
-                <CardBody className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-lg font-semibold text-fg">{result.student?.name}</h2>
-                      <p className="text-sm text-fg-muted">
-                        Adm: {result.student?.admissionNo} · Roll: {result.student?.rollNo} · Class: {result.student?.className}
-                        {(result.student?.fatherName || result.student?.guardianName) && ` · Parent: ${result.student?.fatherName || result.student?.guardianName}`}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="flat"
-                        size="sm"
-                        color="primary"
-                        startContent={<Plus size={14} />}
-                        onPress={markEntryDisclosure.onOpen}
-                        className="border-border-token text-fg"
-                      >
-                        Enter Marks
-                      </Button>
-                      <Button
-                        variant="bordered"
-                        size="sm"
-                        startContent={<Printer size={14} />}
-                        className="border-border-token text-fg"
-                        onPress={handlePrint}
-                        isDisabled={!reportCard}
-                      >
-                        Export PDF
-                      </Button>
-                    </div>
-                  </div>
-                </CardBody>
-              </Card>
+            <div className="space-y-4">
+              {/* Screen-only action bar */}
+              <div className="flex items-center justify-between no-print">
+                <div>
+                  <h2 className="text-lg font-semibold text-fg">{result.student?.name}</h2>
+                  <p className="text-sm text-fg-muted">
+                    Adm: {result.student?.admissionNo} · Roll: {result.student?.rollNo} · Class: {result.student?.className}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="flat"
+                    size="sm"
+                    color="primary"
+                    startContent={<Plus size={14} />}
+                    onPress={markEntryDisclosure.onOpen}
+                  >
+                    Enter Marks
+                  </Button>
+                  <Button
+                    variant="bordered"
+                    size="sm"
+                    startContent={<Printer size={14} />}
+                    className="border-border-token text-fg"
+                    onPress={handlePrint}
+                    isDisabled={!reportCard}
+                  >
+                    Print / PDF
+                  </Button>
+                </div>
+              </div>
 
               {!reportCard ? (
                 <EmptyState
@@ -571,98 +551,208 @@ export default function CBSEReportCardPage() {
                   }
                 />
               ) : (
-                <>
+                <div className="report-card" ref={printRef}>
+                  {/* School branding header */}
+                  <div className="report-card__brand">
+                    {schoolSettings?.logo ? (
+                      <img src={schoolSettings.logo} alt="" className="report-card__logo" />
+                    ) : (
+                      <div className="report-card__logo report-card__photo--placeholder">Logo</div>
+                    )}
+                    <div className="report-card__brand-text">
+                      <div className="report-card__school">{schoolSettings?.name || 'School Name'}</div>
+                      {schoolSettings?.address && (
+                        <div className="report-card__address">{schoolSettings.address}</div>
+                      )}
+                      <div className="report-card__board">
+                        {schoolSettings?.boardOfEducation || 'CBSE'}
+                        {schoolSettings?.affiliationNo ? ` · Affiliation No: ${schoolSettings.affiliationNo}` : ''}
+                        {schoolSettings?.udiseNo ? ` · UDISE: ${schoolSettings.udiseNo}` : ''}
+                      </div>
+                    </div>
+                    {result.student?.photo ? (
+                      <img src={result.student.photo} alt="" className="report-card__photo" />
+                    ) : (
+                      <div className="report-card__photo report-card__photo--placeholder">Student Photo</div>
+                    )}
+                  </div>
+
+                  <div className="report-card__title">
+                    Progress Report — {term?.replace(/_/g, ' ')} · {result.student?.academicYear || currentAcademicYear}
+                  </div>
+
+                  {/* Student meta grid */}
+                  <div className="report-card__meta">
+                    <div className="report-card__meta-row">
+                      <span className="report-card__meta-label">Name</span>
+                      <span className="report-card__meta-value">{result.student?.name || '—'}</span>
+                    </div>
+                    <div className="report-card__meta-row">
+                      <span className="report-card__meta-label">Admission No.</span>
+                      <span className="report-card__meta-value">{result.student?.admissionNo || '—'}</span>
+                    </div>
+                    <div className="report-card__meta-row">
+                      <span className="report-card__meta-label">Roll No.</span>
+                      <span className="report-card__meta-value">{result.student?.rollNo || '—'}</span>
+                    </div>
+                    <div className="report-card__meta-row">
+                      <span className="report-card__meta-label">Class</span>
+                      <span className="report-card__meta-value">{result.student?.className || '—'}</span>
+                    </div>
+                    <div className="report-card__meta-row">
+                      <span className="report-card__meta-label">Parent / Guardian</span>
+                      <span className="report-card__meta-value">
+                        {result.student?.fatherName || result.student?.guardianName || '—'}
+                      </span>
+                    </div>
+                    <div className="report-card__meta-row">
+                      <span className="report-card__meta-label">Date of Birth</span>
+                      <span className="report-card__meta-value">{result.student?.dateOfBirth || '—'}</span>
+                    </div>
+                    <div className="report-card__meta-row">
+                      <span className="report-card__meta-label">Academic Year</span>
+                      <span className="report-card__meta-value">
+                        {result.student?.academicYear || currentAcademicYear}
+                      </span>
+                    </div>
+                    <div className="report-card__meta-row">
+                      <span className="report-card__meta-label">Term</span>
+                      <span className="report-card__meta-value">{term?.replace(/_/g, ' ')}</span>
+                    </div>
+                  </div>
+
                   {/* Scholastic */}
                   {reportCard.scholasticGrades?.length > 0 && (
-                    <Card shadow="sm" className="bg-surface border border-border-token">
-                      <CardBody className="p-4">
-                        <h3 className="text-sm font-semibold text-fg mb-3">Scholastic Areas</h3>
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr className="border-b border-divider">
-                                <th className="text-left py-2 text-fg-muted font-medium">Subject</th>
-                                <th className="text-center py-2 text-fg-muted font-medium">Theory</th>
-                                <th className="text-center py-2 text-fg-muted font-medium">Practical</th>
-                                <th className="text-center py-2 text-fg-muted font-medium">Total</th>
-                                <th className="text-center py-2 text-fg-muted font-medium">Grade</th>
-                                <th className="text-center py-2 text-fg-muted font-medium">Grade Pt</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {reportCard.scholasticGrades.map((subj, i) => (
-                                <tr key={i} className="border-b border-divider">
-                                  <td className="py-2.5 text-fg">{subj.subjectName}</td>
-                                  <td className="py-2.5 text-center text-fg">{subj.theoryMarks ?? '—'}</td>
-                                  <td className="py-2.5 text-center text-fg">{subj.practicalMarks ?? '—'}</td>
-                                  <td className="py-2.5 text-center font-medium text-fg">{subj.totalMarks ?? '—'}</td>
-                                  <td className="py-2.5 text-center">
-                                    <span className={`px-2 py-0.5 rounded text-xs font-semibold ${GRADE_COLORS[subj.grade] || 'bg-surface-2 text-fg'}`}>
-                                      {subj.grade || '—'}
-                                    </span>
-                                  </td>
-                                  <td className="py-2.5 text-center text-fg">{subj.gradePoint ?? '—'}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                        {reportCard.cgpa != null && (
-                          <div className="mt-3 flex items-center justify-end gap-3">
-                            <span className="text-sm text-fg-muted">CGPA:</span>
-                            <span className="text-xl font-bold text-fg">{reportCard.cgpa}</span>
+                    <div className="report-card__section">
+                      <h3 className="report-card__section-title">Scholastic Areas</h3>
+                      <table className="report-card__table">
+                        <thead>
+                          <tr>
+                            <th>Subject</th>
+                            <th className="num">Theory</th>
+                            <th className="num">Practical</th>
+                            <th className="num">Total</th>
+                            <th className="num">Grade</th>
+                            <th className="num">Grade Pt</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {reportCard.scholasticGrades.map((subj, i) => (
+                            <tr key={i}>
+                              <td>{subj.subjectName}</td>
+                              <td className="num">{subj.theoryMarks ?? '—'}</td>
+                              <td className="num">{subj.practicalMarks ?? '—'}</td>
+                              <td className="num"><strong>{subj.totalMarks ?? '—'}</strong></td>
+                              <td className="num">
+                                <span className={gradePillClass(subj.grade)}>{subj.grade || '—'}</span>
+                              </td>
+                              <td className="num">{subj.gradePoint ?? '—'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      {reportCard.cgpa != null && (
+                        <div className="report-card__summary">
+                          <div className="dp-metric">
+                            <span className="dp-metric__label">CGPA</span>
+                            <span className="dp-metric__value tnum">{reportCard.cgpa}</span>
                           </div>
-                        )}
-                      </CardBody>
-                    </Card>
+                          {reportCard.percentage != null && (
+                            <div className="dp-metric">
+                              <span className="dp-metric__label">Percentage</span>
+                              <span className="dp-metric__value tnum">{reportCard.percentage}%</span>
+                            </div>
+                          )}
+                          {reportCard.overallGrade && (
+                            <div className="dp-metric">
+                              <span className="dp-metric__label">Overall Grade</span>
+                              <span className="dp-metric__value">
+                                <span className={gradePillClass(reportCard.overallGrade)}>
+                                  {reportCard.overallGrade}
+                                </span>
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   )}
 
                   {/* Co-scholastic */}
                   {reportCard.coScholasticGrades?.length > 0 && (
-                    <Card shadow="sm" className="bg-surface border border-border-token">
-                      <CardBody className="p-4">
-                        <h3 className="text-sm font-semibold text-fg mb-3">Co-Scholastic Areas</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    <div className="report-card__section">
+                      <h3 className="report-card__section-title">Co-Scholastic Areas</h3>
+                      <table className="report-card__table">
+                        <thead>
+                          <tr>
+                            <th>Area</th>
+                            <th>Activity</th>
+                            <th className="num">Grade</th>
+                          </tr>
+                        </thead>
+                        <tbody>
                           {reportCard.coScholasticGrades.map((item, i) => (
-                            <div key={i} className="flex items-center justify-between p-2 bg-surface-2 rounded-lg">
-                              <span className="text-xs text-fg-muted">{item.area}{item.activity ? ` — ${item.activity}` : ''}</span>
-                              <span className={`text-xs font-semibold px-2 py-0.5 rounded ${GRADE_COLORS[item.grade] || 'bg-surface-2 text-fg'}`}>
-                                {item.grade || '—'}
-                              </span>
-                            </div>
+                            <tr key={i}>
+                              <td>{item.area}</td>
+                              <td>{item.activity || '—'}</td>
+                              <td className="num">
+                                <span className={gradePillClass(item.grade)}>{item.grade || '—'}</span>
+                              </td>
+                            </tr>
                           ))}
-                        </div>
-                      </CardBody>
-                    </Card>
+                        </tbody>
+                      </table>
+                    </div>
                   )}
 
                   {/* Attendance */}
                   {reportCard.attendance && (
-                    <Card shadow="sm" className="bg-surface border border-border-token">
-                      <CardBody className="p-4">
-                        <h3 className="text-sm font-semibold text-fg mb-3">Attendance</h3>
-                        <div className="flex gap-6 text-sm">
-                          <div>
-                            <p className="text-xs text-fg-muted">Working Days</p>
-                            <p className="font-semibold text-fg">{reportCard.attendance.workingDays}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-fg-muted">Days Present</p>
-                            <p className="font-semibold text-fg">{reportCard.attendance.daysPresent}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-fg-muted">Percentage</p>
-                            <p className="font-semibold text-fg">
-                              {reportCard.attendance.workingDays
-                                ? `${Math.round((reportCard.attendance.daysPresent / reportCard.attendance.workingDays) * 100)}%`
-                                : '—'}
-                            </p>
-                          </div>
+                    <div className="report-card__section">
+                      <h3 className="report-card__section-title">Attendance</h3>
+                      <div className="report-card__summary">
+                        <div className="dp-metric">
+                          <span className="dp-metric__label">Working Days</span>
+                          <span className="dp-metric__value tnum">{reportCard.attendance.workingDays ?? '—'}</span>
                         </div>
-                      </CardBody>
-                    </Card>
+                        <div className="dp-metric">
+                          <span className="dp-metric__label">Days Present</span>
+                          <span className="dp-metric__value tnum">{reportCard.attendance.daysPresent ?? '—'}</span>
+                        </div>
+                        <div className="dp-metric">
+                          <span className="dp-metric__label">Attendance</span>
+                          <span className={`dp-metric__value tnum ${
+                            attendancePct == null ? '' :
+                            attendancePct >= 90 ? 'dp-metric__value--ok' :
+                            attendancePct >= 75 ? '' : 'dp-metric__value--warn'
+                          }`}>
+                            {attendancePct != null ? `${attendancePct}%` : '—'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   )}
-                </>
+
+                  {reportCard.classTeacherRemark && (
+                    <div className="report-card__section">
+                      <h3 className="report-card__section-title">Class Teacher's Remarks</h3>
+                      <p style={{ fontSize: '12.5px', color: 'var(--fg)', lineHeight: 1.5 }}>
+                        {reportCard.classTeacherRemark}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Signatures */}
+                  <div className="report-card__signatures">
+                    <div className="report-card__signature">Class Teacher</div>
+                    <div className="report-card__signature">
+                      {schoolSettings?.principalSignature && (
+                        <img src={schoolSettings.principalSignature} alt="" />
+                      )}
+                      Principal
+                    </div>
+                    <div className="report-card__signature">Parent / Guardian</div>
+                  </div>
+                </div>
               )}
             </div>
           )}
