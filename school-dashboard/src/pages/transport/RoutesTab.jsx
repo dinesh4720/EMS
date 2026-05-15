@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Button, Input, Chip, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/react";
-import { Plus, Search, MoreVertical, MapPin, Users, Edit2, Trash2, UserPlus } from "lucide-react";
+import { Plus, Search, MoreVertical, MapPin, Users, Edit2, Trash2, UserPlus, Bus, Route as RouteIcon } from "lucide-react";
 import { transportApi } from "../../services/api";
 import { useApp } from "../../context/AppContext";
 import { CURRENT_ACADEMIC_YEAR } from "../../utils/constants";
@@ -10,6 +10,11 @@ import StudentAssignModal from "./StudentAssignModal";
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import StatCard from '../../components/ui/StatCard';
+import EmptyState from '../../components/ui/EmptyState';
+import ErrorState from '../../components/ui/ErrorState';
+import logger from '../../utils/logger';
+
 
 export default function RoutesTab() {
   const { t } = useTranslation();
@@ -19,6 +24,7 @@ export default function RoutesTab() {
   const [routes, setRoutes] = useState([]);
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -32,6 +38,7 @@ export default function RoutesTab() {
   const fetchData = async () => {
     try {
       setLoading(true);
+      setLoadError(null);
       const [routesRes, vehiclesRes] = await Promise.all([
         transportApi.getRoutes({ academicYear }),
         transportApi.getVehicles(),
@@ -39,10 +46,26 @@ export default function RoutesTab() {
       setRoutes(routesRes?.data || []);
       setVehicles(vehiclesRes?.data || []);
     } catch (error) {
-      console.error('Failed to load transport data:', error);
+      logger.error('Failed to load transport data:', error);
+      setLoadError(error);
       toast.error(t('toast.error.failedToLoadRoutes'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Silent refresh — updates route data in the background without showing the skeleton loader.
+  // Used after student assign/remove so route card counts update without disrupting the open modal.
+  const silentRefresh = async () => {
+    try {
+      const [routesRes, vehiclesRes] = await Promise.all([
+        transportApi.getRoutes({ academicYear }),
+        transportApi.getVehicles(),
+      ]);
+      setRoutes(routesRes?.data || []);
+      setVehicles(vehiclesRes?.data || []);
+    } catch (error) {
+      logger.error('Failed to refresh transport data:', error);
     }
   };
 
@@ -65,7 +88,7 @@ export default function RoutesTab() {
       toast.success(t('toast.success.routeDeleted'));
       fetchData();
     } catch (error) {
-      console.error('Failed to delete route:', error);
+      logger.error('Failed to delete route:', error);
       toast.error(t('toast.error.failedToDeleteRoute'));
     } finally {
       setDeleteTarget(null);
@@ -82,10 +105,50 @@ export default function RoutesTab() {
     setIsStudentModalOpen(true);
   };
 
-  if (loading) return <TablePageSkeleton title={false} kpiCards={0} columns={5} rows={5} />;
+  // Compute stats from real data — "buses on route" = distinct vehicles assigned to active routes
+  const stats = useMemo(() => {
+    const activeRoutes = routes.filter((r) => r.status === 'active');
+    const busesOnRouteIds = new Set(
+      activeRoutes
+        .map((r) => r.vehicleId?._id?.toString() || r.vehicleId?.toString())
+        .filter(Boolean)
+    );
+    const totalStudents = routes.reduce((sum, r) => sum + (r.students?.length || 0), 0);
+    return {
+      totalRoutes: routes.length,
+      activeRoutes: activeRoutes.length,
+      busesOnRoute: busesOnRouteIds.size,
+      totalStudents,
+    };
+  }, [routes]);
+
+  if (loading) return <TablePageSkeleton title={false} kpiCards={4} columns={5} rows={5} />;
+  if (loadError) {
+    return (
+      <ErrorState
+        title={t('pages.failedToLoadTransportData', { defaultValue: 'Failed to load transport data' })}
+        error={loadError}
+        onRetry={fetchData}
+      />
+    );
+  }
 
   return (
     <div className="space-y-4">
+      {/* Summary Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard label={t('pages.totalRoutes')} value={stats.totalRoutes} icon={RouteIcon} color="blue" />
+        <StatCard label={t('pages.activeRoutes')} value={stats.activeRoutes} icon={RouteIcon} color="green" />
+        <StatCard
+          label={t('pages.busesOnRoute')}
+          value={stats.busesOnRoute}
+          icon={Bus}
+          color="amber"
+          subtext={t('pages.ofTotalVehicles', { count: vehicles.length })}
+        />
+        <StatCard label={t('pages.totalStudents1')} value={stats.totalStudents} icon={Users} color="purple" />
+      </div>
+
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex gap-2 items-center flex-1 w-full sm:w-auto">
@@ -100,7 +163,7 @@ export default function RoutesTab() {
           <Dropdown>
             <DropdownTrigger>
               <Button size="sm" variant="flat">
-                {statusFilter === "all" ? "All Status" : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}
+                {statusFilter === "all" ? t('pages.allStatus1') : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}
               </Button>
             </DropdownTrigger>
             <DropdownMenu
@@ -120,28 +183,45 @@ export default function RoutesTab() {
           startContent={<Plus size={16} />}
           onPress={() => { setEditingRoute(null); setIsRouteModalOpen(true); }}
         >
-          Add Route
+          {t('pages.addRoute')}
         </Button>
       </div>
 
       {/* Route Cards */}
       {filtered.length === 0 ? (
-        <div className="text-center py-16 text-gray-500 dark:text-zinc-400">
-          <MapPin size={40} className="mx-auto mb-3 opacity-30" />
-          <p className="font-medium">{t('pages.noRoutesFound')}</p>
-          <p className="text-sm mt-1">{t('pages.createYourFirstTransportRouteToGetStarted')}</p>
-        </div>
+        <EmptyState
+          icon={MapPin}
+          size="lg"
+          title={t('pages.noRoutesFound')}
+          description={
+            routes.length === 0
+              ? t('pages.createYourFirstTransportRouteToGetStarted')
+              : t('pages.noResultsMatchYourFilters', { defaultValue: 'No results match your filters' })
+          }
+          action={
+            routes.length === 0 ? (
+              <Button
+                color="primary"
+                size="sm"
+                startContent={<Plus size={16} />}
+                onPress={() => { setEditingRoute(null); setIsRouteModalOpen(true); }}
+              >
+                {t('pages.addRoute')}
+              </Button>
+            ) : null
+          }
+        />
       ) : (
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map((route) => (
             <div
               key={route._id}
-              className="bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow"
+              className="bg-surface border border-divider rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow"
             >
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-zinc-100">{route.routeName}</h3>
-                  <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">#{route.routeNumber}</p>
+                  <h3 className="font-semibold text-fg">{route.routeName}</h3>
+                  <p className="text-xs text-fg-muted mt-0.5">#{route.routeNumber}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Chip size="sm" variant="flat" color={route.status === "active" ? "success" : "default"}>
@@ -149,7 +229,7 @@ export default function RoutesTab() {
                   </Chip>
                   <Dropdown>
                     <DropdownTrigger>
-                      <Button isIconOnly size="sm" variant="light"><MoreVertical size={16} /></Button>
+                      <Button isIconOnly size="sm" variant="light" aria-label={t('pages.routeActions')}><MoreVertical size={16} /></Button>
                     </DropdownTrigger>
                     <DropdownMenu>
                       <DropdownItem key="edit" startContent={<Edit2 size={14} />} onPress={() => handleEdit(route)}>{t('pages.edit1')}</DropdownItem>
@@ -162,7 +242,7 @@ export default function RoutesTab() {
 
               {/* Vehicle info */}
               {route.vehicleId && (
-                <p className="text-xs text-gray-500 dark:text-zinc-400 mb-2">
+                <p className="text-xs text-fg-muted mb-2">
                   Vehicle: {route.vehicleId.registrationNumber} ({route.vehicleId.make} {route.vehicleId.model})
                 </p>
               )}
@@ -176,11 +256,11 @@ export default function RoutesTab() {
                 return (
                   <>
                     <div className="flex gap-4 text-sm">
-                      <div className="flex items-center gap-1.5 text-gray-600 dark:text-zinc-300">
+                      <div className="flex items-center gap-1.5 text-fg">
                         <MapPin size={14} />
                         <span>{route.stops?.length || 0} stops</span>
                       </div>
-                      <div className={`flex items-center gap-1.5 ${isOverCapacity ? 'text-red-600 dark:text-red-400 font-medium' : isNearCapacity ? 'text-amber-600 dark:text-amber-400' : 'text-gray-600 dark:text-zinc-300'}`}>
+                      <div className={`flex items-center gap-1.5 ${isOverCapacity ? 'text-red-600 dark:text-red-400 font-medium' : isNearCapacity ? 'text-amber-600 dark:text-amber-400' : 'text-fg'}`}>
                         <Users size={14} />
                         <span>{studentCount}{capacity ? `/${capacity}` : ''} students</span>
                       </div>
@@ -201,15 +281,15 @@ export default function RoutesTab() {
 
               {/* Stops preview */}
               {route.stops?.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-gray-50 dark:border-zinc-800">
+                <div className="mt-3 pt-3 border-t border-divider">
                   <div className="flex flex-wrap gap-1.5">
                     {route.stops.slice(0, 4).map((stop) => (
-                      <span key={stop._id} className="text-xs px-2 py-0.5 rounded-full bg-gray-50 dark:bg-zinc-900 text-gray-600 dark:text-zinc-400">
+                      <span key={stop._id} className="text-xs px-2 py-0.5 rounded-full bg-surface-2 text-fg-muted">
                         {stop.name}
                       </span>
                     ))}
                     {route.stops.length > 4 && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-gray-50 dark:bg-zinc-900 text-gray-500 dark:text-zinc-400">
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-surface-2 text-fg-muted">
                         +{route.stops.length - 4} more
                       </span>
                     )}
@@ -235,7 +315,7 @@ export default function RoutesTab() {
         isOpen={isStudentModalOpen}
         onClose={() => { setIsStudentModalOpen(false); setAssigningRoute(null); }}
         route={assigningRoute}
-        onSaved={fetchData}
+        onSaved={silentRefresh}
       />
 
       <ConfirmDialog

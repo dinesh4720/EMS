@@ -1,28 +1,25 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Card, CardBody, Button, Checkbox, Select, SelectItem, Chip,
-  Accordion, AccordionItem,
+  Button, Select, SelectItem, Accordion, AccordionItem,
 } from '@heroui/react';
 import {
-  CheckCircle, XCircle, Users, ArrowUpCircle, GraduationCap, Minus,
+  ArrowUpCircle, GraduationCap, Minus,
 } from 'lucide-react';
 import { promotionApi } from '../../../services/api/extensions';
 import { TablePageSkeleton } from '../../../components/skeletons/PageSkeletons';
 import toast from 'react-hot-toast';
 
 const DECISION_OPTIONS = [
-  { key: 'promoted', label: 'Promote', color: 'text-green-600' },
-  { key: 'detained', label: 'Detain', color: 'text-yellow-600' },
-  { key: 'graduated', label: 'Graduate', color: 'text-purple-600' },
-  { key: 'transferred', label: 'Transfer', color: 'text-blue-600' },
+  { key: 'promoted', label: 'Promote' },
+  { key: 'detained', label: 'Detain' },
+  { key: 'graduated', label: 'Graduate' },
+  { key: 'transferred', label: 'Transfer' },
 ];
 
 export default function StepStudentReview({ onNext, onBack, wizardState, setWizardState }) {
   const [loading, setLoading] = useState(true);
-  // classStudents: { [fromClassId]: { students: [...], decisions: { [studentId]: decision } } }
   const [classStudents, setClassStudents] = useState({});
 
-  // AUDIT-111: Nav guard -- warn on browser close/refresh when student decisions are loaded
   useEffect(() => {
     const hasDecisions = Object.keys(classStudents).length > 0;
     const handleBeforeUnload = (e) => {
@@ -112,7 +109,6 @@ export default function StepStudentReview({ onNext, onBack, wizardState, setWiza
     });
   };
 
-  // Compute totals
   let totalPromoting = 0;
   let totalDetained = 0;
   let totalGraduating = 0;
@@ -128,8 +124,9 @@ export default function StepStudentReview({ onNext, onBack, wizardState, setWiza
     }
   }
 
+  const total = totalPromoting + totalDetained + totalGraduating + totalTransferred;
+
   const handleNext = () => {
-    // Build final decisions per class
     const finalMappings = wizardState.classMappings.map((mapping) => {
       const data = classStudents[mapping.fromClassId];
       if (!data) return { ...mapping, studentDecisions: [] };
@@ -159,28 +156,27 @@ export default function StepStudentReview({ onNext, onBack, wizardState, setWiza
   if (loading) return <TablePageSkeleton />;
 
   return (
-    <div className="space-y-5">
-      {/* Summary stats */}
-      <div className="grid grid-cols-4 gap-3">
-        <div className="bg-green-50 dark:bg-green-950/30 border border-green-100 dark:border-green-900 rounded-lg p-3">
-          <p className="text-xs text-green-600 dark:text-green-400">Promoting</p>
-          <p className="text-xl font-semibold text-green-700 dark:text-green-300">{totalPromoting}</p>
+    <div className="space-y-4">
+      {/* Metrics */}
+      <div className="promo-metrics">
+        <div className="promo-metric promo-metric--ok">
+          <span className="promo-metric__label">Promoting</span>
+          <span className="promo-metric__value">{totalPromoting}</span>
         </div>
-        <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-100 dark:border-yellow-900 rounded-lg p-3">
-          <p className="text-xs text-yellow-600 dark:text-yellow-400">Detained</p>
-          <p className="text-xl font-semibold text-yellow-700 dark:text-yellow-300">{totalDetained}</p>
+        <div className="promo-metric promo-metric--warn">
+          <span className="promo-metric__label">Detained</span>
+          <span className="promo-metric__value">{totalDetained}</span>
         </div>
-        <div className="bg-purple-50 dark:bg-purple-950/30 border border-purple-100 dark:border-purple-900 rounded-lg p-3">
-          <p className="text-xs text-purple-600 dark:text-purple-400">Graduating</p>
-          <p className="text-xl font-semibold text-purple-700 dark:text-purple-300">{totalGraduating}</p>
+        <div className="promo-metric promo-metric--accent">
+          <span className="promo-metric__label">Graduating</span>
+          <span className="promo-metric__value">{totalGraduating}</span>
         </div>
-        <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900 rounded-lg p-3">
-          <p className="text-xs text-blue-600 dark:text-blue-400">Transferred</p>
-          <p className="text-xl font-semibold text-blue-700 dark:text-blue-300">{totalTransferred}</p>
+        <div className="promo-metric promo-metric--info">
+          <span className="promo-metric__label">Transferred</span>
+          <span className="promo-metric__value">{totalTransferred}</span>
         </div>
       </div>
 
-      {/* Per-class accordion */}
       <Accordion variant="splitted" selectionMode="multiple" defaultExpandedKeys={
         wizardState.classMappings.length <= 5
           ? wizardState.classMappings.map((m) => m.fromClassId)
@@ -205,35 +201,28 @@ export default function StepStudentReview({ onNext, onBack, wizardState, setWiza
                   <span className="font-medium">
                     {mapping.fromClassName}{mapping.fromSection ? ` (${mapping.fromSection})` : ''}
                   </span>
-                  <span className="text-xs text-gray-400">→</span>
-                  <span className="text-sm text-gray-600 dark:text-zinc-400">
+                  <span className="text-xs text-fg-faint">→</span>
+                  <span className="text-sm text-fg-muted">
                     {mapping.graduate ? 'Graduate' : mapping.toClassName}
                   </span>
                   <div className="flex gap-1.5 ml-auto">
                     {classPromoting > 0 && (
-                      <Chip size="sm" variant="flat" className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
-                        {classPromoting} promote
-                      </Chip>
+                      <span className="chip chip--ok mono tnum">{classPromoting} promote</span>
                     )}
                     {classDetained > 0 && (
-                      <Chip size="sm" variant="flat" className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300">
-                        {classDetained} detain
-                      </Chip>
+                      <span className="chip chip--warn mono tnum">{classDetained} detain</span>
                     )}
                     {classGraduating > 0 && (
-                      <Chip size="sm" variant="flat" className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
-                        {classGraduating} graduate
-                      </Chip>
+                      <span className="chip chip--accent mono tnum">{classGraduating} graduate</span>
                     )}
                   </div>
                 </div>
               }
               classNames={{
-                base: 'border border-gray-200 dark:border-zinc-800',
+                base: 'border border-border-token',
                 content: 'pt-0',
               }}
             >
-              {/* Bulk actions */}
               <div className="flex gap-2 mb-3 px-1">
                 <button
                   onClick={() => selectAllEligible(mapping.fromClassId, mapping)}
@@ -250,8 +239,7 @@ export default function StepStudentReview({ onNext, onBack, wizardState, setWiza
                 </button>
               </div>
 
-              {/* Student list */}
-              <div className="space-y-1.5 max-h-80 overflow-y-auto">
+              <div className="max-h-80 overflow-y-auto pr-1">
                 {students.length === 0 ? (
                   <p className="text-sm text-gray-400 text-center py-4">No active students</p>
                 ) : (
@@ -261,42 +249,27 @@ export default function StepStudentReview({ onNext, onBack, wizardState, setWiza
                     const isBlocked = s.blocked;
 
                     return (
-                      <div
-                        key={sid}
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors ${
-                          decision === 'promoted'
-                            ? 'bg-green-50/50 dark:bg-green-950/20 border-green-100 dark:border-green-900/50'
-                            : decision === 'detained'
-                              ? 'bg-yellow-50/50 dark:bg-yellow-950/20 border-yellow-100 dark:border-yellow-900/50'
-                              : decision === 'graduated'
-                                ? 'bg-purple-50/50 dark:bg-purple-950/20 border-purple-100 dark:border-purple-900/50'
-                                : 'bg-gray-50 dark:bg-zinc-900 border-gray-100 dark:border-zinc-800'
-                        }`}
-                      >
-                        {/* Status icon */}
-                        {decision === 'promoted' && <ArrowUpCircle size={15} className="text-green-500 shrink-0" />}
-                        {decision === 'detained' && <Minus size={15} className="text-yellow-500 shrink-0" />}
-                        {decision === 'graduated' && <GraduationCap size={15} className="text-purple-500 shrink-0" />}
-                        {decision === 'transferred' && <ArrowUpCircle size={15} className="text-blue-500 shrink-0" />}
+                      <div key={sid} className={`sdec-row sdec-row--${decision}`}>
+                        {decision === 'promoted' && <ArrowUpCircle size={14} className="text-green-500 shrink-0" />}
+                        {decision === 'detained' && <Minus size={14} className="text-yellow-500 shrink-0" />}
+                        {decision === 'graduated' && <GraduationCap size={14} className="text-purple-500 shrink-0" />}
+                        {decision === 'transferred' && <ArrowUpCircle size={14} className="text-blue-500 shrink-0" />}
 
-                        {/* Student info */}
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 truncate">{s.name}</p>
-                          <p className="text-xs text-gray-500 dark:text-zinc-400">
+                          <p className="sdec-row__name truncate">{s.name}</p>
+                          <p className="sdec-row__meta">
                             Roll: {s.rollNo || '—'} · Adm: {s.admissionId || '—'}
                             {s.attendancePercent != null && ` · Att: ${s.attendancePercent}%`}
                             {s.feeStatus && ` · Fee: ${s.feeStatus}`}
                           </p>
                         </div>
 
-                        {/* Blocked reason */}
                         {isBlocked && (
-                          <Chip size="sm" variant="flat" color="danger" className="shrink-0 text-xs">
+                          <span className="chip chip--danger shrink-0">
                             {s.blockedReason || 'Blocked'}
-                          </Chip>
+                          </span>
                         )}
 
-                        {/* Decision selector */}
                         <Select
                           size="sm"
                           selectedKeys={[decision]}
@@ -307,6 +280,7 @@ export default function StepStudentReview({ onNext, onBack, wizardState, setWiza
                           variant="bordered"
                           className="w-32 shrink-0"
                           classNames={{ trigger: 'h-8 min-h-8 dark:border-zinc-700' }}
+                          aria-label="Decision"
                         >
                           {DECISION_OPTIONS.map((opt) => (
                             <SelectItem key={opt.key} value={opt.key}>
@@ -324,8 +298,13 @@ export default function StepStudentReview({ onNext, onBack, wizardState, setWiza
         })}
       </Accordion>
 
-      {/* Navigation */}
-      <div className="flex justify-between pt-2">
+      {/* Sticky foot */}
+      <div className="promo-foot">
+        <div className="promo-foot__progress">
+          <span className="num">{total}</span>
+          <span>students decided</span>
+        </div>
+        <div style={{ flex: 1 }} />
         <Button variant="flat" onPress={onBack}>
           Back
         </Button>
@@ -339,3 +318,4 @@ export default function StepStudentReview({ onNext, onBack, wizardState, setWiza
     </div>
   );
 }
+

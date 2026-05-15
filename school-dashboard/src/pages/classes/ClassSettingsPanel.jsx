@@ -17,6 +17,8 @@ import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 import UnsavedChangesModal from '../../components/modals/UnsavedChangesModal';
+import logger from '../../utils/logger';
+
 
 export default function ClassSettingsPanel({
   classId }) {
@@ -82,7 +84,7 @@ export default function ClassSettingsPanel({
         setOriginalSubjects(subjectsSet);
       }
     } catch (error) {
-      console.error("Error loading class settings:", error);
+      logger.error("Error loading class settings:", error);
       showErrorToast(error, "Failed to load class settings");
     } finally {
       setLoading(false);

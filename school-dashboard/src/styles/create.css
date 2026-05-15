@@ -1,0 +1,809 @@
+/* ============================================================
+   Create-flow styles
+   Composer (full-bleed frosted) and Drawer (right-side sheet)
+   ============================================================ */
+
+/* ===== Shared form atoms ===== */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.field__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 520;
+  color: var(--fg-muted);
+  letter-spacing: 0.01em;
+}
+
+.field__label .req {
+  color: var(--danger);
+  font-weight: 600;
+  margin-left: -2px;
+}
+
+.field__hint {
+  font-size: 11px;
+  color: var(--fg-faint);
+  margin-top: -2px;
+}
+
+.input,
+.select,
+.textarea {
+  font-family: inherit;
+  font-size: 13px;
+  height: 32px;
+  padding: 0 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--fg);
+  outline: none;
+  transition: border-color 120ms, box-shadow 120ms, background 120ms;
+  width: 100%;
+  min-width: 0;
+}
+
+.input::placeholder { color: var(--fg-faint); }
+.input:hover, .select:hover { border-color: var(--border-strong); }
+.input:focus, .select:focus, .textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+.textarea {
+  height: auto;
+  min-height: 64px;
+  padding: 8px 10px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.input--with-icon { padding-left: 32px; }
+.field__icon-wrap { position: relative; }
+.field__icon-wrap > .field__icon {
+  position: absolute;
+  top: 50%; left: 10px;
+  transform: translateY(-50%);
+  color: var(--fg-faint);
+  pointer-events: none;
+}
+
+.input--with-suffix { padding-right: 64px; }
+.field__suffix {
+  position: absolute;
+  top: 50%; right: 10px;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: var(--fg-faint);
+  font-family: var(--font-mono);
+  pointer-events: none;
+}
+
+.select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2399999E' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+}
+
+/* Tag/chip style multi input */
+.taginput {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 4px 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: text;
+}
+.taginput:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+.taginput input {
+  flex: 1;
+  min-width: 80px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 13px;
+}
+.taginput input::placeholder { color: var(--fg-faint); }
+
+.tagchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 4px 0 8px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--font-mono);
+}
+.tagchip button {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  color: var(--accent);
+  opacity: 0.7;
+}
+.tagchip button:hover { background: rgba(0,0,0,0.06); opacity: 1; }
+
+/* Segmented role/option picker */
+.optgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 6px;
+}
+
+.opt {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--fg-muted);
+  text-align: left;
+  transition: all 120ms;
+  cursor: pointer;
+  min-width: 0;
+}
+.opt:hover { border-color: var(--border-strong); color: var(--fg); }
+.opt.is-active {
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent-border);
+}
+.opt__icon {
+  width: 22px; height: 22px;
+  border-radius: 5px;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  color: var(--fg-muted);
+  flex-shrink: 0;
+}
+.opt.is-active .opt__icon { background: var(--accent); color: white; }
+
+.opt__check {
+  position: absolute;
+  top: 6px; right: 6px;
+  width: 14px; height: 14px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: white;
+  display: none;
+  place-items: center;
+}
+.opt.is-active .opt__check { display: grid; }
+
+/* Date-like input grouping */
+.input-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+}
+
+/* ============================================================
+   COMPOSER — full-bleed frosted overlay (variation A)
+   ============================================================ */
+
+.composer-frame {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  /* The faux background showing the staff list underneath */
+}
+
+/* Production overlay wrapper — full-bleed dim scrim that hosts the
+   composer card. NO blur on the overlay — the design intent is the
+   page underneath stays sharp (just dimmed) and only the composer
+   card frosts the content behind it.
+
+   Layout: flexbox centers the card. We deliberately do NOT use
+   .composer-frame > .composer (with absolute + transform) here,
+   because nested transform / overflow:hidden ancestors can suppress
+   backdrop-filter on Chrome inside portaled subtrees.
+
+   Portaled to document.body so it escapes ancestor stacking contexts. */
+.composer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(15, 15, 20, 0.32);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  /* IMPORTANT: NO animation on this element. Any animation (even
+     opacity-only) keeps Chrome's compositor layer active, which
+     suppresses the child .composer's `backdrop-filter` blur. The
+     entrance fade lives on the .composer card instead. */
+}
+[data-theme="dark"] .composer-overlay,
+.dark .composer-overlay {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+/* Inner composer card.
+   Per the latest design pass, ONLY the left section nav stays frosted —
+   the right form area is solid surface-white so reading long forms isn't
+   harmed by translucency over the dimmed page. The card itself is solid
+   too with a crisp 1px border (no backdrop-filter on the card, only on
+   the nav child). Box-shadow does the lift over the scrim. */
+.composer-overlay > .composer {
+  position: static;
+  transform: none;
+  inset: auto;
+  margin: 0;
+  width: min(960px, 100%);
+  max-height: calc(100vh - 48px);
+  height: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow:
+    0 32px 64px -24px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(0, 0, 0, 0.04);
+  animation: composer-fade-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+[data-theme="dark"] .composer-overlay > .composer,
+.dark .composer-overlay > .composer {
+  background: var(--surface);
+  border-color: var(--border);
+}
+@keyframes composer-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.composer-bg {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+.composer-bg__head {
+  padding: 24px 24px 16px;
+}
+.composer-bg__list {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin: 0 24px;
+  overflow: hidden;
+}
+.composer-bg__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--divider);
+  opacity: 0.55;
+  font-size: 12.5px;
+}
+.composer-bg__row:last-child { border-bottom: none; }
+
+/* The composer card itself — frosted */
+.composer {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(960px, calc(100% - 48px));
+  bottom: 24px;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-glass);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  overflow: hidden;
+  z-index: 5;
+  animation: composer-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes composer-in {
+  from { opacity: 0; transform: translate(-50%, 8px) scale(0.99); }
+  to   { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+
+.composer__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+[data-theme="dark"] .composer__head {
+  background: var(--surface);
+}
+
+.composer__crumbs {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--fg-subtle);
+}
+.composer__crumbs .here { color: var(--fg); font-weight: 520; }
+
+.composer__body {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: 0;
+}
+
+.composer__nav {
+  border-right: 1px solid var(--divider);
+  padding: 18px 8px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow: auto;
+  /* Subtle frosted tint — only the section nav rail picks this up so
+     the right form area can stay solid white for legibility. */
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.018) 0%,
+    rgba(0, 0, 0, 0.028) 100%
+  );
+}
+[data-theme="dark"] .composer__nav,
+.dark .composer__nav {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.02) 0%,
+    rgba(255, 255, 255, 0.035) 100%
+  );
+}
+
+.composer__nav-title {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-faint);
+  padding: 0 8px 8px;
+}
+
+.cnav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  height: 30px;
+  border-radius: 6px;
+  color: var(--fg-muted);
+  font-size: 13px;
+  font-weight: 460;
+  text-align: left;
+  position: relative;
+  width: 100%;
+}
+.cnav:hover { background: var(--surface-hover); color: var(--fg); }
+.cnav.is-active {
+  background: var(--surface);
+  color: var(--fg);
+  font-weight: 520;
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.cnav__num {
+  width: 18px; height: 18px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--fg-faint);
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+}
+.cnav.is-active .cnav__num {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+.cnav.is-done .cnav__num {
+  background: var(--ok);
+  color: white;
+  border-color: var(--ok);
+}
+.cnav__count {
+  margin-left: auto;
+  font-size: 10.5px;
+  color: var(--fg-faint);
+  font-family: var(--font-mono);
+}
+
+.composer__main {
+  overflow: auto;
+  padding: 24px 32px 32px;
+  background: var(--surface);
+}
+[data-theme="dark"] .composer__main {
+  background: var(--surface);
+}
+
+.composer__title {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0 0 4px;
+}
+.composer__sub {
+  color: var(--fg-subtle);
+  font-size: 13px;
+  margin: 0 0 24px;
+}
+
+.section {
+  margin-bottom: 28px;
+}
+.section__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.section__title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--fg);
+}
+.section__hint {
+  font-size: 11.5px;
+  color: var(--fg-faint);
+}
+
+.fgrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+}
+.fgrid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.fgrid > .span-2 { grid-column: span 2; }
+.fgrid > .span-3 { grid-column: 1 / -1; }
+
+.composer__foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+[data-theme="dark"] .composer__foot {
+  background: var(--surface);
+}
+
+.composer__progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--fg-subtle);
+}
+.composer__progress-bar {
+  width: 88px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.composer__progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 200ms ease-out;
+}
+
+/* Avatar uploader */
+.avatar-up {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  background: var(--surface);
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+}
+.avatar-up__circle {
+  width: 56px; height: 56px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  display: grid;
+  place-items: center;
+  color: var(--fg-faint);
+  border: 1px solid var(--border);
+}
+
+/* Right-rail card preview — used inside composer Review section */
+.preview-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.kv-list {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 8px 12px;
+  font-size: 12.5px;
+}
+.kv-list dt { color: var(--fg-subtle); font-weight: 460; }
+.kv-list dd { margin: 0; color: var(--fg); font-weight: 500; }
+.kv-list .empty { color: var(--fg-faint); font-style: italic; font-weight: 420; }
+
+/* ============================================================
+   DRAWER — right-side sheet (variation B)
+   ============================================================ */
+
+.drawer-frame {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+.drawer-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  user-select: none;
+  filter: blur(0.5px);
+}
+.drawer-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 15, 20, 0.18);
+  z-index: 4;
+  animation: fadeIn 200ms ease-out both;
+}
+[data-theme="dark"] .drawer-scrim { background: rgba(0,0,0,0.4); }
+
+.drawer {
+  position: absolute;
+  top: 0; bottom: 0; right: 0;
+  width: min(540px, 100%);
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  box-shadow: -24px 0 64px -24px rgba(0,0,0,0.18);
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  z-index: 5;
+  animation: drawer-in 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes drawer-in {
+  from { transform: translateX(20px); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+
+.drawer__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--divider);
+}
+.drawer__title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+.drawer__sub {
+  font-size: 11.5px;
+  color: var(--fg-subtle);
+  margin-top: 1px;
+}
+
+/* Stepper — wizard step indicator.
+   Mirrors preview/form_wizard.html: 22px numbered circle, accent halo on
+   active, solid accent + check icon on done, connector line that fills
+   accent once the previous step is done. */
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 12px 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.stepper--inline {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+}
+.stepper__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  font-size: 12px;
+  color: var(--fg-muted);
+  font-weight: 500;
+  min-width: 0;
+}
+.stepper__item.is-active { color: var(--fg); font-weight: 520; }
+.stepper__item.is-done { color: var(--fg-muted); }
+
+.stepper__num {
+  width: 22px; height: 22px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fg-muted);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: background var(--dur-base), border-color var(--dur-base), box-shadow var(--dur-base);
+}
+.stepper__item.is-active .stepper__num {
+  background: var(--surface);
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+.stepper__item.is-done .stepper__num {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.stepper__lab {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stepper__line {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+  margin: 0 8px;
+  transition: background var(--dur-base);
+}
+.stepper__item.is-done + .stepper__line { background: var(--accent); }
+
+.drawer__body {
+  overflow: auto;
+  padding: 20px 20px 24px;
+}
+
+.drawer__foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--divider);
+  background: var(--surface);
+}
+
+/* Inline reveal for "more options" */
+.disclosure {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 520;
+  padding: 4px 0;
+}
+.disclosure:hover { text-decoration: underline; }
+
+/* Toggle row */
+.toggle-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+}
+.toggle-row__text { flex: 1; min-width: 0; }
+.toggle-row__title { font-size: 13px; font-weight: 500; }
+.toggle-row__desc { font-size: 11.5px; color: var(--fg-subtle); margin-top: 2px; }
+
+.switch {
+  position: relative;
+  width: 28px;
+  height: 16px;
+  background: var(--border-strong);
+  border-radius: 999px;
+  flex-shrink: 0;
+  transition: background 120ms;
+  cursor: pointer;
+  margin-top: 2px;
+}
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 12px; height: 12px;
+  background: white;
+  border-radius: 999px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  transition: transform 160ms;
+}
+.switch.is-on { background: var(--accent); }
+.switch.is-on::after { transform: translateX(12px); }
+
+/* Helper line — warm amber tone (matches the design's "tip" aesthetic).
+   We deliberately don't use --accent here because the help banner is a
+   soft hint, not a primary action; the warm tone keeps it visually
+   distinct from accented controls (buttons, role pickers, focus rings). */
+.help-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--warn-bg);
+  border: 1px solid oklch(70% 0.15 75 / 0.25);
+  border-radius: 7px;
+  font-size: 12.5px;
+  color: var(--warn);
+}
+.help-banner b { font-weight: 600; }
+
+.help-banner__close {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin: -2px -4px -2px 0;
+  border-radius: 4px;
+  color: inherit;
+  opacity: 0.6;
+  flex-shrink: 0;
+  transition: background 120ms, opacity 120ms;
+}
+.help-banner__close:hover {
+  opacity: 1;
+  background: oklch(70% 0.15 75 / 0.18);
+}
+.help-banner__close:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--warn);
+  outline-offset: 1px;
+}

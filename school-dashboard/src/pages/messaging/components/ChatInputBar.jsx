@@ -1,9 +1,9 @@
-import { Button, Input, Tooltip } from "@heroui/react";
 import { Send, Paperclip, Mic, X, Image as ImageIcon } from "lucide-react";
 import ReplyPreview from "./ReplyPreview";
 import VoiceWaveform from "./VoiceWaveform";
 import { getFileIcon, formatFileSize } from "../utils/chatUtils";
 import { useTranslation } from 'react-i18next';
+import { Button, IconButton, Input, Tooltip } from "../../../components/ui";
 
 export default function ChatInputBar({
   newMessage,
@@ -29,118 +29,106 @@ export default function ChatInputBar({
   messageInputRef,
 }) {
   const { t } = useTranslation();
+  const inputDisabled = sending || uploadingFile || isRecording || !!voicePreview;
 
   return (
-    <div className="p-4 border-t border-default-200 dark:border-zinc-800 shrink-0 bg-background dark:bg-zinc-950">
-      {/* Reply Preview */}
+    <div className="chat-input flex-col items-stretch shrink-0">
       {replyToMessage && (
-        <ReplyPreview
-          message={replyToMessage}
-          onCancel={onCancelReply}
-        />
+        <ReplyPreview message={replyToMessage} onCancel={onCancelReply} />
       )}
 
-      {/* File Preview */}
       {selectedFile && (
-        <div className="mb-3 p-3 bg-gradient-to-r from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/5 rounded-xl border border-primary/20 dark:border-primary/30">
+        <div className="mb-3 p-3 bg-accent-bg rounded-lg border border-accent-border">
           <div className="flex items-center gap-3">
             {filePreview ? (
               <div className="relative group">
                 <img
                   src={filePreview}
-                  alt="Preview"
-                  className="w-14 h-14 object-cover rounded-lg flex-shrink-0 shadow-md"
+                  alt={t('messaging.chat.preview', 'Preview')}
+                  className="w-14 h-14 object-cover rounded-md flex-shrink-0"
                 />
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-md flex items-center justify-center">
                   <ImageIcon size={18} className="text-white" />
                 </div>
               </div>
             ) : (
-              <div className="w-14 h-14 bg-white dark:bg-zinc-900 rounded-lg flex items-center justify-center text-2xl flex-shrink-0 shadow-md dark:shadow-zinc-900/50 border border-default-200 dark:border-zinc-700">
+              <div className="w-14 h-14 bg-surface-2 rounded-md flex items-center justify-center text-2xl flex-shrink-0 border border-border-token">
                 {getFileIcon(selectedFile.name)}
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-default-900 dark:text-zinc-100 truncate">{selectedFile.name}</p>
-              <p className="text-xs text-primary font-medium">{formatFileSize(selectedFile.size)}</p>
+              <p className="text-sm font-medium text-fg truncate">
+                {selectedFile.name}
+              </p>
+              <p className="text-xs text-accent font-medium">
+                {formatFileSize(selectedFile.size)}
+              </p>
             </div>
-            <Button
-              isIconOnly
-              size="sm"
-              variant="light"
-              onPress={onCancelFile}
-              isDisabled={uploadingFile}
-              className="flex-shrink-0 text-default-500 hover:text-danger hover:bg-danger/10 rounded-lg transition-all duration-200"
+            <IconButton
+              variant="danger"
+              onClick={onCancelFile}
+              disabled={uploadingFile}
+              aria-label={t('messaging.chat.removeAttachment', 'Remove attachment')}
             >
               <X size={18} />
-            </Button>
+            </IconButton>
           </div>
         </div>
       )}
 
-      {/* Voice Message Preview */}
       {voicePreview && (
-        <div className="mb-3 p-3 bg-gradient-to-r from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/5 rounded-xl border border-primary/20 dark:border-primary/30">
+        <div className="mb-3 p-3 bg-accent-bg rounded-lg border border-accent-border">
           <VoiceWaveform
             audioUrl={voicePreview.url}
             waveformData={voicePreview.waveform || []}
             duration={voicePreview.duration}
             isOwn={false}
           />
-          <div className="flex items-center justify-between mt-2 pt-2 border-t border-primary/10">
+          <div className="flex items-center justify-between mt-2 pt-2 border-t border-divider">
             <Button
+              variant="ghost"
               size="sm"
-              variant="light"
-              onPress={onCancelVoicePreview}
-              className="text-danger hover:bg-danger/10 rounded-lg"
-              startContent={<X size={14} />}
+              onClick={onCancelVoicePreview}
+              icon={<X size={14} />}
             >
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </Button>
             <Button
+              variant="primary"
               size="sm"
-              color="primary"
-              onPress={onSendVoiceMessage}
-              isLoading={sending || uploadingFile}
-              startContent={!sending && !uploadingFile && <Send size={14} />}
-              className="rounded-lg"
+              onClick={onSendVoiceMessage}
+              loading={sending || uploadingFile}
+              icon={!sending && !uploadingFile ? <Send size={14} /> : null}
             >
-              Send
+              {t('common.send', 'Send')}
             </Button>
           </div>
         </div>
       )}
 
-      {/* Recording Indicator */}
       {isRecording && (
-        <div className="mb-3 p-3 bg-danger/10 dark:bg-danger/20 rounded-xl border border-danger/30">
+        <div className="mb-3 p-3 bg-danger-bg rounded-lg border border-danger-token">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-danger flex items-center justify-center flex-shrink-0 animate-pulse">
+            <div className="w-10 h-10 rounded-full bg-danger-token flex items-center justify-center flex-shrink-0 animate-pulse">
               <Mic size={18} className="text-white" />
             </div>
             <div className="flex-1">
               <VoiceWaveform
-                isRecording={true}
+                isRecording
                 liveLevels={liveWaveform}
                 duration={recordingDuration}
                 isOwn={false}
                 size="small"
               />
             </div>
-            <Button
-              size="sm"
-              color="danger"
-              variant="solid"
-              onPress={onStopRecording}
-              className="rounded-lg"
-            >
-              Stop
+            <Button variant="danger" size="sm" onClick={onStopRecording}>
+              {t('messaging.chat.stop', 'Stop')}
             </Button>
           </div>
         </div>
       )}
 
-      <div className="flex items-end gap-2">
+      <div className="chat-input__shell glass">
         <input
           ref={fileInputRef}
           type="file"
@@ -149,66 +137,75 @@ export default function ChatInputBar({
           accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar"
         />
 
-        {/* Attachment Button */}
-        <Tooltip content="Attach file" placement="top">
-          <Button
-            isIconOnly
-            variant="light"
-            onPress={() => fileInputRef.current?.click()}
-            isDisabled={uploadingFile || isRecording || !!voicePreview}
-            className="text-default-500 hover:text-primary hover:bg-primary/10 dark:hover:bg-primary/20 rounded-xl transition-all duration-200"
+        <Tooltip content={t('messaging.chat.attachFile', 'Attach file')}>
+          <IconButton
+            variant="ghost"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingFile || isRecording || !!voicePreview}
+            aria-label={t('messaging.chat.attachFile', 'Attach file')}
           >
-            <Paperclip size={20} />
-          </Button>
+            <Paperclip size={16} />
+          </IconButton>
         </Tooltip>
 
-        {/* Voice Recording Button */}
-        {!voicePreview && !isRecording && (
-          <Tooltip content="Record voice message" placement="top">
-            <Button
-              isIconOnly
-              variant="light"
-              onPress={onStartRecording}
-              isDisabled={sending || uploadingFile || !!selectedFile}
-              className="text-default-500 hover:text-danger hover:bg-danger/10 dark:hover:bg-danger/20 rounded-xl transition-all duration-200"
-            >
-              <Mic size={20} />
-            </Button>
-          </Tooltip>
-        )}
-
-        {/* Input Field */}
-        <div className="flex-1 relative">
+        <div className="chat-input__field">
           <Input
             ref={messageInputRef}
-            placeholder={replyToMessage ? `Replying to ${replyToMessage.senderName || 'message'}...` : selectedFile ? "Add a caption (optional)..." : voicePreview ? "Voice message ready..." : "Type a message..."}
+            placeholder={
+              replyToMessage
+                ? `${t('messaging.chat.replyingTo', 'Replying to')} ${replyToMessage.senderName || t('messaging.chat.message', 'message')}...`
+                : selectedFile
+                  ? t('messaging.chat.addCaptionOptional', 'Add a caption (optional)...')
+                  : voicePreview
+                    ? t('messaging.chat.voiceMessageReady', 'Voice message ready...')
+                    : t('messaging.chat.typeAMessage', 'Type a message...')
+            }
             value={newMessage}
             onChange={onTyping}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && onSend()}
-            isDisabled={sending || uploadingFile || isRecording || !!voicePreview}
-            classNames={{
-              input: "text-sm",
-              inputWrapper: "h-11 rounded-xl border-default-200 dark:border-zinc-700 hover:border-primary dark:hover:border-primary focus-within:border-primary dark:focus-within:border-primary shadow-sm"
-            }}
-            variant="bordered"
+            disabled={inputDisabled}
+            aria-label={t('messaging.chat.messageInput', 'Message input')}
+            wrapperClassName="!border-0 !bg-transparent !shadow-none w-full"
+            className="!border-0 !bg-transparent !shadow-none focus:!ring-0 focus:!shadow-none"
           />
         </div>
 
-        {/* Send Button */}
-        {!voicePreview && (
-          <Tooltip content="Send message" placement="top">
-            <Button
-              color="primary"
-              onPress={onSend}
-              isLoading={sending || uploadingFile}
-              isIconOnly
-              isDisabled={!selectedFile && !newMessage.trim()}
-              className="rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:scale-105 transition-all duration-200 disabled:hover:scale-100 disabled:shadow-none"
+        {!voicePreview && !isRecording && (
+          <Tooltip content={t('messaging.chat.recordVoice', 'Record voice message')}>
+            <IconButton
+              variant="ghost"
+              size="sm"
+              onClick={onStartRecording}
+              disabled={sending || uploadingFile || !!selectedFile}
+              aria-label={t('messaging.chat.recordVoice', 'Record voice message')}
             >
-              <Send size={18} />
-            </Button>
+              <Mic size={16} />
+            </IconButton>
           </Tooltip>
         )}
+
+        {!voicePreview && (
+          <Tooltip content={t('common.send', 'Send (↵)')}>
+            <IconButton
+              variant="primary"
+              size="sm"
+              onClick={onSend}
+              disabled={(!selectedFile && !newMessage.trim()) || sending || uploadingFile}
+              aria-label={t('common.send', 'Send')}
+            >
+              <Send size={14} />
+            </IconButton>
+          </Tooltip>
+        )}
+      </div>
+
+      <div className="chat-input__hint" aria-hidden>
+        <span className="kbd">↵</span>
+        <span>{t('common.send', 'send')}</span>
+        <span className="chat-input__hint-sep">·</span>
+        <span className="kbd">⇧↵</span>
+        <span>{t('messaging.chat.newLine', 'new line')}</span>
       </div>
     </div>
   );

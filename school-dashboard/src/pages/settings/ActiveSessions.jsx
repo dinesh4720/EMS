@@ -85,22 +85,22 @@ export default function ActiveSessions() {
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">
+          <h2 className="text-xl font-semibold text-fg">
             Active Sessions
           </h2>
-          <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">
+          <p className="text-sm text-fg-muted mt-1">
             Manage active login sessions
           </p>
         </div>
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="border border-gray-200 dark:border-zinc-700">
+            <Card key={i} className="border border-border-token">
               <CardBody className="p-4">
                 <div className="animate-pulse flex items-center gap-4">
-                  <div className="w-10 h-10 bg-gray-200 dark:bg-zinc-700 rounded-lg" />
+                  <div className="w-10 h-10 bg-surface-2 rounded-lg" />
                   <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-gray-200 dark:bg-zinc-700 rounded w-1/3" />
-                    <div className="h-3 bg-gray-200 dark:bg-zinc-700 rounded w-1/2" />
+                    <div className="h-4 bg-surface-2 rounded w-1/3" />
+                    <div className="h-3 bg-surface-2 rounded w-1/2" />
                   </div>
                 </div>
               </CardBody>
@@ -116,10 +116,10 @@ export default function ActiveSessions() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">
+          <h2 className="text-xl font-semibold text-fg">
             Active Sessions
           </h2>
-          <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">
+          <p className="text-sm text-fg-muted mt-1">
             Manage active login sessions across devices
           </p>
         </div>
@@ -140,7 +140,7 @@ export default function ActiveSessions() {
               className={`border transition-all ${
                 isCurrent
                   ? "border-primary-300 bg-primary-50/30 dark:bg-primary-900/10"
-                  : "border-gray-200 dark:border-zinc-700"
+                  : "border-border-token"
               }`}
             >
               <CardBody className="p-4">
@@ -150,7 +150,7 @@ export default function ActiveSessions() {
                     className={`p-2.5 rounded-lg ${
                       isCurrent
                         ? "bg-primary-100 dark:bg-primary-900/30"
-                        : "bg-gray-100 dark:bg-zinc-800"
+                        : "bg-surface-2"
                     }`}
                   >
                     <DeviceIcon
@@ -158,7 +158,7 @@ export default function ActiveSessions() {
                       className={
                         isCurrent
                           ? "text-primary-600 dark:text-primary-400"
-                          : "text-gray-500 dark:text-zinc-400"
+                          : "text-fg-muted"
                       }
                     />
                   </div>
@@ -166,7 +166,7 @@ export default function ActiveSessions() {
                   {/* Session Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-medium text-gray-900 dark:text-zinc-100">
+                      <h4 className="font-medium text-fg">
                         {session.deviceInfo?.browser || "Unknown Browser"} on{" "}
                         {session.deviceInfo?.os || "Unknown OS"}
                       </h4>
@@ -177,11 +177,11 @@ export default function ActiveSessions() {
                       )}
                     </div>
                     <div className="flex items-center gap-4 mt-1">
-                      <span className="text-sm text-gray-500 dark:text-zinc-400 flex items-center gap-1">
+                      <span className="text-sm text-fg-muted flex items-center gap-1">
                         <Globe size={14} />
                         {session.ipAddress || "Unknown IP"}
                       </span>
-                      <span className="text-sm text-gray-500 dark:text-zinc-400 flex items-center gap-1">
+                      <span className="text-sm text-fg-muted flex items-center gap-1">
                         <Clock size={14} />
                         {formatDate(session.lastActivityAt)}
                       </span>
@@ -208,13 +208,13 @@ export default function ActiveSessions() {
         })}
 
         {sessions.length === 0 && (
-          <Card className="border border-gray-200 dark:border-zinc-700">
+          <Card className="border border-border-token">
             <CardBody className="p-8 text-center">
               <Shield
                 size={40}
-                className="mx-auto text-gray-400 dark:text-zinc-500 mb-3"
+                className="mx-auto text-fg-faint mb-3"
               />
-              <p className="text-gray-500 dark:text-zinc-400">
+              <p className="text-fg-muted">
                 No active sessions found
               </p>
             </CardBody>

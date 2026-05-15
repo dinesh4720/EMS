@@ -1,91 +1,131 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Card,
-  CardBody,
-  Chip,
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Button,
-} from '@heroui/react';
-import { FileText, Calendar, Eye, Pencil, Trash2, AlertTriangle, Plus, Clock, Send } from 'lucide-react';
-import { examsApi } from '../../services/api';
-import FiltersDropdown from '../../components/FiltersDropdown';
-import { MinimalButton } from '../../components/ui';
+import PropTypes from 'prop-types';
+import { FileText, Plus, Clock, CheckCircle2, ListChecks } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 
-const STATUS_OPTIONS = ['all', 'scheduled', 'ongoing', 'completed', 'results_published'];
+import { examsApi } from '../../services/api';
+import { useApp } from '../../context/AppContext';
+import FiltersDropdown from '../../components/FiltersDropdown';
+import {
+  Button,
+  ConfirmDialog,
+  DataTable,
+  ErrorState,
+  MinimalButton,
+  MinimalTabs,
+  StatCard,
+} from '../../components/ui';
+import logger from '../../utils/logger';
+import ExamScheduleView from './ExamScheduleView';
+import { buildExamColumns } from './examTableColumns';
+import ExamRowActions from './examTableConfig';
 
-import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
-import { formatShortDate } from '../../utils/dateFormatter';
+const STATUS_OPTIONS = ['all', 'scheduled', 'ongoing', 'completed', 'results_published'];
+const PAGE_LIMIT = 50;
 
 const ExamManagement = ({ onCreateExam }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [exams, setExams] = useState([]);
+  const { selectedAcademicYear } = useApp();
 
+  const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState(null);
+  const [skip, setSkip] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [deleteModal, setDeleteModal] = useState({ isOpen: false, examId: null, examName: '' });
   const [activeView, setActiveView] = useState('list');
-  const [filters, setFilters] = useState({
-    classId: 'all',
-    status: 'all',
-    academicYear: 'all'
+
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, examId: null, examName: '' });
+  const [publishModal, setPublishModal] = useState({
+    isOpen: false,
+    examId: null,
+    examName: '',
+    publishing: false,
   });
 
-  // Get unique values for filter options
+  const [filters, setFilters] = useState({ classId: 'all', status: 'all', academicYear: 'all' });
+
+  const fetchExams = useCallback(
+    async (skipValue) => {
+      const isInitial = skipValue === 0;
+      if (isInitial) {
+        setLoading(true);
+        setExams([]);
+      } else {
+        setLoadingMore(true);
+      }
+      try {
+        const params = { limit: PAGE_LIMIT, skip: skipValue };
+        if (selectedAcademicYear) params.academicYear = selectedAcademicYear;
+        const data = await examsApi.getAll(params);
+        const results = (data || []).map((e) => ({ ...e, id: e.id || e._id }));
+        setExams((prev) => (isInitial ? results : [...prev, ...results]));
+        setSkip(skipValue + results.length);
+        setHasMore(results.length === PAGE_LIMIT);
+        setError(null);
+      } catch (err) {
+        logger.error('Error fetching exams:', err);
+        setError(err);
+        if (!isInitial) toast.error(t('toast.error.failedToLoadExams'));
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [selectedAcademicYear, t],
+  );
+
+  useEffect(() => {
+    fetchExams(0);
+  }, [fetchExams]);
+
   const uniqueClasses = useMemo(() => {
-    const classSet = new Set(exams.map(e => e.className || e.classId).filter(Boolean));
+    const classSet = new Set(exams.map((e) => e.className || e.classId).filter(Boolean));
     return Array.from(classSet);
   }, [exams]);
 
   const uniqueYears = useMemo(() => {
-    const yearSet = new Set(exams.map(e => e.academicYear).filter(Boolean));
+    const yearSet = new Set(exams.map((e) => e.academicYear).filter(Boolean));
     return Array.from(yearSet);
   }, [exams]);
 
-  const filterConfig = {
-    classId: {
-      label: 'Class',
-      value: filters.classId,
-      options: ['all', ...uniqueClasses],
-      displayLabels: { all: 'All Classes' },
-      counts: {}
-    },
-    status: {
-      label: 'Status',
-      value: filters.status,
-      options: STATUS_OPTIONS,
-      displayLabels: {
-        all: 'All Status',
-        scheduled: 'Scheduled',
-        ongoing: 'Ongoing',
-        completed: 'Completed',
-        results_published: 'Published'
+  const filterConfig = useMemo(
+    () => ({
+      classId: {
+        label: t('pages.cLASS', { defaultValue: 'Class' }),
+        value: filters.classId,
+        options: ['all', ...uniqueClasses],
+        displayLabels: { all: t('pages.allClasses', { defaultValue: 'All Classes' }) },
+        counts: {},
       },
-      counts: {}
-    },
-    academicYear: {
-      label: 'Academic Year',
-      value: filters.academicYear,
-      options: ['all', ...uniqueYears],
-      displayLabels: { all: 'All Years' },
-      counts: {}
-    }
-  };
+      status: {
+        label: t('pages.sTATUS', { defaultValue: 'Status' }),
+        value: filters.status,
+        options: STATUS_OPTIONS,
+        displayLabels: {
+          all: t('pages.allStatus', { defaultValue: 'All Status' }),
+          scheduled: t('pages.scheduled'),
+          ongoing: t('pages.ongoing'),
+          completed: t('pages.completed'),
+          results_published: t('pages.published', { defaultValue: 'Published' }),
+        },
+        counts: {},
+      },
+      academicYear: {
+        label: t('pages.academicYear', { defaultValue: 'Academic Year' }),
+        value: filters.academicYear,
+        options: ['all', ...uniqueYears],
+        displayLabels: { all: t('pages.allYears', { defaultValue: 'All Years' }) },
+        counts: {},
+      },
+    }),
+    [filters, t, uniqueClasses, uniqueYears],
+  );
 
-  // Calculate active filters count
   const activeFiltersCount = useMemo(() => {
     let count = 0;
     if (filters.classId !== 'all') count++;
@@ -95,80 +135,66 @@ const ExamManagement = ({ onCreateExam }) => {
     return count;
   }, [filters, searchQuery]);
 
-  useEffect(() => {
-    fetchExams();
+  const handleFilterChange = useCallback((key, value) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
   }, []);
 
-  const fetchExams = async () => {
-    setLoading(true);
-    try {
-      const data = await examsApi.getAll();
-      setExams(data || []);
-    } catch (error) {
-      console.error('Error fetching exams:', error);
-      toast.error(t('toast.error.failedToLoadExams'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleFilterChange = (key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-  };
-
-  const handleClearFilters = () => {
+  const handleClearFilters = useCallback(() => {
     setFilters({ classId: 'all', status: 'all', academicYear: 'all' });
     setSearchQuery('');
-  };
+  }, []);
 
-  const handleApplyFilters = () => {
-    // Filters are already applied reactively
-  };
+  const handleLoadMore = useCallback(() => {
+    fetchExams(skip);
+  }, [fetchExams, skip]);
 
-  const getStatusColor = (status) => {
-    const colors = {
-      scheduled: 'primary',
-      ongoing: 'warning',
-      completed: 'success',
-      results_published: 'success'
-    };
-    return colors[status] || 'default';
-  };
-
-  const handleDeleteClick = (examId, examName) => {
+  const handleDeleteClick = useCallback((examId, examName) => {
     setDeleteModal({ isOpen: true, examId, examName });
-  };
+  }, []);
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = useCallback(async () => {
     if (!deleteModal.examId) return;
-
     try {
       await examsApi.delete(deleteModal.examId);
       toast.success(t('toast.success.examDeletedSuccessfully'));
-      fetchExams();
-    } catch (error) {
-      console.error('Error deleting exam:', error);
+      fetchExams(0);
+    } catch (err) {
+      logger.error('Error deleting exam:', err);
       toast.error(t('toast.error.failedToDeleteExam'));
     } finally {
       setDeleteModal({ isOpen: false, examId: null, examName: '' });
     }
-  };
+  }, [deleteModal.examId, fetchExams, t]);
 
-  const handlePublish = async (examId, examName) => {
+  const handlePublishClick = useCallback((examId, examName) => {
+    setPublishModal({ isOpen: true, examId, examName, publishing: false });
+  }, []);
+
+  const handleConfirmPublish = useCallback(async () => {
+    const publishedId = publishModal.examId;
+    setPublishModal((prev) => ({ ...prev, publishing: true }));
     try {
-      await examsApi.publish(examId);
-      toast.success(t('toast.success.resultsPublishedForExam', { examName }));
-      fetchExams();
-    } catch (error) {
-      console.error('Error publishing results:', error);
+      await examsApi.publish(publishedId);
+      toast.success(
+        t('toast.success.resultsPublishedForExam', { examName: publishModal.examName }),
+      );
+      setPublishModal({ isOpen: false, examId: null, examName: '', publishing: false });
+      setExams((prev) =>
+        prev.map((e) =>
+          (e.id || e._id) === publishedId
+            ? { ...e, status: 'results_published', isPublished: true }
+            : e,
+        ),
+      );
+    } catch (err) {
+      logger.error('Error publishing results:', err);
       toast.error(t('toast.error.failedToPublishResults'));
+      setPublishModal((prev) => ({ ...prev, publishing: false }));
     }
-  };
+  }, [publishModal.examId, publishModal.examName, t]);
 
-  // Filter exams
   const filteredExams = useMemo(() => {
-    return exams.filter(exam => {
-      // Search filter
+    return exams.filter((exam) => {
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         const matchesSearch =
@@ -177,365 +203,235 @@ const ExamManagement = ({ onCreateExam }) => {
           exam.subjectName?.toLowerCase().includes(query);
         if (!matchesSearch) return false;
       }
-
-      // Class filter — compare against className (human-readable) since filter options are class names
       if (filters.classId !== 'all' && (exam.className || exam.classId) !== filters.classId) {
         return false;
       }
-
-      // Status filter
-      if (filters.status !== 'all' && exam.status !== filters.status) {
+      if (filters.status !== 'all' && exam.status !== filters.status) return false;
+      if (filters.academicYear !== 'all' && exam.academicYear !== filters.academicYear)
         return false;
-      }
-
-      // Academic year filter
-      if (filters.academicYear !== 'all' && exam.academicYear !== filters.academicYear) {
-        return false;
-      }
-
       return true;
     });
   }, [exams, searchQuery, filters]);
 
-  // Group exams by status for schedule view
-  const examsByStatus = useMemo(() => {
-    return {
-      scheduled: filteredExams.filter(e => e.status === 'scheduled'),
-      ongoing: filteredExams.filter(e => e.status === 'ongoing'),
-      completed: filteredExams.filter(e => e.status === 'completed'),
-      results_published: filteredExams.filter(e => e.status === 'results_published'),
-    };
-  }, [filteredExams]);
+  const stats = useMemo(
+    () => ({
+      total: exams.length,
+      scheduled: exams.filter((e) => e.status === 'scheduled').length,
+      ongoing: exams.filter((e) => e.status === 'ongoing').length,
+      completed: exams.filter(
+        (e) => e.status === 'completed' || e.status === 'results_published',
+      ).length,
+    }),
+    [exams],
+  );
 
-  if (loading) {
-    return <TablePageSkeleton kpiCards={4} columns={7} rows={6} />;
-  }
+  const columns = useMemo(() => buildExamColumns(t), [t]);
+
+  const renderRowActions = useCallback(
+    (exam) => (
+      <ExamRowActions
+        exam={exam}
+        t={t}
+        onView={(id) => navigate(`/academics/exams/${id}`)}
+        onEnterResults={(id) => navigate(`/academics/exams/${id}/results`)}
+        onPublish={handlePublishClick}
+        onDelete={handleDeleteClick}
+      />
+    ),
+    [handleDeleteClick, handlePublishClick, navigate, t],
+  );
+
+  const viewTabs = useMemo(
+    () => [
+      {
+        key: 'list',
+        title: (
+          <span className="flex items-center gap-2">
+            <ListChecks size={14} aria-hidden="true" />
+            {t('pages.listView', { defaultValue: 'List View' })}
+          </span>
+        ),
+      },
+      {
+        key: 'schedule',
+        title: (
+          <span className="flex items-center gap-2">
+            <Clock size={14} aria-hidden="true" />
+            {t('pages.scheduleView', { defaultValue: 'Schedule View' })}
+          </span>
+        ),
+      },
+    ],
+    [t],
+  );
 
   return (
     <div className="space-y-4">
-      {/* View Tabs */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setActiveView('list')}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-              activeView === 'list'
-                ? 'bg-gray-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
-                : 'text-gray-600 hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
-            }`}
-          >
-            List View
-          </button>
-          <button
-            onClick={() => setActiveView('schedule')}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-              activeView === 'schedule'
-                ? 'bg-gray-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
-                : 'text-gray-600 hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
-            }`}
-          >
-            Schedule View
-          </button>
-        </div>
-
+      {/* Toolbar */}
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <MinimalTabs
+          tabs={viewTabs}
+          activeKey={activeView}
+          onChange={setActiveView}
+          size="sm"
+          variant="pills"
+        />
         <div className="flex items-center gap-3">
           <FiltersDropdown
             filters={filterConfig}
             onFilterChange={handleFilterChange}
             onClearAll={handleClearFilters}
-            onApply={handleApplyFilters}
+            onApply={() => { /* filters apply reactively */ }}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             activeFiltersCount={activeFiltersCount}
           />
           <MinimalButton icon={<Plus size={16} />} onClick={onCreateExam}>
-            Create Exam
+            {t('pages.createExam')}
           </MinimalButton>
         </div>
       </div>
 
-      {/* Stats Summary */}
+      {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-3 border border-gray-100 dark:border-zinc-800">
-          <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.totalExams')}</p>
-          <p className="text-xl font-semibold text-gray-900 dark:text-zinc-100">{exams.length}</p>
-        </div>
-        <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-3 border border-blue-100 dark:border-blue-800">
-          <p className="text-xs text-blue-600 dark:text-blue-400">{t('pages.scheduled')}</p>
-          <p className="text-xl font-semibold text-blue-700 dark:text-blue-300">{exams.filter(e => e.status === 'scheduled').length}</p>
-        </div>
-        <div className="bg-amber-50 dark:bg-amber-950 rounded-lg p-3 border border-amber-100 dark:border-amber-800">
-          <p className="text-xs text-amber-600 dark:text-amber-400">{t('pages.ongoing')}</p>
-          <p className="text-xl font-semibold text-amber-700 dark:text-amber-300">{exams.filter(e => e.status === 'ongoing').length}</p>
-        </div>
-        <div className="bg-green-50 dark:bg-green-950 rounded-lg p-3 border border-green-100 dark:border-green-800">
-          <p className="text-xs text-green-600 dark:text-green-400">{t('pages.completed')}</p>
-          <p className="text-xl font-semibold text-green-700 dark:text-green-300">{exams.filter(e => e.status === 'completed' || e.status === 'results_published').length}</p>
-        </div>
+        <StatCard
+          label={t('pages.totalExams')}
+          value={stats.total}
+          icon={FileText}
+          color="gray"
+          isLoading={loading}
+        />
+        <StatCard
+          label={t('pages.scheduled')}
+          value={stats.scheduled}
+          icon={Clock}
+          color="blue"
+          isLoading={loading}
+        />
+        <StatCard
+          label={t('pages.ongoing')}
+          value={stats.ongoing}
+          icon={Clock}
+          color="amber"
+          isLoading={loading}
+        />
+        <StatCard
+          label={t('pages.completed')}
+          value={stats.completed}
+          icon={CheckCircle2}
+          color="green"
+          isLoading={loading}
+        />
       </div>
 
-      {/* Content based on view */}
-      {activeView === 'list' ? (
-        // List View
-        <Card shadow="none" className="border border-gray-100 dark:border-zinc-800">
-          <CardBody className="p-0">
-            {filteredExams.length === 0 ? (
-              <div className="text-center py-12">
-                <FileText size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-                <p className="text-gray-500 dark:text-zinc-400 mb-4">{t('pages.noExamsFound')}</p>
-                {activeFiltersCount > 0 ? (
-                  <Button variant="flat" size="sm" onPress={handleClearFilters}>
-                    Clear Filters
-                  </Button>
-                ) : (
-                  <MinimalButton icon={<Plus size={16} />} onClick={onCreateExam}>
-                    Create First Exam
-                  </MinimalButton>
-                )}
-              </div>
-            ) : (
-              <Table aria-label={t('aria.tables.exams')} removeWrapper>
-                <TableHeader>
-                  <TableColumn scope="col">{t('pages.eXAM')}</TableColumn>
-                  <TableColumn scope="col">{t('pages.tYPE')}</TableColumn>
-                  <TableColumn scope="col">{t('pages.cLASS')}</TableColumn>
-                  <TableColumn scope="col">{t('pages.sUBJECT')}</TableColumn>
-                  <TableColumn scope="col">{t('pages.dATE')}</TableColumn>
-                  <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
-                  <TableColumn scope="col">{t('pages.aCTIONS')}</TableColumn>
-                </TableHeader>
-                <TableBody emptyContent="No exams found">
-                  {filteredExams.map((exam) => (
-                    <TableRow key={exam.id || exam._id} className="hover:bg-gray-50 dark:hover:bg-zinc-900">
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg">
-                            <FileText size={16} className="text-gray-500 dark:text-zinc-400" />
-                          </div>
-                          <div>
-                            <span className="font-medium text-gray-900 dark:text-zinc-100">{exam.name}</span>
-                            {exam.academicYear && (
-                              <p className="text-xs text-gray-400 dark:text-zinc-500">{exam.academicYear}</p>
-                            )}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-gray-600 dark:text-zinc-400 capitalize">
-                          {exam.type?.replace(/_/g, ' ')}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-gray-600 dark:text-zinc-400">{exam.className || exam.classId}</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-gray-600 dark:text-zinc-400">{exam.subjectName}</span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-zinc-400">
-                          <Calendar size={14} />
-                          {exam.startDate ? formatShortDate(exam.startDate) : 'Not scheduled'}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          size="sm"
-                          color={getStatusColor(exam.status)}
-                          variant="flat"
-                          className="capitalize"
-                        >
-                          {exam.status?.replace(/_/g, ' ')}
-                        </Chip>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <button
-                            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
-                            onClick={() => navigate(`/academics/exams/${exam.id || exam._id}`)}
-                            title={t('pages.viewDetails1')}
-                          >
-                            <Eye size={16} className="text-gray-500 dark:text-zinc-400" />
-                          </button>
-                          <button
-                            className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors"
-                            onClick={() => navigate(`/academics/exams/${exam.id || exam._id}/results`)}
-                            title={t('pages.enterResults')}
-                          >
-                            <Pencil size={16} className="text-blue-500" />
-                          </button>
-                          {exam.status === 'completed' && !exam.isPublished && (
-                            <button
-                              className="p-2 rounded-lg hover:bg-green-50 dark:hover:bg-green-950 transition-colors"
-                              onClick={() => handlePublish(exam.id || exam._id, exam.name)}
-                              title="Publish Results"
-                            >
-                              <Send size={16} className="text-green-500" />
-                            </button>
-                          )}
-                          <button
-                            className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
-                            onClick={() => handleDeleteClick(exam.id || exam._id, exam.name)}
-                            title={t('pages.delete1')}
-                          >
-                            <Trash2 size={16} className="text-red-400" />
-                          </button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardBody>
-        </Card>
-      ) : (
-        // Schedule View
-        <div className="space-y-4">
-          {/* Scheduled */}
-          {examsByStatus.scheduled.length > 0 && (
-            <Card shadow="none" className="border border-blue-100 dark:border-blue-800">
-              <CardBody className="p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Clock size={16} className="text-blue-500" />
-                  <h3 className="text-sm font-medium text-blue-700 dark:text-blue-300">Scheduled ({examsByStatus.scheduled.length})</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {examsByStatus.scheduled.map(exam => (
-                    <div
-                      key={exam.id || exam._id}
-                      className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-100 dark:border-blue-800 hover:shadow-sm cursor-pointer transition-shadow"
-                      onClick={() => navigate(`/academics/exams/${exam.id || exam._id}`)}
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{exam.name}</span>
-                        <Chip size="sm" color="primary" variant="flat">{t('pages.scheduled')}</Chip>
-                      </div>
-                      <p className="text-xs text-gray-500 dark:text-zinc-400">{exam.className || exam.classId} - {exam.subjectName}</p>
-                      <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">{exam.startDate ? formatShortDate(exam.startDate) : ''}</p>
-                    </div>
-                  ))}
-                </div>
-              </CardBody>
-            </Card>
-          )}
+      {/* Content */}
+      {activeView === 'list' && (
+        <DataTable
+          columns={columns}
+          data={filteredExams}
+          keyField="id"
+          loading={loading}
+          error={error}
+          onRetry={() => fetchExams(0)}
+          rowActions={renderRowActions}
+          ariaLabel={t('aria.tables.exams')}
+          density="normal"
+          emptyState={{
+            icon: <FileText size={20} className="text-fg-muted" />,
+            title: t('pages.noExamsFound'),
+            description: t('pages.noExamsFoundDesc', {
+              defaultValue: 'Create an exam to start tracking results.',
+            }),
+            action:
+              activeFiltersCount > 0 ? (
+                <Button size="sm" variant="outline" onClick={handleClearFilters}>
+                  {t('common.clearFilters', { defaultValue: 'Clear Filters' })}
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="primary"
+                  icon={<Plus size={14} />}
+                  onClick={onCreateExam}
+                >
+                  {t('pages.createFirstExam', { defaultValue: 'Create First Exam' })}
+                </Button>
+              ),
+          }}
+        />
+      )}
 
-          {/* Ongoing */}
-          {examsByStatus.ongoing.length > 0 && (
-            <Card shadow="none" className="border border-amber-100 dark:border-amber-800">
-              <CardBody className="p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Clock size={16} className="text-amber-500" />
-                  <h3 className="text-sm font-medium text-amber-700 dark:text-amber-300">Ongoing ({examsByStatus.ongoing.length})</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {examsByStatus.ongoing.map(exam => (
-                    <div
-                      key={exam.id || exam._id}
-                      className="p-3 bg-amber-50 dark:bg-amber-950 rounded-lg border border-amber-100 dark:border-amber-800 hover:shadow-sm cursor-pointer transition-shadow"
-                      onClick={() => navigate(`/academics/exams/${exam.id || exam._id}`)}
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{exam.name}</span>
-                        <Chip size="sm" color="warning" variant="flat">{t('pages.ongoing')}</Chip>
-                      </div>
-                      <p className="text-xs text-gray-500 dark:text-zinc-400">{exam.className || exam.classId} - {exam.subjectName}</p>
-                    </div>
-                  ))}
-                </div>
-              </CardBody>
-            </Card>
-          )}
+      {activeView === 'schedule' && error && !loading && (
+        <ErrorState
+          error={error}
+          onRetry={() => fetchExams(0)}
+          size="md"
+          title={t('toast.error.failedToLoadExams')}
+        />
+      )}
 
-          {/* Completed */}
-          {(examsByStatus.completed.length > 0 || examsByStatus.results_published.length > 0) && (
-            <Card shadow="none" className="border border-green-100 dark:border-green-800">
-              <CardBody className="p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <FileText size={16} className="text-green-500" />
-                  <h3 className="text-sm font-medium text-green-700 dark:text-green-300">Completed ({examsByStatus.completed.length + examsByStatus.results_published.length})</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {[...examsByStatus.completed, ...examsByStatus.results_published].map(exam => (
-                    <div
-                      key={exam.id || exam._id}
-                      className="p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-100 dark:border-green-800 hover:shadow-sm cursor-pointer transition-shadow"
-                      onClick={() => navigate(`/academics/exams/${exam.id || exam._id}`)}
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{exam.name}</span>
-                        <Chip size="sm" color="success" variant="flat">
-                          {exam.status === 'results_published' ? 'Published' : 'Completed'}
-                        </Chip>
-                      </div>
-                      <p className="text-xs text-gray-500 dark:text-zinc-400">{exam.className || exam.classId} - {exam.subjectName}</p>
-                      <div className="flex gap-2 mt-2">
-                        <button
-                          className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/academics/exams/${exam.id || exam._id}/results`);
-                          }}
-                        >
-                          Enter Results
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardBody>
-            </Card>
-          )}
+      {activeView === 'schedule' && !error && !loading && (
+        <ExamScheduleView
+          exams={filteredExams}
+          activeFiltersCount={activeFiltersCount}
+          onCreateExam={onCreateExam}
+          onClearFilters={handleClearFilters}
+        />
+      )}
 
-          {/* Empty state for schedule view */}
-          {filteredExams.length === 0 && (
-            <div className="text-center py-12">
-              <FileText size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-              <p className="text-gray-500 dark:text-zinc-400 mb-4">{t('pages.noExamsToDisplay')}</p>
-              <MinimalButton icon={<Plus size={16} />} onClick={onCreateExam}>
-                Create First Exam
-              </MinimalButton>
-            </div>
-          )}
+      {/* Load more */}
+      {!error && hasMore && (
+        <div className="flex justify-center pt-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleLoadMore}
+            loading={loadingMore}
+          >
+            {t('common.loadMore', { defaultValue: 'Load More' })}
+          </Button>
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
-      <Modal
+      {/* Publish Confirmation */}
+      <ConfirmDialog
+        isOpen={publishModal.isOpen}
+        onClose={() =>
+          !publishModal.publishing &&
+          setPublishModal({ isOpen: false, examId: null, examName: '', publishing: false })
+        }
+        onConfirm={handleConfirmPublish}
+        title={t('pages.publishResults', { defaultValue: 'Publish Results' })}
+        message={t('pages.publishResultsMessage', {
+          examName: publishModal.examName,
+          defaultValue: `Publish results for ${publishModal.examName}? Results will become visible to all students and parents in this class.`,
+        })}
+        confirmText={t('pages.publishResults', { defaultValue: 'Publish Results' })}
+        cancelText={t('common.cancel', { defaultValue: 'Cancel' })}
+        variant="info"
+        isLoading={publishModal.publishing}
+      />
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
         isOpen={deleteModal.isOpen}
         onClose={() => setDeleteModal({ isOpen: false, examId: null, examName: '' })}
-        size="sm"
-        classNames={{ backdrop: 'bg-black/30', base: 'bg-white dark:bg-zinc-950' }}
-      >
-        <ModalContent>
-          <ModalHeader className="border-b border-gray-100 dark:border-zinc-800 py-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
-                <AlertTriangle size={20} className="text-red-500" />
-              </div>
-              <div>
-                <h3 className="text-lg font-medium">{t('pages.deleteExam')}</h3>
-                <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal">{t('pages.thisActionCannotBeUndone1')}</p>
-              </div>
-            </div>
-          </ModalHeader>
-          <ModalBody className="py-4">
-            <p className="text-sm text-gray-600 dark:text-zinc-400">
-              Are you sure you want to delete <span className="font-medium">{deleteModal.examName}</span>?
-              All associated results will also be removed.
-            </p>
-          </ModalBody>
-          <ModalFooter className="border-t border-gray-100 dark:border-zinc-800">
-            <Button variant="light" onPress={() => setDeleteModal({ isOpen: false, examId: null, examName: '' })}>
-              Cancel
-            </Button>
-            <Button color="danger" onPress={handleConfirmDelete}>
-              Delete Exam
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+        onConfirm={handleConfirmDelete}
+        title={t('pages.deleteExam')}
+        message={t('pages.deleteExamMessage', {
+          examName: deleteModal.examName,
+          defaultValue: `Delete ${deleteModal.examName}? All associated results will also be removed. ${t('pages.thisActionCannotBeUndone1')}`,
+        })}
+        confirmText={t('pages.delete1')}
+        cancelText={t('common.cancel', { defaultValue: 'Cancel' })}
+        variant="danger"
+      />
     </div>
   );
+};
+
+ExamManagement.propTypes = {
+  onCreateExam: PropTypes.func,
 };
 
 export default ExamManagement;

@@ -190,20 +190,7 @@ async function fetchStaffAttendanceData({ signal } = {}) {
 }
 
 async function loadAllStudentsForContext(skipCache = false, { signal } = {}) {
-  const firstPage = await studentsApi.list({ page: 1, limit: 100 }, { skipCache, signal });
-  const allStudents = [...(firstPage.data || [])];
-  const totalPages = firstPage.pagination?.totalPages || 1;
-  if (totalPages > 1) {
-    throwIfAborted(signal);
-    const remainingPages = Array.from({ length: totalPages - 1 }, (_, i) => i + 2);
-    const results = await Promise.all(
-      remainingPages.map((page) => studentsApi.list({ page, limit: 100 }, { skipCache, signal }))
-    );
-    results.forEach((pageResult) => {
-      allStudents.push(...(pageResult.data || []));
-    });
-  }
-  return allStudents;
+  return studentsApi.getAll({ skipCache }, { signal });
 }
 
 async function fetchTeacherScopedAppData(
@@ -287,8 +274,8 @@ async function fetchOperationalAppData(user, skipCache = false, options = {}) {
   const { signal } = options;
   const [staffProfile, studentsData, classesData] = await Promise.all([
     staffApi.getById(user.id, { signal }).catch(catchUnlessAborted(user)),
-    includeStudents ? loadAllStudentsForContext(skipCache, { signal }) : Promise.resolve([]),
-    classesApi.getAll(skipCache, { signal }),
+    includeStudents ? loadAllStudentsForContext(skipCache, { signal }).catch(catchUnlessAborted([])) : Promise.resolve([]),
+    classesApi.getAll(skipCache, { signal }).catch(catchUnlessAborted([])),
   ]);
 
   const normalizedClasses = (Array.isArray(classesData) ? classesData : [])
@@ -315,9 +302,9 @@ async function fetchAdministrativeAppData(skipCache = false, options = {}) {
   const includeStudents = options.includeStudents ?? true;
   const { signal } = options;
   const [staffData, studentsData, classesData, nextStaffAttendance] = await Promise.all([
-    staffApi.getAll(skipCache, { signal }),
-    includeStudents ? loadAllStudentsForContext(skipCache, { signal }) : Promise.resolve([]),
-    classesApi.getAll(skipCache, { signal }),
+    staffApi.getAll(skipCache, { signal }).catch(catchUnlessAborted([])),
+    includeStudents ? loadAllStudentsForContext(skipCache, { signal }).catch(catchUnlessAborted([])) : Promise.resolve([]),
+    classesApi.getAll(skipCache, { signal }).catch(catchUnlessAborted([])),
     fetchStaffAttendanceData({ signal }),
   ]);
 

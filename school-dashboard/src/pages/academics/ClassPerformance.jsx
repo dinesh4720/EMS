@@ -3,43 +3,54 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useValidatedParams } from '../../hooks/useValidatedParams';
 import {
-  Card, CardBody, CardHeader, Chip, Select, SelectItem,
+  Select, SelectItem,
   Button, Progress, Table, TableHeader, TableColumn,
-  TableBody, TableRow, TableCell, Input, Divider
+  TableBody, TableRow, TableCell, Input
 } from '@heroui/react';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import {
-  BarChart3, Users, BookOpen, Trophy, TrendingUp,
-  FileText, Download, Award, Search,
+  Download, Search, FileText,
   ArrowUpRight, ArrowDownRight, Minus
 } from 'lucide-react';
 import { toTodayDateString } from '../../utils/dateFormatter';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer, LineChart, Line
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer
 } from 'recharts';
 import { useApp } from '../../context/AppContext';
 import { getAcademicYearOptions } from '../../utils/constants';
-import { CHART_COLORS } from '../../utils/chartTheme';
+import { CHART_COLORS, useChartTheme } from '../../utils/chartTheme';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
+import logger from '../../utils/logger';
+
+const gradeToneClass = (grade) => {
+  if (!grade) return 'grade-pill--muted';
+  if (grade.startsWith('A')) return 'grade-pill--ok';
+  if (grade.startsWith('B')) return 'grade-pill--info';
+  if (grade.startsWith('C')) return 'grade-pill--warn';
+  return 'grade-pill--danger';
+};
+
 
 const ClassPerformance = () => {
   const { t } = useTranslation();
   const { params: { classId }, isValid } = useValidatedParams({ classId: 'objectId' }, { redirectTo: '/academics' });
   const navigate = useNavigate();
-  const { currentAcademicYear } = useApp();
+  const { currentAcademicYear, selectedAcademicYear, setSelectedAcademicYear } = useApp();
+  const chart = useChartTheme();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [classInfo, setClassInfo] = useState(null);
   const [students, setStudents] = useState([]);
   const [performance, setPerformance] = useState([]);
+  const [subjectData, setSubjectData] = useState([]);
+  const [perfStats, setPerfStats] = useState(null);
   const [exams, setExams] = useState([]);
-  const [selectedYearOverride, setSelectedYearOverride] = useState(null);
   const [selectedTerm] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const selectedYear = selectedYearOverride || currentAcademicYear;
+  const selectedYear = selectedAcademicYear;
   const academicYearOptions = getAcademicYearOptions(currentAcademicYear, { past: 2, future: 1 });
 
 
@@ -65,11 +76,16 @@ const ClassPerformance = () => {
       if (classData.status === 'fulfilled') setClassInfo(classData.value);
       else setError(classData.reason?.message || 'Failed to load class data');
       if (studentsData.status === 'fulfilled') setStudents(studentsData.value);
-      if (perfData.status === 'fulfilled') setPerformance(perfData.value);
+      if (perfData.status === 'fulfilled') {
+        const pd = perfData.value;
+        setPerformance(pd.students || []);
+        setSubjectData(pd.subjectBreakdown || []);
+        setPerfStats(pd.stats || null);
+      }
       if (examsData.status === 'fulfilled') setExams(examsData.value);
     } catch (err) {
       if (err.name === 'AbortError') return;
-      console.error('Error fetching class performance:', err);
+      logger.error('Error fetching class performance:', err);
       setError(err.message || 'Failed to load performance data');
     } finally {
       if (!signal?.aborted) setLoading(false);
@@ -80,27 +96,19 @@ const ClassPerformance = () => {
   const buildStudentRanking = () => {
     if (performance.length === 0) return [];
 
-    return performance.map(p => {
-      const student = students.find(s => s.id === p.studentId);
-      return {
-        id: p.studentId,
-        name: student?.name || p.studentName || 'Unknown',
-        rollNo: student?.rollNo || '-',
-        percentage: p.overallPercentage,
-        grade: p.overallGrade,
-        rank: p.classRank,
-        trend: p.trend
-      };
-    }).sort((a, b) => a.rank - b.rank);
+    return performance.map(p => ({
+      id: p.studentId,
+      name: p.name || 'Unknown',
+      rollNo: p.rollNo || '-',
+      percentage: p.overallPercentage,
+      grade: p.overallGrade,
+      rank: p.classRank,
+      trend: p.trend
+    })).sort((a, b) => a.rank - b.rank);
   };
 
-  // Build subject breakdown — only from real data
-  const buildSubjectBreakdown = () => {
-    if (performance.length > 0 && performance[0].subjectWisePerformance) {
-      return performance[0].subjectWisePerformance;
-    }
-    return [];
-  };
+  // Build subject breakdown — from API response
+  const buildSubjectBreakdown = () => subjectData;
 
   // Filter students by search
   const filteredStudents = buildStudentRanking().filter(s =>
@@ -110,18 +118,24 @@ const ClassPerformance = () => {
 
   const subjectBreakdown = buildSubjectBreakdown();
 
-  // Class stats
+  // Class stats — prefer backend-computed stats, fall back to local computation
   const classStats = {
-    totalStudents: students.length,
-    averageScore: performance.length > 0
-      ? (performance.reduce((sum, p) => sum + (p.overallPercentage || 0), 0) / performance.length).toFixed(1)
-      : '—',
-    passingRate: performance.length > 0
-      ? `${Math.round((performance.filter(p => (p.overallPercentage || 0) >= 33).length / performance.length) * 100)}%`
-      : '—',
-    topScore: filteredStudents.length > 0
-      ? Math.max(...filteredStudents.map(s => s.percentage)).toFixed(1)
-      : '—'
+    totalStudents: perfStats?.totalStudents ?? students.length,
+    averageScore: perfStats?.averageScore != null
+      ? Number(perfStats.averageScore).toFixed(1)
+      : performance.length > 0
+        ? (performance.reduce((sum, p) => sum + (p.overallPercentage || 0), 0) / performance.length).toFixed(1)
+        : '—',
+    passingRate: perfStats?.passingRate != null
+      ? `${perfStats.passingRate}%`
+      : performance.length > 0
+        ? `${Math.round((performance.filter(p => (p.overallPercentage || 0) >= 33).length / performance.length) * 100)}%`
+        : '—',
+    topScore: perfStats?.topScore != null
+      ? Number(perfStats.topScore).toFixed(1)
+      : filteredStudents.length > 0
+        ? Math.max(...filteredStudents.map(s => s.percentage)).toFixed(1)
+        : '—'
   };
 
   const handleExport = () => {
@@ -176,11 +190,18 @@ const ClassPerformance = () => {
 
   const getTrendIcon = (trend) => {
     switch (trend) {
-      case 'improving': return <ArrowUpRight className="text-success" size={14} />;
-      case 'declining': return <ArrowDownRight className="text-danger" size={14} />;
-      default: return <Minus className="text-default-400" size={14} />;
+      case 'improving': return <ArrowUpRight style={{ color: 'var(--ok)' }} size={14} />;
+      case 'declining': return <ArrowDownRight style={{ color: 'var(--danger)' }} size={14} />;
+      default: return <Minus className="text-fg-faint" size={14} />;
     }
   };
+
+  const avgScoreTone = perfStats?.averageScore != null
+    ? (perfStats.averageScore >= 75 ? 'dp-metric__value--ok' : perfStats.averageScore >= 50 ? '' : 'dp-metric__value--warn')
+    : '';
+  const passRateTone = perfStats?.passingRate != null
+    ? (perfStats.passingRate >= 90 ? 'dp-metric__value--ok' : perfStats.passingRate >= 70 ? '' : 'dp-metric__value--warn')
+    : '';
 
   if (!isValid) return null;
 
@@ -196,8 +217,8 @@ const ClassPerformance = () => {
         <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-950 flex items-center justify-center">
           <FileText size={24} className="text-red-500" />
         </div>
-        <p className="text-sm font-medium text-gray-800 dark:text-zinc-200">Failed to load performance data</p>
-        <p className="text-xs text-gray-500 dark:text-zinc-400 max-w-xs text-center">{error}</p>
+        <p className="text-sm font-medium text-fg">Failed to load performance data</p>
+        <p className="text-xs text-fg-muted max-w-xs text-center">{error}</p>
         <Button size="sm" variant="flat" onPress={() => fetchData()}>Retry</Button>
       </div>
     );
@@ -208,10 +229,10 @@ const ClassPerformance = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-default-900">
+          <h1 className="text-2xl font-bold text-fg">
             {classInfo?.name || classId?.replace('-', ' ')} - Performance
           </h1>
-          <p className="text-default-500">Academic Year {selectedYear}</p>
+          <p className="text-fg-muted">Academic Year {selectedYear}</p>
         </div>
         <div className="flex items-center gap-3">
           <Select
@@ -219,7 +240,7 @@ const ClassPerformance = () => {
             selectedKeys={[selectedYear]}
             onSelectionChange={(keys) => {
               const nextYear = Array.from(keys)[0];
-              setSelectedYearOverride(nextYear === currentAcademicYear ? null : nextYear);
+              setSelectedAcademicYear(nextYear === currentAcademicYear ? null : nextYear);
             }}
             className="w-32"
           >
@@ -238,146 +259,115 @@ const ClassPerformance = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="border border-default-200">
-          <CardBody className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-lg">
-                <Users size={20} />
-              </div>
-              <div>
-                <p className="text-xs text-default-500">{t('pages.totalStudents1')}</p>
-                <p className="text-xl font-bold text-default-900">{classStats.totalStudents}</p>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-        <Card className="border border-default-200">
-          <CardBody className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded-lg">
-                <TrendingUp size={20} />
-              </div>
-              <div>
-                <p className="text-xs text-default-500">{t('pages.averageScore')}</p>
-                <p className="text-xl font-bold text-default-900">{classStats.averageScore}%</p>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-        <Card className="border border-default-200">
-          <CardBody className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400 rounded-lg">
-                <Trophy size={20} />
-              </div>
-              <div>
-                <p className="text-xs text-default-500">{t('pages.topScore')}</p>
-                <p className="text-xl font-bold text-default-900">{classStats.topScore}%</p>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-        <Card className="border border-default-200">
-          <CardBody className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400 rounded-lg">
-                <Award size={20} />
-              </div>
-              <div>
-                <p className="text-xs text-default-500">{t('pages.passRate')}</p>
-                <p className="text-xl font-bold text-default-900">{classStats.passingRate}</p>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
+      {/* KPI strip — dp-metric pattern */}
+      <div className="perf-metrics" role="group" aria-label="Class performance overview">
+        <div className="dp-metric">
+          <span className="dp-metric__label">{t('pages.totalStudents1')}</span>
+          <span className="dp-metric__value tnum">{classStats.totalStudents}</span>
+          <span className="dp-metric__sub">enrolled</span>
+        </div>
+        <div className="dp-metric">
+          <span className="dp-metric__label">{t('pages.averageScore')}</span>
+          <span className={`dp-metric__value tnum ${avgScoreTone}`}>
+            {classStats.averageScore !== '—' ? `${classStats.averageScore}%` : '—'}
+          </span>
+          <span className="dp-metric__sub">across published exams</span>
+        </div>
+        <div className="dp-metric">
+          <span className="dp-metric__label">{t('pages.topScore')}</span>
+          <span className="dp-metric__value tnum dp-metric__value--ok">
+            {classStats.topScore !== '—' ? `${classStats.topScore}%` : '—'}
+          </span>
+          <span className="dp-metric__sub">highest %</span>
+        </div>
+        <div className="dp-metric">
+          <span className="dp-metric__label">{t('pages.passRate')}</span>
+          <span className={`dp-metric__value tnum ${passRateTone}`}>{classStats.passingRate}</span>
+          <span className="dp-metric__sub">≥33% threshold</span>
+        </div>
       </div>
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Student Performance Distribution */}
-        <Card shadow="none" className="border border-default-200">
-          <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-lg">
-                <BarChart3 size={20} />
+        {/* Score distribution */}
+        <div className="chart-card">
+          <div className="chart-card__head">
+            <h3 className="chart-card__title">{t('pages.scoreDistribution')}</h3>
+          </div>
+          <div className="chart-card__body">
+            {filteredStudents.length === 0 ? (
+              <div className="chart-card__empty">
+                <p>No performance data available</p>
+                <p className="text-fg-faint">Publish exam results to see score distribution</p>
               </div>
-              <h3 className="text-lg font-semibold text-default-900">{t('pages.scoreDistribution')}</h3>
-            </div>
-          </CardHeader>
-          <CardBody className="p-6">
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart
-                data={[
-                  { range: '90-100', count: filteredStudents.filter(s => s.percentage >= 90).length },
-                  { range: '80-89', count: filteredStudents.filter(s => s.percentage >= 80 && s.percentage < 90).length },
-                  { range: '70-79', count: filteredStudents.filter(s => s.percentage >= 70 && s.percentage < 80).length },
-                  { range: '60-69', count: filteredStudents.filter(s => s.percentage >= 60 && s.percentage < 70).length },
-                  { range: '50-59', count: filteredStudents.filter(s => s.percentage >= 50 && s.percentage < 60).length },
-                  { range: '<50', count: filteredStudents.filter(s => s.percentage < 50).length },
-                ]}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="range" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Bar dataKey="count" fill={CHART_COLORS.blue} radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardBody>
-        </Card>
+            ) : (
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart
+                  data={[
+                    { range: '90-100', count: filteredStudents.filter(s => s.percentage >= 90).length },
+                    { range: '80-89', count: filteredStudents.filter(s => s.percentage >= 80 && s.percentage < 90).length },
+                    { range: '70-79', count: filteredStudents.filter(s => s.percentage >= 70 && s.percentage < 80).length },
+                    { range: '60-69', count: filteredStudents.filter(s => s.percentage >= 60 && s.percentage < 70).length },
+                    { range: '50-59', count: filteredStudents.filter(s => s.percentage >= 50 && s.percentage < 60).length },
+                    { range: '<50', count: filteredStudents.filter(s => s.percentage < 50).length },
+                  ]}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} />
+                  <XAxis dataKey="range" tick={{ fill: chart.tick, fontSize: 11 }} stroke={chart.axis} />
+                  <YAxis tick={{ fill: chart.tick, fontSize: 11 }} stroke={chart.axis} allowDecimals={false} />
+                  <Tooltip contentStyle={chart.tooltipStyle} itemStyle={chart.tooltipItemStyle} labelStyle={chart.tooltipLabelStyle} cursor={{ fill: chart.cursorFill }} />
+                  <Bar dataKey="count" fill={CHART_COLORS.chart1} radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
 
-        {/* Subject-wise Breakdown */}
-        <Card shadow="none" className="border border-default-200">
-          <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded-lg">
-                <BookOpen size={20} />
+        {/* Subject-wise averages */}
+        <div className="chart-card">
+          <div className="chart-card__head">
+            <h3 className="chart-card__title">{t('pages.subjectAverages')}</h3>
+          </div>
+          <div className="chart-card__body">
+            {subjectBreakdown.length === 0 ? (
+              <div className="chart-card__empty">
+                <p>No subject data available</p>
+                <p className="text-fg-faint">Subject averages appear once results are published</p>
               </div>
-              <h3 className="text-lg font-semibold text-default-900">{t('pages.subjectAverages')}</h3>
-            </div>
-          </CardHeader>
-          <CardBody className="p-6">
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={subjectBreakdown.slice(0, 6)} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11 }} />
-                <YAxis dataKey="subjectName" type="category" tick={{ fontSize: 10 }} width={80} />
-                <Tooltip />
-                <Bar dataKey="average" fill={CHART_COLORS.chart3} radius={[0, 4, 4, 0]} name="Average" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardBody>
-        </Card>
+            ) : (
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={subjectBreakdown.slice(0, 6)} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} />
+                  <XAxis type="number" domain={[0, 100]} tick={{ fill: chart.tick, fontSize: 11 }} stroke={chart.axis} />
+                  <YAxis dataKey="subjectName" type="category" tick={{ fill: chart.tick, fontSize: 10 }} width={80} stroke={chart.axis} />
+                  <Tooltip contentStyle={chart.tooltipStyle} itemStyle={chart.tooltipItemStyle} labelStyle={chart.tooltipLabelStyle} cursor={{ fill: chart.cursorFill }} />
+                  <Bar dataKey="average" fill={CHART_COLORS.chart3} radius={[0, 4, 4, 0]} name="Average" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Student Ranking Table */}
-      <Card shadow="none" className="border border-default-200">
-        <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100">
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-yellow-100 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-400 rounded-lg">
-                <Trophy size={20} />
-              </div>
-              <h3 className="text-lg font-semibold text-default-900">{t('pages.studentRankings1')}</h3>
-            </div>
-            <Input
-              size="sm"
-              placeholder={t('pages.searchStudents')}
-              value={searchQuery}
-              onValueChange={setSearchQuery}
-              startContent={<Search size={16} className="text-default-400" />}
-              className="w-64"
-            />
-          </div>
-        </CardHeader>
-        <CardBody className="p-0">
+      <div className="chart-card">
+        <div className="chart-card__head">
+          <h3 className="chart-card__title">{t('pages.studentRankings1')}</h3>
+          <Input
+            size="sm"
+            placeholder={t('pages.searchStudents')}
+            value={searchQuery}
+            onValueChange={setSearchQuery}
+            startContent={<Search size={16} className="text-fg-faint" />}
+            className="w-64"
+          />
+        </div>
+        <div>
           <Table
             aria-label={t('aria.tables.studentRankings')}
             removeWrapper
             classNames={{
-              th: "bg-default-50 text-default-600",
+              th: "bg-surface-2 text-fg-muted",
               td: "py-3"
             }}
           >
@@ -390,24 +380,28 @@ const ClassPerformance = () => {
               <TableColumn scope="col">{t('pages.tREND')}</TableColumn>
               <TableColumn scope="col">{t('pages.aCTIONS')}</TableColumn>
             </TableHeader>
-            <TableBody>
+            <TableBody emptyContent={
+              performance.length === 0
+                ? "No performance data available. Publish exam results to see rankings."
+                : "No students match your search."
+            }>
               {filteredStudents.slice(0, 20).map((student, idx) => (
                 <TableRow key={student.id || idx}>
                   <TableCell>
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
                       student.rank === 1 ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300' :
-                      student.rank === 2 ? 'bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300' :
+                      student.rank === 2 ? 'bg-surface-2 text-fg' :
                       student.rank === 3 ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300' :
-                      'bg-default-100 text-default-600'
+                      'bg-surface-2 text-fg-muted'
                     }`}>
                       {student.rank != null ? student.rank : '—'}
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className="font-medium text-default-900">{student.name}</span>
+                    <span className="font-medium text-fg">{student.name}</span>
                   </TableCell>
                   <TableCell>
-                    <span className="text-default-500">{student.rollNo}</span>
+                    <span className="text-fg-muted">{student.rollNo}</span>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -421,21 +415,13 @@ const ClassPerformance = () => {
                         size="sm"
                         className="w-20"
                       />
-                      <span className="font-medium">{Math.max(0, Math.min(100, student.percentage ?? 0)).toFixed(1)}%</span>
+                      <span className="font-medium tnum">{Math.max(0, Math.min(100, student.percentage ?? 0)).toFixed(1)}%</span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Chip
-                      size="sm"
-                      color={
-                        student.grade?.includes('A') ? 'success' :
-                        student.grade?.includes('B') ? 'primary' :
-                        student.grade?.includes('C') ? 'warning' : 'danger'
-                      }
-                      variant="flat"
-                    >
-                      {student.grade}
-                    </Chip>
+                    <span className={`grade-pill ${gradeToneClass(student.grade)}`}>
+                      {student.grade || '—'}
+                    </span>
                   </TableCell>
                   <TableCell>
                     {getTrendIcon(student.trend)}
@@ -454,25 +440,20 @@ const ClassPerformance = () => {
               ))}
             </TableBody>
           </Table>
-        </CardBody>
-      </Card>
+        </div>
+      </div>
 
       {/* Subject Details Table */}
-      <Card shadow="none" className="border border-default-200">
-        <CardHeader className="px-6 pt-6 pb-4 border-b border-default-100">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400 rounded-lg">
-              <BookOpen size={20} />
-            </div>
-            <h3 className="text-lg font-semibold text-default-900">{t('pages.subjectWiseDetails')}</h3>
-          </div>
-        </CardHeader>
-        <CardBody className="p-0">
+      <div className="chart-card">
+        <div className="chart-card__head">
+          <h3 className="chart-card__title">{t('pages.subjectWiseDetails')}</h3>
+        </div>
+        <div>
           <Table
             aria-label={t('aria.tables.subjectBreakdown')}
             removeWrapper
             classNames={{
-              th: "bg-default-50 text-default-600",
+              th: "bg-surface-2 text-fg-muted",
               td: "py-3"
             }}
           >
@@ -483,32 +464,36 @@ const ClassPerformance = () => {
               <TableColumn scope="col">{t('pages.lOWEST')}</TableColumn>
               <TableColumn scope="col">{t('pages.pASSRate')}</TableColumn>
             </TableHeader>
-            <TableBody>
+            <TableBody emptyContent="No subject data available. Subject breakdown appears once results are published.">
               {subjectBreakdown.map((subject, idx) => (
                 <TableRow key={subject.subjectId || idx}>
                   <TableCell>
-                    <span className="font-medium text-default-900">{subject.subjectName}</span>
+                    <span className="font-medium text-fg">{subject.subjectName}</span>
                   </TableCell>
                   <TableCell>
-                    <span className={`font-medium ${
-                      subject.average >= 75 ? 'text-success' :
-                      subject.average >= 50 ? 'text-warning' : 'text-danger'
-                    }`}>
+                    <span
+                      className="font-medium tnum"
+                      style={{
+                        color:
+                          subject.average >= 75 ? 'var(--ok)' :
+                          subject.average >= 50 ? 'var(--warn)' : 'var(--danger)'
+                      }}
+                    >
                       {subject.average != null ? `${subject.average.toFixed(1)}%` : '—'}
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className="text-success font-medium">
+                    <span className="font-medium tnum" style={{ color: 'var(--ok)' }}>
                       {subject.highest != null ? `${subject.highest.toFixed(1)}%` : '—'}
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className="text-warning font-medium">
+                    <span className="font-medium tnum" style={{ color: 'var(--warn)' }}>
                       {subject.lowest != null ? `${subject.lowest.toFixed(1)}%` : '—'}
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className="text-sm text-default-500">
+                    <span className="text-sm text-fg-muted tnum">
                       {subject.passRate != null ? `${subject.passRate}%` : '—'}
                     </span>
                   </TableCell>
@@ -516,8 +501,8 @@ const ClassPerformance = () => {
               ))}
             </TableBody>
           </Table>
-        </CardBody>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };

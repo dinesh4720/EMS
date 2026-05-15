@@ -1,43 +1,87 @@
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
+import { useSearchParams } from "react-router-dom";
+// Translations removed — all text is plain English to match StaffList style
+import { Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useStudentsListData } from "./hooks/useStudentsListData";
 import EditStudentDrawer from "./EditStudentDrawer";
 import ScrollToTopButton from "../../components/ui/ScrollToTopButton";
+import Skeleton from "../../components/ui/Skeleton";
 import { StudentCsvUploadModal, StudentCsvPreviewModal } from "./components/modals/StudentImportModals";
 import StudentsFiltersBar from "./components/list/StudentsFiltersBar";
-import StudentsTableVirtualized from "./components/list/StudentsTableVirtualized";
 import StudentsBulkModals from "./components/list/StudentsBulkModals";
-import { StudentsTableProvider } from "./components/list/StudentsTableContext";
+// Removed StudentsTableProvider — no longer needed with row-list layout
+import StudentListRow from "./StudentListRow";
+import StudentDetailPane from "./StudentDetailPane";
+import toast from "react-hot-toast";
 
-export default function StudentsList() {
+// Mobile breakpoint — below this the right pane collapses to a Drawer
+const MOBILE_MAX = 1099;
+
+function StudentsListSkeleton() {
+  return (
+    <div className="w-full flex flex-col flex-1 min-h-0" aria-busy="true" aria-live="polite">
+      {/* Toolbar skeleton */}
+      <div className="toolbar" role="presentation">
+        <Skeleton variant="rect" className="h-7" style={{ flex: "0 1 280px" }} />
+        <Skeleton variant="rect" className="h-7 w-56" />
+        <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
+          <Skeleton variant="rect" className="h-7 w-7" />
+        </div>
+      </div>
+      {/* Row skeletons */}
+      <div className="flex-1 min-h-0 overflow-hidden">
+        {Array.from({ length: 12 }).map((_, i) => (
+          <div
+            key={i}
+            className="flex items-center gap-3 px-4"
+            style={{
+              padding: "10px 16px",
+              borderBottom: "1px solid var(--divider)",
+            }}
+          >
+            <Skeleton variant="rect" className="shrink-0" style={{ width: 16, height: 16, borderRadius: 4 }} />
+            <Skeleton variant="circle" className="shrink-0" style={{ width: 28, height: 28 }} />
+            <div className="flex-1 min-w-0 space-y-1.5">
+              <Skeleton variant="text" className="h-3" style={{ width: `${120 + (i % 4) * 24}px` }} />
+              <Skeleton variant="text" className="h-2.5 w-24" />
+            </div>
+            <Skeleton variant="text" className="h-3 hidden lg:block" style={{ width: 64 }} />
+            <Skeleton variant="text" className="h-3 hidden lg:block" style={{ width: 100 }} />
+            <Skeleton variant="rect" className="hidden lg:block" style={{ width: 56, height: 18, borderRadius: 999 }} />
+            <Skeleton variant="rect" className="shrink-0" style={{ width: 24, height: 24, borderRadius: 6 }} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function StudentsList({ onAddStudent }) {
+  const navigate = useNavigate();
   const {
     // loading
     contextLoading, listLoading,
     // students data
-    students, filteredItems, visibleItems, selectedCount, currentAcademicYear, classes,
+    students, filteredItems, visibleItems, selectedCount, classes,
     // filter state
-    searchQuery, setSearchQuery, deferredSearchQuery, statusFilter, setStatusFilter,
+    searchQuery, setSearchQuery, statusFilter, setStatusFilter,
     // filter helpers
-    filtersConfig, filterPresets, activeFiltersCount, isSearching,
-    handleFilterChange, handlePresetClick, clearAllFilters,
+    filtersConfig, activeFiltersCount, isSearching,
+    handleFilterChange, clearAllFilters,
     // dropdown state
-    statusDropdownOpen, setStatusDropdownOpen,
     bulkDropdownOpen, setBulkDropdownOpen,
-    filtersDropdownOpen, setFiltersDropdownOpen,
-    sortDropdownOpen, setSortDropdownOpen,
-    columnsDropdownOpen, setColumnsDropdownOpen,
     moreDropdownOpen, setMoreDropdownOpen,
-    closeAllDropdowns,
     // sort / selection
     sortDescriptor, setSortDescriptor, selectedKeys, setSelectedKeys, statusCounts,
     // column visibility
-    visibleColumns, toggleColumn, visibleColumnsArray,
-    // table
-    tableContainerRef, rowVirtualizer,
-    // fee structures
-    studentFeeStructures,
-    // phone editing
-    editingPhoneId, setEditingPhoneId, phoneInput, setPhoneInput, handleSavePhone,
-    // pin
-    handlePinStudent, handleUnpinStudent,
+    visibleColumns, toggleColumn,
     // edit drawer
     isEditDrawerOpen, setIsEditDrawerOpen, selectedStudent, setSelectedStudent,
     // local override
@@ -46,15 +90,16 @@ export default function StudentsList() {
     refreshStudentsList,
     // bulk modals
     isBulkActionOpen, onBulkActionClose,
-    isPromoteOpen, onPromoteOpen, onPromoteClose, promotionPreview,
+    isPromoteOpen, onPromoteClose, promotionPreview,
     isReminderOpen, onReminderClose, reminderMessage, setReminderMessage, reminderTime, setReminderTime, reminderTargetCount,
-    isTcModalOpen, onTcModalOpen, onTcModalClose, tcStudents, setTcStudents,
-    isDeleteOpen, onDeleteClose, onDeleteOpen, studentToDelete, setStudentToDelete, isDeleting, setIsDeleting,
-    isStatusChangeOpen, onStatusChangeClose, onStatusChangeOpen, statusChangeData, setStatusChangeData,
+    isTcModalOpen, onTcModalClose, tcStudents,
+    isDeleteOpen, onDeleteClose, studentToDelete, setStudentToDelete, isDeleting, setIsDeleting,
+    isStatusChangeOpen, onStatusChangeClose, statusChangeData, setStatusChangeData,
     isCsvUploadOpen, onCsvUploadClose, onCsvUploadOpen,
     isPreviewOpen, onPreviewClose,
     // bulk handlers
-    bulkAction, handleBulkAction, executeBulkAction, executePromotion, executeSendReminders,
+    bulkAction, handleBulkAction, executeBulkAction, executeBulkDelete, executePromotion, executeSendReminders,
+    isBulkDeleteOpen, onBulkDeleteClose, bulkDeleteStudents,
     // delete/update
     deleteStudent, updateStudent,
     // csv upload
@@ -62,6 +107,175 @@ export default function StudentsList() {
     // helpers
     getClassOptions,
   } = useStudentsListData();
+
+  // ============ Routing (URL-driven selection) ============
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedId = searchParams.get("id") || null;
+
+  const setSelectedId = useCallback(
+    (id) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (id) next.set("id", id);
+          else next.delete("id");
+          return next;
+        },
+        { replace: false }
+      );
+    },
+    [setSearchParams]
+  );
+
+  // ============ Mobile viewport detection ============
+  const [isMobileViewport, setIsMobileViewport] = useState(() =>
+    typeof window !== "undefined"
+      ? window.innerWidth <= MOBILE_MAX
+      : false
+  );
+
+  useEffect(() => {
+    const onResize = () => setIsMobileViewport(window.innerWidth <= MOBILE_MAX);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  // ============ Selected student ============
+  const selectedStudentRecord = useMemo(() => {
+    if (!selectedId) return null;
+    return visibleItems.find((st) => String(st.id || st._id) === selectedId) || null;
+  }, [selectedId, visibleItems]);
+
+  const handleViewProfile = useCallback(
+    (student) => {
+      const id = student.id || student._id;
+      navigate(`/students/${id}`);
+    },
+    [navigate]
+  );
+
+  // Auto-select first visible student on desktop when nothing is selected
+  useEffect(() => {
+    if (isMobileViewport) return;
+    if (selectedId) return;
+    if (visibleItems.length === 0) return;
+    const first = visibleItems[0];
+    const firstId = String(first.id || first._id);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("id", firstId);
+        return next;
+      },
+      { replace: true }
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMobileViewport, selectedId, visibleItems.length]);
+
+  // ============ Keyboard nav ============
+  const listRef = useRef(null);
+  const rowRefs = useRef(new Map());
+
+  const moveSelection = useCallback(
+    (delta) => {
+      if (visibleItems.length === 0) return;
+      const ids = visibleItems.map((st) => String(st.id || st._id));
+      const currentIdx = ids.indexOf(selectedId);
+      const nextIdx =
+        currentIdx === -1
+          ? delta > 0
+            ? 0
+            : visibleItems.length - 1
+          : Math.min(visibleItems.length - 1, Math.max(0, currentIdx + delta));
+      const nextStudent = visibleItems[nextIdx];
+      if (!nextStudent) return;
+      const nextId = String(nextStudent.id || nextStudent._id);
+      setSelectedId(nextId);
+      requestAnimationFrame(() => {
+        rowRefs.current.get(nextId)?.scrollIntoView({ block: "nearest" });
+        rowRefs.current.get(nextId)?.focus({ preventScroll: true });
+      });
+    },
+    [visibleItems, selectedId, setSelectedId]
+  );
+
+  const handleListKeyDown = useCallback(
+    (e) => {
+      const tag = e.target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        moveSelection(1);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        moveSelection(-1);
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (selectedStudentRecord) {
+          handleViewProfile(selectedStudentRecord);
+        }
+      } else if (e.key === "Escape") {
+        if (selectedCount > 0) {
+          setSelectedKeys(new Set([]));
+          return;
+        }
+        e.preventDefault();
+        setSelectedId(null);
+      }
+    },
+    [moveSelection, setSelectedId, selectedCount, setSelectedKeys, selectedStudentRecord, handleViewProfile]
+  );
+
+  // ============ Bulk toggle ============
+  const toggleCheck = useCallback(
+    (student, event) => {
+      const id = String(student.id || student._id);
+      if (event?.shiftKey) {
+        // Simple range select
+        const ids = visibleItems.map((st) => String(st.id || st._id));
+        const lastId = rowRefs.current.get("__lastClicked__");
+        if (lastId) {
+          const idxA = ids.indexOf(lastId);
+          const idxB = ids.indexOf(id);
+          if (idxA !== -1 && idxB !== -1) {
+            const [lo, hi] = idxA < idxB ? [idxA, idxB] : [idxB, idxA];
+            const newKeys = new Set(selectedKeys);
+            for (let i = lo; i <= hi; i++) {
+              newKeys.add(ids[i]);
+            }
+            setSelectedKeys(newKeys);
+            rowRefs.current.set("__lastClicked__", id);
+            return;
+          }
+        }
+      }
+      const newKeys = new Set(selectedKeys);
+      if (newKeys.has(id)) newKeys.delete(id);
+      else newKeys.add(id);
+      setSelectedKeys(newKeys);
+      rowRefs.current.set("__lastClicked__", id);
+    },
+    [visibleItems, selectedKeys, setSelectedKeys]
+  );
+
+  const handleClearSelection = useCallback(
+    () => setSelectedKeys(new Set([])),
+    [setSelectedKeys]
+  );
+
+  const handleMessageParent = useCallback(() => {
+    if (!selectedStudentRecord) return;
+    const parentPhone = selectedStudentRecord.parentPhone || selectedStudentRecord.fatherPhone || selectedStudentRecord.motherPhone;
+    const parentEmail = selectedStudentRecord.parentEmail || selectedStudentRecord.fatherEmail || selectedStudentRecord.motherEmail;
+    if (!parentPhone && !parentEmail) {
+      toast("No parent contact available.");
+      return;
+    }
+    navigate(`/messaging?to=${encodeURIComponent(parentPhone || parentEmail)}`);
+  }, [selectedStudentRecord, navigate]);
+
+  const closeDetail = () => setSelectedId(null);
+  const detailVisible = !!selectedStudentRecord;
 
   const {
     csvFile, setCsvFile, csvDragActive, csvProcessing,
@@ -71,164 +285,169 @@ export default function StudentsList() {
   } = csvUpload;
 
   if (contextLoading || listLoading) {
-    return (
-      <div className="w-full space-y-4">
-        {/* Toolbar skeleton */}
-        <div className="flex items-center gap-3 px-2">
-          <div className="h-8 w-24 bg-gray-200 dark:bg-zinc-700 rounded-lg animate-pulse" />
-          <div className="h-9 flex-1 max-w-xs bg-gray-200 dark:bg-zinc-700 rounded-lg animate-pulse" />
-          <div className="h-8 w-20 bg-gray-200 dark:bg-zinc-700 rounded-lg animate-pulse" />
-          <div className="h-8 w-20 bg-gray-200 dark:bg-zinc-700 rounded-lg animate-pulse" />
-        </div>
-        {/* Table skeleton */}
-        <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center gap-4 px-4 py-3 border-b border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900">
-            <div className="w-5 h-5 rounded bg-gray-200 dark:bg-zinc-700 animate-pulse shrink-0" />
-            <div className="h-3 w-16 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" style={{ minWidth: 240 }} />
-            <div className="h-3 w-10 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" style={{ minWidth: 100 }} />
-            <div className="h-3 w-20 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" style={{ minWidth: 180 }} />
-            <div className="h-3 w-20 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" style={{ minWidth: 110 }} />
-            <div className="h-3 w-16 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" style={{ minWidth: 100 }} />
-            <div className="h-3 w-8 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" style={{ minWidth: 60 }} />
-          </div>
-          {/* Rows */}
-          {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-gray-100 dark:border-zinc-800 last:border-b-0">
-              {/* Checkbox */}
-              <div className="w-5 h-5 rounded bg-gray-200 dark:bg-zinc-700 animate-pulse shrink-0" />
-              {/* Student: avatar + name + roll */}
-              <div className="flex items-center gap-3" style={{ minWidth: 240 }}>
-                <div className="w-9 h-9 rounded-full bg-gray-200 dark:bg-zinc-700 animate-pulse shrink-0" />
-                <div className="space-y-1.5">
-                  <div className="h-3.5 rounded animate-pulse bg-gray-200 dark:bg-zinc-700" style={{ width: `${100 + (i % 3) * 30}px` }} />
-                  <div className="h-2.5 w-16 rounded animate-pulse bg-gray-100 dark:bg-zinc-800" />
-                </div>
-              </div>
-              {/* Class */}
-              <div style={{ minWidth: 100 }}>
-                <div className="h-3.5 w-14 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-              </div>
-              {/* Parent info */}
-              <div className="space-y-1.5" style={{ minWidth: 180 }}>
-                <div className="h-3.5 rounded animate-pulse bg-gray-200 dark:bg-zinc-700" style={{ width: `${90 + (i % 4) * 20}px` }} />
-                <div className="h-2.5 w-24 rounded animate-pulse bg-gray-100 dark:bg-zinc-800" />
-              </div>
-              {/* Attendance bar */}
-              <div className="space-y-1" style={{ minWidth: 110 }}>
-                <div className="h-2 w-full bg-gray-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-gray-200 dark:bg-zinc-700 rounded-full animate-pulse" style={{ width: `${50 + (i % 5) * 10}%` }} />
-                </div>
-                <div className="h-2.5 w-8 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-              </div>
-              {/* Fee status chip */}
-              <div style={{ minWidth: 100 }}>
-                <div className="h-6 w-16 bg-gray-200 dark:bg-zinc-700 rounded-full animate-pulse" />
-              </div>
-              {/* Actions */}
-              <div style={{ minWidth: 60 }}>
-                <div className="h-7 w-7 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+    return <StudentsListSkeleton />;
   }
 
   return (
-    <div className="w-full flex flex-col flex-1 min-h-0 overflow-hidden">
-      {/* ── Toolbar ──────────────────────────────────────────────────────── */}
-      <StudentsFiltersBar
-        statusFilter={statusFilter}
-        setStatusFilter={setStatusFilter}
-        statusDropdownOpen={statusDropdownOpen}
-        setStatusDropdownOpen={setStatusDropdownOpen}
-        statusCounts={statusCounts}
-        students={students}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        isSearching={isSearching}
-        selectedCount={selectedCount}
-        bulkDropdownOpen={bulkDropdownOpen}
-        setBulkDropdownOpen={setBulkDropdownOpen}
-        handleBulkAction={handleBulkAction}
-        downloadSelectedStudents={downloadSelectedStudents}
-        filtersConfig={filtersConfig}
-        handleFilterChange={handleFilterChange}
-        clearAllFilters={clearAllFilters}
-        activeFiltersCount={activeFiltersCount}
-        filterPresets={filterPresets}
-        handlePresetClick={handlePresetClick}
-        filtersDropdownOpen={filtersDropdownOpen}
-        setFiltersDropdownOpen={setFiltersDropdownOpen}
-        sortDescriptor={sortDescriptor}
-        setSortDescriptor={setSortDescriptor}
-        sortDropdownOpen={sortDropdownOpen}
-        setSortDropdownOpen={setSortDropdownOpen}
-        visibleColumns={visibleColumns}
-        toggleColumn={toggleColumn}
-        columnsDropdownOpen={columnsDropdownOpen}
-        setColumnsDropdownOpen={setColumnsDropdownOpen}
-        moreDropdownOpen={moreDropdownOpen}
-        setMoreDropdownOpen={setMoreDropdownOpen}
-        csvInputRef={csvInputRef}
-        handleCSVUpload={handleCSVUpload}
-        setCsvFile={setCsvFile}
-        onCsvUploadOpen={onCsvUploadOpen}
-        downloadStudentList={downloadStudentList}
-      />
+    <div
+      className="page"
+      style={
+        isMobileViewport
+          ? { display: "flex", flexDirection: "column", minHeight: 0 }
+          : {
+              display: "grid",
+              gridTemplateColumns: "minmax(420px, 1fr) 380px",
+              gap: 0,
+              minHeight: 0,
+            }
+      }
+    >
+      {/* Left list */}
+      <div
+        style={{
+          borderRight: isMobileViewport ? "none" : "1px solid var(--border)",
+          display: "flex",
+          flexDirection: "column",
+          minHeight: 0,
+        }}
+      >
+        <div className="page__head" style={{ paddingBottom: 12 }}>
+          <div>
+            <h1 className="page__title">Students</h1>
+            <div className="page__sub">
+              <span className="mono tnum">{filteredItems.length}</span> of{" "}
+              <span className="mono tnum">{students.length}</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="btn btn--accent"
+            onClick={onAddStudent}
+          >
+            <Plus size={13} aria-hidden />
+            New Student
+          </button>
+        </div>
 
-      {/* ── Virtualized Table ─────────────────────────────────────────────── */}
-      <StudentsTableProvider actions={{
-        setSelectedKeys,
-        setSortDescriptor,
-        setEditingPhoneId,
-        setPhoneInput,
-        handleSavePhone,
-        handlePinStudent,
-        handleUnpinStudent,
-        setSelectedStudent,
-        setIsEditDrawerOpen,
-        setStudentToDelete,
-        onDeleteOpen,
-        setStatusChangeData,
-        onStatusChangeOpen,
-        setTcStudents,
-        onTcModalOpen,
-        handleBulkAction,
-        onPromoteOpen,
-        closeAllDropdowns,
-        onClearFilters: clearAllFilters,
-      }}>
-        <StudentsTableVirtualized
-          visibleItems={visibleItems}
-          filteredItems={filteredItems}
-          visibleColumnsArray={visibleColumnsArray}
-          studentFeeStructures={studentFeeStructures}
-          currentAcademicYear={currentAcademicYear}
-          selectedKeys={selectedKeys}
-          rowVirtualizer={rowVirtualizer}
-          tableContainerRef={tableContainerRef}
+        {/* Toolbar */}
+        <StudentsFiltersBar
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
+          statusCounts={statusCounts}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          isSearching={isSearching}
+          selectedCount={selectedCount}
+          bulkDropdownOpen={bulkDropdownOpen}
+          setBulkDropdownOpen={setBulkDropdownOpen}
+          handleBulkAction={handleBulkAction}
+          downloadSelectedStudents={downloadSelectedStudents}
+          onClearSelection={handleClearSelection}
+          filtersConfig={filtersConfig}
+          handleFilterChange={handleFilterChange}
+          clearAllFilters={clearAllFilters}
+          activeFiltersCount={activeFiltersCount}
           sortDescriptor={sortDescriptor}
-          editingPhoneId={editingPhoneId}
-          phoneInput={phoneInput}
-          searchQuery={deferredSearchQuery}
-          hasActiveFilters={activeFiltersCount > 0}
+          setSortDescriptor={setSortDescriptor}
+          visibleColumns={visibleColumns}
+          toggleColumn={toggleColumn}
+          moreDropdownOpen={moreDropdownOpen}
+          setMoreDropdownOpen={setMoreDropdownOpen}
+          csvInputRef={csvInputRef}
+          handleCSVUpload={handleCSVUpload}
+          setCsvFile={setCsvFile}
+          onCsvUploadOpen={onCsvUploadOpen}
+          downloadStudentList={downloadStudentList}
+          onNavigateToTC={() => navigate('/students/transfer-certificate')}
         />
-      </StudentsTableProvider>
 
-      {/* ── Footer: row count ──────────────────────────────────────────────── */}
-      <div className="border-t border-gray-200 dark:border-zinc-700 px-6 py-3 shrink-0">
-        <span className="text-default-500 text-sm">
-          {filteredItems.length === students.length
-            ? `Showing ${students.length} student${students.length !== 1 ? "s" : ""}`
-            : `Showing ${filteredItems.length} of ${students.length} student${students.length !== 1 ? "s" : ""}`}
-        </span>
+        {/* List rows */}
+        <div
+          ref={listRef}
+          role="listbox"
+          aria-label="Student list"
+          tabIndex={0}
+          onKeyDown={handleListKeyDown}
+          style={{
+            flex: 1,
+            overflow: "auto",
+            outline: "none",
+            minHeight: 0,
+          }}
+        >
+          {visibleItems.length === 0 ? (
+            <div
+              className="subtle"
+              style={{ padding: 32, textAlign: "center", fontSize: 13 }}
+            >
+              No students matched.
+            </div>
+          ) : (
+            visibleItems.map((student) => {
+              const id = String(student.id || student._id);
+              return (
+                <StudentListRow
+                  key={id}
+                  ref={(el) => {
+                    if (el) rowRefs.current.set(id, el);
+                    else rowRefs.current.delete(id);
+                  }}
+                  student={student}
+                  isActive={selectedId === id}
+                  isChecked={selectedKeys.has(id)}
+                  onSelect={() => setSelectedId(id)}
+                  onToggleCheck={toggleCheck}
+                  onViewProfile={handleViewProfile}
+                  attendancePct={student.attendancePercentage}
+                />
+              );
+            })
+          )}
+        </div>
+
       </div>
 
-      {/* ── Bulk Modals ────────────────────────────────────────────────────── */}
+      {/* Right detail pane — desktop only */}
+      {!isMobileViewport && (
+        <StudentDetailPane
+          student={selectedStudentRecord}
+          onClose={closeDetail}
+          onViewProfile={() => selectedStudentRecord && handleViewProfile(selectedStudentRecord)}
+          onMessageParent={handleMessageParent}
+        />
+      )}
+
+      {/* Mobile: slide-over drawer for detail */}
+      {isMobileViewport && detailVisible && (
+        <div
+          className="stafflist__drawer-overlay"
+          role="presentation"
+          onClick={closeDetail}
+        >
+          <div
+            className="stafflist__drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Profile: ${selectedStudentRecord?.name}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <StudentDetailPane
+              student={selectedStudentRecord}
+              isMobile
+              onClose={closeDetail}
+              onViewProfile={() => selectedStudentRecord && handleViewProfile(selectedStudentRecord)}
+              onMessageParent={handleMessageParent}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ── Bulk Modals ── */}
       <StudentsBulkModals
+        isBulkDeleteOpen={isBulkDeleteOpen}
+        onBulkDeleteClose={onBulkDeleteClose}
+        bulkDeleteStudents={bulkDeleteStudents}
+        executeBulkDelete={executeBulkDelete}
         isBulkActionOpen={isBulkActionOpen}
         onBulkActionClose={onBulkActionClose}
         bulkAction={bulkAction}
@@ -265,7 +484,7 @@ export default function StudentsList() {
         updateStudent={updateStudent}
       />
 
-      {/* ── CSV Upload Modal ───────────────────────────────────────────────── */}
+      {/* ── CSV Upload Modal ── */}
       <StudentCsvUploadModal
         isOpen={isCsvUploadOpen}
         onClose={onCsvUploadClose}
@@ -281,7 +500,7 @@ export default function StudentsList() {
         processCsvUpload={processCsvUpload}
       />
 
-      {/* ── CSV Preview Modal ──────────────────────────────────────────────── */}
+      {/* ── CSV Preview Modal ── */}
       <StudentCsvPreviewModal
         isOpen={isPreviewOpen}
         onClose={onPreviewClose}
@@ -293,7 +512,7 @@ export default function StudentsList() {
         importValidStudents={importValidStudents}
       />
 
-      {/* ── Edit Student Drawer ────────────────────────────────────────────── */}
+      {/* ── Edit Student Drawer ── */}
       <EditStudentDrawer
         isOpen={isEditDrawerOpen}
         onClose={() => { setIsEditDrawerOpen(false); setSelectedStudent(null); }}

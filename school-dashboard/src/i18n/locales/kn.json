@@ -127,7 +127,9 @@
     "success": "ಯಶಸ್ವಿ",
     "optional": "ಐಚ್ಛಿಕ",
     "offlineBanner": "ನೀವು ಆಫ್‌ಲೈನ್‌ನಲ್ಲಿದ್ದೀರಿ. ಕೆಲವು ವೈಶಿಷ್ಟ್ಯಗಳು ಲಭ್ಯವಿಲ್ಲದಿರಬಹುದು.",
-    "staleDataBanner": "ಡೇಟಾ ಹಳೆಯದಾಗಿರಬಹುದು. ದಯವಿಟ್ಟು ರಿಫ್ರೆಶ್ ಮಾಡಿ."
+    "staleDataBanner": "ಡೇಟಾ ಹಳೆಯದಾಗಿರಬಹುದು. ದಯವಿಟ್ಟು ರಿಫ್ರೆಶ್ ಮಾಡಿ.",
+    "done": "ಮುಗಿದಿದೆ",
+    "mandatory": "ಕಡ್ಡಾಯ"
   },
   "messaging": {
     "chat": {
@@ -726,7 +728,7 @@
       "pending": "ಬಾಕಿ",
       "approved": "ಅನುಮೋದಿತ",
       "rejected": "ತಿರಸ್ಕೃತ",
-      "needs_revision": "ಪರಿಷ್ಕರಣೆ ಅಗತ್ಯ",
+      "needsRevision": "ಪರಿಷ್ಕರಣೆ ಅಗತ್ಯ",
       "all": "ಎಲ್ಲಾ"
     }
   },
@@ -1130,7 +1132,9 @@
     "deleteFeedback": "ನೀವು ಅಳಿಸಲು ಖಚಿತವಾಗಿ ಬಯಸುತ್ತೀರಾ this feedback?",
     "deleteAdmission": "ನೀವು ಅಳಿಸಲು ಖಚಿತವಾಗಿ ಬಯಸುತ್ತೀರಾ this admission inquiry?",
     "deleteCallLog": "ನೀವು ಅಳಿಸಲು ಖಚಿತವಾಗಿ ಬಯಸುತ್ತೀರಾ this call log?",
-    "deleteRoom": "this room? ಅಳಿಸಿ",
+    "deleteRoomTitle": "ಕೋಣೆ ಅಳಿಸಿ",
+    "deleteRoom": "this room? This cannot be undone. ಅಳಿಸಿ",
+    "deleteHostelTitle": "ಹಾಸ್ಟೆಲ್ ಅಳಿಸಿ",
     "deleteHostel": "this hostel? This cannot be undone. ಅಳಿಸಿ",
     "deleteItem": "ನೀವು ಅಳಿಸಲು ಖಚಿತವಾಗಿ ಬಯಸುತ್ತೀರಾ this item?",
     "deleteItemNamed": "ನೀವು ಅಳಿಸಲು ಖಚಿತವಾಗಿ ಬಯಸುತ್ತೀರಾ this {{name}}?",
@@ -1364,7 +1368,9 @@
       "auditCreated": "Audit ರಚಿಸಲಾಗಿದೆ",
       "auditDeleted": "Audit ಅಳಿಸಲಾಗಿದೆ",
       "examDeletedSuccessfully": "Exam deleted ಯಶಸ್ವಿಯಾಗಿ",
-      "examCreatedSuccessfully": "Exam created ಯಶಸ್ವಿಯಾಗಿ!"
+      "examCreatedSuccessfully": "Exam created ಯಶಸ್ವಿಯಾಗಿ!",
+      "templateUpdated": "ಟೆಂಪ್ಲೇಟ್ ಯಶಸ್ವಿಯಾಗಿ ನವೀಕರಿಸಲಾಗಿದೆ",
+      "feeStructureApplied": "ಎಲ್ಲಾ ವಿದ್ಯಾರ್ಥಿಗಳಿಗೆ ಶುಲ್ಕ ರಚನೆ ಅನ್ವಯಿಸಲಾಗಿದೆ"
     },
     "error": {
       "cSVFileAppearsToBeEmptyOrHasNoDataRows": "CSV ಫೈಲ್ ಖಾಲಿಯಾಗಿದೆ ಅಥವಾ ಡೇಟಾ ಸಾಲುಗಳಿಲ್ಲ",
@@ -1372,6 +1378,7 @@
       "failedToTranscribeAudio": "transcribe audio ವಿಫಲವಾಗಿದೆ",
       "failedToLoadExamData": "load exam data ವಿಫಲವಾಗಿದೆ",
       "failedToSaveResults": "save results ವಿಫಲವಾಗಿದೆ",
+      "insufficientPermissionsToSaveResults": "results ಉಳಿಸಲು ನಿಮಗೆ ಅನುಮತಿ ಇಲ್ಲ",
       "failedToLoadExams": "load exams ವಿಫಲವಾಗಿದೆ",
       "failedToDeleteExam": "delete exam ವಿಫಲವಾಗಿದೆ",
       "failedToLoadExamDetails": "load exam details ವಿಫಲವಾಗಿದೆ",
@@ -4485,6 +4492,17 @@
     "shareWithStaff": "Share with staff",
     "plansComparison": "Plans comparison",
     "attendanceReport": "Attendance ವರದಿ",
-    "subjectWiseAttendanceComingSoonDesc": "When per-subject attendance tracking is enabled, you will see each subject attendance percentage here."
+    "subjectWiseAttendanceComingSoonDesc": "When per-subject attendance tracking is enabled, you will see each subject attendance percentage here.",
+    "createFeeTemplate": "ಶುಲ್ಕ ಟೆಂಪ್ಲೇಟ್ ರಚಿಸಿ",
+    "retry": "ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ"
+  },
+  "fees": {
+    "pendingAmount": "ಬಾಕಿ ಮೊತ್ತ",
+    "dueDate": "ನಿಗದಿತ ದಿನಾಂಕ",
+    "daysOverdue": "ವಿಳಂಬ ದಿನಗಳು",
+    "templateCount": "{{count}} ಟೆಂಪ್ಲೇಟ್(ಗಳು)",
+    "feeHeadNum": "ಶುಲ್ಕ ಶೀರ್ಷಿಕೆ #{{num}}",
+    "templateUsedByStudents": "ಈ ಟೆಂಪ್ಲೇಟ್ {{structureCount}} ತರಗತಿ ಶುಲ್ಕ ರಚನೆಗಳಲ್ಲಿ {{studentCount}} ವಿದ್ಯಾರ್ಥಿಗಳಿಗೆ ಅನ್ವಯಿಸಲಾಗಿದೆ.",
+    "templateUsedByStructures": "ಈ ಟೆಂಪ್ಲೇಟ್ {{structureCount}} ತರಗತಿ ಶುಲ್ಕ ರಚನೆಗಳಿಂದ ಬಳಸಲ್ಪಡುತ್ತಿದೆ."
   }
 }

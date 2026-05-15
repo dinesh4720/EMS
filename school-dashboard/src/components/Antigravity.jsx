@@ -66,8 +66,10 @@ export default function Antigravity({
             animationFrameId = requestAnimationFrame(render);
         };
 
+        let resizeTimeout;
         const handleResize = () => {
-            init();
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(init, 150);
         };
 
         init();
@@ -76,6 +78,7 @@ export default function Antigravity({
 
         return () => {
             window.removeEventListener('resize', handleResize);
+            clearTimeout(resizeTimeout);
             cancelAnimationFrame(animationFrameId);
         };
     }, [count, color]);

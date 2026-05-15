@@ -8,6 +8,8 @@ import toast from "react-hot-toast";
 import ConfirmDialog from "../../../components/ConfirmDialog";
 import { useApp } from "../../../context/AppContext";
 import { useTranslation } from 'react-i18next';
+import logger from '../../../utils/logger';
+
 
 /**
  * AssignClassToStaffModal - Modal to assign a staff member as class teacher
@@ -108,7 +110,7 @@ export default function AssignClassToStaffModal({
       setConfirmDialog(prev => ({ ...prev, isOpen: false }));
       onClose();
     } catch (error) {
-      console.error('Error assigning class teacher:', error);
+      logger.error('Error assigning class teacher:', error);
       toast.error(error.message || 'Failed to assign class teacher');
     } finally {
       setIsProcessing(false);
@@ -162,85 +164,95 @@ export default function AssignClassToStaffModal({
             </div>
 
             {/* Important Notice */}
-            <div className="bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800 rounded-lg p-3 flex gap-3 mb-4">
-              <AlertCircle size={18} className="text-warning-600 dark:text-warning-400 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-warning-800 dark:text-warning-200">
-                <strong>{t('pages.important')}</strong> A staff member can be class teacher for only one class. If they're already assigned to a class, that assignment will be automatically removed.
-              </p>
+            <div className="staff-banner staff-banner--warn" style={{ marginBottom: 12 }}>
+              <div className="staff-banner__icon"><AlertCircle size={14} /></div>
+              <div>
+                <div className="staff-banner__title">{t('pages.important')}</div>
+                <div className="staff-banner__body">
+                  A staff member can be class teacher for only one class. If they're already assigned to a class, that assignment will be automatically removed.
+                </div>
+              </div>
             </div>
 
             {/* Classes List */}
-            <div className="space-y-2">
+            <div className="col" style={{ gap: 6 }}>
               {filteredClasses.length === 0 ? (
-                <div className="text-center py-8 px-4">
-                  <GraduationCap size={32} className="text-default-300 mx-auto mb-2" />
-                  <p className="text-sm text-default-500 mb-1">
-                    {searchQuery ? "No classes found matching your search" : "No classes available"}
-                  </p>
-                  <p className="text-xs text-default-400">
+                <div className="assign-empty">
+                  <div className="assign-empty__icon"><GraduationCap size={16} /></div>
+                  <div className="assign-empty__title">
+                    {searchQuery ? "No classes found" : "No classes available"}
+                  </div>
+                  <div className="assign-empty__sub">
                     {searchQuery ? "Try a different search term" : "Create classes first to assign teachers"}
-                  </p>
+                  </div>
                 </div>
               ) : (
                 filteredClasses.map((cls) => (
-                  <div
-                    key={cls.id}
-                    className="flex items-center justify-between p-4 rounded-lg border border-default-200 hover:border-default-300 hover:bg-default-50 transition-all"
-                  >
+                  <div key={cls.id} className="subjrow">
                     {/* Left: Class Info */}
-                    <div className="flex items-center gap-3 flex-1">
-                      <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                        <GraduationCap size={20} className="text-gray-600 dark:text-gray-400" />
+                    <div className="row" style={{ alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
+                      <div className="assignsec__icon">
+                        <GraduationCap size={14} />
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-default-700">
+                      <div className="col" style={{ gap: 2, minWidth: 0 }}>
+                        <span className="subjrow__name mono tnum">
                           {cls.name}-{cls.section}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Users size={12} className="text-default-400" />
-                          <span className="text-xs text-default-500">
-                            {cls.studentCount || 0} students
-                          </span>
-                        </div>
+                        </span>
+                        <span className="subtle" style={{ fontSize: 11.5 }}>
+                          <Users size={10} style={{ display: "inline", marginRight: 4 }} />
+                          {cls.studentCount || 0} students
+                        </span>
                       </div>
                     </div>
 
                     {/* Middle: Current Teacher */}
-                    <div className="flex items-center gap-2 px-4">
+                    <div className="row" style={{ alignItems: "center", gap: 8, marginRight: 12 }}>
                       {cls.classTeacherId ? (
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
+                        <div className="row" style={{ alignItems: "center", gap: 8 }}>
+                          <div
+                            style={{
+                              width: 28, height: 28, borderRadius: 999,
+                              background: "var(--surface-2)", overflow: "hidden",
+                              display: "grid", placeItems: "center",
+                            }}
+                          >
                             {cls.teacherPhoto ? (
-                              <img src={cls.teacherPhoto} alt={cls.classTeacherName} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                              <img
+                                src={cls.teacherPhoto}
+                                alt={cls.classTeacherName}
+                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                loading="lazy"
+                              />
                             ) : (
-                              <User size={14} className="text-gray-600 dark:text-gray-400" />
+                              <User size={12} className="text-fg-muted" />
                             )}
                           </div>
-                          <div>
-                            <p className="text-sm font-medium text-default-700">
+                          <div className="col" style={{ gap: 0 }}>
+                            <span style={{ fontSize: 12.5, fontWeight: 520 }}>
                               {cls.classTeacherName}
-                            </p>
-                            <p className="text-xs text-default-400">{t('pages.current')}</p>
+                            </span>
+                            <span className="subtle" style={{ fontSize: 10.5 }}>
+                              {t('pages.current')}
+                            </span>
                           </div>
                         </div>
                       ) : (
                         <Badge color="default" variant="flat" size="sm">
-                          No Teacher Assigned
+                          Vacant
                         </Badge>
                       )}
                     </div>
 
                     {/* Right: Assign Button */}
-                    <Button
-                      size="sm"
-                      color={cls.classTeacherId ? "warning" : "primary"}
-                      variant="flat"
-                      onPress={() => handleAssignClass(cls)}
-                      isDisabled={isProcessing}
-                      className="min-w-[80px]"
+                    <button
+                      type="button"
+                      className={`btn btn--sm ${cls.classTeacherId ? "" : "btn--accent"}`}
+                      onClick={() => handleAssignClass(cls)}
+                      disabled={isProcessing}
+                      style={{ minWidth: 72 }}
                     >
                       {isProcessing ? <Spinner size="sm" /> : "Assign"}
-                    </Button>
+                    </button>
                   </div>
                 ))
               )}

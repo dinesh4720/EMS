@@ -22,13 +22,15 @@ describe('parseCSV', () => {
     const csv = 'name,class\nAlice,5';
     const result = parseCSV(csv);
     expect(result).toHaveLength(1);
-    expect(result[0]).toEqual({ name: 'Alice', class: '5' });
+    // Implementation also attaches _csvRow for error reporting; only assert
+    // the user-facing fields with toMatchObject.
+    expect(result[0]).toMatchObject({ name: 'Alice', class: '5' });
   });
 
   it('handles quoted values by stripping surrounding quotes', () => {
     const csv = 'name,class\n"Alice","5"';
     const result = parseCSV(csv);
-    expect(result[0]).toEqual({ name: 'Alice', class: '5' });
+    expect(result[0]).toMatchObject({ name: 'Alice', class: '5' });
   });
 
   it('skips blank lines in the data', () => {
@@ -48,7 +50,7 @@ describe('parseCSV', () => {
   it('trims whitespace from header names and values', () => {
     const csv = ' name , class \n Alice , 5 ';
     const result = parseCSV(csv);
-    expect(result[0]).toEqual({ name: 'Alice', class: '5' });
+    expect(result[0]).toMatchObject({ name: 'Alice', class: '5' });
   });
 
   it('handles Windows-style CRLF line endings', () => {

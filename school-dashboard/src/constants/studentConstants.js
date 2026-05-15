@@ -100,7 +100,7 @@ export const VALIDATION_RULES = {
   name: {
     minLength: 2,
     maxLength: 100,
-    pattern: /^[\p{L}\s'-]+$/u, // Unicode letters, spaces, hyphens, apostrophes
+    pattern: /^[\p{L}\p{M}\s'-]+$/u, // Unicode letters + combining marks (for Indic scripts), spaces, hyphens, apostrophes
     message: "Name must contain only letters, spaces, hyphens, and apostrophes"
   },
   phone: {

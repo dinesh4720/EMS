@@ -1,9 +1,8 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button, Input, Textarea } from "@heroui/react";
 import {
   Plus, Clock, Calendar as CalendarIcon, X, Edit3, Repeat
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from 'react-i18next';
 import { formatDateWithWeekday, formatDateShortWeekday } from "../../../utils/dateFormatter";
 
@@ -89,26 +88,43 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
     setNewEvent(defaultState);
   };
 
+  // Esc to close + body scroll lock
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const onKey = (e) => { if (e.key === "Escape") onClose?.(); };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ x: '100%' }}
-          animate={{ x: 0 }}
-          exit={{ x: '100%' }}
-          transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-          className="fixed right-0 top-0 h-full w-[480px] bg-background border-l border-default-200 z-panel flex flex-col"
-        >
+    <div
+      className="frosted-overlay__backdrop frosted-overlay__backdrop--side"
+      role="presentation"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose?.(); }}
+    >
+      <div
+        className="frosted-overlay frosted-overlay--side"
+        role="dialog"
+        aria-modal="true"
+        aria-label={editingEvent ? "Edit event" : "Add event"}
+      >
             {/* Drawer Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-default-100">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-divider">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-default-100 flex items-center justify-center">
-                  {editingEvent ? <Edit3 size={18} className="text-default-600" /> : <Plus size={18} className="text-default-600" />}
+                <div className="w-10 h-10 rounded-lg bg-surface-2 flex items-center justify-center">
+                  {editingEvent ? <Edit3 size={18} className="text-fg-muted" /> : <Plus size={18} className="text-fg-muted" />}
                 </div>
                 <div>
-                  <span className="text-base font-semibold block">{editingEvent ? t('calendar.editEvent.title', 'Edit Event') : t('calendar.addEvent.title', 'New Event')}</span>
+                  <span className="text-base font-semibold block text-fg">{editingEvent ? t('calendar.editEvent.title', 'Edit Event') : t('calendar.addEvent.title', 'New Event')}</span>
                   {selectedDate && (
-                    <span className="text-xs text-default-400">{formatDate(selectedDate)}</span>
+                    <span className="text-xs text-fg-faint">{formatDate(selectedDate)}</span>
                   )}
                 </div>
               </div>
@@ -117,7 +133,8 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                 size="sm"
                 variant="light"
                 onPress={onClose}
-                className="text-default-400 hover:text-foreground"
+                className="text-fg-faint hover:text-fg"
+                aria-label="Close"
               >
                 <X size={18} />
               </Button>
@@ -340,13 +357,13 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
             </div>
 
             {/* Drawer Footer */}
-            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-default-100 bg-background">
-              <Button variant="light" size="sm" onPress={onClose} className="text-default-500">
+            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-divider bg-surface">
+              <Button variant="light" size="sm" onPress={onClose} className="text-fg-muted">
                 {t('common.cancel', 'Cancel')}
               </Button>
               <Button
                 size="sm"
-                className="bg-foreground text-background font-medium"
+                color="primary"
                 onPress={handleAddEvent}
                 isDisabled={!newEvent.title.trim()}
                 startContent={editingEvent ? <Edit3 size={14} /> : <Plus size={14} />}
@@ -354,8 +371,7 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                 {editingEvent ? t('calendar.editEvent.updateEvent', 'Update Event') : t('calendar.addEvent.createEvent', 'Create Event')}
               </Button>
             </div>
-          </motion.div>
-      )}
-    </AnimatePresence>
+      </div>
+    </div>
   );
 }

@@ -2,6 +2,8 @@ import { safeGetItem, safeSetItem } from '../utils/safeStorage';
 import { useEffect, useRef } from 'react'
 import { init as initOwlinTracker, destroy as destroyOwlinTracker } from '@owlin/tracker-sdk'
 import { useAuth } from '../context/AuthContext'
+import logger from '../utils/logger';
+
 
 // Module-scoped tracker instance (not exposed on window)
 let _trackerInstance = null
@@ -64,7 +66,7 @@ export function useOwlinTracking() {
         page: window.location.pathname,
       })
     } catch (error) {
-      console.warn('[Owlin] Tracker init failed:', error)
+      logger.warn('[Owlin] Tracker init failed:', error)
     }
 
     return () => {
@@ -107,7 +109,7 @@ export function useOwlinTracking() {
               }),
             })
           } catch (err) {
-            console.warn('[Owlin] User identify failed (non-fatal):', err)
+            logger.warn('[Owlin] User identify failed (non-fatal):', err)
           }
 
           try {
@@ -123,18 +125,15 @@ export function useOwlinTracking() {
               }),
             })
           } catch (err) {
-            console.warn('[Owlin] Session start failed (non-fatal):', err)
+            logger.warn('[Owlin] Session start failed (non-fatal):', err)
           }
         } catch (err) {
-          console.warn('[Owlin] User setup failed:', err)
+          logger.warn('[Owlin] User setup failed:', err)
         }
       }
     }
 
     checkAndSetUser()
-    const timeout = setTimeout(checkAndSetUser, 1000)
-
-    return () => clearTimeout(timeout)
   }, [user])
 
   return _trackerInstance

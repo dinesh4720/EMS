@@ -28,7 +28,9 @@ describe('examsApi', () => {
 
   it('getById — calls /exams/:id', () => {
     examsApi.getById('exam123');
-    expect(request).toHaveBeenCalledWith('/exams/exam123');
+    // The implementation forwards the optional `options` arg, so undefined
+    // is passed as the second arg when caller omits it.
+    expect(request).toHaveBeenCalledWith('/exams/exam123', undefined);
   });
 
   it('create — POSTs to /exams with serialised body', () => {
@@ -160,7 +162,8 @@ describe('resultsApi', () => {
 
   it('getByClassExam — calls /results/class/:classId/exam/:examId', () => {
     resultsApi.getByClassExam('cls1', 'exam1');
-    expect(request).toHaveBeenCalledWith('/results/class/cls1/exam/exam1');
+    // Implementation forwards optional `options` arg as undefined.
+    expect(request).toHaveBeenCalledWith('/results/class/cls1/exam/exam1', undefined);
   });
 });
 
@@ -168,15 +171,17 @@ describe('resultsApi', () => {
 // subjectsApi
 // ---------------------------------------------------------------------------
 describe('subjectsApi', () => {
-  it('getAll — calls /subjects', () => {
+  // Subjects live under /settings/subjects on the backend (school-wide
+  // settings), not a top-level /subjects route. The frontend API mirrors this.
+  it('getAll — calls /settings/subjects', () => {
     subjectsApi.getAll();
-    expect(request).toHaveBeenCalledWith('/subjects');
+    expect(request).toHaveBeenCalledWith('/settings/subjects');
   });
 
-  it('create — POSTs to /subjects with serialised body', () => {
+  it('create — POSTs to /settings/subjects with serialised body', () => {
     const data = { name: 'Mathematics', code: 'MATH' };
     subjectsApi.create(data);
-    expect(request).toHaveBeenCalledWith('/subjects', {
+    expect(request).toHaveBeenCalledWith('/settings/subjects', {
       method: 'POST',
       body: JSON.stringify(data),
     });

@@ -1,15 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Card, CardBody, Button, Input, Chip } from '@heroui/react';
+import { Card, CardBody, Button, Input } from '@heroui/react';
 import { Calendar, CheckCircle, AlertTriangle, Settings, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../../../context/SettingsContext';
 import { promotionApi } from '../../../services/api/extensions';
 import toast from 'react-hot-toast';
-import { useTranslation } from 'react-i18next';
 
 function computeNextYear(current) {
   if (!current || typeof current !== 'string') return '';
-  // Support both YYYY-YY (e.g. 2025-26) and YYYY-YYYY (e.g. 2025-2026)
   const match = current.match(/^(\d{4})-(\d{2,4})$/);
   if (!match) return '';
   const start = parseInt(match[1], 10);
@@ -20,11 +18,11 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
   const navigate = useNavigate();
   const { currentAcademicYear } = useSettings();
 
-  // Compute defaults once
   const defaults = useMemo(() => {
     const from = wizardState.fromYear || currentAcademicYear || '2025-26';
     const to = wizardState.toYear || computeNextYear(from);
     return { from, to };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const [fromYear, setFromYear] = useState(defaults.from);
@@ -34,12 +32,10 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
   const [preparing, setPreparing] = useState(false);
   const [rules, setRules] = useState(null);
 
-  // Check target year + load rules on mount
   useEffect(() => {
-    if (toYear) {
-      checkTargetYear(toYear, true); // silent on mount — no toast if server hasn't restarted
-    }
+    if (toYear) checkTargetYear(toYear, true);
     loadRules();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkTargetYear = async (year, silent = false) => {
@@ -50,8 +46,6 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
       const res = await promotionApi.checkYear(y);
       setTargetYearStatus(res);
     } catch {
-      // If silent (auto-check on mount), don't show error — just leave status null
-      // so the user can manually click "Check" once the server is ready
       if (!silent) toast.error('Failed to check target academic year');
     } finally {
       setChecking(false);
@@ -63,7 +57,6 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
       const res = await promotionApi.getRules();
       setRules(res);
     } catch {
-      // Fallback to sensible defaults if API fails
       setRules({ minAttendancePercent: 75, feeRequirement: 'none' });
     }
   };
@@ -95,7 +88,6 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
       setTargetYearStatus({ exists: true, classCount: res.classesCreated });
     } catch (e) {
       const msg = e?.message || '';
-      // 409 = classes already exist — that's actually fine, just re-check
       if (msg.includes('already exist')) {
         toast.success(`Classes for ${toYear} already exist. Ready to proceed.`);
         await checkTargetYear(toYear, true);
@@ -127,33 +119,33 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
   const isValidFormat = (y) => /^\d{4}-\d{2}$/.test(y);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* Academic Year Selection */}
-      <Card shadow="sm" className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800">
+      <Card shadow="sm" className="bg-surface border border-border-token">
         <CardBody className="p-5 space-y-4">
-          <div className="flex items-center gap-2 mb-1">
-            <Calendar size={18} className="text-gray-600 dark:text-zinc-400" />
-            <h3 className="text-sm font-semibold text-gray-800 dark:text-zinc-200">Academic Year</h3>
+          <div className="flex items-center gap-2">
+            <Calendar size={16} className="text-fg-muted" />
+            <h3 className="text-sm font-semibold text-fg">Academic Year</h3>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
-              label="From (Current Year)"
+              label="From (current year)"
               placeholder="e.g. 2025-26"
               value={fromYear}
               onChange={(e) => handleFromYearChange(e.target.value)}
               variant="bordered"
-              classNames={{ inputWrapper: 'dark:border-zinc-700' }}
+              classNames={{ inputWrapper: 'dark:border-zinc-700', input: 'font-mono' }}
               description={isValidFormat(fromYear) ? '' : 'Format: YYYY-YY'}
             />
             <div className="flex gap-2 items-start">
               <Input
-                label="To (Target Year)"
+                label="To (target year)"
                 placeholder="e.g. 2026-27"
                 value={toYear}
                 onChange={(e) => handleToYearChange(e.target.value)}
                 variant="bordered"
                 className="flex-1"
-                classNames={{ inputWrapper: 'dark:border-zinc-700' }}
+                classNames={{ inputWrapper: 'dark:border-zinc-700', input: 'font-mono' }}
                 description={isValidFormat(toYear) ? '' : 'Format: YYYY-YY'}
               />
               <Button
@@ -173,10 +165,10 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
 
       {/* Target Year Status */}
       {checking && (
-        <Card shadow="sm" className="bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800">
+        <Card shadow="sm" className="bg-surface-2 border border-border-token">
           <CardBody className="p-4 flex items-center gap-3">
-            <Loader2 size={18} className="animate-spin text-gray-400" />
-            <p className="text-sm text-gray-500 dark:text-zinc-400">Checking target year classes...</p>
+            <Loader2 size={16} className="animate-spin text-gray-400" />
+            <p className="text-sm text-fg-muted">Checking target year classes…</p>
           </CardBody>
         </Card>
       )}
@@ -194,17 +186,17 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3">
                 {targetYearStatus.exists ? (
-                  <CheckCircle size={20} className="text-green-600 dark:text-green-400 mt-0.5" />
+                  <CheckCircle size={18} className="text-green-600 dark:text-green-400 mt-0.5" />
                 ) : (
-                  <AlertTriangle size={20} className="text-yellow-600 dark:text-yellow-400 mt-0.5" />
+                  <AlertTriangle size={18} className="text-yellow-600 dark:text-yellow-400 mt-0.5" />
                 )}
                 <div>
-                  <p className="text-sm font-medium text-gray-800 dark:text-zinc-200">
+                  <p className="text-sm font-medium text-fg">
                     {targetYearStatus.exists
-                      ? `${targetYearStatus.classCount} classes ready for ${toYear}`
-                      : `No classes found for ${toYear}`}
+                      ? <><span className="mono tnum">{targetYearStatus.classCount}</span> classes ready for <span className="mono tnum">{toYear}</span></>
+                      : <>No classes found for <span className="mono tnum">{toYear}</span></>}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
+                  <p className="text-xs text-fg-muted mt-0.5">
                     {targetYearStatus.exists
                       ? 'Target year is prepared. You can proceed with promotion.'
                       : 'Classes must be created for the target year before promoting students.'}
@@ -228,12 +220,12 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
 
       {/* Promotion Rules Summary */}
       {rules && (
-        <Card shadow="sm" className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800">
+        <Card shadow="sm" className="bg-surface border border-border-token">
           <CardBody className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Settings size={16} className="text-gray-500 dark:text-zinc-400" />
-                <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">Promotion Rules</span>
+                <Settings size={14} className="text-fg-muted" />
+                <span className="text-sm font-medium text-fg">Promotion rules</span>
               </div>
               <Button
                 size="sm"
@@ -241,29 +233,30 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
                 className="text-xs text-blue-600 dark:text-blue-400"
                 onPress={() => navigate('/settings/promotion-rules')}
               >
-                Edit Rules
+                Edit rules
               </Button>
             </div>
-            <div className="flex gap-3 mt-3">
-              <Chip size="sm" variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300">
-                Min Attendance: {rules.minAttendancePercent}%
-              </Chip>
-              <Chip size="sm" variant="flat" className="bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300">
-                Fee: {rules.feeRequirement === 'none' ? 'Not required' : rules.feeRequirement === 'partial' ? 'Partial Payment' : 'Full Payment'}
-              </Chip>
+            <div className="flex gap-2 mt-3">
+              <span className="chip">
+                Min attendance: <span className="mono tnum ml-1">{rules.minAttendancePercent}%</span>
+              </span>
+              <span className="chip">
+                Fee: {rules.feeRequirement === 'none' ? 'Not required' : rules.feeRequirement === 'partial' ? 'Partial' : 'Full'}
+              </span>
             </div>
           </CardBody>
         </Card>
       )}
 
-      {/* Next Button */}
-      <div className="flex justify-end pt-2">
+      {/* Sticky foot */}
+      <div className="promo-foot">
+        <div style={{ flex: 1 }} />
         <Button
           className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900"
           onPress={handleNext}
           isDisabled={!targetYearStatus?.exists || !isValidFormat(fromYear) || !isValidFormat(toYear)}
         >
-          Next: Map Classes
+          Next: Map classes
         </Button>
       </div>
     </div>

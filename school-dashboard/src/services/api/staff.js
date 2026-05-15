@@ -42,7 +42,7 @@ export const studentsApi = {
       }
     };
   },
-  getAll: async (classIdOrOptions) => {
+  getAll: async (classIdOrOptions, { signal } = {}) => {
     let params = {};
     let skipCache = false;
 
@@ -57,12 +57,17 @@ export const studentsApi = {
     }
 
     const limit = params.limit || 100;
-    const firstPage = await studentsApi.list({ ...params, page: 1, limit }, { skipCache });
+    const firstPage = await studentsApi.list({ ...params, page: 1, limit }, { skipCache, signal });
     const allStudents = [...firstPage.data];
     const totalPages = firstPage.pagination?.totalPages || 1;
 
     for (let page = 2; page <= totalPages; page += 1) {
-      const nextPage = await studentsApi.list({ ...params, page, limit }, { skipCache });
+      if (signal?.aborted) {
+        const err = new Error('Aborted');
+        err.name = 'AbortError';
+        throw err;
+      }
+      const nextPage = await studentsApi.list({ ...params, page, limit }, { skipCache, signal });
       allStudents.push(...nextPage.data);
     }
 
@@ -81,7 +86,9 @@ export const studentsApi = {
   deleteDocument: (id, documentIndex) => request(`/students/${id}/documents/${documentIndex}`, { method: 'DELETE' }),
   fixDocuments: (id) => request(`/students/${id}/fix-documents`, { method: 'POST' }),
   sendReminder: (id, data) => request(`/students/${id}/send-reminder`, { method: 'POST', body: JSON.stringify(data) }),
+  sendRemindersBulk: (data) => request('/students/send-reminders-bulk', { method: 'POST', body: JSON.stringify(data) }),
   promote: (id, data) => request(`/students/${id}/promote`, { method: 'POST', body: JSON.stringify(data) }),
+  bulkPromote: (data) => request('/students/bulk-promote', { method: 'POST', body: JSON.stringify(data) }),
 };
 
 // Trash API

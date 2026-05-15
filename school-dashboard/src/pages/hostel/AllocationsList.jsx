@@ -8,6 +8,8 @@ import { getDateLocale } from '../../i18n/index';
 import { toTodayDateString } from '../../utils/dateFormatter';
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+import { EmptyState, ErrorState } from '../../components/ui';
+import { hostelAllocationSchema, parseFormSchema } from '../../validators/formSchemas';
 
 
 const INITIAL_FORM = {
@@ -19,6 +21,7 @@ export default function AllocationsList() {
   const { t } = useTranslation();
   const [allocations, setAllocations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("active");
@@ -46,6 +49,7 @@ export default function AllocationsList() {
   const fetchAllocations = useCallback(async () => {
     try {
       setIsLoading(true);
+      setLoadError(null);
       const params = { page, limit: 20 };
       if (search) params.search = search;
       if (statusFilter) params.status = statusFilter;
@@ -53,23 +57,20 @@ export default function AllocationsList() {
       const data = await hostelApi.getAllocations(params);
       setAllocations(data.allocations || []);
       setTotalPages(data.pages || 1);
-    } catch {
+    } catch (err) {
+      setLoadError(err);
       toast.error(t('toast.error.failedToLoadAllocations'));
     } finally {
       setIsLoading(false);
     }
-  }, [search, statusFilter, hostelFilter, page]);
+  }, [search, statusFilter, hostelFilter, page, t]);
 
   useEffect(() => { fetchAllocations(); }, [fetchAllocations]);
 
   const validateForm = () => {
-    const e = {};
-    if (!formData.hostelId) e.hostelId = "Hostel is required";
-    if (!formData.roomId) e.roomId = "Room is required";
-    if (!formData.studentId) e.studentId = "Student is required";
-    if (!formData.startDate) e.startDate = "Start date is required";
-    setErrors(e);
-    return Object.keys(e).length === 0;
+    const { success, errors: zodErrors } = parseFormSchema(hostelAllocationSchema, formData);
+    setErrors(zodErrors);
+    return success;
   };
 
   const handleSubmit = async (e) => {
@@ -133,6 +134,10 @@ export default function AllocationsList() {
 
   if (isLoading) return <TablePageSkeleton title={false} kpiCards={0} columns={5} rows={6} />;
 
+  if (loadError) {
+    return <ErrorState error={loadError} onRetry={fetchAllocations} />;
+  }
+
   return (
     <div className="space-y-4">
       {/* Filters */}
@@ -140,7 +145,7 @@ export default function AllocationsList() {
         <div className="flex gap-3 flex-1 flex-wrap">
           <Input
             placeholder={t('pages.searchStudent')}
-            startContent={<Search size={16} className="text-gray-400 dark:text-zinc-500" />}
+            startContent={<Search size={16} className="text-fg-faint" />}
             value={searchInput}
             onValueChange={setSearchInput}
             className="max-w-xs"
@@ -174,43 +179,48 @@ export default function AllocationsList() {
 
       {/* Allocations Table */}
       {allocations.length === 0 ? (
-        <div className="text-center py-12">
-          <Users size={40} className="mx-auto text-gray-400 dark:text-zinc-500 mb-3" />
-          <p className="text-gray-500 dark:text-zinc-400">{t('pages.noAllocationsFound')}</p>
-        </div>
+        <EmptyState
+          icon={Users}
+          title={t('pages.noAllocationsFound')}
+          action={
+            <Button color="primary" size="sm" startContent={<Plus size={14} />} onPress={handleAdd}>
+              Allocate Student
+            </Button>
+          }
+        />
       ) : (
         <>
-          <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-zinc-800">
+          <div className="overflow-x-auto rounded-lg border border-border-token">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-gray-50 dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800">
-                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">{t('pages.student')}</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">{t('pages.admNo')}</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">{t('pages.hostel1')}</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">{t('pages.room')}</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">{t('pages.bed')}</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">{t('pages.from')}</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">{t('pages.status2')}</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-700 dark:text-zinc-300">{t('pages.actions1')}</th>
+                <tr className="bg-surface-2 border-b border-border-token">
+                  <th className="text-left px-4 py-3 font-medium text-fg">{t('pages.student')}</th>
+                  <th className="text-left px-4 py-3 font-medium text-fg">{t('pages.admNo')}</th>
+                  <th className="text-left px-4 py-3 font-medium text-fg">{t('pages.hostel1')}</th>
+                  <th className="text-left px-4 py-3 font-medium text-fg">{t('pages.room')}</th>
+                  <th className="text-left px-4 py-3 font-medium text-fg">{t('pages.bed')}</th>
+                  <th className="text-left px-4 py-3 font-medium text-fg">{t('pages.from')}</th>
+                  <th className="text-left px-4 py-3 font-medium text-fg">{t('pages.status2')}</th>
+                  <th className="text-right px-4 py-3 font-medium text-fg">{t('pages.actions1')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-zinc-800">
                 {allocations.map((alloc) => (
-                  <tr key={alloc._id} className="bg-white dark:bg-zinc-950 hover:bg-gray-50 dark:hover:bg-zinc-900 transition-colors">
-                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-zinc-100">
+                  <tr key={alloc._id} className="bg-surface hover:bg-surface-hover transition-colors">
+                    <td className="px-4 py-3 font-medium text-fg">
                       {alloc.studentName || alloc.studentId?.name || "—"}
                     </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-zinc-400">
+                    <td className="px-4 py-3 text-fg-muted">
                       {alloc.admissionNo || alloc.studentId?.admissionNo || "—"}
                     </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-zinc-400">
+                    <td className="px-4 py-3 text-fg-muted">
                       {alloc.hostelName || alloc.hostelId?.name || "—"}
                     </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-zinc-400">
+                    <td className="px-4 py-3 text-fg-muted">
                       {alloc.roomNumber || alloc.roomId?.roomNumber || "—"}
                     </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-zinc-400">{alloc.bedNumber || "—"}</td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-zinc-400">
+                    <td className="px-4 py-3 text-fg-muted">{alloc.bedNumber || "—"}</td>
+                    <td className="px-4 py-3 text-fg-muted">
                       <div className="flex items-center gap-1">
                         <Calendar size={12} />
                         {formatDate(alloc.startDate)}
@@ -241,7 +251,7 @@ export default function AllocationsList() {
           {totalPages > 1 && (
             <div className="flex justify-center gap-2">
               <Button size="sm" variant="flat" isDisabled={page <= 1} onPress={() => setPage(p => p - 1)}>{t('pages.previous')}</Button>
-              <span className="flex items-center text-sm text-gray-600 dark:text-zinc-400">Page {page} of {totalPages}</span>
+              <span className="flex items-center text-sm text-fg-muted">Page {page} of {totalPages}</span>
               <Button size="sm" variant="flat" isDisabled={page >= totalPages} onPress={() => setPage(p => p + 1)}>{t('pages.next')}</Button>
             </div>
           )}
@@ -251,7 +261,7 @@ export default function AllocationsList() {
       {/* Add Allocation Modal */}
       <Modal isOpen={isOpen} onClose={handleClose} size="2xl" scrollBehavior="inside">
         <ModalContent>
-          <ModalHeader className="text-gray-900 dark:text-zinc-100">{t('pages.allocateStudentToRoom')}</ModalHeader>
+          <ModalHeader className="text-fg">{t('pages.allocateStudentToRoom')}</ModalHeader>
           <ModalBody className="gap-4">
             {/* Server-side student search — replaces bulk limit:500 fetch (MF-24) */}
             <Input
@@ -336,9 +346,9 @@ export default function AllocationsList() {
       {/* Vacate Modal */}
       <Modal isOpen={isVacateOpen} onClose={onVacateClose} size="md">
         <ModalContent>
-          <ModalHeader className="text-gray-900 dark:text-zinc-100">{t('pages.vacateStudent')}</ModalHeader>
+          <ModalHeader className="text-fg">{t('pages.vacateStudent')}</ModalHeader>
           <ModalBody className="gap-4">
-            <p className="text-sm text-gray-600 dark:text-zinc-400">{t('pages.markThisAllocationAsVacatedTheRoomBedWillBeFreedUp')}</p>
+            <p className="text-sm text-fg-muted">{t('pages.markThisAllocationAsVacatedTheRoomBedWillBeFreedUp')}</p>
             <Input
               label={t('pages.endDate1')} type="date"
               value={vacateData.endDate}

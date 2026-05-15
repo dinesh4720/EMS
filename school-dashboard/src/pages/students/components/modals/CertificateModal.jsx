@@ -1,280 +1,449 @@
-import { useState, useRef, useCallback } from 'react';
-import {
-  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  Button, Input, Textarea, Select, SelectItem,
-} from '@heroui/react';
-import { FileText, Download, Printer, Eye } from 'lucide-react';
-import toast from 'react-hot-toast';
-import { useTranslation } from 'react-i18next';
-import { formatDate } from '../../../../utils/dateFormatter';
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { FileText, Printer, Eye } from "lucide-react";
+import toast from "react-hot-toast";
+import { z } from "zod";
+import Modal from "../../../../components/ui/Modal";
+import { formatDate } from "../../../../utils/dateFormatter";
+import { escapeHtml } from "../../../../utils/sanitize";
 
-const CONDUCT_OPTIONS = ['Excellent', 'Very Good', 'Good', 'Satisfactory', 'Needs Improvement'];
+const CONDUCT_OPTIONS = [
+  "Excellent",
+  "Very Good",
+  "Good",
+  "Satisfactory",
+  "Needs Improvement",
+];
 
-/**
- * CertificateModal — generates Bonafide or Character certificates.
- *
- * Props:
- *  - isOpen: boolean
- *  - onClose: () => void
- *  - student: object with { name, class, rollNo, admissionId, dob, parentName, ... }
- *  - type: 'bonafide' | 'character'
- *  - schoolInfo: optional { name, address, phone, email }
- */
-export default function CertificateModal({ isOpen, onClose, student, type = 'bonafide', schoolInfo }) {
-  const { t } = useTranslation();
-  const [purpose, setPurpose] = useState('');
-  const [conductRating, setConductRating] = useState('Good');
-  const [remarks, setRemarks] = useState('');
+const bonafideSchema = z.object({
+  purpose: z
+    .string()
+    .trim()
+    .min(3, "Please enter the purpose for the certificate")
+    .max(200, "Purpose must be at most 200 characters"),
+});
+const characterSchema = z.object({
+  conductRating: z.enum([
+    "Excellent",
+    "Very Good",
+    "Good",
+    "Satisfactory",
+    "Needs Improvement",
+  ]),
+  remarks: z.string().max(500).optional(),
+});
+
+const PRINT_CSS = `
+  @page { size: A4; margin: 20mm; }
+  body { margin: 0; padding: 20px; font-family: 'Times New Roman', Times, serif; color: #000; }
+  .certificate { max-width: 800px; margin: 0 auto; padding: 40px; border: 3px double #333; }
+  .certificate-header { text-align: center; margin-bottom: 30px; }
+  .school-name { font-size: 24px; font-weight: bold; text-transform: uppercase; }
+  .certificate-title { font-size: 20px; font-weight: bold; text-decoration: underline; margin: 20px 0; text-align: center; }
+  .certificate-body { font-size: 16px; line-height: 2; margin: 20px 0; }
+  .certificate-footer { margin-top: 40px; display: flex; justify-content: space-between; }
+  .signature-line { border-top: 1px solid #333; width: 200px; text-align: center; padding-top: 5px; }
+  @media print { @page { size: A4; margin: 20mm; } body { padding: 0; } }
+`;
+
+export default function CertificateModal({
+  isOpen,
+  onClose,
+  student,
+  type = "bonafide",
+  schoolInfo,
+}) {
+  const [purpose, setPurpose] = useState("");
+  const [conductRating, setConductRating] = useState("Good");
+  const [remarks, setRemarks] = useState("");
+  const [errors, setErrors] = useState({});
   const [showPreview, setShowPreview] = useState(false);
   const previewRef = useRef(null);
 
-  const isBonafide = type === 'bonafide';
-  const title = isBonafide ? 'Bonafide Certificate' : 'Character Certificate';
+  const isBonafide = type === "bonafide";
+  const title = isBonafide ? "Bonafide Certificate" : "Character Certificate";
 
   const resetForm = useCallback(() => {
-    setPurpose('');
-    setConductRating('Good');
-    setRemarks('');
+    setPurpose("");
+    setConductRating("Good");
+    setRemarks("");
+    setErrors({});
     setShowPreview(false);
   }, []);
 
-  const handleClose = () => {
-    resetForm();
+  useEffect(() => {
+    if (!isOpen) resetForm();
+  }, [isOpen, resetForm]);
+
+  const handleClose = useCallback(() => {
     onClose();
-  };
+  }, [onClose]);
 
   const handleGenerate = () => {
-    if (isBonafide && !purpose.trim()) {
-      toast.error('Please enter the purpose for the certificate');
-      return;
+    if (isBonafide) {
+      const parsed = bonafideSchema.safeParse({ purpose });
+      if (!parsed.success) {
+        setErrors({ purpose: parsed.error.issues[0]?.message });
+        return;
+      }
+    } else {
+      const parsed = characterSchema.safeParse({ conductRating, remarks });
+      if (!parsed.success) {
+        setErrors({ remarks: parsed.error.issues[0]?.message });
+        return;
+      }
     }
+    setErrors({});
     setShowPreview(true);
-    toast.success(`${title} generated successfully`);
+    toast.success(`${title} generated`);
   };
 
   const handleDownload = () => {
     const content = previewRef.current;
     if (!content) return;
-
-    const clonedContent = content.cloneNode(true);
-
     const html = `<html>
       <head>
-        <title>${title} - ${student?.name || 'Student'}</title>
-        <style>
-          body { margin: 0; padding: 20px; font-family: 'Times New Roman', Times, serif; }
-          .certificate { max-width: 800px; margin: 0 auto; padding: 40px; border: 3px double #333; }
-          .certificate-header { text-align: center; margin-bottom: 30px; }
-          .school-name { font-size: 24px; font-weight: bold; text-transform: uppercase; }
-          .certificate-title { font-size: 20px; font-weight: bold; text-decoration: underline; margin: 20px 0; text-align: center; }
-          .certificate-body { font-size: 16px; line-height: 2; margin: 20px 0; }
-          .certificate-footer { margin-top: 40px; display: flex; justify-content: space-between; }
-          .signature-line { border-top: 1px solid #333; width: 200px; text-align: center; padding-top: 5px; }
-          @media print { @page { size: A4; margin: 20mm; } body { padding: 0; } }
-        </style>
+        <title>${escapeHtml(title)} - ${escapeHtml(student?.name || "Student")}</title>
+        <style>${PRINT_CSS}</style>
       </head>
       <body>
-        ${clonedContent.outerHTML}
-        <script>setTimeout(() => { window.print(); window.close(); }, 500);<\/script>
+        ${content.outerHTML}
+        <script>setTimeout(function(){window.print();window.close();},500);</${"script"}>
       </body>
     </html>`;
-
-    const blob = new Blob([html], { type: 'text/html' });
+    const blob = new Blob([html], { type: "text/html" });
     const url = URL.createObjectURL(blob);
-    const printWindow = window.open(url, '', 'width=800,height=600');
+    const printWindow = window.open(url, "", "width=800,height=600");
     const revoke = () => URL.revokeObjectURL(url);
     if (printWindow) {
-      printWindow.addEventListener('afterprint', revoke);
-      // Fallback: revoke blob URL even if afterprint never fires (e.g. window closed)
-      const tid = setInterval(() => { if (printWindow.closed) { clearInterval(tid); revoke(); } }, 1000);
+      printWindow.addEventListener("afterprint", revoke);
+      const tid = setInterval(() => {
+        if (printWindow.closed) {
+          clearInterval(tid);
+          revoke();
+        }
+      }, 1000);
     } else {
       revoke();
+      toast.error("Pop-up blocked. Please allow pop-ups and try again.");
+      return;
     }
-    toast.success('Print dialog opened');
+    toast.success("Print dialog opened");
   };
+
+  const today = useMemo(() => formatDate(new Date()), []);
 
   if (!student) return null;
 
-  const today = formatDate(new Date());
+  const guardian = student.parentName || student.guardianName || "";
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} size="3xl" scrollBehavior="inside">
-      <ModalContent>
-        <ModalHeader className="flex items-center gap-3 bg-gradient-to-r from-primary/10 to-primary/5">
-          <FileText size={20} className="text-primary" />
-          <div>
-            <h2 className="text-lg font-bold">{title}</h2>
-            <p className="text-sm text-default-500">{student.name} — Class {student.class}</p>
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={
+        <span className="row gap-2">
+          <FileText size={14} aria-hidden style={{ color: "var(--accent)" }} />
+          {title}
+        </span>
+      }
+      description={`${student.name} · Class ${student.class || "—"}`}
+      size="xl"
+      footer={
+        !showPreview ? (
+          <>
+            <button type="button" className="btn" onClick={handleClose}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="btn btn--accent"
+              onClick={handleGenerate}
+            >
+              <Eye size={13} aria-hidden /> Generate
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => setShowPreview(false)}
+            >
+              Edit
+            </button>
+            <button
+              type="button"
+              className="btn btn--accent"
+              onClick={handleDownload}
+              data-testid="download-certificate"
+            >
+              <Printer size={13} aria-hidden /> Download / Print
+            </button>
+          </>
+        )
+      }
+    >
+      {!showPreview ? (
+        <div className="section" style={{ margin: 0 }}>
+          <div
+            className="row"
+            style={{
+              padding: 12,
+              background: "var(--surface-2)",
+              border: "1px solid var(--border)",
+              borderRadius: 8,
+              marginBottom: 16,
+              flexWrap: "wrap",
+              gap: 12,
+            }}
+          >
+            <div className="col" style={{ flex: "1 1 160px", gap: 1 }}>
+              <span className="field__hint">Name</span>
+              <span style={{ fontSize: 13, fontWeight: 520 }}>
+                {student.name}
+              </span>
+            </div>
+            <div className="col" style={{ flex: "1 1 80px", gap: 1 }}>
+              <span className="field__hint">Class</span>
+              <span style={{ fontSize: 13, fontWeight: 520 }}>
+                {student.class || "—"}
+              </span>
+            </div>
+            <div className="col" style={{ flex: "1 1 120px", gap: 1 }}>
+              <span className="field__hint">Admission No</span>
+              <span className="mono tnum" style={{ fontSize: 13 }}>
+                {student.admissionId || student.admissionNo || "—"}
+              </span>
+            </div>
+            <div className="col" style={{ flex: "1 1 80px", gap: 1 }}>
+              <span className="field__hint">Roll No</span>
+              <span className="mono tnum" style={{ fontSize: 13 }}>
+                {student.rollNo || "—"}
+              </span>
+            </div>
           </div>
-        </ModalHeader>
 
-        <ModalBody>
-          {!showPreview ? (
-            <div className="space-y-4">
-              {/* Student Info Summary */}
-              <div className="p-4 bg-gray-50 dark:bg-zinc-800 rounded-lg">
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <span className="text-gray-500 dark:text-zinc-400">Name:</span>{' '}
-                    <span className="font-medium">{student.name}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500 dark:text-zinc-400">Class:</span>{' '}
-                    <span className="font-medium">{student.class}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500 dark:text-zinc-400">Admission No:</span>{' '}
-                    <span className="font-medium">{student.admissionId || 'N/A'}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500 dark:text-zinc-400">Roll No:</span>{' '}
-                    <span className="font-medium">{student.rollNo || 'N/A'}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Form Fields */}
-              {isBonafide ? (
-                <Input
-                  label="Purpose"
-                  placeholder="e.g., Bank account opening, Passport application"
+          <div className="fgrid">
+            {isBonafide ? (
+              <div className="field span-2">
+                <label className="field__label" htmlFor="cert-purpose">
+                  Purpose
+                  <span className="req" aria-hidden>
+                    *
+                  </span>
+                </label>
+                <input
+                  id="cert-purpose"
+                  type="text"
+                  className={`input ${errors.purpose ? "input--err" : ""}`}
                   value={purpose}
-                  onValueChange={setPurpose}
-                  variant="bordered"
-                  isRequired
+                  onChange={(e) => {
+                    setPurpose(e.target.value);
+                    if (errors.purpose) setErrors({});
+                  }}
+                  placeholder="e.g., Bank account opening, Passport application"
                   data-testid="certificate-purpose"
+                  maxLength={200}
+                  aria-invalid={errors.purpose ? "true" : undefined}
                 />
-              ) : (
-                <>
-                  <Select
-                    label="Conduct Rating"
-                    selectedKeys={[conductRating]}
-                    onSelectionChange={(keys) => setConductRating([...keys][0] || 'Good')}
-                    variant="bordered"
+                {errors.purpose ? (
+                  <span
+                    className="field__hint"
+                    style={{ color: "var(--danger)" }}
+                  >
+                    {errors.purpose}
+                  </span>
+                ) : null}
+              </div>
+            ) : (
+              <>
+                <div className="field span-2">
+                  <label className="field__label" htmlFor="cert-conduct">
+                    Conduct Rating
+                  </label>
+                  <select
+                    id="cert-conduct"
+                    className="select"
+                    value={conductRating}
+                    onChange={(e) => setConductRating(e.target.value)}
                     data-testid="conduct-rating"
                   >
                     {CONDUCT_OPTIONS.map((opt) => (
-                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
                     ))}
-                  </Select>
-                  <Textarea
-                    label="Remarks"
-                    placeholder="Additional remarks about the student's character and conduct"
+                  </select>
+                </div>
+                <div className="field span-2">
+                  <label className="field__label" htmlFor="cert-remarks">
+                    Remarks
+                  </label>
+                  <textarea
+                    id="cert-remarks"
+                    className={`textarea ${errors.remarks ? "input--err" : ""}`}
                     value={remarks}
-                    onValueChange={setRemarks}
-                    variant="bordered"
-                    minRows={3}
+                    onChange={(e) => setRemarks(e.target.value)}
+                    rows={3}
+                    maxLength={500}
+                    placeholder="Additional remarks about the student's character and conduct"
                     data-testid="certificate-remarks"
                   />
+                  <div
+                    className="row"
+                    style={{ justifyContent: "space-between" }}
+                  >
+                    {errors.remarks ? (
+                      <span
+                        className="field__hint"
+                        style={{ color: "var(--danger)" }}
+                      >
+                        {errors.remarks}
+                      </span>
+                    ) : (
+                      <span />
+                    )}
+                    <span className="field__hint mono tnum">
+                      {remarks.length}/500
+                    </span>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div>
+          <div
+            ref={previewRef}
+            className="certificate"
+            data-testid="certificate-preview"
+            style={{
+              background: "#fff",
+              color: "#000",
+              padding: 32,
+              border: "2px solid #d1d5db",
+              borderRadius: 8,
+              fontFamily: "'Times New Roman', Times, serif",
+            }}
+          >
+            <div className="certificate-header" style={{ textAlign: "center" }}>
+              <div
+                className="school-name"
+                style={{
+                  fontSize: 22,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.04em",
+                }}
+              >
+                {schoolInfo?.name || "School Name"}
+              </div>
+              {schoolInfo?.address ? (
+                <div style={{ fontSize: 13, color: "#4b5563", marginTop: 4 }}>
+                  {schoolInfo.address}
+                </div>
+              ) : null}
+            </div>
+
+            <div
+              className="certificate-title"
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                textDecoration: "underline",
+                textAlign: "center",
+                margin: "20px 0",
+              }}
+            >
+              {title}
+            </div>
+
+            <div
+              className="certificate-body"
+              style={{ fontSize: 15, lineHeight: 2 }}
+            >
+              {isBonafide ? (
+                <p>
+                  This is to certify that <strong>{student.name}</strong>
+                  {guardian ? (
+                    <>
+                      , son/daughter of <strong>{guardian}</strong>,
+                    </>
+                  ) : null}{" "}
+                  is a bonafide student of this institution studying in Class{" "}
+                  <strong>{student.class || "—"}</strong> with Admission Number{" "}
+                  <strong>
+                    {student.admissionId || student.admissionNo || "—"}
+                  </strong>{" "}
+                  and Roll Number <strong>{student.rollNo || "—"}</strong>.
+                </p>
+              ) : (
+                <>
+                  <p>
+                    This is to certify that <strong>{student.name}</strong>
+                    {guardian ? (
+                      <>
+                        , son/daughter of <strong>{guardian}</strong>,
+                      </>
+                    ) : null}{" "}
+                    is a bonafide student of this institution studying in Class{" "}
+                    <strong>{student.class || "—"}</strong>.
+                  </p>
+                  <p style={{ marginTop: 12 }}>
+                    During the stay in this institution, the student&apos;s
+                    conduct and character has been{" "}
+                    <strong>{conductRating}</strong>.
+                  </p>
                 </>
               )}
+
+              {isBonafide && purpose ? (
+                <p style={{ marginTop: 12 }}>
+                  This certificate is issued for the purpose of{" "}
+                  <strong>{purpose}</strong>.
+                </p>
+              ) : null}
+              {!isBonafide && remarks ? (
+                <p style={{ marginTop: 12 }}>Remarks: {remarks}</p>
+              ) : null}
             </div>
-          ) : (
-            /* Certificate Preview */
-            <div>
-              <div
-                ref={previewRef}
-                className="certificate bg-white text-black p-8 border-2 border-gray-300 rounded-lg"
-                data-testid="certificate-preview"
-              >
-                <div className="text-center mb-6">
-                  <h2 className="text-2xl font-bold uppercase tracking-wide">
-                    {schoolInfo?.name || 'School Name'}
-                  </h2>
-                  {schoolInfo?.address && (
-                    <p className="text-sm text-gray-600 mt-1">{schoolInfo.address}</p>
-                  )}
-                </div>
 
-                <h3 className="text-xl font-bold text-center underline underline-offset-4 mb-6">
-                  {title}
-                </h3>
-
-                <div className="leading-8 text-base">
-                  {isBonafide ? (
-                    <p>
-                      This is to certify that <strong>{student.name}</strong>,
-                      {student.parentName && <> son/daughter of <strong>{student.parentName}</strong>,</>}
-                      is a bonafide student of this institution studying in Class{' '}
-                      <strong>{student.class}</strong> with Admission Number{' '}
-                      <strong>{student.admissionId || 'N/A'}</strong> and Roll Number{' '}
-                      <strong>{student.rollNo || 'N/A'}</strong>.
-                    </p>
-                  ) : (
-                    <>
-                      <p>
-                        This is to certify that <strong>{student.name}</strong>,
-                        {student.parentName && <> son/daughter of <strong>{student.parentName}</strong>,</>}
-                        is a bonafide student of this institution studying in Class{' '}
-                        <strong>{student.class}</strong>.
-                      </p>
-                      <p className="mt-4">
-                        During the stay in this institution, the student&apos;s conduct and character
-                        has been <strong>{conductRating}</strong>.
-                      </p>
-                    </>
-                  )}
-
-                  {isBonafide && purpose && (
-                    <p className="mt-4">
-                      This certificate is issued for the purpose of{' '}
-                      <strong>{purpose}</strong>.
-                    </p>
-                  )}
-
-                  {!isBonafide && remarks && (
-                    <p className="mt-4">
-                      Remarks: {remarks}
-                    </p>
-                  )}
-                </div>
-
-                <div className="mt-8 flex justify-between items-end">
-                  <div>
-                    <p className="text-sm text-gray-600">Date: {today}</p>
-                    <p className="text-sm text-gray-600">Place: ___________</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-48 border-t border-gray-400 pt-1">
-                      <p className="text-sm font-medium">Principal / Headmaster</p>
-                    </div>
-                  </div>
+            <div
+              className="certificate-footer"
+              style={{
+                marginTop: 32,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-end",
+              }}
+            >
+              <div>
+                <p style={{ fontSize: 13, color: "#4b5563", margin: 0 }}>
+                  Date: {today}
+                </p>
+                <p style={{ fontSize: 13, color: "#4b5563", marginTop: 4 }}>
+                  Place: ___________
+                </p>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <div
+                  className="signature-line"
+                  style={{
+                    width: 200,
+                    borderTop: "1px solid #9ca3af",
+                    paddingTop: 4,
+                  }}
+                >
+                  <p style={{ fontSize: 13, fontWeight: 500, margin: 0 }}>
+                    Principal / Headmaster
+                  </p>
                 </div>
               </div>
             </div>
-          )}
-        </ModalBody>
-
-        <ModalFooter>
-          <Button variant="light" onPress={handleClose}>Cancel</Button>
-          {!showPreview ? (
-            <Button
-              color="primary"
-              onPress={handleGenerate}
-              startContent={<Eye size={16} />}
-            >
-              Generate
-            </Button>
-          ) : (
-            <div className="flex gap-2">
-              <Button
-                variant="flat"
-                onPress={() => setShowPreview(false)}
-              >
-                Edit
-              </Button>
-              <Button
-                color="primary"
-                onPress={handleDownload}
-                startContent={<Printer size={16} />}
-                data-testid="download-certificate"
-              >
-                Download as PDF
-              </Button>
-            </div>
-          )}
-        </ModalFooter>
-      </ModalContent>
+          </div>
+        </div>
+      )}
     </Modal>
   );
 }

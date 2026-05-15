@@ -32,10 +32,10 @@ export default function ValidationModal({
           {validating ? (
             <div className="space-y-4 py-4">
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="rounded-lg p-4 border border-gray-200 dark:border-zinc-800 space-y-2">
-                  <div className="h-4 w-32 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-                  <div className="h-3 w-full bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-                  <div className="h-3 w-2/3 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+                <div key={i} className="rounded-lg p-4 border border-border-token space-y-2">
+                  <div className="h-4 w-32 bg-surface-2 rounded animate-pulse" />
+                  <div className="h-3 w-full bg-surface-2 rounded animate-pulse" />
+                  <div className="h-3 w-2/3 bg-surface-2 rounded animate-pulse" />
                 </div>
               ))}
             </div>

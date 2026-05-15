@@ -199,10 +199,10 @@ export default function FormAssignments() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">
+          <h2 className="text-2xl font-semibold text-fg">
             Form Assignments
           </h2>
-          <p className="text-sm text-gray-600 dark:text-zinc-400 mt-1">
+          <p className="text-sm text-fg-muted mt-1">
             Manage and track form assignments sent to teachers
           </p>
         </div>
@@ -235,11 +235,12 @@ export default function FormAssignments() {
       {/* Assignments Table */}
       <Card>
         <CardBody className="p-0">
+          <div className="overflow-x-auto">
           <Table
             aria-label={t('aria.tables.formAssignments')}
             removeWrapper
             classNames={{
-              th: "bg-gray-50 dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 font-semibold",
+              th: "bg-surface-2 text-fg font-semibold",
               td: "py-4",
             }}
           >
@@ -261,10 +262,10 @@ export default function FormAssignments() {
               {(assignment) => (
                 <TableRow key={assignment._id}>
                   <TableCell>
-                    <div className="font-medium text-gray-900 dark:text-zinc-100">
+                    <div className="font-medium text-fg">
                       {assignment.formId?.formName || 'Unknown Form'}
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-zinc-500">
+                    <div className="text-xs text-fg-faint">
                       {assignment.formId?.formType || '—'}
                     </div>
                   </TableCell>
@@ -296,7 +297,7 @@ export default function FormAssignments() {
                   <TableCell>
                     <Dropdown>
                       <DropdownTrigger>
-                        <Button isIconOnly size="sm" variant="light">
+                        <Button isIconOnly size="sm" variant="light" aria-label="More actions">
                           <MoreVertical size={16} />
                         </Button>
                       </DropdownTrigger>
@@ -338,6 +339,7 @@ export default function FormAssignments() {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardBody>
       </Card>
 
@@ -348,11 +350,11 @@ export default function FormAssignments() {
           <ModalBody>
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium mb-2 block dark:text-zinc-300">
+                <label className="text-sm font-medium mb-2 block text-fg">
                   Select Form
                 </label>
                 <select
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 dark:text-zinc-100"
+                  className="w-full px-3 py-2 border border-border-token rounded-lg bg-surface text-fg"
                   value={assignmentData.formId}
                   onChange={(e) =>
                     setAssignmentData({
@@ -438,7 +440,7 @@ export default function FormAssignments() {
             {selectedAssignment && (
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-600 dark:text-zinc-400">
+                  <label className="text-sm font-medium text-fg-muted">
                     Form Name
                   </label>
                   <p className="text-base font-semibold">
@@ -447,14 +449,14 @@ export default function FormAssignments() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-600 dark:text-zinc-400">
+                  <label className="text-sm font-medium text-fg-muted">
                     Assigned To
                   </label>
                   <p className="text-base">{selectedAssignment.assignedToEmail || selectedAssignment.assignedToPhone || '—'}</p>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-600 dark:text-zinc-400">
+                  <label className="text-sm font-medium text-fg-muted">
                     Access Link
                   </label>
                   <div className="flex gap-2 mt-1">
@@ -476,7 +478,7 @@ export default function FormAssignments() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-600 dark:text-zinc-400">
+                  <label className="text-sm font-medium text-fg-muted">
                     Status
                   </label>
                   <div className="mt-1">
@@ -492,7 +494,7 @@ export default function FormAssignments() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-600 dark:text-zinc-400">
+                    <label className="text-sm font-medium text-fg-muted">
                       Assigned Date
                     </label>
                     <p className="text-sm">
@@ -503,7 +505,7 @@ export default function FormAssignments() {
                     </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600 dark:text-zinc-400">
+                    <label className="text-sm font-medium text-fg-muted">
                       Expires On
                     </label>
                     <p className="text-sm">

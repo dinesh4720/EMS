@@ -6,7 +6,7 @@
 
 export { clearApiCache, request } from './core.js';
 export { staffApi, studentsApi, trashApi } from './staff.js';
-export { examsApi, homeworkApi, resultsApi, academicPerformanceApi, subjectsApi } from './academics.js';
+export { examsApi, homeworkApi, resultsApi, academicPerformanceApi, subjectsApi, examScheduleApi } from './academics.js';
 export {
   classesApi, classesEnhancedApi, attendanceApi, staffAttendanceApi,
   timetableApi, teacherAssignmentsApi, teacherTimetableApi,

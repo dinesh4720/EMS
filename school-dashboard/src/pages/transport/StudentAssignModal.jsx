@@ -3,12 +3,13 @@ import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   Button, Input, Select, SelectItem, Chip, Divider, Switch,
 } from "@heroui/react";
-import { Search, UserPlus, Trash2 } from "lucide-react";
+import { Search, UserPlus, Trash2, Users } from "lucide-react";
 import { transportApi } from "../../services/api";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import EmptyState from '../../components/ui/EmptyState';
 
 export default function StudentAssignModal({
   isOpen, onClose, route, onSaved }) {
@@ -29,8 +30,9 @@ export default function StudentAssignModal({
 
   const fetchRouteDetail = async () => {
     if (!route?._id) return;
+    setRouteDetail(null);
+    setLoading(true);
     try {
-      setLoading(true);
       const res = await transportApi.getRoute(route._id);
       setRouteDetail(res?.data || null);
     } catch {
@@ -48,6 +50,8 @@ export default function StudentAssignModal({
       setPickupActive(true);
       setDropActive(true);
       setSearch("");
+    } else if (!isOpen) {
+      setRouteDetail(null);
     }
   }, [isOpen, route?._id]);
 
@@ -65,7 +69,7 @@ export default function StudentAssignModal({
     return list;
   }, [allStudents, assignedStudentIds, search]);
 
-  const stops = routeDetail?.stops || [];
+  const stops = Array.isArray(routeDetail?.stops) ? routeDetail.stops : [];
 
   const handleAssign = async () => {
     if (!selectedStudentId) {
@@ -121,14 +125,14 @@ export default function StudentAssignModal({
           {loading ? (
             <div className="space-y-3 animate-pulse">
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-12 bg-gray-100 dark:bg-zinc-800 rounded-lg" />
+                <div key={i} className="h-12 bg-surface-2 rounded-lg" />
               ))}
             </div>
           ) : (
             <>
               {/* Add student form */}
-              <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-4 space-y-3">
-                <h4 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.addStudent')}</h4>
+              <div className="bg-surface-2 rounded-lg p-4 space-y-3">
+                <h4 className="text-sm font-semibold text-fg">{t('pages.addStudent')}</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Select
                     label={t('pages.student')}
@@ -180,7 +184,7 @@ export default function StudentAssignModal({
               {/* Assigned students list */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">
+                  <h4 className="text-sm font-semibold text-fg">
                     Assigned Students ({assignedStudents.length})
                   </h4>
                   {assignedStudents.length > 5 && (
@@ -196,7 +200,11 @@ export default function StudentAssignModal({
                 </div>
 
                 {assignedStudents.length === 0 ? (
-                  <p className="text-sm text-gray-400 dark:text-zinc-500 text-center py-6">{t('pages.noStudentsAssignedToThisRouteYet')}</p>
+                  <EmptyState
+                    icon={Users}
+                    size="sm"
+                    title={t('pages.noStudentsAssignedToThisRouteYet')}
+                  />
                 ) : (
                   <div className="space-y-2 max-h-[300px] overflow-y-auto">
                     {assignedStudents.map((assignment) => {
@@ -209,12 +217,12 @@ export default function StudentAssignModal({
                       return (
                         <div
                           key={studentObjId}
-                          className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50 dark:bg-zinc-900"
+                          className="flex items-center justify-between py-2 px-3 rounded-lg bg-surface-2"
                         >
                           <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 truncate">{studentName}</p>
+                            <p className="text-sm font-medium text-fg truncate">{studentName}</p>
                             <div className="flex items-center gap-2 mt-0.5">
-                              {studentAdmId && <span className="text-xs text-gray-500 dark:text-zinc-400">{studentAdmId}</span>}
+                              {studentAdmId && <span className="text-xs text-fg-muted">{studentAdmId}</span>}
                               {stop && (
                                 <Chip size="sm" variant="flat" color="primary" className="h-5 text-[10px]">
                                   {stop.name}

@@ -4,6 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { formatFileSize } from "../utils/studentHelpers";
 import { uploadApi } from "../../../services/api";
 import toast from "react-hot-toast";
+import { filterAllowedFiles } from "../../../utils/fileValidation";
+import logger from '../../../utils/logger';
+
 
 
 /**
@@ -28,7 +31,7 @@ export function useStudentDocuments(studentId) {
         setDocuments(Array.isArray(data.documents) ? data.documents : []);
       }
     } catch (err) {
-      console.error("Error fetching documents:", err);
+      logger.error("Error fetching documents:", err);
     } finally {
       setLoading(false);
     }
@@ -45,7 +48,9 @@ export function useStudentDocuments(studentId) {
   const handleUpload = useCallback(async (files) => {
     if (!files || files.length === 0) return;
 
-    const fileArray = Array.from(files);
+    const { valid: fileArray, rejected } = filterAllowedFiles(Array.from(files));
+    rejected.forEach(msg => toast.error(msg));
+    if (fileArray.length === 0) return;
 
     const newUploads = fileArray.map(file => ({
       id: Date.now() + Math.random(),
@@ -99,7 +104,7 @@ export function useStudentDocuments(studentId) {
         successCount++;
       } catch (error) {
         clearInterval(progressInterval);
-        console.error(`Upload error for ${file.name}:`, error);
+        logger.error(`Upload error for ${file.name}:`, error);
 
         setActiveUploads(prev => prev.map(u =>
           u.id === uploadId ? { ...u, status: 'error', progress: 0, errorMsg: error.message } : u
@@ -147,7 +152,7 @@ export function useStudentDocuments(studentId) {
 
       return true;
     } catch (error) {
-      console.error("Delete error:", error);
+      logger.error("Delete error:", error);
       toast.error(error.message || "Failed to delete document", { id: loadingToast });
       return false;
     }
@@ -168,7 +173,7 @@ export function useStudentDocuments(studentId) {
 
       return true;
     } catch (error) {
-      console.error("Fix error:", error);
+      logger.error("Fix error:", error);
       toast.error(error.message || "Failed to fix documents", { id: loadingToast });
       return false;
     }

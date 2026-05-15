@@ -2,7 +2,7 @@ import { Routes, Route } from "react-router-dom";
 import { Breadcrumbs, BreadcrumbItem } from "@heroui/react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  BarChart3, Package, Truck, Wrench, ShoppingCart, ClipboardCheck, FileBarChart, Home,
+  BarChart3, Package, Truck, Wrench, ShoppingCart, ClipboardCheck, FileBarChart, Home, ArrowLeftRight,
 } from "lucide-react";
 import { PageLayout } from "../../components/ui";
 import InventoryDashboard from "./InventoryDashboard";
@@ -12,6 +12,7 @@ import Maintenance from "./Maintenance";
 import Procurement from "./Procurement";
 import Audits from "./Audits";
 import Reports from "./Reports";
+import InventoryTransaction from "./InventoryTransaction";
 import { useTranslation } from 'react-i18next';
 
 export default function InventoryPage() {
@@ -26,6 +27,7 @@ export default function InventoryPage() {
     if (location.pathname.includes("/procurement")) return "procurement";
     if (location.pathname.includes("/audits")) return "audits";
     if (location.pathname.includes("/reports")) return "reports";
+    if (location.pathname.includes("/transactions")) return "transactions";
     return "dashboard";
   };
 
@@ -39,6 +41,7 @@ export default function InventoryPage() {
     { key: "procurement", title: <div className="flex items-center gap-2"><ShoppingCart size={16} /><span>{t('pages.procurement')}</span></div> },
     { key: "audits", title: <div className="flex items-center gap-2"><ClipboardCheck size={16} /><span>{t('pages.audits')}</span></div> },
     { key: "reports", title: <div className="flex items-center gap-2"><FileBarChart size={16} /><span>{t('pages.reports1')}</span></div> },
+    { key: "transactions", title: <div className="flex items-center gap-2"><ArrowLeftRight size={16} /><span>Transactions</span></div> },
   ];
 
   const handleTabChange = (key) => {
@@ -54,11 +57,12 @@ export default function InventoryPage() {
     procurement: { title: "Procurement Requests", description: "Create and manage purchase requests" },
     audits: { title: "Asset Audits", description: "Conduct and review asset audits" },
     reports: { title: "Inventory Reports", description: "Analytics and reports on inventory data" },
+    transactions: { title: "Purchase Transactions", description: "Ledger of completed inventory purchases" },
   };
 
   const tabLabel = {
     dashboard: null, assets: "Assets", vendors: "Vendors", maintenance: "Maintenance",
-    procurement: "Procurement", audits: "Audits", reports: "Reports",
+    procurement: "Procurement", audits: "Audits", reports: "Reports", transactions: "Transactions",
   };
 
   return (
@@ -87,6 +91,7 @@ export default function InventoryPage() {
             <Route path="procurement" element={<Procurement />} />
             <Route path="audits" element={<Audits />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="transactions" element={<InventoryTransaction />} />
           </Routes>
         </div>
       </PageLayout>

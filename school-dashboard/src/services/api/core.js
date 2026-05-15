@@ -271,7 +271,9 @@ export function request(endpoint, options = {}) {
   // [AUDIT-857] Register and auto-clean GET/HEAD promises in the dedup map.
   if (method === 'GET' || method === 'HEAD') {
     _inflightRequests.set(url, promise);
-    promise.finally(() => _inflightRequests.delete(url));
+    void promise
+      .finally(() => _inflightRequests.delete(url))
+      .catch(() => {});
   }
 
   return promise;

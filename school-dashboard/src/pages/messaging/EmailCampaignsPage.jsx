@@ -16,7 +16,7 @@ import { formatShortDate, formatDateTime} from '../../utils/dateFormatter';
 import { useTranslation } from 'react-i18next';
 
 const STATUS_COLORS = {
-  draft: 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400',
+  draft: 'bg-surface-2 text-fg-muted',
   scheduled: 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300',
   sending: 'bg-yellow-50 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-300',
   sent: 'bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300',
@@ -191,10 +191,10 @@ export default function EmailCampaignsPage() {
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { label: 'Total', value: stats.total, cls: 'bg-gray-50 dark:bg-zinc-900 border-gray-100 dark:border-zinc-800 text-gray-900 dark:text-zinc-100' },
+              { label: 'Total', value: stats.total, cls: 'bg-surface-2 border-divider text-fg' },
               { label: 'Sent', value: stats.sent, cls: 'bg-green-50 dark:bg-green-950 border-green-100 dark:border-green-900 text-green-700 dark:text-green-300' },
               { label: 'Scheduled', value: stats.scheduled, cls: 'bg-blue-50 dark:bg-blue-950 border-blue-100 dark:border-blue-900 text-blue-700 dark:text-blue-300' },
-              { label: 'Drafts', value: stats.draft, cls: 'bg-gray-50 dark:bg-zinc-900 border-gray-100 dark:border-zinc-800 text-gray-600 dark:text-zinc-400' },
+              { label: 'Drafts', value: stats.draft, cls: 'bg-surface-2 border-divider text-fg-muted' },
             ].map(s => (
               <div key={s.label} className={`rounded-lg p-3 border ${s.cls}`}>
                 <p className="text-xs opacity-70">{s.label}</p>
@@ -206,9 +206,9 @@ export default function EmailCampaignsPage() {
           {loading ? (
             <TablePageSkeleton />
           ) : campaigns.length === 0 ? (
-            <div className="text-center py-16 border-2 border-dashed border-gray-200 dark:border-zinc-700 rounded-xl">
-              <Mail size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-              <p className="text-gray-500 dark:text-zinc-400 mb-4">No email campaigns yet</p>
+            <div className="text-center py-16 border-2 border-dashed border-border-token rounded-xl">
+              <Mail size={40} className="mx-auto mb-3 text-fg-faint" />
+              <p className="text-fg-muted mb-4">No email campaigns yet</p>
               <MinimalButton icon={<Plus size={16} />} onClick={() => setCreateOpen(true)}>
                 Create First Campaign
               </MinimalButton>
@@ -222,19 +222,19 @@ export default function EmailCampaignsPage() {
                   <Card
                     key={c._id}
                     shadow="sm"
-                    className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800"
+                    className="bg-surface border border-border-token"
                   >
                     <CardBody className="p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-medium text-gray-900 dark:text-zinc-100 truncate">{c.name}</h3>
+                            <h3 className="font-medium text-fg truncate">{c.name}</h3>
                             <Chip size="sm" variant="flat" className={STATUS_COLORS[c.status] || ''}>
                               {c.status}
                             </Chip>
                           </div>
-                          <p className="text-sm text-gray-600 dark:text-zinc-300 truncate mb-1">Subject: {c.subject}</p>
-                          <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-zinc-500">
+                          <p className="text-sm text-fg-muted truncate mb-1">Subject: {c.subject}</p>
+                          <div className="flex items-center gap-3 text-xs text-fg-faint">
                             <span className="capitalize">{c.targetCriteria?.groupType?.replace(/_/g, ' ')}</span>
                             {c.scheduledFor && (
                               <span className="flex items-center gap-1">
@@ -257,10 +257,10 @@ export default function EmailCampaignsPage() {
                           {/* Preview button */}
                           <button
                             onClick={() => handlePreview(c._id)}
-                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                            className="p-1.5 rounded-lg hover:bg-surface-2 transition-colors"
                             title="Preview email"
                           >
-                            <Eye size={15} className="text-gray-500 dark:text-zinc-400" />
+                            <Eye size={15} className="text-fg-muted" />
                           </button>
                           {/* Test send button */}
                           <button
@@ -304,17 +304,17 @@ export default function EmailCampaignsPage() {
         onClose={() => { setCreateOpen(false); setForm(EMPTY_FORM); setErrors({}); }}
         size="2xl"
         scrollBehavior="inside"
-        classNames={{ backdrop: 'bg-black/30', base: 'bg-white dark:bg-zinc-950' }}
+        classNames={{ backdrop: 'bg-black/30', base: 'bg-surface' }}
       >
         <ModalContent>
-          <ModalHeader className="border-b border-gray-100 dark:border-zinc-800 py-4 px-6">
+          <ModalHeader className="border-b border-divider py-4 px-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg">
-                <Mail size={20} className="text-gray-600 dark:text-zinc-300" />
+              <div className="p-2 bg-surface-2 rounded-lg">
+                <Mail size={20} className="text-fg-muted" />
               </div>
               <div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">New Email Campaign</h3>
-                <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal">Send targeted emails to parents</p>
+                <h3 className="text-lg font-medium text-fg">New Email Campaign</h3>
+                <p className="text-sm text-fg-muted font-normal">Send targeted emails to parents</p>
               </div>
             </div>
           </ModalHeader>
@@ -390,7 +390,7 @@ export default function EmailCampaignsPage() {
               classNames={{ input: 'dark:text-zinc-100', inputWrapper: 'dark:border-zinc-700' }}
             />
           </ModalBody>
-          <ModalFooter className="border-t border-gray-100 dark:border-zinc-800">
+          <ModalFooter className="border-t border-divider">
             <Button variant="light" onPress={() => { setCreateOpen(false); setForm(EMPTY_FORM); setErrors({}); }}>Cancel</Button>
             <Button
               className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900"
@@ -409,17 +409,17 @@ export default function EmailCampaignsPage() {
         onClose={() => setPreviewModal({ open: false, id: null, html: '', loading: false })}
         size="3xl"
         scrollBehavior="inside"
-        classNames={{ backdrop: 'bg-black/30', base: 'bg-white dark:bg-zinc-950' }}
+        classNames={{ backdrop: 'bg-black/30', base: 'bg-surface' }}
       >
         <ModalContent>
-          <ModalHeader className="border-b border-gray-100 dark:border-zinc-800 py-4 px-6">
+          <ModalHeader className="border-b border-divider py-4 px-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg">
-                <Eye size={20} className="text-gray-600 dark:text-zinc-300" />
+              <div className="p-2 bg-surface-2 rounded-lg">
+                <Eye size={20} className="text-fg-muted" />
               </div>
               <div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">Email Preview</h3>
-                <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal">Rendered with sample data</p>
+                <h3 className="text-lg font-medium text-fg">Email Preview</h3>
+                <p className="text-sm text-fg-muted font-normal">Rendered with sample data</p>
               </div>
             </div>
           </ModalHeader>
@@ -437,7 +437,7 @@ export default function EmailCampaignsPage() {
               />
             )}
           </ModalBody>
-          <ModalFooter className="border-t border-gray-100 dark:border-zinc-800">
+          <ModalFooter className="border-t border-divider">
             <Button variant="light" onPress={() => setPreviewModal({ open: false, id: null, html: '', loading: false })}>Close</Button>
           </ModalFooter>
         </ModalContent>
@@ -448,17 +448,17 @@ export default function EmailCampaignsPage() {
         isOpen={testModal.open}
         onClose={() => setTestModal({ open: false, id: null, email: '', sending: false })}
         size="sm"
-        classNames={{ backdrop: 'bg-black/30', base: 'bg-white dark:bg-zinc-950' }}
+        classNames={{ backdrop: 'bg-black/30', base: 'bg-surface' }}
       >
         <ModalContent>
-          <ModalHeader className="border-b border-gray-100 dark:border-zinc-800 py-4">
+          <ModalHeader className="border-b border-divider py-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-purple-100 dark:bg-purple-950 rounded-lg">
                 <FlaskConical size={20} className="text-purple-500" />
               </div>
               <div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">Send Test Email</h3>
-                <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal">Preview with sample data</p>
+                <h3 className="text-lg font-medium text-fg">Send Test Email</h3>
+                <p className="text-sm text-fg-muted font-normal">Preview with sample data</p>
               </div>
             </div>
           </ModalHeader>
@@ -472,11 +472,11 @@ export default function EmailCampaignsPage() {
               variant="bordered"
               classNames={{ input: 'dark:text-zinc-100', inputWrapper: 'dark:border-zinc-700' }}
             />
-            <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
+            <p className="text-xs text-fg-faint mt-1">
               Placeholders ({"{{parentName}}"}, {"{{studentName}}"}) will be replaced with sample values.
             </p>
           </ModalBody>
-          <ModalFooter className="border-t border-gray-100 dark:border-zinc-800">
+          <ModalFooter className="border-t border-divider">
             <Button variant="light" onPress={() => setTestModal({ open: false, id: null, email: '', sending: false })}>Cancel</Button>
             <Button
               className="bg-purple-600 text-white"
@@ -494,21 +494,21 @@ export default function EmailCampaignsPage() {
         isOpen={deleteModal.open}
         onClose={() => setDeleteModal({ open: false, id: null })}
         size="sm"
-        classNames={{ backdrop: 'bg-black/30', base: 'bg-white dark:bg-zinc-950' }}
+        classNames={{ backdrop: 'bg-black/30', base: 'bg-surface' }}
       >
         <ModalContent>
-          <ModalHeader className="border-b border-gray-100 dark:border-zinc-800 py-4">
+          <ModalHeader className="border-b border-divider py-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-red-100 dark:bg-red-950 rounded-lg">
                 <AlertCircle size={20} className="text-red-500" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">Delete Campaign</h3>
+              <h3 className="text-lg font-medium text-fg">Delete Campaign</h3>
             </div>
           </ModalHeader>
           <ModalBody className="py-4">
-            <p className="text-sm text-gray-600 dark:text-zinc-300">This will permanently delete the campaign. This cannot be undone.</p>
+            <p className="text-sm text-fg-muted">This will permanently delete the campaign. This cannot be undone.</p>
           </ModalBody>
-          <ModalFooter className="border-t border-gray-100 dark:border-zinc-800">
+          <ModalFooter className="border-t border-divider">
             <Button variant="light" onPress={() => setDeleteModal({ open: false, id: null })}>Cancel</Button>
             <Button color="danger" onPress={handleDelete}>Delete</Button>
           </ModalFooter>

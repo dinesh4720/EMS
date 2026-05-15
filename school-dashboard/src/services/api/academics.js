@@ -25,6 +25,10 @@ export const homeworkApi = {
     const queryString = params ? new URLSearchParams(params).toString() : '';
     return request(`/homework/class/${classId}${queryString ? `?${queryString}` : ''}`);
   },
+  getByTeacher: (teacherId, params) => {
+    const queryString = params ? new URLSearchParams(params).toString() : '';
+    return request(`/homework/teacher/${teacherId}${queryString ? `?${queryString}` : ''}`);
+  },
   getById: (id) => request(`/homework/${id}`),
   create: (data) => request('/homework', { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => request(`/homework/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
@@ -69,6 +73,21 @@ export const academicPerformanceApi = {
 export const subjectsApi = {
   getAll: () => request('/settings/subjects'),
   create: (data) => request('/settings/subjects', { method: 'POST', body: JSON.stringify(data) }),
+};
+
+// Exam Schedule API
+export const examScheduleApi = {
+  getAll: (params) => {
+    const queryString = params ? new URLSearchParams(params).toString() : '';
+    return request(`/exam-schedules${queryString ? `?${queryString}` : ''}`);
+  },
+  getById: (id) => request(`/exam-schedules/${id}`),
+  create: (data) => request('/exam-schedules', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => request(`/exam-schedules/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) => request(`/exam-schedules/${id}`, { method: 'DELETE' }),
+  generate: (id) => request(`/exam-schedules/${id}/generate`, { method: 'POST' }),
+  confirm: (id) => request(`/exam-schedules/${id}/confirm`, { method: 'POST' }),
+  send: (id) => request(`/exam-schedules/${id}/send`, { method: 'POST' }),
 };
 
 // Classes API

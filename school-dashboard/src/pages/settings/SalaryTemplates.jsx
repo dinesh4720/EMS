@@ -4,12 +4,14 @@ import { Plus, Edit, Trash2, DollarSign, X } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import toast from "react-hot-toast";
 import { settingsApi } from '../../services/api';
+import { useCurrency } from '../../context/hooks/useCurrency';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
 
 export default function SalaryTemplates() {
   const { t } = useTranslation();
+  const { fmt, currencySymbol } = useCurrency();
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -45,11 +47,23 @@ export default function SalaryTemplates() {
 
   const handleSave = async () => {
     if (!editingTemplate?.name.trim()) return;
+
+    const validBreakdown = editingTemplate.breakdown.filter(b => b.component.trim());
+    if (validBreakdown.length === 0) {
+      toast.error('At least one salary component is required');
+      return;
+    }
+    const total = validBreakdown.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    if (total <= 0) {
+      toast.error(`Total salary must be greater than ${fmt(0)}. Please set amounts for the salary components.`);
+      return;
+    }
+
     setSaving(true);
     try {
       const payload = {
         name: editingTemplate.name.trim(),
-        breakdown: editingTemplate.breakdown.filter(b => b.component.trim()),
+        breakdown: validBreakdown,
       };
 
       if (editingTemplate._id) {
@@ -118,7 +132,7 @@ export default function SalaryTemplates() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-medium">{t('pages.salaryTemplates')}</h2>
-          <p className="text-sm text-default-500 mt-1">{t('pages.manageSalaryTemplatesForDifferentStaffRoles')}</p>
+          <p className="text-sm text-fg-muted mt-1">{t('pages.manageSalaryTemplatesForDifferentStaffRoles')}</p>
         </div>
         <Button color="primary" startContent={<Plus size={16} />} onPress={handleNew}>
           New Template
@@ -129,7 +143,7 @@ export default function SalaryTemplates() {
         {templates.map(template => {
           const total = calculateTotal(template.breakdown);
           return (
-            <Card key={template._id} className="shadow-sm border border-default-200">
+            <Card key={template._id} className="shadow-sm border border-border-token">
               <CardHeader className="flex justify-between items-center pb-3">
                 <div className="flex items-center gap-2">
                   <div className="p-2 bg-primary/10 rounded-lg">
@@ -138,10 +152,10 @@ export default function SalaryTemplates() {
                   <h3 className="text-lg font-medium">{template.name}</h3>
                 </div>
                 <div className="flex gap-1">
-                  <Button size="sm" isIconOnly variant="light" onPress={() => handleEdit(template)} title={t('pages.editTemplate')}>
+                  <Button size="sm" isIconOnly variant="light" onPress={() => handleEdit(template)} aria-label={t('pages.editTemplate')}>
                     <Edit size={16} />
                   </Button>
-                  <Button size="sm" isIconOnly variant="light" color="danger" onPress={() => handleDelete(template._id)} title={t('pages.deleteTemplate1')}>
+                  <Button size="sm" isIconOnly variant="light" color="danger" onPress={() => handleDelete(template._id)} aria-label={t('pages.deleteTemplate1')}>
                     <Trash2 size={16} />
                   </Button>
                 </div>
@@ -151,8 +165,8 @@ export default function SalaryTemplates() {
                 <div className="space-y-2 mb-4">
                   {template.breakdown.map((item, i) => (
                     <div key={`${template._id}-${item.component}`} className="flex justify-between text-sm">
-                      <span className="text-default-600">{item.component}</span>
-                      <span className="font-medium">₹{item.amount.toLocaleString()}</span>
+                      <span className="text-fg-muted">{item.component}</span>
+                      <span className="font-medium">{fmt(item.amount)}</span>
                     </div>
                   ))}
                 </div>
@@ -160,7 +174,7 @@ export default function SalaryTemplates() {
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">{t('pages.totalMonthly')}</span>
                   <Chip color="success" variant="flat" size="lg" classNames={{ content: "font-bold" }}>
-                    ₹{total.toLocaleString()}
+                    {fmt(total)}
                   </Chip>
                 </div>
               </CardBody>
@@ -201,7 +215,7 @@ export default function SalaryTemplates() {
                       </div>
 
                       {editingTemplate.breakdown.map((item, i) => (
-                        <div key={`edit-breakdown-${i}`} className="p-3 bg-default-50 rounded-lg border border-default-200">
+                        <div key={`edit-breakdown-${i}`} className="p-3 bg-surface-2 rounded-lg border border-border-token">
                           <div className="flex gap-3 items-start">
                             <Input
                               size="sm"
@@ -220,7 +234,7 @@ export default function SalaryTemplates() {
                               onValueChange={v => updateBreakdownItem(i, "amount", v)}
                               variant="bordered"
                               className="flex-1"
-                              startContent="₹"
+                              startContent={currencySymbol}
                             />
                             <Button
                               size="sm"
@@ -240,7 +254,7 @@ export default function SalaryTemplates() {
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium">{t('pages.totalMonthlySalary1')}</span>
                           <span className="text-xl font-bold text-success">
-                            ₹{calculateTotal(editingTemplate.breakdown).toLocaleString()}
+                            {fmt(calculateTotal(editingTemplate.breakdown))}
                           </span>
                         </div>
                       </div>

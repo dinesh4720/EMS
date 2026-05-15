@@ -1,65 +1,19 @@
-import React, { useState, useCallback, Suspense } from "react";
-import lazyWithRetry from "../utils/lazyWithRetry";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import ErrorBoundary from "../components/ErrorBoundary";
-import { Eye, EyeOff, Lock, Mail, CheckCircle } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
+
+import { useAuth } from "../context/AuthContext";
 import { APP_CONFIG } from "../utils/constants";
+import { loginSchema, parseFormSchema } from "../validators/formSchemas";
 
-// Only import the 3D component if WebGL is actually available AND we're not in a headless/automated browser
-// Three.js shader compilation can crash in headless/automated environments even if WebGL context exists
-const hasWebGL = (() => {
-  try {
-    // Headless/automated browsers lack full GPU — skip 3D to avoid noisy console errors
-    if (
-      navigator.webdriver ||
-      /HeadlessChrome|Headless|Puppeteer|Playwright|PhantomJS|Chrome-Lighthouse/i.test(navigator.userAgent) ||
-      (!navigator.gpu && !window.chrome?.runtime) // Likely not a real desktop Chrome
-    ) return false;
-    // Skip if running inside an iframe or MCP preview tool
-    if (window.self !== window.top) return false;
-    const c = document.createElement("canvas");
-    const gl = c.getContext("webgl2") || c.getContext("webgl");
-    if (!gl) return false;
-    // Test actual shader compilation (not just context creation)
-    const vs = gl.createShader(gl.VERTEX_SHADER);
-    if (!vs) return false;
-    gl.shaderSource(vs, "void main(){ gl_Position = vec4(0.0); }");
-    gl.compileShader(vs);
-    const ok = gl.getShaderParameter(vs, gl.COMPILE_STATUS);
-    gl.deleteShader(vs);
-    // Also check renderer — SwiftShader / software renderers often crash Three.js
-    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-    if (debugInfo) {
-      const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || '';
-      if (/SwiftShader|llvmpipe|Software|ANGLE.*Direct3D9/i.test(renderer)) return false;
-    }
-    // Test a fragment shader too — some environments pass vertex but fail fragment
-    const fs = gl.createShader(gl.FRAGMENT_SHADER);
-    if (!fs) return false;
-    gl.shaderSource(fs, "precision mediump float; void main(){ gl_FragColor = vec4(1.0); }");
-    gl.compileShader(fs);
-    const fsOk = gl.getShaderParameter(fs, gl.COMPILE_STATUS);
-    gl.deleteShader(fs);
-    return ok && fsOk;
-  } catch { return false; }
-})();
-
-const SchoolBuilding3D = hasWebGL
-  ? lazyWithRetry(() => import("../components/SchoolBuilding3D"))
-  : null;
-
-function LoginVisualFallback() {
-  return (
-    <div className="w-full h-full bg-gradient-to-br from-teal-50 via-white to-slate-100 dark:from-zinc-900 dark:via-zinc-950 dark:to-zinc-900" />
-  );
-}
+import AuthVisual from "../components/auth/AuthVisual";
+import AuthBrand from "../components/auth/AuthBrand";
 
 const MAX_ATTEMPTS = APP_CONFIG.MAX_LOGIN_ATTEMPTS;
 const LOCKOUT_MS = APP_CONFIG.LOCKOUT_DURATION_MS;
-const LOCKOUT_KEY = 'login_lockout';
+const LOCKOUT_KEY = "login_lockout";
 
 function getLockoutState() {
   try {
@@ -74,36 +28,49 @@ function getLockoutState() {
 function saveLockoutState(state) {
   try {
     sessionStorage.setItem(LOCKOUT_KEY, JSON.stringify(state));
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 function clearLockoutState() {
   try {
     sessionStorage.removeItem(LOCKOUT_KEY);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
+}
+
+function formatCountdown(seconds) {
+  const safe = Math.max(0, Number.isFinite(seconds) ? seconds : 0);
+  const mins = Math.floor(safe / 60);
+  const secs = safe % 60;
+  return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 }
 
 export default function Login() {
   const { t } = useTranslation();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
-  const [lockoutRemaining, setLockoutRemaining] = useState(0);
-
-  const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
 
+  const [emailOrPhone, setEmailOrPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [submitError, setSubmitError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [lockoutRemaining, setLockoutRemaining] = useState(0);
+
   const successMessage = location.state?.message;
 
-  const toggleVisibility = useCallback(() => setIsVisible((v) => !v), []);
-
-  // Countdown timer for lockout
-  React.useEffect(() => {
+  // Countdown timer for lockout — re-syncs from sessionStorage so a reload
+  // doesn't reset the timer (lockout persistence bug license from the task).
+  useEffect(() => {
     const state = getLockoutState();
-    if (!state.lockedUntil || Date.now() >= state.lockedUntil) return;
+    if (!state.lockedUntil || Date.now() >= state.lockedUntil) {
+      if (state.lockedUntil) clearLockoutState();
+      return undefined;
+    }
 
     let active = true;
     setLockoutRemaining(Math.ceil((state.lockedUntil - Date.now()) / 1000));
@@ -119,184 +86,235 @@ export default function Login() {
       }
     }, 1000);
 
-    return () => { active = false; clearInterval(interval); };
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
   }, []);
 
-  const handleSubmit = useCallback(async (e) => {
-    e.preventDefault();
-    setError("");
+  const handleSubmit = useCallback(
+    async (e) => {
+      e.preventDefault();
+      setSubmitError("");
+      setFieldErrors({});
 
-    // Check lockout
-    const lockout = getLockoutState();
-    if (lockout.lockedUntil && Date.now() < lockout.lockedUntil) {
-      const remaining = Math.ceil((lockout.lockedUntil - Date.now()) / 1000);
-      setLockoutRemaining(remaining);
-      setError(t('login.lockoutError', { mins: Math.ceil(remaining / 60), secs: remaining % 60 }));
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      await login(email, password);
-      clearLockoutState();
-    } catch (err) {
-      const state = getLockoutState();
-      const attempts = (state.attempts || 0) + 1;
-
-      if (attempts >= MAX_ATTEMPTS) {
-        const lockedUntil = Date.now() + LOCKOUT_MS;
-        saveLockoutState({ attempts, lockedUntil });
-        const mins = Math.ceil(LOCKOUT_MS / 60000);
-        setError(t('login.lockedFor', { mins }));
-        setLockoutRemaining(Math.ceil(LOCKOUT_MS / 1000));
-      } else {
-        saveLockoutState({ attempts, lockedUntil: null });
-        const remaining = MAX_ATTEMPTS - attempts;
-        setError(t('login.loginFailedAttempts', { message: err?.message || "Login failed", remaining, plural: remaining !== 1 ? "s" : "" }));
+      // Lockout gate
+      const lockout = getLockoutState();
+      if (lockout.lockedUntil && Date.now() < lockout.lockedUntil) {
+        const remaining = Math.ceil((lockout.lockedUntil - Date.now()) / 1000);
+        setLockoutRemaining(remaining);
+        setSubmitError(
+          t("login.lockoutError", {
+            mins: Math.ceil(remaining / 60),
+            secs: remaining % 60,
+          })
+        );
+        return;
       }
-    } finally {
-      setLoading(false);
-    }
-  }, [email, password, login]);
+
+      // Client-side validation (mirrors backend Zod loginSchema)
+      const parsed = parseFormSchema(loginSchema, { emailOrPhone, password });
+      if (!parsed.success) {
+        setFieldErrors(parsed.errors);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        await login(emailOrPhone, password);
+        clearLockoutState();
+      } catch (err) {
+        const state = getLockoutState();
+        const attempts = (state.attempts || 0) + 1;
+
+        if (attempts >= MAX_ATTEMPTS) {
+          const lockedUntil = Date.now() + LOCKOUT_MS;
+          saveLockoutState({ attempts, lockedUntil });
+          const mins = Math.ceil(LOCKOUT_MS / 60000);
+          setSubmitError(t("login.lockedFor", { mins }));
+          setLockoutRemaining(Math.ceil(LOCKOUT_MS / 1000));
+        } else {
+          saveLockoutState({ attempts, lockedUntil: null });
+          const remaining = MAX_ATTEMPTS - attempts;
+          setSubmitError(
+            t("login.loginFailedAttempts", {
+              message: err?.message || "Login failed",
+              remaining,
+              plural: remaining !== 1 ? "s" : "",
+            })
+          );
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [emailOrPhone, password, login, t]
+  );
+
+  const isLocked = lockoutRemaining > 0;
+  const submitDisabled = loading || isLocked;
+  const countdownLabel = useMemo(() => formatCountdown(lockoutRemaining), [lockoutRemaining]);
 
   return (
-    <div className="h-screen w-screen flex flex-col lg:flex-row overflow-hidden">
-      {/* Left Side - 3D School Building - Hidden on mobile */}
-      <div className="hidden lg:flex flex-1 relative overflow-hidden h-full">
-        {SchoolBuilding3D ? (
-          <ErrorBoundary fallback={<LoginVisualFallback />}>
-            <Suspense fallback={<LoginVisualFallback />}>
-              <SchoolBuilding3D />
-            </Suspense>
-          </ErrorBoundary>
-        ) : (
-          <LoginVisualFallback />
-        )}
-      </div>
-
-      {/* Right Side - Login Form */}
-      <div className="w-full lg:w-[45%] flex flex-col items-center justify-center bg-white dark:bg-zinc-900 p-6 lg:p-0 h-full overflow-y-auto">
-        <div className="w-full max-w-xs flex-shrink-0">
-          {/* Logo */}
-          <div className="flex items-center justify-center gap-2 mb-8">
-            <div className="w-9 h-9 rounded-lg bg-teal-600 flex items-center justify-center">
-              <span className="text-white font-bold text-lg">S</span>
-            </div>
-            <span className="text-xl font-semibold text-gray-800 dark:text-zinc-100">{t('pages.schoolSync1')}</span>
+    <div className="auth-shell">
+      <section className="auth-form">
+        <div className="auth-form__inner">
+          <div className="auth-form__brand">
+            <AuthBrand />
           </div>
 
-          {/* Welcome Text */}
-          <div className="mb-6 text-center">
-            <h1 className="text-xl font-bold text-gray-800 dark:text-zinc-100 mb-2">{t('login.welcome')}</h1>
-            <p className="text-gray-500 dark:text-zinc-400 text-sm">{t('login.subtitle')}</p>
-          </div>
+          <header className="auth-form__head">
+            <h1 className="auth-form__title">{t("login.welcome")}</h1>
+            <p className="auth-form__sub">{t("login.subtitle")}</p>
+          </header>
 
-          {/* Success Message from Signup */}
           {successMessage && (
-            <div className="mb-4 p-2.5 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-sm text-center flex items-center justify-center gap-2">
-              <CheckCircle size={16} />
+            <div className="auth-form__alert auth-form__alert--success" role="status">
               {successMessage}
             </div>
           )}
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="flex flex-col" autoComplete="off">
-            {/* Email */}
-            <div className="mb-3">
-              <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1.5">
-                {t('login.emailLabel')} <span className="text-red-500">*</span>
+          <form
+            onSubmit={handleSubmit}
+            className="auth-form__form"
+            autoComplete="on"
+            noValidate
+          >
+            <div className="field">
+              <label htmlFor="login-email" className="field__label">
+                {t("login.emailLabel")}
+                <span className="req" aria-hidden="true">*</span>
               </label>
-              <div className="flex items-center gap-2 px-3 py-2.5 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-colors autofill-fix">
-                <Mail size={16} className="text-gray-400 dark:text-zinc-500" />
+              <div className="field__icon-wrap">
+                <Mail size={14} className="field__icon" aria-hidden="true" />
                 <input
                   id="login-email"
-                  type="email"
-                  placeholder={t('login.emailPlaceholder')}
-                  className="flex-1 bg-transparent outline-none text-gray-800 dark:text-zinc-100 placeholder:text-gray-500 dark:placeholder:text-zinc-500 text-sm autofill:bg-white autofill:text-gray-800"
-                  autoComplete="off"
-                  data-form-type="other"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  className={`input input--with-icon ${
+                    fieldErrors.emailOrPhone ? "input--err" : ""
+                  }`}
+                  type="text"
+                  inputMode="email"
+                  placeholder={t("login.emailPlaceholder")}
+                  value={emailOrPhone}
+                  onChange={(e) => setEmailOrPhone(e.target.value)}
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  spellCheck={false}
                   required
+                  aria-invalid={Boolean(fieldErrors.emailOrPhone) || undefined}
+                  aria-describedby={fieldErrors.emailOrPhone ? "login-email-err" : undefined}
                 />
               </div>
+              {fieldErrors.emailOrPhone && (
+                <span id="login-email-err" className="field__hint field__hint--danger">
+                  {fieldErrors.emailOrPhone}
+                </span>
+              )}
             </div>
 
-            {/* Password */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1.5">
-                {t('login.passwordLabel')} <span className="text-red-500">*</span>
+            <div className="field">
+              <label htmlFor="login-password" className="field__label">
+                {t("login.passwordLabel")}
+                <span className="req" aria-hidden="true">*</span>
               </label>
-              <div className="flex items-center gap-2 px-3 py-2.5 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-colors autofill-fix">
-                <Lock size={16} className="text-gray-400 dark:text-zinc-500" />
+              <div className="field__icon-wrap">
+                <Lock size={14} className="field__icon" aria-hidden="true" />
                 <input
                   id="login-password"
-                  type={isVisible ? "text" : "password"}
-                  placeholder={t('login.passwordPlaceholder')}
-                  className="flex-1 bg-transparent outline-none text-gray-800 dark:text-zinc-100 placeholder:text-gray-500 dark:placeholder:text-zinc-500 text-sm autofill:bg-white autofill:text-gray-800"
-                  autoComplete="new-password"
-                  data-form-type="other"
+                  className={`input input--with-icon input--with-action ${
+                    fieldErrors.password ? "input--err" : ""
+                  }`}
+                  type={showPassword ? "text" : "password"}
+                  placeholder={t("login.passwordPlaceholder")}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
                   required
+                  aria-invalid={Boolean(fieldErrors.password) || undefined}
+                  aria-describedby={fieldErrors.password ? "login-password-err" : undefined}
                 />
                 <button
                   type="button"
-                  className="p-1 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded transition-colors"
-                  onClick={toggleVisibility}
-                  aria-label={isVisible ? t('login.hidePassword') : t('login.showPassword')}
+                  className="field__action"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={
+                    showPassword ? t("login.hidePassword") : t("login.showPassword")
+                  }
+                  tabIndex={0}
                 >
-                  {isVisible ? (
-                    <EyeOff size={16} className="text-gray-400 dark:text-zinc-500" />
-                  ) : (
-                    <Eye size={16} className="text-gray-400 dark:text-zinc-500" />
-                  )}
+                  {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
               </div>
+              {fieldErrors.password && (
+                <span id="login-password-err" className="field__hint field__hint--danger">
+                  {fieldErrors.password}
+                </span>
+              )}
             </div>
 
-            {/* Error */}
-            {error && (
-              <div className="mb-3 p-2.5 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm text-center">
-                {error}
-              </div>
-            )}
-
-            {/* Buttons */}
-            <button
-              type="submit"
-              disabled={loading || lockoutRemaining > 0}
-              className={`w-full py-2.5 rounded-lg text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 transition-colors mb-2 ${
-                loading || lockoutRemaining > 0 ? "opacity-70 cursor-not-allowed" : ""
-              }`}
-            >
-              {loading ? t('login.signingIn') : lockoutRemaining > 0 ? t('login.locked', { seconds: lockoutRemaining }) : t('login.signIn')}
-            </button>
-
-            {/* Forgot Password + Invite Note */}
-            <div className="flex items-center justify-between mb-3">
+            <div className="auth-form__actions">
+              <span className="auth-form__kbd-hint" aria-hidden="true">
+                <span className="kbd">↵</span>
+                {t("login.enterToSignIn", "to sign in")}
+              </span>
               <button
                 type="button"
-                onClick={() => toast(t('login.forgotPasswordToast', 'Contact your administrator to reset your password.'), { icon: 'ℹ️' })}
-                className="text-xs text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300 font-medium"
+                onClick={() =>
+                  toast(
+                    t(
+                      "login.forgotPasswordToast",
+                      "Contact your administrator to reset your password."
+                    ),
+                    { icon: "ℹ️" }
+                  )
+                }
+                className="auth-form__link"
               >
-                {t('login.forgotPassword', 'Forgot Password?')}
+                {t("login.forgotPassword", "Forgot Password?")}
               </button>
             </div>
 
-            <div className="mb-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 px-3 py-2 text-xs text-amber-900 dark:text-amber-300">
-              {t('login.inviteOnlyNote')}
-            </div>
+            {submitError && (
+              <div className="auth-form__alert auth-form__alert--danger" role="alert">
+                <span>{submitError}</span>
+              </div>
+            )}
+
+            {isLocked && (
+              <div
+                className="chip chip--warn auth-form__lockout mono tnum"
+                role="status"
+                aria-live="polite"
+              >
+                <span className="dot" aria-hidden="true" />
+                {t("login.lockoutRemaining", "Try again in")} {countdownLabel}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="btn btn--accent btn--block"
+              disabled={submitDisabled}
+              aria-busy={loading || undefined}
+            >
+              {isLocked
+                ? t("login.locked", { seconds: lockoutRemaining })
+                : loading
+                ? t("login.signingIn")
+                : t("login.signIn")}
+            </button>
+
+            <p className="auth-form__notice">{t("login.inviteOnlyNote")}</p>
           </form>
 
-          {/* Footer */}
-          <div className="flex items-center justify-center gap-4 text-xs text-gray-400 dark:text-zinc-500 mt-5 pt-3 border-t border-gray-100 dark:border-zinc-800">
-            <p>{t('login.copyright', { year: new Date().getFullYear() })}</p>
-            <Link to="/privacy" className="hover:text-gray-600 dark:hover:text-zinc-300">{t('login.privacyPolicy')}</Link>
-          </div>
+          <footer className="auth-form__foot">
+            <span>{t("login.copyright", { year: new Date().getFullYear() })}</span>
+            <Link to="/privacy">{t("login.privacyPolicy")}</Link>
+          </footer>
         </div>
-      </div>
+      </section>
+
+      <AuthVisual />
     </div>
   );
 }

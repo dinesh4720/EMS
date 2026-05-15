@@ -88,7 +88,7 @@ export function parseError(error) {
     };
   }
 
-  if (error.status === 409) {
+  if (error.status === 409 || error.status === 422) {
     return {
       type: ErrorTypes.CONFLICT,
       message: error.message || 'A scheduling conflict was detected.',
@@ -237,7 +237,8 @@ export async function retryWithBackoff(fn, maxRetries = 3, initialDelay = 1000) 
       if (
         parsedError.type === ErrorTypes.AUTHORIZATION ||
         parsedError.type === ErrorTypes.VALIDATION ||
-        parsedError.type === ErrorTypes.NOT_FOUND
+        parsedError.type === ErrorTypes.NOT_FOUND ||
+        parsedError.type === ErrorTypes.CONFLICT
       ) {
         throw error;
       }
@@ -309,20 +310,20 @@ export async function executeWithFeedback(
  */
 export function formatConflictDetails(conflict) {
   if (!conflict || !conflict.details) {
-    return 'A scheduling conflict was detected.';
+    return conflict?.message || 'A scheduling conflict was detected.';
   }
 
   const details = conflict.details;
-  
+
   if (details.teacherName && details.conflictingClass) {
     return `${details.teacherName} is already assigned to ${details.conflictingClass} at this time.`;
   }
-  
+
   if (details.message) {
     return details.message;
   }
-  
-  return 'A scheduling conflict was detected.';
+
+  return conflict.message || 'A scheduling conflict was detected.';
 }
 
 /**

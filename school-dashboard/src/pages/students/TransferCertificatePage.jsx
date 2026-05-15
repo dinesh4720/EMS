@@ -1,16 +1,17 @@
 import { useState, useCallback } from 'react';
 import {
-  Card, CardBody, Button, Input, Checkbox,
-  Breadcrumbs, BreadcrumbItem, Chip,
+  Button, Input, Checkbox,
+  Breadcrumbs, BreadcrumbItem,
 } from '@heroui/react';
 import { FileText, Search, Home, Printer } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { request } from '../../services/api';
-import { PageLayout, MinimalButton } from '../../components/ui';
+import { PageLayout } from '../../components/ui';
 import TCGeneratorModal from './TCGeneratorModal';
 import toast from 'react-hot-toast';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { useTranslation } from 'react-i18next';
+import '../../styles/student.css';
 
 export default function TransferCertificatePage() {
   const navigate = useNavigate();
@@ -47,130 +48,125 @@ export default function TransferCertificatePage() {
     });
   };
 
+  const selectAll = () => {
+    if (selected.size === students.length) setSelected(new Set());
+    else setSelected(new Set(students.map(s => s._id)));
+  };
+
   const selectedStudents = students.filter(s => selected.has(s._id));
 
   return (
-    <div className="animate-fade-in">
-      <div className="mb-4">
-        <Breadcrumbs size="sm">
-          <BreadcrumbItem startContent={<Home size={14} />} onPress={() => navigate('/')}>Home</BreadcrumbItem>
-          <BreadcrumbItem onPress={() => navigate('/students')}>Students</BreadcrumbItem>
-          <BreadcrumbItem>Transfer Certificate</BreadcrumbItem>
-        </Breadcrumbs>
-      </div>
+    <div className="animate-fade-in tc-page">
+      <Breadcrumbs size="sm">
+        <BreadcrumbItem startContent={<Home size={14} />} onPress={() => navigate('/')}>Home</BreadcrumbItem>
+        <BreadcrumbItem onPress={() => navigate('/students')}>Students</BreadcrumbItem>
+        <BreadcrumbItem>Transfer Certificate</BreadcrumbItem>
+      </Breadcrumbs>
 
       <PageLayout
         header={{ title: 'Transfer Certificate', description: 'Search students and generate TC documents' }}
         noPadding
       >
-        <div className="p-6 space-y-5">
-          {/* Search */}
-          <Card shadow="sm" className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800">
-            <CardBody className="p-4">
-              <div className="flex gap-3">
-                <Input
-                  label="Search Student"
-                  placeholder={t('students.form.searchStudentPlaceholder')}
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                  variant="bordered"
-                  startContent={<Search size={16} className="text-gray-400" />}
-                  classNames={{ input: 'dark:text-zinc-100', inputWrapper: 'dark:border-zinc-700' }}
-                  className="flex-1"
-                />
-                <Button
-                  className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900 self-end"
-                  onPress={handleSearch}
-                  isLoading={loading}
-                >
-                  Search
+        <div className="p-6 space-y-4">
+          {/* Search bar */}
+          <div className="tc-toolbar">
+            <Input
+              aria-label="Search students"
+              placeholder={t('students.form.searchStudentPlaceholder')}
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSearch()}
+              variant="bordered"
+              size="sm"
+              startContent={<Search size={14} className="text-fg-faint" />}
+              classNames={{ input: 'text-fg', inputWrapper: 'border-border-token h-9' }}
+              className="flex-1 max-w-md"
+            />
+            <Button
+              size="sm"
+              className="bg-fg text-bg"
+              onPress={handleSearch}
+              isLoading={loading}
+            >
+              Search
+            </Button>
+            <div style={{ flex: 1 }} />
+            {students.length > 0 && (
+              <>
+                <span className="tc-toolbar__count">
+                  <span className="mono tnum">{students.length}</span> result{students.length !== 1 ? 's' : ''} ·{' '}
+                  <span className="mono tnum">{selected.size}</span> selected
+                </span>
+                <Button size="sm" variant="flat" onPress={selectAll}>
+                  {selected.size === students.length ? 'Clear' : 'Select all'}
                 </Button>
-              </div>
-            </CardBody>
-          </Card>
+                {selected.size > 0 && (
+                  <Button
+                    size="sm"
+                    className="bg-fg text-bg"
+                    startContent={<Printer size={14} />}
+                    onPress={() => setModalOpen(true)}
+                  >
+                    Generate TC (<span className="mono tnum">{selected.size}</span>)
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
 
           {/* Results */}
           {loading && <TablePageSkeleton />}
 
           {!loading && searched && students.length === 0 && (
-            <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-zinc-700 rounded-xl">
-              <FileText size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-              <p className="text-gray-500 dark:text-zinc-400">No students found for "{search}"</p>
+            <div className="text-center py-12 border-2 border-dashed border-border-token rounded-xl">
+              <FileText size={36} className="mx-auto mb-3 text-fg-faint" />
+              <p className="text-fg-muted">No students found for "{search}"</p>
             </div>
           )}
 
           {!loading && students.length > 0 && (
-            <>
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-600 dark:text-zinc-400">
-                  {students.length} student{students.length !== 1 ? 's' : ''} found · {selected.size} selected
-                </p>
-                {selected.size > 0 && (
-                  <MinimalButton icon={<Printer size={16} />} onClick={() => setModalOpen(true)}>
-                    Generate TC ({selected.size})
-                  </MinimalButton>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                {students.map(s => (
+            <div className="tc-list-frame">
+              {students.map(s => {
+                const isSel = selected.has(s._id);
+                const className = s.classId?.name || s.className || '—';
+                const section = s.classId?.section ? ` (${s.classId.section})` : '';
+                return (
                   <div
                     key={s._id}
                     onClick={() => toggleSelect(s._id)}
-                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                      selected.has(s._id)
-                        ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800'
-                        : 'bg-white dark:bg-zinc-950 border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700'
-                    }`}
+                    className={`tc-row ${isSel ? 'is-selected' : ''}`}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSelect(s._id); } }}
                   >
                     <Checkbox
-                      isSelected={selected.has(s._id)}
+                      isSelected={isSel}
                       onChange={() => toggleSelect(s._id)}
                       size="sm"
                       onClick={e => e.stopPropagation()}
+                      aria-label={`Select ${s.name}`}
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{s.name}</p>
-                      <p className="text-xs text-gray-500 dark:text-zinc-400">
+                      <p className="tc-row__name">{s.name}</p>
+                      <p className="tc-row__meta">
                         Adm: {s.admissionId || s.admissionNumber || '—'} ·
                         Roll: {s.rollNo || '—'} ·
-                        Class: {s.classId?.name || s.className || '—'}{s.classId?.section ? ` (${s.classId.section})` : ''}
+                        Class: {className}{section}
                       </p>
                     </div>
-                    <Chip
-                      size="sm"
-                      variant="flat"
-                      className={
-                        s.status === 'active'
-                          ? 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300'
-                          : 'bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400'
-                      }
-                    >
+                    <span className={`chip ${s.status === 'active' ? 'chip--ok' : ''}`}>
                       {s.status}
-                    </Chip>
+                    </span>
                   </div>
-                ))}
-              </div>
-
-              {selected.size > 0 && (
-                <div className="flex justify-end pt-2">
-                  <Button
-                    className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900"
-                    startContent={<Printer size={16} />}
-                    onPress={() => setModalOpen(true)}
-                  >
-                    Generate TC for {selected.size} Student{selected.size !== 1 ? 's' : ''}
-                  </Button>
-                </div>
-              )}
-            </>
+                );
+              })}
+            </div>
           )}
 
           {!loading && !searched && (
             <div className="text-center py-20">
-              <FileText size={48} className="mx-auto mb-4 text-gray-200 dark:text-zinc-700" />
-              <p className="text-gray-500 dark:text-zinc-400">Search for students to generate Transfer Certificates</p>
+              <FileText size={44} className="mx-auto mb-4 text-fg-faint" />
+              <p className="text-fg-muted">Search for students to generate Transfer Certificates</p>
             </div>
           )}
         </div>

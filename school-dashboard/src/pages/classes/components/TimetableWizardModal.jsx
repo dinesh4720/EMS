@@ -16,6 +16,8 @@ import { usePermissions } from "../../../context/PermissionContext";
 import { timetableApi, teacherAssignmentsApi, classesApi } from "../../../services/api";
 import { DEFAULT_PERIODS, TIMETABLE_DAYS } from "../../../utils/constants";
 import { useTranslation } from 'react-i18next';
+import logger from '../../../utils/logger';
+
 
 const DAYS = TIMETABLE_DAYS;
 const DEFAULT_PERIODS_LIST = DEFAULT_PERIODS;
@@ -139,7 +141,7 @@ export default function TimetableWizardModal({
       });
       setTeacherBusySlots(busyMap);
     } catch (error) {
-      console.error('Error loading teacher busy slots:', error);
+      logger.error('Error loading teacher busy slots:', error);
       // Non-blocking: proceed without cross-class checks
     } finally {
       setIsLoadingBusySlots(false);
@@ -207,7 +209,7 @@ export default function TimetableWizardModal({
       }
     } catch (error) {
       if (isStale()) return;
-      console.error('Error loading class data:', error);
+      logger.error('Error loading class data:', error);
       toast.error(t('toast.error.failedToLoadClassData'));
     } finally {
       if (!isStale()) {
@@ -240,7 +242,7 @@ export default function TimetableWizardModal({
 
       setTeacherAssignments(assignments);
     } catch (error) {
-      console.error('Error loading teacher assignments:', error);
+      logger.error('Error loading teacher assignments:', error);
     }
   };
 
@@ -433,7 +435,7 @@ export default function TimetableWizardModal({
         // Check if subject has assigned teachers
         const teachers = getTeachersForSubject(subject);
         if (teachers.length === 0) {
-          console.warn(`No teachers assigned for ${subject}`);
+          logger.warn(`No teachers assigned for ${subject}`);
         }
 
         for (let i = 0; i < Math.max(1, periodsPerSubject); i++) {
@@ -518,7 +520,7 @@ export default function TimetableWizardModal({
               }
               // Fallback: if all teachers are busy in other classes, log a warning instead of silently assigning a busy teacher
               if (!selectedTeacher) {
-                console.warn(`All teachers for ${selectedSubject} are busy on ${day} Period ${periodIdx + 1}. Assigning first available teacher (conflict expected).`);
+                logger.warn(`All teachers for ${selectedSubject} are busy on ${day} Period ${periodIdx + 1}. Assigning first available teacher (conflict expected).`);
                 selectedTeacher = teachers[startIdx].id;
                 // Mark this slot explicitly as a known conflict so the user is warned
                 if (!schedule._knownConflicts) schedule._knownConflicts = [];
@@ -554,7 +556,7 @@ export default function TimetableWizardModal({
       }
       return true;
     } catch (error) {
-      console.error('Error generating timetable:', error);
+      logger.error('Error generating timetable:', error);
       toast.error(t('toast.error.failedToGenerateTimetable'));
       return false;
     } finally {
@@ -619,7 +621,7 @@ export default function TimetableWizardModal({
 
       onClose();
     } catch (error) {
-      console.error('Error saving timetable:', error);
+      logger.error('Error saving timetable:', error);
       toast.error(error.message || t('toast.error.failedToSaveTimetable', 'Failed to save timetable'));
     } finally {
       setIsSaving(false);
@@ -671,14 +673,14 @@ export default function TimetableWizardModal({
       }}
     >
       <ModalContent>
-        <ModalHeader className="flex flex-col gap-1 border-b border-gray-200 dark:border-zinc-800">
+        <ModalHeader className="flex flex-col gap-1 border-b border-border-token">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary-100 rounded-lg">
               <Wand2 size={24} className="text-primary-600" />
             </div>
             <div>
               <h2 className="text-xl font-semibold">{t('pages.timetableWizard')}</h2>
-              <p className="text-sm text-gray-500 dark:text-zinc-400">
+              <p className="text-sm text-fg-muted">
                 {t('classes.timetableWizardDescription', 'Create and configure class timetables with smart generation')}
               </p>
             </div>
@@ -697,20 +699,20 @@ export default function TimetableWizardModal({
                     flex items-center gap-2 px-3 py-2 rounded-lg transition-colors
                     ${isActive ? 'bg-primary-100 text-primary-700' :
                       isCompleted ? 'bg-success-100 text-success-700' :
-                      'bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400'}
+                      'bg-surface-2 text-fg-muted'}
                   `}>
                     <div className={`
                       w-7 h-7 rounded-full flex items-center justify-center text-sm font-medium
                       ${isActive ? 'bg-primary-500 text-white' :
                         isCompleted ? 'bg-success-500 text-white' :
-                        'bg-gray-300 dark:bg-zinc-600 text-gray-600 dark:text-zinc-300'}
+                        'bg-surface-2 text-gray-600 dark:text-zinc-300'}
                     `}>
                       {isCompleted ? <Check size={14} /> : step.number}
                     </div>
                     <span className="text-sm font-medium hidden md:block">{step.title}</span>
                   </div>
                   {index < steps.length - 1 && (
-                    <ChevronRight size={20} className="mx-2 text-gray-400 dark:text-zinc-500" />
+                    <ChevronRight size={20} className="mx-2 text-fg-faint" />
                   )}
                 </div>
               );
@@ -724,7 +726,7 @@ export default function TimetableWizardModal({
             <div className="space-y-6">
               <div>
                 <h3 className="text-lg font-medium mb-2">{t('pages.selectAClass')}</h3>
-                <p className="text-sm text-gray-500 dark:text-zinc-400 mb-4">
+                <p className="text-sm text-fg-muted mb-4">
                   {t('classes.chooseClassDescription', 'Choose the class for which you want to create or edit the timetable.')}
                 </p>
 
@@ -756,31 +758,31 @@ export default function TimetableWizardModal({
               </div>
 
               {isLoadingClassData && selectedClassId && (
-                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400">
+                <div className="flex items-center gap-2 text-sm text-fg-muted">
                   <RefreshCw className="w-4 h-4 animate-spin" />
                   {t('common.loading', 'Loading class data...')}
                 </div>
               )}
 
               {selectedClass && !isLoadingClassData && (
-                <Card className="bg-gray-50 dark:bg-zinc-900">
+                <Card className="bg-surface-2">
                   <CardBody className="p-4">
                     <h4 className="font-medium mb-3">{t('pages.classInformation')}</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.class1')}</p>
+                        <p className="text-xs text-fg-muted">{t('pages.class1')}</p>
                         <p className="font-medium">{selectedClass.name}-{selectedClass.section}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.classTeacher2')}</p>
+                        <p className="text-xs text-fg-muted">{t('pages.classTeacher2')}</p>
                         <p className="font-medium">{selectedClass.teacher || t('common.notAssigned', 'Not assigned')}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.currentSubjects')}</p>
+                        <p className="text-xs text-fg-muted">{t('pages.currentSubjects')}</p>
                         <p className="font-medium">{selectedClass.subjects?.length || 0} {t('common.subjects', 'subjects')}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.academicYear1')}</p>
+                        <p className="text-xs text-fg-muted">{t('pages.academicYear1')}</p>
                         <p className="font-medium">{currentAcademicYear}</p>
                       </div>
                     </div>
@@ -795,13 +797,13 @@ export default function TimetableWizardModal({
             <div className="space-y-6">
               <div>
                 <h3 className="text-lg font-medium mb-2">{t('pages.configureSubjects')}</h3>
-                <p className="text-sm text-gray-500 dark:text-zinc-400 mb-4">
+                <p className="text-sm text-fg-muted mb-4">
                   {t('classes.subjectConfigDescription', 'Add or remove subjects for this class. These subjects will be used in the timetable.')}
                 </p>
               </div>
 
               {isLoadingClassData && (
-                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400">
+                <div className="flex items-center gap-2 text-sm text-fg-muted">
                   <RefreshCw className="w-4 h-4 animate-spin" />
                   {t('common.loadingSubjects', 'Loading subjects...')}
                 </div>
@@ -845,7 +847,7 @@ export default function TimetableWizardModal({
                     </Chip>
                   ))}
                   {classSubjects.length === 0 && (
-                    <p className="text-sm text-gray-400 dark:text-zinc-500 italic">{t('pages.noSubjectsSelected')}</p>
+                    <p className="text-sm text-fg-faint italic">{t('pages.noSubjectsSelected')}</p>
                   )}
                 </div>
               </div>
@@ -882,13 +884,13 @@ export default function TimetableWizardModal({
             <div className="space-y-6">
               <div>
                 <h3 className="text-lg font-medium mb-2">{t('pages.assignTeachersToSubjects')}</h3>
-                <p className="text-sm text-gray-500 dark:text-zinc-400 mb-4">
+                <p className="text-sm text-fg-muted mb-4">
                   {t('classes.teacherAssignDescription', 'Select which teachers can teach each subject for this class. Teachers must already have subject assignments configured.')}
                 </p>
               </div>
 
               {(isLoadingClassData || isLoadingBusySlots) && (
-                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400">
+                <div className="flex items-center gap-2 text-sm text-fg-muted">
                   <RefreshCw className="w-4 h-4 animate-spin" />
                   {isLoadingClassData
                     ? t('common.loadingTeacherAssignments', 'Loading teacher assignments...')
@@ -906,7 +908,7 @@ export default function TimetableWizardModal({
                       <CardBody className="p-4">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
-                            <BookOpen size={18} className="text-gray-500 dark:text-zinc-400" />
+                            <BookOpen size={18} className="text-fg-muted" />
                             <span className="font-medium">{subject}</span>
                             <Chip size="sm" variant="flat" color={getSubjectColor(subject)}>
                               {assignedTeachers.length} {t('classes.teacherCount', 'teacher(s)')}
@@ -950,7 +952,7 @@ export default function TimetableWizardModal({
             <div className="space-y-6">
               <div>
                 <h3 className="text-lg font-medium mb-2">{t('pages.setPeriodRules')}</h3>
-                <p className="text-sm text-gray-500 dark:text-zinc-400 mb-4">
+                <p className="text-sm text-fg-muted mb-4">
                   {t('classes.periodRulesDescription', 'Configure constraints for timetable generation. These rules will be applied when generating the schedule.')}
                 </p>
               </div>
@@ -960,7 +962,7 @@ export default function TimetableWizardModal({
                 <Card className="shadow-sm">
                   <CardBody className="p-4 space-y-4">
                     <h4 className="font-medium flex items-center gap-2">
-                      <Settings size={18} className="text-gray-500 dark:text-zinc-400" />
+                      <Settings size={18} className="text-fg-muted" />
                       {t('classes.basicRules', 'Basic Rules')}
                     </h4>
 
@@ -968,7 +970,7 @@ export default function TimetableWizardModal({
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm font-medium">{t('pages.maxPeriodsPerSubjectPerDay')}</p>
-                          <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.limitHowManyTimesASubjectCanAppearInOneDay')}</p>
+                          <p className="text-xs text-fg-muted">{t('pages.limitHowManyTimesASubjectCanAppearInOneDay')}</p>
                         </div>
                         <Select
                           size="sm"
@@ -985,7 +987,7 @@ export default function TimetableWizardModal({
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm font-medium">{t('pages.maxPeriodsPerSubjectPerWeek')}</p>
-                          <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.totalLimitAcrossAllDays')}</p>
+                          <p className="text-xs text-fg-muted">{t('pages.totalLimitAcrossAllDays')}</p>
                         </div>
                         <Select
                           size="sm"
@@ -1022,7 +1024,7 @@ export default function TimetableWizardModal({
                 <Card className="shadow-sm">
                   <CardBody className="p-4 space-y-4">
                     <h4 className="font-medium flex items-center gap-2">
-                      <Clock size={18} className="text-gray-500 dark:text-zinc-400" />
+                      <Clock size={18} className="text-fg-muted" />
                       {t('classes.advancedRules', 'Advanced Rules')}
                     </h4>
 
@@ -1065,7 +1067,7 @@ export default function TimetableWizardModal({
                             <SelectItem key={s}>{s}</SelectItem>
                           ))}
                         </Select>
-                        <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">{t('pages.subjectsThatShouldBeScheduledInTheFirstPeriod')}</p>
+                        <p className="text-xs text-fg-muted mt-1">{t('pages.subjectsThatShouldBeScheduledInTheFirstPeriod')}</p>
                       </div>
                     </div>
                   </CardBody>
@@ -1076,7 +1078,7 @@ export default function TimetableWizardModal({
               <Card className="shadow-sm">
                 <CardBody className="p-4">
                   <h4 className="font-medium mb-4 flex items-center gap-2">
-                    <Calendar size={18} className="text-gray-500 dark:text-zinc-400" />
+                    <Calendar size={18} className="text-fg-muted" />
                     {t('classes.periodConfiguration', 'Period Configuration')} ({periods.length} {t('common.periods', 'periods')})
                   </h4>
 
@@ -1093,7 +1095,7 @@ export default function TimetableWizardModal({
                       </thead>
                       <tbody>
                         {periods.map((period, idx) => (
-                          <tr key={`period-config-${idx}`} className={`border-b ${period.isBreak ? 'bg-gray-50 dark:bg-zinc-900' : ''}`}>
+                          <tr key={`period-config-${idx}`} className={`border-b ${period.isBreak ? 'bg-surface-2' : ''}`}>
                             <td className="py-2 px-3">{idx + 1}</td>
                             <td className="py-2 px-3">{period.name}</td>
                             <td className="py-2 px-3">{period.startTime}</td>
@@ -1119,7 +1121,7 @@ export default function TimetableWizardModal({
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-medium mb-2">{t('pages.generatedTimetable')}</h3>
-                  <p className="text-sm text-gray-500 dark:text-zinc-400">
+                  <p className="text-sm text-fg-muted">
                     {t('classes.previewDescription', 'Preview the generated timetable. Click "Regenerate" to create a new arrangement.')}
                   </p>
                 </div>
@@ -1170,14 +1172,14 @@ export default function TimetableWizardModal({
                 <div className="space-y-4 py-4">
                   <div className="flex items-center justify-center gap-3">
                     <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
-                    <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.generatingTimetable')}</p>
+                    <p className="text-sm text-fg-muted">{t('pages.generatingTimetable')}</p>
                   </div>
-                  <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
+                  <div className="bg-surface rounded-lg border border-border-token overflow-hidden">
                     {Array.from({ length: 6 }).map((_, row) => (
-                      <div key={row} className="flex gap-px bg-gray-100 dark:bg-zinc-800">
+                      <div key={row} className="flex gap-px bg-surface-2">
                         {Array.from({ length: 7 }).map((_, col) => (
-                          <div key={col} className="flex-1 bg-white dark:bg-zinc-950 p-2">
-                            <div className="h-8 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+                          <div key={col} className="flex-1 bg-surface p-2">
+                            <div className="h-8 bg-surface-2 rounded animate-pulse" />
                           </div>
                         ))}
                       </div>
@@ -1188,7 +1190,7 @@ export default function TimetableWizardModal({
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm border-collapse">
                     <thead>
-                      <tr className="bg-gray-100 dark:bg-zinc-800">
+                      <tr className="bg-surface-2">
                         <th className="border p-2 text-left min-w-[100px]">{t('pages.period2')}</th>
                         {DAYS.map(day => (
                           <th key={day} className="border p-2 text-center min-w-[120px]">{day}</th>
@@ -1201,7 +1203,7 @@ export default function TimetableWizardModal({
                           <td className="border p-2 font-medium">
                             <div>
                               <p>{period.name}</p>
-                              <p className="text-xs text-gray-500 dark:text-zinc-400">{period.startTime}-{period.endTime}</p>
+                              <p className="text-xs text-fg-muted">{period.startTime}-{period.endTime}</p>
                             </div>
                           </td>
                           {DAYS.map(day => {
@@ -1218,12 +1220,12 @@ export default function TimetableWizardModal({
                                       getSubjectColor(slot.subject) === 'warning' ? 'bg-warning-50 text-warning-700' :
                                       getSubjectColor(slot.subject) === 'danger' ? 'bg-danger-50 text-danger-700' :
                                       getSubjectColor(slot.subject) === 'secondary' ? 'bg-secondary-50 text-secondary-700' :
-                                      'bg-gray-50 dark:bg-zinc-900 text-gray-700 dark:text-zinc-300'}
+                                      'bg-surface-2 text-fg'}
                                   `}>
                                     <p className="font-medium">{slot.subject}</p>
                                   </div>
                                 ) : (
-                                  <span className="text-gray-400 dark:text-zinc-500 text-xs">-</span>
+                                  <span className="text-fg-faint text-xs">-</span>
                                 )}
                               </td>
                             );
@@ -1235,8 +1237,8 @@ export default function TimetableWizardModal({
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12">
-                  <AlertCircle size={48} className="text-gray-300 dark:text-zinc-600 mb-4" />
-                  <p className="text-gray-500 dark:text-zinc-400 mb-4">{t('pages.noTimetableGeneratedYet')}</p>
+                  <AlertCircle size={48} className="text-fg-faint mb-4" />
+                  <p className="text-fg-muted mb-4">{t('pages.noTimetableGeneratedYet')}</p>
                   <Button
                     color="primary"
                     startContent={<Wand2 size={16} />}
@@ -1249,26 +1251,26 @@ export default function TimetableWizardModal({
 
               {/* Summary Stats */}
               {generatedSchedule && (
-                <Card className="bg-gray-50 dark:bg-zinc-900">
+                <Card className="bg-surface-2">
                   <CardBody className="p-4">
                     <h4 className="font-medium mb-3">{t('pages.scheduleSummary')}</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-zinc-400">{t('classes.totalPeriodsPerWeek', 'Total Periods/Week')}</p>
+                        <p className="text-xs text-fg-muted">{t('classes.totalPeriodsPerWeek', 'Total Periods/Week')}</p>
                         <p className="text-lg font-semibold">
                           {periods.filter(p => !p.isBreak).length * DAYS.length}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.subjects1')}</p>
+                        <p className="text-xs text-fg-muted">{t('pages.subjects1')}</p>
                         <p className="text-lg font-semibold">{classSubjects.length}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.workingDays')}</p>
+                        <p className="text-xs text-fg-muted">{t('pages.workingDays')}</p>
                         <p className="text-lg font-semibold">{DAYS.length}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-zinc-400">{t('classes.breaksPerDay', 'Breaks/Day')}</p>
+                        <p className="text-xs text-fg-muted">{t('classes.breaksPerDay', 'Breaks/Day')}</p>
                         <p className="text-lg font-semibold">
                           {periods.filter(p => p.isBreak).length}
                         </p>
@@ -1281,7 +1283,7 @@ export default function TimetableWizardModal({
           )}
         </ModalBody>
 
-        <ModalFooter className="border-t border-gray-200 dark:border-zinc-800">
+        <ModalFooter className="border-t border-border-token">
           <div className="flex items-center justify-between w-full">
             <Button
               variant="light"

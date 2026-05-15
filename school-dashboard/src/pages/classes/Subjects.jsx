@@ -8,11 +8,15 @@ import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { useNavigate } from "react-router-dom";
 import { useValidatedParams } from "../../hooks/useValidatedParams";
 import {
-  BookOpen, Plus, AlertCircle, Clock
+  BookOpen, Plus, AlertCircle, Clock, CheckCircle2, AlertTriangle
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import logger from '../../utils/logger';
+import StatCard from '../../components/ui/StatCard';
+import EmptyState from '../../components/ui/EmptyState';
+
 
 export default function Subjects() {
   const { t } = useTranslation();
@@ -20,17 +24,34 @@ export default function Subjects() {
   // Instead of redirecting, show a class selector when no class is chosen.
   const { params: { id: routeId } } = useValidatedParams({ id: 'optional' }, {});
   const navigate = useNavigate();
-  const { classesEnhancedApi, staff, classes, students } = useApp();
+  const { classesEnhancedApi, classesApi, staff, classes } = useApp();
   const [selectedClassId, setSelectedClassId] = useState(routeId || '');
   const id = routeId || selectedClassId;
   const isValid = true; // Always valid — class selection handled by UI
 
-  // Filter students for this class
-  const classStudents = (students || []).filter(s =>
-    String(s.classId?._id || s.classId) === String(id) &&
-    (s.status || 'active') === 'active' &&
-    s.isDeleted !== true
-  );
+  // Lazily loaded students for this class (only fetched when "specific students" is selected)
+  const [classStudents, setClassStudents] = useState([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+
+  // Reset students cache when class changes
+  useEffect(() => {
+    setClassStudents([]);
+  }, [id]);
+
+  const fetchClassStudents = async () => {
+    if (!id || classStudents.length > 0) return;
+    try {
+      setLoadingStudents(true);
+      const data = await classesApi.getStudents(id);
+      setClassStudents((data || []).filter(s =>
+        (s.status || 'active') === 'active' && s.isDeleted !== true
+      ));
+    } catch (error) {
+      logger.error('Error loading class students:', error);
+    } finally {
+      setLoadingStudents(false);
+    }
+  };
 
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -64,21 +85,25 @@ export default function Subjects() {
         </div>
         <Card className="border-default-200">
           <CardBody className="py-8 space-y-4">
-            <BookOpen size={48} className="mx-auto text-default-300" />
-            <p className="text-default-500 text-center">{t('pages.pleaseSelectAClassToViewItsSubjects')}</p>
-            <Select
-              label={t('pages.selectClass')}
-              placeholder={t('pages.chooseAClass')}
-              variant="bordered"
-              className="max-w-xs mx-auto"
-              onChange={(e) => setSelectedClassId(e.target.value)}
+            <EmptyState
+              icon={BookOpen}
+              title={t('pages.pleaseSelectAClassToViewItsSubjects')}
+              size="md"
             >
-              {(classes || []).map((cls) => (
-                <SelectItem key={cls._id} value={cls._id}>
-                  {cls.name}{cls.section ? ` - ${cls.section}` : ''}
-                </SelectItem>
-              ))}
-            </Select>
+              <Select
+                label={t('pages.selectClass')}
+                placeholder={t('pages.chooseAClass')}
+                variant="bordered"
+                className="max-w-xs mx-auto"
+                onChange={(e) => setSelectedClassId(e.target.value)}
+              >
+                {(classes || []).map((cls) => (
+                  <SelectItem key={cls._id} value={cls._id}>
+                    {cls.name}{cls.section ? ` - ${cls.section}` : ''}
+                  </SelectItem>
+                ))}
+              </Select>
+            </EmptyState>
           </CardBody>
         </Card>
       </div>
@@ -92,7 +117,7 @@ export default function Subjects() {
       const data = await classesEnhancedApi.getSubjects(id);
       setSubjects(data || []);
     } catch (error) {
-      console.error('Error loading subjects:', error);
+      logger.error('Error loading subjects:', error);
         toast.error(t('toast.error.failedToLoadSubjects', 'Failed to load subjects'));
       // Fallback to class subjects if API fails
       const classData = classes.find(c => String(c.id || c._id) === String(id));
@@ -154,7 +179,7 @@ export default function Subjects() {
       loadSubjects();
       toast.success(t('toast.success.subjectAdded', 'Subject added successfully'));
     } catch (error) {
-      console.error('Error adding subject:', error);
+      logger.error('Error adding subject:', error);
       toast.error(error.response?.data?.message || error.message || t('toast.error.failedToAddSubject', 'Failed to add subject'));
     } finally {
       setIsAddingSubject(false);
@@ -174,7 +199,7 @@ export default function Subjects() {
       loadSubjects();
       toast.success(t('toast.success.chapterProgressUpdatedSuccessfully'));
     } catch (error) {
-      console.error('Error updating chapter:', error);
+      logger.error('Error updating chapter:', error);
       toast.error(error.response?.data?.message || error.message || t('toast.error.failedToUpdateChapter', 'Failed to update chapter progress'));
     } finally {
       setIsUpdatingChapter(false);
@@ -225,61 +250,78 @@ export default function Subjects() {
 
   return (
     <div className="w-full flex flex-col">
-      {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-background border-b border-default-200 py-4 -mx-6 -mt-6 px-6 mb-4">
-        {/* Left Side */}
-        <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold text-default-800">{t('pages.subjectsTeachers')}</h2>
-          <Chip size="sm" variant="flat">{subjects.length} {t('classes.subjects', 'Subjects')}</Chip>
-        </div>
-
-        {/* Right Side - Actions */}
-        <div className="flex gap-2 w-full sm:w-auto justify-end">
-          <Button
-            size="sm"
-            color="primary"
-            startContent={<Plus size={16} />}
-            onPress={() => setAddSubjectModal(true)}
-          >
-            {t('classes.addSubject', 'Add Subject')}
-          </Button>
-        </div>
+      {/* Toolbar — dense, mirrors StaffList */}
+      <div className="toolbar -mx-6 -mt-6 mb-4">
+        <span style={{ fontSize: 13, fontWeight: 520, letterSpacing: '-0.01em', color: 'var(--fg)' }}>
+          {t('pages.subjectsTeachers')}
+        </span>
+        <span className="status">
+          <span className="mono tnum">{subjects.length}</span>&nbsp;{t('classes.subjects', 'Subjects')}
+        </span>
+        {subjects.length > 0 && (
+          <>
+            <span className="status status--ok">
+              <span className="mono tnum">{onTrackCount}</span>&nbsp;on track
+            </span>
+            <span className="status status--warn">
+              <span className="mono tnum">{behindCount}</span>&nbsp;behind
+            </span>
+          </>
+        )}
+        <button
+          type="button"
+          className="btn btn--accent btn--sm"
+          onClick={() => setAddSubjectModal(true)}
+          style={{ marginLeft: 'auto' }}
+        >
+          <Plus size={13} aria-hidden /> {t('classes.addSubject', 'Add Subject')}
+        </button>
       </div>
 
       {/* Curriculum Health Summary */}
       {subjects.length > 0 && (
-        <div className="grid grid-cols-3 gap-4 mb-4">
-          <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-default-200">
-            <p className="text-xs text-default-500">{t('classes.totalSubjects', 'Total Subjects')}</p>
-            <p className="text-2xl font-semibold text-default-900">{subjects.length}</p>
-          </div>
-          <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-default-200">
-            <p className="text-xs text-green-600">{t('classes.onTrack', 'On Track')}</p>
-            <p className="text-2xl font-semibold text-green-700">{onTrackCount}</p>
-            <p className="text-[11px] text-default-400">{t('classes.fiftyPlusProgress', '50%+ progress')}</p>
-          </div>
-          <div className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-default-200">
-            <p className="text-xs text-amber-600">{t('classes.behindSchedule', 'Behind Schedule')}</p>
-            <p className="text-2xl font-semibold text-amber-700">{behindCount}</p>
-            <p className="text-[11px] text-default-400">{t('classes.belowFifty', 'Below 50%')}</p>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+          <StatCard
+            label={t('classes.totalSubjects', 'Total Subjects')}
+            value={subjects.length}
+            icon={BookOpen}
+            color="gray"
+          />
+          <StatCard
+            label={t('classes.onTrack', 'On Track')}
+            value={onTrackCount}
+            subtext={t('classes.fiftyPlusProgress', '50%+ progress')}
+            icon={CheckCircle2}
+            color="success"
+          />
+          <StatCard
+            label={t('classes.behindSchedule', 'Behind Schedule')}
+            value={behindCount}
+            subtext={t('classes.belowFifty', 'Below 50%')}
+            icon={AlertTriangle}
+            color="warning"
+          />
         </div>
       )}
 
       {/* Subjects Table */}
       {subjects.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center bg-default-50/50 rounded-lg border border-dashed border-default-200">
-          <BookOpen size={48} className="text-default-300 mb-4" />
-          <p className="text-default-500 font-medium">{t('pages.noSubjectsAssignedYet')}</p>
-          <Button
-            color="primary"
-            variant="flat"
-            size="sm"
-            className="mt-4"
-            onPress={() => setAddSubjectModal(true)}
-          >
-            {t('classes.addFirstSubject', 'Add First Subject')}
-          </Button>
+        <div className="bg-default-50/50 rounded-lg border border-dashed border-default-200">
+          <EmptyState
+            icon={BookOpen}
+            title={t('pages.noSubjectsAssignedYet')}
+            size="lg"
+            action={
+              <Button
+                color="primary"
+                variant="flat"
+                size="sm"
+                onPress={() => setAddSubjectModal(true)}
+              >
+                {t('classes.addFirstSubject', 'Add First Subject')}
+              </Button>
+            }
+          />
         </div>
       ) : (
         <Table
@@ -421,6 +463,7 @@ export default function Subjects() {
                   onValueChange={(checked) => {
                     if (checked) {
                       setNewSubject(prev => ({ ...prev, assignTo: 'specific' }));
+                      fetchClassStudents();
                     }
                   }}
                 >
@@ -429,7 +472,9 @@ export default function Subjects() {
               </div>
               {newSubject.assignTo === 'specific' && (
                 <div className="mt-2 max-h-40 overflow-y-auto border border-default-200 rounded-lg p-2 space-y-1">
-                  {classStudents.length > 0 ? classStudents.map(student => (
+                  {loadingStudents ? (
+                    <p className="text-sm text-default-400 text-center py-2">{t('common.loading', 'Loading...')}</p>
+                  ) : classStudents.length > 0 ? classStudents.map(student => (
                     <Checkbox
                       key={student._id || student.id}
                       size="sm"
@@ -527,9 +572,12 @@ export default function Subjects() {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8 bg-default-50 rounded-lg">
-                    <AlertCircle size={24} className="mx-auto text-default-300 mb-2" />
-                    <p className="text-default-500">{t('pages.noChaptersFound')}</p>
+                  <div className="bg-default-50 rounded-lg">
+                    <EmptyState
+                      icon={AlertCircle}
+                      title={t('pages.noChaptersFound')}
+                      size="sm"
+                    />
                   </div>
                 )}
               </div>

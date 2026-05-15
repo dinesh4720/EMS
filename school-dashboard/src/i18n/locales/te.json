@@ -127,7 +127,9 @@
     "success": "విజయవంతం",
     "optional": "ఐచ్ఛికం",
     "offlineBanner": "మీరు ఆఫ్‌లైన్‌లో ఉన్నారు. కొన్ని ఫీచర్లు అందుబాటులో ఉండకపోవచ్చు.",
-    "staleDataBanner": "డేటా పాతది కావచ్చు. దయచేసి రిఫ్రెష్ చేయండి."
+    "staleDataBanner": "డేటా పాతది కావచ్చు. దయచేసి రిఫ్రెష్ చేయండి.",
+    "done": "పూర్తయింది",
+    "mandatory": "తప్పనిసరి"
   },
   "messaging": {
     "chat": {
@@ -726,7 +728,7 @@
       "pending": "పెండింగ్",
       "approved": "ఆమోదించబడింది",
       "rejected": "తిరస్కరించబడింది",
-      "needs_revision": "సవరణ అవసరం",
+      "needsRevision": "సవరణ అవసరం",
       "all": "అన్నీ"
     }
   },
@@ -1130,7 +1132,9 @@
     "deleteFeedback": "మీరు తొలగించు this feedback అనుకుంటున్నారా?",
     "deleteAdmission": "మీరు తొలగించు this admission inquiry అనుకుంటున్నారా?",
     "deleteCallLog": "మీరు తొలగించు this call log అనుకుంటున్నారా?",
-    "deleteRoom": "తొలగించు this room?",
+    "deleteRoomTitle": "గది తొలగించు",
+    "deleteRoom": "తొలగించు this room? ఇది రద్దు చేయలేము.",
+    "deleteHostelTitle": "హాస్టల్ తొలగించు",
     "deleteHostel": "ఈ హాస్టల్‌ను తొలగించాలా? ఇది రద్దు చేయలేము.",
     "deleteItem": "మీరు తొలగించు this item అనుకుంటున్నారా?",
     "deleteItemNamed": "మీరు తొలగించు this {{name}} అనుకుంటున్నారా?",
@@ -1364,7 +1368,9 @@
       "auditCreated": "ఆడిట్ సృష్టించబడింది",
       "auditDeleted": "ఆడిట్ తొలగించబడింది",
       "examDeletedSuccessfully": "పరీక్ష విజయవంతంగా తొలగించబడింది",
-      "examCreatedSuccessfully": "పరీక్ష విజయవంతంగా సృష్టించబడింది"
+      "examCreatedSuccessfully": "పరీక్ష విజయవంతంగా సృష్టించబడింది",
+      "templateUpdated": "టెంప్లేట్ విజయవంతంగా అప్డేట్ చేయబడింది",
+      "feeStructureApplied": "అన్ని విద్యార్థులకు ఫీ స్ట్రక్చర్ వర్తింపబడింది"
     },
     "error": {
       "cSVFileAppearsToBeEmptyOrHasNoDataRows": "CSV ఫైల్ ఖాళీగా ఉన్నట్లు కనిపిస్తోంది లేదా డేటా అడ్డు వరుసలు లేవు",
@@ -1372,6 +1378,7 @@
       "failedToTranscribeAudio": "transcribe audio విఫలమైంది",
       "failedToLoadExamData": "load పరీక్ష data విఫలమైంది",
       "failedToSaveResults": "సేవ్ చేయి results విఫలమైంది",
+      "insufficientPermissionsToSaveResults": "results సేవ్ చేయడానికి మీకు అనుమతి లేదు",
       "failedToLoadExams": "load exams విఫలమైంది",
       "failedToDeleteExam": "తొలగించు పరీక్ష విఫలమైంది",
       "failedToLoadExamDetails": "load పరీక్ష details విఫలమైంది",
@@ -4515,6 +4522,17 @@
     "period1": "పీరియడ్",
     "date1": "తేదీ",
     "availableTeachers": "అందుబాటులో ఉన్న ఉపాధ్యాయులు",
-    "noTeachersAvailable": "ఉపాధ్యాయులు అందుబాటులో లేరు"
+    "noTeachersAvailable": "ఉపాధ్యాయులు అందుబాటులో లేరు",
+    "createFeeTemplate": "ఫీ టెంప్లేట్ సృష్టించండి",
+    "retry": "మళ్ళీ ప్రయత్నించండి"
+  },
+  "fees": {
+    "pendingAmount": "పెండింగ్ మొత్తం",
+    "dueDate": "చెల్లింపు తేదీ",
+    "daysOverdue": "గడువు మించిన రోజులు",
+    "templateCount": "{{count}} టెంప్లేట్(లు)",
+    "feeHeadNum": "ఫీ హెడ్ #{{num}}",
+    "templateUsedByStudents": "ఈ టెంప్లేట్ {{structureCount}} క్లాస్ ఫీ స్ట్రక్చర్లలో {{studentCount}} విద్యార్థులకు వర్తింపబడింది.",
+    "templateUsedByStructures": "ఈ టెంప్లేట్ {{structureCount}} క్లాస్ ఫీ స్ట్రక్చర్లు ఉపయోగిస్తున్నాయి."
   }
 }

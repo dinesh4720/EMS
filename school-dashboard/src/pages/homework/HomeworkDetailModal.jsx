@@ -1,40 +1,46 @@
 import { useState, useEffect } from 'react';
 import {
-  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  Button, Chip, Input,
-} from '@heroui/react';
-import { ClipboardList, Clock, Star, UserCheck, Paperclip, ExternalLink } from 'lucide-react';
+  ClipboardList, Clock, Star, UserCheck, Paperclip, ExternalLink,
+  Calendar, CheckCircle2, FileCheck2, Hourglass, ChevronDown, ChevronUp,
+} from 'lucide-react';
 import { request } from '../../services/api';
 import toast from 'react-hot-toast';
 import { formatShortDate } from '../../utils/dateFormatter';
-import { useTranslation } from 'react-i18next';
+import {
+  Modal, Card, Chip, Button, Input,
+  EmptyState, ErrorState, MarkdownRenderer, StatCard, Skeleton,
+} from '../../components/ui';
+import { homeworkGradeSchema, parseFormSchema } from '../../validators/formSchemas';
 
-const SUBMISSION_STATUS_COLORS = {
-  submitted: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
-  graded: 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300',
-  late: 'bg-orange-50 text-orange-600 dark:bg-orange-950 dark:text-orange-300',
+const getSubmissionChipColor = ({ isGraded, isLate }) => {
+  if (isGraded) return 'success';
+  if (isLate) return 'warning';
+  return 'info';
 };
 
 export default function HomeworkDetailModal({ homeworkId, onClose, onDataChanged }) {
   const [hw, setHw] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [classStudents, setClassStudents] = useState([]);
   const [grading, setGrading] = useState(null); // { studentId, marks, feedback }
+  const [gradeErrors, setGradeErrors] = useState({});
   const [savingGrade, setSavingGrade] = useState(false);
-  const [markingSubmit, setMarkingSubmit] = useState(null); // studentId being marked
+  const [markingSubmit, setMarkingSubmit] = useState(null);
   const [showUnsubmitted, setShowUnsubmitted] = useState(false);
 
   useEffect(() => {
     if (!homeworkId) return;
     fetchDetail();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [homeworkId]);
 
   const fetchDetail = async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const res = await request(`/homework/${homeworkId}`);
       setHw(res);
-      // Fetch class students to show unsubmitted list
       const classId = res?.classId?._id || res?.classId;
       if (classId) {
         try {
@@ -44,7 +50,8 @@ export default function HomeworkDetailModal({ homeworkId, onClose, onDataChanged
           // Non-critical — unsubmitted list simply won't show
         }
       }
-    } catch {
+    } catch (err) {
+      setLoadError(err);
       toast.error('Failed to load homework details');
     } finally {
       setLoading(false);
@@ -60,6 +67,7 @@ export default function HomeworkDetailModal({ homeworkId, onClose, onDataChanged
       });
       toast.success('Submission recorded');
       fetchDetail();
+      onDataChanged?.();
     } catch (e) {
       toast.error(e?.message || 'Failed to record submission');
     } finally {
@@ -68,19 +76,20 @@ export default function HomeworkDetailModal({ homeworkId, onClose, onDataChanged
   };
 
   const handleGrade = async () => {
-    if (!grading || grading.marks === '' || grading.marks === undefined) {
-      toast.error('Enter a marks value');
-      return;
-    }
     const maxMarks = hw?.totalMarks ?? 100;
-    if (Number(grading.marks) > maxMarks) {
-      toast.error(`Marks cannot exceed ${maxMarks}`);
+    const { success, errors } = parseFormSchema(homeworkGradeSchema, {
+      studentId: grading?.studentId,
+      marks: grading?.marks,
+      feedback: grading?.feedback || '',
+      maxMarks,
+    });
+    if (!success) {
+      setGradeErrors(errors);
+      const firstErr = Object.values(errors)[0];
+      if (firstErr) toast.error(firstErr);
       return;
     }
-    if (Number(grading.marks) < 0) {
-      toast.error('Marks cannot be negative');
-      return;
-    }
+    setGradeErrors({});
     setSavingGrade(true);
     try {
       await request(`/homework/${homeworkId}/grade`, {
@@ -103,16 +112,244 @@ export default function HomeworkDetailModal({ homeworkId, onClose, onDataChanged
   };
 
   const submittedCount = hw?.submissions?.length || 0;
-  const gradedCount = hw?.submissions?.filter(s => s.marks != null).length || 0;
+  const gradedCount = hw?.submissions?.filter((sub) => sub.marks != null).length || 0;
+  const pendingGradeCount = submittedCount - gradedCount;
   const dueDate = hw?.dueDate ? new Date(hw.dueDate) : null;
   const isOverdue = dueDate && dueDate < new Date();
 
   const submittedStudentIds = new Set(
-    (hw?.submissions || []).map(s => String(s.studentId?._id || s.studentId))
+    (hw?.submissions || []).map((sub) => String(sub.studentId?._id || sub.studentId))
   );
   const unsubmittedStudents = classStudents.filter(
-    st => !submittedStudentIds.has(String(st._id))
+    (st) => !submittedStudentIds.has(String(st._id))
   );
+
+  const headerTitle = loading
+    ? 'Loading…'
+    : hw?.title || 'Homework';
+  const headerDescription = loading
+    ? ' '
+    : `${hw?.subject || ''} · ${hw?.classId?.name || ''}${hw?.classId?.section ? ` (${hw.classId.section})` : ''}`;
+
+  const renderLoading = () => (
+    <div role="status" aria-busy="true" aria-live="polite" className="space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[...Array(4)].map((_, i) => (
+          <Skeleton key={i} variant="rect" className="h-20 w-full" />
+        ))}
+      </div>
+      <Skeleton variant="text" className="h-4 w-1/3" />
+      <Skeleton variant="rect" className="h-24 w-full" />
+    </div>
+  );
+
+  const renderBody = () => {
+    if (loading) return renderLoading();
+    if (loadError) {
+      return (
+        <ErrorState
+          title="Couldn't load homework"
+          error={loadError}
+          onRetry={fetchDetail}
+        />
+      );
+    }
+    if (!hw) return <EmptyState icon={ClipboardList} title="Homework not found" description="This homework could not be loaded." />;
+
+    return (
+      <div className="space-y-5">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <StatCard
+            label="Due Date"
+            value={dueDate ? formatShortDate(dueDate) : '—'}
+            icon={Calendar}
+            color={isOverdue ? 'red' : 'gray'}
+          />
+          <StatCard label="Submitted" value={submittedCount} icon={FileCheck2} color="blue" />
+          <StatCard label="Graded" value={gradedCount} icon={CheckCircle2} color="green" />
+          <StatCard label="Pending Grade" value={pendingGradeCount} icon={Hourglass} color="amber" />
+        </div>
+
+        {hw?.description && (
+          <div>
+            <p className="text-xs text-fg-muted mb-1">Description</p>
+            <MarkdownRenderer content={hw.description} className="text-sm text-fg" />
+          </div>
+        )}
+
+        {hw?.attachments?.length > 0 && (
+          <div>
+            <p className="text-xs text-fg-muted mb-2 flex items-center gap-1">
+              <Paperclip size={12} aria-hidden="true" /> Attachments ({hw.attachments.length})
+            </p>
+            <div className="space-y-1.5">
+              {hw.attachments.map((att, i) => (
+                <a
+                  key={i}
+                  href={att.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-3 py-2 bg-surface-2 border border-divider rounded-lg hover:bg-surface-2 transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
+                >
+                  <Paperclip size={14} className="text-fg-faint shrink-0" aria-hidden="true" />
+                  <span className="text-sm text-fg truncate flex-1">
+                    {att.name || att.url}
+                  </span>
+                  {att.type && (
+                    <Chip size="sm" color="neutral">
+                      {att.type}
+                    </Chip>
+                  )}
+                  <ExternalLink
+                    size={13}
+                    className="text-fg-faint shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-hidden="true"
+                  />
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {unsubmittedStudents.length > 0 && (
+          <Card padding="none" className="overflow-hidden border-amber-100 dark:border-amber-900">
+            <button
+              type="button"
+              onClick={() => setShowUnsubmitted((prev) => !prev)}
+              aria-expanded={showUnsubmitted}
+              className="w-full flex items-center justify-between px-4 py-2.5 bg-amber-50 dark:bg-amber-950/40 text-sm font-medium text-amber-700 dark:text-amber-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30"
+            >
+              <span className="flex items-center gap-2">
+                <UserCheck size={14} aria-hidden="true" />
+                Not Submitted ({unsubmittedStudents.length}) — Mark Paper Submission
+              </span>
+              {showUnsubmitted ? (
+                <ChevronUp size={14} aria-hidden="true" />
+              ) : (
+                <ChevronDown size={14} aria-hidden="true" />
+              )}
+            </button>
+            {showUnsubmitted && (
+              <div className="divide-y divide-divider max-h-48 overflow-y-auto">
+                {unsubmittedStudents.map((st) => (
+                  <div
+                    key={st._id}
+                    className="flex items-center justify-between px-4 py-2 bg-surface"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-fg">{st.name}</p>
+                      <p className="text-xs text-fg-faint">Roll: {st.rollNo || '—'}</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      loading={markingSubmit === st._id}
+                      onClick={() => handleMarkSubmitted(st._id)}
+                    >
+                      Mark Submitted
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        )}
+
+        <div>
+          <p className="text-sm font-semibold text-fg mb-3">Submissions</p>
+          {!hw?.submissions?.length ? (
+            <EmptyState icon={Clock} size="sm" title="No submissions yet" />
+          ) : (
+            <div className="space-y-2 max-h-72 overflow-y-auto">
+              {(hw.submissions || []).map((sub, i) => {
+                const student = sub.studentId;
+                const isLate = sub.submittedAt && dueDate && new Date(sub.submittedAt) > dueDate;
+                const isGraded = sub.marks != null;
+                const isEditingThis = grading?.studentId === (student?._id || student);
+
+                return (
+                  <Card key={i} padding="sm" className="bg-surface-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-fg truncate">
+                          {student?.name || 'Student'}
+                        </p>
+                        <p className="text-xs text-fg-muted">
+                          Roll: {student?.rollNo || '—'} · Submitted {sub.submittedAt ? formatShortDate(sub.submittedAt) : '—'}
+                          {isLate && <span className="ml-1 text-amber-600 dark:text-amber-400">(Late)</span>}
+                        </p>
+                        {sub.remarks && (
+                          <p className="text-xs text-fg-faint mt-0.5 italic">&quot;{sub.remarks}&quot;</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {isGraded && (
+                          <div className="flex items-center gap-1">
+                            <Star size={13} className="text-amber-400 fill-amber-400" aria-hidden="true" />
+                            <span className="text-sm font-medium text-fg">
+                              {sub.marks}/{hw?.totalMarks ?? 100}
+                            </span>
+                          </div>
+                        )}
+                        <Chip size="sm" color={getSubmissionChipColor({ isGraded, isLate })}>
+                          {isGraded ? 'Graded' : isLate ? 'Late' : 'Submitted'}
+                        </Chip>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setGradeErrors({});
+                            setGrading(
+                              isEditingThis
+                                ? null
+                                : {
+                                    studentId: student?._id || student,
+                                    marks: sub.marks ?? '',
+                                    feedback: sub.feedback || '',
+                                  }
+                            );
+                          }}
+                        >
+                          {isEditingThis ? 'Cancel' : isGraded ? 'Edit' : 'Grade'}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {isEditingThis && (
+                      <div className="mt-3 flex items-end gap-2 border-t border-divider pt-3">
+                        <Input
+                          wrapperClassName="w-32"
+                          label={`Marks (max ${hw?.totalMarks ?? 100})`}
+                          type="number"
+                          size="sm"
+                          min={0}
+                          max={hw?.totalMarks ?? 100}
+                          value={String(grading.marks)}
+                          onChange={(e) => setGrading((prev) => ({ ...prev, marks: e.target.value }))}
+                          error={gradeErrors.marks}
+                        />
+                        <Input
+                          wrapperClassName="flex-1"
+                          label="Feedback (optional)"
+                          size="sm"
+                          value={grading.feedback}
+                          onChange={(e) => setGrading((prev) => ({ ...prev, feedback: e.target.value }))}
+                          error={gradeErrors.feedback}
+                        />
+                        <Button size="sm" variant="primary" onClick={handleGrade} loading={savingGrade}>
+                          Save
+                        </Button>
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <Modal
@@ -120,248 +357,15 @@ export default function HomeworkDetailModal({ homeworkId, onClose, onDataChanged
       onClose={onClose}
       size="2xl"
       scrollBehavior="inside"
-      classNames={{ backdrop: 'bg-black/30', base: 'bg-white dark:bg-zinc-950' }}
+      title={headerTitle}
+      description={headerDescription}
+      footer={(close) => (
+        <Button variant="ghost" onClick={close}>
+          Close
+        </Button>
+      )}
     >
-      <ModalContent>
-        <ModalHeader className="border-b border-gray-100 dark:border-zinc-800 py-4 px-6">
-          {loading ? (
-            <div className="h-6 w-48 bg-gray-100 dark:bg-zinc-800 rounded animate-pulse" />
-          ) : (
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg">
-                <ClipboardList size={20} className="text-gray-600 dark:text-zinc-300" />
-              </div>
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">{hw?.title}</h3>
-                <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal">
-                  {hw?.subject} · {hw?.classId?.name}{hw?.classId?.section ? ` (${hw.classId.section})` : ''}
-                </p>
-              </div>
-            </div>
-          )}
-        </ModalHeader>
-        <ModalBody className="px-6 py-4">
-          {loading ? (
-            <div className="animate-pulse space-y-4 py-4">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {[...Array(4)].map((_, i) => <div key={i} className="h-14 bg-gray-200 dark:bg-zinc-700 rounded-lg" />)}
-              </div>
-              <div className="h-4 bg-gray-200 dark:bg-zinc-700 rounded w-1/3" />
-              <div className="h-24 bg-gray-100 dark:bg-zinc-800 rounded-lg" />
-            </div>
-          ) : (
-            <div className="space-y-5">
-              {/* Meta */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-3 border border-gray-100 dark:border-zinc-800">
-                  <p className="text-xs text-gray-500 dark:text-zinc-400">Due Date</p>
-                  <p className={`text-sm font-medium mt-0.5 ${isOverdue ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-zinc-100'}`}>
-                    {dueDate ? formatShortDate(dueDate) : '—'}
-                  </p>
-                </div>
-                <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-3 border border-gray-100 dark:border-zinc-800">
-                  <p className="text-xs text-gray-500 dark:text-zinc-400">Submitted</p>
-                  <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 mt-0.5">{submittedCount}</p>
-                </div>
-                <div className="bg-green-50 dark:bg-green-950 rounded-lg p-3 border border-green-100 dark:border-green-900">
-                  <p className="text-xs text-green-600 dark:text-green-400">Graded</p>
-                  <p className="text-sm font-medium text-green-700 dark:text-green-300 mt-0.5">{gradedCount}</p>
-                </div>
-                <div className="bg-yellow-50 dark:bg-yellow-950 rounded-lg p-3 border border-yellow-100 dark:border-yellow-900">
-                  <p className="text-xs text-yellow-600 dark:text-yellow-400">Pending Grade</p>
-                  <p className="text-sm font-medium text-yellow-700 dark:text-yellow-300 mt-0.5">{submittedCount - gradedCount}</p>
-                </div>
-              </div>
-
-              {/* Description */}
-              {hw?.description && (
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">Description</p>
-                  <p className="text-sm text-gray-700 dark:text-zinc-300">{hw.description}</p>
-                </div>
-              )}
-
-              {/* Attachments */}
-              {hw?.attachments?.length > 0 && (
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-zinc-400 mb-2 flex items-center gap-1">
-                    <Paperclip size={12} /> Attachments ({hw.attachments.length})
-                  </p>
-                  <div className="space-y-1.5">
-                    {hw.attachments.map((att, i) => (
-                      <a
-                        key={i}
-                        href={att.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors group"
-                      >
-                        <Paperclip size={14} className="text-gray-400 dark:text-zinc-500 shrink-0" />
-                        <span className="text-sm text-gray-700 dark:text-zinc-300 truncate flex-1">
-                          {att.name || att.url}
-                        </span>
-                        {att.type && (
-                          <Chip size="sm" variant="flat" className="text-xs bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 shrink-0">
-                            {att.type}
-                          </Chip>
-                        )}
-                        <ExternalLink size={13} className="text-gray-400 dark:text-zinc-500 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Unsubmitted students — paper submission panel */}
-              {unsubmittedStudents.length > 0 && (
-                <div className="border border-orange-100 dark:border-orange-900 rounded-lg overflow-hidden">
-                  <button
-                    onClick={() => setShowUnsubmitted(p => !p)}
-                    className="w-full flex items-center justify-between px-4 py-2.5 bg-orange-50 dark:bg-orange-950/40 text-sm font-medium text-orange-700 dark:text-orange-300"
-                  >
-                    <span className="flex items-center gap-2">
-                      <UserCheck size={14} />
-                      Not Submitted ({unsubmittedStudents.length}) — Mark Paper Submission
-                    </span>
-                    <span className="text-xs">{showUnsubmitted ? '▲' : '▼'}</span>
-                  </button>
-                  {showUnsubmitted && (
-                    <div className="divide-y divide-gray-100 dark:divide-zinc-800 max-h-48 overflow-y-auto">
-                      {unsubmittedStudents.map(st => (
-                        <div
-                          key={st._id}
-                          className="flex items-center justify-between px-4 py-2 bg-white dark:bg-zinc-950"
-                        >
-                          <div>
-                            <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{st.name}</p>
-                            <p className="text-xs text-gray-400 dark:text-zinc-500">Roll: {st.rollNo || '—'}</p>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="flat"
-                            className="bg-orange-50 dark:bg-orange-950 text-orange-700 dark:text-orange-300 text-xs"
-                            isLoading={markingSubmit === st._id}
-                            onPress={() => handleMarkSubmitted(st._id)}
-                          >
-                            Mark Submitted
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Submissions list */}
-              <div>
-                <p className="text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-3">Submissions</p>
-                {!hw?.submissions?.length ? (
-                  <div className="text-center py-8 border-2 border-dashed border-gray-200 dark:border-zinc-700 rounded-lg">
-                    <Clock size={32} className="mx-auto mb-2 text-gray-300 dark:text-zinc-600" />
-                    <p className="text-sm text-gray-400 dark:text-zinc-500">No submissions yet</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2 max-h-72 overflow-y-auto">
-                    {hw.submissions.map((sub, i) => {
-                      const student = sub.studentId;
-                      const isLate = sub.submittedAt && dueDate && new Date(sub.submittedAt) > dueDate;
-                      const isGraded = sub.marks != null;
-                      const isEditingThis = grading?.studentId === (student?._id || student);
-
-                      return (
-                        <div
-                          key={i}
-                          className="p-3 rounded-lg bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 truncate">
-                                {student?.name || 'Student'}
-                              </p>
-                              <p className="text-xs text-gray-500 dark:text-zinc-400">
-                                Roll: {student?.rollNo || '—'} · Submitted {sub.submittedAt ? formatShortDate(sub.submittedAt) : '—'}
-                                {isLate && <span className="ml-1 text-orange-500">(Late)</span>}
-                              </p>
-                              {sub.remarks && (
-                                <p className="text-xs text-gray-400 dark:text-zinc-500 mt-0.5 italic">"{sub.remarks}"</p>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              {isGraded && (
-                                <div className="flex items-center gap-1">
-                                  <Star size={13} className="text-yellow-400 fill-yellow-400" />
-                                  <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">{sub.marks}/{hw?.totalMarks ?? 100}</span>
-                                </div>
-                              )}
-                              <Chip
-                                size="sm"
-                                variant="flat"
-                                className={isGraded ? SUBMISSION_STATUS_COLORS.graded : isLate ? SUBMISSION_STATUS_COLORS.late : SUBMISSION_STATUS_COLORS.submitted}
-                              >
-                                {isGraded ? 'Graded' : isLate ? 'Late' : 'Submitted'}
-                              </Chip>
-                              <button
-                                onClick={() => setGrading(
-                                  isEditingThis ? null : {
-                                    studentId: student?._id || student,
-                                    marks: sub.marks ?? '',
-                                    feedback: sub.feedback || '',
-                                  }
-                                )}
-                                className="text-xs text-blue-500 hover:underline"
-                              >
-                                {isEditingThis ? 'Cancel' : isGraded ? 'Edit' : 'Grade'}
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Inline grading form */}
-                          {isEditingThis && (
-                            <div className="mt-3 flex items-end gap-2 border-t border-gray-100 dark:border-zinc-800 pt-3">
-                              <Input
-                                label={`Marks (max ${hw?.totalMarks ?? 100})`}
-                                type="number"
-                                size="sm"
-                                min={0}
-                                max={hw?.totalMarks ?? 100}
-                                value={String(grading.marks)}
-                                onChange={e => setGrading(p => ({ ...p, marks: e.target.value }))}
-                                variant="bordered"
-                                className="w-28"
-                                classNames={{ input: 'dark:text-zinc-100', inputWrapper: 'dark:border-zinc-700' }}
-                              />
-                              <Input
-                                label="Feedback (optional)"
-                                size="sm"
-                                value={grading.feedback}
-                                onChange={e => setGrading(p => ({ ...p, feedback: e.target.value }))}
-                                variant="bordered"
-                                className="flex-1"
-                                classNames={{ input: 'dark:text-zinc-100', inputWrapper: 'dark:border-zinc-700' }}
-                              />
-                              <Button
-                                size="sm"
-                                className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900"
-                                onPress={handleGrade}
-                                isLoading={savingGrade}
-                              >
-                                Save
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </ModalBody>
-        <ModalFooter className="border-t border-gray-100 dark:border-zinc-800">
-          <Button variant="light" onPress={onClose}>Close</Button>
-        </ModalFooter>
-      </ModalContent>
+      {renderBody()}
     </Modal>
   );
 }

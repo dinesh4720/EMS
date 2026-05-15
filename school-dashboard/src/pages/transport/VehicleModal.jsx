@@ -6,6 +6,7 @@ import {
 import { transportApi, staffApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import { vehicleSchema, parseFormSchema } from '../../validators/formSchemas';
 
 export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
   const { t } = useTranslation();
@@ -100,20 +101,22 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
   };
 
   const handleSave = async () => {
-    if (!form.registrationNumber.trim()) {
-      setErrors({ registrationNumber: t('toast.error.registrationNumberIsRequired') });
-      toast.error(t('toast.error.registrationNumberIsRequired'));
+    const { success, errors: zodErrors } = parseFormSchema(vehicleSchema, form);
+    if (!success) {
+      setErrors(zodErrors);
+      toast.error(Object.values(zodErrors)[0] || t('toast.error.registrationNumberIsRequired'));
       return;
     }
 
     setSaving(true);
     try {
+      const capNum = form.capacity ? Number(form.capacity) : NaN;
       const payload = {
         registrationNumber: form.registrationNumber.trim(),
         make: form.make.trim() || undefined,
         model: form.model.trim() || undefined,
         year: form.year ? Number(form.year) : undefined,
-        capacity: form.capacity ? Number(form.capacity) : undefined,
+        capacity: !isNaN(capNum) && capNum > 0 ? capNum : undefined,
         color: form.color.trim() || undefined,
         status: form.status,
         notes: form.notes.trim() || undefined,
@@ -177,7 +180,7 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
             <Input label={t('pages.make')} placeholder={t('transport.makePlaceholder')} value={form.make} onValueChange={(v) => updateField("make", v)} />
             <Input label={t('pages.model')} placeholder={t('transport.modelPlaceholder')} value={form.model} onValueChange={(v) => updateField("model", v)} />
             <Input label={t('pages.year1')} placeholder={t('transport.yearPlaceholder')} type="number" value={form.year} onValueChange={(v) => updateField("year", v)} />
-            <Input label={t('pages.capacity')} placeholder={t('transport.capacityPlaceholder')} type="number" value={form.capacity} onValueChange={(v) => updateField("capacity", v)} />
+            <Input label={t('pages.capacity')} placeholder={t('transport.capacityPlaceholder')} type="number" min={1} value={form.capacity} onValueChange={(v) => updateField("capacity", v)} isInvalid={!!errors.capacity} errorMessage={errors.capacity} />
           </div>
 
           <Input label={t('pages.color')} placeholder={t('transport.colorPlaceholder')} value={form.color} onValueChange={(v) => updateField("color", v)} />
@@ -194,7 +197,7 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
 
           {/* Driver */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-3">{t('pages.driverDetails')}</h3>
+            <h3 className="text-sm font-semibold text-fg mb-3">{t('pages.driverDetails')}</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Select
                 label={t('pages.driver')}
@@ -231,7 +234,7 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
 
           {/* Conductor */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-3">{t('pages.conductorDetails')}</h3>
+            <h3 className="text-sm font-semibold text-fg mb-3">{t('pages.conductorDetails')}</h3>
             <Select
               label={t('pages.conductor')}
               placeholder={t('pages.selectConductor')}

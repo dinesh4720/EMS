@@ -24,6 +24,7 @@ export const initialSchoolSettings = {
   boardOfEducation: "",
   principalSignature: null,
   correspondentSignature: null,
+  currency: "INR",
   academicYear: "",
   academicYearStart: "",
   academicYearEnd: "",

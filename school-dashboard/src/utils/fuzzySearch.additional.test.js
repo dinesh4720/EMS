@@ -123,8 +123,10 @@ describe('highlightMatches - special characters and edge cases', () => {
     // If escaping works, this should not throw
     expect(() => highlightMatches('cost is $50', '$50')).not.toThrow();
     const result = highlightMatches('cost is $50', '$50');
-    expect(result).toContain('<mark');
-    expect(result).toContain('$50');
+    expect(Array.isArray(result)).toBe(true);
+    const markEl = result.find(el => el && typeof el === 'object' && el.type === 'mark');
+    expect(markEl).toBeTruthy();
+    expect(markEl.props.children).toBe('$50');
   });
 
   it('handles query with parentheses without throwing', () => {
@@ -133,7 +135,8 @@ describe('highlightMatches - special characters and edge cases', () => {
 
   it('wraps all occurrences (case insensitive) in mark tags', () => {
     const result = highlightMatches('hello hello HELLO', 'hello');
-    const markCount = (result.match(/<mark/g) || []).length;
+    expect(Array.isArray(result)).toBe(true);
+    const markCount = result.filter(el => el && typeof el === 'object' && el.type === 'mark').length;
     expect(markCount).toBe(3);
   });
 

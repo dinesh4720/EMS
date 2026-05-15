@@ -6,7 +6,14 @@ import AnnouncementAnalyticsModal from "./components/announcements/AnnouncementA
 import toast from "react-hot-toast";
 import { announcementsApi } from "../../services/api";
 import { useTranslation } from 'react-i18next';
-import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
+import {
+  Card,
+  ErrorState,
+  MinimalButton,
+  SectionHeading,
+  StatCard,
+  Skeleton,
+} from "../../components/ui";
 
 export default function Announcements({ isDrawerOpen, setIsDrawerOpen }) {
   const { t } = useTranslation();
@@ -15,29 +22,38 @@ export default function Announcements({ isDrawerOpen, setIsDrawerOpen }) {
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [editAnnouncement, setEditAnnouncement] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [announcementStats, setAnnouncementStats] = useState({ sent: 0, delivered: 0, scheduled: 0 });
+  const [stats, setStats] = useState({ sent: 0, delivered: 0, scheduled: 0 });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Sync with parent drawer state
   useEffect(() => {
-    if (isDrawerOpen) {
-      setShowCreateModal(true);
-    }
+    if (isDrawerOpen) setShowCreateModal(true);
   }, [isDrawerOpen]);
 
   useEffect(() => {
+    let mounted = true;
     if (refreshKey === 0) setLoading(true);
+    setError(null);
     announcementsApi.getAll()
       .then((data) => {
+        if (!mounted) return;
         const list = Array.isArray(data) ? data : (data?.announcements || []);
-        const sent = list.filter(a => a.status === 'sent').length;
-        const scheduled = list.filter(a => a.status === 'scheduled').length;
-        const delivered = list.reduce((sum, a) => sum + (a.deliveredCount || a.recipientCount || 0), 0);
-        setAnnouncementStats({ sent, delivered, scheduled });
+        const sent = list.filter((item) => item.status === 'sent').length;
+        const scheduled = list.filter((item) => item.status === 'scheduled').length;
+        const delivered = list.reduce(
+          (sum, item) => sum + (item.deliveredCount || item.recipientCount || 0),
+          0,
+        );
+        setStats({ sent, delivered, scheduled });
       })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [refreshKey]);
+      .catch((err) => {
+        if (!mounted) return;
+        setError(err);
+        toast.error(t('toast.error.failedToLoad'));
+      })
+      .finally(() => { if (mounted) setLoading(false); });
+    return () => { mounted = false; };
+  }, [refreshKey, t]);
 
   const handleView = (announcement) => {
     setSelectedAnnouncement(announcement);
@@ -62,127 +78,79 @@ export default function Announcements({ isDrawerOpen, setIsDrawerOpen }) {
     setShowCreateModal(true);
   };
 
-  const stats = [
-    {
-      label: "Sent",
-      value: announcementStats.sent.toString(),
-      description: "Total sent",
-      icon: Send,
-      color: "bg-teal-100 text-teal-600 dark:bg-teal-500/20 dark:text-teal-400"
-    },
-    {
-      label: "Delivered",
-      value: announcementStats.delivered.toLocaleString(),
-      description: "Total recipients",
-      icon: Check,
-      color: "bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-300"
-    },
-    {
-      label: "Scheduled",
-      value: announcementStats.scheduled.toString(),
-      description: "Pending",
-      icon: Clock,
-      color: "bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400"
-    },
+  const closeForm = () => {
+    setShowCreateModal(false);
+    setIsDrawerOpen(false);
+    setEditAnnouncement(null);
+  };
+
+  const statCards = [
+    { label: 'Sent', value: stats.sent, subtext: 'Total sent', icon: Send, color: 'primary' },
+    { label: 'Delivered', value: stats.delivered.toLocaleString(), subtext: 'Total recipients', icon: Check, color: 'gray' },
+    { label: 'Scheduled', value: stats.scheduled, subtext: 'Pending', icon: Clock, color: 'warning' },
   ];
 
-  if (loading) {
-    return (
-      <div className="space-y-6 bg-white dark:bg-zinc-950">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={`skel-stat-${i}`} className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 p-5">
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-lg bg-gray-200 dark:bg-zinc-700 animate-pulse" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-3 w-16 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-                  <div className="h-6 w-12 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-                  <div className="h-3 w-24 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        <CardGridPageSkeleton title={false} cards={3} columns="grid-cols-1" />
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6 bg-white dark:bg-zinc-950">
-      {/* Stats Cards */}
+    <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {stats.map((stat) => (
-          <div
+        {statCards.map((stat) => (
+          <StatCard
             key={stat.label}
-            className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 p-5"
-          >
-            <div className="flex items-start gap-4">
-              {/* Icon Container */}
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${stat.color}`}>
-                <stat.icon size={18} />
-              </div>
-
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
-                  {stat.label}
-                </p>
-                <p className="text-2xl font-semibold text-gray-800 dark:text-zinc-100 mt-1">
-                  {stat.value}
-                </p>
-                <p className="text-xs text-gray-400 dark:text-zinc-500 mt-0.5">
-                  {stat.description}
-                </p>
-              </div>
-            </div>
-          </div>
+            label={stat.label}
+            value={loading ? '—' : stat.value}
+            subtext={stat.subtext}
+            icon={stat.icon}
+            color={stat.color}
+            isLoading={loading}
+          />
         ))}
       </div>
 
-      {/* Announcements List */}
-      <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
-              <Send size={16} className="text-gray-600 dark:text-zinc-400" />
-            </div>
-            <div>
-              <h3 className="font-medium text-gray-800 dark:text-zinc-100 text-sm">{t('pages.allAnnouncements')}</h3>
-              <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.manageYourAnnouncements')}</p>
-            </div>
-          </div>
-          <button
-            onClick={handleCreateNew}
-            className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors text-sm font-medium"
+      <Card padding="none">
+        <Card.Header className="px-5 py-4 mb-0 border-b">
+          <SectionHeading
+            size="sm"
+            icon={Send}
+            description={t('pages.manageYourAnnouncements')}
+            actions={
+              <MinimalButton onClick={handleCreateNew} icon={<Plus size={16} />} size="sm">
+                {t('pages.newAnnouncement')}
+              </MinimalButton>
+            }
           >
-            <Plus size={16} />
-            <span>{t('pages.newAnnouncement')}</span>
-          </button>
-        </div>
+            {t('pages.allAnnouncements')}
+          </SectionHeading>
+        </Card.Header>
         <div className="p-5">
-          <AnnouncementsList
-            key={refreshKey}
-            onView={handleView}
-            onEdit={handleEdit}
-            onRefresh={() => setRefreshKey(prev => prev + 1)}
-          />
+          {error ? (
+            <ErrorState
+              error={error}
+              onRetry={() => setRefreshKey((prev) => prev + 1)}
+            />
+          ) : loading ? (
+            <div className="space-y-3">
+              <Skeleton.Row />
+              <Skeleton.Row />
+              <Skeleton.Row />
+            </div>
+          ) : (
+            <AnnouncementsList
+              key={refreshKey}
+              onView={handleView}
+              onEdit={handleEdit}
+              onRefresh={() => setRefreshKey((prev) => prev + 1)}
+            />
+          )}
         </div>
-      </div>
+      </Card>
 
-      {/* Create/Edit Modal */}
       <AnnouncementForm
         isOpen={showCreateModal}
-        onClose={() => {
-          setShowCreateModal(false);
-          setIsDrawerOpen(false);
-          setEditAnnouncement(null);
-        }}
+        onClose={closeForm}
         onSave={handleSave}
         editData={editAnnouncement}
       />
 
-      {/* Analytics Modal */}
       <AnnouncementAnalyticsModal
         isOpen={showAnalyticsModal}
         onClose={() => {

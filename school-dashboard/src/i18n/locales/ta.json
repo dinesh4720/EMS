@@ -127,7 +127,9 @@
     "success": "வெற்றிகரமான",
     "optional": "விருப்பத்தேர்வு",
     "offlineBanner": "நீங்கள் ஆஃப்லைனில் உள்ளீர்கள். சில அம்சங்கள் கிடைக்காமல் போகலாம்.",
-    "staleDataBanner": "தரவு காலாவதியாகியிருக்கலாம். புதுப்பிக்கவும்."
+    "staleDataBanner": "தரவு காலாவதியாகியிருக்கலாம். புதுப்பிக்கவும்.",
+    "done": "முடிந்தது",
+    "mandatory": "கட்டாயம்"
   },
   "messaging": {
     "chat": {
@@ -726,7 +728,7 @@
       "pending": "நிலுவையில்",
       "approved": "ஒப்புதல் அளிக்கப்பட்டது",
       "rejected": "நிராகரிக்கப்பட்டது",
-      "needs_revision": "திருத்தம் தேவை",
+      "needsRevision": "திருத்தம் தேவை",
       "all": "அனைத்தும்"
     }
   },
@@ -1130,7 +1132,9 @@
     "deleteFeedback": "delete this feedback விரும்புகிறீர்களா?",
     "deleteAdmission": "delete this admission inquiry விரும்புகிறீர்களா?",
     "deleteCallLog": "delete this call log விரும்புகிறீர்களா?",
-    "deleteRoom": "this room நீக்கவா?",
+    "deleteRoomTitle": "அறை நீக்கு",
+    "deleteRoom": "this room நீக்கவா? இது மீளமுடியாது.",
+    "deleteHostelTitle": "விடுதி நீக்கு",
     "deleteHostel": "இந்த விடுதியை நீக்கவா? இது மீளமுடியாது.",
     "deleteItem": "delete this item விரும்புகிறீர்களா?",
     "deleteItemNamed": "delete this {{name}} விரும்புகிறீர்களா?",
@@ -1364,7 +1368,9 @@
       "auditCreated": "Audit உருவாக்கப்பட்டது",
       "auditDeleted": "Audit நீக்கப்பட்டது",
       "examDeletedSuccessfully": "Exam deleted வெற்றிகரமாக",
-      "examCreatedSuccessfully": "Exam created வெற்றிகரமாக!"
+      "examCreatedSuccessfully": "Exam created வெற்றிகரமாக!",
+      "templateUpdated": "டெம்ப்ளேட் வெற்றிகரமாக புதுப்பிக்கப்பட்டது",
+      "feeStructureApplied": "அனைத்து மாணவர்களுக்கும் கட்டண கட்டமைப்பு பயன்படுத்தப்பட்டது"
     },
     "error": {
       "cSVFileAppearsToBeEmptyOrHasNoDataRows": "CSV கோப்பு காலியாக அல்லது தரவு வரிசைகள் இல்லாமல் உள்ளது",
@@ -1372,6 +1378,7 @@
       "failedToTranscribeAudio": "transcribe audio முடியவில்லை",
       "failedToLoadExamData": "தேர்வு தரவை ஏற்ற முடியவில்லை",
       "failedToSaveResults": "முடிவுகளை சேமிக்க முடியவில்லை",
+      "insufficientPermissionsToSaveResults": "முடிவுகளை சேமிக்க உங்களுக்கு அனுமதி இல்லை",
       "failedToLoadExams": "தேர்வுகளை ஏற்ற முடியவில்லை",
       "failedToDeleteExam": "delete exam முடியவில்லை",
       "failedToLoadExamDetails": "தேர்வு விவரங்களை ஏற்ற முடியவில்லை",
@@ -4485,6 +4492,17 @@
     "shareWithStaff": "with staff பகிர்",
     "plansComparison": "திட்டங்கள் ஒப்பீடு",
     "attendanceReport": "Attendance அறிக்கை",
-    "subjectWiseAttendanceComingSoonDesc": "When per-subject attendance tracking is enabled, you will see each subject attendance percentage here."
+    "subjectWiseAttendanceComingSoonDesc": "When per-subject attendance tracking is enabled, you will see each subject attendance percentage here.",
+    "createFeeTemplate": "கட்டண டெம்ப்ளேட் உருவாக்கு",
+    "retry": "மீண்டும் முயற்சி"
+  },
+  "fees": {
+    "pendingAmount": "நிலுவை தொகை",
+    "dueDate": "கடைசி தேதி",
+    "daysOverdue": "தாமத நாட்கள்",
+    "templateCount": "{{count}} டெம்ப்ளேட்(கள்)",
+    "feeHeadNum": "கட்டண தலைப்பு #{{num}}",
+    "templateUsedByStudents": "இந்த டெம்ப்ளேட் {{structureCount}} வகுப்பு கட்டண கட்டமைப்புகளில் {{studentCount}} மாணவர்களுக்கு பயன்படுத்தப்பட்டுள்ளது.",
+    "templateUsedByStructures": "இந்த டெம்ப்ளேட் {{structureCount}} வகுப்பு கட்டண கட்டமைப்புகளால் பயன்படுத்தப்படுகிறது."
   }
 }

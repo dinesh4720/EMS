@@ -63,12 +63,12 @@ export default function ReturnBookModal({ isOpen, onClose, issue, onSaved }) {
         <ModalHeader>{t('pages.returnBook')}</ModalHeader>
         <ModalBody className="gap-4">
           {/* Book info */}
-          <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-3 space-y-1">
-            <p className="font-medium text-gray-900 dark:text-zinc-100">{issue.bookId?.title || issue.bookTitle}</p>
-            <p className="text-sm text-gray-500 dark:text-zinc-400">
-              Issued to: {issue.studentId?.name || "Unknown"}
+          <div className="bg-surface-2 rounded-lg p-3 space-y-1">
+            <p className="font-medium text-fg">{issue.bookId?.title || issue.bookTitle}</p>
+            <p className="text-sm text-fg-muted">
+              Issued to: {issue.studentId?.name || issue.studentName || "Unknown"}
             </p>
-            <p className="text-sm text-gray-500 dark:text-zinc-400">
+            <p className="text-sm text-fg-muted">
               Due: {issue.dueDate ? new Date(issue.dueDate).toLocaleDateString(getDateLocale(), { day: "2-digit", month: "short", year: "numeric" }) : '—'}
             </p>
             {isOverdue && (
@@ -91,7 +91,7 @@ export default function ReturnBookModal({ isOpen, onClose, issue, onSaved }) {
 
           {accruedFine > 0 && (
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-700 dark:text-zinc-300">Fine paid (₹{accruedFine})?</span>
+              <span className="text-sm text-fg">Fine paid (₹{accruedFine})?</span>
               <Switch
                 isSelected={form.finePaid}
                 onValueChange={(v) => setForm((f) => ({ ...f, finePaid: v }))}

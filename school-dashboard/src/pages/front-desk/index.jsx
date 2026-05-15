@@ -1,8 +1,6 @@
-import { Navigate } from 'react-router-dom';
-import FrontDeskDashboard from './FrontDeskDashboard';
-import { useTranslation } from 'react-i18next';
+// Phase 9 — Front Desk index. The legacy FrontDeskDashboard tabbed shell
+// is replaced by FrontDeskPage (single canonical surface w/ KPI strip +
+// filterable activity + frosted check-in / gate-pass sheets).
+import FrontDeskPage from "./FrontDeskPage";
 
-export default function FrontDeskPage() {
-  // All front desk functionality is now managed through tabs in the main dashboard
-  return <FrontDeskDashboard />;
-}
+export default FrontDeskPage;

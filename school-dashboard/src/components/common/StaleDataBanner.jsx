@@ -30,7 +30,7 @@ export default function StaleDataBanner() {
     <div
       role="status"
       aria-live="polite"
-      className="sticky top-14 z-50 bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center gap-2 text-sm text-amber-700"
+      className="sticky top-11 z-50 bg-warn-bg border-b border-warn/20 px-4 py-2 flex items-center gap-2 text-sm text-warn"
     >
       <CloudOff size={15} className="flex-shrink-0" />
       <span>

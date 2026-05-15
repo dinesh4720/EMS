@@ -9,12 +9,6 @@ import {
   useRef,
 } from "react";
 import { useLocation } from "react-router-dom";
-import {
-  classesApi,
-  classesEnhancedApi,
-  teacherAssignmentsApi,
-  teacherTimetableApi,
-} from "../services/api";
 import { clearStoredUser, getStoredUser } from "../utils/authSession";
 import { isSuperAdminRole } from "../utils/roleUtils";
 import toast from "react-hot-toast";
@@ -26,6 +20,7 @@ import { StaffProvider, useStaff } from "./StaffContext";
 import { AttendanceProvider, useAttendance } from "./AttendanceContext";
 import { SettingsProvider, useSettings } from "./SettingsContext";
 import { SchoolProvider } from "./SchoolContext";
+import { AcademicYearProvider, useAcademicYear } from "./AcademicYearContext";
 import {
   extractRoleNames,
   shouldHydrateStudentsForPath,
@@ -62,109 +57,40 @@ function AppContextCore({ children }) {
     [storedUser?.role]
   );
 
-  // Pull everything from domain contexts
+  // Pull minimal state from domain contexts needed for orchestration
   const {
     students,
     studentsHydrated,
     setStudents,
     setStudentsHydrated,
     setStudentsFromQuery,
-    addStudent,
-    updateStudent,
     updateStudentLocal,
-    deleteStudent,
-    getStudentById,
-    getStudentsByClass,
   } = useStudents();
 
   const {
-    classes,
-    classesWithTeachers,
     setClasses,
     setClassesFromQuery,
-    addClass,
-    updateClass,
     updateClassLocal,
-    deleteClass,
-    getClassById,
   } = useClasses();
 
   const {
     staff,
-    teachers,
-    lessonPlans,
-    documents,
-    remarks,
     setStaff,
     setStaffFromQuery,
-    addStaff,
-    updateStaff,
     updateStaffLocal,
-    deleteStaff,
-    toggleStaffStatus,
-    getStaffById,
-    addLessonPlan,
-    addDocument,
-    addRemark,
-    salarySettings,
-    staffSalaries,
-    payrollHistory,
-    loadingSalarySettings,
-    updateSalarySettings,
-    updateStaffSalary,
-    processPayroll,
-    fetchPayrollHistory,
-    getPayrollForMonth,
   } = useStaff();
 
   const {
-    staffAttendance,
-    studentAttendance,
     setStaffAttendance,
     setStaffAttendanceFromQuery,
-    fetchStaffAttendanceForDate,
-    fetchStaffAttendanceByStaff,
-    markStaffAttendance,
-    markStudentAttendance,
-    getStaffAttendanceForDate,
-    markAllStaffAttendance,
-    requestRegularization,
-    approveRegularization,
-    fetchPendingRegularizations,
-    getMonthlyAttendance,
   } = useAttendance();
 
+  const { storedYear, setSelectedAcademicYear } = useAcademicYear();
+
   const {
-    schoolSettings,
     currentAcademicYear,
-    events,
-    feePayments,
-    announcements,
-    leaveTypes,
-    feeHeads,
-    isBeforeSchoolHours,
     setSettingsFromQuery,
-    updateSchoolSettings,
-    addSubject,
-    updateSubject,
-    deleteSubject,
-    addEvent,
-    updateEvent,
-    deleteEvent,
-    getEventsForDate,
-    addFeePayment,
     syncFeePaymentLocal,
-    getStudentFeeHistory,
-    addAnnouncement,
-    addLeaveType,
-    updateLeaveType,
-    deleteLeaveType,
-    addFeeHead,
-    updateFeeHead,
-    deleteFeeHead,
-    themeSettings,
-    updateThemeSettings,
-    resetThemeSettings,
   } = useSettings();
 
   const appQueryKey = useMemo(
@@ -172,14 +98,15 @@ function AppContextCore({ children }) {
       "app-context-data",
       sessionVersion,
       storedUser?.id ?? "anonymous",
+      storedUser?.schoolId ?? "unknown",
       roleKey,
     ],
-    [roleKey, sessionVersion, storedUser?.id]
+    [roleKey, sessionVersion, storedUser?.id, storedUser?.schoolId]
   );
 
   const settingsQueryKey = useMemo(
-    () => ["app-settings-data", sessionVersion, storedUser?.id ?? "anonymous"],
-    [sessionVersion, storedUser?.id]
+    () => ["app-settings-data", sessionVersion, storedUser?.id ?? "anonymous", storedUser?.schoolId ?? "unknown"],
+    [sessionVersion, storedUser?.id, storedUser?.schoolId]
   );
 
   const appDataQuery = useQuery({
@@ -363,6 +290,7 @@ function AppContextCore({ children }) {
 
   // Socket.IO real-time updates
   useSocketSync({
+    userId: storedUser?.id,
     staff,
     updateStaffLocal,
     updateStudentLocal,
@@ -373,154 +301,34 @@ function AppContextCore({ children }) {
   });
 
   // ---------------------------------------------------------------------------
-  // Error-capturing wrappers — match original behavior: setError + re-throw
+  // Slim cross-cutting context value — domain data lives in domain contexts
   // ---------------------------------------------------------------------------
 
-  const wrapWithError = useCallback(
-    (fn) =>
-      async (...args) => {
-        try {
-          return await fn(...args);
-        } catch (err) {
-          setError(err.message);
-          throw err;
-        }
-      },
-    []
-  );
-
-  const addStaffSafe = useMemo(() => wrapWithError(addStaff), [wrapWithError, addStaff]);
-  const updateStaffSafe = useMemo(() => wrapWithError(updateStaff), [wrapWithError, updateStaff]);
-  const deleteStaffSafe = useMemo(() => wrapWithError(deleteStaff), [wrapWithError, deleteStaff]);
-  const toggleStaffStatusSafe = useMemo(
-    () => wrapWithError(toggleStaffStatus),
-    [wrapWithError, toggleStaffStatus]
-  );
-  const addStudentSafe = useMemo(() => wrapWithError(addStudent), [wrapWithError, addStudent]);
-  const updateStudentSafe = useMemo(
-    () => wrapWithError(updateStudent),
-    [wrapWithError, updateStudent]
-  );
-  const deleteStudentSafe = useMemo(
-    () => wrapWithError(deleteStudent),
-    [wrapWithError, deleteStudent]
-  );
-  const addClassSafe = useMemo(() => wrapWithError(addClass), [wrapWithError, addClass]);
-  const updateClassSafe = useMemo(() => wrapWithError(updateClass), [wrapWithError, updateClass]);
-  const deleteClassSafe = useMemo(() => wrapWithError(deleteClass), [wrapWithError, deleteClass]);
-
-  // ---------------------------------------------------------------------------
-  // Computed values
-  // ---------------------------------------------------------------------------
-
-  const feeDefaultersRef = useRef([]);
-  const feeDefaulters = useMemo(() => {
-    const next = Array.isArray(students)
-      ? students.filter((s) => s.feeStatus === "overdue" || s.feeStatus === "pending")
-      : [];
-    const prev = feeDefaultersRef.current;
-    if (
-      prev.length === next.length &&
-      next.every((s, i) => s._id === prev[i]?._id && s.feeStatus === prev[i]?.feeStatus)
-    ) {
-      return prev;
-    }
-    feeDefaultersRef.current = next;
-    return next;
-  }, [students]);
-
-  const dashboardStats = useMemo(
-    () => ({
-      totalStaff: Array.isArray(staff) ? staff.length : 0,
-      activeStaff: Array.isArray(staff) ? staff.filter((s) => s.status === "active").length : 0,
-      totalStudents: Array.isArray(students) ? students.length : 0,
-      totalClasses: Array.isArray(classes) ? classes.length : 0,
-      totalTeachers: teachers.length,
-      feeDefaultersCount: feeDefaulters.length,
-      upcomingEvents: Array.isArray(events)
-        ? events.filter((e) => new Date(e.date) >= new Date()).length
-        : 0,
-    }),
-    [staff, students, classes, teachers, feeDefaulters, events]
-  );
-
-  // ---------------------------------------------------------------------------
-  // Full backward-compatible context value
-  // ---------------------------------------------------------------------------
+  // Resolved selected year: persisted value (from sessionStorage) or current school year
+  const selectedAcademicYear = storedYear || currentAcademicYear;
 
   const value = useMemo(
     () => ({
-      // Data
-      staff, students, classes, events, feePayments, announcements,
-      staffAttendance, studentAttendance, schoolSettings, currentAcademicYear,
-      leaveTypes, feeHeads,
-      loading, error, settingsLoading, refetch, refetchSettings,
-      // Computed
-      teachers, classesWithTeachers, feeDefaulters, dashboardStats, isBeforeSchoolHours,
-      // Staff actions
-      addStaff: addStaffSafe,
-      updateStaff: updateStaffSafe,
-      updateStaffLocal,
-      deleteStaff: deleteStaffSafe,
-      toggleStaffStatus: toggleStaffStatusSafe,
-      getStaffById,
-      // Student actions
-      addStudent: addStudentSafe,
-      updateStudent: updateStudentSafe,
-      updateStudentLocal,
-      deleteStudent: deleteStudentSafe,
-      getStudentById,
-      getStudentsByClass,
-      // Class actions
-      addClass: addClassSafe,
-      updateClass: updateClassSafe,
-      updateClassLocal,
-      deleteClass: deleteClassSafe,
-      getClassById,
-      // Event actions
-      addEvent, updateEvent, deleteEvent, getEventsForDate,
-      // Fee actions
-      addFeePayment, syncFeePaymentLocal, getStudentFeeHistory,
-      // Announcement actions
-      addAnnouncement,
-      // Attendance actions
-      markStaffAttendance, markStudentAttendance, getStaffAttendanceForDate,
-      markAllStaffAttendance, getMonthlyAttendance,
-      fetchStaffAttendanceForDate, fetchStaffAttendanceByStaff,
-      requestRegularization, approveRegularization, fetchPendingRegularizations,
-      // School Settings actions
-      updateSchoolSettings, addSubject, updateSubject, deleteSubject,
-      // Leave Types actions
-      addLeaveType, updateLeaveType, deleteLeaveType,
-      // Fee Heads actions
-      addFeeHead, updateFeeHead, deleteFeeHead,
-      // Salary
-      salarySettings, staffSalaries, payrollHistory, loadingSalarySettings,
-      updateSalarySettings, updateStaffSalary, processPayroll, fetchPayrollHistory, getPayrollForMonth,
-      // Academic & other
-      lessonPlans, documents, remarks,
-      addLessonPlan, addDocument, addRemark,
-      // APIs (passed through for components that use them directly)
-      classesApi, classesEnhancedApi, teacherAssignmentsApi, teacherTimetableApi,
-      // Theme
-      themeSettings, updateThemeSettings, resetThemeSettings,
-      // Onboarding
-      showOnboarding, setShowOnboarding,
+      // Global loading / error state
+      loading,
+      settingsLoading,
+      error,
+      // Global refetch triggers
+      refetch,
+      refetchSettings,
+      // Academic year (cross-cutting: bridges AcademicYearContext + SettingsContext)
+      currentAcademicYear,
+      selectedAcademicYear,
+      setSelectedAcademicYear,
+      // Onboarding UI state
+      showOnboarding,
+      setShowOnboarding,
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
-      staff, students, classes, events, feePayments, announcements,
-      staffAttendance, studentAttendance, schoolSettings, currentAcademicYear,
-      leaveTypes, feeHeads,
-      loading, error, settingsLoading, refetch, refetchSettings,
-      teachers, classesWithTeachers, feeDefaulters, dashboardStats, isBeforeSchoolHours,
-      salarySettings, staffSalaries, payrollHistory,
-      lessonPlans, documents, remarks,
-      themeSettings, showOnboarding,
-      // safe wrappers — stable after first render but depend on domain fns
-      addStaffSafe, updateStaffSafe, deleteStaffSafe, toggleStaffStatusSafe,
-      addStudentSafe, updateStudentSafe, deleteStudentSafe,
-      addClassSafe, updateClassSafe, deleteClassSafe,
+      loading, settingsLoading, error,
+      refetch, refetchSettings,
+      currentAcademicYear, selectedAcademicYear, setSelectedAcademicYear,
+      showOnboarding, setShowOnboarding,
     ]
   );
 
@@ -552,26 +360,50 @@ function ClassesAndAttendanceShell({ children }) {
 
 export function AppProvider({ children }) {
   return (
-    <StudentsProvider>
-      <StaffProvider>
-        <SettingsProvider>
-          <SchoolProvider>
-            <ClassesAndAttendanceShell>
-              <AppContextCore>{children}</AppContextCore>
-            </ClassesAndAttendanceShell>
-          </SchoolProvider>
-        </SettingsProvider>
-      </StaffProvider>
-    </StudentsProvider>
+    <AcademicYearProvider>
+      <StudentsProvider>
+        <StaffProvider>
+          <SettingsProvider>
+            <SchoolProvider>
+              <ClassesAndAttendanceShell>
+                <AppContextCore>{children}</AppContextCore>
+              </ClassesAndAttendanceShell>
+            </SchoolProvider>
+          </SettingsProvider>
+        </StaffProvider>
+      </StudentsProvider>
+    </AcademicYearProvider>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Public hook
+// Public hooks
 // ---------------------------------------------------------------------------
 
 export const useApp = () => {
   const context = useContext(AppContext);
   if (!context) throw new Error("useApp must be used within AppProvider");
-  return context;
+  const students = useStudents();
+  const staff = useStaff();
+  const classes = useClasses();
+  const attendance = useAttendance();
+  const settings = useSettings();
+  return {
+    ...students,
+    ...staff,
+    ...classes,
+    ...attendance,
+    ...settings,
+    ...context,
+  };
 };
+
+// Re-export domain hooks so consumers can import from a single location.
+// Prefer importing from domain context files directly in new code.
+export { useStudents } from "./StudentsContext";
+export { useStaff } from "./StaffContext";
+export { useClasses } from "./ClassesContext";
+export { useAttendance } from "./AttendanceContext";
+export { useSettings } from "./SettingsContext";
+export { useSchool } from "./SchoolContext";
+export { useAcademicYear } from "./AcademicYearContext";

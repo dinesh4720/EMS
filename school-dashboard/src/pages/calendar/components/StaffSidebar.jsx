@@ -35,17 +35,17 @@ export default function StaffSidebar({
   };
 
   return (
-    <div className={`border-l border-default-200 bg-background transition-all duration-300 ${sidebarExpanded ? 'w-80' : 'w-12'}`}>
+    <div className={`border-l border-border-token bg-surface transition-all duration-300 ${sidebarExpanded ? 'w-80' : 'w-12'}`}>
       {sidebarExpanded ? (
         <div className="flex flex-col h-full">
-          <div className="flex items-center justify-between p-3 border-b border-default-100">
-            <h3 className="text-sm font-semibold text-foreground">{t('calendar.sidebar.title', 'Staff Schedule')}</h3>
-            <Button isIconOnly size="sm" variant="light" className="text-default-400" onPress={() => onToggleSidebar(false)}>
+          <div className="flex items-center justify-between p-3 border-b border-divider">
+            <h3 className="text-sm font-semibold text-fg">{t('calendar.sidebar.title', 'Staff Schedule')}</h3>
+            <Button isIconOnly size="sm" variant="light" aria-label="Collapse sidebar" className="text-fg-faint" onPress={() => onToggleSidebar(false)}>
               <ChevronRight size={16} />
             </Button>
           </div>
 
-          <div className="p-3 border-b border-default-100">
+          <div className="p-3 border-b border-divider">
             <Select
               size="sm"
               placeholder={t('calendar.sidebar.selectStaff', 'Select staff member')}
@@ -57,7 +57,7 @@ export default function StaffSidebar({
               }}
               variant="bordered"
               classNames={{ trigger: "h-9" }}
-              startContent={<User size={14} className="text-default-400" />}
+              startContent={<User size={14} className="text-fg-faint" />}
               isClearable
               onClear={() => onStaffChange(null)}
             >
@@ -75,21 +75,21 @@ export default function StaffSidebar({
           <ScrollShadow className="flex-1">
             {selectedStaff ? (
               <div className="p-3 space-y-4">
-                <div className="flex items-center gap-3 p-2 rounded-lg bg-default-50">
+                <div className="flex items-center gap-3 p-2 rounded-lg bg-surface-2">
                   <Avatar name={selectedStaff.name} className="w-10 h-10" />
                   <div>
-                    <div className="font-medium text-sm">{selectedStaff.name}</div>
-                    <div className="text-xs text-default-400">{Array.isArray(selectedStaff.role) ? selectedStaff.role.join(', ') : selectedStaff.role}</div>
+                    <div className="font-medium text-sm text-fg">{selectedStaff.name}</div>
+                    <div className="text-xs text-fg-faint">{Array.isArray(selectedStaff.role) ? selectedStaff.role.join(', ') : selectedStaff.role}</div>
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="text-xs font-semibold text-default-500 uppercase mb-2 flex items-center gap-1.5">
+                  <h4 className="text-xs font-semibold text-fg-muted uppercase mb-2 flex items-center gap-1.5">
                     <BookOpen size={12} /> {t('calendar.sidebar.todaysClasses', "Today's Classes")}
                   </h4>
                   {loadingTimetable ? (
                     <div className="animate-pulse space-y-1.5">
-                      {[...Array(3)].map((_, i) => <div key={i} className="h-10 bg-gray-100 dark:bg-zinc-800 rounded-lg" />)}
+                      {[...Array(3)].map((_, i) => <div key={i} className="h-10 bg-surface-2 rounded-lg" />)}
                     </div>
                   ) : todaySchedule.filter(s => s.classId && s.subject).length > 0 ? (
                     <div className="space-y-1.5">
@@ -111,30 +111,30 @@ export default function StaffSidebar({
                               };
                               onEventClick(event);
                             }}
-                            className="flex items-center gap-2 p-2 rounded-lg border border-default-200 bg-background hover:bg-default-50 cursor-pointer"
+                            className="flex items-center gap-2 p-2 rounded-lg border border-border-token bg-surface hover:bg-surface-2 cursor-pointer"
                           >
-                            <div className="text-2xs text-default-400 w-14 flex-shrink-0">{period?.startTime}</div>
-                            <div className="w-1 h-8 rounded-full bg-default-200" />
+                            <div className="text-2xs text-fg-faint w-14 flex-shrink-0">{period?.startTime}</div>
+                            <div className="w-1 h-8 rounded-full bg-border-token" />
                             <div className="flex-1 min-w-0">
-                              <div className="text-xs font-medium truncate">{slot.subject}</div>
-                              <div className="text-2xs text-default-400">{getClassName(slot.classId)}</div>
+                              <div className="text-xs font-medium truncate text-fg">{slot.subject}</div>
+                              <div className="text-2xs text-fg-faint">{getClassName(slot.classId)}</div>
                             </div>
                           </div>
                         );
                       })}
                     </div>
                   ) : (
-                    <div className="text-xs text-default-400 py-3 text-center border border-dashed border-default-200 rounded-lg">{t('calendar.sidebar.noClassesToday', 'No classes today')}</div>
+                    <div className="text-xs text-fg-faint py-3 text-center border border-dashed border-border-token rounded-lg">{t('calendar.sidebar.noClassesToday', 'No classes today')}</div>
                   )}
                 </div>
 
                 <div>
-                  <h4 className="text-xs font-semibold text-default-500 uppercase mb-2 flex items-center gap-1.5">
+                  <h4 className="text-xs font-semibold text-fg-muted uppercase mb-2 flex items-center gap-1.5">
                     <Users size={12} /> {t('calendar.sidebar.upcomingAppointments', 'Upcoming Appointments')}
                   </h4>
                   {loadingAppointments ? (
                     <div className="animate-pulse space-y-1.5">
-                      {[...Array(2)].map((_, i) => <div key={i} className="h-10 bg-gray-100 dark:bg-zinc-800 rounded-lg" />)}
+                      {[...Array(2)].map((_, i) => <div key={i} className="h-10 bg-surface-2 rounded-lg" />)}
                     </div>
                   ) : upcomingAppointments.length > 0 ? (
                     <div className="space-y-1.5">
@@ -161,42 +161,42 @@ export default function StaffSidebar({
                             };
                             onEventClick(event);
                           }}
-                          className="p-2 rounded-lg border border-success-200 bg-success-50/50 hover:bg-success-100/50 cursor-pointer"
+                          className="p-2 rounded-lg border border-[color:var(--ok)]/30 bg-ok-bg hover:opacity-90 cursor-pointer"
                         >
                           <div className="flex items-center justify-between">
-                            <div className="text-xs font-medium text-success-700">{apt.visitorName}</div>
+                            <div className="text-xs font-medium text-ok">{apt.visitorName}</div>
                             <Chip size="sm" variant="flat" className="h-4 text-3xs">{apt.status}</Chip>
                           </div>
-                          <div className="text-2xs text-success-600 mt-1 flex items-center gap-1">
+                          <div className="text-2xs text-ok mt-1 flex items-center gap-1">
                             <Clock size={10} />
                             {formatDateTime(apt.fromDateTime)}
                           </div>
-                          {apt.purpose && <div className="text-2xs text-success-500 mt-0.5 truncate">{apt.purpose}</div>}
+                          {apt.purpose && <div className="text-2xs text-ok/80 mt-0.5 truncate">{apt.purpose}</div>}
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-xs text-default-400 py-3 text-center border border-dashed border-default-200 rounded-lg">{t('calendar.sidebar.noUpcomingAppointments', 'No upcoming appointments')}</div>
+                    <div className="text-xs text-fg-faint py-3 text-center border border-dashed border-border-token rounded-lg">{t('calendar.sidebar.noUpcomingAppointments', 'No upcoming appointments')}</div>
                   )}
                 </div>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full p-4 text-center">
-                <div className="w-12 h-12 rounded-full bg-default-50 flex items-center justify-center mb-3">
-                  <User size={20} className="text-default-300" />
+                <div className="w-12 h-12 rounded-full bg-surface-2 flex items-center justify-center mb-3">
+                  <User size={20} className="text-fg-faint" />
                 </div>
-                <p className="text-sm text-default-500 font-medium">{t('calendar.sidebar.noStaffSelected', 'No Staff Selected')}</p>
-                <p className="text-xs text-default-400 mt-1">{t('calendar.sidebar.selectStaffPrompt', 'Select a staff member to view their schedule')}</p>
+                <p className="text-sm text-fg-muted font-medium">{t('calendar.sidebar.noStaffSelected', 'No Staff Selected')}</p>
+                <p className="text-xs text-fg-faint mt-1">{t('calendar.sidebar.selectStaffPrompt', 'Select a staff member to view their schedule')}</p>
               </div>
             )}
           </ScrollShadow>
         </div>
       ) : (
         <div className="flex flex-col items-center py-3">
-          <Button isIconOnly size="sm" variant="light" className="text-default-400" onPress={() => onToggleSidebar(true)}>
+          <Button isIconOnly size="sm" variant="light" aria-label="Expand sidebar" className="text-fg-faint" onPress={() => onToggleSidebar(true)}>
             <ChevronLeft size={16} />
           </Button>
-          <div className="mt-2 writing-mode-vertical text-2xs text-default-400 font-medium">{t('calendar.sidebar.staff', 'Staff')}</div>
+          <div className="mt-2 writing-mode-vertical text-2xs text-fg-faint font-medium">{t('calendar.sidebar.staff', 'Staff')}</div>
         </div>
       )}
     </div>

@@ -32,6 +32,7 @@ const IconButtonWithTooltip = memo(function IconButtonWithTooltip({
         variant="light"
         size="sm"
         className={className}
+        aria-label={typeof tooltip === "string" ? tooltip : undefined}
         {...props}
       >
         {children}

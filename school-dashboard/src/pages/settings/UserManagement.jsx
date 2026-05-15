@@ -29,6 +29,8 @@ import RolesAccess from "./RolesAccess";
 import HierarchySettings from "./HierarchySettings";
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+import logger from '../../utils/logger';
+
 
 export default function UserManagement() {
   const { t } = useTranslation();
@@ -90,7 +92,7 @@ export default function UserManagement() {
             setCopiedPassword(true);
             setTimeout(() => setCopiedPassword(false), 2000);
         } catch (err) {
-            console.error('Failed to copy password:', err);
+            logger.error('Failed to copy password:', err);
         }
     };
 
@@ -170,8 +172,8 @@ export default function UserManagement() {
         <div className="space-y-6">
             {/* Header */}
             <div>
-                <h2 className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">{t('pages.userManagement')}</h2>
-                <p className="text-sm text-gray-600 dark:text-zinc-400 mt-1">
+                <h2 className="text-2xl font-semibold text-fg">{t('pages.userManagement')}</h2>
+                <p className="text-sm text-fg-muted mt-1">
                     Manage users, roles, permissions, and organizational hierarchy
                 </p>
             </div>
@@ -202,12 +204,12 @@ export default function UserManagement() {
                             <CardBody className="flex flex-col md:flex-row justify-between gap-4 items-center p-4">
                                 <div>
                                     <h3 className="text-lg font-semibold">{t('pages.staffLoginManagement')}</h3>
-                                    <p className="text-default-500 text-sm">{t('pages.viewAndManageLoginCredentialsForAllStaffMembers')}</p>
+                                    <p className="text-fg-muted text-sm">{t('pages.viewAndManageLoginCredentialsForAllStaffMembers')}</p>
                                 </div>
                                 <div className="w-full md:w-72">
                                     <Input
                                         placeholder={t('pages.searchStaff')}
-                                        startContent={<Search size={18} className="text-default-400" />}
+                                        startContent={<Search size={18} className="text-fg-faint" />}
                                         value={searchTerm}
                                         onValueChange={setSearchTerm}
                                         isClearable
@@ -245,7 +247,7 @@ export default function UserManagement() {
                                                 <span className="text-small font-medium capitalize">{item.role}</span>
                                             </TableCell>
                                             <TableCell>
-                                                <div className="flex items-center gap-2 text-default-600">
+                                                <div className="flex items-center gap-2 text-fg-muted">
                                                     <Phone size={14} />
                                                     <span className="font-mono text-sm">{item.phone || "N/A"}</span>
                                                 </div>
@@ -255,7 +257,7 @@ export default function UserManagement() {
                                                     size="sm"
                                                     variant="flat"
                                                     color={item.status === "active" ? "success" : "default"}
-                                                    startContent={<span className={`w-1.5 h-1.5 rounded-full ml-1 ${item.status === "active" ? 'bg-success-500' : 'bg-default-500'}`}></span>}
+                                                    startContent={<span className={`w-1.5 h-1.5 rounded-full ml-1 ${item.status === "active" ? 'bg-success-500' : 'bg-fg-faint'}`}></span>}
                                                 >
                                                     {item.status || "Active"}
                                                 </Chip>
@@ -327,8 +329,8 @@ export default function UserManagement() {
                         <>
                             <ModalHeader className="flex flex-col gap-1">
                                 Change Password
-                                <span className="text-sm font-normal text-default-500">
-                                    Update password for <span className="font-semibold text-foreground">{selectedUser?.name}</span>
+                                <span className="text-sm font-normal text-fg-muted">
+                                    Update password for <span className="font-semibold text-fg">{selectedUser?.name}</span>
                                 </span>
                             </ModalHeader>
                             <ModalBody>
@@ -341,8 +343,8 @@ export default function UserManagement() {
                                     </div>
                                 </div>
 
-                                <div className="mb-4 p-3 bg-default-100 rounded-lg">
-                                    <p className="text-xs text-default-500 mb-1">{t('pages.loginIdPhoneNumber')}</p>
+                                <div className="mb-4 p-3 bg-surface-2 rounded-lg">
+                                    <p className="text-xs text-fg-muted mb-1">{t('pages.loginIdPhoneNumber')}</p>
                                     <p className="font-mono text-sm">{selectedUser?.phone}</p>
                                 </div>
 
@@ -390,8 +392,8 @@ export default function UserManagement() {
                                     <RefreshCw size={20} className="text-primary" />
                                     <span>{t('pages.passwordReset')}</span>
                                 </div>
-                                <span className="text-sm font-normal text-default-500">
-                                    For <span className="font-semibold text-foreground">{selectedUser?.name}</span>
+                                <span className="text-sm font-normal text-fg-muted">
+                                    For <span className="font-semibold text-fg">{selectedUser?.name}</span>
                                 </span>
                             </ModalHeader>
                             <ModalBody>
@@ -413,8 +415,8 @@ export default function UserManagement() {
                                     </div>
                                 ) : resetting ? (
                                     <div className="flex flex-col items-center justify-center py-8">
-                                        <div className="animate-spin h-8 w-8 rounded-full border-2 border-gray-300 border-t-gray-900" />
-                                        <p className="text-sm text-default-500 mt-4">{t('pages.generatingSecurePassword')}</p>
+                                        <div className="animate-spin h-8 w-8 rounded-full border-2 border-border-token border-t-gray-900" />
+                                        <p className="text-sm text-fg-muted mt-4">{t('pages.generatingSecurePassword')}</p>
                                     </div>
                                 ) : resetSuccess ? (
                                     <div className="space-y-4">
@@ -428,8 +430,8 @@ export default function UserManagement() {
                                             </div>
                                         </div>
 
-                                        <div className="p-4 bg-default-100 dark:bg-default-50 rounded-lg">
-                                            <p className="text-xs text-default-500 mb-2">{t('pages.newTemporaryPassword')}</p>
+                                        <div className="p-4 bg-surface-2 dark:bg-surface-2 rounded-lg">
+                                            <p className="text-xs text-fg-muted mb-2">{t('pages.newTemporaryPassword')}</p>
                                             <div className="flex items-center gap-2">
                                                 <div className="flex-1 font-mono text-lg font-semibold text-center py-3 bg-content1 rounded-lg border-2 border-primary">
                                                     {showGeneratedPassword ? generatedPassword : '\u2022'.repeat(generatedPassword.length)}
@@ -438,6 +440,7 @@ export default function UserManagement() {
                                                     isIconOnly
                                                     size="lg"
                                                     variant="flat"
+                                                    aria-label={showGeneratedPassword ? "Hide password" : "Show password"}
                                                     onPress={() => setShowGeneratedPassword(prev => !prev)}
                                                     className="flex-shrink-0"
                                                 >
@@ -448,6 +451,7 @@ export default function UserManagement() {
                                                     size="lg"
                                                     color={copiedPassword ? "success" : "primary"}
                                                     variant="flat"
+                                                    aria-label="Copy password"
                                                     onPress={copyGeneratedPassword}
                                                     className="flex-shrink-0"
                                                 >

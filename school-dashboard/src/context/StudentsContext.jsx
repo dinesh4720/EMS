@@ -37,6 +37,7 @@ export function StudentsProvider({ children }) {
     } catch (err) {
       logger.error("Failed to add student:", err);
       toast.error(t('toast.error.failedToAddStudent', 'Failed to add student'));
+      err._toastShown = true;
       throw err;
     }
   };
@@ -61,6 +62,7 @@ export function StudentsProvider({ children }) {
     } catch (err) {
       logger.error("Failed to update student:", err);
       toast.error(t('toast.error.failedToUpdateStudent', 'Failed to update student'));
+      err._toastShown = true;
       setStudents(prev);
       throw err;
     }
@@ -82,7 +84,6 @@ export function StudentsProvider({ children }) {
       return result;
     } catch (err) {
       logger.error("Failed to delete student:", err);
-      toast.error(t('toast.error.failedToDeleteStudent', 'Failed to delete student'));
       setStudents(prev);
       throw err;
     }

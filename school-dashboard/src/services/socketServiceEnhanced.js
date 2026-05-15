@@ -58,8 +58,8 @@ class SocketServiceEnhanced {
       // Connection timeout
       const connectionTimeout = setTimeout(() => {
         if (!this.connected || !this.authenticated) {
-          console.warn('⚠️ Socket connection/authentication timeout');
-          console.warn('⚠️ Connection status:', { connected: this.connected, authenticated: this.authenticated });
+          logger.warn('⚠️ Socket connection/authentication timeout');
+          logger.warn('⚠️ Connection status:', { connected: this.connected, authenticated: this.authenticated });
           this.disconnect(); // Ensure we clean up if we timeout
           safeReject(new Error('Connection/Authentication timeout'));
         }

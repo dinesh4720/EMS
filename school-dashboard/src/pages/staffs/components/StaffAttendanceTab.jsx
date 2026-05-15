@@ -16,6 +16,7 @@ import {
 import { useApp } from "../../../context/AppContext";
 import { getDateLocale } from '../../../i18n/index';
 import { useTranslation } from 'react-i18next';
+import StaffLeaveBalance from "./StaffLeaveBalance";
 
 
 export default function StaffAttendanceTab({ staffId }) {
@@ -132,7 +133,7 @@ export default function StaffAttendanceTab({ staffId }) {
 
     if (!isCurrentMonth) return null;
 
-    let bgClass = "bg-gray-50 dark:bg-zinc-800 text-gray-400 dark:text-zinc-500"; // Unmarked/Default
+    let bgClass = "bg-surface-2 text-fg-faint"; // Unmarked/Default
     let statusText = "";
 
     if (record) {
@@ -185,7 +186,7 @@ export default function StaffAttendanceTab({ staffId }) {
         <PopoverContent className="w-64 p-3 ring-1 ring-gray-100 dark:ring-zinc-700">
           <div className="space-y-3">
             <div className="flex items-center justify-between border-b pb-2">
-              <span className="font-semibold text-gray-900 dark:text-zinc-100">{format(day, 'EEE, MMM d')}</span>
+              <span className="font-semibold text-fg">{format(day, 'EEE, MMM d')}</span>
               <Chip size="sm" variant="flat" color={
                 record?.status === 'present' ? 'success' :
                   record?.status === 'absent' ? 'danger' :
@@ -196,7 +197,7 @@ export default function StaffAttendanceTab({ staffId }) {
             </div>
 
             {record?.reason && (
-              <div className="text-xs text-gray-500 dark:text-zinc-400 bg-gray-50 dark:bg-zinc-800 p-2 rounded">
+              <div className="text-xs text-fg-muted bg-surface-2 p-2 rounded">
                 {record.reason}
               </div>
             )}
@@ -235,40 +236,40 @@ export default function StaffAttendanceTab({ staffId }) {
 
       {/* Top Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-zinc-950 p-4 rounded-xl border border-gray-200 dark:border-zinc-800">
+        <div className="bg-surface p-4 rounded-xl border border-border-token">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider font-semibold">{t('pages.workingDays')}</p>
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-zinc-100 mt-1">{monthlyStats.total}</h3>
+              <p className="text-xs text-fg-muted uppercase tracking-wider font-semibold">{t('pages.workingDays')}</p>
+              <h3 className="text-2xl font-bold text-fg mt-1">{monthlyStats.total}</h3>
             </div>
-            <div className="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg"><CalendarDays size={18} className="text-gray-600 dark:text-zinc-400" /></div>
+            <div className="p-2 bg-surface-2 rounded-lg"><CalendarDays size={18} className="text-fg-muted" /></div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-zinc-950 p-4 rounded-xl border border-gray-200 dark:border-zinc-800">
+        <div className="bg-surface p-4 rounded-xl border border-border-token">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider font-semibold">{t('pages.present2')}</p>
+              <p className="text-xs text-fg-muted uppercase tracking-wider font-semibold">{t('pages.present2')}</p>
               <h3 className="text-2xl font-bold text-green-600 mt-1">{monthlyStats.present}</h3>
             </div>
             <div className="p-2 bg-green-50 rounded-lg"><CheckCircle2 size={18} className="text-green-600" /></div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-zinc-950 p-4 rounded-xl border border-gray-200 dark:border-zinc-800">
+        <div className="bg-surface p-4 rounded-xl border border-border-token">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider font-semibold">{t('pages.absent2')}</p>
+              <p className="text-xs text-fg-muted uppercase tracking-wider font-semibold">{t('pages.absent2')}</p>
               <h3 className="text-2xl font-bold text-red-600 mt-1">{monthlyStats.absent}</h3>
             </div>
             <div className="p-2 bg-red-50 rounded-lg"><XCircle size={18} className="text-red-600" /></div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-zinc-950 p-4 rounded-xl border border-gray-200 dark:border-zinc-800">
+        <div className="bg-surface p-4 rounded-xl border border-border-token">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider font-semibold">Leaves/Half</p>
+              <p className="text-xs text-fg-muted uppercase tracking-wider font-semibold">Leaves/Half</p>
               <h3 className="text-2xl font-bold text-yellow-600 mt-1">{monthlyStats.leave + monthlyStats.halfday}</h3>
             </div>
             <div className="p-2 bg-yellow-50 rounded-lg"><AlertCircle size={18} className="text-yellow-600" /></div>
@@ -277,20 +278,20 @@ export default function StaffAttendanceTab({ staffId }) {
       </div>
 
       {/* Main Calendar Section */}
-      <div className="bg-white dark:bg-zinc-950 rounded-xl border border-gray-200 dark:border-zinc-800 overflow-hidden shadow-sm">
+      <div className="bg-surface rounded-xl border border-border-token overflow-hidden shadow-sm">
         {/* Header */}
-        <div className="p-5 border-b border-gray-100 dark:border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="p-5 border-b border-divider flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gray-50 dark:bg-zinc-800 flex items-center justify-center">
-              <CalendarIcon size={20} className="text-gray-600 dark:text-zinc-400" />
+            <div className="w-10 h-10 rounded-xl bg-surface-2 flex items-center justify-center">
+              <CalendarIcon size={20} className="text-fg-muted" />
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900 dark:text-zinc-100">{t('pages.attendanceCalendar')}</h3>
-              <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.viewAndManageDailyAttendanceRecords')}</p>
+              <h3 className="font-semibold text-fg">{t('pages.attendanceCalendar')}</h3>
+              <p className="text-xs text-fg-muted">{t('pages.viewAndManageDailyAttendanceRecords')}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 bg-gray-50 dark:bg-zinc-800 p-1 rounded-lg">
+          <div className="flex items-center gap-2 bg-surface-2 p-1 rounded-lg">
             <Button isIconOnly size="sm" variant="light" onPress={handlePrevMonth}>
               <ChevronLeft size={16} />
             </Button>
@@ -308,7 +309,7 @@ export default function StaffAttendanceTab({ staffId }) {
           {/* Weekday Headers */}
           <div className="grid grid-cols-7 gap-2 mb-2">
             {weekDays.map(day => (
-              <div key={day} className="text-center text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider py-2">
+              <div key={day} className="text-center text-xs font-semibold text-fg-faint uppercase tracking-wider py-2">
                 {day}
               </div>
             ))}
@@ -328,19 +329,19 @@ export default function StaffAttendanceTab({ staffId }) {
           <div className="flex flex-wrap justify-center gap-6 mt-8 pt-4 border-t border-gray-50 dark:border-zinc-800">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded bg-green-100 border border-green-200" />
-              <span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.present2')}</span>
+              <span className="text-xs text-fg-muted">{t('pages.present2')}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded bg-red-100 border border-red-200" />
-              <span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.absent2')}</span>
+              <span className="text-xs text-fg-muted">{t('pages.absent2')}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded bg-yellow-100 border border-yellow-200" />
-              <span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.leave')}</span>
+              <span className="text-xs text-fg-muted">{t('pages.leave')}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded bg-orange-100 border border-orange-200" />
-              <span className="text-xs text-gray-600 dark:text-zinc-400">{t('pages.halfDay')}</span>
+              <span className="text-xs text-fg-muted">{t('pages.halfDay')}</span>
             </div>
           </div>
         </div>
@@ -348,11 +349,11 @@ export default function StaffAttendanceTab({ staffId }) {
 
       {/* Today's Quick Action */}
       {isSameMonth(new Date(), currentDate) && (
-        <div className="bg-white dark:bg-zinc-950 rounded-xl border border-gray-200 dark:border-zinc-800 p-5">
+        <div className="bg-surface rounded-xl border border-border-token p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-50 rounded-lg"><Clock size={16} className="text-blue-600" /></div>
-              <h3 className="font-semibold text-gray-900 dark:text-zinc-100">{t('pages.quickMarkToday')}</h3>
+              <h3 className="font-semibold text-fg">{t('pages.quickMarkToday')}</h3>
             </div>
             <Chip size="sm" variant="flat">{format(new Date(), 'dd MMMM yyyy')}</Chip>
           </div>
@@ -406,6 +407,9 @@ export default function StaffAttendanceTab({ staffId }) {
         </div>
       )}
 
+      {/* Leave Balance */}
+      <StaffLeaveBalance staffId={staffId} />
+
       {/* Regularization Modal */}
       <Modal isOpen={isRegOpen} onClose={onRegClose}>
         <ModalContent>
@@ -413,7 +417,7 @@ export default function StaffAttendanceTab({ staffId }) {
             <>
               <ModalHeader className="flex flex-col gap-1">
                 Regularize Attendance
-                <span className="text-xs font-normal text-gray-500 dark:text-zinc-400">
+                <span className="text-xs font-normal text-fg-muted">
                   Requesting change for {selectedDateForReg && format(selectedDateForReg, 'PPPP')}
                 </span>
               </ModalHeader>
@@ -429,7 +433,7 @@ export default function StaffAttendanceTab({ staffId }) {
                   </div>
 
                   <div>
-                    <label className="text-xs font-semibold text-gray-600 dark:text-zinc-400 mb-1.5 block">{t('pages.newStatus')}</label>
+                    <label className="text-xs font-semibold text-fg-muted mb-1.5 block">{t('pages.newStatus')}</label>
                     <Select
                       label={t('pages.selectStatus')}
                       selectedKeys={targetStatus}
@@ -443,7 +447,7 @@ export default function StaffAttendanceTab({ staffId }) {
                     </Select>
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-gray-600 dark:text-zinc-400 mb-1.5 block">{t('pages.reasonForCorrection')}</label>
+                    <label className="text-xs font-semibold text-fg-muted mb-1.5 block">{t('pages.reasonForCorrection')}</label>
                     <Textarea
                       placeholder={t('staff.form.regularizationReasonPlaceholder')}
                       value={regularizationReason}

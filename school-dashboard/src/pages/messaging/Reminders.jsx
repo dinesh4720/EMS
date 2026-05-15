@@ -6,6 +6,8 @@ import ReminderTemplates from "./components/reminders/ReminderTemplates";
 import { remindersApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import logger from '../../utils/logger';
+
 
 const typeTabs = [
   { id: "all", label: "All" },
@@ -37,7 +39,7 @@ export default function Reminders() {
       const response = await remindersApi.getAll();
       setReminders(response.reminders || response || []);
     } catch (error) {
-      console.error('Error loading reminders:', error);
+      logger.error('Error loading reminders:', error);
       setError(error.message || 'Unknown error');
       toast.error(`Failed to load reminders`);
     } finally {
@@ -146,15 +148,15 @@ export default function Reminders() {
         {statsData.map((stat) => (
           <div
             key={stat.label}
-            className="group relative bg-white dark:bg-zinc-900 rounded-xl border border-gray-100 dark:border-zinc-800 p-4 overflow-hidden transition-all duration-200 hover:scale-[1.02] hover:shadow-lg"
+            className="group relative bg-surface rounded-xl border border-divider p-4 overflow-hidden transition-all duration-200 hover:scale-[1.02] hover:shadow-lg"
           >
             <div className="flex items-center gap-3">
               <div className={`w-11 h-11 rounded-xl ${stat.gradient} ${stat.shadowColor} shadow-lg flex items-center justify-center transition-transform duration-200 group-hover:scale-110`}>
                 <stat.icon size={20} className={stat.textColor} strokeWidth={2} />
               </div>
               <div className="min-w-0">
-                <p className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">{stat.value}</p>
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{stat.label}</p>
+                <p className="text-2xl font-bold text-fg tracking-tight">{stat.value}</p>
+                <p className="text-xs font-medium text-fg-muted uppercase tracking-wide">{stat.label}</p>
               </div>
             </div>
             {/* Subtle gradient accent */}
@@ -164,7 +166,7 @@ export default function Reminders() {
       </div>
 
       {/* Type Tabs - Modern Pill Style */}
-      <div className="bg-white dark:bg-zinc-900 rounded-xl border border-gray-100 dark:border-zinc-800 p-1.5">
+      <div className="bg-surface rounded-xl border border-divider p-1.5">
         <div className="flex items-center gap-1 overflow-x-auto">
           {typeTabs.map((tab) => {
             const isActive = selectedType === tab.id;
@@ -175,21 +177,21 @@ export default function Reminders() {
                 onClick={() => setSelectedType(tab.id)}
                 className={`relative flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap ${
                   isActive
-                    ? "text-indigo-600 dark:text-indigo-400"
-                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-800/50"
+                    ? "text-accent"
+                    : "text-fg-muted hover:text-fg hover:bg-surface-2"
                 }`}
               >
                 {IconComponent && (
                   <IconComponent
                     size={15}
                     className={`transition-colors duration-200 ${
-                      isActive ? "text-indigo-500 dark:text-indigo-400" : ""
+                      isActive ? "text-accent" : ""
                     }`}
                   />
                 )}
                 <span>{tab.label}</span>
                 {isActive && (
-                  <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-indigo-500 dark:bg-indigo-400 rounded-full" />
+                  <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-accent rounded-full" />
                 )}
               </button>
             );
@@ -199,13 +201,13 @@ export default function Reminders() {
 
       {/* Actions */}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+        <h3 className="text-lg font-semibold text-fg">
           {selectedType === 'all' ? 'All Reminders' : `${selectedType.charAt(0).toUpperCase() + selectedType.slice(1)} Reminders`}
         </h3>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowTemplatesModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-all duration-200 text-sm font-medium border border-gray-200 dark:border-zinc-700"
+            className="flex items-center gap-2 px-4 py-2.5 text-fg-muted hover:text-fg hover:bg-surface-2 rounded-lg transition-all duration-200 text-sm font-medium border border-border-token"
           >
             <BookOpen size={16} />
             <span>{t('pages.templates1')}</span>
@@ -215,7 +217,7 @@ export default function Reminders() {
               setEditReminder(null);
               setShowCreateModal(true);
             }}
-            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white rounded-lg transition-all duration-200 text-sm font-medium shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40"
+            className="flex items-center gap-2 px-4 py-2.5 bg-accent hover:bg-accent-hover text-accent-fg rounded-lg transition-all duration-200 text-sm font-medium shadow-lg"
           >
             <Plus size={16} />
             <span>{t('pages.newReminder')}</span>
@@ -224,7 +226,7 @@ export default function Reminders() {
       </div>
 
       {/* Reminders List */}
-      <div className="bg-white dark:bg-zinc-900 rounded-xl border border-gray-100 dark:border-zinc-800 overflow-hidden">
+      <div className="bg-surface rounded-xl border border-divider overflow-hidden">
         <RemindersList
           key={refreshKey}
           reminders={filteredReminders}

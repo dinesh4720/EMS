@@ -45,7 +45,7 @@ export default function PayrollTable({
               <Checkbox
                 size="md"
                 classNames={{ base: "p-0 m-0", wrapper: "m-0" }}
-                isSelected={selectedKeys.size > 0 && selectedKeys.size === filteredRecords.length}
+                isSelected={filteredRecords.length > 0 && selectedKeys.size === filteredRecords.length}
                 isIndeterminate={selectedKeys.size > 0 && selectedKeys.size < filteredRecords.length}
                 onValueChange={(checked) => {
                   if (checked) setSelectedKeys(new Set(filteredRecords.map(r => r._id)));
