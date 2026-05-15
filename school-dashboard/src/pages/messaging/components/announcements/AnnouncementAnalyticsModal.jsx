@@ -6,24 +6,18 @@ import {
   ModalBody,
   ModalFooter,
   Button,
-  Card,
-  CardBody,
-  Progress,
-  Chip,
   Avatar,
-  Divider,
 } from '@heroui/react';
 import {
-  Eye,
   Send,
   AlertCircle,
-  CheckCircle,
   Users,
   Mail,
   MessageSquare,
   Phone,
   RefreshCw,
   Download,
+  Paperclip,
 } from 'lucide-react';
 import { announcementsApi } from '../../../../services/api';
 import toast from 'react-hot-toast';
@@ -33,6 +27,64 @@ import ConfirmDialog from '../../../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../../../hooks/useConfirmDialog';
 import logger from '../../../../utils/logger';
 
+const CHANNEL_ICON = {
+  email: Mail,
+  sms: MessageSquare,
+  whatsapp: Phone,
+  inapp: Users,
+};
+
+function pct(num, denom) {
+  if (!denom) return 0;
+  return Math.round((num / denom) * 100);
+}
+
+function Metric({ label, value, sub, tone = 'default' }) {
+  const toneColor = tone === 'ok' ? 'var(--ok)'
+    : tone === 'warn' ? 'var(--warn)'
+    : tone === 'danger' ? 'var(--danger)'
+    : tone === 'accent' ? 'var(--accent)'
+    : 'var(--fg)';
+  return (
+    <div className="dp-metric">
+      <span className="dp-metric__label">{label}</span>
+      <span className="dp-metric__value mono tnum" style={{ color: toneColor }}>{value}</span>
+      {sub != null && (
+        <span className="subtle mono tnum" style={{ fontSize: 11 }}>{sub}</span>
+      )}
+    </div>
+  );
+}
+
+function ProgressBar({ value, tone = 'accent' }) {
+  const fill = tone === 'ok' ? 'var(--ok)'
+    : tone === 'warn' ? 'var(--warn)'
+    : tone === 'danger' ? 'var(--danger)'
+    : 'var(--accent)';
+  return (
+    <div
+      role="progressbar"
+      aria-valuenow={value}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      style={{
+        height: 6,
+        background: 'var(--surface-2)',
+        borderRadius: 999,
+        overflow: 'hidden',
+      }}
+    >
+      <div
+        style={{
+          width: `${Math.max(0, Math.min(100, value))}%`,
+          height: '100%',
+          background: fill,
+          transition: 'width 200ms',
+        }}
+      />
+    </div>
+  );
+}
 
 export default function AnnouncementAnalyticsModal({
   isOpen,
@@ -46,41 +98,42 @@ export default function AnnouncementAnalyticsModal({
   const [retrying, setRetrying] = useState(false);
 
   useEffect(() => {
-    if (isOpen && announcementId) {
-      loadAnalytics();
-    }
-  }, [isOpen, announcementId]);
+    if (!isOpen || !announcementId) return;
+    let cancelled = false;
+    setLoading(true);
+    setAnalytics(null);
+    announcementsApi
+      .getAnalytics(announcementId)
+      .then((data) => {
+        if (!cancelled) setAnalytics(data);
+      })
+      .catch((err) => {
+        logger.error('Error loading analytics:', err);
+        if (!cancelled) toast.error(t('toast.error.failedToLoadAnalytics'));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [isOpen, announcementId, t]);
 
-  const loadAnalytics = async () => {
+  const reload = async () => {
+    if (!announcementId) return;
     setLoading(true);
     try {
       const data = await announcementsApi.getAnalytics(announcementId);
       setAnalytics(data);
-    } catch (error) {
-      logger.error('Error loading analytics:', error);
+    } catch (err) {
+      logger.error('Error reloading analytics:', err);
       toast.error(t('toast.error.failedToLoadAnalytics'));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRetry = async (recipientId) => {
-    setRetrying(true);
-    try {
-      await announcementsApi.resend(announcementId, { recipientIds: [recipientId] });
-      toast.success(t('toast.success.resentSuccessfully'));
-      loadAnalytics();
-    } catch (error) {
-      logger.error('Error retrying:', error);
-      toast.error(t('toast.error.failedToResend'));
-    } finally {
-      setRetrying(false);
-    }
-  };
-
   const handleRetryAll = () => {
     showConfirm({
-      title: 'Resend to Failed Recipients',
+      title: 'Resend to failed recipients',
       message: t('confirm.resendFailedRecipients'),
       variant: 'warning',
       confirmText: 'Resend',
@@ -89,9 +142,9 @@ export default function AnnouncementAnalyticsModal({
         try {
           await announcementsApi.resend(announcementId, { failedOnly: true });
           toast.success(t('toast.success.resendingToAllFailedRecipients'));
-          loadAnalytics();
-        } catch (error) {
-          logger.error('Error retrying all:', error);
+          await reload();
+        } catch (err) {
+          logger.error('Error retrying all:', err);
           toast.error(t('toast.error.failedToResend'));
         } finally {
           setRetrying(false);
@@ -100,312 +153,289 @@ export default function AnnouncementAnalyticsModal({
     });
   };
 
-  const getChannelIcon = (channel) => {
-    switch (channel) {
-      case 'email':
-        return <Mail size={16} />;
-      case 'sms':
-        return <MessageSquare size={16} />;
-      case 'whatsapp':
-        return <Phone size={16} />;
-      case 'inapp':
-        return <Users size={16} />;
-      default:
-        return <Send size={16} />;
-    }
-  };
+  const stats = analytics?.stats || {};
+  const announcement = analytics?.announcement || {};
+  const total = stats.totalRecipients || 0;
+  const delivered = stats.delivered || 0;
+  const read = stats.read || 0;
+  const clicked = stats.clicked || 0;
+  const failed = stats.failed || 0;
+  const deliveryRate = pct(delivered, total);
+  const openRate = pct(read, total);
+  const clickRate = pct(clicked, total);
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'delivered':
-        return 'success';
-      case 'sent':
-        return 'primary';
-      case 'failed':
-        return 'danger';
-      case 'pending':
-        return 'warning';
-      default:
-        return 'default';
-    }
-  };
-
-  const calculateReadRate = () => {
-    const stats = analytics?.stats;
-    if (!stats || !stats.totalRecipients) return 0;
-    return Math.round((stats.read / stats.totalRecipients) * 100);
-  };
-
-  const calculateDeliveryRate = () => {
-    const stats = analytics?.stats;
-    if (!stats || !stats.totalRecipients) return 0;
-    return Math.round((stats.delivered / stats.totalRecipients) * 100);
-  };
-
-  if (loading) {
-    return (
-      <Modal isOpen={isOpen} onClose={onClose} size="2xl">
-        <ModalContent>
-          <ModalHeader>
-            <div className="h-5 w-48 bg-surface-2 rounded animate-pulse" />
-          </ModalHeader>
-          <ModalBody className="py-4 space-y-4">
-            <div className="grid grid-cols-3 gap-4">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="p-4 rounded-xl border border-default-100 space-y-2 animate-pulse">
-                  <div className="h-3 w-16 bg-surface-2 rounded" />
-                  <div className="h-7 w-12 bg-surface-2 rounded" />
-                </div>
-              ))}
-            </div>
-            <div className="space-y-2 animate-pulse">
-              <div className="h-4 w-32 bg-surface-2 rounded" />
-              <div className="h-2 w-full bg-surface-2 rounded-full" />
-            </div>
-            <div className="space-y-3">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="flex items-center gap-3 animate-pulse">
-                  <div className="w-8 h-8 rounded-full bg-surface-2" />
-                  <div className="flex-1 space-y-1">
-                    <div className="h-3 w-1/3 bg-surface-2 rounded" />
-                    <div className="h-2 w-1/2 bg-surface-2 rounded" />
-                  </div>
-                  <div className="h-5 w-16 bg-surface-2 rounded-full" />
-                </div>
-              ))}
-            </div>
-          </ModalBody>
-        </ModalContent>
-      </Modal>
-    );
-  }
-
-  if (!analytics) {
-    return (
-      <Modal isOpen={isOpen} onClose={onClose} size="2xl">
-        <ModalContent>
-          <ModalBody className="py-8 text-center text-default-500">
-            No analytics data available.
-          </ModalBody>
-          <ModalFooter>
-            <Button onPress={onClose}>{t('pages.close2')}</Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    );
-  }
-
-  const announcement = analytics.announcement || {};
-  const stats = analytics.stats || {};
   const channelBreakdown = stats.byChannel
     ? Object.entries(stats.byChannel).map(([channel, data]) => ({ channel, ...data }))
     : [];
 
   return (
     <>
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      size="3xl"
-      scrollBehavior="inside"
-    >
-      <ModalContent>
-        <ModalHeader>
-          <div className="w-full">
-            <h3 className="text-lg font-semibold text-fg">{announcement.title}</h3>
-            <p className="text-sm text-default-500 mt-1">{announcement.content}</p>
-          </div>
-        </ModalHeader>
-
-        <ModalBody className="space-y-4">
-          {/* Overview */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card>
-              <CardBody className="text-center py-4">
-                <Users size={24} className="mx-auto mb-2 text-primary" />
-                <p className="text-2xl font-bold">{stats.totalRecipients ?? 0}</p>
-                <p className="text-xs text-default-500">{t('pages.totalRecipients')}</p>
-              </CardBody>
-            </Card>
-
-            <Card>
-              <CardBody className="text-center py-4">
-                <CheckCircle size={24} className="mx-auto mb-2 text-success" />
-                <p className="text-2xl font-bold">{stats.delivered ?? 0}</p>
-                <p className="text-xs text-default-500">{t('pages.delivered')}</p>
-              </CardBody>
-            </Card>
-
-            <Card>
-              <CardBody className="text-center py-4">
-                <Eye size={24} className="mx-auto mb-2 text-primary" />
-                <p className="text-2xl font-bold">{stats.read ?? 0}</p>
-                <p className="text-xs text-default-500">{t('pages.read')}</p>
-              </CardBody>
-            </Card>
-
-            <Card>
-              <CardBody className="text-center py-4">
-                <AlertCircle size={24} className="mx-auto mb-2 text-danger" />
-                <p className="text-2xl font-bold">{stats.failed ?? 0}</p>
-                <p className="text-xs text-default-500">{t('pages.failed')}</p>
-              </CardBody>
-            </Card>
-          </div>
-
-          <Divider />
-
-          {/* Read & Delivery Rates */}
-          <div className="space-y-3">
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium text-fg">{t('pages.deliveryRate')}</span>
-                <span className="text-sm text-default-500">{calculateDeliveryRate()}%</span>
-              </div>
-              <Progress
-                value={calculateDeliveryRate()}
-                color="primary"
-                className="w-full"
-              />
+      <Modal isOpen={isOpen} onClose={onClose} size="3xl" scrollBehavior="inside">
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1">
+            <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: '-0.01em' }}>
+              {loading ? 'Loading…' : (announcement.title || 'Announcement analytics')}
             </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium text-fg">{t('pages.readRate')}</span>
-                <span className="text-sm text-default-500">{calculateReadRate()}%</span>
+            {!loading && announcement.content && (
+              <div className="subtle" style={{ fontSize: 12, fontWeight: 400 }}>
+                {announcement.content}
               </div>
-              <Progress
-                value={calculateReadRate()}
-                color="success"
-                className="w-full"
-              />
-            </div>
-          </div>
+            )}
+          </ModalHeader>
 
-          <Divider />
+          <ModalBody className="col gap-4">
+            {loading ? (
+              <div className="col gap-3">
+                <div className="row gap-2">
+                  {[0, 1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      style={{
+                        flex: 1,
+                        height: 76,
+                        background: 'var(--surface-2)',
+                        borderRadius: 8,
+                        animation: 'pulse 1.2s ease-in-out infinite',
+                      }}
+                    />
+                  ))}
+                </div>
+                <div style={{ height: 60, background: 'var(--surface-2)', borderRadius: 8 }} />
+              </div>
+            ) : !analytics ? (
+              <div className="col gap-2" style={{ alignItems: 'center', padding: 32, textAlign: 'center' }}>
+                <AlertCircle size={28} className="faint" aria-hidden />
+                <div className="subtle" style={{ fontSize: 13 }}>No analytics data available.</div>
+              </div>
+            ) : (
+              <>
+                {/* Top metrics — dp-metric strip */}
+                <div
+                  className="detail-pane__metrics"
+                  style={{ margin: 0, gridTemplateColumns: 'repeat(4, 1fr)' }}
+                >
+                  <Metric label="Recipients" value={total} sub="Total" />
+                  <Metric
+                    label="Delivered"
+                    value={delivered}
+                    sub={`${deliveryRate}%`}
+                    tone="ok"
+                  />
+                  <Metric
+                    label="Opened"
+                    value={read}
+                    sub={`${openRate}%`}
+                    tone="accent"
+                  />
+                  <Metric
+                    label="Clicked"
+                    value={clicked}
+                    sub={`${clickRate}%`}
+                    tone="accent"
+                  />
+                </div>
 
-          {/* Channel Breakdown */}
-          <div>
-            <h4 className="text-sm font-semibold mb-3 text-fg">{t('pages.channelBreakdown')}</h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {channelBreakdown.map((channel) => (
-                <Card key={channel.channel} size="sm">
-                  <CardBody className="py-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      {getChannelIcon(channel.channel)}
-                      <span className="text-xs font-medium uppercase">
-                        {channel.channel}
-                      </span>
+                {/* Delivery & read rate progress */}
+                <div className="col gap-3" style={{ padding: '4px 4px 0' }}>
+                  <div className="col" style={{ gap: 6 }}>
+                    <div className="row" style={{ justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: 12, fontWeight: 520 }}>Delivery rate</span>
+                      <span className="subtle mono tnum" style={{ fontSize: 12 }}>{deliveryRate}%</span>
                     </div>
-                    <p className="text-lg font-bold">{channel.sent}</p>
-                    <p className="text-xs text-default-500">
-                      {channel.delivered} delivered
-                    </p>
-                  </CardBody>
-                </Card>
-              ))}
-            </div>
-          </div>
-
-          <Divider />
-
-          {/* Attachments */}
-          {announcement.attachments && announcement.attachments.length > 0 && (
-            <>
-              <div>
-                <h4 className="text-sm font-semibold mb-3 text-fg">{t('pages.attachments')}</h4>
-                <div className="space-y-2">
-                  {announcement.attachments.map((attachment) => (
-                    <Card key={attachment._id || attachment.name} size="sm">
-                      <CardBody className="py-2 flex flex-row items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Download size={16} />
-                          <span className="text-sm">{attachment.name}</span>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="flat"
-                          onPress={() => window.open(attachment.url, '_blank', 'noopener,noreferrer')}
-                        >
-                          Download
-                        </Button>
-                      </CardBody>
-                    </Card>
-                  ))}
+                    <ProgressBar value={deliveryRate} tone="ok" />
+                  </div>
+                  <div className="col" style={{ gap: 6 }}>
+                    <div className="row" style={{ justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: 12, fontWeight: 520 }}>Open rate</span>
+                      <span className="subtle mono tnum" style={{ fontSize: 12 }}>{openRate}%</span>
+                    </div>
+                    <ProgressBar value={openRate} tone="accent" />
+                  </div>
+                  {failed > 0 && (
+                    <div className="col" style={{ gap: 6 }}>
+                      <div className="row" style={{ justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 12, fontWeight: 520 }}>Failure rate</span>
+                        <span className="subtle mono tnum" style={{ fontSize: 12 }}>
+                          {pct(failed, total)}%
+                        </span>
+                      </div>
+                      <ProgressBar value={pct(failed, total)} tone="danger" />
+                    </div>
+                  )}
                 </div>
-              </div>
-              <Divider />
-            </>
-          )}
 
-          {/* Failed Recipients */}
-          {analytics.failedRecipients && analytics.failedRecipients.length > 0 && (
-            <>
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-sm font-semibold text-fg">{t('pages.failedRecipients')}</h4>
-                  <Button
-                    size="sm"
-                    color="primary"
-                    variant="flat"
-                    onPress={handleRetryAll}
-                    isLoading={retrying}
-                    startContent={<RefreshCw size={14} />}
-                  >
-                    Retry All
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  {analytics.failedRecipients.map((recipient, idx) => (
-                    <Card key={recipient.userId?.toString() || idx} size="sm">
-                      <CardBody className="py-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <Avatar
-                              name={recipient.userType}
-                              size="sm"
-                            />
-                            <div>
-                              <p className="text-sm font-medium text-fg">{recipient.userType}</p>
-                              {recipient.errors?.map((e, i) => (
-                                <p key={i} className="text-xs text-danger mt-0.5">
-                                  {e.channel}: {e.error || 'Failed to deliver'}
-                                </p>
-                              ))}
+                {/* Channel breakdown */}
+                {channelBreakdown.length > 0 && (
+                  <div className="col gap-2">
+                    <div style={{ fontSize: 12, fontWeight: 520 }}>Channel breakdown</div>
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                        gap: 8,
+                      }}
+                    >
+                      {channelBreakdown.map((c) => {
+                        const Icon = CHANNEL_ICON[c.channel] || Send;
+                        return (
+                          <div
+                            key={c.channel}
+                            className="col gap-1"
+                            style={{
+                              padding: 10,
+                              border: '1px solid var(--border)',
+                              borderRadius: 8,
+                              background: 'var(--surface)',
+                            }}
+                          >
+                            <div className="row gap-2" style={{ alignItems: 'center' }}>
+                              <Icon size={14} className="subtle" aria-hidden />
+                              <span className="mono tnum" style={{ fontSize: 11, textTransform: 'uppercase' }}>
+                                {c.channel}
+                              </span>
                             </div>
+                            <span className="mono tnum" style={{ fontSize: 16, fontWeight: 600 }}>
+                              {c.sent ?? 0}
+                            </span>
+                            <span className="subtle mono tnum" style={{ fontSize: 11 }}>
+                              {(c.delivered ?? 0)} delivered
+                            </span>
                           </div>
-                          <Chip size="sm" color="danger" variant="flat">
-                            FAILED
-                          </Chip>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Attachments */}
+                {announcement.attachments?.length > 0 && (
+                  <div className="col gap-2">
+                    <div style={{ fontSize: 12, fontWeight: 520 }}>Attachments</div>
+                    <div className="col gap-1">
+                      {announcement.attachments.map((att, idx) => (
+                        <div
+                          key={att._id || att.url || idx}
+                          className="row gap-2"
+                          style={{
+                            padding: '8px 10px',
+                            border: '1px solid var(--border)',
+                            borderRadius: 8,
+                            background: 'var(--surface-2)',
+                          }}
+                        >
+                          <Paperclip size={13} className="subtle" aria-hidden />
+                          <span style={{ flex: 1, fontSize: 12 }}>{att.name}</span>
+                          <button
+                            type="button"
+                            className="btn btn--sm"
+                            onClick={() => window.open(att.url, '_blank', 'noopener,noreferrer')}
+                          >
+                            <Download size={12} aria-hidden /> Download
+                          </button>
                         </div>
-                      </CardBody>
-                    </Card>
-                  ))}
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Failed recipients */}
+                {analytics.failedRecipients?.length > 0 && (
+                  <div className="col gap-2">
+                    <div className="row" style={{ justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: 12, fontWeight: 520 }}>
+                        Failed recipients
+                        <span className="subtle mono tnum" style={{ fontSize: 11, marginLeft: 6 }}>
+                          {analytics.failedRecipients.length}
+                        </span>
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        color="primary"
+                        onPress={handleRetryAll}
+                        isLoading={retrying}
+                        startContent={<RefreshCw size={12} />}
+                      >
+                        Retry all
+                      </Button>
+                    </div>
+                    <div className="col gap-1">
+                      {analytics.failedRecipients.slice(0, 20).map((r, idx) => (
+                        <div
+                          key={r.userId?.toString() || idx}
+                          className="row gap-2"
+                          style={{
+                            padding: '8px 10px',
+                            border: '1px solid var(--border)',
+                            borderRadius: 8,
+                            background: 'var(--surface)',
+                          }}
+                        >
+                          <Avatar name={r.userType || 'U'} size="sm" />
+                          <div className="col" style={{ flex: 1, minWidth: 0 }}>
+                            <span style={{ fontSize: 12, fontWeight: 520 }}>{r.userType || 'Recipient'}</span>
+                            {r.errors?.slice(0, 1).map((e, i) => (
+                              <span key={i} className="subtle" style={{ fontSize: 11, color: 'var(--danger)' }}>
+                                {e.channel}: {e.error || 'Failed to deliver'}
+                              </span>
+                            ))}
+                          </div>
+                          <span className="chip chip--danger">FAILED</span>
+                        </div>
+                      ))}
+                      {analytics.failedRecipients.length > 20 && (
+                        <span className="faint" style={{ fontSize: 11, padding: '4px 8px' }}>
+                          and {analytics.failedRecipients.length - 20} more…
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Sent-by / sent-on footer block */}
+                <div
+                  className="row"
+                  style={{
+                    padding: '8px 10px',
+                    border: '1px solid var(--border)',
+                    borderRadius: 8,
+                    background: 'var(--surface-2)',
+                    justifyContent: 'space-between',
+                    fontSize: 12,
+                  }}
+                >
+                  <span className="subtle">Sent by</span>
+                  <span className="mono">{announcement.createdBy?.name || 'Unknown'}</span>
                 </div>
-              </div>
-              <Divider />
-            </>
-          )}
+                <div
+                  className="row"
+                  style={{
+                    padding: '8px 10px',
+                    border: '1px solid var(--border)',
+                    borderRadius: 8,
+                    background: 'var(--surface-2)',
+                    justifyContent: 'space-between',
+                    fontSize: 12,
+                  }}
+                >
+                  <span className="subtle">Sent on</span>
+                  <span className="mono tnum">{formatDateTime(announcement.sentAt)}</span>
+                </div>
+              </>
+            )}
+          </ModalBody>
 
-          {/* Sent By */}
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-default-500">{t('pages.sentBy')}</span>
-            <span className="font-medium text-fg">{announcement.createdBy?.name || 'Unknown'}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-default-500">{t('pages.sentOn')}</span>
-            <span className="font-medium text-fg">
-              {formatDateTime(announcement.sentAt)}
-            </span>
-          </div>
-        </ModalBody>
-
-        <ModalFooter>
-          <Button onPress={onClose}>{t('pages.close2')}</Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
-    <ConfirmDialog {...confirmState} onClose={closeConfirm} />
+          <ModalFooter>
+            <Button variant="flat" onPress={reload} isDisabled={loading} startContent={<RefreshCw size={13} />}>
+              Refresh
+            </Button>
+            <Button color="primary" onPress={onClose}>
+              {t('pages.close2')}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </>
   );
 }

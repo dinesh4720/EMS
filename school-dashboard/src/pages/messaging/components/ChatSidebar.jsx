@@ -1,4 +1,4 @@
-import { ScrollShadow } from "@heroui/react";
+import { forwardRef, useMemo } from "react";
 import { Search, X, Plus, Users, MessageCircle } from "lucide-react";
 import { formatTime } from "../utils/chatUtils";
 import { useTranslation } from 'react-i18next';
@@ -12,50 +12,72 @@ import {
   EmptyState,
 } from "../../../components/ui";
 
-const STATUS_LABEL = {
-  connected: { dot: 'bg-green-500', label: 'Connected' },
-  offline: { dot: 'bg-amber-500', label: 'Offline mode' },
-};
+const ConversationListItem = forwardRef(function ConversationListItem(
+  { conv, isActive, onSelect },
+  ref
+) {
+  const previewText =
+    conv.lastMessage?.content
+    || (conv.lastMessage?.type === 'audio' ? '🎤 Voice message'
+      : conv.lastMessage?.type === 'image' ? '📷 Photo'
+      : conv.lastMessage?.type === 'video' ? '🎥 Video'
+      : conv.lastMessage?.type === 'file' ? '📎 File'
+      : 'No messages');
 
-function ConversationListItem({ conv, isActive, onSelect }) {
   return (
     <button
+      ref={ref}
       type="button"
+      role="option"
+      aria-selected={isActive}
       onClick={() => onSelect(conv)}
-      className={`chat-list__row w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 ${
-        isActive ? 'is-active' : ''
-      }`}
+      data-conv-id={conv.id || conv._id}
+      className={`chat-list__row ${isActive ? 'is-active' : ''}`}
     >
-      <div className="relative shrink-0">
-        <Avatar
-          src={conv.otherParticipant?.avatar}
-          name={conv.otherParticipant?.name}
-          size="md"
-          status={conv.otherParticipant?.online ? 'online' : undefined}
-        />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-0.5 gap-2">
-          <span className="chat-list__name">
+      <Avatar
+        src={conv.otherParticipant?.avatar}
+        name={conv.otherParticipant?.name}
+        size="md"
+        status={conv.otherParticipant?.online ? 'online' : undefined}
+      />
+      <div className="col" style={{ flex: 1, minWidth: 0, lineHeight: 1.3, alignItems: 'flex-start' }}>
+        <div className="row gap-2" style={{ width: '100%', minWidth: 0 }}>
+          <span
+            style={{
+              fontWeight: 520,
+              letterSpacing: '-0.01em',
+              fontSize: 13,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              minWidth: 0,
+              flex: 1,
+            }}
+          >
             {conv.otherParticipant?.name}
           </span>
           {conv.lastMessage?.timestamp && (
-            <span className="chat-list__time shrink-0">
+            <span className="mono tnum faint" style={{ fontSize: 11, flexShrink: 0 }}>
               {formatTime(conv.lastMessage.timestamp)}
             </span>
           )}
         </div>
-        <div className="flex items-center justify-between gap-2">
-          <p className="chat-list__preview flex-1">
-            {conv.lastMessage?.content
-              || (conv.lastMessage?.type === 'audio' ? '🎤 Voice message'
-                : conv.lastMessage?.type === 'image' ? '📷 Photo'
-                : conv.lastMessage?.type === 'video' ? '🎥 Video'
-                : conv.lastMessage?.type === 'file' ? '📎 File'
-                : 'No messages')}
-          </p>
+        <div className="row gap-2" style={{ width: '100%', minWidth: 0 }}>
+          <span
+            className="subtle"
+            style={{
+              fontSize: 12,
+              flex: 1,
+              minWidth: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {previewText}
+          </span>
           {conv.unreadCount > 0 && (
-            <span className="chat-list__unread">
+            <span className="chip chip--accent mono tnum" style={{ fontSize: 10, padding: '1px 6px', flexShrink: 0 }}>
               {conv.unreadCount}
             </span>
           )}
@@ -63,7 +85,7 @@ function ConversationListItem({ conv, isActive, onSelect }) {
       </div>
     </button>
   );
-}
+});
 
 function NewChatModal({ isOpen, onClose, contacts, contactSearch, onContactSearchChange, onStartNewConversation }) {
   const { t } = useTranslation();
@@ -126,35 +148,43 @@ function NewChatModal({ isOpen, onClose, contacts, contactSearch, onContactSearc
   );
 }
 
-export default function ChatSidebar({
-  conversations,
-  selectedConversation,
-  searchQuery,
-  onSearchChange,
-  onSelectConversation,
-  socketConnected,
-  showNewChatModal,
-  onOpenNewChatModal,
-  onCloseNewChatModal,
-  contacts,
-  contactSearch,
-  onContactSearchChange,
-  onStartNewConversation,
-}) {
+const ChatSidebar = forwardRef(function ChatSidebar(
+  {
+    conversations,
+    selectedConversation,
+    searchQuery,
+    onSearchChange,
+    onSelectConversation,
+    socketConnected,
+    showNewChatModal,
+    onOpenNewChatModal,
+    onCloseNewChatModal,
+    contacts,
+    contactSearch,
+    onContactSearchChange,
+    onStartNewConversation,
+    searchInputRef,
+    rowRefs,
+    onListKeyDown,
+  },
+  listRef
+) {
   const { t } = useTranslation();
 
-  const filteredConversations = conversations.filter(c =>
-    c.otherParticipant?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredConversations = useMemo(
+    () => conversations.filter(c =>
+      c.otherParticipant?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    ),
+    [conversations, searchQuery]
   );
-
-  const status = socketConnected ? STATUS_LABEL.connected : STATUS_LABEL.offline;
 
   return (
     <>
-      <aside className="w-80 shrink-0 border-r border-[var(--color-border)] bg-[var(--color-bg)] h-full flex flex-col overflow-hidden">
-        <div className="p-4 border-b border-[var(--color-border)] shrink-0 space-y-3">
+      <aside className="chat-shell__sidebar">
+        <div className="chat-sidebar__head">
           <div className="flex items-center gap-2">
             <Input
+              ref={searchInputRef}
               placeholder={t('pages.searchConversations')}
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
@@ -168,7 +198,9 @@ export default function ChatSidebar({
                 >
                   <X size={14} />
                 </button>
-              ) : null}
+              ) : (
+                <span className="kbd" aria-hidden style={{ fontSize: 9.5, padding: '0 4px' }}>/</span>
+              )}
               wrapperClassName="flex-1"
               aria-label={t('pages.searchConversations')}
             />
@@ -183,20 +215,29 @@ export default function ChatSidebar({
             </Tooltip>
           </div>
 
-          <div className="flex items-center gap-2 text-xs px-1">
-            <span
-              className={`w-2 h-2 rounded-full ${status.dot} ${socketConnected ? 'animate-pulse' : ''}`}
-              aria-hidden="true"
-            />
-            <span className="text-[var(--color-text-muted)] font-medium">
+          <div className={`chat-sidebar__status ${socketConnected ? '' : 'is-offline'}`}>
+            <span className="dot" aria-hidden />
+            <span>
               {socketConnected
                 ? t('messaging.chat.connected', 'Connected')
                 : t('messaging.chat.offlineMode', 'Offline mode')}
             </span>
+            <span className="faint" style={{ marginLeft: 'auto' }}>
+              <span className="mono tnum">{filteredConversations.length}</span>
+              {' '}of <span className="mono tnum">{conversations.length}</span>
+            </span>
           </div>
         </div>
 
-        <ScrollShadow className="flex-1 min-h-0">
+        <div
+          ref={listRef}
+          role="listbox"
+          aria-label={t('pages.conversations', 'Conversations')}
+          tabIndex={0}
+          onKeyDown={onListKeyDown}
+          className="flex-1 min-h-0 overflow-y-auto"
+          style={{ outline: 'none' }}
+        >
           {filteredConversations.length === 0 ? (
             <EmptyState
               icon={MessageCircle}
@@ -205,18 +246,26 @@ export default function ChatSidebar({
               description={t('pages.startANewChatToBeginMessaging')}
             />
           ) : (
-            <div className="p-2 space-y-1">
-              {filteredConversations.map((conv) => (
-                <ConversationListItem
-                  key={conv.id}
-                  conv={conv}
-                  isActive={selectedConversation?.id === conv.id}
-                  onSelect={onSelectConversation}
-                />
-              ))}
+            <div>
+              {filteredConversations.map((conv) => {
+                const id = conv.id || conv._id;
+                return (
+                  <ConversationListItem
+                    key={id}
+                    ref={(el) => {
+                      if (!rowRefs) return;
+                      if (el) rowRefs.current.set(id, el);
+                      else rowRefs.current.delete(id);
+                    }}
+                    conv={conv}
+                    isActive={selectedConversation?.id === conv.id || selectedConversation?._id === conv._id}
+                    onSelect={onSelectConversation}
+                  />
+                );
+              })}
             </div>
           )}
-        </ScrollShadow>
+        </div>
       </aside>
 
       <NewChatModal
@@ -229,4 +278,6 @@ export default function ChatSidebar({
       />
     </>
   );
-}
+});
+
+export default ChatSidebar;
