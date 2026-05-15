@@ -7,6 +7,9 @@ import {
   AlertCircle,
   Info,
   Trash2,
+  Check,
+  Sparkles,
+  AlertTriangle,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
@@ -19,19 +22,7 @@ import { getAcademicYearOptions } from "../../utils/constants";
 import { getDateLocale } from "../../i18n/index";
 import useConfirmDialog from "../../hooks/useConfirmDialog";
 import logger from "../../utils/logger";
-import {
-  Badge,
-  Button,
-  Card,
-  Chip,
-  ConfirmDialog,
-  EmptyState,
-  IconButton,
-  InlineEdit,
-  SectionHeading,
-  Select,
-  Skeleton,
-} from "../../components/ui";
+import { ConfirmDialog, EmptyState, Skeleton } from "../../components/ui";
 
 import StudentsPreviewModal from "./feeStructure/StudentsPreviewModal";
 
@@ -53,15 +44,25 @@ const buildAcademicYearDate = (academicYear, month, day, useNextYear = false) =>
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 };
 
+// Frequency multipliers for annual sum. Treat unknown frequencies as one-shot
+// instead of silently dropping them — fixes "totals not summing" bug surfaced
+// in the REVAMP-28 brief.
+const FREQUENCY_MULTIPLIER = {
+  monthly: 12,
+  quarterly: 4,
+  yearly: 1,
+  "one-time": 1,
+};
+
 const calculateAnnualTotal = (feeHeads) =>
   feeHeads.reduce((sum, head) => {
-    let annualAmount = head.amount || 0;
-    if (head.frequency === "monthly") annualAmount *= 12;
-    else if (head.frequency === "quarterly") annualAmount *= 4;
-    else if (head.frequency === "term" && head.applicableTerms) {
-      annualAmount *= head.applicableTerms.length;
+    const amount = Number(head.amount) || 0;
+    if (head.frequency === "term") {
+      const terms = Array.isArray(head.applicableTerms) ? head.applicableTerms.length : 2;
+      return sum + amount * Math.max(terms, 1);
     }
-    return sum + annualAmount;
+    const mult = FREQUENCY_MULTIPLIER[head.frequency] ?? 1;
+    return sum + amount * mult;
   }, 0);
 
 export default function FeeStructureAssignment({ classes, onAssignmentComplete }) {
@@ -79,6 +80,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
   const [templateError, setTemplateError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [applying, setApplying] = useState(false);
+  const [selectedGrade, setSelectedGrade] = useState("");
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [academicYearOverride, setAcademicYearOverride] = useState(null);
@@ -95,6 +97,44 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
 
   const [previewStudents, setPreviewStudents] = useState([]);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+  // Group classes by name (e.g. "Class 6") so the .optgrid lists grades and
+  // .taginput chips show sections within that grade. Each .Class document is
+  // still one section — assignment runs per-class under the hood.
+  const gradeGroups = useMemo(() => {
+    const map = new Map();
+    (classes || []).forEach((cls) => {
+      const key = String(cls.name || "Unnamed").trim();
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(cls);
+    });
+    return Array.from(map.entries())
+      .map(([name, sections]) => ({
+        name,
+        sections: sections.sort((a, b) =>
+          String(a.section || "").localeCompare(String(b.section || "")),
+        ),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  }, [classes]);
+
+  const sectionsForSelectedGrade = useMemo(
+    () => gradeGroups.find((g) => g.name === selectedGrade)?.sections || [],
+    [gradeGroups, selectedGrade],
+  );
+
+  // When the grade changes, default to its first section so the user is never
+  // stuck with an empty selection.
+  useEffect(() => {
+    if (!selectedGrade) {
+      setSelectedClass("");
+      return;
+    }
+    const sections = gradeGroups.find((g) => g.name === selectedGrade)?.sections || [];
+    if (!sections.find((s) => s._id === selectedClass)) {
+      setSelectedClass(sections[0]?._id || "");
+    }
+  }, [selectedGrade, gradeGroups, selectedClass]);
 
   const generateInstallments = useCallback(
     (feeHeads, mode, totalAnnualFee = formData.totalAnnualFee) => {
@@ -164,7 +204,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
         templateId: data.templateId?._id || data.templateId || "",
         feeHeads: data.feeHeads || [],
         collectionSchedule: data.collectionSchedule || { mode: "term", installments: [] },
-        totalAnnualFee: data.totalAnnualFee || 0,
+        totalAnnualFee: data.totalAnnualFee || calculateAnnualTotal(data.feeHeads || []),
       });
       if (data.templateId?._id) {
         setSelectedTemplate(data.templateId._id);
@@ -196,15 +236,20 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
 
   const handleTemplateChange = (templateId) => {
     setSelectedTemplate(templateId);
+    if (!templateId) {
+      setFormData((prev) => ({ ...prev, templateId: "" }));
+      return;
+    }
     const template = templates.find((tpl) => tpl._id === templateId);
     if (template) {
-      const annual = template.totalAnnualFee || 0;
+      const feeHeads = template.feeHeads || [];
+      const annual = template.totalAnnualFee || calculateAnnualTotal(feeHeads);
       setFormData({
         templateId,
-        feeHeads: template.feeHeads || [],
+        feeHeads,
         collectionSchedule: {
           mode: "term",
-          installments: generateInstallments(template.feeHeads, "term", annual),
+          installments: generateInstallments(feeHeads, "term", annual),
         },
         totalAnnualFee: annual,
       });
@@ -286,17 +331,23 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
     }
   };
 
+  const existingStudentCount = previewStudents.length;
+
   const handleApplyToStudents = () => {
     if (!selectedClass) {
       toast.error(t("toast.error.pleaseSelectAClassFirst"));
       return;
     }
+    const overwriteWarning = existingStudentCount > 0
+      ? ` ${existingStudentCount} student${existingStudentCount === 1 ? "" : "s"} already have a fee structure and will be skipped (existing balances are preserved).`
+      : "";
     showConfirm({
       title: t("pages.applyFeeStructure", "Apply Fee Structure"),
-      message: t(
-        "confirm.applyFeeStructure",
-        "Apply this fee structure to all students in the selected class? This cannot be undone.",
-      ),
+      message:
+        t(
+          "confirm.applyFeeStructure",
+          "Apply this fee structure to all students in the selected class? This cannot be undone.",
+        ) + overwriteWarning,
       variant: "warning",
       confirmText: t("pages.apply", "Apply"),
       onConfirm: async () => {
@@ -315,60 +366,158 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
     });
   };
 
-  const classOptions = useMemo(
-    () => (classes || []).map((cls) => ({ value: cls._id, label: `${cls.name} - ${cls.section}` })),
-    [classes],
-  );
-
   const templateOptions = useMemo(
     () => [
       { value: "", label: t("pages.selectATemplateOptional", "Select a template (optional)") },
       ...templates.map((tpl) => ({
         value: tpl._id,
-        label: `${tpl.name} — ${tpl.section} • ${fmt(tpl.totalAnnualFee || 0)}/year`,
+        label: `${tpl.name} — ${tpl.section || "All"} • ${fmt(tpl.totalAnnualFee || 0)}/year`,
       })),
     ],
     [templates, t, fmt],
   );
 
-  return (
-    <Card padding="md" elevation="raised" className="space-y-6">
-      <SectionHeading
-        description={t(
-          "pages.createOrUpdateFeeStructureForASpecificClass",
-          "Create or update fee structure for a specific class",
-        )}
-        actions={
-          existingStructure ? (
-            <Badge color="success" dot>
-              {t("pages.structureExists", "Structure exists")}
-            </Badge>
-          ) : null
-        }
-      >
-        {t("pages.assignFeeStructureToClass", "Assign Fee Structure to Class")}
-      </SectionHeading>
+  const selectedClassDoc = useMemo(
+    () => sectionsForSelectedGrade.find((s) => s._id === selectedClass),
+    [sectionsForSelectedGrade, selectedClass],
+  );
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Select
-          label={t("pages.selectClass1", "Select Class")}
-          value={selectedClass}
-          onChange={(e) => setSelectedClass(e.target.value)}
-          options={[
-            { value: "", label: t("pages.chooseAClass", "Choose a class") },
-            ...classOptions,
-          ]}
-        />
-        <Select
-          label={t("pages.academicYear1", "Academic Year")}
-          value={academicYear}
-          onChange={(e) => {
-            const next = e.target.value;
-            setAcademicYearOverride(next === currentAcademicYear ? null : next);
-          }}
-          options={academicYearOptions.map((year) => ({ value: year, label: year }))}
-        />
-      </div>
+  const totalsByCategory = useMemo(() => {
+    const map = {};
+    formData.feeHeads.forEach((h) => {
+      const cat = h.category || "other";
+      map[cat] = (map[cat] || 0) + (Number(h.amount) || 0);
+    });
+    return map;
+  }, [formData.feeHeads]);
+
+  return (
+    <div className="fees-assign">
+      {/* Class & year picker */}
+      <section className="section">
+        <div className="section__head">
+          <div>
+            <div className="section__title">
+              {t("pages.assignFeeStructureToClass", "Assign Fee Structure to Class")}
+            </div>
+            <div className="section__hint">
+              {t(
+                "pages.createOrUpdateFeeStructureForASpecificClass",
+                "Create or update fee structure for a specific class",
+              )}
+            </div>
+          </div>
+          {existingStructure && (
+            <span className="chip chip--ok">
+              <Check size={9} strokeWidth={2.5} aria-hidden /> {t("pages.structureExists", "Structure exists")}
+            </span>
+          )}
+        </div>
+
+        <div className="fgrid">
+          <div className="field span-2">
+            <label className="field__label">
+              {t("pages.selectClass1", "Select Class")}
+              <span className="req">*</span>
+            </label>
+            {gradeGroups.length === 0 ? (
+              <EmptyState
+                icon={Info}
+                size="sm"
+                title={t("pages.noClassesAvailable", "No classes available")}
+              />
+            ) : (
+              <div className="optgrid">
+                {gradeGroups.map((g) => {
+                  const isActive = g.name === selectedGrade;
+                  return (
+                    <button
+                      key={g.name}
+                      type="button"
+                      className={`opt ${isActive ? "is-active" : ""}`}
+                      onClick={() => setSelectedGrade(g.name)}
+                    >
+                      <span className="opt__icon">
+                        <Users size={12} strokeWidth={2} />
+                      </span>
+                      <span className="col" style={{ gap: 1, minWidth: 0, alignItems: "flex-start" }}>
+                        <span style={{ fontWeight: 520 }}>{g.name}</span>
+                        <span className="subtle" style={{ fontSize: 11 }}>
+                          {g.sections.length} {g.sections.length === 1 ? "section" : "sections"}
+                        </span>
+                      </span>
+                      <span className="opt__check">
+                        <Check size={8} strokeWidth={3} />
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {selectedGrade && (
+            <div className="field span-2">
+              <label className="field__label">
+                {t("pages.section", "Section")}
+                <span className="req">*</span>
+              </label>
+              <div className="taginput" role="radiogroup" aria-label="Sections">
+                {sectionsForSelectedGrade.map((s) => {
+                  const isActive = s._id === selectedClass;
+                  return (
+                    <button
+                      key={s._id}
+                      type="button"
+                      role="radio"
+                      aria-checked={isActive}
+                      className="tagchip"
+                      onClick={() => setSelectedClass(s._id)}
+                      style={
+                        isActive
+                          ? undefined
+                          : {
+                              background: "var(--surface-2)",
+                              color: "var(--fg-muted)",
+                            }
+                      }
+                    >
+                      {s.section || "—"}
+                      {isActive && <Check size={10} strokeWidth={2.5} aria-hidden />}
+                    </button>
+                  );
+                })}
+              </div>
+              <span className="field__hint">
+                {t(
+                  "pages.assignmentRunsPerSection",
+                  "Each section gets its own structure. Switch sections to assign multiple.",
+                )}
+              </span>
+            </div>
+          )}
+
+          <div className="field">
+            <label className="field__label">
+              {t("pages.academicYear1", "Academic Year")}
+            </label>
+            <select
+              className="select mono tnum"
+              value={academicYear}
+              onChange={(e) => {
+                const next = e.target.value;
+                setAcademicYearOverride(next === currentAcademicYear ? null : next);
+              }}
+            >
+              {academicYearOptions.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </section>
 
       {!selectedClass && (
         <EmptyState
@@ -381,183 +530,233 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
       {selectedClass && (
         <>
           {structureLoading && (
-            <div className="space-y-3">
+            <div className="section">
               <Skeleton className="h-10 w-full" />
+              <div style={{ height: 8 }} />
               <Skeleton className="h-20 w-full" />
             </div>
           )}
 
           {templateError && (
-            <div className="flex items-center gap-3 p-4 rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/30">
-              <AlertCircle size={18} className="text-red-500 shrink-0" aria-hidden="true" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-red-800 dark:text-red-200">
-                  {t("toast.error.failedToLoadFeeTemplates", "Failed to load fee templates")}
-                </p>
-                <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">{templateError}</p>
-              </div>
-              <Button size="sm" variant="outline" onClick={fetchTemplates}>
+            <div className="help-banner" style={{ color: "var(--danger)", background: "var(--danger-bg)", borderColor: "var(--danger-bg)" }}>
+              <AlertCircle size={12} style={{ marginTop: 1, flexShrink: 0 }} aria-hidden />
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <strong>{t("toast.error.failedToLoadFeeTemplates", "Failed to load fee templates")}</strong>
+                <br />
+                <span className="subtle">{templateError}</span>
+              </span>
+              <button type="button" className="btn btn--sm" onClick={fetchTemplates}>
                 {t("pages.retry", "Retry")}
-              </Button>
+              </button>
+            </div>
+          )}
+
+          {existingStructure && (
+            <div className="help-banner" style={{ color: "var(--warn)", background: "var(--warn-bg)", borderColor: "var(--warn-bg)" }}>
+              <AlertTriangle size={12} style={{ marginTop: 1, flexShrink: 0 }} aria-hidden />
+              <span style={{ flex: 1, minWidth: 0 }}>
+                {t(
+                  "pages.feeStructureOverwriteWarning",
+                  "Saving will overwrite the existing structure for this class & year. Already-assigned student structures keep their balances; only the class template changes.",
+                )}
+              </span>
             </div>
           )}
 
           {!structureLoading && (
-            <div className="space-y-3 border-t border-divider pt-5">
-              <div>
-                <h4 className="text-sm font-semibold text-fg">
-                  {t("pages.selectFeeTemplate", "Select Fee Template")}
-                </h4>
-                <p className="text-xs text-fg-muted">
-                  {t(
-                    "pages.chooseFromExistingTemplatesOrCreateCustomStructure",
-                    "Choose from existing templates or create a custom structure",
-                  )}
-                </p>
+            <section className="section">
+              <div className="section__head">
+                <div>
+                  <div className="section__title">
+                    {t("pages.selectFeeTemplate", "Select Fee Template")}
+                  </div>
+                  <div className="section__hint">
+                    {t(
+                      "pages.chooseFromExistingTemplatesOrCreateCustomStructure",
+                      "Choose from existing templates or create a custom structure",
+                    )}
+                  </div>
+                </div>
               </div>
-              <Select
+              <select
+                className="select"
                 value={selectedTemplate}
                 onChange={(e) => handleTemplateChange(e.target.value)}
-                options={templateOptions}
-              />
-            </div>
+              >
+                {templateOptions.map((opt) => (
+                  <option key={opt.value || "none"} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </section>
           )}
 
           {formData.feeHeads.length > 0 && (
             <>
-              <div className="border-t border-divider pt-5">
-                <SectionHeading
-                  size="md"
-                  description={t("pages.reviewAndCustomizeAmountsIfNeeded", "Review and customize amounts if needed")}
-                  actions={
-                    <Badge color="primary">
-                      {fmt(formData.totalAnnualFee)}/{t("pages.year", "year")}
-                    </Badge>
-                  }
-                >
-                  {t("pages.feeHeads1", "Fee Heads")}
-                </SectionHeading>
+              <section className="section">
+                <div className="section__head">
+                  <div>
+                    <div className="section__title">{t("pages.feeHeads1", "Fee Heads")}</div>
+                    <div className="section__hint">
+                      {t("pages.reviewAndCustomizeAmountsIfNeeded", "Review and customize amounts if needed")}
+                    </div>
+                  </div>
+                  <span className="chip chip--ok mono tnum" title="Annual total" aria-label="Annual total">
+                    {fmt(formData.totalAnnualFee)}/{t("pages.year", "year")}
+                  </span>
+                </div>
 
-                <ul className="mt-4 space-y-3">
+                <ul className="fees-heads">
                   {formData.feeHeads.map((head, index) => (
-                    <li
-                      key={head._id || `${head.name}-${index}`}
-                      className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-lg border border-divider bg-surface-2"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium text-fg">{head.name}</span>
-                          <Badge color={head.mandatory ? "success" : "warning"} size="sm">
-                            {head.mandatory ? t("common.mandatory", "Mandatory") : t("common.optional", "Optional")}
-                          </Badge>
-                          <Chip size="sm" color="neutral">{head.frequency}</Chip>
+                    <li key={head._id || `${head.name}-${index}`} className="fees-heads__row">
+                      <div className="fees-heads__main">
+                        <span className="fees-heads__name">{head.name}</span>
+                        <div className="fees-heads__meta">
+                          <span className={`chip ${head.mandatory ? "chip--ok" : "chip--warn"}`}>
+                            {head.mandatory
+                              ? t("common.mandatory", "Mandatory")
+                              : t("common.optional", "Optional")}
+                          </span>
+                          <span className="subtle" style={{ fontSize: 11 }}>
+                            {head.category} · {head.frequency}
+                          </span>
                         </div>
-                        <p className="text-xs text-fg-muted mt-1">{head.category}</p>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-sm text-fg-muted">{currencySymbol}</span>
-                        <InlineEdit
+                      <div className="fees-heads__amt">
+                        <span className="subtle" style={{ fontSize: 11 }}>
+                          {currencySymbol}
+                        </span>
+                        <input
                           type="number"
-                          numeric
-                          ariaLabel={t("pages.amount1", "Amount")}
-                          value={head.amount}
+                          inputMode="decimal"
                           min={0}
-                          width="8rem"
-                          validate={(val) => (val < 0 ? t("common.mustBePositive", "Must be ≥ 0") : null)}
-                          display={(val) => fmt(val ?? 0)}
-                          onSave={(val) => updateFeeHeadAmount(index, val)}
+                          aria-label={t("pages.amount1", "Amount")}
+                          className="input mono tnum"
+                          value={head.amount ?? 0}
+                          onChange={(e) => updateFeeHeadAmount(index, e.target.value)}
+                          style={{ width: "8rem", textAlign: "right" }}
                         />
-                        <IconButton
-                          icon={<Trash2 size={14} />}
+                        <button
+                          type="button"
+                          className="iconbtn"
                           aria-label={t("common.remove", "Remove")}
-                          size="sm"
-                          variant="danger"
                           onClick={() => removeFeeHead(index)}
-                        />
+                          style={{ color: "var(--danger)" }}
+                        >
+                          <Trash2 size={13} />
+                        </button>
                       </div>
                     </li>
                   ))}
                 </ul>
-              </div>
 
-              <div className="border-t border-divider pt-5">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                  <div>
-                    <h4 className="text-sm font-semibold text-fg">
-                      {t("pages.collectionSchedule", "Collection Schedule")}
-                    </h4>
-                    <p className="text-xs text-fg-muted">
-                      {t("pages.configureHowFeesWillBeCollected", "Configure how fees will be collected")}
-                    </p>
+                {Object.keys(totalsByCategory).length > 1 && (
+                  <div className="fees-heads__totals">
+                    {Object.entries(totalsByCategory).map(([cat, sum]) => (
+                      <span key={cat} className="dp-kv">
+                        <span className="subtle">{cat}</span>
+                        <span className="mono tnum">{fmt(sum)}</span>
+                      </span>
+                    ))}
+                    <span className="dp-kv" style={{ fontWeight: 600 }}>
+                      <span>{t("pages.annualTotal", "Annual total")}</span>
+                      <span className="mono tnum">{fmt(formData.totalAnnualFee)}</span>
+                    </span>
                   </div>
-                  <Select
+                )}
+              </section>
+
+              <section className="section">
+                <div className="section__head">
+                  <div>
+                    <div className="section__title">
+                      {t("pages.collectionSchedule", "Collection Schedule")}
+                    </div>
+                    <div className="section__hint">
+                      {t("pages.configureHowFeesWillBeCollected", "Configure how fees will be collected")}
+                    </div>
+                  </div>
+                  <select
                     aria-label={t("pages.collectionSchedule", "Collection Schedule")}
+                    className="select"
                     value={formData.collectionSchedule.mode}
                     onChange={(e) => handleCollectionModeChange(e.target.value)}
-                    options={COLLECTION_MODES.map((mode) => ({
-                      value: mode.value,
-                      label: t(`fees.collectionMode.${mode.value}`, mode.label),
-                    }))}
-                    className="sm:w-56"
-                  />
+                    style={{ width: 180 }}
+                  >
+                    {COLLECTION_MODES.map((mode) => (
+                      <option key={mode.value} value={mode.value}>
+                        {t(`fees.collectionMode.${mode.value}`, mode.label)}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="fees-schedule">
                   {formData.collectionSchedule.installments.map((installment) => (
-                    <div
-                      key={installment._id || installment.name}
-                      className="p-4 rounded-lg border border-divider bg-surface"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-semibold text-fg">
-                          {installment.name}
+                    <div key={installment._id || installment.name} className="fees-schedule__cell">
+                      <div className="fees-schedule__head">
+                        <span className="fees-schedule__name">{installment.name}</span>
+                        <span className="subtle mono tnum" style={{ fontSize: 11 }}>
+                          {installment.dueDate
+                            ? new Date(installment.dueDate).toLocaleDateString(getDateLocale(), {
+                                month: "short",
+                                day: "numeric",
+                              })
+                            : "—"}
                         </span>
-                        <Badge color="neutral" size="sm">
-                          {t("fees.dueLabel", {
-                            date: installment.dueDate
-                              ? new Date(installment.dueDate).toLocaleDateString(getDateLocale(), {
-                                  month: "short",
-                                  day: "numeric",
-                                })
-                              : "—",
-                            defaultValue: `Due ${installment.dueDate || "—"}`,
-                          })}
-                        </Badge>
                       </div>
-                      <p className="text-xl font-semibold font-mono text-fg">
-                        {fmt(installment.amount)}
-                      </p>
+                      <div className="fees-schedule__amt mono tnum">{fmt(installment.amount)}</div>
                     </div>
                   ))}
                 </div>
-              </div>
+              </section>
 
-              <div className="flex flex-wrap gap-3 justify-end pt-4 border-t border-divider">
-                <Button
-                  variant="outline"
-                  icon={<Users size={16} />}
+              <div className="fees-assign__foot">
+                {selectedClassDoc && (
+                  <span className="subtle" style={{ fontSize: 12 }}>
+                    <Sparkles size={11} aria-hidden style={{ marginRight: 4, verticalAlign: -1 }} />
+                    {selectedClassDoc.name} — {selectedClassDoc.section} · {academicYear}
+                  </span>
+                )}
+                <div style={{ flex: 1 }} />
+                <button
+                  type="button"
+                  className="btn"
                   onClick={handlePreviewStudents}
                   disabled={!existingStructure}
+                  title={
+                    !existingStructure
+                      ? t("pages.saveStructureFirstHint", "Save the structure first to preview students")
+                      : undefined
+                  }
                 >
-                  {t("pages.previewStudents", "Preview Students")} ({previewStudents.length})
-                </Button>
-                <Button
-                  variant="secondary"
-                  icon={<Save size={16} />}
-                  loading={saving}
+                  <Users size={11} />
+                  {t("pages.previewStudents", "Preview Students")}
+                </button>
+                <button
+                  type="button"
+                  className="btn"
                   onClick={handleSaveStructure}
+                  disabled={saving}
                 >
-                  {t("pages.saveStructure", "Save Structure")}
-                </Button>
+                  <Save size={11} />
+                  {saving
+                    ? t("common.saving", "Saving…")
+                    : t("pages.saveStructure", "Save Structure")}
+                </button>
                 {existingStructure && (
-                  <Button
-                    variant="primary"
-                    icon={<CheckCircle size={16} />}
-                    loading={applying}
+                  <button
+                    type="button"
+                    className="btn btn--accent"
                     onClick={handleApplyToStudents}
+                    disabled={applying}
                   >
-                    {t("pages.applyToStudents1", "Apply to Students")}
-                  </Button>
+                    <CheckCircle size={11} />
+                    {applying
+                      ? t("common.applying", "Applying…")
+                      : t("pages.applyToStudents1", "Apply to Students")}
+                  </button>
                 )}
               </div>
             </>
@@ -571,10 +770,12 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
         students={previewStudents}
         applying={applying}
         onApply={handleApplyToStudents}
+        classDoc={selectedClassDoc}
+        academicYear={academicYear}
       />
 
       <ConfirmDialog {...confirmState} onClose={closeConfirm} />
-    </Card>
+    </div>
   );
 }
 

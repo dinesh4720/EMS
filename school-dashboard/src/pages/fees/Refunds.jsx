@@ -73,6 +73,27 @@ export default function Refunds() {
     }
   };
 
+  // REVAMP-27 — reject pending refund with a required reason
+  const handleReject = async (refund) => {
+    const reason = window.prompt(
+      t('pages.rejectionReason', 'Reason for rejecting this refund?')
+    );
+    if (!reason || !reason.trim()) return;
+    setActionLoading(refund._id);
+    try {
+      await feesApi.rejectRefund(refund._id, { rejectionReason: reason.trim() });
+      toast.success(t('toast.success.refundRejected', 'Refund rejected'));
+      fetchRefunds();
+    } catch (error) {
+      toast.error(
+        error?.message ||
+          t('toast.error.failedToRejectRefund', 'Failed to reject refund')
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const handleDownloadRefund = (refund) => {
     const sanitize = (value) => {
       const str = String(value ?? '');
@@ -374,15 +395,26 @@ export default function Refunds() {
                 <TableCell>
                   <div className="flex justify-end gap-2">
                     {refund.status === "pending" && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        loading={actionLoading === refund._id}
-                        disabled={actionLoading === refund._id}
-                        onClick={() => handleApprove(refund)}
-                      >
-                        {t('pages.approve1')}
-                      </Button>
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          loading={actionLoading === refund._id}
+                          disabled={actionLoading === refund._id}
+                          onClick={() => handleReject(refund)}
+                        >
+                          {t('pages.reject', 'Reject')}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          loading={actionLoading === refund._id}
+                          disabled={actionLoading === refund._id}
+                          onClick={() => handleApprove(refund)}
+                        >
+                          {t('pages.approve1')}
+                        </Button>
+                      </>
                     )}
                     {refund.status === "approved" && (
                       <Button
