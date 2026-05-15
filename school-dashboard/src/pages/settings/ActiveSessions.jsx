@@ -45,20 +45,21 @@ export default function ActiveSessions() {
   const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
 
   useEffect(() => {
+    let cancelled = false;
+    const fetchSessions = async () => {
+      try {
+        setLoading(true);
+        const data = await request("/auth/sessions");
+        if (!cancelled) setSessions(Array.isArray(data?.sessions) ? data.sessions : []);
+      } catch {
+        if (!cancelled) toast.error("Failed to load sessions");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
     fetchSessions();
+    return () => { cancelled = true; };
   }, []);
-
-  const fetchSessions = async () => {
-    try {
-      setLoading(true);
-      const data = await request("/auth/sessions");
-      setSessions(Array.isArray(data?.sessions) ? data.sessions : []);
-    } catch {
-      toast.error("Failed to load sessions");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleRevoke = (sessionId) => {
     showConfirm({

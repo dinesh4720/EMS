@@ -305,9 +305,11 @@ function GeneralPayrollSettings() {
   const [initialLoad, setInitialLoad] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchPayrollSettings = async () => {
       try {
         const data = await settingsApi.getPayrollSettings();
+        if (cancelled) return;
         const d = data.data?.disburseDate || "";
         setDisburseDate(d);
         setTempDisburseDate(d);
@@ -329,11 +331,13 @@ function GeneralPayrollSettings() {
         }
         setInitialLoad(false);
       } catch (error) {
+        if (cancelled) return;
         logger.error("Failed to fetch payroll settings:", error);
         setInitialLoad(false);
       }
     };
     fetchPayrollSettings();
+    return () => { cancelled = true; };
   }, []);
 
   // AUDIT-127: Warn before leaving with unsaved edits
