@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, Suspense } from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { useApp } from "../../context/AppContext";
 import { PageLayout, MinimalButton } from "../../components/ui";
@@ -25,34 +25,56 @@ import {
   Webhook,
 } from "lucide-react";
 
-import InstitutionSettings from "./InstitutionSettings";
-import AcademicSettings from "./AcademicSettings";
-import AttendanceRules from "./AttendanceRules";
-import FeeManagementSettings from "./FeeManagementSettings";
-import CommunicationSettings from "./CommunicationSettings";
-import PayrollSettings from "./PayrollSettings";
-import UserManagement from "./UserManagement";
-import HolidaySettings from "./HolidaySettings";
-import LeaveSettings from "./LeaveSettings";
-import FeeHeadsUnified from "./FeeHeadsUnified";
-import IntakeFormsSettings from "./IntakeFormsSettings";
-import SubscriptionSettings from "./SubscriptionSettings";
-import RolesAccess from "./RolesAccess";
-import AdmissionFormSettings from "./AdmissionFormSettings";
-import StaffIdSettings from "./StaffIdSettings";
-import PermissionRequests from "./PermissionRequests";
-import TrashSettings from "./TrashSettings";
+import lazyWithRetry from "../../utils/lazyWithRetry";
+import SettingsErrorBoundary from "../../components/SettingsErrorBoundary";
 import TimetableCleanup from "../../components/TimetableCleanup";
-import ParentManagement from "./ParentManagement";
-import WebhooksPage from "./WebhooksPage";
-import NPSAnalyticsPage from "./NPSAnalyticsPage";
-import SCIMSettings from "./SCIMSettings";
-import PromotionRulesSettings from "./PromotionRulesSettings";
-import PeriodSettings from "./PeriodSettings";
-import SeedDataSettings from "./SeedDataSettings";
-import DataCleanupSettings from "./DataCleanupSettings";
-import ActiveSessions from "./ActiveSessions";
 import { useTranslation } from 'react-i18next';
+
+const InstitutionSettings = lazyWithRetry(() => import("./InstitutionSettings"));
+const AcademicSettings = lazyWithRetry(() => import("./AcademicSettings"));
+const AttendanceRules = lazyWithRetry(() => import("./AttendanceRules"));
+const FeeManagementSettings = lazyWithRetry(() => import("./FeeManagementSettings"));
+const CommunicationSettings = lazyWithRetry(() => import("./CommunicationSettings"));
+const PayrollSettings = lazyWithRetry(() => import("./PayrollSettings"));
+const UserManagement = lazyWithRetry(() => import("./UserManagement"));
+const HolidaySettings = lazyWithRetry(() => import("./HolidaySettings"));
+const LeaveSettings = lazyWithRetry(() => import("./LeaveSettings"));
+const FeeHeadsUnified = lazyWithRetry(() => import("./FeeHeadsUnified"));
+const IntakeFormsSettings = lazyWithRetry(() => import("./IntakeFormsSettings"));
+const SubscriptionSettings = lazyWithRetry(() => import("./SubscriptionSettings"));
+const RolesAccess = lazyWithRetry(() => import("./RolesAccess"));
+const AdmissionFormSettings = lazyWithRetry(() => import("./AdmissionFormSettings"));
+const StaffIdSettings = lazyWithRetry(() => import("./StaffIdSettings"));
+const PermissionRequests = lazyWithRetry(() => import("./PermissionRequests"));
+const TrashSettings = lazyWithRetry(() => import("./TrashSettings"));
+const ParentManagement = lazyWithRetry(() => import("./ParentManagement"));
+const WebhooksPage = lazyWithRetry(() => import("./WebhooksPage"));
+const NPSAnalyticsPage = lazyWithRetry(() => import("./NPSAnalyticsPage"));
+const SCIMSettings = lazyWithRetry(() => import("./SCIMSettings"));
+const PromotionRulesSettings = lazyWithRetry(() => import("./PromotionRulesSettings"));
+const PeriodSettings = lazyWithRetry(() => import("./PeriodSettings"));
+const SeedDataSettings = lazyWithRetry(() => import("./SeedDataSettings"));
+const DataCleanupSettings = lazyWithRetry(() => import("./DataCleanupSettings"));
+const ActiveSessions = lazyWithRetry(() => import("./ActiveSessions"));
+
+function SettingsPageSkeleton() {
+  return (
+    <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-lg animate-pulse">
+      {/* Header skeleton */}
+      <div className="px-6 py-5 border-b border-gray-100 dark:border-zinc-800">
+        <div className="h-6 bg-gray-200 dark:bg-zinc-800 rounded w-1/3 mb-2" />
+        <div className="h-4 bg-gray-200 dark:bg-zinc-800 rounded w-1/2" />
+      </div>
+      {/* Content skeleton */}
+      <div className="p-6 space-y-4">
+        <div className="h-4 bg-gray-200 dark:bg-zinc-800 rounded w-full" />
+        <div className="h-4 bg-gray-200 dark:bg-zinc-800 rounded w-5/6" />
+        <div className="h-4 bg-gray-200 dark:bg-zinc-800 rounded w-4/6" />
+        <div className="h-32 bg-gray-200 dark:bg-zinc-800 rounded w-full mt-4" />
+      </div>
+    </div>
+  );
+}
 
 export default function SettingsPage() {
   const { t } = useTranslation();
@@ -256,49 +278,107 @@ export default function SettingsPage() {
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-[800px] mx-auto">
-          <Routes>
-            <Route index element={<InstitutionSettings />} />
-            <Route path="academics" element={<AcademicSettings />} />
-            <Route path="admission-form" element={<AdmissionFormSettings />} />
-            <Route path="users" element={<UserManagement />} />
-            <Route path="staff-id" element={<StaffIdSettings />} />
-            <Route path="roles" element={<RolesAccess />} />
-            <Route path="permission-requests" element={<PermissionRequests />} />
-            <Route path="parents" element={<ParentManagement />} />
-            <Route path="intake-forms" element={<IntakeFormsSettings />} />
-            <Route path="attendance-rules" element={<AttendanceRules />} />
-            <Route path="fees" element={<FeeManagementSettings />} />
-            <Route path="holidays" element={<HolidaySettings />} />
-            <Route path="leaves" element={<LeaveSettings />} />
-            <Route path="communication" element={<CommunicationSettings />} />
-            <Route path="payroll" element={<PayrollSettings />} />
-            <Route path="subscription" element={<SubscriptionSettings />} />
-            <Route path="trash" element={<TrashSettings />} />
-            <Route path="webhooks" element={<WebhooksPage />} />
-            <Route path="scim" element={<SCIMSettings />} />
-            <Route path="periods" element={<PeriodSettings />} />
-            <Route path="promotion-rules" element={<PromotionRulesSettings />} />
-            <Route path="nps" element={<NPSAnalyticsPage />} />
-            <Route path="seed-data" element={<SeedDataSettings />} />
-            <Route path="data-cleanup" element={<DataCleanupSettings />} />
-            <Route path="sessions" element={<ActiveSessions />} />
-            <Route path="timetable-cleanup" element={
-              <div className="space-y-6">
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">{t('pages.timetableDataCleanup1')}</h2>
-                  <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">
-                    Clear all timetable-related data to start fresh
-                  </p>
-                </div>
-                <TimetableCleanup />
-              </div>
-            } />
-            <Route path="*" element={<div className="flex flex-col items-center justify-center h-[50vh] text-gray-400 dark:text-zinc-500">
-              <Puzzle size={48} className="mb-4 opacity-50" />
-              <h3 className="text-base font-medium text-gray-900 dark:text-zinc-100">{t('pages.settingModuleUnderDevelopment')}</h3>
-              <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.thisSectionWillBeAvailableInTheNextUpdate')}</p>
-            </div>} />
-          </Routes>
+          <Suspense fallback={<SettingsPageSkeleton />}>
+            <Routes>
+              <Route index element={
+                <SettingsErrorBoundary><InstitutionSettings /></SettingsErrorBoundary>
+              } />
+              <Route path="academics" element={
+                <SettingsErrorBoundary><AcademicSettings /></SettingsErrorBoundary>
+              } />
+              <Route path="admission-form" element={
+                <SettingsErrorBoundary><AdmissionFormSettings /></SettingsErrorBoundary>
+              } />
+              <Route path="users" element={
+                <SettingsErrorBoundary><UserManagement /></SettingsErrorBoundary>
+              } />
+              <Route path="staff-id" element={
+                <SettingsErrorBoundary><StaffIdSettings /></SettingsErrorBoundary>
+              } />
+              <Route path="roles" element={
+                <SettingsErrorBoundary><RolesAccess /></SettingsErrorBoundary>
+              } />
+              <Route path="permission-requests" element={
+                <SettingsErrorBoundary><PermissionRequests /></SettingsErrorBoundary>
+              } />
+              <Route path="parents" element={
+                <SettingsErrorBoundary><ParentManagement /></SettingsErrorBoundary>
+              } />
+              <Route path="intake-forms" element={
+                <SettingsErrorBoundary><IntakeFormsSettings /></SettingsErrorBoundary>
+              } />
+              <Route path="attendance-rules" element={
+                <SettingsErrorBoundary><AttendanceRules /></SettingsErrorBoundary>
+              } />
+              <Route path="fees" element={
+                <SettingsErrorBoundary><FeeManagementSettings /></SettingsErrorBoundary>
+              } />
+              <Route path="holidays" element={
+                <SettingsErrorBoundary><HolidaySettings /></SettingsErrorBoundary>
+              } />
+              <Route path="leaves" element={
+                <SettingsErrorBoundary><LeaveSettings /></SettingsErrorBoundary>
+              } />
+              <Route path="communication" element={
+                <SettingsErrorBoundary><CommunicationSettings /></SettingsErrorBoundary>
+              } />
+              <Route path="payroll" element={
+                <SettingsErrorBoundary><PayrollSettings /></SettingsErrorBoundary>
+              } />
+              <Route path="subscription" element={
+                <SettingsErrorBoundary><SubscriptionSettings /></SettingsErrorBoundary>
+              } />
+              <Route path="trash" element={
+                <SettingsErrorBoundary><TrashSettings /></SettingsErrorBoundary>
+              } />
+              <Route path="webhooks" element={
+                <SettingsErrorBoundary><WebhooksPage /></SettingsErrorBoundary>
+              } />
+              <Route path="scim" element={
+                <SettingsErrorBoundary><SCIMSettings /></SettingsErrorBoundary>
+              } />
+              <Route path="periods" element={
+                <SettingsErrorBoundary><PeriodSettings /></SettingsErrorBoundary>
+              } />
+              <Route path="promotion-rules" element={
+                <SettingsErrorBoundary><PromotionRulesSettings /></SettingsErrorBoundary>
+              } />
+              <Route path="nps" element={
+                <SettingsErrorBoundary><NPSAnalyticsPage /></SettingsErrorBoundary>
+              } />
+              <Route path="seed-data" element={
+                <SettingsErrorBoundary><SeedDataSettings /></SettingsErrorBoundary>
+              } />
+              <Route path="data-cleanup" element={
+                <SettingsErrorBoundary><DataCleanupSettings /></SettingsErrorBoundary>
+              } />
+              <Route path="sessions" element={
+                <SettingsErrorBoundary><ActiveSessions /></SettingsErrorBoundary>
+              } />
+              <Route path="timetable-cleanup" element={
+                <SettingsErrorBoundary>
+                  <div className="space-y-6">
+                    <div>
+                      <h2 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">{t('pages.timetableDataCleanup1')}</h2>
+                      <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">
+                        Clear all timetable-related data to start fresh
+                      </p>
+                    </div>
+                    <TimetableCleanup />
+                  </div>
+                </SettingsErrorBoundary>
+              } />
+              <Route path="*" element={
+                <SettingsErrorBoundary>
+                  <div className="flex flex-col items-center justify-center h-[50vh] text-gray-400 dark:text-zinc-500">
+                    <Puzzle size={48} className="mb-4 opacity-50" />
+                    <h3 className="text-base font-medium text-gray-900 dark:text-zinc-100">{t('pages.settingModuleUnderDevelopment')}</h3>
+                    <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.thisSectionWillBeAvailableInTheNextUpdate')}</p>
+                  </div>
+                </SettingsErrorBoundary>
+              } />
+            </Routes>
+          </Suspense>
         </div>
       </div>
     </div>
