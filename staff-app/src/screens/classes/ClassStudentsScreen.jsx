@@ -88,18 +88,23 @@ const ClassStudentsScreen = () => {
     setActiveFilter(filter);
   };
 
+  const getParentPhone = (student) => {
+    return student.parents?.find(p => p.isParent !== false)?.phone || student.parents?.[0]?.phone || null;
+  };
+
   const handleStudentPress = (student) => {
     setSelectedStudent(student);
+    const parentPhone = getParentPhone(student);
     // Show student details in an alert for now
     Alert.alert(
       student.name,
-      `Roll: ${student.rollNumber || 'N/A'}\nClass: ${student.class || className}\n${student.parentPhone ? `Parent: ${student.parentPhone}` : ''}`,
+      `Roll: ${student.rollNumber || 'N/A'}\nClass: ${student.class || className}\n${parentPhone ? `Parent: ${parentPhone}` : ''}`,
       [
         { text: 'Cancel', style: 'cancel' },
-        ...(student.parentPhone ? [
+        ...(parentPhone ? [
           {
             text: 'Call Parent',
-            onPress: () => Linking.openURL(`tel:${student.parentPhone}`),
+            onPress: () => Linking.openURL(`tel:${parentPhone}`),
           },
         ] : []),
       ]

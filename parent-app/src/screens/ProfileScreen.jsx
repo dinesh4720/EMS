@@ -139,9 +139,9 @@ const ProfileScreen = ({ navigation }) => {
               ))
             ) : (
               <>
-                <InfoItem icon={User} label={t('screens.parentName')} value={student?.parentName || user?.name} />
-                <InfoItem icon={Phone} label={t('screens.parentPhone')} value={student?.parentPhone || user?.phone} />
-                <InfoItem icon={Mail} label={t('screens.parentEmail')} value={student?.parentEmail || user?.email} />
+                <InfoItem icon={User} label={t('screens.parentName')} value={user?.name} />
+                <InfoItem icon={Phone} label={t('screens.parentPhone')} value={user?.phone} />
+                <InfoItem icon={Mail} label={t('screens.parentEmail')} value={user?.email} />
               </>
             )}
           </Card>
