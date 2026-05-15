@@ -3,7 +3,7 @@ import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   Button, Input, Select, SelectItem, Textarea, Divider,
 } from "@heroui/react";
-import { transportApi } from "../../services/api";
+import { transportApi, staffApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 
@@ -20,11 +20,13 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
     color: "",
     status: "active",
     notes: "",
-    driver: { name: "", phone: "", licenseNumber: "", licenseExpiry: "" },
-    conductor: { name: "", phone: "" },
+    driverId: "",
+    conductorId: "",
   });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
+  const [staffList, setStaffList] = useState([]);
+  const [staffLoading, setStaffLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -39,38 +41,42 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
           color: vehicle.color || "",
           status: vehicle.status || "active",
           notes: vehicle.notes || "",
-          driver: {
-            name: vehicle.driver?.name || "",
-            phone: vehicle.driver?.phone || "",
-            licenseNumber: vehicle.driver?.licenseNumber || "",
-            licenseExpiry: vehicle.driver?.licenseExpiry?.split("T")[0] || "",
-          },
-          conductor: {
-            name: vehicle.conductor?.name || "",
-            phone: vehicle.conductor?.phone || "",
-          },
+          driverId: vehicle.driverId?._id || vehicle.driverId || "",
+          conductorId: vehicle.conductorId?._id || vehicle.conductorId || "",
         });
       } else {
         setForm({
           registrationNumber: "", make: "", model: "", year: "", capacity: "", color: "",
-          status: "active", notes: "",
-          driver: { name: "", phone: "", licenseNumber: "", licenseExpiry: "" },
-          conductor: { name: "", phone: "" },
+          status: "active", notes: "", driverId: "", conductorId: "",
         });
       }
     }
   }, [isOpen, vehicle]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    setStaffLoading(true);
+    staffApi.getAll()
+      .then((res) => {
+        if (cancelled) return;
+        const list = Array.isArray(res) ? res : res?.data || [];
+        // Filter to active staff only for new assignments
+        setStaffList(list.filter((s) => s.status !== 'terminated' && s.status !== 'suspended'));
+      })
+      .catch(() => {
+        if (!cancelled) toast.error(t('toast.error.failedToLoadStaff'));
+      })
+      .finally(() => {
+        if (!cancelled) setStaffLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [isOpen, t]);
+
   const updateField = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     setErrors((e) => ({ ...e, [field]: '' }));
   };
-
-  const updateDriver = (field, value) =>
-    setForm((prev) => ({ ...prev, driver: { ...prev.driver, [field]: value } }));
-
-  const updateConductor = (field, value) =>
-    setForm((prev) => ({ ...prev, conductor: { ...prev.conductor, [field]: value } }));
 
   const handleSave = async () => {
     if (!form.registrationNumber.trim()) {
@@ -90,23 +96,9 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
         color: form.color.trim() || undefined,
         status: form.status,
         notes: form.notes.trim() || undefined,
+        driverId: form.driverId || undefined,
+        conductorId: form.conductorId || undefined,
       };
-
-      // Only include driver/conductor if any field is filled
-      if (form.driver.name || form.driver.phone || form.driver.licenseNumber) {
-        payload.driver = {
-          name: form.driver.name.trim() || undefined,
-          phone: form.driver.phone.trim() || undefined,
-          licenseNumber: form.driver.licenseNumber.trim() || undefined,
-          licenseExpiry: form.driver.licenseExpiry || undefined,
-        };
-      }
-      if (form.conductor.name || form.conductor.phone) {
-        payload.conductor = {
-          name: form.conductor.name.trim() || undefined,
-          phone: form.conductor.phone.trim() || undefined,
-        };
-      }
 
       if (isEdit) {
         await transportApi.updateVehicle(vehicle._id, payload);
@@ -122,6 +114,12 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
     } finally {
       setSaving(false);
     }
+  };
+
+  const renderStaffLabel = (staff) => {
+    if (!staff) return '';
+    const roles = Array.isArray(staff.role) ? staff.role.join(', ') : staff.role || '';
+    return `${staff.name}${staff.code ? ` (${staff.code})` : ''}${roles ? ` — ${roles}` : ''}`;
   };
 
   return (
@@ -173,12 +171,20 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
           {/* Driver */}
           <div>
             <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-3">{t('pages.driverDetails')}</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input label={t('pages.driverName')} value={form.driver.name} onValueChange={(v) => updateDriver("name", v)} />
-              <Input label={t('pages.phone1')} value={form.driver.phone} onValueChange={(v) => updateDriver("phone", v)} />
-              <Input label={t('pages.licenseNumber')} value={form.driver.licenseNumber} onValueChange={(v) => updateDriver("licenseNumber", v)} />
-              <Input label={t('pages.licenseExpiry')} type="date" value={form.driver.licenseExpiry} onValueChange={(v) => updateDriver("licenseExpiry", v)} />
-            </div>
+            <Select
+              label={t('pages.driver')}
+              placeholder={t('pages.selectDriver')}
+              selectedKeys={form.driverId ? [form.driverId] : []}
+              onSelectionChange={(keys) => updateField("driverId", [...keys][0] || "")}
+              isLoading={staffLoading}
+            >
+              <SelectItem key="">{t('pages.none')}</SelectItem>
+              {staffList.map((staff) => (
+                <SelectItem key={staff._id || staff.id}>
+                  {renderStaffLabel(staff)}
+                </SelectItem>
+              ))}
+            </Select>
           </div>
 
           <Divider />
@@ -186,10 +192,20 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
           {/* Conductor */}
           <div>
             <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-3">{t('pages.conductorDetails')}</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input label={t('pages.conductorName')} value={form.conductor.name} onValueChange={(v) => updateConductor("name", v)} />
-              <Input label={t('pages.phone1')} value={form.conductor.phone} onValueChange={(v) => updateConductor("phone", v)} />
-            </div>
+            <Select
+              label={t('pages.conductor')}
+              placeholder={t('pages.selectConductor')}
+              selectedKeys={form.conductorId ? [form.conductorId] : []}
+              onSelectionChange={(keys) => updateField("conductorId", [...keys][0] || "")}
+              isLoading={staffLoading}
+            >
+              <SelectItem key="">{t('pages.none')}</SelectItem>
+              {staffList.map((staff) => (
+                <SelectItem key={staff._id || staff.id}>
+                  {renderStaffLabel(staff)}
+                </SelectItem>
+              ))}
+            </Select>
           </div>
         </ModalBody>
         <ModalFooter>
