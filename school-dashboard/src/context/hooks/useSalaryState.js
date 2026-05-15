@@ -37,8 +37,8 @@ export function useSalaryState() {
           if (data && (Array.isArray(data.earnings) || Array.isArray(data.deductions))) {
             setSalarySettings((prev) => ({
               ...prev,
-              earnings: data.earnings?.length ? data.earnings : prev.earnings,
-              deductions: data.deductions?.length ? data.deductions : prev.deductions,
+              earnings: Array.isArray(data.earnings) ? data.earnings : prev.earnings,
+              deductions: Array.isArray(data.deductions) ? data.deductions : prev.deductions,
             }));
           }
         }
