@@ -1,12 +1,9 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Card, CardBody, CardHeader, Chip, Button
-} from '@heroui/react';
+import { Button } from '@heroui/react';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import {
-  FileText, Calendar, Trophy, TrendingUp, Users, BookOpen,
-  Download, ArrowRight, Award, BarChart3
+  FileText, Download, ArrowRight
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -14,7 +11,6 @@ import {
 } from 'recharts';
 import { examsApi, academicPerformanceApi } from '../../services/api';
 import { useApp } from '../../context/AppContext';
-import StatCard from '../../components/StatCard';
 import FiltersDropdown from '../../components/FiltersDropdown';
 import { MinimalButton } from '../../components/ui';
 import { getAcademicYearOptions } from '../../utils/constants';
@@ -269,12 +265,20 @@ const PerformanceDashboard = ({ onCreateExam }) => {
     return subjectAverages.slice(0, 6);
   };
 
-  // Build grade distribution pie chart data from backend performance data
+  // Build grade distribution pie chart data — uses --chart-c* + status tokens
   const buildGradeDistributionData = () => {
-    const gradeColors = { 'A+': '#10b981', 'A': '#3b82f6', 'B+': '#8b5cf6', 'B': '#f59e0b', 'C': '#ef4444', 'D': '#6b7280', 'F': '#374151' };
+    const gradeColors = {
+      'A+': 'var(--ok)',
+      'A':  'var(--chart-c2)',
+      'B+': 'var(--chart-c1)',
+      'B':  'var(--chart-c5)',
+      'C':  'var(--warn)',
+      'D':  'var(--chart-c4)',
+      'F':  'var(--danger)',
+    };
     return gradeDistribution.map(g => ({
       ...g,
-      color: gradeColors[g.name] || '#6b7280'
+      color: gradeColors[g.name] || 'var(--fg-faint)'
     }));
   };
 
@@ -325,155 +329,131 @@ const PerformanceDashboard = ({ onCreateExam }) => {
         </MinimalButton>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <StatCard
-          label={t('pages.totalExams')}
-          value={stats.totalExams.toString()}
-          icon={FileText}
-        />
-        <StatCard
-          label={t('pages.scheduled')}
-          value={stats.scheduled.toString()}
-          icon={Calendar}
-        />
-        <StatCard
-          label={t('pages.completed')}
-          value={stats.completed.toString()}
-          icon={Trophy}
-        />
-        <StatCard
-          label={t('pages.published1')}
-          value={stats.published.toString()}
-          icon={Award}
-        />
-        <StatCard
-          label={t('pages.avgScore1')}
-          value={stats.avgScore !== '—' ? `${stats.avgScore}%` : '—'}
-          icon={TrendingUp}
-        />
-        <StatCard
-          label={t('pages.passRate')}
-          value={stats.passingRate}
-          icon={Users}
-        />
+      {/* KPI strip — dp-metric */}
+      <div className="perf-metrics" style={{ gridTemplateColumns: 'repeat(6, 1fr)' }} role="group" aria-label="Performance overview">
+        <div className="dp-metric">
+          <span className="dp-metric__label">{t('pages.totalExams')}</span>
+          <span className="dp-metric__value tnum">{stats.totalExams}</span>
+          <span className="dp-metric__sub">this year</span>
+        </div>
+        <div className="dp-metric">
+          <span className="dp-metric__label">{t('pages.scheduled')}</span>
+          <span className="dp-metric__value tnum">{stats.scheduled}</span>
+          <span className="dp-metric__sub">upcoming</span>
+        </div>
+        <div className="dp-metric">
+          <span className="dp-metric__label">{t('pages.completed')}</span>
+          <span className="dp-metric__value tnum">{stats.completed}</span>
+          <span className="dp-metric__sub">done</span>
+        </div>
+        <div className="dp-metric">
+          <span className="dp-metric__label">{t('pages.published1')}</span>
+          <span className="dp-metric__value tnum dp-metric__value--ok">{stats.published}</span>
+          <span className="dp-metric__sub">results live</span>
+        </div>
+        <div className="dp-metric">
+          <span className="dp-metric__label">{t('pages.avgScore1')}</span>
+          <span className="dp-metric__value tnum">
+            {stats.avgScore !== '—' ? `${stats.avgScore}%` : '—'}
+          </span>
+          <span className="dp-metric__sub">all classes</span>
+        </div>
+        <div className="dp-metric">
+          <span className="dp-metric__label">{t('pages.passRate')}</span>
+          <span className="dp-metric__value tnum">{stats.passingRate}</span>
+          <span className="dp-metric__sub">across exams</span>
+        </div>
       </div>
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Class-wise Performance Comparison */}
-        <Card shadow="none" className="border border-divider">
-          <CardHeader className="px-6 pt-6 pb-4 border-b border-divider">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-surface-2 text-fg-muted rounded-lg">
-                <BarChart3 size={20} />
-              </div>
-              <h3 className="text-lg font-medium text-fg">{t('pages.classWisePerformance')}</h3>
-            </div>
-          </CardHeader>
-          <CardBody className="p-6">
+        <div className="chart-card">
+          <div className="chart-card__head">
+            <h3 className="chart-card__title">{t('pages.classWisePerformance')}</h3>
+          </div>
+          <div className="chart-card__body">
             {classComparisonData.length > 0 ? (
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={classComparisonData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={chart.gridAlt} />
-                  <XAxis dataKey="class" tick={{ fill: chart.tick, fontSize: 11 }} />
-                  <YAxis domain={[0, 100]} tick={{ fill: chart.tick, fontSize: 11 }} />
-                  <Tooltip contentStyle={chart.tooltipStyle} itemStyle={chart.tooltipItemStyle} />
-                  <Bar dataKey="average" fill={CHART_COLORS.primary} radius={[4, 4, 0, 0]} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} />
+                  <XAxis dataKey="class" tick={{ fill: chart.tick, fontSize: 11 }} stroke={chart.axis} />
+                  <YAxis domain={[0, 100]} tick={{ fill: chart.tick, fontSize: 11 }} stroke={chart.axis} />
+                  <Tooltip contentStyle={chart.tooltipStyle} itemStyle={chart.tooltipItemStyle} labelStyle={chart.tooltipLabelStyle} cursor={{ fill: chart.cursorFill }} />
+                  <Bar dataKey="average" fill={CHART_COLORS.chart1} radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-[250px] flex items-center justify-center text-fg-faint">
-                No data available
-              </div>
+              <div className="chart-card__empty">No data available</div>
             )}
-          </CardBody>
-        </Card>
+          </div>
+        </div>
 
-        {/* Subject-wise Averages */}
-        <Card shadow="none" className="border border-divider">
-          <CardHeader className="px-6 pt-6 pb-4 border-b border-divider">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-surface-2 text-fg-muted rounded-lg">
-                <BookOpen size={20} />
-              </div>
-              <h3 className="text-lg font-medium text-fg">{t('pages.subjectAverages')}</h3>
-            </div>
-          </CardHeader>
-          <CardBody className="p-6">
+        <div className="chart-card">
+          <div className="chart-card__head">
+            <h3 className="chart-card__title">{t('pages.subjectAverages')}</h3>
+          </div>
+          <div className="chart-card__body">
             {subjectAveragesData.length > 0 ? (
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={subjectAveragesData} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke={chart.gridAlt} />
-                  <XAxis type="number" domain={[0, 100]} tick={{ fill: chart.tick, fontSize: 11 }} />
-                  <YAxis dataKey="subject" type="category" tick={{ fill: chart.tick, fontSize: 11 }} width={80} />
-                  <Tooltip contentStyle={chart.tooltipStyle} itemStyle={chart.tooltipItemStyle} />
-                  <Bar dataKey="average" fill={CHART_COLORS.neutral} radius={[0, 4, 4, 0]} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} />
+                  <XAxis type="number" domain={[0, 100]} tick={{ fill: chart.tick, fontSize: 11 }} stroke={chart.axis} />
+                  <YAxis dataKey="subject" type="category" tick={{ fill: chart.tick, fontSize: 11 }} width={80} stroke={chart.axis} />
+                  <Tooltip contentStyle={chart.tooltipStyle} itemStyle={chart.tooltipItemStyle} labelStyle={chart.tooltipLabelStyle} cursor={{ fill: chart.cursorFill }} />
+                  <Bar dataKey="average" fill={CHART_COLORS.chart3} radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-[250px] flex items-center justify-center text-fg-faint">
-                No data available
-              </div>
+              <div className="chart-card__empty">No data available</div>
             )}
-          </CardBody>
-        </Card>
+          </div>
+        </div>
       </div>
 
       {/* Bottom Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Top Performers */}
-        <Card shadow="none" className="border border-divider">
-          <CardHeader className="px-6 pt-6 pb-4 border-b border-divider">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-surface-2 text-fg-muted rounded-lg">
-                <Trophy size={20} />
-              </div>
-              <h3 className="text-lg font-medium text-fg">{t('pages.topPerformers')}</h3>
-            </div>
-          </CardHeader>
-          <CardBody className="p-6">
+        <div className="chart-card">
+          <div className="chart-card__head">
+            <h3 className="chart-card__title">{t('pages.topPerformers')}</h3>
+          </div>
+          <div className="chart-card__body">
             {filteredTopPerformers.length > 0 ? (
               <div className="space-y-3">
                 {filteredTopPerformers.slice(0, 5).map((student, idx) => (
-                  <div key={student.studentId || idx} className="flex items-center justify-between p-3 rounded-lg bg-surface-2">
+                  <div key={student.studentId || idx} className="flex items-center justify-between p-3 rounded-lg" style={{ background: 'var(--surface-2)' }}>
                     <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
-                        idx === 0 ? 'bg-yellow-500' : idx === 1 ? 'bg-gray-400' : idx === 2 ? 'bg-amber-600' : 'bg-gray-300'
-                      }`}>
+                      <span
+                        className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs tnum"
+                        style={{
+                          background: idx === 0 ? 'var(--warn-bg)' : idx === 1 ? 'var(--surface-2)' : idx === 2 ? 'var(--ok-bg)' : 'var(--surface)',
+                          color: idx === 0 ? 'var(--warn)' : idx === 1 ? 'var(--fg-muted)' : idx === 2 ? 'var(--ok)' : 'var(--fg-faint)',
+                          border: '1px solid var(--border-token)'
+                        }}
+                      >
                         {idx + 1}
-                      </div>
+                      </span>
                       <div>
-                        <p className="font-medium text-fg">{student.name}</p>
+                        <p className="font-medium text-fg text-sm">{student.name}</p>
                         <p className="text-xs text-fg-muted">{student.class}</p>
                       </div>
                     </div>
-                    <Chip size="sm" color="success" variant="flat">
-                      {student.percentage}%
-                    </Chip>
+                    <span className="grade-pill grade-pill--ok tnum">{student.percentage}%</span>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-8 text-fg-faint">
-                <Trophy size={36} className="mb-2 opacity-40" />
-                <p className="text-sm">{t('pages.noPerformanceDataYet')}</p>
-              </div>
+              <div className="chart-card__empty">{t('pages.noPerformanceDataYet')}</div>
             )}
-          </CardBody>
-        </Card>
+          </div>
+        </div>
 
         {/* Grade Distribution */}
-        <Card shadow="none" className="border border-divider">
-          <CardHeader className="px-6 pt-6 pb-4 border-b border-divider">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-surface-2 text-fg-muted rounded-lg">
-                <Award size={20} />
-              </div>
-              <h3 className="text-lg font-medium text-fg">{t('pages.gradeDistribution')}</h3>
-            </div>
-          </CardHeader>
-          <CardBody className="p-6">
+        <div className="chart-card">
+          <div className="chart-card__head">
+            <h3 className="chart-card__title">{t('pages.gradeDistribution')}</h3>
+          </div>
+          <div className="chart-card__body">
             {gradeDistributionData.length > 0 ? (
               <>
                 <ResponsiveContainer width="100%" height={200}>
@@ -491,40 +471,34 @@ const PerformanceDashboard = ({ onCreateExam }) => {
                         <Cell key={`cell-${entry.name}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip contentStyle={chart.tooltipStyle} itemStyle={chart.tooltipItemStyle} />
+                    <Tooltip contentStyle={chart.tooltipStyle} itemStyle={chart.tooltipItemStyle} labelStyle={chart.tooltipLabelStyle} />
                   </PieChart>
                 </ResponsiveContainer>
-                <div className="flex flex-wrap justify-center gap-3 mt-4">
+                <div className="flex flex-wrap justify-center gap-3 mt-3">
                   {gradeDistributionData.map((item) => (
                     <div key={`legend-${item.name}`} className="flex items-center gap-1.5 text-xs">
-                      <div className="w-3 h-3 rounded" style={{ backgroundColor: item.color }} />
-                      <span className="text-fg-muted">{item.name}</span>
+                      <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: item.color }} />
+                      <span className="text-fg-muted tnum">{item.name} · {item.value}</span>
                     </div>
                   ))}
                 </div>
               </>
             ) : (
-              <div className="h-[250px] flex items-center justify-center text-fg-faint">
-                No data available
-              </div>
+              <div className="chart-card__empty">No data available</div>
             )}
-          </CardBody>
-        </Card>
+          </div>
+        </div>
 
         {/* Quick Actions */}
-        <Card shadow="none" className="border border-divider">
-          <CardHeader className="px-6 pt-6 pb-4 border-b border-divider">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-surface-2 text-fg-muted rounded-lg">
-                <FileText size={20} />
-              </div>
-              <h3 className="text-lg font-medium text-fg">{t('pages.quickActions1')}</h3>
-            </div>
-          </CardHeader>
-          <CardBody className="p-6">
+        <div className="chart-card">
+          <div className="chart-card__head">
+            <h3 className="chart-card__title">{t('pages.quickActions1')}</h3>
+          </div>
+          <div className="chart-card__body">
             <div className="space-y-3">
-              <div
-                className="p-4 border border-border-token rounded-lg hover:bg-surface-2 cursor-pointer transition-colors"
+              <button
+                type="button"
+                className="w-full p-4 border border-border-token rounded-lg hover:bg-surface-2 transition-colors text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
                 onClick={() => onCreateExam?.() || navigate('/academics/exams')}
               >
                 <div className="flex items-center justify-between">
@@ -534,9 +508,10 @@ const PerformanceDashboard = ({ onCreateExam }) => {
                   </div>
                   <ArrowRight size={18} className="text-fg-faint" />
                 </div>
-              </div>
-              <div
-                className="p-4 border border-border-token rounded-lg hover:bg-surface-2 cursor-pointer transition-colors"
+              </button>
+              <button
+                type="button"
+                className="w-full p-4 border border-border-token rounded-lg hover:bg-surface-2 transition-colors text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
                 onClick={() => navigate('/academics/exams')}
               >
                 <div className="flex items-center justify-between">
@@ -546,9 +521,10 @@ const PerformanceDashboard = ({ onCreateExam }) => {
                   </div>
                   <ArrowRight size={18} className="text-fg-faint" />
                 </div>
-              </div>
-              <div
-                className="p-4 border border-border-token rounded-lg hover:bg-surface-2 cursor-pointer transition-colors"
+              </button>
+              <button
+                type="button"
+                className="w-full p-4 border border-border-token rounded-lg hover:bg-surface-2 transition-colors text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
                 onClick={() => navigate('/academics/exams')}
               >
                 <div className="flex items-center justify-between">
@@ -558,21 +534,16 @@ const PerformanceDashboard = ({ onCreateExam }) => {
                   </div>
                   <ArrowRight size={18} className="text-fg-faint" />
                 </div>
-              </div>
+              </button>
             </div>
-          </CardBody>
-        </Card>
+          </div>
+        </div>
       </div>
 
       {/* Recent Exams */}
-      <Card shadow="none" className="border border-divider">
-        <CardHeader className="px-6 pt-6 pb-4 border-b border-divider flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-surface-2 text-fg-muted rounded-lg">
-              <Calendar size={20} />
-            </div>
-            <h3 className="text-lg font-medium text-fg">{t('pages.recentExams')}</h3>
-          </div>
+      <div className="chart-card">
+        <div className="chart-card__head">
+          <h3 className="chart-card__title">{t('pages.recentExams')}</h3>
           <Button
             size="sm"
             variant="light"
@@ -581,55 +552,47 @@ const PerformanceDashboard = ({ onCreateExam }) => {
           >
             View All
           </Button>
-        </CardHeader>
-        <CardBody className="p-6">
+        </div>
+        <div className="chart-card__body">
           {exams.length === 0 ? (
-            <div className="text-center py-8 text-fg-muted">
-              <FileText size={40} className="mx-auto mb-3 opacity-50" />
+            <div className="chart-card__empty">
               <p>{t('pages.noExamsCreatedYet')}</p>
-              <MinimalButton className="mt-4" onClick={() => onCreateExam?.()}>
+              <MinimalButton className="mt-3" onClick={() => onCreateExam?.()}>
                 Create First Exam
               </MinimalButton>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {exams.slice(0, 8).map(exam => (
-                <Card
-                  key={exam.id || exam._id}
-                  isPressable
-                  shadow="none"
-                  className="border border-border-token hover:shadow-md transition-all"
-                  onPress={() => navigate(`/academics/exams/${exam._id || exam.id}`)}
-                >
-                  <CardBody className="p-4">
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="p-2 bg-surface-2 text-fg-muted rounded-lg">
-                        <FileText size={18} />
-                      </div>
-                      <Chip
-                        size="sm"
-                        color={
-                          exam.status === 'scheduled' ? 'primary' :
-                          exam.status === 'completed' ? 'success' :
-                          exam.status === 'results_published' ? 'success' : 'default'
-                        }
-                        variant="flat"
-                      >
+              {exams.slice(0, 8).map(exam => {
+                const tone =
+                  exam.status === 'scheduled' ? 'grade-pill--info' :
+                  exam.isPublished || exam.status === 'results_published' ? 'grade-pill--ok' :
+                  exam.status === 'completed' ? 'grade-pill--info' : 'grade-pill--muted';
+                return (
+                  <button
+                    key={exam.id || exam._id}
+                    type="button"
+                    onClick={() => navigate(`/academics/exams/${exam._id || exam.id}`)}
+                    className="text-left p-4 rounded-lg border border-border-token bg-surface hover:bg-surface-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <FileText size={18} className="text-fg-faint" />
+                      <span className={`grade-pill ${tone}`}>
                         {exam.status?.replace(/_/g, ' ')}
-                      </Chip>
+                      </span>
                     </div>
-                    <h4 className="font-medium text-fg mb-1">{exam.name}</h4>
-                    <p className="text-sm text-fg-muted">{exam.classId} - {exam.subjectName}</p>
-                    <p className="text-xs text-fg-faint mt-2">
+                    <h4 className="font-medium text-fg mb-0.5 text-sm truncate">{exam.name}</h4>
+                    <p className="text-xs text-fg-muted truncate">{exam.classId} · {exam.subjectName}</p>
+                    <p className="text-xs text-fg-faint mt-1 tnum">
                       {exam.date ? formatShortDate(exam.date) : 'No date'}
                     </p>
-                  </CardBody>
-                </Card>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           )}
-        </CardBody>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };

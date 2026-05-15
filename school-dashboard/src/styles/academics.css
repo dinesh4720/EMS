@@ -131,3 +131,308 @@
   }
   .academics-table__action { text-align: left; }
 }
+
+/* ============================================================
+   Phase 26 — Performance + Report Card
+   dp-metric strip, chart cards, grade pills, A4 print layout
+   ============================================================ */
+
+/* KPI strip — mirrors detail-pane dp-metric pattern */
+.perf-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--divider);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.perf-metrics .dp-metric {
+  background: var(--surface);
+  padding: 14px 16px;
+  gap: 4px;
+}
+.perf-metrics .dp-metric__value { font-size: 22px; font-variant-numeric: tabular-nums; }
+.perf-metrics .dp-metric__value--ok { color: var(--ok); }
+.perf-metrics .dp-metric__value--warn { color: var(--warn); }
+.perf-metrics .dp-metric__value--danger { color: var(--danger); }
+.perf-metrics .dp-metric__sub {
+  font-size: 11px;
+  color: var(--fg-faint);
+  margin-top: 2px;
+}
+
+@media (max-width: 1023px) {
+  .perf-metrics { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Chart card primitive — surface + header + canvas slot */
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border-token);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.chart-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--divider);
+}
+.chart-card__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg);
+  letter-spacing: -0.005em;
+}
+.chart-card__body { padding: 16px; }
+.chart-card__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 240px;
+  color: var(--fg-faint);
+  font-size: 12.5px;
+  text-align: center;
+}
+
+/* Numeric emphasis — use anywhere stats need tabular-nums */
+.tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+/* Grade pills — token-driven; status semantics for grade bands */
+.grade-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  min-width: 28px;
+  border: 1px solid transparent;
+}
+.grade-pill--ok       { background: var(--ok-bg);     color: var(--ok);     border-color: color-mix(in oklch, var(--ok) 24%, transparent); }
+.grade-pill--info     { background: var(--info-bg);   color: var(--info);   border-color: color-mix(in oklch, var(--info) 24%, transparent); }
+.grade-pill--warn     { background: var(--warn-bg);   color: var(--warn);   border-color: color-mix(in oklch, var(--warn) 24%, transparent); }
+.grade-pill--danger   { background: var(--danger-bg); color: var(--danger); border-color: color-mix(in oklch, var(--danger) 24%, transparent); }
+.grade-pill--muted    { background: var(--surface-2); color: var(--fg-muted); border-color: var(--divider); }
+
+/* ============================================================
+   Report card — screen + A4 print
+   ============================================================ */
+
+.report-card {
+  background: var(--surface);
+  border: 1px solid var(--border-token);
+  border-radius: 12px;
+  padding: 24px;
+  color: var(--fg);
+}
+
+.report-card__brand {
+  display: grid;
+  grid-template-columns: 56px 1fr 64px;
+  gap: 16px;
+  align-items: center;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--fg);
+}
+.report-card__brand img.report-card__logo,
+.report-card__brand .report-card__logo {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  border-radius: 6px;
+  background: var(--surface-2);
+}
+.report-card__brand-text { text-align: center; line-height: 1.25; }
+.report-card__school { font-size: 18px; font-weight: 700; color: var(--fg); }
+.report-card__address { font-size: 11px; color: var(--fg-muted); margin-top: 2px; }
+.report-card__board { font-size: 11px; color: var(--fg-subtle); margin-top: 2px; }
+.report-card__photo {
+  width: 64px;
+  height: 80px;
+  border: 1px solid var(--border-token);
+  border-radius: 4px;
+  object-fit: cover;
+  background: var(--surface-2);
+}
+.report-card__photo--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  color: var(--fg-faint);
+  text-align: center;
+  padding: 4px;
+}
+
+.report-card__title {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-muted);
+  margin: 16px 0 8px;
+}
+
+.report-card__meta {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--divider);
+}
+.report-card__meta-row { display: flex; flex-direction: column; gap: 2px; }
+.report-card__meta-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-subtle);
+  font-weight: 500;
+}
+.report-card__meta-value {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+
+.report-card__section { margin-top: 16px; }
+.report-card__section-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-subtle);
+  margin-bottom: 8px;
+}
+
+.report-card__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.report-card__table th,
+.report-card__table td {
+  border: 1px solid var(--border-token);
+  padding: 6px 10px;
+  text-align: left;
+  vertical-align: middle;
+}
+.report-card__table th {
+  background: var(--surface-2);
+  font-weight: 600;
+  color: var(--fg-muted);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.report-card__table td.num,
+.report-card__table th.num {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.report-card__summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--surface-2);
+  border-radius: 8px;
+}
+.report-card__summary .dp-metric { background: transparent; padding: 0; }
+
+.report-card__signatures {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 40px;
+  padding-top: 12px;
+}
+.report-card__signature {
+  text-align: center;
+  border-top: 1px solid var(--fg);
+  padding-top: 6px;
+  font-size: 11px;
+  color: var(--fg-muted);
+}
+.report-card__signature img {
+  display: block;
+  margin: 0 auto 4px;
+  max-height: 36px;
+  max-width: 140px;
+}
+
+/* A4 print layout — fired only when printing */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 14mm 12mm;
+  }
+  html, body { background: #fff !important; }
+  .no-print, .no-print * { display: none !important; }
+  /* Isolate the report card during print — visibility:hidden on
+     every ancestor while keeping the report-card subtree visible,
+     then absolutely position the card at the page origin. */
+  body * { visibility: hidden; }
+  .report-card, .report-card * { visibility: visible; }
+  .report-card {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    background: #fff !important;
+    color: #000 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+  }
+  .report-card__brand { border-bottom-color: #000 !important; }
+  .report-card__school { color: #000 !important; }
+  .report-card__table th { background: #f3f3f3 !important; color: #000 !important; }
+  .report-card__table th,
+  .report-card__table td { border-color: #777 !important; color: #000 !important; }
+  .report-card__signature { border-top-color: #000 !important; color: #000 !important; }
+  .grade-pill {
+    background: transparent !important;
+    color: #000 !important;
+    border-color: #000 !important;
+  }
+}
+
+/* ============================================================
+   CCE grading scale — token-driven editor table
+   ============================================================ */
+.cce-scale-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.cce-scale-table th,
+.cce-scale-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--divider);
+  text-align: left;
+}
+.cce-scale-table th {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-subtle);
+  background: var(--surface-2);
+}
+.cce-scale-table td.num,
+.cce-scale-table th.num {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
