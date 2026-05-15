@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Card,
   CardBody,
@@ -41,34 +41,36 @@ export default function DataCleanupSettings() {
   const [confirmText, setConfirmText] = useState("");
   const [cleaning, setCleaning] = useState(false);
   const [result, setResult] = useState(null);
+  const cancelledRef = useRef(false);
+
+  const fetchCounts = async () => {
+    try {
+      setLoading(true);
+      setCountsError(false);
+      const data = await request("/settings/data-counts");
+      if (cancelledRef.current) return;
+      if (data && typeof data === "object" && Object.keys(data).length > 0) {
+        setCounts({
+          students: data.students ?? 0,
+          staff: data.staff ?? 0,
+          classes: data.classes ?? 0,
+          attendance: data.attendance ?? 0,
+          results: data.results ?? 0,
+        });
+      }
+    } catch {
+      if (cancelledRef.current) return;
+      setCountsError(true);
+      setCounts(EMPTY_COUNTS);
+    } finally {
+      if (!cancelledRef.current) setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    let cancelled = false;
-    const fetchCounts = async () => {
-      try {
-        setLoading(true);
-        setCountsError(false);
-        const data = await request("/settings/data-counts");
-        if (cancelled) return;
-        if (data && typeof data === "object" && Object.keys(data).length > 0) {
-          setCounts({
-            students: data.students ?? 0,
-            staff: data.staff ?? 0,
-            classes: data.classes ?? 0,
-            attendance: data.attendance ?? 0,
-            results: data.results ?? 0,
-          });
-        }
-      } catch {
-        if (cancelled) return;
-        setCountsError(true);
-        setCounts(EMPTY_COUNTS);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
+    cancelledRef.current = false;
     fetchCounts();
-    return () => { cancelled = true; };
+    return () => { cancelledRef.current = true; };
   }, []);
 
   const totalSelected = Array.from(selected).reduce(
