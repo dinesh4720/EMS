@@ -498,3 +498,111 @@
   background: var(--accent-bg);
   color: var(--accent);
 }
+
+/* ============================================================
+   Student list — two-pane layout (mirrors StaffList)
+   ============================================================ */
+
+/* Students page shell — matches .staffs-page */
+.students-page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Full-bleed list container inside the page chrome */
+.students-page__listframe {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.students-page__listframe > .page {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
+}
+
+/* Card container for attendance / submissions tabs */
+.student-page__content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Student list row — same density as stafflist__row */
+.studentlist__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--divider);
+  text-align: left;
+  transition: background 80ms;
+  background: transparent;
+  cursor: pointer;
+}
+.studentlist__row:hover { background: var(--surface-2); }
+.studentlist__row.is-active {
+  background: var(--surface);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+/* Keyboard-nav focus ring on the list scroller */
+[role="listbox"][aria-label="Student list"]:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--accent-bg);
+}
+
+/* Profile arrow icon on row — visible on row hover */
+.studentlist__profile-arrow {
+  opacity: 0;
+  transition: opacity 120ms, background 120ms, color 120ms;
+}
+.studentlist__row:hover .studentlist__profile-arrow,
+.studentlist__row.is-active .studentlist__profile-arrow {
+  opacity: 1;
+}
+.studentlist__profile-arrow:hover {
+  background: var(--surface-3);
+  color: var(--fg);
+}
+
+/* Clickable avatar in detail pane */
+.avatar-btn {
+  transition: box-shadow 120ms;
+}
+.avatar-btn:hover {
+  box-shadow: 0 0 0 2px var(--accent-bg);
+}
+.avatar-btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent-bg);
+  outline: none;
+}
+
+/* Clickable name in detail pane */
+.profile-name-btn {
+  transition: color 120ms;
+}
+.profile-name-btn:hover {
+  color: var(--accent);
+}
+.profile-name-btn:hover svg {
+  opacity: 1 !important;
+  color: var(--accent);
+}
+.profile-name-btn:focus-visible {
+  outline: 2px solid var(--accent-bg);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
