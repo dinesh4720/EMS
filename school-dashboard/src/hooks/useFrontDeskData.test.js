@@ -40,10 +40,41 @@ describe("summarizeKpis", () => {
       visitorsCheckedIn: 0,
       gatePassesToday: 0,
       gatePassesPending: 0,
+      appointmentsToday: 0,
       appointmentsCount: 0,
       feedbacksOpen: 0,
+      callsToday: 0,
       callsCount: 0,
+      admissionsToday: 0,
+      admissionsPending: 0,
     });
+  });
+
+  it("counts appointments today using local-date boundary", () => {
+    const now = new Date();
+    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const k = summarizeKpis({
+      appointments: [
+        { fromDateTime: now.toISOString() },
+        { fromDateTime: yesterday.toISOString() },
+        { appointmentDate: now.toISOString() },
+      ],
+    });
+    expect(k.appointmentsCount).toBe(3);
+    expect(k.appointmentsToday).toBe(2);
+  });
+
+  it("counts admissions pending separately from today", () => {
+    const now = new Date();
+    const k = summarizeKpis({
+      admissions: [
+        { applicationDate: now.toISOString(), status: "pending" },
+        { applicationDate: now.toISOString(), status: "approved" },
+        { status: "pending" },
+      ],
+    });
+    expect(k.admissionsToday).toBe(2);
+    expect(k.admissionsPending).toBe(2);
   });
 });
 

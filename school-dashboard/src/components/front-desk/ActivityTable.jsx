@@ -1,4 +1,6 @@
-import { Users, DoorOpen, Calendar, MessageSquare, Phone, ChevronRight } from "lucide-react";
+import {
+  Users, DoorOpen, Calendar, GraduationCap, MessageSquare, Phone, ChevronRight,
+} from "lucide-react";
 import { ACTIVITY_TYPES } from "../../hooks/useFrontDeskData";
 
 const ICON_BY_TYPE = {
@@ -7,6 +9,7 @@ const ICON_BY_TYPE = {
   [ACTIVITY_TYPES.APPOINTMENT]: Calendar,
   [ACTIVITY_TYPES.FEEDBACK]: MessageSquare,
   [ACTIVITY_TYPES.CALL]: Phone,
+  [ACTIVITY_TYPES.ADMISSION]: GraduationCap,
 };
 
 const LABEL_BY_TYPE = {
@@ -15,6 +18,7 @@ const LABEL_BY_TYPE = {
   [ACTIVITY_TYPES.APPOINTMENT]: "Appointment",
   [ACTIVITY_TYPES.FEEDBACK]: "Feedback",
   [ACTIVITY_TYPES.CALL]: "Call",
+  [ACTIVITY_TYPES.ADMISSION]: "Admission",
 };
 
 function StatusPill({ status }) {

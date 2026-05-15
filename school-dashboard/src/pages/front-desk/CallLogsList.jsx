@@ -4,7 +4,7 @@ import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Textarea, useDisclosure, Button,
   Select, SelectItem, Checkbox
 } from '@heroui/react';
-import { Edit, Trash2, Eye, Plus, Phone, Search } from 'lucide-react';
+import { Edit, Trash2, Eye, Plus, Phone, Search, Download } from 'lucide-react';
 import { frontDeskApi } from '../../services/api';
 import { validatePhone, validateFutureDate } from '../../utils/validations';
 import toast from 'react-hot-toast';
@@ -214,6 +214,53 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
     return log?.purpose || '-';
   };
 
+  const escapeCsv = (val) => {
+    if (val == null) return '';
+    const str = String(val).replace(/\r?\n/g, ' ').trim();
+    if (str.includes(',') || str.includes('"')) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
+
+  const handleExportCsv = () => {
+    if (!filteredCallLogs.length) {
+      toast.error('No call logs to export');
+      return;
+    }
+    const header = [
+      'Caller Name', 'Phone', 'Purpose', 'Date/Time',
+      'Title', 'Intent', 'Key Notes', 'Summary',
+      'Callback Required', 'Callback Date', 'Callback Time',
+    ];
+    const rows = filteredCallLogs.map((log) => [
+      log.callerName,
+      log.phoneNumber,
+      getPurposeLabel(log),
+      log.dateTime ? formatDateTime(log.dateTime) : '',
+      log.title,
+      log.intent,
+      log.keyNotes,
+      log.summary,
+      log.callbackRequired ? 'Yes' : 'No',
+      log.callbackDate ? formatShortDate(log.callbackDate) : '',
+      log.callbackTime || '',
+    ].map(escapeCsv).join(','));
+    const csv = [header.join(','), ...rows].join('\n');
+    // U+FEFF BOM ensures Excel detects UTF-8 encoding.
+    const BOM = String.fromCharCode(0xFEFF);
+    const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `call-logs-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${filteredCallLogs.length} call log${filteredCallLogs.length === 1 ? '' : 's'}`);
+  };
+
   const filteredCallLogs = callLogs.filter(log => {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
@@ -237,9 +284,19 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
           isClearable
           onClear={() => setSearchTerm('')}
         />
-        <Button color="primary" startContent={<Plus size={16} />} onPress={onOpen}>
-          Log New Call
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="bordered"
+            startContent={<Download size={16} />}
+            onPress={handleExportCsv}
+            isDisabled={!filteredCallLogs.length}
+          >
+            Export CSV
+          </Button>
+          <Button color="primary" startContent={<Plus size={16} />} onPress={onOpen}>
+            Log New Call
+          </Button>
+        </div>
       </div>
       <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
       <Table aria-label={t('aria.tables.callLogs')} removeWrapper>
