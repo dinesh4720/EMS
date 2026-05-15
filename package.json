@@ -33,6 +33,7 @@
     "@react-three/fiber": "^9.0.0",
     "bufferutil": "^4.1.0",
     "expo": "^54.0.33",
+    "react-dom": "^19.2.6",
     "three": "^0.176.0",
     "utf-8-validate": "^6.0.6"
   },
