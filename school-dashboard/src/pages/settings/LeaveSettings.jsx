@@ -21,6 +21,13 @@ export default function LeaveSettings() {
   const [saving, setSaving] = useState(false);
   // AUDIT-128: State-driven delete confirmation
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
+  const pendingDeleteTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (pendingDeleteTimeoutRef.current) clearTimeout(pendingDeleteTimeoutRef.current);
+    };
+  }, []);
 
   // Lazy loading state
   const ITEMS_PER_LOAD = 10;
@@ -115,7 +122,8 @@ export default function LeaveSettings() {
     if (pendingDeleteId !== id) {
       setPendingDeleteId(id);
       toast(t('confirm.deleteLeaveType') + ' Click delete again to confirm.', { icon: '\u26A0\uFE0F', duration: 3000 });
-      setTimeout(() => setPendingDeleteId(null), 3000);
+      if (pendingDeleteTimeoutRef.current) clearTimeout(pendingDeleteTimeoutRef.current);
+      pendingDeleteTimeoutRef.current = setTimeout(() => setPendingDeleteId(null), 3000);
       return;
     }
     setPendingDeleteId(null);

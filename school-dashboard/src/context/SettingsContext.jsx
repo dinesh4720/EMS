@@ -254,7 +254,9 @@ export function SettingsProvider({ children }) {
       } catch (err) {
         logger.error("Failed to save event to server:", err);
         toast.error(t('toast.error.eventSavedLocally', 'Event saved locally (server unavailable)'));
-        return localEvent;
+        // Rollback optimistic update
+        setEvents((prev) => prev.filter((e) => e.id !== localEvent.id));
+        throw err;
       }
     }
   }, [t, invalidateSettingsData]);
@@ -324,7 +326,7 @@ export function SettingsProvider({ children }) {
   );
 
   // Fee functions
-  const addFeePayment = useCallback(async (payment) => {
+  const addFeePayment = useCallback(async (payment, options = {}) => {
     const localPayment = { ...payment, id: payment.id || `temp-${Date.now()}` };
     setFeePayments((prev) => [...prev, localPayment]);
     try {
@@ -335,7 +337,9 @@ export function SettingsProvider({ children }) {
     } catch (err) {
       logger.error("Failed to save fee payment:", err);
       toast.error(t('toast.error.feePaymentSavedLocally', 'Fee payment saved locally (server unavailable)'));
-      return localPayment;
+      // Rollback optimistic update
+      setFeePayments((prev) => prev.filter((p) => p.id !== localPayment.id));
+      throw err;
     }
   }, [t, invalidateSettingsData]);
 
@@ -353,7 +357,7 @@ export function SettingsProvider({ children }) {
   );
 
   // Announcement functions
-  const addAnnouncement = useCallback(async (announcement) => {
+  const addAnnouncement = useCallback(async (announcement, options = {}) => {
     const localAnnouncement = { ...announcement, id: `temp-${Date.now()}` };
     setAnnouncements((prev) => [...prev, localAnnouncement]);
     try {
@@ -364,7 +368,9 @@ export function SettingsProvider({ children }) {
     } catch (err) {
       logger.error("Failed to save announcement:", err);
       toast.error(t('toast.error.announcementSavedLocally', 'Announcement saved locally (server unavailable)'));
-      return localAnnouncement;
+      // Rollback optimistic update
+      setAnnouncements((prev) => prev.filter((a) => a.id !== localAnnouncement.id));
+      throw err;
     }
   }, [t, invalidateSettingsData]);
 

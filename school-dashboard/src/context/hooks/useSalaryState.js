@@ -37,8 +37,8 @@ export function useSalaryState() {
           if (data && (Array.isArray(data.earnings) || Array.isArray(data.deductions))) {
             setSalarySettings((prev) => ({
               ...prev,
-              earnings: data.earnings?.length ? data.earnings : prev.earnings,
-              deductions: data.deductions?.length ? data.deductions : prev.deductions,
+              earnings: Array.isArray(data.earnings) ? data.earnings : prev.earnings,
+              deductions: Array.isArray(data.deductions) ? data.deductions : prev.deductions,
             }));
           }
         }
@@ -54,26 +54,28 @@ export function useSalaryState() {
   }, []);
 
   const updateSalarySettings = async (type, action, item) => {
-    // Build next state optimistically
-    const nextState = { ...salarySettings };
-    if (action === "add") {
-      const newItem = { id: item.name.toLowerCase().replace(/\s+/g, ""), ...item };
-      nextState[type] = [...(nextState[type] || []), newItem];
-    } else if (action === "remove") {
-      nextState[type] = (nextState[type] || []).filter((i) => i.id !== item.id);
-    } else if (action === "update") {
-      Object.assign(nextState, item);
-    }
-
-    // Optimistically update local state
-    prevSettingsRef.current = salarySettings;
-    setSalarySettings(nextState);
+    let nextState;
+    // Use functional update to avoid stale closure on concurrent edits
+    setSalarySettings((prev) => {
+      nextState = { ...prev };
+      if (action === "add") {
+        const newItem = { id: item.name.toLowerCase().replace(/\s+/g, ""), ...item };
+        nextState[type] = [...(nextState[type] || []), newItem];
+      } else if (action === "remove") {
+        nextState[type] = (nextState[type] || []).filter((i) => i.id !== item.id);
+      } else if (action === "update") {
+        Object.assign(nextState, item);
+      }
+      prevSettingsRef.current = prev;
+      return nextState;
+    });
 
     try {
-      // Persist to backend
+      // Persist to backend — read from ref since React state may not be flushed yet
+      const payload = nextState || salarySettings;
       await settingsApi.updateSalaryComponents({
-        earnings: nextState.earnings,
-        deductions: nextState.deductions,
+        earnings: payload.earnings,
+        deductions: payload.deductions,
       });
     } catch (err) {
       logger.error("Failed to persist salary components:", err);

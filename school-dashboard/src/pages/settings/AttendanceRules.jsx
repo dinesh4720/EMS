@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardBody, CardHeader, Button, Input, Switch, Divider, Select, SelectItem, Spinner } from "@heroui/react";
 import { Save, AlertCircle } from "lucide-react";
 import { useTranslation } from 'react-i18next';
@@ -30,6 +30,13 @@ export default function AttendanceRules() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [saveMessage, setSaveMessage] = useState(null);
+  const saveMessageTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (saveMessageTimeoutRef.current) clearTimeout(saveMessageTimeoutRef.current);
+    };
+  }, []);
 
   // Fetch attendance rules from backend on mount
   const fetchRules = useCallback(async () => {
@@ -85,11 +92,13 @@ export default function AttendanceRules() {
       setTempRules(merged);
       setSaveMessage({ type: 'success', text: 'Settings saved successfully' });
       setEditingSection(null);
-      setTimeout(() => setSaveMessage(null), 3000);
+      if (saveMessageTimeoutRef.current) clearTimeout(saveMessageTimeoutRef.current);
+      saveMessageTimeoutRef.current = setTimeout(() => setSaveMessage(null), 3000);
     } catch (err) {
       console.error('Failed to save attendance rules:', err);
       setSaveMessage({ type: 'error', text: err.message || 'Failed to save settings' });
-      setTimeout(() => setSaveMessage(null), 5000);
+      if (saveMessageTimeoutRef.current) clearTimeout(saveMessageTimeoutRef.current);
+      saveMessageTimeoutRef.current = setTimeout(() => setSaveMessage(null), 5000);
     } finally {
       setSaving(false);
     }
