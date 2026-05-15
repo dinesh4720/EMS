@@ -76,53 +76,53 @@ describe('filterByAcademicPerformance', () => {
     { name: 'NoData' },
   ];
 
-  it('returns all students when filter is "all"', () => {
-    expect(filterByAcademicPerformance(students, 'all')).toHaveLength(5);
+  it('returns all students when filter is empty', () => {
+    expect(filterByAcademicPerformance(students, [])).toHaveLength(5);
   });
 
   it('filters excellent (>= 90%)', () => {
-    const result = filterByAcademicPerformance(students, 'excellent');
+    const result = filterByAcademicPerformance(students, ['excellent']);
     expect(result).toHaveLength(1);
     expect(result[0].name).toBe('Excellent');
   });
 
   it('filters good (75-89%)', () => {
-    const result = filterByAcademicPerformance(students, 'good');
+    const result = filterByAcademicPerformance(students, ['good']);
     expect(result).toHaveLength(1);
     expect(result[0].name).toBe('Good');
   });
 
   it('filters average (50-74%)', () => {
-    const result = filterByAcademicPerformance(students, 'average');
+    const result = filterByAcademicPerformance(students, ['average']);
     expect(result).toHaveLength(1);
     expect(result[0].name).toBe('Average');
   });
 
   it('filters below_average (< 50%)', () => {
-    const result = filterByAcademicPerformance(students, 'below_average');
+    const result = filterByAcademicPerformance(students, ['below_average']);
     expect(result).toHaveLength(1);
     expect(result[0].name).toBe('Below');
   });
 
   it('excludes students with no examResults', () => {
-    const result = filterByAcademicPerformance(students, 'excellent');
+    const result = filterByAcademicPerformance(students, ['excellent']);
     expect(result.find((s) => s.name === 'NoData')).toBeUndefined();
   });
 
   it('excludes students with empty examResults', () => {
-    const result = filterByAcademicPerformance([{ examResults: [] }], 'excellent');
+    const result = filterByAcademicPerformance([{ examResults: [] }], ['excellent']);
     expect(result).toHaveLength(0);
   });
 
   it('averages multiple exam results', () => {
     const multi = [{ name: 'Multi', examResults: [{ percentage: 80 }, { percentage: 100 }] }]; // avg = 90
-    expect(filterByAcademicPerformance(multi, 'excellent')).toHaveLength(1);
-    expect(filterByAcademicPerformance(multi, 'good')).toHaveLength(0);
+    expect(filterByAcademicPerformance(multi, ['excellent'])).toHaveLength(1);
+    expect(filterByAcademicPerformance(multi, ['good'])).toHaveLength(0);
   });
 
   it('handles examResults with null percentages', () => {
     const s = [{ name: 'X', examResults: [{ percentage: null }, { percentage: 90 }] }]; // avg = 90/2 = 45
-    expect(filterByAcademicPerformance(s, 'below_average')).toHaveLength(1);
+    expect(filterByAcademicPerformance(s, ['below_average'])).toHaveLength(1);
   });
 });
 
@@ -137,60 +137,60 @@ describe('filterByAttendance', () => {
     { name: 'NoData' },
   ];
 
-  it('returns all students when filter is "all"', () => {
-    expect(filterByAttendance(students, 'all')).toHaveLength(5);
+  it('returns all students when filter is empty', () => {
+    expect(filterByAttendance(students, [])).toHaveLength(5);
   });
 
   it('filters excellent (>= 90%)', () => {
-    const result = filterByAttendance(students, 'excellent');
+    const result = filterByAttendance(students, ['excellent']);
     expect(result).toHaveLength(1);
     expect(result[0].name).toBe('Excellent');
   });
 
   it('filters good (75-89%)', () => {
-    const result = filterByAttendance(students, 'good');
+    const result = filterByAttendance(students, ['good']);
     expect(result).toHaveLength(1);
     expect(result[0].name).toBe('Good');
   });
 
   it('filters average (50-74%)', () => {
-    const result = filterByAttendance(students, 'average');
+    const result = filterByAttendance(students, ['average']);
     expect(result).toHaveLength(1);
     expect(result[0].name).toBe('Average');
   });
 
   it('filters below (< 50%)', () => {
-    const result = filterByAttendance(students, 'below');
+    const result = filterByAttendance(students, ['below']);
     expect(result).toHaveLength(1);
     expect(result[0].name).toBe('Below');
   });
 
   it('excludes students with no attendance data', () => {
-    const result = filterByAttendance(students, 'excellent');
+    const result = filterByAttendance(students, ['excellent']);
     expect(result.find((s) => s.name === 'NoData')).toBeUndefined();
   });
 
   it('includes attendance of exactly 0', () => {
     const s = [{ attendancePercentage: 0 }];
-    expect(filterByAttendance(s, 'below')).toHaveLength(1);
+    expect(filterByAttendance(s, ['below'])).toHaveLength(1);
   });
 
   it('boundary: 90 is excellent not good', () => {
     const s = [{ attendancePercentage: 90 }];
-    expect(filterByAttendance(s, 'excellent')).toHaveLength(1);
-    expect(filterByAttendance(s, 'good')).toHaveLength(0);
+    expect(filterByAttendance(s, ['excellent'])).toHaveLength(1);
+    expect(filterByAttendance(s, ['good'])).toHaveLength(0);
   });
 
   it('boundary: 75 is good not average', () => {
     const s = [{ attendancePercentage: 75 }];
-    expect(filterByAttendance(s, 'good')).toHaveLength(1);
-    expect(filterByAttendance(s, 'average')).toHaveLength(0);
+    expect(filterByAttendance(s, ['good'])).toHaveLength(1);
+    expect(filterByAttendance(s, ['average'])).toHaveLength(0);
   });
 
   it('boundary: 50 is average not below', () => {
     const s = [{ attendancePercentage: 50 }];
-    expect(filterByAttendance(s, 'average')).toHaveLength(1);
-    expect(filterByAttendance(s, 'below')).toHaveLength(0);
+    expect(filterByAttendance(s, ['average'])).toHaveLength(1);
+    expect(filterByAttendance(s, ['below'])).toHaveLength(0);
   });
 });
 
@@ -245,33 +245,33 @@ describe('sortWithPinned', () => {
 // ─── computeActiveFiltersCount ───────────────────────────────────────────────
 
 describe('computeActiveFiltersCount', () => {
-  it('returns 0 when all filters are "all"', () => {
+  it('returns 0 when all filters are default', () => {
     expect(computeActiveFiltersCount({
       classFilter: 'all',
-      feeStatusFilter: 'all',
-      academicYearFilter: 'all',
-      academicPerformanceFilter: 'all',
-      attendanceFilter: 'all',
+      feeStatusFilter: [],
+      academicYearFilter: [],
+      academicPerformanceFilter: [],
+      attendanceFilter: [],
     })).toBe(0);
   });
 
   it('counts each active filter', () => {
     expect(computeActiveFiltersCount({
       classFilter: '5-A',
-      feeStatusFilter: 'pending',
-      academicYearFilter: 'all',
-      academicPerformanceFilter: 'all',
-      attendanceFilter: 'below',
+      feeStatusFilter: ['pending'],
+      academicYearFilter: [],
+      academicPerformanceFilter: [],
+      attendanceFilter: ['below'],
     })).toBe(3);
   });
 
   it('returns 5 when all filters are active', () => {
     expect(computeActiveFiltersCount({
       classFilter: '5-A',
-      feeStatusFilter: 'paid',
-      academicYearFilter: '2024-25',
-      academicPerformanceFilter: 'excellent',
-      attendanceFilter: 'excellent',
+      feeStatusFilter: ['paid'],
+      academicYearFilter: ['2024-25'],
+      academicPerformanceFilter: ['excellent'],
+      attendanceFilter: ['excellent'],
     })).toBe(5);
   });
 });
