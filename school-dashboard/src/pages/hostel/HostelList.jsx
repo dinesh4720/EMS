@@ -1,19 +1,22 @@
-import { useState, useEffect, useCallback } from "react";
-import { Input, Button, Select, SelectItem, useDisclosure, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Chip } from "@heroui/react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { Input, Button, Select, SelectItem, useDisclosure, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Chip, Avatar } from "@heroui/react";
 import { Plus, Search, Building2, Edit2, Trash2, Users, DoorOpen } from "lucide-react";
 import { hostelApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import { useApp } from "../../context/AppContext";
 import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 
 const INITIAL_FORM = {
-  name: "", type: "boys", wardenName: "", wardenPhone: "", wardenEmail: "",
+  name: "", type: "boys", wardenId: "",
   address: "", description: "",
 };
 
 export default function HostelList() {
   const { t } = useTranslation();
+  const { staff } = useApp();
+  const activeStaff = useMemo(() => (staff || []).filter((s) => s.status === "active"), [staff]);
   const [hostels, setHostels] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchInput, setSearchInput] = useState("");
@@ -52,9 +55,6 @@ export default function HostelList() {
     const e = {};
     if (!formData.name.trim()) e.name = "Name is required";
     if (!formData.type) e.type = "Type is required";
-    if (formData.wardenEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.wardenEmail)) {
-      e.wardenEmail = "Invalid email";
-    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -84,8 +84,8 @@ export default function HostelList() {
     setEditingId(hostel._id);
     setFormData({
       name: hostel.name || "", type: hostel.type || "boys",
-      wardenName: hostel.wardenName || "", wardenPhone: hostel.wardenPhone || "",
-      wardenEmail: hostel.wardenEmail || "", address: hostel.address || "",
+      wardenId: hostel.wardenId?._id || hostel.wardenId || "",
+      address: hostel.address || "",
       description: hostel.description || "",
     });
     setErrors({});
@@ -189,8 +189,8 @@ export default function HostelList() {
                   <Users size={14} />
                   <span>{hostel.occupiedBeds || 0} / {hostel.totalCapacity || 0} beds occupied</span>
                 </div>
-                {hostel.wardenName && (
-                  <p className="text-gray-500 dark:text-zinc-400">Warden: {hostel.wardenName}</p>
+                {hostel.wardenId && (
+                  <p className="text-gray-500 dark:text-zinc-400">Warden: {hostel.wardenId.name || 'Unknown'}</p>
                 )}
               </div>
             </div>
@@ -232,24 +232,24 @@ export default function HostelList() {
               <SelectItem key="girls">{t('pages.girls')}</SelectItem>
               <SelectItem key="mixed">{t('pages.mixed')}</SelectItem>
             </Select>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input
-                label={t('pages.wardenName')}
-                value={formData.wardenName}
-                onValueChange={(v) => setFormData(p => ({ ...p, wardenName: v }))}
-              />
-              <Input
-                label={t('pages.wardenPhone')}
-                value={formData.wardenPhone}
-                onValueChange={(v) => setFormData(p => ({ ...p, wardenPhone: v }))}
-              />
-            </div>
-            <Input
-              label={t('pages.wardenEmail')}
-              value={formData.wardenEmail}
-              onValueChange={(v) => setFormData(p => ({ ...p, wardenEmail: v }))}
-              isInvalid={!!errors.wardenEmail} errorMessage={errors.wardenEmail}
-            />
+            <Select
+              label={t('pages.selectWarden')}
+              placeholder={t('pages.chooseStaffMember')}
+              selectedKeys={formData.wardenId ? [formData.wardenId] : []}
+              onSelectionChange={(keys) => {
+                const val = [...keys][0];
+                setFormData(p => ({ ...p, wardenId: val || "" }));
+              }}
+            >
+              {activeStaff.map((s) => (
+                <SelectItem key={s._id || s.id} textValue={s.name}>
+                  <div className="flex items-center gap-2">
+                    <Avatar src={s.picture || s.photo} name={s.name} className="w-6 h-6 text-tiny" />
+                    <span>{s.name}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </Select>
             <Input
               label={t('pages.address2')}
               value={formData.address}
