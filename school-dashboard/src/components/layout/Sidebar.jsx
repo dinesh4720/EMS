@@ -5,6 +5,7 @@ import {
   MessageSquare, IndianRupee, Settings, Award, ClipboardList,
   Wand2, Package, Library, Building2, Bus, FileBarChart, Database,
   DoorOpen, BarChart3, Sparkles, ChevronDown, Palette, Wallet,
+  CalendarCheck, FileText,
 } from "lucide-react";
 import { useChatNotifications } from "../../context/ChatNotificationContext";
 import { useApp } from "../../context/AppContext";
@@ -30,6 +31,8 @@ const WORKSPACE_NAV = [
 // Alphabetised. First MORE_VISIBLE_LIMIT entries render by default; the
 // rest collapse under a "Show all" disclosure to keep the sidebar calm.
 const MORE_NAV = [
+  { href: "/students/attendance", icon: CalendarCheck, label: "Attendance" },
+  { href: "/students/submissions", icon: FileText, label: "Form Submissions" },
   { href: "/ai-assistant", icon: Sparkles, label: "AI Assistant" },
   { href: "/academics", icon: Award, label: "Academics" },
   { href: "/analytics", icon: BarChart3, label: "Analytics" },
