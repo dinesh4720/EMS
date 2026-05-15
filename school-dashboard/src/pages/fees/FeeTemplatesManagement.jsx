@@ -522,7 +522,7 @@ export default function FeeTemplatesManagement() {
                         label={t('fees.amountLabel')}
                         placeholder={t('fees.amountPlaceholder')}
                         value={head.amount}
-                        onValueChange={(val) => updateFeeHead(index, 'amount', Math.max(0, parseInt(val) || 0))}
+                        onValueChange={(val) => updateFeeHead(index, 'amount', Math.max(0, parseFloat(val) || 0))}
                         variant="bordered"
                         startContent={<IndianRupee size={16} className="text-default-400" />}
                         size="sm"
