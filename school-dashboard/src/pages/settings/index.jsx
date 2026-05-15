@@ -57,15 +57,6 @@ const AdmissionFormSettings = lazyWithRetry(() => import("./AdmissionFormSetting
 const StaffIdSettings = lazyWithRetry(() => import("./StaffIdSettings"));
 const PermissionRequests = lazyWithRetry(() => import("./PermissionRequests"));
 const TrashSettings = lazyWithRetry(() => import("./TrashSettings"));
-const ParentManagement = lazyWithRetry(() => import("./ParentManagement"));
-const WebhooksPage = lazyWithRetry(() => import("./WebhooksPage"));
-const NPSAnalyticsPage = lazyWithRetry(() => import("./NPSAnalyticsPage"));
-const SCIMSettings = lazyWithRetry(() => import("./SCIMSettings"));
-const PromotionRulesSettings = lazyWithRetry(() => import("./PromotionRulesSettings"));
-const PeriodSettings = lazyWithRetry(() => import("./PeriodSettings"));
-const SeedDataSettings = lazyWithRetry(() => import("./SeedDataSettings"));
-const DataCleanupSettings = lazyWithRetry(() => import("./DataCleanupSettings"));
-const ActiveSessions = lazyWithRetry(() => import("./ActiveSessions"));
 const FeeTemplatesPage = lazyWithRetry(() => import("./FeeTemplatesPage"));
 const SSOSettings = lazyWithRetry(() => import("./SSOSettings"));
 
