@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { safeGetItem, safeSetItem } from "../../utils/safeStorage";
 
 const DEFAULT_THEME = {
@@ -20,15 +20,15 @@ export function useThemeSettings() {
     }
   });
 
-  const updateThemeSettings = (newSettings) => {
+  const updateThemeSettings = useCallback((newSettings) => {
     setThemeSettings(newSettings);
     safeSetItem("themeSettings", JSON.stringify(newSettings));
-  };
+  }, []);
 
-  const resetThemeSettings = () => {
+  const resetThemeSettings = useCallback(() => {
     setThemeSettings(DEFAULT_THEME);
     safeSetItem("themeSettings", JSON.stringify(DEFAULT_THEME));
-  };
+  }, []);
 
   useEffect(() => {
     const root = document.documentElement;
