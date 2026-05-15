@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import logger from "../../utils/logger";
 import { parentApi } from "../../services/api";
 import { getDateLocale } from '../../i18n/index';
@@ -35,7 +35,14 @@ export default function ParentManagement() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState(null);
   const [copiedPassword, setCopiedPassword] = useState(false);
+  const copiedPasswordTimeoutRef = useRef(null);
   const [actionLoading, setActionLoading] = useState(null);
+
+  useEffect(() => {
+    return () => {
+      if (copiedPasswordTimeoutRef.current) clearTimeout(copiedPasswordTimeoutRef.current);
+    };
+  }, []);
 
   const fetchParents = useCallback(async (page = 1) => {
     setLoading(true);
@@ -147,7 +154,8 @@ export default function ParentManagement() {
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
     setCopiedPassword(true);
-    setTimeout(() => setCopiedPassword(false), 2000);
+    if (copiedPasswordTimeoutRef.current) clearTimeout(copiedPasswordTimeoutRef.current);
+    copiedPasswordTimeoutRef.current = setTimeout(() => setCopiedPassword(false), 2000);
   };
 
 

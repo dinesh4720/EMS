@@ -43,30 +43,33 @@ export default function DataCleanupSettings() {
   const [result, setResult] = useState(null);
 
   useEffect(() => {
-    fetchCounts();
-  }, []);
-
-  const fetchCounts = async () => {
-    try {
-      setLoading(true);
-      setCountsError(false);
-      const data = await request("/settings/data-counts");
-      if (data && typeof data === "object" && Object.keys(data).length > 0) {
-        setCounts({
-          students: data.students ?? 0,
-          staff: data.staff ?? 0,
-          classes: data.classes ?? 0,
-          attendance: data.attendance ?? 0,
-          results: data.results ?? 0,
-        });
+    let cancelled = false;
+    const fetchCounts = async () => {
+      try {
+        setLoading(true);
+        setCountsError(false);
+        const data = await request("/settings/data-counts");
+        if (cancelled) return;
+        if (data && typeof data === "object" && Object.keys(data).length > 0) {
+          setCounts({
+            students: data.students ?? 0,
+            staff: data.staff ?? 0,
+            classes: data.classes ?? 0,
+            attendance: data.attendance ?? 0,
+            results: data.results ?? 0,
+          });
+        }
+      } catch {
+        if (cancelled) return;
+        setCountsError(true);
+        setCounts(EMPTY_COUNTS);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    } catch {
-      setCountsError(true);
-      setCounts(EMPTY_COUNTS);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+    fetchCounts();
+    return () => { cancelled = true; };
+  }, []);
 
   const totalSelected = Array.from(selected).reduce(
     (sum, key) => sum + (counts[key] || 0),
