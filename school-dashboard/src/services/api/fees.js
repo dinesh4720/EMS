@@ -2,9 +2,9 @@ import { request, requestBlob } from './core.js';
 
 export const calendarEventsApi = {
   getAll: (options) => options?.signal ? request('/calendar/events', { signal: options.signal }) : request('/calendar/events'),
-  create: (data) => request('/calendar/events', { method: 'POST', body: JSON.stringify(data) }),
-  update: (id, data) => request(`/calendar/events/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  delete: (id) => request(`/calendar/events/${id}`, { method: 'DELETE' }),
+  create: (data, options) => request('/calendar/events', { method: 'POST', body: JSON.stringify(data), ...(options?.signal ? { signal: options.signal } : {}) }),
+  update: (id, data, options) => request(`/calendar/events/${id}`, { method: 'PUT', body: JSON.stringify(data), ...(options?.signal ? { signal: options.signal } : {}) }),
+  delete: (id, options) => request(`/calendar/events/${id}`, { method: 'DELETE', ...(options?.signal ? { signal: options.signal } : {}) }),
 };
 
 // Intake Forms API
@@ -88,7 +88,7 @@ export const feesApi = {
     return { payments: res?.payments ?? [], pagination: res?.pagination ?? null };
   },
   getPaymentById: (id) => request(`/fees/payments/${id}`),
-  createPayment: (data) => request('/fees/payments', { method: 'POST', body: JSON.stringify(data) }),
+  createPayment: (data, options) => request('/fees/payments', { method: 'POST', body: JSON.stringify(data), ...(options?.signal ? { signal: options.signal } : {}) }),
   updatePayment: (id, data) => request(`/fees/payments/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deletePayment: (id) => request(`/fees/payments/${id}`, { method: 'DELETE' }),
 

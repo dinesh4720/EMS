@@ -176,6 +176,17 @@ describe('settingsApi — Admission Form Config', () => {
   });
 });
 
+describe('settingsApi — Document Config', () => {
+  it('saveDocumentConfigAtomic calls PUT /settings/document-config/atomic', () => {
+    const configs = [{ documentName: 'Birth Certificate', isRequired: true }];
+    settingsApi.saveDocumentConfigAtomic(configs);
+    expect(request).toHaveBeenCalledWith('/settings/document-config/atomic', {
+      method: 'PUT',
+      body: JSON.stringify({ configs }),
+    });
+  });
+});
+
 describe('settingsApi — Communication Settings', () => {
   it('getCommunicationSettings calls GET /settings/communication', () => {
     settingsApi.getCommunicationSettings();

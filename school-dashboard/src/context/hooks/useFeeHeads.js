@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import { settingsApi } from "../../services/api";
@@ -8,7 +8,7 @@ export function useFeeHeads(invalidateSettingsData) {
   const { t } = useTranslation();
   const [feeHeads, setFeeHeads] = useState([]);
 
-  const addFeeHead = async (feeHead) => {
+  const addFeeHead = useCallback(async (feeHead) => {
     try {
       const created = await settingsApi.createFeeHead(feeHead);
       setFeeHeads((prev) => [...prev, created]);
@@ -22,9 +22,9 @@ export function useFeeHeads(invalidateSettingsData) {
       setFeeHeads((prev) => [...prev, feeHeadWithId]);
       return feeHeadWithId;
     }
-  };
+  }, [t, invalidateSettingsData]);
 
-  const updateFeeHead = async (id, updates) => {
+  const updateFeeHead = useCallback(async (id, updates) => {
     try {
       const updated = await settingsApi.updateFeeHead(id, updates);
       setFeeHeads((prev) => prev.map((fh) => (fh.id === id ? updated : fh)));
@@ -36,9 +36,9 @@ export function useFeeHeads(invalidateSettingsData) {
       toast.error(t('toast.error.failedToUpdateFeeHead', 'Failed to update fee head'));
       setFeeHeads((prev) => prev.map((fh) => (fh.id === id ? { ...fh, ...updates } : fh)));
     }
-  };
+  }, [t, invalidateSettingsData]);
 
-  const deleteFeeHead = async (id) => {
+  const deleteFeeHead = useCallback(async (id) => {
     try {
       await settingsApi.deleteFeeHead(id);
       setFeeHeads((prev) => prev.filter((fh) => fh.id !== id));
@@ -49,7 +49,7 @@ export function useFeeHeads(invalidateSettingsData) {
       toast.error(t('toast.error.failedToDeleteFeeHead', 'Failed to delete fee head'));
       throw err;
     }
-  };
+  }, [t, invalidateSettingsData]);
 
   return { feeHeads, setFeeHeads, addFeeHead, updateFeeHead, deleteFeeHead };
 }
