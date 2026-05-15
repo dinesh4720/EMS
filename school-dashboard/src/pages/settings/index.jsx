@@ -28,6 +28,16 @@ import {
 import lazyWithRetry from "../../utils/lazyWithRetry";
 import SettingsErrorBoundary from "../../components/SettingsErrorBoundary";
 import TimetableCleanup from "../../components/TimetableCleanup";
+import ParentManagement from "./ParentManagement";
+import WebhooksPage from "./WebhooksPage";
+import NPSAnalyticsPage from "./NPSAnalyticsPage";
+import SCIMSettings from "./SCIMSettings";
+import PromotionRulesSettings from "./PromotionRulesSettings";
+import PeriodSettings from "./PeriodSettings";
+import SeedDataSettings from "./SeedDataSettings";
+import DataCleanupSettings from "./DataCleanupSettings";
+import ActiveSessions from "./ActiveSessions";
+import RequirePermission from "../../components/RequirePermission";
 import { useTranslation } from 'react-i18next';
 
 const InstitutionSettings = lazyWithRetry(() => import("./InstitutionSettings"));
@@ -290,13 +300,13 @@ export default function SettingsPage() {
                 <SettingsErrorBoundary><AdmissionFormSettings /></SettingsErrorBoundary>
               } />
               <Route path="users" element={
-                <SettingsErrorBoundary><UserManagement /></SettingsErrorBoundary>
+                <SettingsErrorBoundary><RequirePermission module="settings" action="edit"><UserManagement /></RequirePermission></SettingsErrorBoundary>
               } />
               <Route path="staff-id" element={
                 <SettingsErrorBoundary><StaffIdSettings /></SettingsErrorBoundary>
               } />
               <Route path="roles" element={
-                <SettingsErrorBoundary><RolesAccess /></SettingsErrorBoundary>
+                <SettingsErrorBoundary><RequirePermission module="settings" action="edit"><RolesAccess /></RequirePermission></SettingsErrorBoundary>
               } />
               <Route path="permission-requests" element={
                 <SettingsErrorBoundary><PermissionRequests /></SettingsErrorBoundary>
@@ -335,7 +345,7 @@ export default function SettingsPage() {
                 <SettingsErrorBoundary><WebhooksPage /></SettingsErrorBoundary>
               } />
               <Route path="scim" element={
-                <SettingsErrorBoundary><SCIMSettings /></SettingsErrorBoundary>
+                <SettingsErrorBoundary><RequirePermission adminOnly><SCIMSettings /></RequirePermission></SettingsErrorBoundary>
               } />
               <Route path="periods" element={
                 <SettingsErrorBoundary><PeriodSettings /></SettingsErrorBoundary>
@@ -347,10 +357,10 @@ export default function SettingsPage() {
                 <SettingsErrorBoundary><NPSAnalyticsPage /></SettingsErrorBoundary>
               } />
               <Route path="seed-data" element={
-                <SettingsErrorBoundary><SeedDataSettings /></SettingsErrorBoundary>
+                <SettingsErrorBoundary><RequirePermission adminOnly><SeedDataSettings /></RequirePermission></SettingsErrorBoundary>
               } />
               <Route path="data-cleanup" element={
-                <SettingsErrorBoundary><DataCleanupSettings /></SettingsErrorBoundary>
+                <SettingsErrorBoundary><RequirePermission adminOnly><DataCleanupSettings /></RequirePermission></SettingsErrorBoundary>
               } />
               <Route path="sessions" element={
                 <SettingsErrorBoundary><ActiveSessions /></SettingsErrorBoundary>
