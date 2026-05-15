@@ -32,45 +32,49 @@ export function getAttendancePercentage(student) {
 }
 
 /**
- * Filter students by academic performance.
+ * Filter students by academic performance (multi-select).
  * @param {Array} students
- * @param {string} filter - 'all' | 'excellent' | 'good' | 'average' | 'below_average'
+ * @param {string[]} filter - array of categories, empty = no filter
  * @returns {Array}
  */
 export function filterByAcademicPerformance(students, filter) {
-  if (filter === 'all') return students;
+  if (!filter || filter.length === 0) return students;
   return students.filter((student) => {
     if (!student.examResults || !Array.isArray(student.examResults) || student.examResults.length === 0) return false;
     const total = student.examResults.reduce((sum, e) => (e.percentage != null ? sum + e.percentage : sum), 0);
     const avg = total / student.examResults.length;
-    switch (filter) {
-      case 'excellent':     return avg >= 90;
-      case 'good':          return avg >= 75 && avg < 90;
-      case 'average':       return avg >= 50 && avg < 75;
-      case 'below_average': return avg < 50;
-      default:              return true;
-    }
+    return filter.some((category) => {
+      switch (category) {
+        case 'excellent':     return avg >= 90;
+        case 'good':          return avg >= 75 && avg < 90;
+        case 'average':       return avg >= 50 && avg < 75;
+        case 'below_average': return avg < 50;
+        default:              return false;
+      }
+    });
   });
 }
 
 /**
- * Filter students by attendance range.
+ * Filter students by attendance range (multi-select).
  * @param {Array} students
- * @param {string} filter - 'all' | 'excellent' | 'good' | 'average' | 'below'
+ * @param {string[]} filter - array of categories, empty = no filter
  * @returns {Array}
  */
 export function filterByAttendance(students, filter) {
-  if (filter === 'all') return students;
+  if (!filter || filter.length === 0) return students;
   return students.filter((student) => {
     const att = getAttendancePercentage(student);
     if (att == null) return false;
-    switch (filter) {
-      case 'excellent': return att >= 90;
-      case 'good':      return att >= 75 && att < 90;
-      case 'average':   return att >= 50 && att < 75;
-      case 'below':     return att < 50;
-      default:          return true;
-    }
+    return filter.some((category) => {
+      switch (category) {
+        case 'excellent': return att >= 90;
+        case 'good':      return att >= 75 && att < 90;
+        case 'average':   return att >= 50 && att < 75;
+        case 'below':     return att < 50;
+        default:          return false;
+      }
+    });
   });
 }
 
@@ -96,11 +100,11 @@ export function sortWithPinned(items) {
  */
 export function computeActiveFiltersCount(filters) {
   return (
-    (filters.classFilter !== 'all' ? 1 : 0) +
-    (filters.feeStatusFilter !== 'all' ? 1 : 0) +
-    (filters.academicYearFilter !== 'all' ? 1 : 0) +
-    (filters.academicPerformanceFilter !== 'all' ? 1 : 0) +
-    (filters.attendanceFilter !== 'all' ? 1 : 0)
+    (filters.classFilter && filters.classFilter !== 'all' ? 1 : 0) +
+    (filters.feeStatusFilter?.length || 0) +
+    (filters.academicYearFilter?.length || 0) +
+    (filters.academicPerformanceFilter?.length || 0) +
+    (filters.attendanceFilter?.length || 0)
   );
 }
 

@@ -1,123 +1,133 @@
-
-
-
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { Card, CardBody, CardHeader, Select, SelectItem, Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea, Input, Divider } from "@heroui/react";
-import { ArrowLeft, Calendar as CalendarIcon, Check, X, AlertCircle, Clock } from "lucide-react";
+import {
+  Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
+  Textarea, Input, Divider,
+} from "@heroui/react";
+import { ArrowLeft, Calendar as CalendarIcon, Check, X, AlertCircle, Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
-import { useTranslation } from 'react-i18next';
-import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
+import { useTranslation } from "react-i18next";
+import { CardGridPageSkeleton } from "../../components/skeletons/PageSkeletons";
+import logger from "../../utils/logger";
+
+const STATUS_META = {
+  present: { label: "Present", tone: "ok" },
+  absent: { label: "Absent", tone: "danger" },
+  leave: { label: "Leave", tone: "warn" },
+  halfday: { label: "Half day", tone: "info" },
+  unmarked: { label: "Unmarked", tone: "muted" },
+};
 
 export default function StaffAttendanceRegularize() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { staff, staffAttendance, requestRegularization, fetchStaffAttendanceByStaff, loading } = useApp();
+  const {
+    staff,
+    staffAttendance,
+    requestRegularization,
+    fetchStaffAttendanceByStaff,
+    loading,
+  } = useApp();
   const [selectedStaffId, setSelectedStaffId] = useState("");
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [selectedDate, setSelectedDate] = useState(null);
   const [regularizeModalOpen, setRegularizeModalOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [regularizeData, setRegularizeData] = useState({
     status: "present",
     inTime: "",
     outTime: "",
-    reason: ""
+    reason: "",
   });
 
-  const selectedStaff = useMemo(() => {
-    return staff.find(member => String(member.id) === String(selectedStaffId));
-  }, [staff, selectedStaffId]);
+  // Race-condition guards:
+  //  - requestSeqRef ignores stale month/year fetches if the user navigated
+  //    again before the previous response landed.
+  //  - submitToken stops double-fire from rapid Regularize clicks.
+  const requestSeqRef = useRef(0);
+  const submitTokenRef = useRef(null);
 
-  // Fetch attendance data when selection changes
+  const selectedStaff = useMemo(
+    () => staff.find((member) => String(member.id) === String(selectedStaffId)),
+    [staff, selectedStaffId]
+  );
+
   useEffect(() => {
-    if (selectedStaffId) {
-      const start = format(new Date(currentYear, currentMonth, 1), 'yyyy-MM-dd');
-      const end = format(new Date(currentYear, currentMonth + 1, 0), 'yyyy-MM-dd');
-      fetchStaffAttendanceByStaff(selectedStaffId, start, end);
-    }
+    if (!selectedStaffId) return;
+    const seq = ++requestSeqRef.current;
+    const start = format(new Date(currentYear, currentMonth, 1), "yyyy-MM-dd");
+    const end = format(new Date(currentYear, currentMonth + 1, 0), "yyyy-MM-dd");
+    (async () => {
+      try {
+        await fetchStaffAttendanceByStaff(selectedStaffId, start, end);
+        // If a newer request fired after this one, drop the result silently.
+        if (seq !== requestSeqRef.current) return;
+      } catch (err) {
+        if (seq === requestSeqRef.current) logger.error("Failed to load staff attendance:", err);
+      }
+    })();
   }, [selectedStaffId, currentMonth, currentYear, fetchStaffAttendanceByStaff]);
 
-
-  // Get calendar data for selected month
   const calendarData = useMemo(() => {
     if (!selectedStaffId) return [];
-
     const firstDay = new Date(currentYear, currentMonth, 1);
     const lastDay = new Date(currentYear, currentMonth + 1, 0);
     const daysInMonth = lastDay.getDate();
     const startingDayOfWeek = firstDay.getDay();
-
     const days = [];
-
-    // Add empty cells for days before month starts
-    for (let i = 0; i < startingDayOfWeek; i++) {
-      days.push({ isEmpty: true });
-    }
-
-    // Add actual days
+    for (let i = 0; i < startingDayOfWeek; i++) days.push({ isEmpty: true });
     for (let day = 1; day <= daysInMonth; day++) {
-      const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
       const attendance = staffAttendance[selectedStaffId]?.[dateStr];
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = new Date().toISOString().split("T")[0];
       const isToday = dateStr === todayStr;
       const isFuture = dateStr > todayStr;
-
-      days.push({
-        day,
-        dateStr,
-        attendance,
-        isToday,
-        isFuture
-      });
+      days.push({ day, dateStr, attendance, isToday, isFuture });
     }
-
     return days;
   }, [selectedStaffId, currentMonth, currentYear, staffAttendance]);
 
   const monthNames = [
-    t('months.january', 'January'), t('months.february', 'February'), t('months.march', 'March'),
-    t('months.april', 'April'), t('months.may', 'May'), t('months.june', 'June'),
-    t('months.july', 'July'), t('months.august', 'August'), t('months.september', 'September'),
-    t('months.october', 'October'), t('months.november', 'November'), t('months.december', 'December')
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
   ];
 
   const handlePreviousMonth = () => {
     if (currentMonth === 0) {
       setCurrentMonth(11);
-      setCurrentYear(currentYear - 1);
-    } else {
-      setCurrentMonth(currentMonth - 1);
-    }
+      setCurrentYear((y) => y - 1);
+    } else setCurrentMonth((m) => m - 1);
   };
-
   const handleNextMonth = () => {
     if (currentMonth === 11) {
       setCurrentMonth(0);
-      setCurrentYear(currentYear + 1);
-    } else {
-      setCurrentMonth(currentMonth + 1);
-    }
+      setCurrentYear((y) => y + 1);
+    } else setCurrentMonth((m) => m + 1);
   };
+  const isAtCurrentMonth =
+    currentMonth === new Date().getMonth() && currentYear === new Date().getFullYear();
 
   const handleDayClick = (dayData) => {
     if (dayData.isEmpty || dayData.isFuture) return;
-
     setSelectedDate(dayData);
     setRegularizeData({
       status: dayData.attendance?.status || "present",
       inTime: dayData.attendance?.inTime || "09:00",
       outTime: dayData.attendance?.outTime || "17:00",
-      reason: dayData.attendance?.reason || ""
+      reason: dayData.attendance?.reason || "",
     });
     setRegularizeModalOpen(true);
   };
 
   const handleRegularize = async () => {
     if (!selectedDate || !selectedStaffId) return;
-
+    // Race guard: tag this submission and bail out if a newer one started.
+    const token = Symbol("regularize");
+    submitTokenRef.current = token;
+    setSubmitting(true);
     try {
       await requestRegularization(
         selectedStaffId,
@@ -125,375 +135,239 @@ export default function StaffAttendanceRegularize() {
         regularizeData.status,
         regularizeData.reason
       );
-
-      toast.success(t('toast.success.attendanceRegularizedSuccessfully'));
+      if (submitTokenRef.current !== token) return;
+      toast.success(t("toast.success.attendanceRegularizedSuccessfully"));
       setRegularizeModalOpen(false);
       setSelectedDate(null);
     } catch (error) {
-      console.error('Regularization failed:', error);
-      toast.error(error.message || 'Failed to regularize attendance');
+      if (submitTokenRef.current !== token) return;
+      logger.error("Regularization failed:", error);
+      toast.error(error.message || "Failed to regularize attendance");
+    } finally {
+      if (submitTokenRef.current === token) setSubmitting(false);
     }
   };
 
-  const getDayStyle = (dayData) => {
-    if (dayData.isEmpty) return "";
-    if (dayData.isFuture) return "opacity-30 cursor-not-allowed";
-
-    const status = dayData.attendance?.status;
-
-    if (dayData.isToday) {
-      return "ring-2 ring-primary ring-offset-2";
-    }
-
-    switch (status) {
-      case "present":
-        return "bg-success-50 border-success-300 text-success-700";
-      case "absent":
-        return "bg-danger-50 border-danger-300 text-danger-700";
-      case "leave":
-        return "bg-warning-50 border-warning-300 text-warning-700";
-      case "halfday":
-        return "bg-secondary-50 border-secondary-300 text-secondary-700";
-      default:
-        return "bg-default-50 border-default-200 text-default-500";
-    }
-  };
-
-  const getDayIndicator = (dayData) => {
-    if (dayData.isEmpty || dayData.isFuture) return null;
-
-    const status = dayData.attendance?.status;
-
-    switch (status) {
-      case "present":
-        return <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-success-500" />;
-      case "absent":
-        return <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-danger-500" />;
-      case "leave":
-        return <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-warning-500" />;
-      case "halfday":
-        return <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-secondary-500" />;
-      default:
-        return <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-default-300" />;
-    }
-  };
-
-  const getMonthStats = useMemo(() => {
-    if (!selectedStaffId) return { present: 0, absent: 0, leave: 0, halfday: 0, unmarked: 0 };
-
+  const monthStats = useMemo(() => {
     const stats = { present: 0, absent: 0, leave: 0, halfday: 0, unmarked: 0 };
-
-    calendarData.forEach(day => {
+    if (!selectedStaffId) return stats;
+    calendarData.forEach((day) => {
       if (!day.isEmpty && !day.isFuture) {
         const status = day.attendance?.status || "unmarked";
-        stats[status]++;
+        if (stats[status] != null) stats[status]++;
       }
     });
-
     return stats;
   }, [selectedStaffId, calendarData]);
 
+  const dayClass = (dayData) => {
+    if (dayData.isEmpty) return "is-empty";
+    if (dayData.isFuture) return "";
+    const status = dayData.attendance?.status;
+    const tone = STATUS_META[status]?.tone;
+    return [
+      dayData.isToday ? "is-today" : "",
+      tone === "ok" ? "is-present" : tone === "danger" ? "is-absent" : tone === "warn" ? "is-leave" : tone === "info" ? "is-halfday" : "",
+    ].filter(Boolean).join(" ");
+  };
+
   if (loading) {
-    return (
-      <div className="w-full space-y-6">
-        <div className="flex items-center gap-3">
-          <div className="h-7 w-7 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-          <div className="space-y-2">
-            <div className="h-7 w-56 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-            <div className="h-4 w-72 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-          </div>
-        </div>
-        <CardGridPageSkeleton title={false} cards={5} columns="grid-cols-2 sm:grid-cols-5" />
-      </div>
-    );
+    return <CardGridPageSkeleton title cards={5} columns="grid-cols-2 sm:grid-cols-5" />;
   }
 
   return (
-    <div className="w-full">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <Button
-            isIconOnly
-            variant="light"
-            onPress={() => navigate("/staffs/attendance")}
+    <div className="page">
+      <div className="page__head">
+        <div className="row" style={{ alignItems: "center", gap: 8 }}>
+          <button
+            type="button"
+            className="iconbtn"
+            onClick={() => navigate("/staffs/attendance")}
+            aria-label="Back to attendance"
           >
-            <ArrowLeft size={20} />
-          </Button>
+            <ArrowLeft size={14} />
+          </button>
           <div>
-            <h1 className="text-2xl font-bold text-default-900">{t('pages.regularizeAttendance1')}</h1>
-            <p className="text-sm text-default-500 mt-1">{t('pages.viewAndRegularizeStaffAttendanceRecords')}</p>
+            <h1 className="page__title">Regularize Attendance</h1>
+            <div className="page__sub">View and adjust per-day staff attendance records.</div>
           </div>
         </div>
       </div>
 
-      {/* Staff Selection */}
-      <Card shadow="none" className="border border-default-200 mb-6">
-        <CardBody className="p-6">
+      {/* Staff picker — uses HeroUI Select so existing staff data renders;
+          wrapped in a card to match other pages' density. */}
+      <div className="card" style={{ marginBottom: 12 }}>
+        <div className="card__body" style={{ padding: 14 }}>
           <Select
-            label={t('pages.selectStaffMember1')}
-            placeholder={t('pages.chooseAStaffMemberToViewAttendance')}
+            label="Select staff member"
+            placeholder="Choose a staff member to view attendance"
             selectedKeys={selectedStaffId ? [selectedStaffId] : []}
             onSelectionChange={(keys) => setSelectedStaffId(Array.from(keys)[0])}
             variant="bordered"
-            size="lg"
-            classNames={{
-              trigger: "h-14"
-            }}
+            size="md"
+            aria-label="Select staff"
           >
-            {staff.filter(member => member.status === "active").map(member => (
-              <SelectItem key={member.id} value={member.id}>
-                {member.name} - {member.department}
-              </SelectItem>
-            ))}
+            {staff
+              .filter((m) => m.status === "active")
+              .map((m) => (
+                <SelectItem key={m.id} value={m.id}>
+                  {m.name} {m.department ? `— ${m.department}` : ""}
+                </SelectItem>
+              ))}
           </Select>
-        </CardBody>
-      </Card>
+        </div>
+      </div>
 
-      {!selectedStaffId && (
-        <Card shadow="none" className="border border-default-200">
-          <CardBody className="p-12 text-center">
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-20 h-20 rounded-full bg-primary-50 flex items-center justify-center">
-                <CalendarIcon size={40} className="text-primary-500" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-default-900 mb-2">{t('pages.selectAStaffMember1')}</h3>
-                <p className="text-sm text-default-500 max-w-md">
-                  Choose a staff member from the dropdown above to view their attendance calendar and regularize any records.
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-4 mt-4 text-xs text-default-500">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-success-500" />
-                  <span>{t('pages.present2')}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-danger-500" />
-                  <span>{t('pages.absent2')}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-warning-500" />
-                  <span>{t('pages.onLeave1')}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-secondary-500" />
-                  <span>{t('pages.halfDay')}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-default-300" />
-                  <span>{t('pages.unmarked')}</span>
-                </div>
-              </div>
+      {!selectedStaffId ? (
+        <div className="card" style={{ textAlign: "center", padding: 48 }}>
+          <div className="assign-empty">
+            <div className="assign-empty__icon">
+              <CalendarIcon size={20} />
             </div>
-          </CardBody>
-        </Card>
-      )}
-
-      {selectedStaffId && (
+            <div className="assign-empty__title">Select a staff member</div>
+            <div className="assign-empty__sub">
+              Choose a staff member above to view their attendance calendar and regularize records.
+            </div>
+            <div
+              className="row gap-2"
+              style={{ marginTop: 12, flexWrap: "wrap", justifyContent: "center" }}
+            >
+              <span className="status status--ok"><span className="dot" />Present</span>
+              <span className="status status--danger"><span className="dot" />Absent</span>
+              <span className="status status--warn"><span className="dot" />Leave</span>
+              <span className="status status--info"><span className="dot" />Half day</span>
+            </div>
+          </div>
+        </div>
+      ) : (
         <>
-          {/* Staff Info Banner */}
-          <Card shadow="none" className="border border-primary-200 bg-primary-50 mb-6">
-            <CardBody className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
-                  <span className="text-lg font-semibold text-primary-700">
-                    {selectedStaff?.name?.charAt(0)}
-                  </span>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-primary-900">{selectedStaff?.name}</h3>
-                  <p className="text-sm text-primary-700">{selectedStaff?.department} • {selectedStaff?.role}</p>
-                </div>
+          {/* KPI strip — mirrors detail-pane__metrics */}
+          <div className="detail-pane__metrics" style={{ margin: "0 0 12px", gridTemplateColumns: "repeat(5, 1fr)" }}>
+            {(["present", "absent", "leave", "halfday", "unmarked"]).map((k) => (
+              <div key={k} className="dp-metric">
+                <span className="dp-metric__label">{STATUS_META[k].label}</span>
+                <span className="dp-metric__value mono tnum">{monthStats[k]}</span>
               </div>
-            </CardBody>
-          </Card>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
-            <Card shadow="none" className="border border-success-200 bg-success-50">
-              <CardBody className="p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <Check size={16} className="text-success-600" />
-                  <span className="text-xs text-success-700 uppercase tracking-wider">{t('pages.present2')}</span>
-                </div>
-                <p className="text-2xl font-semibold text-success-700">{getMonthStats.present}</p>
-              </CardBody>
-            </Card>
-            <Card shadow="none" className="border border-danger-200 bg-danger-50">
-              <CardBody className="p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <X size={16} className="text-danger-600" />
-                  <span className="text-xs text-danger-700 uppercase tracking-wider">{t('pages.absent2')}</span>
-                </div>
-                <p className="text-2xl font-semibold text-danger-700">{getMonthStats.absent}</p>
-              </CardBody>
-            </Card>
-            <Card shadow="none" className="border border-warning-200 bg-warning-50">
-              <CardBody className="p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <Clock size={16} className="text-warning-600" />
-                  <span className="text-xs text-warning-700 uppercase tracking-wider">{t('pages.leave')}</span>
-                </div>
-                <p className="text-2xl font-semibold text-warning-700">{getMonthStats.leave}</p>
-              </CardBody>
-            </Card>
-            <Card shadow="none" className="border border-secondary-200 bg-secondary-50">
-              <CardBody className="p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <AlertCircle size={16} className="text-secondary-600" />
-                  <span className="text-xs text-secondary-700 uppercase tracking-wider">{t('pages.halfDay')}</span>
-                </div>
-                <p className="text-2xl font-semibold text-secondary-700">{getMonthStats.halfday}</p>
-              </CardBody>
-            </Card>
-            <Card shadow="none" className="border border-default-200 bg-default-50">
-              <CardBody className="p-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <Clock size={16} className="text-default-500" />
-                  <span className="text-xs text-default-600 uppercase tracking-wider">{t('pages.unmarked')}</span>
-                </div>
-                <p className="text-2xl font-semibold text-default-700">{getMonthStats.unmarked}</p>
-              </CardBody>
-            </Card>
+            ))}
           </div>
 
           {/* Calendar */}
-          <Card shadow="none" className="border border-default-200">
-            <CardHeader className="flex justify-between items-center px-6 py-4 border-b border-default-200">
-              <div className="flex items-center gap-3">
-                <CalendarIcon size={20} className="text-default-500" />
-                <h3 className="text-lg font-semibold text-default-900">
-                  {monthNames[currentMonth]} {currentYear}
-                </h3>
+          <div className="card">
+            <div className="card__head" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div className="row" style={{ alignItems: "center", gap: 8 }}>
+                <CalendarIcon size={14} className="text-fg-muted" />
+                <span className="card__title">
+                  {monthNames[currentMonth]} <span className="mono tnum">{currentYear}</span>
+                </span>
+                {selectedStaff && (
+                  <span className="chip" style={{ marginLeft: 8 }}>
+                    {selectedStaff.name}
+                  </span>
+                )}
               </div>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="flat"
-                  onPress={handlePreviousMonth}
+              <div className="row" style={{ gap: 6 }}>
+                <button
+                  type="button"
+                  className="iconbtn"
+                  onClick={handlePreviousMonth}
+                  aria-label="Previous month"
                 >
-                  Previous
-                </Button>
-                <Button
-                  size="sm"
-                  variant="flat"
-                  onPress={handleNextMonth}
-                  isDisabled={currentMonth === new Date().getMonth() && currentYear === new Date().getFullYear()}
+                  <ChevronLeft size={14} />
+                </button>
+                <button
+                  type="button"
+                  className="iconbtn"
+                  onClick={handleNextMonth}
+                  aria-label="Next month"
+                  disabled={isAtCurrentMonth}
                 >
-                  Next
-                </Button>
+                  <ChevronRight size={14} />
+                </button>
               </div>
-            </CardHeader>
-            <CardBody className="p-6">
-              {/* Legend */}
-              <div className="flex flex-wrap gap-4 mb-6 pb-4 border-b border-default-200">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-success-500" />
-                  <span className="text-xs text-default-600">{t('pages.present2')}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-danger-500" />
-                  <span className="text-xs text-default-600">{t('pages.absent2')}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-warning-500" />
-                  <span className="text-xs text-default-600">{t('pages.onLeave1')}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-secondary-500" />
-                  <span className="text-xs text-default-600">{t('pages.halfDay')}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-default-300" />
-                  <span className="text-xs text-default-600">{t('pages.unmarked')}</span>
-                </div>
-              </div>
+            </div>
 
-              {/* Calendar Grid */}
-              <div className="grid grid-cols-7 gap-2">
-                {/* Day headers */}
-                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => (
-                  <div key={day} className="text-center text-xs font-semibold text-default-500 uppercase py-2">
-                    {day}
-                  </div>
+            <div className="card__body">
+              <div className="regcal" style={{ marginBottom: 8 }}>
+                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+                  <div key={d} className="regcal__head">{d}</div>
                 ))}
-
-                {/* Calendar days */}
+              </div>
+              <div className="regcal">
                 {calendarData.map((dayData, index) => (
                   <button
-                    key={dayData.date || index}
+                    key={dayData.dateStr || `empty-${index}`}
+                    type="button"
                     onClick={() => handleDayClick(dayData)}
                     disabled={dayData.isEmpty || dayData.isFuture}
-                    className={`
-                      relative aspect-square rounded-lg border-2 transition-all
-                      ${dayData.isEmpty ? "invisible" : ""}
-                      ${dayData.isFuture ? "cursor-not-allowed" : "cursor-pointer hover:scale-105"}
-                      ${getDayStyle(dayData)}
-                    `}
+                    className={`regcal__day ${dayClass(dayData)}`}
+                    aria-label={dayData.isEmpty ? "" : `Day ${dayData.day}${dayData.attendance?.status ? ` — ${dayData.attendance.status}` : ""}`}
                   >
                     {!dayData.isEmpty && (
                       <>
-                        <span className="text-sm font-medium">{dayData.day}</span>
-                        {getDayIndicator(dayData)}
+                        <span>{dayData.day}</span>
+                        {dayData.attendance?.status && <span className="regcal__day__dot" style={{ background: "currentColor" }} />}
                       </>
                     )}
                   </button>
                 ))}
               </div>
-            </CardBody>
-          </Card>
+            </div>
+          </div>
         </>
       )}
 
       {/* Regularize Modal */}
-      <Modal isOpen={regularizeModalOpen} onOpenChange={setRegularizeModalOpen} size="lg">
+      <Modal
+        isOpen={regularizeModalOpen}
+        onOpenChange={(open) => {
+          if (!submitting) setRegularizeModalOpen(open);
+        }}
+        size="lg"
+      >
         <ModalContent>
           {(onClose) => (
             <>
               <ModalHeader className="flex flex-col gap-1">
-                <h3 className="text-lg font-semibold">{t('pages.regularizeAttendance1')}</h3>
-                <p className="text-sm text-default-500 font-normal">
-                  {selectedStaff?.name} - {selectedDate?.dateStr}
+                <h3 className="text-lg font-semibold">Regularize attendance</h3>
+                <p className="text-sm text-default-500 font-normal mono tnum">
+                  {selectedStaff?.name} · {selectedDate?.dateStr}
                 </p>
               </ModalHeader>
               <Divider />
               <ModalBody className="py-6">
                 <div className="space-y-4">
                   <Select
-                    label={t('pages.status2')}
+                    label="Status"
                     selectedKeys={[regularizeData.status]}
-                    onSelectionChange={(keys) => setRegularizeData({ ...regularizeData, status: Array.from(keys)[0] })}
+                    onSelectionChange={(keys) =>
+                      setRegularizeData({ ...regularizeData, status: Array.from(keys)[0] })
+                    }
                     variant="bordered"
                   >
-                    <SelectItem key="present" textValue="Present" startContent={<Check size={16} className="text-success" />}>
-                      Present
-                    </SelectItem>
-                    <SelectItem key="halfday" textValue="Half Day" startContent={<AlertCircle size={16} className="text-secondary" />}>
-                      Half Day
-                    </SelectItem>
-                    <SelectItem key="absent" textValue="Absent" startContent={<X size={16} className="text-danger" />}>
-                      Absent
-                    </SelectItem>
-                    <SelectItem key="leave" textValue="On Leave" startContent={<Clock size={16} className="text-warning" />}>
-                      On Leave
-                    </SelectItem>
+                    <SelectItem key="present" startContent={<Check size={14} />}>Present</SelectItem>
+                    <SelectItem key="halfday" startContent={<AlertCircle size={14} />}>Half day</SelectItem>
+                    <SelectItem key="absent" startContent={<X size={14} />}>Absent</SelectItem>
+                    <SelectItem key="leave" startContent={<Clock size={14} />}>On leave</SelectItem>
                   </Select>
 
                   {(regularizeData.status === "present" || regularizeData.status === "halfday") && (
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-3">
                       <Input
                         type="time"
-                        label={t('pages.checkInTime')}
+                        label="Check-in"
                         value={regularizeData.inTime}
-                        onValueChange={(value) => setRegularizeData({ ...regularizeData, inTime: value })}
+                        onValueChange={(value) =>
+                          setRegularizeData({ ...regularizeData, inTime: value })
+                        }
                         variant="bordered"
                       />
                       <Input
                         type="time"
-                        label={t('pages.checkOutTime')}
+                        label="Check-out"
                         value={regularizeData.outTime}
-                        onValueChange={(value) => setRegularizeData({ ...regularizeData, outTime: value })}
+                        onValueChange={(value) =>
+                          setRegularizeData({ ...regularizeData, outTime: value })
+                        }
                         variant="bordered"
                       />
                     </div>
@@ -501,23 +375,32 @@ export default function StaffAttendanceRegularize() {
 
                   <Textarea
                     label="Reason / Notes"
-                    placeholder={t('pages.enterReasonForRegularization')}
+                    placeholder="Enter reason for regularization"
                     value={regularizeData.reason}
-                    onValueChange={(value) => setRegularizeData({ ...regularizeData, reason: value })}
+                    onValueChange={(value) =>
+                      setRegularizeData({ ...regularizeData, reason: value })
+                    }
                     variant="bordered"
                     minRows={3}
                   />
 
                   {selectedDate?.attendance && (
-                    <div className="p-4 bg-default-50 rounded-lg border border-default-200">
-                      <p className="text-xs text-default-500 mb-2">{t('pages.currentRecord')}</p>
-                      <div className="space-y-1 text-sm">
-                        <p><span className="font-medium">{t('pages.status3')}</span> {selectedDate.attendance.status}</p>
-                        <p><span className="font-medium">{t('pages.in')}</span> {selectedDate.attendance.inTime}</p>
-                        <p><span className="font-medium">{t('pages.out')}</span> {selectedDate.attendance.outTime}</p>
-                        {selectedDate.attendance.reason && (
-                          <p><span className="font-medium">{t('pages.reason1')}</span> {selectedDate.attendance.reason}</p>
-                        )}
+                    <div className="staff-banner">
+                      <div className="staff-banner__icon">
+                        <AlertCircle size={14} />
+                      </div>
+                      <div>
+                        <div className="staff-banner__title">Current record</div>
+                        <div className="staff-banner__body" style={{ marginTop: 4 }}>
+                          <span className="mono tnum">
+                            {selectedDate.attendance.status}
+                            {selectedDate.attendance.inTime ? ` · in ${selectedDate.attendance.inTime}` : ""}
+                            {selectedDate.attendance.outTime ? ` · out ${selectedDate.attendance.outTime}` : ""}
+                          </span>
+                          {selectedDate.attendance.reason && (
+                            <div className="subtle" style={{ marginTop: 2 }}>{selectedDate.attendance.reason}</div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -525,12 +408,22 @@ export default function StaffAttendanceRegularize() {
               </ModalBody>
               <Divider />
               <ModalFooter>
-                <Button variant="light" onPress={onClose}>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={onClose}
+                  disabled={submitting}
+                >
                   Cancel
-                </Button>
-                <Button color="primary" onPress={handleRegularize}>
-                  Regularize
-                </Button>
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--accent"
+                  onClick={handleRegularize}
+                  disabled={submitting}
+                >
+                  {submitting ? "Saving…" : "Regularize"}
+                </button>
               </ModalFooter>
             </>
           )}

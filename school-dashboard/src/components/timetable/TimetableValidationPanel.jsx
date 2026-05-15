@@ -3,6 +3,8 @@ import { Card, CardBody, CardHeader, Progress, Badge, Button, Tabs, Tab } from '
 import { request } from '../../services/api';
 import { CURRENT_ACADEMIC_YEAR } from '../../utils/constants';
 import { useTranslation } from 'react-i18next';
+import logger from '../../utils/logger';
+
 
 /**
  * TimetableValidationPanel Component
@@ -41,7 +43,7 @@ const TimetableValidationPanel = ({ type = 'class', id, academicYear }) => {
         setError(response.message || 'Failed to fetch validation report');
       }
     } catch (err) {
-      console.error('Error fetching validation report:', err);
+      logger.error('Error fetching validation report:', err);
       setError(err.message || 'Failed to fetch validation report');
     } finally {
       setLoading(false);

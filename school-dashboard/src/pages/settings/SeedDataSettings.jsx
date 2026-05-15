@@ -122,10 +122,10 @@ export default function SeedDataSettings() {
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">
+          <h2 className="text-xl font-semibold text-fg">
             Generate Dummy Data
           </h2>
-          <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">
+          <p className="text-sm text-fg-muted mt-1">
             Populate your school with realistic sample data
           </p>
         </div>
@@ -147,12 +147,12 @@ export default function SeedDataSettings() {
                 return (
                   <div
                     key={cat}
-                    className="bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-200 dark:border-zinc-700"
+                    className="bg-surface rounded-lg p-4 border border-border-token"
                   >
-                    <p className="text-sm text-gray-500 dark:text-zinc-400">
+                    <p className="text-sm text-fg-muted">
                       {label}
                     </p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">
+                    <p className="text-2xl font-bold text-fg">
                       {count}
                     </p>
                     <p className="text-xs text-success-600 dark:text-success-400 mt-1">
@@ -180,10 +180,10 @@ export default function SeedDataSettings() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">
+        <h2 className="text-xl font-semibold text-fg">
           Generate Dummy Data
         </h2>
-        <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">
+        <p className="text-sm text-fg-muted mt-1">
           Populate your school with realistic sample data
         </p>
       </div>
@@ -223,7 +223,7 @@ export default function SeedDataSettings() {
               className={`border transition-all ${
                 isSelected
                   ? "border-primary-400 bg-primary-50/50 dark:bg-primary-900/20"
-                  : "border-gray-200 dark:border-zinc-700"
+                  : "border-border-token"
               }`}
             >
               <CardBody className="p-4">
@@ -236,12 +236,12 @@ export default function SeedDataSettings() {
                   />
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <Icon size={18} className="text-gray-600 dark:text-zinc-400" />
-                      <h4 className="font-medium text-gray-900 dark:text-zinc-100">
+                      <Icon size={18} className="text-fg-muted" />
+                      <h4 className="font-medium text-fg">
                         {cat.label}
                       </h4>
                     </div>
-                    <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">
+                    <p className="text-sm text-fg-muted mt-1">
                       {cat.description}
                     </p>
                     {cat.dependencyLabel && (
@@ -281,7 +281,7 @@ export default function SeedDataSettings() {
           <ModalHeader>Confirm Data Generation</ModalHeader>
           <ModalBody>
             <div className="space-y-4">
-              <p className="text-sm text-gray-600 dark:text-zinc-400">
+              <p className="text-sm text-fg-muted">
                 This will generate realistic dummy data for the selected categories.
               </p>
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
@@ -291,7 +291,7 @@ export default function SeedDataSettings() {
                 </p>
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2">
+                <p className="text-sm font-medium text-fg mb-2">
                   Selected categories:
                 </p>
                 <div className="flex flex-wrap gap-2">

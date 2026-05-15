@@ -23,6 +23,7 @@ export const announcementsApi = {
   send: (id) => request(`/announcements/${id}/send`, { method: 'POST' }),
   resend: (id, data) => request(`/announcements/${id}/resend`, { method: 'POST', body: JSON.stringify(data || {}) }),
   getAnalytics: (id) => request(`/announcements/${id}/analytics`),
+  getStats: () => request('/announcements/stats'),
 };
 
 // Reminders API
@@ -99,6 +100,7 @@ export const gatePassesApi = {
 export const frontDeskApi = {
   // Visitors — delegates to dedicated /visitors routes (with Zod validation)
   getVisitorsToday: () => request('/visitors/today').then((r) => r.data || []),
+  getVisitorsByDate: (date) => request(`/visitors?startDate=${date}&endDate=${date}`).then((r) => r.data || []),
   createVisitor: (data) => request('/visitors', { method: 'POST', body: JSON.stringify(data) }).then((r) => r.data),
   updateVisitor: (id, data) => request(`/visitors/${id}`, { method: 'PUT', body: JSON.stringify(data) }).then((r) => r.data),
   checkoutVisitor: (id, data = {}) => request(`/visitors/${id}/check-out`, { method: 'POST', body: JSON.stringify(data) }).then((r) => r.data),
@@ -117,6 +119,7 @@ export const frontDeskApi = {
 
   // Gate Passes — delegates to dedicated /gate-passes routes (with Zod validation)
   getGatePassesToday: () => request('/gate-passes/today').then((r) => r.data || []),
+  getGatePassesByDate: (date) => request(`/gate-passes?startDate=${date}&endDate=${date}`).then((r) => r.data || []),
   createGatePass: (data) => request('/gate-passes', { method: 'POST', body: JSON.stringify(data) }).then((r) => r.data),
   updateGatePass: (id, data) => request(`/gate-passes/${id}`, { method: 'PUT', body: JSON.stringify(data) }).then((r) => r.data),
   deleteGatePass: (id) => request(`/gate-passes/${id}`, { method: 'DELETE' }),

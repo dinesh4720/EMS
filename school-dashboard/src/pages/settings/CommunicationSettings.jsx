@@ -1,10 +1,13 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useEntityFetch } from "../../hooks/useEntityFetch";
 import { Card, CardBody, CardHeader, Input, Switch, Select, SelectItem, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Spinner, Divider } from "@heroui/react";
 import { Save, Plus, Edit, Search, X, MessageSquare, Mail } from "lucide-react";
 import { settingsApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+import logger from '../../utils/logger';
+
 
 // BUG-11: provider defaults to '' so user must explicitly choose — never assume Twilio
 // AUDIT-645: Never store raw secrets (apiKey, password) in React state — DevTools exposure risk.
@@ -48,7 +51,7 @@ export default function CommunicationSettings() {
         }
       })
       .catch((err) => {
-        console.error('Failed to load communication settings:', err);
+        logger.error('Failed to load communication settings:', err);
         toast.error(t('toast.error.failedToLoadCommunicationSettings'));
       })
       .finally(() => setLoadingSettings(false));
@@ -88,7 +91,7 @@ export default function CommunicationSettings() {
         setTemplates(merged);
       })
       .catch((err) => {
-        console.error('Failed to load templates:', err);
+        logger.error('Failed to load templates:', err);
         if (!cancelled) toast.error(t('toast.error.failedToLoadTemplates', 'Failed to load templates'));
       })
       .finally(() => { if (!cancelled) setLoadingTemplates(false); });
@@ -104,37 +107,10 @@ export default function CommunicationSettings() {
   }, [templates, searchQuery, typeFilter]);
 
   const ITEMS_PER_LOAD = 10;
-  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const loaderRef = useRef(null);
-
-  const visibleTemplates = useMemo(() =>
-    filteredTemplates.slice(0, visibleCount),
-    [filteredTemplates, visibleCount]
+  const { visibleItems: visibleTemplates, hasMore, isLoadingMore, loaderRef } = useEntityFetch(
+    filteredTemplates,
+    [searchQuery, typeFilter]
   );
-
-  const hasMore = visibleCount < filteredTemplates.length;
-
-  useEffect(() => {
-    setVisibleCount(ITEMS_PER_LOAD);
-  }, [searchQuery, typeFilter]);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
-          setIsLoadingMore(true);
-          setTimeout(() => {
-            setVisibleCount(prev => prev + ITEMS_PER_LOAD);
-            setIsLoadingMore(false);
-          }, 300);
-        }
-      },
-      { threshold: 0.1 }
-    );
-    if (loaderRef.current) observer.observe(loaderRef.current);
-    return () => observer.disconnect();
-  }, [hasMore, isLoadingMore]);
 
   const handleSave = async (section) => {
     setSaving(true);
@@ -142,10 +118,10 @@ export default function CommunicationSettings() {
       // AUDIT-645: Build payload — only include secret fields if user entered a new value
       const smsPayload = section === 'sms'
         ? { enabled: smsDraft.enabled, provider: smsDraft.provider, senderId: smsDraft.senderId, ...(smsDraft.apiKey ? { apiKey: smsDraft.apiKey } : {}) }
-        : { enabled: smsConfig.enabled, provider: smsConfig.provider, senderId: smsConfig.senderId };
+        : { enabled: smsConfig.enabled, provider: smsConfig.provider, senderId: smsConfig.senderId, ...(smsConfig.hasApiKey ? { apiKey: '••••••••' } : {}) };
       const emailPayload = section === 'email'
         ? { enabled: emailDraft.enabled, provider: emailDraft.provider, smtpHost: emailDraft.smtpHost, port: emailDraft.port, username: emailDraft.username, ...(emailDraft.password ? { password: emailDraft.password } : {}) }
-        : { enabled: emailConfig.enabled, provider: emailConfig.provider, smtpHost: emailConfig.smtpHost, port: emailConfig.port, username: emailConfig.username };
+        : { enabled: emailConfig.enabled, provider: emailConfig.provider, smtpHost: emailConfig.smtpHost, port: emailConfig.port, username: emailConfig.username, ...(emailConfig.hasPassword ? { password: '••••••••' } : {}) };
       const payload = { sms: smsPayload, email: emailPayload };
       const updated = await settingsApi.updateCommunicationSettings(payload);
       if (updated) {
@@ -181,8 +157,8 @@ export default function CommunicationSettings() {
           <Icon size={24} />
         </div>
         <div>
-          <h3 className="text-lg font-bold text-default-900">{title}</h3>
-          <p className="text-xs text-default-500">{description}</p>
+          <h3 className="text-lg font-bold text-fg">{title}</h3>
+          <p className="text-xs text-fg-muted">{description}</p>
         </div>
       </div>
       <div className="flex items-center gap-4">
@@ -234,16 +210,16 @@ export default function CommunicationSettings() {
   return (
     <div className="max-w-4xl mx-auto pb-10 space-y-8">
       {/* Unified Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-default-200 pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border-token pb-6">
         <div>
-          <h2 className="text-2xl font-bold text-default-900">{t('pages.communicationChannels')}</h2>
-          <p className="text-sm text-default-500 mt-1">{t('pages.configureSmsGatewaysAndEmailSmtpSettings')}</p>
+          <h2 className="text-2xl font-bold text-fg">{t('pages.communicationChannels')}</h2>
+          <p className="text-sm text-fg-muted mt-1">{t('pages.configureSmsGatewaysAndEmailSmtpSettings')}</p>
         </div>
       </div>
 
       <div className="space-y-8">
         {/* SMS Section */}
-        <section className={`rounded-xl border transition-all duration-300 ${editingSection === 'sms' ? 'border-primary ring-1 ring-primary bg-white dark:bg-zinc-950' : 'border-default-200 dark:border-zinc-800 bg-white dark:bg-zinc-950'}`}>
+        <section className={`rounded-xl border transition-all duration-300 ${editingSection === 'sms' ? 'border-primary ring-1 ring-primary bg-surface' : 'border-border-token bg-surface'}`}>
           <div className="p-6">
             <SectionHeader
               title={t('pages.sMSConfiguration')}
@@ -264,7 +240,7 @@ export default function CommunicationSettings() {
                       onSelectionChange={(keys) => setSmsDraft(prev => ({ ...prev, provider: Array.from(keys)[0] }))}
                       variant="bordered"
                       labelPlacement="outside"
-                      classNames={{ trigger: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }}
+                      classNames={{ trigger: "bg-surface border-border-token" }}
                     >
                       <SelectItem key="twilio">{t('pages.twilio')}</SelectItem>
                       <SelectItem key="msg91">{t('pages.mSG91')}</SelectItem>
@@ -277,7 +253,7 @@ export default function CommunicationSettings() {
                       onValueChange={(val) => setSmsDraft(prev => ({ ...prev, senderId: val }))}
                       variant="bordered"
                       labelPlacement="outside"
-                      classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }}
+                      classNames={{ inputWrapper: "bg-surface border-border-token" }}
                     />
                     <Input
                       label={t('pages.aPIKey')}
@@ -287,23 +263,23 @@ export default function CommunicationSettings() {
                       placeholder={smsConfig.hasApiKey ? 'Leave blank to keep current key' : t('pages.enterApiKey')}
                       variant="bordered"
                       labelPlacement="outside"
-                      classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }}
+                      classNames={{ inputWrapper: "bg-surface border-border-token" }}
                       className="md:col-span-2"
                     />
                   </>
                 ) : (
                   <>
                     <div className="space-y-1">
-                      <span className="text-xs font-semibold text-default-500 uppercase tracking-wider">{t('pages.sMSProvider')}</span>
-                      <p className="font-medium text-default-900 capitalize">{smsConfig.provider || '—'}</p>
+                      <span className="text-xs font-semibold text-fg-muted uppercase tracking-wider">{t('pages.sMSProvider')}</span>
+                      <p className="font-medium text-fg capitalize">{smsConfig.provider || '—'}</p>
                     </div>
                     <div className="space-y-1">
-                      <span className="text-xs font-semibold text-default-500 uppercase tracking-wider">{t('pages.senderId')}</span>
-                      <p className="font-medium text-default-900">{smsConfig.senderId || '—'}</p>
+                      <span className="text-xs font-semibold text-fg-muted uppercase tracking-wider">{t('pages.senderId')}</span>
+                      <p className="font-medium text-fg">{smsConfig.senderId || '—'}</p>
                     </div>
                     <div className="space-y-1 md:col-span-2">
-                      <span className="text-xs font-semibold text-default-500 uppercase tracking-wider">{t('pages.aPIKey')}</span>
-                      <p className="font-medium text-default-900">{smsConfig.hasApiKey ? '••••••••' : 'Not configured'}</p>
+                      <span className="text-xs font-semibold text-fg-muted uppercase tracking-wider">{t('pages.aPIKey')}</span>
+                      <p className="font-medium text-fg">{smsConfig.hasApiKey ? '••••••••' : 'Not configured'}</p>
                     </div>
                   </>
                 )}
@@ -317,14 +293,14 @@ export default function CommunicationSettings() {
                       {smsConfig.senderId ? `Sender: ${smsConfig.senderId}` : 'Add API key to enable SMS'}
                     </p>
                   </div>
-                  <button onClick={() => toast.error('SMS test not yet implemented')} className="px-4 py-2 bg-white dark:bg-zinc-900 text-success-700 dark:text-success-300 rounded-lg border border-success-200 dark:border-success-800 text-xs font-medium hover:bg-success-50 dark:hover:bg-success-950/50">
+                  <button onClick={() => toast.error('SMS test not yet implemented')} className="px-4 py-2 bg-surface text-success-700 dark:text-success-300 rounded-lg border border-success-200 dark:border-success-800 text-xs font-medium hover:bg-success-50 dark:hover:bg-success-950/50">
                     Test SMS
                   </button>
                 </div>
               </div>
             )}
             {!(editingSection === 'sms' ? smsDraft.enabled : smsConfig.enabled) && (
-              <div className="p-8 text-center text-default-400 bg-default-50 rounded-lg border border-dashed border-default-200">
+              <div className="p-8 text-center text-fg-faint bg-surface-2 rounded-lg border border-dashed border-border-token">
                 <p>{t('pages.sMSNotificationsAreCurrentlyDisabled')}</p>
               </div>
             )}
@@ -332,7 +308,7 @@ export default function CommunicationSettings() {
         </section>
 
         {/* Email Section */}
-        <section className={`rounded-xl border transition-all duration-300 ${editingSection === 'email' ? 'border-primary ring-1 ring-primary bg-white dark:bg-zinc-950' : 'border-default-200 dark:border-zinc-800 bg-white dark:bg-zinc-950'}`}>
+        <section className={`rounded-xl border transition-all duration-300 ${editingSection === 'email' ? 'border-primary ring-1 ring-primary bg-surface' : 'border-border-token bg-surface'}`}>
           <div className="p-6">
             <SectionHeader
               title={t('pages.emailConfiguration')}
@@ -353,7 +329,7 @@ export default function CommunicationSettings() {
                       onSelectionChange={(keys) => setEmailDraft(prev => ({ ...prev, provider: Array.from(keys)[0] }))}
                       variant="bordered"
                       labelPlacement="outside"
-                      classNames={{ trigger: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }}
+                      classNames={{ trigger: "bg-surface border-border-token" }}
                       className="md:col-span-2"
                     >
                       <SelectItem key="smtp">{t('pages.sMTP')}</SelectItem>
@@ -367,7 +343,7 @@ export default function CommunicationSettings() {
                       onValueChange={(val) => setEmailDraft(prev => ({ ...prev, smtpHost: val }))}
                       variant="bordered"
                       labelPlacement="outside"
-                      classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }}
+                      classNames={{ inputWrapper: "bg-surface border-border-token" }}
                     />
                     <Input
                       label={t('pages.port')}
@@ -376,7 +352,7 @@ export default function CommunicationSettings() {
                       onValueChange={(val) => setEmailDraft(prev => ({ ...prev, port: val }))}
                       variant="bordered"
                       labelPlacement="outside"
-                      classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }}
+                      classNames={{ inputWrapper: "bg-surface border-border-token" }}
                     />
                     <Input
                       label="Username/Email"
@@ -385,7 +361,7 @@ export default function CommunicationSettings() {
                       onValueChange={(val) => setEmailDraft(prev => ({ ...prev, username: val }))}
                       variant="bordered"
                       labelPlacement="outside"
-                      classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }}
+                      classNames={{ inputWrapper: "bg-surface border-border-token" }}
                     />
                     <Input
                       label={t('pages.password')}
@@ -395,30 +371,30 @@ export default function CommunicationSettings() {
                       onValueChange={(val) => setEmailDraft(prev => ({ ...prev, password: val }))}
                       variant="bordered"
                       labelPlacement="outside"
-                      classNames={{ inputWrapper: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800" }}
+                      classNames={{ inputWrapper: "bg-surface border-border-token" }}
                     />
                   </>
                 ) : (
                   <>
                     <div className="space-y-1 md:col-span-2">
-                      <span className="text-xs font-semibold text-default-500 uppercase tracking-wider">{t('pages.emailProvider')}</span>
-                      <p className="font-medium text-default-900 capitalize">{emailConfig.provider || '—'}</p>
+                      <span className="text-xs font-semibold text-fg-muted uppercase tracking-wider">{t('pages.emailProvider')}</span>
+                      <p className="font-medium text-fg capitalize">{emailConfig.provider || '—'}</p>
                     </div>
                     <div className="space-y-1">
-                      <span className="text-xs font-semibold text-default-500 uppercase tracking-wider">{t('pages.sMTPHost')}</span>
-                      <p className="font-medium text-default-900">{emailConfig.smtpHost || '—'}</p>
+                      <span className="text-xs font-semibold text-fg-muted uppercase tracking-wider">{t('pages.sMTPHost')}</span>
+                      <p className="font-medium text-fg">{emailConfig.smtpHost || '—'}</p>
                     </div>
                     <div className="space-y-1">
-                      <span className="text-xs font-semibold text-default-500 uppercase tracking-wider">{t('pages.port')}</span>
-                      <p className="font-medium text-default-900">{emailConfig.port || '—'}</p>
+                      <span className="text-xs font-semibold text-fg-muted uppercase tracking-wider">{t('pages.port')}</span>
+                      <p className="font-medium text-fg">{emailConfig.port || '—'}</p>
                     </div>
                     <div className="space-y-1">
-                      <span className="text-xs font-semibold text-default-500 uppercase tracking-wider">{t('pages.username')}</span>
-                      <p className="font-medium text-default-900">{emailConfig.username || '—'}</p>
+                      <span className="text-xs font-semibold text-fg-muted uppercase tracking-wider">{t('pages.username')}</span>
+                      <p className="font-medium text-fg">{emailConfig.username || '—'}</p>
                     </div>
                     <div className="space-y-1">
-                      <span className="text-xs font-semibold text-default-500 uppercase tracking-wider">{t('pages.password')}</span>
-                      <p className="font-medium text-default-900">{emailConfig.hasPassword ? '••••••••' : 'Not configured'}</p>
+                      <span className="text-xs font-semibold text-fg-muted uppercase tracking-wider">{t('pages.password')}</span>
+                      <p className="font-medium text-fg">{emailConfig.hasPassword ? '••••••••' : 'Not configured'}</p>
                     </div>
                   </>
                 )}
@@ -431,7 +407,7 @@ export default function CommunicationSettings() {
               </div>
             )}
             {!(editingSection === 'email' ? emailDraft.enabled : emailConfig.enabled) && (
-              <div className="p-8 text-center text-default-400 bg-default-50 rounded-lg border border-dashed border-default-200">
+              <div className="p-8 text-center text-fg-faint bg-surface-2 rounded-lg border border-dashed border-border-token">
                 <p>{t('pages.emailNotificationsAreCurrentlyDisabled')}</p>
               </div>
             )}
@@ -448,8 +424,8 @@ export default function CommunicationSettings() {
                 <Edit size={24} />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-default-900">{t('pages.messageTemplates')}</h3>
-                <p className="text-xs text-default-500">{t('pages.manageSmsAndEmailTemplates')}</p>
+                <h3 className="text-lg font-bold text-fg">{t('pages.messageTemplates')}</h3>
+                <p className="text-xs text-fg-muted">{t('pages.manageSmsAndEmailTemplates')}</p>
               </div>
             </div>
             <button onClick={() => toast('Template creation coming soon')} className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-xs font-medium hover:bg-primary-600 transition-colors shadow-sm">
@@ -458,22 +434,22 @@ export default function CommunicationSettings() {
             </button>
           </div>
 
-          <div className="bg-white dark:bg-zinc-950 border border-default-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm dark:shadow-zinc-900/50">
+          <div className="bg-surface border border-border-token rounded-xl overflow-hidden shadow-sm dark:shadow-zinc-900/50">
             {/* Toolbar */}
-            <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-default-50/50 border-b border-default-200 dark:border-zinc-800 py-4 px-6">
+            <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-surface-2/50 border-b border-border-token py-4 px-6">
               <div className="w-full sm:w-auto">
-                <div className="flex items-center gap-2 w-full sm:max-w-[250px] px-3 py-2 bg-white dark:bg-zinc-900 rounded-lg border border-default-200 dark:border-zinc-800 hover:border-primary focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200">
-                  <Search size={16} className="text-default-400" />
+                <div className="flex items-center gap-2 w-full sm:max-w-[250px] px-3 py-2 bg-surface rounded-lg border border-border-token hover:border-primary focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200">
+                  <Search size={16} className="text-fg-faint" />
                   <input
                     type="text"
                     placeholder={t('pages.searchTemplates')}
-                    className="flex-1 bg-transparent outline-none text-sm text-default-900"
+                    className="flex-1 bg-transparent outline-none text-sm text-fg"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                   {searchQuery && (
-                    <button onClick={() => setSearchQuery("")} className="p-0.5 hover:bg-default-200 rounded cursor-pointer">
-                      <X size={14} className="text-default-400" />
+                    <button onClick={() => setSearchQuery("")} className="p-0.5 hover:bg-surface-2 rounded cursor-pointer">
+                      <X size={14} className="text-fg-faint" />
                     </button>
                   )}
                 </div>
@@ -488,7 +464,7 @@ export default function CommunicationSettings() {
                   className="w-full sm:w-[140px]"
                   variant="bordered"
                   classNames={{
-                    trigger: "bg-white dark:bg-zinc-950 border-default-200 dark:border-zinc-800",
+                    trigger: "bg-surface border-border-token",
                   }}
                 >
                   <SelectItem key="all">{t('pages.allTypes1')}</SelectItem>
@@ -506,8 +482,8 @@ export default function CommunicationSettings() {
               classNames={{
                 base: "overflow-visible [&_table]:border-spacing-0",
                 thead: "[&>tr]:first:shadow-none",
-                th: "bg-default-50 text-default-500 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200",
-                td: "py-4 border-b border-default-200",
+                th: "bg-surface-2 text-fg-muted font-medium text-xs uppercase tracking-wider h-12 border-b border-border-token",
+                td: "py-4 border-b border-border-token",
                 tbody: "[&>tr:last-child>td]:border-none"
               }}
             >
@@ -522,14 +498,14 @@ export default function CommunicationSettings() {
                 loadingContent={<Spinner size="sm" color="primary" />}
                 emptyContent={
                   <div className="text-center py-12">
-                    <p className="text-default-400 text-sm">{t('pages.noTemplatesFoundMatchingYourSearch')}</p>
+                    <p className="text-fg-faint text-sm">{t('pages.noTemplatesFoundMatchingYourSearch')}</p>
                   </div>
                 }
               >
                 {visibleTemplates.map((tmpl) => (
                   <TableRow key={tmpl.id}>
                     <TableCell>
-                      <span className="text-default-900 font-medium text-sm">{tmpl.name}</span>
+                      <span className="text-fg font-medium text-sm">{tmpl.name}</span>
                     </TableCell>
                     <TableCell>
                       <Chip
@@ -542,13 +518,13 @@ export default function CommunicationSettings() {
                       </Chip>
                     </TableCell>
                     <TableCell>
-                      <span className="text-xs text-default-600 font-mono bg-default-50 px-2 py-1 rounded-md border border-default-200 inline-block max-w-[200px] truncate">
+                      <span className="text-xs text-fg-muted font-mono bg-surface-2 px-2 py-1 rounded-md border border-border-token inline-block max-w-[200px] truncate">
                         {tmpl.variables}
                       </span>
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">
-                        <button onClick={() => toast('Template editing coming soon')} className="p-2 bg-transparent rounded-lg border border-transparent hover:border-primary hover:bg-primary-50 dark:hover:bg-primary-950/30 transition-all duration-200 cursor-pointer text-default-400 hover:text-primary">
+                        <button onClick={() => toast('Template editing coming soon')} className="p-2 bg-transparent rounded-lg border border-transparent hover:border-primary hover:bg-primary-50 dark:hover:bg-primary-950/30 transition-all duration-200 cursor-pointer text-fg-faint hover:text-primary">
                           <Edit size={16} />
                         </button>
                       </div>
@@ -559,17 +535,17 @@ export default function CommunicationSettings() {
             </Table>
 
             {/* Lazy loading indicator */}
-            <div ref={loaderRef} className="flex justify-center py-4 bg-default-50/30">
+            <div ref={loaderRef} className="flex justify-center py-4 bg-surface-2/30">
               {isLoadingMore && <Spinner size="sm" color="primary" />}
               {!hasMore && filteredTemplates.length > ITEMS_PER_LOAD && (
-                <span className="text-default-400 text-xs">{t('pages.allTemplatesLoaded')}</span>
+                <span className="text-fg-faint text-xs">{t('pages.allTemplatesLoaded')}</span>
               )}
             </div>
           </div>
 
           {/* Variables Helper */}
-          <div className="mt-8 p-6 bg-default-50 dark:bg-zinc-900/50 rounded-xl border border-default-200 dark:border-zinc-800 border-dashed">
-            <h4 className="text-sm font-semibold text-default-700 mb-4 flex items-center gap-2">
+          <div className="mt-8 p-6 bg-surface-2 rounded-xl border border-border-token border-dashed">
+            <h4 className="text-sm font-semibold text-fg mb-4 flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-primary/50"></span>
               Available Variables
             </h4>
@@ -579,14 +555,14 @@ export default function CommunicationSettings() {
                   key={`variable-${v}`}
                   size="sm"
                   variant="flat"
-                  className="cursor-pointer hover:bg-white dark:hover:bg-zinc-800 hover:shadow-sm transition-all border border-transparent hover:border-default-200/50"
-                  classNames={{ base: "h-7 bg-white dark:bg-zinc-800 shadow-sm dark:shadow-zinc-900/50 border border-default-200 dark:border-zinc-700", content: "text-xs font-mono font-medium text-default-700" }}
+                  className="cursor-pointer hover:bg-surface -2 hover:shadow-sm transition-all border border-transparent hover:border-border-token"
+                  classNames={{ base: "h-7 bg-surface shadow-sm dark:shadow-zinc-900/50 border border-border-token ", content: "text-xs font-mono font-medium text-fg" }}
                 >
                   {v}
                 </Chip>
               ))}
             </div>
-            <p className="text-xs text-default-500">
+            <p className="text-xs text-fg-muted">
               These variables can be used in your SMS and Email templates. They are dynamically replaced with actual data when sending.
             </p>
           </div>

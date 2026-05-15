@@ -11,39 +11,46 @@ const PageHeader = memo(function PageHeader({
   breadcrumb,
   className,
   size = "md",
+  bordered = true,
 }) {
   const sizeStyles = {
     sm: {
       title: "text-lg",
       description: "text-xs",
-      padding: "py-3 px-4",
+      padding: bordered ? "py-3 px-4" : "",
     },
     md: {
       title: "text-xl",
       description: "text-sm",
-      padding: "py-5 px-6",
+      padding: bordered ? "py-5 px-6" : "",
     },
     lg: {
       title: "text-2xl",
       description: "text-base",
-      padding: "py-6 px-6",
+      padding: bordered ? "py-6 px-6" : "",
     },
   };
 
   const styles = sizeStyles[size];
 
   return (
-    <div className={cn("border-b border-gray-100 dark:border-zinc-800", styles.padding, className)}>
+    <div
+      className={cn(
+        bordered && "border-b border-divider",
+        styles.padding,
+        className
+      )}
+    >
       {breadcrumb && (
         <div className="mb-2">{breadcrumb}</div>
       )}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className={cn("font-medium text-gray-900 dark:text-zinc-100", styles.title)}>
+          <h1 className={cn("font-medium text-fg", styles.title)}>
             {title}
           </h1>
           {description && (
-            <p className={cn("text-gray-500 dark:text-zinc-400 mt-1", styles.description)}>
+            <p className={cn("text-fg-muted mt-1", styles.description)}>
               {description}
             </p>
           )}

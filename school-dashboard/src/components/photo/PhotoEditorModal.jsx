@@ -5,6 +5,8 @@ import { RotateCw, RotateCcw, ZoomIn, ZoomOut, FlipHorizontal, FlipVertical, Che
 import getCroppedImg from "../../utils/canvasUtils";
 import { useApp } from "../../context/AppContext";
 import { useTranslation } from 'react-i18next';
+import logger from '../../utils/logger';
+
 
 const PhotoEditorModal = ({ isOpen, onClose, imageSrc, onSave }) => {
   const { t } = useTranslation();
@@ -43,7 +45,7 @@ const PhotoEditorModal = ({ isOpen, onClose, imageSrc, onSave }) => {
             onSave(croppedImage);
             onClose();
         } catch (e) {
-            console.error('❌ Error saving photo:', e);
+            logger.error('❌ Error saving photo:', e);
         } finally {
             setLoading(false);
         }
@@ -141,12 +143,12 @@ const PhotoEditorModal = ({ isOpen, onClose, imageSrc, onSave }) => {
                                 {/* Buttons Row */}
                                 <div className="flex flex-wrap items-center justify-center gap-4 py-2">
                                     <Tooltip content="Rotate -90°">
-                                        <Button isIconOnly variant="flat" onPress={() => setRotation((r) => r - 90)}>
+                                        <Button isIconOnly variant="flat" aria-label="Rotate -90°" onPress={() => setRotation((r) => r - 90)}>
                                             <RotateCcw size={20} />
                                         </Button>
                                     </Tooltip>
                                     <Tooltip content="Rotate +90°">
-                                        <Button isIconOnly variant="flat" onPress={() => setRotation((r) => r + 90)}>
+                                        <Button isIconOnly variant="flat" aria-label="Rotate +90°" onPress={() => setRotation((r) => r + 90)}>
                                             <RotateCw size={20} />
                                         </Button>
                                     </Tooltip>
@@ -155,6 +157,7 @@ const PhotoEditorModal = ({ isOpen, onClose, imageSrc, onSave }) => {
                                         <Button
                                             isIconOnly
                                             variant="flat"
+                                            aria-label="Flip horizontal"
                                             className={flip.horizontal ? "bg-primary-100 dark:bg-primary-900/40 text-primary" : ""}
                                             onPress={() => setFlip(prev => ({ ...prev, horizontal: !prev.horizontal }))}
                                         >
@@ -165,6 +168,7 @@ const PhotoEditorModal = ({ isOpen, onClose, imageSrc, onSave }) => {
                                         <Button
                                             isIconOnly
                                             variant="flat"
+                                            aria-label="Flip vertical"
                                             className={flip.vertical ? "bg-primary-100 dark:bg-primary-900/40 text-primary" : ""}
                                             onPress={() => setFlip(prev => ({ ...prev, vertical: !prev.vertical }))}
                                         >

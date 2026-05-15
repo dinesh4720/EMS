@@ -88,15 +88,20 @@ export const validateRequired = (data, requiredFields) => {
  */
 export const validateFutureDate = (dateTime) => {
   if (!dateTime) return true;
-  // FIX: Use local date comparison to avoid timezone issues
-  // Parse the input date and strip time component for fair comparison
-  const inputDate = new Date(dateTime);
+  // Parse YYYY-MM-DD as local-day to avoid the UTC-midnight off-by-one
+  // (e.g. "2026-05-05" should be today even when the user's clock is past
+  // 18:30 IST and JS parses the bare string as 2026-05-05T00:00:00Z).
   const today = new Date();
-
-  // Reset both dates to midnight for fair comparison
-  inputDate.setHours(0, 0, 0, 0);
   today.setHours(0, 0, 0, 0);
 
+  let inputDate;
+  if (typeof dateTime === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dateTime)) {
+    const [y, m, d] = dateTime.split("-").map(Number);
+    inputDate = new Date(y, m - 1, d);
+  } else {
+    inputDate = new Date(dateTime);
+    inputDate.setHours(0, 0, 0, 0);
+  }
   return inputDate >= today;
 };
 

@@ -1,0 +1,173 @@
+/* ============================================================
+   Command palette (Cmd+K) — REVAMP-04
+   Centered frosted-glass card matching AddStaffComposer overlay.
+   Selectors mirror the design system: .cmdk-overlay / .cmdk /
+   .cmdk__input / .cmdk__group / .cmdk__item / .cmdk__hint.
+   ============================================================ */
+
+.cmdk-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(15, 15, 20, 0.32);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 12vh 24px 24px;
+  /* NO animation on the overlay — keeps the child's backdrop-filter
+     blur compositing path active on Chrome (see create.css notes). */
+}
+[data-theme="dark"] .cmdk-overlay,
+.dark .cmdk-overlay {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.cmdk {
+  width: min(560px, 100%);
+  max-height: min(560px, calc(100vh - 16vh));
+  border-radius: 14px;
+  box-shadow: var(--shadow-glass);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: cmdk-in 200ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.cmdk > [cmdk-root] {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+@keyframes cmdk-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.99); }
+  to   { opacity: 1; transform: none; }
+}
+
+.cmdk__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--divider);
+  flex-shrink: 0;
+}
+
+.cmdk__input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  color: var(--fg);
+  letter-spacing: -0.005em;
+}
+.cmdk__input::placeholder { color: var(--fg-subtle); }
+
+.cmdk__list {
+  overflow-y: auto;
+  padding: 6px;
+  flex: 1;
+  min-height: 0;
+  scrollbar-width: thin;
+}
+
+.cmdk__empty {
+  padding: 28px 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--fg-subtle);
+}
+
+/* Group heading (cmdk renders heading inside [cmdk-group-heading]).
+   Uses the same compact uppercase label as the sidebar/composer nav. */
+.cmdk [cmdk-group-heading] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 10px 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-faint);
+}
+
+.cmdk__group-count {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--fg-faint);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.cmdk__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--fg-muted);
+  cursor: pointer;
+  user-select: none;
+  transition: background 80ms, color 80ms;
+}
+.cmdk__item:hover,
+.cmdk__item[data-selected="true"] {
+  background: var(--surface-hover);
+  color: var(--fg);
+}
+.cmdk__item[data-selected="true"] .cmdk__hint { opacity: 1; }
+
+.cmdk__item-icon {
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  color: var(--fg-faint);
+  flex-shrink: 0;
+}
+.cmdk__item[data-selected="true"] .cmdk__item-icon { color: var(--fg-muted); }
+
+.cmdk__item-label { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.cmdk__item-sub {
+  font-size: 11px;
+  color: var(--fg-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.cmdk__hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 80ms;
+  margin-left: 4px;
+}
+
+.cmdk__foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 36px;
+  padding: 0 12px;
+  border-top: 1px solid var(--divider);
+  background: var(--surface-2);
+  font-size: 11px;
+  color: var(--fg-subtle);
+  flex-shrink: 0;
+}
+.cmdk__foot-item { display: inline-flex; align-items: center; gap: 4px; }
+.cmdk__foot-spacer { flex: 1; }
+
+@media (max-width: 480px) {
+  .cmdk-overlay { padding: 8vh 12px 12px; }
+  .cmdk { max-height: calc(100vh - 12vh); }
+  .cmdk__foot { display: none; }
+}

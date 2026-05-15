@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { createPortal } from "react-dom";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ImageOff } from "lucide-react";
 import { useTranslation } from 'react-i18next';
+import ModalBase from "../ui/ModalBase";
 
 /**
  * PhotoModal - A beautiful, accessible modal for viewing full-size photos
@@ -11,17 +11,17 @@ import { useTranslation } from 'react-i18next';
  * - Smooth fade-in/scale animations using framer-motion
  * - Backdrop blur effect
  * - Close on: backdrop click, Escape key, close button
- * - Keyboard navigation (Escape to close)
+ * - Focus trapped within the modal (Tab/Shift+Tab cycle through modal elements only)
  * - Loading state while image loads
  * - Error state if image fails to load
  * - Responsive sizing with max constraints
  * - Full accessibility support (aria-labels, roles, focus management)
  */
-export default function PhotoModal({
-  isOpen, onClose, src, alt = "Photo" }) {
+export default function PhotoModal({ isOpen, onClose, src, alt = "Photo" }) {
   const { t } = useTranslation();
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const titleId = useRef("photo-modal-title");
 
   // Reset image state when src changes or modal opens
   useEffect(() => {
@@ -31,64 +31,31 @@ export default function PhotoModal({
     }
   }, [isOpen, src]);
 
-  // Use ref to track latest isOpen/onClose without recreating the handler
-  const isOpenRef = useRef(isOpen);
-  const onCloseRef = useRef(onClose);
-  const handleEscapeRef = useRef(null);
-
-  // Keep refs in sync
-  useEffect(() => {
-    isOpenRef.current = isOpen;
-    onCloseRef.current = onClose;
-  }, [isOpen, onClose]);
-
-  // Handle Escape key press - stable reference
-  const handleEscape = useCallback((e) => {
-    if (e.key === "Escape" && isOpenRef.current) {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-      onCloseRef.current();
-    }
-  }, []); // Empty deps - function never changes
-
-  // Store the latest handleEscape
-  handleEscapeRef.current = handleEscape;
-
-  // Set up keyboard listener - use capture phase to ensure it runs first
-  useEffect(() => {
-    if (!isOpen) return;
-
-    document.addEventListener("keydown", handleEscape, true); // true = capture phase
-    // Prevent body scroll when modal is open - save original to restore later
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.removeEventListener("keydown", handleEscape, true);
-      document.body.style.overflow = originalOverflow;
-    };
-  }, [isOpen, handleEscape]);
-
-  // Handle backdrop click
+  // Handle backdrop click (only fires when clicking the backdrop div itself)
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) {
       onClose();
     }
   };
 
-  const modalContent = (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {/* Backdrop */}
+  return (
+    <ModalBase
+      isOpen={isOpen}
+      onClose={onClose}
+      labelledBy={alt && alt !== "Photo" ? titleId.current : undefined}
+      portalId="photo-modal-root"
+      className="fixed inset-0 z-[99999]"
+    >
+      <AnimatePresence>
+        {isOpen && (
+          /* Backdrop */
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={handleBackdropClick}
-            className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+            className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
             role="presentation"
           >
             {/* Modal Content */}
@@ -96,20 +63,15 @@ export default function PhotoModal({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              transition={{
-                duration: 0.3,
-                ease: [0.4, 0, 0.2, 1]
-              }}
+              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
               className="relative max-w-5xl w-full"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="photo-modal-title"
+              onClick={(e) => e.stopPropagation()}
             >
               {/* Close Button */}
               <button
                 onClick={onClose}
                 className="absolute -top-12 right-0 p-2 text-white/90 hover:text-white transition-colors rounded-lg hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/50"
-                aria-label={t('aria.buttons.closePhotoModal')}
+                aria-label={t('aria.buttons.closePhotoModal', 'Close photo')}
               >
                 <X size={28} strokeWidth={2} />
               </button>
@@ -148,10 +110,10 @@ export default function PhotoModal({
                   />
                 )}
 
-                {/* Photo Title/Alt Text (Optional) */}
+                {/* Photo Title/Alt Text */}
                 {alt && alt !== "Photo" && (
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
-                    <p id="photo-modal-title" className="text-white text-sm font-medium">
+                    <p id={titleId.current} className="text-white text-sm font-medium">
                       {alt}
                     </p>
                   </div>
@@ -164,22 +126,8 @@ export default function PhotoModal({
               </div>
             </motion.div>
           </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+        )}
+      </AnimatePresence>
+    </ModalBase>
   );
-
-  // Use a dedicated portal container to avoid bypassing React's control of document.body
-  const portalContainer = useRef(null);
-  if (!portalContainer.current) {
-    let el = document.getElementById("photo-modal-root");
-    if (!el) {
-      el = document.createElement("div");
-      el.id = "photo-modal-root";
-      document.body.appendChild(el);
-    }
-    portalContainer.current = el;
-  }
-
-  return createPortal(modalContent, portalContainer.current);
 }

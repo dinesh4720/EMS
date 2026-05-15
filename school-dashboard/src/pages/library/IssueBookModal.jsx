@@ -8,7 +8,7 @@ import { studentsApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 
-export default function IssueBookModal({ isOpen, onClose, onSaved }) {
+export default function IssueBookModal({ isOpen, onClose, onSaved, book: preselectedBook }) {
   const { t } = useTranslation();
   const [form, setForm] = useState({ bookId: "", studentId: "", dueDate: "", notes: "" });
   const [saving, setSaving] = useState(false);
@@ -16,16 +16,19 @@ export default function IssueBookModal({ isOpen, onClose, onSaved }) {
   const [students, setStudents] = useState([]);
   const [bookSearch, setBookSearch] = useState("");
   const [studentSearch, setStudentSearch] = useState("");
+  // Persist the selected student object so the input doesn't blank out after selection
+  const [selectedStudentObj, setSelectedStudentObj] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
-      setForm({ bookId: "", studentId: "", dueDate: defaultDueDate(), notes: "" });
+      setForm({ bookId: preselectedBook?._id || "", studentId: "", dueDate: defaultDueDate(), notes: "" });
       setBookSearch("");
       setStudentSearch("");
-      fetchBooks();
+      setSelectedStudentObj(null);
+      if (!preselectedBook) fetchBooks();
       fetchStudents();
     }
-  }, [isOpen]);
+  }, [isOpen, preselectedBook?._id]);
 
   function defaultDueDate() {
     const d = new Date();
@@ -60,7 +63,6 @@ export default function IssueBookModal({ isOpen, onClose, onSaved }) {
   }, [studentSearch]);
 
   const selectedBook = books.find((b) => b._id === form.bookId);
-  const selectedStudent = students.find((s) => s._id === form.studentId);
 
   const handleSubmit = async (e) => {
     e?.preventDefault?.();
@@ -93,50 +95,60 @@ export default function IssueBookModal({ isOpen, onClose, onSaved }) {
         <ModalBody className="gap-4">
           {/* Book selector */}
           <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1 block">Book *</label>
-            <Input
-              placeholder={t('pages.searchBooksByTitleOrIsbn')}
-              value={selectedBook ? `${selectedBook.title} (${selectedBook.isbn || "No ISBN"})` : bookSearch}
-              onValueChange={(v) => { setBookSearch(v); setForm((f) => ({ ...f, bookId: "" })); }}
-              onFocus={() => { if (form.bookId) { setBookSearch(""); setForm((f) => ({ ...f, bookId: "" })); } }}
-              size="sm"
-            />
-            {!form.bookId && books.length > 0 && bookSearch && (
-              <div className="border border-gray-200 dark:border-zinc-700 rounded-lg mt-1 max-h-40 overflow-y-auto bg-white dark:bg-zinc-900">
-                {books.map((b) => (
-                  <button
-                    key={b._id}
-                    onClick={() => { setForm((f) => ({ ...f, bookId: b._id })); setBookSearch(""); }}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
-                  >
-                    <span className="font-medium text-gray-900 dark:text-zinc-100">{b.title}</span>
-                    <span className="text-gray-500 dark:text-zinc-400 ml-2">({b.availableCopies || 0} available)</span>
-                  </button>
-                ))}
-              </div>
+            <label className="text-sm font-medium text-fg mb-1 block">Book *</label>
+            {preselectedBook ? (
+              <Input
+                value={`${preselectedBook.title} (${preselectedBook.isbn || "No ISBN"})`}
+                isReadOnly
+                size="sm"
+              />
+            ) : (
+              <>
+                <Input
+                  placeholder={t('pages.searchBooksByTitleOrIsbn')}
+                  value={selectedBook ? `${selectedBook.title} (${selectedBook.isbn || "No ISBN"})` : bookSearch}
+                  onValueChange={(v) => { setBookSearch(v); setForm((f) => ({ ...f, bookId: "" })); }}
+                  onFocus={() => { if (form.bookId) { setBookSearch(""); setForm((f) => ({ ...f, bookId: "" })); } }}
+                  size="sm"
+                />
+                {!form.bookId && books.length > 0 && bookSearch && (
+                  <div className="border border-border-token rounded-lg mt-1 max-h-40 overflow-y-auto bg-surface">
+                    {books.map((b) => (
+                      <button
+                        key={b._id}
+                        onClick={() => { setForm((f) => ({ ...f, bookId: b._id })); setBookSearch(""); }}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-surface-2 transition-colors"
+                      >
+                        <span className="font-medium text-fg">{b.title}</span>
+                        <span className="text-fg-muted ml-2">({b.availableCopies || 0} available)</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
 
           {/* Student selector */}
           <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1 block">Student *</label>
+            <label className="text-sm font-medium text-fg mb-1 block">Student *</label>
             <Input
               placeholder={t('pages.searchStudentsByNameOrAdmissionNo')}
-              value={selectedStudent ? `${selectedStudent.name} (${selectedStudent.admissionNo || ""})` : studentSearch}
-              onValueChange={(v) => { setStudentSearch(v); setForm((f) => ({ ...f, studentId: "" })); }}
-              onFocus={() => { if (form.studentId) { setStudentSearch(""); setForm((f) => ({ ...f, studentId: "" })); } }}
+              value={selectedStudentObj ? `${selectedStudentObj.name} (${selectedStudentObj.admissionNo || ""})` : studentSearch}
+              onValueChange={(v) => { setStudentSearch(v); setSelectedStudentObj(null); setForm((f) => ({ ...f, studentId: "" })); }}
+              onFocus={() => { if (form.studentId) { setStudentSearch(""); setSelectedStudentObj(null); setForm((f) => ({ ...f, studentId: "" })); } }}
               size="sm"
             />
             {!form.studentId && students.length > 0 && studentSearch && (
-              <div className="border border-gray-200 dark:border-zinc-700 rounded-lg mt-1 max-h-40 overflow-y-auto bg-white dark:bg-zinc-900">
+              <div className="border border-border-token rounded-lg mt-1 max-h-40 overflow-y-auto bg-surface">
                 {students.map((s) => (
                   <button
                     key={s._id}
-                    onClick={() => { setForm((f) => ({ ...f, studentId: s._id })); setStudentSearch(""); }}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
+                    onClick={() => { setSelectedStudentObj(s); setForm((f) => ({ ...f, studentId: s._id })); setStudentSearch(""); }}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-surface-2 transition-colors"
                   >
-                    <span className="font-medium text-gray-900 dark:text-zinc-100">{s.name}</span>
-                    <span className="text-gray-500 dark:text-zinc-400 ml-2">{s.admissionNo || ""}</span>
+                    <span className="font-medium text-fg">{s.name}</span>
+                    <span className="text-fg-muted ml-2">{s.admissionNo || ""}</span>
                   </button>
                 ))}
               </div>
@@ -161,7 +173,7 @@ export default function IssueBookModal({ isOpen, onClose, onSaved }) {
         </ModalBody>
         <ModalFooter>
           <Button variant="flat" onPress={onClose}>{t('pages.cancel2')}</Button>
-          <Button className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900" isLoading={saving} onPress={handleSubmit}>
+          <Button color="primary" isLoading={saving} onPress={handleSubmit}>
             Issue Book
           </Button>
         </ModalFooter>

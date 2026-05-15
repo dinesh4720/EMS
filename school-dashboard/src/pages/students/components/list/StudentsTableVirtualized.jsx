@@ -2,7 +2,7 @@ import React from "react";
 import {
     Button, Checkbox,
 } from "@heroui/react";
-import { ArrowUpDown } from "lucide-react";
+import { ChevronUp, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useStudentsTableActions } from "./StudentsTableContext";
@@ -60,6 +60,10 @@ function StudentsTableVirtualized({
 
     // ── Empty state context ────────────────────────────────────────────
     hasActiveFilters = false,
+
+    // ── Phase 5b · frosted student overlay ─────────────────────────────
+    openStudent,
+    activeStudentId,
 }) {
     const { t } = useTranslation();
     const navigate = useNavigate();
@@ -97,17 +101,15 @@ function StudentsTableVirtualized({
                 <thead className="sticky top-0 z-30">
                     <tr>
                         {/* Select-all checkbox */}
-                        <th className="bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-700 text-center w-12 min-w-12">
+                        <th className="bg-surface border-b border-border-token text-center w-12 min-w-12">
                             <Checkbox
                                 size="md"
                                 classNames={{ base: "p-0 m-0", wrapper: "m-0" }}
                                 isSelected={
-                                    selectedKeys === "all" ||
-                                    (selectedKeys.size > 0 &&
-                                        selectedKeys.size === filteredItems.length)
+                                    filteredItems.length > 0 &&
+                                    selectedKeys.size === filteredItems.length
                                 }
                                 isIndeterminate={
-                                    selectedKeys !== "all" &&
                                     selectedKeys.size > 0 &&
                                     selectedKeys.size < filteredItems.length
                                 }
@@ -126,7 +128,7 @@ function StudentsTableVirtualized({
 
                         {/* Student name (sticky left) */}
                         <th
-                            className="bg-white dark:bg-zinc-900 text-gray-500 dark:text-zinc-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-gray-200 dark:border-zinc-700 select-none pl-3 pr-3 sticky left-0 z-20 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800/50 w-[40%] lg:w-[220px]"
+                            className="bg-surface text-fg-muted font-medium text-xs uppercase tracking-wider h-12 border-b border-border-token select-none pl-3 pr-3 sticky left-0 z-20 cursor-pointer hover:bg-surface-2/50 w-[40%] lg:w-[220px]"
                             onClick={() =>
                                 setSortDescriptor((prev) => ({
                                     column: "name",
@@ -140,7 +142,9 @@ function StudentsTableVirtualized({
                             <div className="flex items-center gap-1">
                                 STUDENT
                                 {sortDescriptor.column === "name" && (
-                                    <ArrowUpDown size={12} className="text-gray-400 dark:text-zinc-500" />
+                                    sortDescriptor.direction === "ascending"
+                                        ? <ChevronUp size={12} className="text-fg-faint" />
+                                        : <ChevronDown size={12} className="text-fg-faint" />
                                 )}
                             </div>
                         </th>
@@ -151,9 +155,9 @@ function StudentsTableVirtualized({
                             .map((column) => (
                                 <th
                                     key={column.key}
-                                    className={`bg-white dark:bg-zinc-900 text-gray-500 dark:text-zinc-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-gray-200 dark:border-zinc-700 select-none px-3 text-left ${
+                                    className={`bg-surface text-fg-muted font-medium text-xs uppercase tracking-wider h-12 border-b border-border-token select-none px-3 text-left ${
                                         column.key === "class"
-                                            ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800/50"
+                                            ? "cursor-pointer hover:bg-surface-2/50"
                                             : ""
                                     } ${MOBILE_HIDDEN_COLUMNS.has(column.key) ? "hidden lg:table-cell" : ""}`}
                                     onClick={
@@ -174,10 +178,9 @@ function StudentsTableVirtualized({
                                         {column.label.toUpperCase()}
                                         {column.key === "class" &&
                                             sortDescriptor.column === "class" && (
-                                                <ArrowUpDown
-                                                    size={12}
-                                                    className="text-gray-400 dark:text-zinc-500"
-                                                />
+                                                sortDescriptor.direction === "ascending"
+                                                    ? <ChevronUp size={12} className="text-fg-faint" />
+                                                    : <ChevronDown size={12} className="text-fg-faint" />
                                             )}
                                     </div>
                                 </th>
@@ -185,7 +188,7 @@ function StudentsTableVirtualized({
 
                         {/* Actions column header */}
                         {visibleColumnsArray.some((col) => col.key === "actions") && (
-                            <th className="bg-white dark:bg-zinc-900 text-gray-500 dark:text-zinc-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-gray-200 dark:border-zinc-700 select-none pr-6 text-right w-[60px]">
+                            <th className="bg-surface text-fg-muted font-medium text-xs uppercase tracking-wider h-12 border-b border-border-token select-none pr-6 text-right w-[60px]">
                                 ACTIONS
                             </th>
                         )}
@@ -242,7 +245,7 @@ function StudentsTableVirtualized({
                                     selectedKeys.has(student.id?.toString());
 
                                 const selectedBg = "bg-primary-50";
-                                const defaultBg = "bg-white dark:bg-zinc-900 group-hover:bg-gray-50 dark:group-hover:bg-zinc-800/50";
+                                const defaultBg = "bg-surface group-hover:bg-gray-50 dark:group-hover:bg-zinc-800/50";
                                 const bgClass = isSelected ? selectedBg : defaultBg;
 
                                 return (
@@ -250,7 +253,7 @@ function StudentsTableVirtualized({
                                         key={student.id}
                                         data-index={virtualRow.index}
                                         ref={rowVirtualizer.measureElement}
-                                        className={`group cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-zinc-800/50 ${
+                                        className={`group cursor-pointer transition-colors hover:bg-surface-2/50 ${
                                             isSelected ? "bg-primary-50" : ""
                                         }`}
                                         onClick={(e) => {
@@ -265,12 +268,16 @@ function StudentsTableVirtualized({
                                             const selection = window.getSelection();
                                             if (selection && selection.toString().length > 0)
                                                 return;
-                                            navigate(`/students/${student.id}`);
+                                            if (openStudent) {
+                                                openStudent(student.id);
+                                            } else {
+                                                navigate(`/students/${student.id}`);
+                                            }
                                         }}
                                     >
                                         {/* Checkbox cell */}
                                         <td
-                                            className={`py-4 border-b border-gray-200 dark:border-zinc-700 text-center transition-colors w-12 min-w-12 ${
+                                            className={`py-4 border-b border-border-token text-center transition-colors w-12 min-w-12 ${
                                                 isSelected
                                                     ? "bg-primary-50"
                                                     : "group-hover:bg-gray-50 dark:group-hover:bg-zinc-800/50"
@@ -302,7 +309,7 @@ function StudentsTableVirtualized({
                                         {/* Student name (sticky left) */}
                                         <StudentNameCell
                                             student={student}
-                                            className={`py-4 border-b border-gray-200 dark:border-zinc-700 select-text pl-3 pr-3 sticky left-0 z-10 transition-colors w-[40%] lg:w-[220px] ${bgClass}`}
+                                            className={`py-4 border-b border-border-token select-text pl-3 pr-3 sticky left-0 z-10 transition-colors w-[40%] lg:w-[220px] ${bgClass}`}
                                             searchQuery={searchQuery}
                                         />
 
@@ -314,7 +321,7 @@ function StudentsTableVirtualized({
                                             )
                                             .map((column) => {
                                                 const mobileHidden = MOBILE_HIDDEN_COLUMNS.has(column.key) ? " hidden lg:table-cell" : "";
-                                                const baseTd = `py-4 border-b border-gray-200 dark:border-zinc-700 select-text px-3 transition-colors${mobileHidden} ${bgClass}`;
+                                                const baseTd = `py-4 border-b border-border-token select-text px-3 transition-colors${mobileHidden} ${bgClass}`;
 
                                                 if (column.key === "class") {
                                                     return <ClassCell key="class" student={student} className={baseTd} />;
@@ -364,7 +371,7 @@ function StudentsTableVirtualized({
                                         ) && (
                                             <ActionsCell
                                                 student={student}
-                                                className={`py-4 border-b border-gray-200 dark:border-zinc-700 select-text pr-6 transition-colors ${bgClass}`}
+                                                className={`py-4 border-b border-border-token select-text pr-6 transition-colors ${bgClass}`}
                                                 handlePinStudent={handlePinStudent}
                                                 handleUnpinStudent={handleUnpinStudent}
                                                 setSelectedStudent={setSelectedStudent}

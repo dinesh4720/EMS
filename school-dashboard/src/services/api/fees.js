@@ -122,9 +122,14 @@ export const feesApi = {
   updateRefund: (id, data) => request(`/fees/refunds/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteRefund: (id) => request(`/fees/refunds/${id}`, { method: 'DELETE' }),
 
+  // Fee Templates
+  getTemplates: () => request('/fee-templates'),
+
   // Fee Structure
   getFeeStructure: (classId, academicYear) => request(`/fee-structure/class/${classId}${academicYear ? `?academicYear=${academicYear}` : ''}`),
   saveFeeStructure: (data) => request('/fee-structure', { method: 'POST', body: JSON.stringify(data) }),
+  applyToStudents: (data) => request('/fee-structure/apply-to-students', { method: 'POST', body: JSON.stringify(data) }),
+  getClassFeeStatus: (classId, academicYear) => request(`/students/class/${classId}/fee-status${academicYear ? `?academicYear=${academicYear}` : ''}`),
 };
 
 export const studentFeesApi = {

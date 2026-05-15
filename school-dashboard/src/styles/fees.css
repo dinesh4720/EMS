@@ -1,0 +1,546 @@
+/* Phase 7 — Fees page chrome
+ * KPI strip + payments table + collection sheet specifics.
+ * Frosted overlay base lives in `frosted-overlay.css`.
+ */
+
+.fees-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 24px;
+}
+
+/* ── KPI strip ────────────────────────────────────────────────────────────── */
+.fees-kpi {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--divider);
+  border: 1px solid var(--border-token);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.fees-kpi__cell {
+  position: relative;
+  background: var(--surface);
+  border: 0;
+  border-radius: 0;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 120ms ease;
+  overflow: hidden;
+}
+.fees-kpi__cell::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  background: transparent;
+  transition: background 120ms ease;
+}
+.fees-kpi__cell:hover {
+  background: var(--surface-2);
+}
+.fees-kpi__cell.is-active {
+  background: var(--surface);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+.fees-kpi__cell.is-active::before {
+  background: var(--accent);
+}
+.fees-kpi__cell:disabled,
+.fees-kpi__cell[aria-disabled="true"] {
+  cursor: default;
+}
+.fees-kpi__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.fees-kpi__label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-subtle);
+  font-weight: 500;
+}
+.fees-kpi__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--fg-muted);
+}
+.fees-kpi__icon--ok     { background: var(--ok-bg);     color: var(--ok); }
+.fees-kpi__icon--warn   { background: var(--warn-bg);   color: var(--warn); }
+.fees-kpi__icon--danger { background: var(--danger-bg); color: var(--danger); }
+.fees-kpi__value {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+.fees-kpi__value--ok     { color: var(--ok); }
+.fees-kpi__value--warn   { color: var(--warn); }
+.fees-kpi__value--danger { color: var(--danger); }
+.fees-kpi__sub {
+  font-size: 12px;
+  color: var(--fg-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.fees-kpi__delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.fees-kpi__delta--up { color: var(--ok); background: var(--ok-bg); }
+.fees-kpi__delta--down { color: var(--danger); background: var(--danger-bg); }
+
+/* ── Payments table ────────────────────────────────────────────────────────── */
+.fees-table {
+  background: var(--surface);
+  border: 1px solid var(--border-token);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.fees-table__head,
+.fees-table__row {
+  display: grid;
+  grid-template-columns: 36px 60px 1fr 140px 120px 120px 120px;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 16px;
+}
+.fees-table__head {
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border-token);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-subtle);
+}
+.fees-table__row {
+  border-bottom: 1px solid var(--divider);
+  font-size: 13px;
+  color: var(--fg);
+}
+.fees-table__row:last-child {
+  border-bottom: 0;
+}
+.fees-table__row:hover {
+  background: var(--surface-2);
+}
+.fees-table__row.is-selected {
+  background: var(--accent-bg);
+}
+.fees-table__name {
+  font-weight: 520;
+  color: var(--fg);
+}
+.fees-table__sub {
+  font-size: 11px;
+  color: var(--fg-subtle);
+  margin-top: 1px;
+}
+.fees-table__amount {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.fees-table__action {
+  text-align: right;
+}
+
+/* ── Bulk action chip (when rows selected) ────────────────────────────────── */
+.fees-bulk {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 14px;
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--fg);
+  font-weight: 520;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+}
+.fees-bulk__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--fg-muted);
+}
+.fees-bulk__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--accent-fg);
+  background: var(--accent);
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+}
+.fees-bulk__divider {
+  width: 1px;
+  height: 20px;
+  background: var(--accent-border);
+}
+
+/* ── Empty state inside table ─────────────────────────────────────────────── */
+.fees-table__empty {
+  padding: 64px 24px;
+  text-align: center;
+  color: var(--fg-subtle);
+  font-size: 13px;
+}
+
+/* ── Collection sheet — right drawer with sticky head + foot ──────────────── */
+.fees-sheet__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.32);
+  z-index: var(--z-modal, 300);
+  display: flex;
+  justify-content: flex-end;
+  animation: feesSheetFade 140ms ease-out;
+}
+.fees-sheet {
+  width: min(440px, 100vw);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border-left: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-glass);
+  outline: none;
+  animation: feesSheetSlide 200ms ease-out;
+}
+.fees-sheet__head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--divider);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+.fees-sheet__title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+  margin: 0;
+}
+.fees-sheet__subtitle {
+  font-size: 12px;
+  color: var(--fg-muted);
+  margin: 0;
+}
+.fees-sheet__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.fees-sheet__field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.fees-sheet__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.fees-sheet__label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-subtle);
+  font-weight: 500;
+}
+.fees-sheet__field input,
+.fees-sheet__field select,
+.fees-sheet__field textarea {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border-token);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--fg);
+  font-family: inherit;
+}
+.fees-sheet__field input:focus,
+.fees-sheet__field select:focus,
+.fees-sheet__field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--surface-2);
+}
+.fees-sheet__field input[aria-invalid="true"],
+.fees-sheet__field select[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+.fees-sheet__error {
+  font-size: 11.5px;
+  color: var(--danger);
+}
+.fees-sheet__foot {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--divider);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+
+@keyframes feesSheetFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes feesSheetSlide {
+  from { transform: translateX(24px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fees-sheet,
+  .fees-sheet__backdrop { animation: none; }
+}
+
+/* Mobile — stack KPI + form rows; full-width drawer */
+@media (max-width: 1023px) {
+  .fees-kpi { grid-template-columns: 1fr; }
+  .fees-sheet__field-row { grid-template-columns: 1fr; }
+}
+@media (max-width: 767px) {
+  .fees-sheet { width: 100vw; border-left: none; }
+}
+
+/* Mobile — collapse table to card-stack */
+@media (max-width: 767px) {
+  .fees-table__head { display: none; }
+  .fees-table__row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding: 12px 16px;
+  }
+  .fees-table__amount,
+  .fees-table__action {
+    text-align: left;
+  }
+}
+
+/* ============================================================
+   REVAMP-28 — Fee structure assignment surface
+   Class/section pickers via .optgrid + .taginput; mono tnum totals.
+   ============================================================ */
+
+.fees-assign {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border-token);
+  border-radius: 12px;
+}
+
+.fees-assign__foot {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 0 0;
+  margin-top: 4px;
+  border-top: 1px solid var(--divider);
+  background: var(--surface);
+}
+
+/* Fee-heads list — one row per head with mono tnum amount input. */
+.fees-heads {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fees-heads__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-token);
+  border-radius: 8px;
+}
+.fees-heads__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.fees-heads__name {
+  font-size: 13px;
+  font-weight: 520;
+  color: var(--fg);
+}
+.fees-heads__meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.fees-heads__amt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.fees-heads__totals {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-token);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Schedule cards — installment grid with date + amount. */
+.fees-schedule {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+.fees-schedule__cell {
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border-token);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.fees-schedule__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.fees-schedule__name {
+  font-size: 12.5px;
+  font-weight: 520;
+  color: var(--fg);
+}
+.fees-schedule__amt {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--fg);
+  letter-spacing: -0.01em;
+}
+
+/* Right-side preview pane — slides in over the page (via composer-overlay). */
+.fees-preview {
+  width: min(440px, 100vw);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  border-left: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-glass);
+  animation: feesSheetSlide 200ms ease-out;
+}
+
+.fees-preview__list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: calc(100vh - 360px);
+  overflow-y: auto;
+}
+.fees-preview__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border-token);
+  border-radius: 8px;
+}
+.fees-preview__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.fees-preview__name {
+  font-size: 13px;
+  font-weight: 520;
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fees-preview__amt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 767px) {
+  .fees-assign { padding: 12px; gap: 14px; }
+  .fees-heads__row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .fees-heads__amt { width: 100%; justify-content: space-between; }
+  .fees-schedule { grid-template-columns: 1fr; }
+  .fees-preview { width: 100vw; border-left: none; }
+  .fees-preview__list { max-height: calc(100vh - 320px); }
+}

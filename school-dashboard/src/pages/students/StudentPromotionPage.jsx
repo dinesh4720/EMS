@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Card, CardBody, Chip, Button, Tabs, Tab, Input,
+  Card, CardBody, Button, Input,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
 } from '@heroui/react';
 import {
@@ -21,7 +21,7 @@ import StepClassMapping from './promotion/StepClassMapping';
 import StepStudentReview from './promotion/StepStudentReview';
 import StepConfirm from './promotion/StepConfirm';
 import StepResults from './promotion/StepResults';
-import { useTranslation } from 'react-i18next';
+import '../../styles/student.css';
 
 const STEPS = [
   { key: 'year', label: 'Academic Year', icon: Calendar },
@@ -71,6 +71,19 @@ export default function StudentPromotionPage() {
     if (activeTab === 'history') fetchHistory();
   }, [activeTab, fetchHistory]);
 
+  // Bug-fix license: warn if the user is mid-wizard and switches tabs
+  // (students stuck mid-promotion). The state stays in memory, but a hint
+  // helps prevent accidental abandonment.
+  const switchTab = (key) => {
+    if (key === 'history' && step > 0 && step < 4 && wizardState.fromYear) {
+      const ok = window.confirm(
+        'You have a promotion in progress. Switching tabs will keep your selections but pause the flow. Continue?'
+      );
+      if (!ok) return;
+    }
+    setActiveTab(key);
+  };
+
   const openRollback = (rec) => {
     setRollbackRecord(rec);
     setRollbackReason('');
@@ -87,6 +100,8 @@ export default function StudentPromotionPage() {
       setRollbackRecord(null);
       fetchHistory();
     } catch (e) {
+      // Edge: server returned 409 because students were already partly moved
+      // back. Surface the message instead of a generic failure toast.
       toast.error(e?.message || 'Rollback failed');
     } finally {
       setRollingBack(false);
@@ -112,14 +127,12 @@ export default function StudentPromotionPage() {
   };
 
   return (
-    <div className="animate-fade-in">
-      <div className="mb-4">
-        <Breadcrumbs size="sm">
-          <BreadcrumbItem startContent={<Home size={14} />} onPress={() => navigate('/')}>Home</BreadcrumbItem>
-          <BreadcrumbItem onPress={() => navigate('/students')}>Students</BreadcrumbItem>
-          <BreadcrumbItem>Year-End Promotion</BreadcrumbItem>
-        </Breadcrumbs>
-      </div>
+    <div className="animate-fade-in promo-page">
+      <Breadcrumbs size="sm">
+        <BreadcrumbItem startContent={<Home size={14} />} onPress={() => navigate('/')}>Home</BreadcrumbItem>
+        <BreadcrumbItem onPress={() => navigate('/students')}>Students</BreadcrumbItem>
+        <BreadcrumbItem>Year-End Promotion</BreadcrumbItem>
+      </Breadcrumbs>
 
       <PageLayout
         header={{
@@ -129,74 +142,68 @@ export default function StudentPromotionPage() {
         noPadding
       >
         <div className="p-6 space-y-5">
-          <Tabs
-            selectedKey={activeTab}
-            onSelectionChange={(k) => setActiveTab(k)}
-            variant="underlined"
-            classNames={{
-              tabList: 'border-b border-gray-100 dark:border-zinc-800 w-full gap-4',
-              cursor: 'bg-gray-900 dark:bg-zinc-100',
-            }}
-          >
-            <Tab
-              key="promote"
-              title={
-                <div className="flex items-center gap-2">
-                  <ArrowUpCircle size={15} />
-                  <span>Promote Students</span>
-                </div>
-              }
-            />
-            <Tab
-              key="history"
-              title={
-                <div className="flex items-center gap-2">
-                  <History size={15} />
-                  <span>History</span>
-                </div>
-              }
-            />
-          </Tabs>
+          {/* Segmented tabs (mono tnum count for history) */}
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="promo-tabs" role="tablist" aria-label="Promotion sections">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'promote'}
+                onClick={() => switchTab('promote')}
+                className={`promo-tab ${activeTab === 'promote' ? 'is-active' : ''}`}
+              >
+                <ArrowUpCircle size={13} />
+                <span>Promote Students</span>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'history'}
+                onClick={() => switchTab('history')}
+                className={`promo-tab ${activeTab === 'history' ? 'is-active' : ''}`}
+              >
+                <History size={13} />
+                <span>History</span>
+                {history.length > 0 && (
+                  <span className="promo-tab__count">{history.length}</span>
+                )}
+              </button>
+            </div>
+          </div>
 
           {/* ── Promote tab — Wizard ──────────────────────────────────────────── */}
           {activeTab === 'promote' && (
             <>
-              {/* Step indicator */}
-              <div className="flex items-center gap-1 overflow-x-auto pb-2">
+              {/* Step rail */}
+              <nav className="steprail" aria-label="Promotion steps">
                 {STEPS.map((s, idx) => {
                   const Icon = s.icon;
                   const isActive = idx === step;
                   const isDone = idx < step;
                   const isLast = idx === STEPS.length - 1;
+                  const cls = isActive ? 'is-active' : isDone ? 'is-done' : '';
 
                   return (
-                    <div key={s.key} className="flex items-center">
+                    <div key={s.key} style={{ display: 'inline-flex', alignItems: 'center' }}>
                       <button
-                        onClick={() => idx < step && setStep(idx)}
-                        disabled={idx >= step}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                          isActive
-                            ? 'bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900'
-                            : isDone
-                              ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 cursor-pointer hover:bg-green-200'
-                              : 'bg-gray-100 dark:bg-zinc-800 text-gray-400 dark:text-zinc-500'
-                        }`}
+                        type="button"
+                        className={`steprail__step ${cls}`}
+                        onClick={() => isDone && setStep(idx)}
+                        disabled={!isDone && !isActive}
+                        aria-current={isActive ? 'step' : undefined}
                       >
-                        {isDone ? (
-                          <CheckCircle size={13} />
-                        ) : (
-                          <Icon size={13} />
-                        )}
-                        <span className="hidden sm:inline">{s.label}</span>
-                        <span className="sm:hidden">{idx + 1}</span>
+                        <span className="steprail__num">
+                          {isDone ? <CheckCircle size={10} /> : <Icon size={10} />}
+                        </span>
+                        <span className="steprail__label">{s.label}</span>
                       </button>
                       {!isLast && (
-                        <div className={`w-6 h-px mx-1 ${isDone ? 'bg-green-300 dark:bg-green-700' : 'bg-gray-200 dark:bg-zinc-700'}`} />
+                        <span className={`steprail__sep ${isDone ? 'is-done' : ''}`} aria-hidden />
                       )}
                     </div>
                   );
                 })}
-              </div>
+              </nav>
 
               {/* Step content */}
               {step === 0 && (
@@ -247,59 +254,55 @@ export default function StudentPromotionPage() {
                 <TablePageSkeleton />
               ) : history.length === 0 ? (
                 <div className="text-center py-16">
-                  <Clock size={48} className="mx-auto mb-4 text-gray-200 dark:text-zinc-700" />
-                  <p className="text-gray-500 dark:text-zinc-400">No promotion records found</p>
+                  <Clock size={48} className="mx-auto mb-4 text-fg-faint" />
+                  <p className="text-fg-muted">No promotion records found</p>
                 </div>
               ) : (
-                history.map((rec) => (
-                  <Card key={rec._id} shadow="sm" className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800">
-                    <CardBody className="p-4">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="space-y-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">
-                              {rec.fromAcademicYear} &rarr; {rec.toAcademicYear}
+                history.map((rec) => {
+                  const isRolledback = rec.status === 'rolledback';
+                  return (
+                    <Card key={rec._id} shadow="sm" className="bg-surface border border-border-token">
+                      <CardBody className="p-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="space-y-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="text-sm font-semibold text-fg mono tnum">
+                                {rec.fromAcademicYear} &rarr; {rec.toAcademicYear}
+                              </p>
+                              <span className={`chip ${isRolledback ? 'chip--danger' : 'chip--ok'}`}>
+                                {isRolledback ? 'Rolled back' : 'Completed'}
+                              </span>
+                            </div>
+                            <p className="text-xs text-fg-muted">
+                              {formatDateTime(rec.createdAt)} ·{' '}
+                              <span className="mono tnum">{rec.summary?.promoted ?? 0}</span> promoted ·{' '}
+                              <span className="mono tnum">{rec.summary?.detained ?? 0}</span> detained ·{' '}
+                              <span className="mono tnum">{rec.summary?.graduated ?? 0}</span> graduated ·{' '}
+                              <span className="mono tnum">{rec.summary?.errors ?? 0}</span> failed
                             </p>
-                            <Chip
+                            {isRolledback && rec.rollbackReason && (
+                              <p className="text-xs text-red-500 dark:text-red-400 mt-0.5">
+                                Reason: {rec.rollbackReason}
+                              </p>
+                            )}
+                          </div>
+                          {!isRolledback && (
+                            <Button
                               size="sm"
                               variant="flat"
-                              className={rec.status === 'rolledback'
-                                ? 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300'
-                                : 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300'
-                              }
+                              color="danger"
+                              startContent={<RotateCcw size={13} />}
+                              onPress={() => openRollback(rec)}
+                              className="shrink-0"
                             >
-                              {rec.status === 'rolledback' ? 'Rolled back' : 'Completed'}
-                            </Chip>
-                          </div>
-                          <p className="text-xs text-gray-500 dark:text-zinc-400">
-                            {formatDateTime(rec.createdAt)} &middot;{' '}
-                            {rec.summary?.promoted ?? 0} promoted &middot;{' '}
-                            {rec.summary?.detained ?? 0} detained &middot;{' '}
-                            {rec.summary?.graduated ?? 0} graduated &middot;{' '}
-                            {rec.summary?.errors ?? 0} failed
-                          </p>
-                          {rec.status === 'rolledback' && rec.rollbackReason && (
-                            <p className="text-xs text-red-500 dark:text-red-400 mt-0.5">
-                              Reason: {rec.rollbackReason}
-                            </p>
+                              Rollback
+                            </Button>
                           )}
                         </div>
-                        {rec.status !== 'rolledback' && (
-                          <Button
-                            size="sm"
-                            variant="flat"
-                            color="danger"
-                            startContent={<RotateCcw size={13} />}
-                            onPress={() => openRollback(rec)}
-                            className="shrink-0"
-                          >
-                            Rollback
-                          </Button>
-                        )}
-                      </div>
-                    </CardBody>
-                  </Card>
-                ))
+                      </CardBody>
+                    </Card>
+                  );
+                })
               )}
             </div>
           )}
@@ -311,22 +314,22 @@ export default function StudentPromotionPage() {
         isOpen={rollbackOpen}
         onClose={() => setRollbackOpen(false)}
         size="sm"
-        classNames={{ backdrop: 'bg-black/30', base: 'bg-white dark:bg-zinc-950' }}
+        classNames={{ backdrop: 'bg-black/30', base: 'bg-surface' }}
       >
         <ModalContent>
-          <ModalHeader className="border-b border-gray-100 dark:border-zinc-800 py-4">
+          <ModalHeader className="border-b border-divider py-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-red-100 dark:bg-red-950 rounded-lg">
                 <RotateCcw size={18} className="text-red-600" />
               </div>
-              <h3 className="text-base font-medium text-gray-900 dark:text-zinc-100">Rollback Promotion</h3>
+              <h3 className="text-base font-medium text-fg">Rollback Promotion</h3>
             </div>
           </ModalHeader>
           <ModalBody className="py-4 space-y-3">
             {rollbackRecord && (
-              <p className="text-sm text-gray-600 dark:text-zinc-300">
-                Roll back <strong>{rollbackRecord.fromAcademicYear} &rarr; {rollbackRecord.toAcademicYear}</strong>?{' '}
-                This will restore <strong>{rollbackRecord.summary?.promoted ?? 0} students</strong> to their previous classes.
+              <p className="text-sm text-fg-muted">
+                Roll back <strong className="mono tnum">{rollbackRecord.fromAcademicYear} &rarr; {rollbackRecord.toAcademicYear}</strong>?{' '}
+                This will restore <strong className="mono tnum">{rollbackRecord.summary?.promoted ?? 0}</strong> students to their previous classes.
               </p>
             )}
             <Input
@@ -341,7 +344,7 @@ export default function StudentPromotionPage() {
               Students will be moved back to their original classes and fee structures will be reset.
             </p>
           </ModalBody>
-          <ModalFooter className="border-t border-gray-100 dark:border-zinc-800">
+          <ModalFooter className="border-t border-divider">
             <Button variant="light" onPress={() => setRollbackOpen(false)}>Cancel</Button>
             <Button color="danger" onPress={handleRollback} isLoading={rollingBack}>
               Confirm Rollback

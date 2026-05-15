@@ -102,16 +102,19 @@ export const TransferCertificateTemplate = React.forwardRef(({ data, schoolData:
                     </div>
                 </div>
 
-                {/* Footer Signatures */}
-                <div className="mt-8 flex justify-between items-end pb-4">
-                    <div className="text-center w-56">
-                        <div className="border-t border-black pt-2 font-bold text-sm">{t('pages.signatureOfTheClassTeacher')}</div>
+                {/* Footer Signatures — REVAMP-13 bug-fix: grid with minmax(0, 1fr)
+                    prevents the three columns from overflowing the page when the
+                    parent padding is tight (was: three fixed 14rem boxes in a
+                    flex justify-between that pushed off-page on some templates). */}
+                <div className="tc-print-signatures">
+                    <div>
+                        <div>{t('pages.signatureOfTheClassTeacher')}</div>
                     </div>
-                    <div className="text-center w-56">
-                        <div className="border-t border-black pt-2 font-bold text-sm">checked by</div>
+                    <div>
+                        <div>checked by</div>
                     </div>
-                    <div className="text-center w-56">
-                        <div className="border-t border-black pt-2 font-bold text-sm">{t('pages.principal2')}</div>
+                    <div>
+                        <div>{t('pages.principal2')}</div>
                     </div>
                 </div>
             </div>

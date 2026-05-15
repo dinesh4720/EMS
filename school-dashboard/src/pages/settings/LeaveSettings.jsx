@@ -1,10 +1,13 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect } from "react";
+import { useEntityFetch } from "../../hooks/useEntityFetch";
 import { Card, CardBody, CardHeader, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Select, SelectItem, Switch, Spinner } from "@heroui/react";
 import { Plus, Edit, Trash2, UserCheck, Users } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { useTranslation } from 'react-i18next';
+import logger from '../../utils/logger';
+
 
 export default function LeaveSettings() {
   const { t } = useTranslation();
@@ -22,45 +25,11 @@ export default function LeaveSettings() {
   // AUDIT-128: State-driven delete confirmation
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
-  // Lazy loading state
   const ITEMS_PER_LOAD = 10;
-  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const loaderRef = useRef(null);
-
-  const visibleLeaveTypes = useMemo(() => 
-    leaveTypes.slice(0, visibleCount),
-    [leaveTypes, visibleCount]
+  const { visibleItems: visibleLeaveTypes, hasMore, isLoadingMore, loaderRef } = useEntityFetch(
+    leaveTypes,
+    [leaveTypes.length]
   );
-
-  const hasMore = visibleCount < leaveTypes.length;
-
-  // Reset visible count when leave types change
-  useEffect(() => {
-    setVisibleCount(ITEMS_PER_LOAD);
-  }, [leaveTypes.length]);
-
-  // Lazy loading intersection observer
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
-          setIsLoadingMore(true);
-          setTimeout(() => {
-            setVisibleCount(prev => prev + ITEMS_PER_LOAD);
-            setIsLoadingMore(false);
-          }, 300);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (loaderRef.current) {
-      observer.observe(loaderRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [hasMore, isLoadingMore]);
 
   const handleOpen = (leaveType = null) => {
     if (leaveType) {
@@ -103,7 +72,7 @@ export default function LeaveSettings() {
       }
       onClose();
     } catch (error) {
-      console.error('Failed to save leave type:', error);
+      logger.error('Failed to save leave type:', error);
       toast.error(t('toast.error.failedToSaveLeaveType'));
     } finally {
       setSaving(false);
@@ -123,7 +92,7 @@ export default function LeaveSettings() {
       await deleteLeaveType(id);
       toast.success(t('toast.success.leaveTypeDeletedSuccessfully'));
     } catch (error) {
-      console.error('Failed to delete leave type:', error);
+      logger.error('Failed to delete leave type:', error);
       toast.error(t('toast.error.failedToDeleteLeaveType'));
     }
   };
@@ -144,8 +113,8 @@ export default function LeaveSettings() {
     <div className="w-full flex flex-col">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-lg font-semibold text-default-800">{t('pages.leaveConfiguration')}</h2>
-          <p className="text-sm text-default-500">{t('pages.manageLeaveTypesAndApprovalWorkflows')}</p>
+          <h2 className="text-lg font-semibold text-fg">{t('pages.leaveConfiguration')}</h2>
+          <p className="text-sm text-fg-muted">{t('pages.manageLeaveTypesAndApprovalWorkflows')}</p>
         </div>
         <Button 
           color="primary" 
@@ -198,15 +167,15 @@ export default function LeaveSettings() {
         </div>
       </div>
 
-      <Card className="shadow-sm border border-default-200 rounded-lg">
+      <Card className="shadow-sm border border-border-token rounded-lg">
         <CardBody className="p-0">
           <Table
             aria-label={t('aria.misc.leaveTypes')}
             removeWrapper
             classNames={{
               base: "overflow-visible",
-              th: "bg-transparent text-default-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200",
-              td: "py-5 border-b border-default-100",
+              th: "bg-transparent text-fg-faint font-medium text-xs uppercase tracking-wider h-12 border-b border-border-token",
+              td: "py-5 border-b border-divider",
               tbody: "[&>tr:last-child>td]:border-none"
             }}
           >
@@ -221,7 +190,7 @@ export default function LeaveSettings() {
             <TableBody emptyContent="No leave types configured">
               {visibleLeaveTypes.map((leaveType) => (
                 <TableRow key={leaveType._id || leaveType.id}>
-                  <TableCell className="font-medium text-default-700">{leaveType.name}</TableCell>
+                  <TableCell className="font-medium text-fg">{leaveType.name}</TableCell>
                   <TableCell>
                     <Chip 
                       size="sm" 
@@ -232,37 +201,39 @@ export default function LeaveSettings() {
                       {leaveType.applicableTo}
                     </Chip>
                   </TableCell>
-                  <TableCell className="text-sm text-default-600">{leaveType.quota} days</TableCell>
+                  <TableCell className="text-sm text-fg-muted">{leaveType.quota} days</TableCell>
                   <TableCell>
                     <Chip 
                       size="sm" 
                       variant="dot"
                       color={leaveType.requiresApproval ? "warning" : "success"}
-                      classNames={{ base: "border-1 border-default-200 pl-2" }}
+                      classNames={{ base: "border-1 border-border-token pl-2" }}
                     >
                       {leaveType.requiresApproval ? "Required" : "Auto-approved"}
                     </Chip>
                   </TableCell>
-                  <TableCell className="text-sm text-default-600 capitalize">
+                  <TableCell className="text-sm text-fg-muted capitalize">
                     {leaveType.requiresApproval ? leaveType.approver : "N/A"}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2 justify-end">
-                      <Button 
-                        isIconOnly 
-                        size="sm" 
-                        variant="light" 
-                        color="primary" 
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        color="primary"
+                        aria-label="Edit leave type"
                         onPress={() => handleOpen(leaveType)}
                         className="transition-all duration-200"
                       >
                         <Edit size={16} />
                       </Button>
-                      <Button 
-                        isIconOnly 
-                        size="sm" 
-                        variant="light" 
-                        color="danger" 
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        color="danger"
+                        aria-label="Delete leave type"
                         onPress={() => handleDelete(leaveType._id || leaveType.id)}
                         className="transition-all duration-200"
                       >
@@ -279,35 +250,35 @@ export default function LeaveSettings() {
           <div ref={loaderRef} className="flex justify-center py-4">
             {isLoadingMore && <Spinner size="sm" color="primary" />}
             {!hasMore && leaveTypes.length > ITEMS_PER_LOAD && (
-              <span className="text-default-400 text-sm">All {leaveTypes.length} leave types loaded</span>
+              <span className="text-fg-faint text-sm">All {leaveTypes.length} leave types loaded</span>
             )}
           </div>
         </CardBody>
       </Card>
 
-      <Card className="shadow-sm border border-default-200 rounded-lg mt-4">
-        <CardHeader className="py-4 px-4 bg-default-50/50 border-b border-default-100">
-          <h3 className="text-sm font-semibold text-default-700">{t('pages.approvalWorkflow')}</h3>
+      <Card className="shadow-sm border border-border-token rounded-lg mt-4">
+        <CardHeader className="py-4 px-4 bg-surface-2/50 border-b border-divider">
+          <h3 className="text-sm font-semibold text-fg">{t('pages.approvalWorkflow')}</h3>
         </CardHeader>
         <CardBody className="p-4 space-y-3">
-          <div className="flex items-center justify-between p-4 bg-default-50 rounded-lg border border-default-200">
+          <div className="flex items-center justify-between p-4 bg-surface-2 rounded-lg border border-border-token">
             <div>
-              <p className="text-sm font-medium text-default-800">{t('pages.reporter')}</p>
-              <p className="text-xs text-default-500">{t('pages.directSupervisorOrClassTeacher')}</p>
+              <p className="text-sm font-medium text-fg">{t('pages.reporter')}</p>
+              <p className="text-xs text-fg-muted">{t('pages.directSupervisorOrClassTeacher')}</p>
             </div>
             <Chip size="sm" color="primary" variant="flat">{t('pages.level1')}</Chip>
           </div>
-          <div className="flex items-center justify-between p-4 bg-default-50 rounded-lg border border-default-200">
+          <div className="flex items-center justify-between p-4 bg-surface-2 rounded-lg border border-border-token">
             <div>
-              <p className="text-sm font-medium text-default-800">{t('pages.principal2')}</p>
-              <p className="text-xs text-default-500">{t('pages.schoolPrincipalOrHead')}</p>
+              <p className="text-sm font-medium text-fg">{t('pages.principal2')}</p>
+              <p className="text-xs text-fg-muted">{t('pages.schoolPrincipalOrHead')}</p>
             </div>
             <Chip size="sm" color="warning" variant="flat">{t('pages.level2')}</Chip>
           </div>
-          <div className="flex items-center justify-between p-4 bg-default-50 rounded-lg border border-default-200">
+          <div className="flex items-center justify-between p-4 bg-surface-2 rounded-lg border border-border-token">
             <div>
-              <p className="text-sm font-medium text-default-800">{t('pages.admin2')}</p>
-              <p className="text-xs text-default-500">{t('pages.systemAdministrator')}</p>
+              <p className="text-sm font-medium text-fg">{t('pages.admin2')}</p>
+              <p className="text-xs text-fg-muted">{t('pages.systemAdministrator')}</p>
             </div>
             <Chip size="sm" color="danger" variant="flat">{t('pages.level3')}</Chip>
           </div>
@@ -349,10 +320,10 @@ export default function LeaveSettings() {
               errorMessage={formData.quota < 1 ? 'Quota must be at least 1 day' : undefined}
               variant="bordered"
             />
-            <div className="flex items-center justify-between p-3 bg-default-50 rounded-lg border border-default-200">
+            <div className="flex items-center justify-between p-3 bg-surface-2 rounded-lg border border-border-token">
               <div>
-                <p className="text-sm font-medium text-default-700">{t('pages.requiresApproval')}</p>
-                <p className="text-xs text-default-500">{t('pages.leaveNeedsApprovalBeforeGranting')}</p>
+                <p className="text-sm font-medium text-fg">{t('pages.requiresApproval')}</p>
+                <p className="text-xs text-fg-muted">{t('pages.leaveNeedsApprovalBeforeGranting')}</p>
               </div>
               <Switch 
                 size="sm" 

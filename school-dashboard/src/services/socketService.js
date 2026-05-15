@@ -157,8 +157,7 @@ class SocketService {
       this.connected = false;
       this.userId = null;
       this.userType = null;
-      this.listeners.clear();
-      this.conversationRooms.clear(); // Clear tracked rooms
+      this.conversationRooms.clear();
     }
   }
 

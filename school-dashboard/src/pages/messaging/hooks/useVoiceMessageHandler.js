@@ -1,6 +1,8 @@
 import { useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import logger from '../../../utils/logger';
+
 
 export function useVoiceMessageHandler({
   user,
@@ -173,7 +175,7 @@ export function useVoiceMessageHandler({
       recorder.sampleInterval = sampleInterval;
 
     } catch (error) {
-      console.error('Error starting recording:', error);
+      logger.error('Error starting recording:', error);
       toast.error(t('messaging.toast.failedToAccessMicrophone', 'Failed to access microphone'));
     }
   }, [voicePreview, setVoicePreview, setLiveWaveform, mediaStreamRef, analyserRef, audioContextRef, setIsRecording, setRecordingDuration, recordingDurationRef, setMediaRecorder, setRecordedChunks, recordingTimerRef, animationFrameRef, compressWaveform, t]);
@@ -333,7 +335,7 @@ export function useVoiceMessageHandler({
         toast.success(t('messaging.toast.voiceMessageSent', 'Voice message sent'));
       }
     } catch (error) {
-      console.error('Error sending voice message:', error);
+      logger.error('Error sending voice message:', error);
       toast.error(t('messaging.toast.failedToSendVoiceMessage', 'Failed to send voice message'));
     } finally {
       setUploadingFile(false);

@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { Modal, ModalContent, ModalHeader, ModalBody, Button } from '@heroui/react';
 import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Monitor, Speaker } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import logger from '../../../utils/logger';
+
 
 export default function VideoCallModal({
   isOpen,
@@ -63,7 +65,7 @@ export default function VideoCallModal({
       setLocalStream(stream);
       onAccept(call.callId);
     } catch (error) {
-      console.error('Error accessing media devices:', error);
+      logger.error('Error accessing media devices:', error);
     }
   };
 
@@ -138,6 +140,7 @@ export default function VideoCallModal({
                   color="danger"
                   size="lg"
                   isIconOnly
+                  aria-label="Reject call"
                   onClick={() => {
                     onReject(call.callId);
                     onClose();
@@ -150,6 +153,7 @@ export default function VideoCallModal({
                   color="success"
                   size="lg"
                   isIconOnly
+                  aria-label="Accept call"
                   onClick={handleAccept}
                   className="w-16 h-16 rounded-full"
                 >
@@ -195,6 +199,7 @@ export default function VideoCallModal({
                   <Button
                     isIconOnly
                     size="lg"
+                    aria-label={audioEnabled ? 'Mute microphone' : 'Unmute microphone'}
                     className={`w-14 h-14 rounded-full ${audioEnabled ? 'bg-white/20 dark:bg-white/15' : 'bg-danger'}`}
                     onClick={toggleAudio}
                   >
@@ -205,6 +210,7 @@ export default function VideoCallModal({
                     <Button
                       isIconOnly
                       size="lg"
+                      aria-label={videoEnabled ? 'Turn off camera' : 'Turn on camera'}
                       className={`w-14 h-14 rounded-full ${videoEnabled ? 'bg-white/20 dark:bg-white/15' : 'bg-danger'}`}
                       onClick={toggleVideo}
                     >
@@ -216,6 +222,7 @@ export default function VideoCallModal({
                     isIconOnly
                     size="lg"
                     color="danger"
+                    aria-label="End call"
                     className="w-16 h-16 rounded-full"
                     onClick={() => {
                       handleEnd();

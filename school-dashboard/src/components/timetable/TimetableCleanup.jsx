@@ -11,6 +11,8 @@ import {
 import { request } from '../../services/api';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import logger from '../../utils/logger';
+
 
 /**
  * TimetableCleanup - Admin utility to clear timetable data
@@ -51,7 +53,7 @@ export default function TimetableCleanup() {
         setPreviewData(response);
       }
     } catch (error) {
-      console.error('Error fetching preview:', error);
+      logger.error('Error fetching preview:', error);
       toast.error('Failed to load preview data');
     } finally {
       setLoading(false);
@@ -86,7 +88,7 @@ export default function TimetableCleanup() {
         fetchPreview(); // Refresh preview
       }
     } catch (error) {
-      console.error('Error executing cleanup:', error);
+      logger.error('Error executing cleanup:', error);
       toast.error('Failed to clear data');
     } finally {
       setCleaning(false);
@@ -182,6 +184,7 @@ export default function TimetableCleanup() {
           size="sm"
           variant="light"
           isIconOnly
+          aria-label="Refresh preview"
           onPress={fetchPreview}
           isLoading={loading}
         >

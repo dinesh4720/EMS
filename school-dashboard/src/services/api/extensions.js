@@ -33,6 +33,7 @@ export const inventoryApi = {
   getLowStockAssets: () => request('/inventory/assets/low-stock'),
   createAsset: (data) => request('/inventory/assets', { method: 'POST', body: JSON.stringify(data) }),
   updateAsset: (id, data) => request(`/inventory/assets/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  adjustAssetStock: (id, data) => request(`/inventory/assets/${id}/stock-adjust`, { method: 'POST', body: JSON.stringify(data) }),
   deleteAsset: (id) => request(`/inventory/assets/${id}`, { method: 'DELETE' }),
   assignAsset: (id, data) => request(`/inventory/assets/${id}/assign`, { method: 'PUT', body: JSON.stringify(data) }),
   getAssetDepreciation: (id) => request(`/inventory/assets/${id}/depreciation`),
@@ -173,6 +174,10 @@ export const reportsApi = {
   classwiseAttendance: (params = {}) => {
     const q = new URLSearchParams(params).toString();
     return request(`/reports/attendance/class-summary${q ? `?${q}` : ''}`);
+  },
+  attendanceTrend: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/reports/attendance/trend${q ? `?${q}` : ''}`);
   },
   staffAttendance: (params = {}) => {
     const q = new URLSearchParams(params).toString();

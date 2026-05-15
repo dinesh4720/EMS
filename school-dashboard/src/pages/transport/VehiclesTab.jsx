@@ -7,11 +7,15 @@ import VehicleModal from "./VehicleModal";
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import EmptyState from '../../components/ui/EmptyState';
+import ErrorState from '../../components/ui/ErrorState';
+import logger from '../../utils/logger';
 
 export default function VehiclesTab() {
   const { t } = useTranslation();
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -23,9 +27,12 @@ export default function VehiclesTab() {
   const fetchVehicles = async () => {
     try {
       setLoading(true);
+      setLoadError(null);
       const res = await transportApi.getVehicles();
       setVehicles(res?.data || []);
-    } catch {
+    } catch (error) {
+      logger.error('Failed to load vehicles:', error);
+      setLoadError(error);
       toast.error(t('toast.error.failedToLoadVehicles'));
     } finally {
       setLoading(false);
@@ -66,6 +73,15 @@ export default function VehiclesTab() {
   const statusColorMap = { active: "success", inactive: "default", maintenance: "warning" };
 
   if (loading) return <TablePageSkeleton title={false} kpiCards={0} columns={5} rows={5} />;
+  if (loadError) {
+    return (
+      <ErrorState
+        title={t('pages.failedToLoadVehicles', { defaultValue: 'Failed to load vehicles' })}
+        error={loadError}
+        onRetry={fetchVehicles}
+      />
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -110,22 +126,39 @@ export default function VehiclesTab() {
 
       {/* Vehicle Cards */}
       {filtered.length === 0 ? (
-        <div className="text-center py-16 text-gray-500 dark:text-zinc-400">
-          <Truck size={40} className="mx-auto mb-3 opacity-30" />
-          <p className="font-medium">{t('pages.noVehiclesFound')}</p>
-          <p className="text-sm mt-1">{t('pages.addYourFirstVehicleToTheFleet')}</p>
-        </div>
+        <EmptyState
+          icon={Truck}
+          size="lg"
+          title={t('pages.noVehiclesFound')}
+          description={
+            vehicles.length === 0
+              ? t('pages.addYourFirstVehicleToTheFleet')
+              : t('pages.noResultsMatchYourFilters', { defaultValue: 'No results match your filters' })
+          }
+          action={
+            vehicles.length === 0 ? (
+              <Button
+                color="primary"
+                size="sm"
+                startContent={<Plus size={16} />}
+                onPress={() => { setEditingVehicle(null); setIsModalOpen(true); }}
+              >
+                Add Vehicle
+              </Button>
+            ) : null
+          }
+        />
       ) : (
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map((vehicle) => (
             <div
               key={vehicle._id}
-              className="bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow"
+              className="bg-surface border border-divider rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow"
             >
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-zinc-100">{vehicle.registrationNumber}</h3>
-                  <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
+                  <h3 className="font-semibold text-fg">{vehicle.registrationNumber}</h3>
+                  <p className="text-xs text-fg-muted mt-0.5">
                     {[vehicle.make, vehicle.model, vehicle.year].filter(Boolean).join(" ") || "No details"}
                   </p>
                 </div>
@@ -135,7 +168,7 @@ export default function VehiclesTab() {
                   </Chip>
                   <Dropdown>
                     <DropdownTrigger>
-                      <Button isIconOnly size="sm" variant="light"><MoreVertical size={16} /></Button>
+                      <Button isIconOnly size="sm" variant="light" aria-label="Vehicle actions"><MoreVertical size={16} /></Button>
                     </DropdownTrigger>
                     <DropdownMenu>
                       <DropdownItem key="edit" startContent={<Edit2 size={14} />} onPress={() => { setEditingVehicle(vehicle); setIsModalOpen(true); }}>{t('pages.edit1')}</DropdownItem>
@@ -147,15 +180,15 @@ export default function VehiclesTab() {
 
               {/* Capacity */}
               {vehicle.capacity && (
-                <p className="text-xs text-gray-500 dark:text-zinc-400 mb-2">Capacity: {vehicle.capacity} seats</p>
+                <p className="text-xs text-fg-muted mb-2">Capacity: {vehicle.capacity} seats</p>
               )}
 
               {/* Driver & Conductor */}
-              <div className="mt-3 pt-3 border-t border-gray-50 dark:border-zinc-800 space-y-1.5">
+              <div className="mt-3 pt-3 border-t border-divider space-y-1.5">
                 {vehicle.driverId?.name && (
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500 dark:text-zinc-400">{t('pages.driver')}</span>
-                    <span className="text-gray-900 dark:text-zinc-100 font-medium">
+                    <span className="text-fg-muted">{t('pages.driver')}</span>
+                    <span className="text-fg font-medium">
                       {vehicle.driverId.name}
                       {vehicle.driverId.status && vehicle.driverId.status !== 'active' && (
                         <span className="ml-1 text-xs text-amber-600 dark:text-amber-400">({vehicle.driverId.status})</span>
@@ -165,8 +198,8 @@ export default function VehiclesTab() {
                 )}
                 {vehicle.conductorId?.name && (
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500 dark:text-zinc-400">{t('pages.conductor')}</span>
-                    <span className="text-gray-900 dark:text-zinc-100 font-medium">
+                    <span className="text-fg-muted">{t('pages.conductor')}</span>
+                    <span className="text-fg font-medium">
                       {vehicle.conductorId.name}
                       {vehicle.conductorId.status && vehicle.conductorId.status !== 'active' && (
                         <span className="ml-1 text-xs text-amber-600 dark:text-amber-400">({vehicle.conductorId.status})</span>
@@ -175,7 +208,7 @@ export default function VehiclesTab() {
                   </div>
                 )}
                 {!vehicle.driverId?.name && !vehicle.conductorId?.name && (
-                  <p className="text-xs text-gray-400 dark:text-zinc-500 italic">{t('pages.noStaffAssigned')}</p>
+                  <p className="text-xs text-fg-faint italic">{t('pages.noStaffAssigned')}</p>
                 )}
               </div>
             </div>

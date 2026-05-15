@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useEntityFetch } from "../../hooks/useEntityFetch";
 import { Card, CardBody, CardHeader, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Select, SelectItem, Spinner } from "@heroui/react";
 import { Plus, Edit, Trash2, Calendar } from "lucide-react";
 import { useApp } from "../../context/AppContext";
@@ -6,6 +7,8 @@ import toast from "react-hot-toast";
 import { getDateLocale } from '../../i18n/index';
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+import logger from '../../utils/logger';
+
 
 
 export default function HolidaySettings() {
@@ -23,52 +26,18 @@ export default function HolidaySettings() {
   // AUDIT-128: State-driven delete confirmation instead of confirm()
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
-  // Lazy loading state
   const ITEMS_PER_LOAD = 10;
-  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const loaderRef = useRef(null);
-
   const holidays = events.filter(e => e.type === "holiday");
   // AUDIT-122: Use spread to avoid mutating the context array
   const sortedHolidays = useMemo(() =>
-    [...holidays].sort((a, b) => new Date(a.date) - new Date(b.date)),
+    [...holidays].sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0)),
     [holidays]
   );
 
-  const visibleHolidays = useMemo(() => 
-    sortedHolidays.slice(0, visibleCount),
-    [sortedHolidays, visibleCount]
+  const { visibleItems: visibleHolidays, hasMore, isLoadingMore, loaderRef } = useEntityFetch(
+    sortedHolidays,
+    [holidays.length]
   );
-
-  const hasMore = visibleCount < sortedHolidays.length;
-
-  // Reset visible count when holidays change
-  useEffect(() => {
-    setVisibleCount(ITEMS_PER_LOAD);
-  }, [holidays.length]);
-
-  // Lazy loading intersection observer
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
-          setIsLoadingMore(true);
-          setTimeout(() => {
-            setVisibleCount(prev => prev + ITEMS_PER_LOAD);
-            setIsLoadingMore(false);
-          }, 300);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (loaderRef.current) {
-      observer.observe(loaderRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [hasMore, isLoadingMore]);
 
   const handleOpen = (holiday = null) => {
     if (holiday) {
@@ -132,7 +101,7 @@ export default function HolidaySettings() {
       }
       onClose();
     } catch (error) {
-      console.error('Failed to save holiday:', error);
+      logger.error('Failed to save holiday:', error);
       toast.error(t('toast.error.failedToSaveHoliday'));
     } finally {
       setSaving(false);
@@ -152,7 +121,7 @@ export default function HolidaySettings() {
       await deleteEvent(id);
       toast.success(t('toast.success.holidayDeletedSuccessfully'));
     } catch (error) {
-      console.error('Failed to delete holiday:', error);
+      logger.error('Failed to delete holiday:', error);
       toast.error(t('toast.error.failedToDeleteHoliday'));
     }
   };
@@ -173,8 +142,8 @@ export default function HolidaySettings() {
     <div className="w-full flex flex-col">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-lg font-semibold text-default-800">{t('pages.holidayManagement')}</h2>
-          <p className="text-sm text-default-500">{t('pages.manageSchoolHolidaysAndAcademicCalendar')}</p>
+          <h2 className="text-lg font-semibold text-fg">{t('pages.holidayManagement')}</h2>
+          <p className="text-sm text-fg-muted">{t('pages.manageSchoolHolidaysAndAcademicCalendar')}</p>
         </div>
         <Button 
           color="primary" 
@@ -206,12 +175,12 @@ export default function HolidaySettings() {
           </p>
         </div>
 
-        <div className="p-4 bg-default-50 rounded-lg border border-default-200">
+        <div className="p-4 bg-surface-2 rounded-lg border border-border-token">
           <div className="flex items-center gap-2 mb-2">
-            <Calendar size={18} className="text-default-500" />
-            <span className="text-xs text-default-500 uppercase tracking-wider">{t('pages.regional')}</span>
+            <Calendar size={18} className="text-fg-muted" />
+            <span className="text-xs text-fg-muted uppercase tracking-wider">{t('pages.regional')}</span>
           </div>
-          <p className="text-2xl font-semibold text-default-900">
+          <p className="text-2xl font-semibold text-fg">
             {holidays.filter(h => h.holidayType === "Regional").length}
           </p>
         </div>
@@ -227,15 +196,15 @@ export default function HolidaySettings() {
         </div>
       </div>
 
-      <Card className="shadow-sm border border-default-200 rounded-lg">
+      <Card className="shadow-sm border border-border-token rounded-lg">
         <CardBody className="p-0">
           <Table
             aria-label={t('aria.misc.holidays')}
             removeWrapper
             classNames={{
               base: "overflow-visible",
-              th: "bg-transparent text-default-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200",
-              td: "py-5 border-b border-default-100",
+              th: "bg-transparent text-fg-faint font-medium text-xs uppercase tracking-wider h-12 border-b border-border-token",
+              td: "py-5 border-b border-divider",
               tbody: "[&>tr:last-child>td]:border-none"
             }}
           >
@@ -252,8 +221,8 @@ export default function HolidaySettings() {
                 const dayName = date.toLocaleDateString(getDateLocale(), { weekday: 'short' });
                 return (
                   <TableRow key={holiday._id || holiday.id}>
-                    <TableCell className="font-medium text-default-700">{holiday.title}</TableCell>
-                    <TableCell className="text-sm text-default-600">
+                    <TableCell className="font-medium text-fg">{holiday.title}</TableCell>
+                    <TableCell className="text-sm text-fg-muted">
                       {date.toLocaleDateString(getDateLocale(), { day: 'numeric', month: 'short', year: 'numeric' })}
                     </TableCell>
                     <TableCell>
@@ -265,24 +234,26 @@ export default function HolidaySettings() {
                         {holiday.holidayType || "School"}
                       </Chip>
                     </TableCell>
-                    <TableCell className="text-sm text-default-500">{dayName}</TableCell>
+                    <TableCell className="text-sm text-fg-muted">{dayName}</TableCell>
                     <TableCell>
                       <div className="flex gap-2 justify-end">
-                        <Button 
-                          isIconOnly 
-                          size="sm" 
-                          variant="light" 
-                          color="primary" 
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          color="primary"
+                          aria-label="Edit holiday"
                           onPress={() => handleOpen(holiday)}
                           className="transition-all duration-200"
                         >
                           <Edit size={16} />
                         </Button>
-                        <Button 
-                          isIconOnly 
-                          size="sm" 
-                          variant="light" 
-                          color="danger" 
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          color="danger"
+                          aria-label="Delete holiday"
                           onPress={() => handleDelete(holiday._id || holiday.id)}
                           className="transition-all duration-200"
                         >
@@ -300,7 +271,7 @@ export default function HolidaySettings() {
           <div ref={loaderRef} className="flex justify-center py-4">
             {isLoadingMore && <Spinner size="sm" color="primary" />}
             {!hasMore && sortedHolidays.length > ITEMS_PER_LOAD && (
-              <span className="text-default-400 text-sm">All {sortedHolidays.length} holidays loaded</span>
+              <span className="text-fg-faint text-sm">All {sortedHolidays.length} holidays loaded</span>
             )}
           </div>
         </CardBody>

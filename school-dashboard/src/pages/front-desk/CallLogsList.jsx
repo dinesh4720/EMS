@@ -4,7 +4,7 @@ import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Textarea, useDisclosure, Button,
   Select, SelectItem, Checkbox
 } from '@heroui/react';
-import { Edit, Trash2, Eye, Plus, Phone, Search } from 'lucide-react';
+import { Edit, Trash2, Eye, Plus, Phone, Search, Download } from 'lucide-react';
 import { frontDeskApi } from '../../services/api';
 import { validatePhone, validateFutureDate } from '../../utils/validations';
 import toast from 'react-hot-toast';
@@ -12,6 +12,8 @@ import { useTranslation } from 'react-i18next';
 import { formatShortDate, formatDateTime} from '../../utils/dateFormatter';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
+import logger from '../../utils/logger';
+
 
 const CALL_PURPOSES = [
   { key: 'ADMISSION_INQUIRY', label: 'Admission Inquiry' },
@@ -68,7 +70,7 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
       const response = await frontDeskApi.getCallLogs();
       setCallLogs(Array.isArray(response) ? response : []);
     } catch (error) {
-      console.error('Failed to load call logs:', error);
+      logger.error('Failed to load call logs:', error);
       toast.error(t('toast.error.failedToLoadCallLogs'));
     } finally {
       setLoading(false);
@@ -212,6 +214,53 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
     return log?.purpose || '-';
   };
 
+  const escapeCsv = (val) => {
+    if (val == null) return '';
+    const str = String(val).replace(/\r?\n/g, ' ').trim();
+    if (str.includes(',') || str.includes('"')) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
+
+  const handleExportCsv = () => {
+    if (!filteredCallLogs.length) {
+      toast.error('No call logs to export');
+      return;
+    }
+    const header = [
+      'Caller Name', 'Phone', 'Purpose', 'Date/Time',
+      'Title', 'Intent', 'Key Notes', 'Summary',
+      'Callback Required', 'Callback Date', 'Callback Time',
+    ];
+    const rows = filteredCallLogs.map((log) => [
+      log.callerName,
+      log.phoneNumber,
+      getPurposeLabel(log),
+      log.dateTime ? formatDateTime(log.dateTime) : '',
+      log.title,
+      log.intent,
+      log.keyNotes,
+      log.summary,
+      log.callbackRequired ? 'Yes' : 'No',
+      log.callbackDate ? formatShortDate(log.callbackDate) : '',
+      log.callbackTime || '',
+    ].map(escapeCsv).join(','));
+    const csv = [header.join(','), ...rows].join('\n');
+    // U+FEFF BOM ensures Excel detects UTF-8 encoding.
+    const BOM = String.fromCharCode(0xFEFF);
+    const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `call-logs-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${filteredCallLogs.length} call log${filteredCallLogs.length === 1 ? '' : 's'}`);
+  };
+
   const filteredCallLogs = callLogs.filter(log => {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
@@ -235,10 +284,21 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
           isClearable
           onClear={() => setSearchTerm('')}
         />
-        <Button color="primary" startContent={<Plus size={16} />} onPress={onOpen}>
-          Log New Call
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="bordered"
+            startContent={<Download size={16} />}
+            onPress={handleExportCsv}
+            isDisabled={!filteredCallLogs.length}
+          >
+            Export CSV
+          </Button>
+          <Button color="primary" startContent={<Plus size={16} />} onPress={onOpen}>
+            Log New Call
+          </Button>
+        </div>
       </div>
+      <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
       <Table aria-label={t('aria.tables.callLogs')} removeWrapper>
         <TableHeader>
           <TableColumn scope="col">{t('pages.cALLERName')}</TableColumn>
@@ -278,6 +338,7 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
                     color="primary"
                     variant="light"
                     isIconOnly
+                    aria-label="View call log"
                     onPress={() => handleView(log)}
                   >
                     <Eye size={14} />
@@ -287,6 +348,7 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
                     color="warning"
                     variant="light"
                     isIconOnly
+                    aria-label="Edit call log"
                     onPress={() => handleEdit(log)}
                   >
                     <Edit size={14} />
@@ -296,6 +358,7 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
                     color="danger"
                     variant="light"
                     isIconOnly
+                    aria-label="Delete call log"
                     onPress={() => handleDelete(log._id)}
                   >
                     <Trash2 size={14} />
@@ -306,6 +369,7 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
           )}
         </TableBody>
       </Table>
+      </div>
 
       {/* Add/Edit Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">

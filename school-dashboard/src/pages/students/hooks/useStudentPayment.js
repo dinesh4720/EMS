@@ -9,6 +9,8 @@ import { studentFeesApi } from '../../../services/api';
 import { useTranslation } from 'react-i18next';
 import { toTodayDateString } from '../../../utils/dateFormatter';
 import { formatCurrency } from '../../../utils/numberFormatter';
+import logger from '../../../utils/logger';
+
 
 export function useStudentPayment(studentId, {
   currentAcademicYear,
@@ -104,7 +106,7 @@ export function useStudentPayment(studentId, {
 
       onSuccess?.();
     } catch (error) {
-      console.error('Payment error:', error);
+      logger.error('Payment error:', error);
       toast.error(
         t('toast.error.failedToRecordPayment', 'Failed to record payment') +
           ': ' +

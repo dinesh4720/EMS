@@ -17,10 +17,15 @@ export default function PageLayout({
   const hasTabs = tabs && tabs.length > 0;
 
   return (
-    <div className={cn("bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-lg h-full flex flex-col min-w-0 overflow-hidden", className)}>
+    <div
+      className={cn(
+        "bg-surface border border-border-token rounded-lg h-full flex flex-col min-w-0 overflow-hidden",
+        className
+      )}
+    >
       {/* Tabs */}
       {hasTabs && (
-        <div className="px-6 py-3 border-b border-gray-100 dark:border-zinc-800 shrink-0">
+        <div className="px-6 py-3 border-b border-border-token shrink-0">
           <nav className="flex gap-1">
             {tabs.map((tab) => (
               <button
@@ -29,8 +34,8 @@ export default function PageLayout({
                 className={cn(
                   "px-5 py-2 text-sm font-medium rounded-md transition-colors",
                   activeTab === tab.key
-                    ? "bg-gray-900 text-white"
-                    : "text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800"
+                    ? "bg-fg text-bg"
+                    : "text-fg-muted hover:text-fg hover:bg-surface-hover"
                 )}
               >
                 {tab.title}
@@ -42,11 +47,11 @@ export default function PageLayout({
 
       {/* Header */}
       {header && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 py-5 border-b border-gray-100 dark:border-zinc-800 shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 py-5 border-b border-border-token shrink-0">
           <div>
-            <h1 className="text-xl font-medium text-gray-900 dark:text-zinc-100">{header.title}</h1>
+            <h1 className="text-xl font-medium text-fg">{header.title}</h1>
             {header.description && (
-              <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">{header.description}</p>
+              <p className="text-sm text-fg-muted mt-1">{header.description}</p>
             )}
           </div>
           {actions && <div className="flex items-center gap-2">{actions}</div>}

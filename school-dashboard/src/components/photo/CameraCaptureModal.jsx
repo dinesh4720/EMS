@@ -5,6 +5,8 @@ import CameraView from "./CameraView";
 import PhotoEditorModal from "./PhotoEditorModal";
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
+import logger from '../../utils/logger';
+
 
 /**
  * CameraCaptureModal - Profile photo capture modal with upload and camera options
@@ -35,6 +37,7 @@ const CameraCaptureModal = ({ isOpen, onClose, onPhotoCaptured, title, descripti
     reader.onloadend = () => {
       setEditorImage(reader.result);
       setIsEditorOpen(true);
+      reader.onloadend = null;
     };
     reader.readAsDataURL(file);
   }, []);
@@ -80,7 +83,7 @@ const CameraCaptureModal = ({ isOpen, onClose, onPhotoCaptured, title, descripti
         handleClose();
       })
       .catch(err => {
-        console.error("Error processing cropped image:", err);
+        logger.error("Error processing cropped image:", err);
       });
   }, [onPhotoCaptured, handleClose]);
 

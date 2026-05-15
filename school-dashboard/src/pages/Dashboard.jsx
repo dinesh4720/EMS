@@ -1,821 +1,940 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  RefreshCw,
+  GraduationCap,
+  IndianRupee,
+  AlertCircle,
+  ArrowRight,
+  CalendarDays,
+  AlertTriangle,
+  Info,
+  Megaphone,
+  Users,
+  SlidersHorizontal,
+  Check,
+} from "lucide-react";
+
 import { useApp } from "../context/AppContext";
-import { announcementsApi, attendanceApi, feesApi, studentFeesApi } from "../services/api";
-import StatCard from "../components/StatCard";
-import ChartSection from "../components/ChartSection";
-import ActivityFeed from "../components/ActivityFeed";
-import AlertsPanel from "../components/AlertsPanel";
-import QuickActions from "../components/QuickActions";
+import { useAuth } from "../context/AuthContext";
+import useDashboardData from "./dashboard/useDashboardData";
 import SubstitutionAlertPanel from "../components/SubstitutionAlertPanel";
 import NpsSurveyModal from "../components/NpsSurveyModal";
-import GuidedTour, { useGuidedTour } from "../components/ui/GuidedTour";
-import { getStoredUser } from "../utils/authSession";
-import {
-  GraduationCap,
-  Users,
-  IndianRupee,
-  Calendar,
-  CheckCircle2,
-  AlertCircle,
-  BookOpen,
-  ClipboardList,
-  Clock,
-} from "lucide-react";
-import { getDateLocale } from "../i18n/index";
-const getNumberFormatter = () => new Intl.NumberFormat(getDateLocale());
-const getCurrencyFormatter = () => new Intl.NumberFormat(getDateLocale(), {
-  style: "currency",
-  currency: "INR",
-  maximumFractionDigits: 0,
-});
+import Skeleton from "../components/ui/Skeleton";
+import PhotoAvatar from "../components/PhotoAvatar";
+import { formatRelativeTime, toTodayDateString } from "../utils/dateFormatter";
 
-const getMonthFormatter = () => new Intl.DateTimeFormat(getDateLocale(), { month: "short" });
-
-const createEmptyAttendanceSnapshot = (totalClasses = 0) => ({
-  studentRate: null,
-  studentPresent: 0,
-  studentTotal: 0,
-  markedClasses: 0,
-  totalClasses,
-  staffRate: null,
-  staffPresent: 0,
-  staffMarked: 0,
-  staffTotal: 0,
-});
-
-function toValidDate(value) {
-  if (!value) {
-    return null;
-  }
-
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+/* ─── Helpers ─── */
+function fmt(n, digits) {
+  return n.toFixed(digits).replace(/\.0+$/, "");
 }
 
-function getRecordDate(record) {
-  return (
-    record?.paymentDate ||
-    record?.date ||
-    record?.createdAt ||
-    record?.updatedAt ||
-    record?.sentAt ||
-    record?.scheduledFor ||
-    null
-  );
+function compactINR(n) {
+  if (n == null) return "—";
+  if (n < 0) return `-${compactINR(-n)}`;
+  if (n >= 1e7) return `₹${fmt(n / 1e7, n >= 1e8 ? 0 : 1)}Cr`;
+  if (n >= 1e5) return `₹${fmt(n / 1e5, n >= 1e6 ? 0 : 1)}L`;
+  if (n >= 1e3) return `₹${fmt(n / 1e3, n >= 1e4 ? 0 : 1)}K`;
+  return `₹${Math.round(n)}`;
 }
 
-function isSameDay(date, reference) {
-  return (
-    date.getFullYear() === reference.getFullYear() &&
-    date.getMonth() === reference.getMonth() &&
-    date.getDate() === reference.getDate()
-  );
+function initials(name) {
+  return (name || "")
+    .trim()
+    .split(/\s+/)
+    .map((part) => part[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 }
 
-function isSameMonth(date, reference) {
-  return (
-    date.getFullYear() === reference.getFullYear() &&
-    date.getMonth() === reference.getMonth()
-  );
-}
-
-function normalizePayments(response, students) {
-  const studentsById = new Map((students || []).map((student) => [String(student.id), student]));
-  const records = Array.isArray(response)
-    ? response
-    : Array.isArray(response?.payments)
-      ? response.payments
-      : [];
-
-  return records
-    .map((payment) => {
-      const studentId = String(payment?.studentId?._id || payment?.studentId || "");
-      const studentRecord = studentsById.get(studentId);
-      const recordDate = toValidDate(getRecordDate(payment));
-      const amount = Number(payment?.amount || payment?.paidAmount || 0);
-      const status = String(payment?.status || "paid").toLowerCase();
-
-      return {
-        id: payment?._id || payment?.id || `${studentId}-${recordDate?.toISOString() || "payment"}`,
-        student: payment?.studentName || payment?.studentId?.name || studentRecord?.name || "Unknown student",
-        className: payment?.className || payment?.studentId?.className || studentRecord?.class || studentRecord?.className || "—",
-        amount: Number.isFinite(amount) ? amount : 0,
-        status,
-        date: recordDate?.toISOString() || null,
-      };
-    })
-    .filter((payment) => payment.date)
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
-}
-
-function isSuccessfulPayment(payment) {
-  return !["failed", "cancelled", "refunded"].includes(String(payment?.status || "").toLowerCase());
-}
-
-function normalizeAnnouncements(response) {
-  const records = Array.isArray(response)
-    ? response
-    : Array.isArray(response?.announcements)
-      ? response.announcements
-      : [];
-
-  return records
-    .map((announcement) => {
-      const recordDate = toValidDate(getRecordDate(announcement));
-
-      return {
-        id: announcement?._id || announcement?.id || announcement?.title || "announcement",
-        title: announcement?.title || "Announcement",
-        content: announcement?.content || announcement?.message || "",
-        status: announcement?.status || "draft",
-        date: recordDate?.toISOString() || null,
-      };
-    })
-    .filter((announcement) => announcement.date)
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
-}
-
-function createFeeCollectionSeries(payments) {
-  const now = new Date();
-  const months = [];
-
-  for (let index = 5; index >= 0; index -= 1) {
-    const monthDate = new Date(now.getFullYear(), now.getMonth() - index, 1);
-    months.push({
-      key: `${monthDate.getFullYear()}-${monthDate.getMonth()}`,
-      month: getMonthFormatter().format(monthDate),
-      collected: 0,
-    });
-  }
-
-  const monthIndex = new Map(months.map((month) => [month.key, month]));
-
-  payments.forEach((payment) => {
-    const paymentDate = toValidDate(payment.date);
-    if (!paymentDate) {
-      return;
-    }
-
-    const key = `${paymentDate.getFullYear()}-${paymentDate.getMonth()}`;
-    const month = monthIndex.get(key);
-    if (month) {
-      month.collected += payment.amount;
-    }
-  });
-
-  return months;
-}
-
-const DASHBOARD_TOUR_STEPS = [
-  {
-    target: '[data-tour="sidebar"]',
-    title: 'Navigation Sidebar',
-    content: 'Use the sidebar to navigate between all modules — Students, Fees, Academics, Staff, and more.',
-    placement: 'right',
-  },
-  {
-    target: '[data-tour="stat-cards"]',
-    title: 'Key Metrics',
-    content: 'These cards show real-time stats: total students, staff, fee collection, and today\'s attendance.',
-    placement: 'bottom',
-  },
-  {
-    target: '[data-tour="notifications"]',
-    title: 'Notifications',
-    content: 'Stay updated with alerts for pending attendance, overdue fees, and important announcements.',
-    placement: 'bottom',
-  },
-  {
-    target: '[data-tour="fee-chart"]',
-    title: 'Fee Collection Chart',
-    content: 'Track monthly fee collection trends over the last 6 months.',
-    placement: 'top',
-  },
+const AVATAR_GRADIENTS = [
+  "linear-gradient(135deg,oklch(70% 0.14 30),oklch(55% 0.18 350))",
+  "linear-gradient(135deg,oklch(72% 0.13 220),oklch(58% 0.17 270))",
+  "linear-gradient(135deg,oklch(75% 0.14 130),oklch(60% 0.18 160))",
+  "linear-gradient(135deg,oklch(80% 0.15 60),oklch(65% 0.18 30))",
+  "linear-gradient(135deg,oklch(75% 0.16 320),oklch(58% 0.18 290))",
+  "linear-gradient(135deg,oklch(72% 0.15 200),oklch(55% 0.18 250))",
 ];
 
+function avatarFor(name, fallbackIndex = 0) {
+  const seed = (name || "").split("").reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+  return AVATAR_GRADIENTS[(seed || fallbackIndex) % AVATAR_GRADIENTS.length];
+}
+
+function isBirthdayToday(dobStr) {
+  if (!dobStr) return false;
+  const today = new Date();
+  const todayMonth = today.getMonth();
+  const todayDate = today.getDate();
+
+  let month, day;
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dobStr)) {
+    [, day, month] = dobStr.match(/^(\d{2})\/(\d{2})\/\d{4}$/);
+  } else {
+    const d = new Date(dobStr);
+    if (isNaN(d.getTime())) return false;
+    month = d.getMonth() + 1;
+    day = d.getDate();
+  }
+  return parseInt(month, 10) - 1 === todayMonth && parseInt(day, 10) === todayDate;
+}
+
+/* ─── Section Config ─── */
+const SECTION_CONFIG = [
+  { key: "yourDay", label: "Your day", icon: CalendarDays },
+  { key: "actions", label: "Actions", icon: AlertCircle },
+  { key: "people", label: "People", icon: Users },
+  { key: "announcements", label: "Notices", icon: Megaphone },
+  { key: "recentPayments", label: "Payments", icon: IndianRupee },
+];
+
+const DEFAULT_VISIBILITY = Object.fromEntries(
+  SECTION_CONFIG.map((s) => [s.key, true])
+);
+
+/* ─── Sub-components ─── */
+
+function StatCard({ icon: Icon, label, value, sub, tone, onClick, loading }) {
+  if (loading) {
+    return (
+      <div className="stat-card" aria-busy="true">
+        <div className="stat-card__row">
+          <Skeleton variant="circle" className="h-9 w-9" />
+          <Skeleton variant="text" className="h-3 w-24" />
+        </div>
+        <Skeleton variant="text" className="h-8 w-28 mt-1" />
+        <Skeleton variant="text" className="h-3 w-32 mt-1" />
+      </div>
+    );
+  }
+  return (
+    <button type="button" className="stat-card" onClick={onClick}>
+      <div className="stat-card__row">
+        <div className={`stat-card__icon stat-card__icon--${tone}`}>
+          <Icon size={18} strokeWidth={2} />
+        </div>
+        <span className="stat-card__label">{label}</span>
+      </div>
+      <div className="stat-card__value">{value}</div>
+      {sub && <div className="stat-card__sub">{sub}</div>}
+    </button>
+  );
+}
+
+function DashboardSection({ title, count, children }) {
+  return (
+    <div className="dash-section">
+      <h2 className="dash-section-title">
+        {title}
+        {count != null && <span className="dash-section-count">{count}</span>}
+      </h2>
+      <div className="dash-section-card">{children}</div>
+    </div>
+  );
+}
+
+function EmptyState({ icon: Icon, message }) {
+  return (
+    <div className="empty">
+      {Icon && <Icon size={20} strokeWidth={1.5} />}
+      <span>{message}</span>
+    </div>
+  );
+}
+
+function PeopleSection({ staff, students, staffAttendance, classes }) {
+  const [tab, setTab] = useState("staff");
+  const todayStr = toTodayDateString();
+
+  /* ── Staff data ── */
+  const activeStaff = useMemo(
+    () => (staff || []).filter((s) => (s.status || "active") === "active"),
+    [staff]
+  );
+
+  const absentStaff = useMemo(() => {
+    return activeStaff.filter((s) => {
+      const rec = staffAttendance?.[s.id]?.[todayStr];
+      return rec && rec.status !== "present" && rec.status !== "unmarked";
+    });
+  }, [activeStaff, staffAttendance, todayStr]);
+
+  const staffBirthdays = useMemo(
+    () => activeStaff.filter((s) => isBirthdayToday(s.dob)),
+    [activeStaff]
+  );
+
+  const presentStaff = useMemo(() => {
+    return activeStaff.filter((s) => {
+      const rec = staffAttendance?.[s.id]?.[todayStr];
+      return rec?.status === "present";
+    });
+  }, [activeStaff, staffAttendance, todayStr]);
+
+  /* ── Student data ── */
+  const activeStudents = useMemo(
+    () => (students || []).filter((s) => (s.status || "active") === "active"),
+    [students]
+  );
+
+  const studentBirthdays = useMemo(
+    () => activeStudents.filter((s) => isBirthdayToday(s.dateOfBirth || s.dob)),
+    [activeStudents]
+  );
+
+  const feeDueStudents = useMemo(
+    () => activeStudents.filter((s) => ["overdue", "partial", "pending"].includes(s.feeStatus)),
+    [activeStudents]
+  );
+
+  const classMap = useMemo(() => {
+    const map = {};
+    (classes || []).forEach((c) => {
+      map[c.id] = c.name || c.className || "";
+    });
+    return map;
+  }, [classes]);
+
+  function staffStatusBadge(s) {
+    const rec = staffAttendance?.[s.id]?.[todayStr];
+    if (!rec || rec.status === "unmarked") return null;
+    const map = {
+      present: { label: "Present", tone: "ok" },
+      absent: { label: "Absent", tone: "danger" },
+      leave: { label: "Leave", tone: "warn" },
+      halfday: { label: "Half day", tone: "warn" },
+    };
+    const info = map[rec.status];
+    if (!info) return null;
+    return <span className={`status status--${info.tone}`}>{info.label}</span>;
+  }
+
+  function PersonRow({ name, sub, badge, photo, type }) {
+    return (
+      <div className="pulse">
+        <PhotoAvatar
+          name={name}
+          src={photo}
+          size="sm"
+          type={type}
+          className="pulse__avatar-img"
+        />
+        <div className="pulse__main">
+          <div className="pulse__name">{name}</div>
+          <div className="pulse__sub">{sub}</div>
+        </div>
+        {badge}
+      </div>
+    );
+  }
+
+  return (
+    <div className="dash-section">
+      <div className="dash-people-header">
+        <h2 className="dash-section-title">
+          People
+        </h2>
+        <div className="dash-people-tabs">
+          <button
+            type="button"
+            className={`dash-people-tab${tab === "staff" ? " is-active" : ""}`}
+            onClick={() => setTab("staff")}
+          >
+            Staff
+          </button>
+          <button
+            type="button"
+            className={`dash-people-tab${tab === "students" ? " is-active" : ""}`}
+            onClick={() => setTab("students")}
+          >
+            Students
+          </button>
+        </div>
+      </div>
+      <div className="dash-section-card">
+        {tab === "staff" ? (
+          <div className="pulse-list">
+            {absentStaff.length > 0 && (
+              <>
+                <div className="pulse__group">
+                  Absent today · {absentStaff.length}
+                </div>
+                {absentStaff.map((s) => (
+                  <PersonRow
+                    key={s.id}
+                    name={s.name}
+                    photo={s.picture || s.photo}
+                    type="staff"
+                    sub={[s.role, s.department].filter(Boolean).join(" · ")}
+                    badge={staffStatusBadge(s)}
+                  />
+                ))}
+              </>
+            )}
+
+            {staffBirthdays.length > 0 && (
+              <>
+                <div className="pulse__group">
+                  Birthdays · {staffBirthdays.length}
+                </div>
+                {staffBirthdays.map((s) => (
+                  <PersonRow
+                    key={s.id}
+                    name={s.name}
+                    photo={s.picture || s.photo}
+                    type="staff"
+                    sub={[s.role, s.department].filter(Boolean).join(" · ")}
+                    badge={
+                      <button type="button" className="btn btn--xs btn--ghost">
+                        Wish
+                      </button>
+                    }
+                  />
+                ))}
+              </>
+            )}
+
+            {presentStaff.length > 0 && (
+              <>
+                <div className="pulse__group">
+                  On campus · {presentStaff.length}
+                </div>
+                {presentStaff.slice(0, 5).map((s) => (
+                  <PersonRow
+                    key={s.id}
+                    name={s.name}
+                    photo={s.picture || s.photo}
+                    type="staff"
+                    sub={[s.role, s.department].filter(Boolean).join(" · ")}
+                    badge={staffStatusBadge(s)}
+                  />
+                ))}
+              </>
+            )}
+
+            {absentStaff.length === 0 && staffBirthdays.length === 0 && presentStaff.length === 0 && (
+              <EmptyState icon={Users} message="No staff data available" />
+            )}
+          </div>
+        ) : (
+          <div className="pulse-list">
+            {studentBirthdays.length > 0 && (
+              <>
+                <div className="pulse__group">
+                  Birthdays · {studentBirthdays.length}
+                </div>
+                {studentBirthdays.map((s) => (
+                  <PersonRow
+                    key={s.id}
+                    name={s.name}
+                    photo={s.photo || s.picture}
+                    type="student"
+                    sub={classMap[s.classId] || s.className || ""}
+                    badge={
+                      <button type="button" className="btn btn--xs btn--ghost">
+                        Wish
+                      </button>
+                    }
+                  />
+                ))}
+              </>
+            )}
+
+            {feeDueStudents.length > 0 && (
+              <>
+                <div className="pulse__group">
+                  Fee due · {feeDueStudents.length}
+                </div>
+                {feeDueStudents.slice(0, 5).map((s) => (
+                  <PersonRow
+                    key={s.id}
+                    name={s.name}
+                    photo={s.photo || s.picture}
+                    type="student"
+                    sub={[classMap[s.classId] || s.className, s.feeStatus].filter(Boolean).join(" · ")}
+                    badge={<span className="status status--danger">Due</span>}
+                  />
+                ))}
+              </>
+            )}
+
+            {activeStudents.length > 0 && feeDueStudents.length === 0 && studentBirthdays.length === 0 && (
+              <>
+                <div className="pulse__group">
+                  Active · {activeStudents.length}
+                </div>
+                {activeStudents.slice(0, 6).map((s) => (
+                  <PersonRow
+                    key={s.id}
+                    name={s.name}
+                    photo={s.photo || s.picture}
+                    type="student"
+                    sub={classMap[s.classId] || s.className || ""}
+                    badge={<span className="status status--ok">Active</span>}
+                  />
+                ))}
+              </>
+            )}
+
+            {activeStudents.length === 0 && (
+              <EmptyState icon={Users} message="No student data available" />
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SectionDropdown({ visible, onToggle }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handle(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [open]);
+
+  return (
+    <div className="dash-section-dropdown" ref={ref}>
+      <button
+        type="button"
+        className="iconbtn iconbtn--sm"
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Edit sections"
+        title="Edit sections"
+      >
+        <SlidersHorizontal size={13} />
+      </button>
+      {open && (
+        <div className="dash-section-dropdown__menu">
+          <div className="dash-section-dropdown__head">Show sections</div>
+          {SECTION_CONFIG.map(({ key, label, icon: Icon }) => {
+            const isActive = visible[key];
+            return (
+              <button
+                key={key}
+                type="button"
+                className="dash-section-dropdown__item"
+                onClick={() => onToggle(key)}
+              >
+                <span className={`dash-section-dropdown__check${isActive ? " is-checked" : ""}`}>
+                  {isActive && <Check size={11} strokeWidth={3} />}
+                </span>
+                <Icon size={13} />
+                <span className="dash-section-dropdown__label">{label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TimelineRow({ time, title, meta, status, mine, now, done }) {
+  return (
+    <div
+      className={`trow${mine ? " trow--mine" : ""}${now ? " trow--now" : ""}${done ? " trow--done" : ""}`}
+      aria-current={now ? "true" : undefined}
+    >
+      <div className="trow__time">{time}</div>
+      <div className="trow__content">
+        <div className="trow__top">
+          <span className="trow__title">
+            {title}
+            {mine && <span className="trow__mine-tag">YOU</span>}
+          </span>
+          {status}
+        </div>
+        {meta && <div className="trow__meta">{meta}</div>}
+      </div>
+    </div>
+  );
+}
+
+function PulseRow({ name, sub, badge, idx }) {
+  return (
+    <div className="pulse">
+      <div className="pulse__avatar" style={{ background: avatarFor(name, idx) }}>
+        {initials(name)}
+      </div>
+      <div className="pulse__main">
+        <div className="pulse__name">{name}</div>
+        <div className="pulse__sub">{sub}</div>
+      </div>
+      {badge}
+    </div>
+  );
+}
+
+function ActionItem({ kind, title, body, meta, primary, onPrimary, onDismiss }) {
+  const iconMap = {
+    danger: AlertCircle,
+    warn: AlertTriangle,
+    info: Info,
+  };
+  const toneClass = {
+    danger: "action-item--danger",
+    warn: "action-item--warn",
+    info: "action-item--info",
+  }[kind];
+  const Icon = iconMap[kind] || Info;
+
+  return (
+    <div className={`action-item ${toneClass}`}>
+      <div className="action-item__top">
+        <div className={`action-item__icon action-item__icon--${kind}`}>
+          <Icon size={16} strokeWidth={2} />
+        </div>
+        <div className="action-item__content">
+          <div className="action-item__title">{title}</div>
+          <div className="action-item__meta">
+            {body}
+            {meta && <span className="action-item__meta-sep">·</span>}
+            {meta}
+          </div>
+        </div>
+        {primary && (
+          <button type="button" className="action-item__cta" onClick={onPrimary}>
+            {primary}
+            <ArrowRight size={12} />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function NoticeRow({ title, content, date }) {
+  return (
+    <div className="notice-row">
+      <div className="notice-row__dot" />
+      <div className="notice-row__content">
+        <div className="notice-row__title">{title}</div>
+        {content && (
+          <div className="notice-row__body">
+            {content.length > 80 ? `${content.slice(0, 80)}…` : content}
+          </div>
+        )}
+        <div className="notice-row__date">{formatRelativeTime(date)}</div>
+      </div>
+    </div>
+  );
+}
+
+function PaymentRow({ student, className, amount, date }) {
+  return (
+    <div className="payment-row">
+      <div className="payment-row__amount">{compactINR(amount)}</div>
+      <div className="payment-row__content">
+        <div className="payment-row__student">{student}</div>
+        <div className="payment-row__meta">
+          {className && <span>{className}</span>}
+          <span>{formatRelativeTime(date)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Main Dashboard ─── */
+
 function Dashboard() {
+  const navigate = useNavigate();
   const {
-    dashboardStats,
     classes,
     currentAcademicYear,
-    loading,
     staff,
     staffAttendance,
     students,
   } = useApp();
+  const { user: authUser } = useAuth();
 
-  const { isOpen: isTourOpen, closeTour } = useGuidedTour('dashboard-v1', true);
-
-  const [recentPayments, setRecentPayments] = useState([]);
-  const [recentAnnouncements, setRecentAnnouncements] = useState([]);
-  const [feeCollectionData, setFeeCollectionData] = useState([]);
-  const [paymentSnapshot, setPaymentSnapshot] = useState({ totalPending: null, totalCollected: null, today: null, month: null });
-  const [attendanceSnapshot, setAttendanceSnapshot] = useState(() => createEmptyAttendanceSnapshot());
-  const [dashboardLoading, setDashboardLoading] = useState(true);
-  const [paymentsLoaded, setPaymentsLoaded] = useState(false);
-
-  // Use a ref for students so the payment effect doesn't re-run when students load.
-  // Students are only used for name resolution (cosmetic), not for filtering/amounts.
-  const studentsRef = useRef(students);
-  studentsRef.current = students;
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadDashboardFeed = async () => {
-      setDashboardLoading(true);
-      setPaymentsLoaded(false);
-
-      try {
-        const [paymentsResult, announcementsResult, feeStructuresResult] = await Promise.allSettled([
-          feesApi.getPayments({ academicYear: currentAcademicYear }),
-          announcementsApi.getAll({}),
-          studentFeesApi.getAll(currentAcademicYear),
-        ]);
-
-        if (cancelled) {
-          return;
-        }
-
-        const normalizedPayments = paymentsResult.status === "fulfilled"
-          ? normalizePayments(paymentsResult.value?.payments ?? [], studentsRef.current)
-          : [];
-        const normalizedAnnouncements = announcementsResult.status === "fulfilled"
-          ? normalizeAnnouncements(announcementsResult.value)
-          : [];
-        const now = new Date();
-        const settledPayments = normalizedPayments.filter(isSuccessfulPayment);
-        const liveAnnouncements = normalizedAnnouncements.filter((announcement) => announcement.status !== "draft");
-
-        // Compute fee totals from student fee structures
-        const feeStructures = feeStructuresResult.status === "fulfilled"
-          ? (Array.isArray(feeStructuresResult.value) ? feeStructuresResult.value : [])
-          : [];
-        const totalPending = feeStructures.reduce((sum, fs) => sum + (fs.totalBalance || 0), 0);
-        const totalCollected = feeStructures.reduce((sum, fs) => sum + (fs.totalPaid || 0), 0);
-
-        setRecentPayments(settledPayments.slice(0, 6));
-        setRecentAnnouncements((liveAnnouncements.length > 0 ? liveAnnouncements : normalizedAnnouncements).slice(0, 6));
-        setFeeCollectionData(createFeeCollectionSeries(settledPayments));
-        setPaymentSnapshot({
-          totalPending: feeStructuresResult.status === "fulfilled" ? totalPending : null,
-          totalCollected: feeStructuresResult.status === "fulfilled" ? totalCollected : null,
-          today: paymentsResult.status === "fulfilled" ? settledPayments.reduce((sum, payment) => {
-            const paymentDate = toValidDate(payment.date);
-            return paymentDate && isSameDay(paymentDate, now) ? sum + payment.amount : sum;
-          }, 0) : null,
-          month: paymentsResult.status === "fulfilled" ? settledPayments.reduce((sum, payment) => {
-            const paymentDate = toValidDate(payment.date);
-            return paymentDate && isSameMonth(paymentDate, now) ? sum + payment.amount : sum;
-          }, 0) : null,
-        });
-        setPaymentsLoaded(paymentsResult.status === "fulfilled" || feeStructuresResult.status === "fulfilled");
-      } finally {
-        if (!cancelled) {
-          setDashboardLoading(false);
-        }
-      }
-    };
-
-    loadDashboardFeed();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [currentAcademicYear]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadStudentAttendanceSnapshot = async () => {
-      const activeStudents = (students || []).filter((student) => (student.status || "active") === "active");
-      const classesWithStudents = (classes || []).filter((classItem) =>
-        activeStudents.some((student) => String(student.classId) === String(classItem.id))
-      );
-
-      if (!classesWithStudents.length) {
-        setAttendanceSnapshot((current) => ({
-          ...current,
-          studentRate: null,
-          studentPresent: 0,
-          studentTotal: 0,
-          markedClasses: 0,
-          totalClasses: 0,
-        }));
-        return;
-      }
-
-      try {
-        // Single API call replaces N per-class calls (fixes 429 rate-limit issue)
-        const snapshot = await attendanceApi.getTodaySnapshot();
-
-        if (cancelled) return;
-
-        const classSummaries = snapshot?.classes || {};
-        let totalPresent = 0;
-        let totalStudentsInMarkedClasses = 0;
-        let markedClassCount = 0;
-
-        classesWithStudents.forEach((classItem) => {
-          const classData = classSummaries[String(classItem.id)];
-          if (classData && classData.total > 0) {
-            markedClassCount += 1;
-            const classStudentCount = activeStudents.filter(
-              (student) => String(student.classId) === String(classItem.id)
-            ).length;
-            totalStudentsInMarkedClasses += classStudentCount;
-            totalPresent += classData.present || 0;
-          }
-        });
-
-        setAttendanceSnapshot((current) => ({
-          ...current,
-          studentRate: totalStudentsInMarkedClasses > 0
-            ? Math.round((totalPresent / totalStudentsInMarkedClasses) * 100)
-            : null,
-          studentPresent: totalPresent,
-          studentTotal: totalStudentsInMarkedClasses,
-          markedClasses: markedClassCount,
-          totalClasses: classesWithStudents.length,
-        }));
-      } catch {
-        if (!cancelled) {
-          setAttendanceSnapshot((current) => ({
-            ...current,
-            studentRate: null,
-            studentPresent: 0,
-            studentTotal: 0,
-            markedClasses: 0,
-            totalClasses: classesWithStudents.length,
-          }));
-        }
-      }
-    };
-
-    loadStudentAttendanceSnapshot();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [classes, students]);
-
-  // Compute todayKey fresh each render so staffSnapshot stays current if
-  // the component remains mounted across midnight.
-  const todayKey = useMemo(() => new Date().toISOString().split("T")[0], [
-    // Re-evaluate when staffAttendance changes (most likely trigger after midnight)
+  const {
+    paymentSnapshot,
+    attendanceSnapshot,
+    feeDefaultersCount,
+    recentPayments,
+    recentAnnouncements,
+    dashboardLoading,
+    reload,
+  } = useDashboardData({
+    classes,
+    students,
+    staff,
     staffAttendance,
-  ]);
+    currentAcademicYear,
+  });
 
-  const staffSnapshot = useMemo(() => {
-    const activeStaff = (staff || []).filter((staffMember) => (staffMember.status || "active") === "active");
-    const markedStaff = activeStaff.filter((staffMember) => staffAttendance?.[staffMember.id]?.[todayKey]?.status);
-    const presentStaff = markedStaff.filter((staffMember) => {
-      const status = String(staffAttendance?.[staffMember.id]?.[todayKey]?.status || "").toLowerCase();
-      return status === "present";
+  const [dismissed, setDismissed] = useState(() => new Set());
+  const [refreshing, setRefreshing] = useState(false);
+
+  /* Section visibility with localStorage persistence */
+  const [visible, setVisible] = useState(() => {
+    try {
+      const saved = localStorage.getItem("dashboard_sections");
+      return saved ? { ...DEFAULT_VISIBILITY, ...JSON.parse(saved) } : DEFAULT_VISIBILITY;
+    } catch {
+      return DEFAULT_VISIBILITY;
+    }
+  });
+
+  const toggleSection = (key) => {
+    setVisible((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      localStorage.setItem("dashboard_sections", JSON.stringify(next));
+      return next;
     });
+  };
 
-    return {
-      staffRate: markedStaff.length > 0 ? Math.round((presentStaff.length / markedStaff.length) * 100) : null,
-      staffPresent: presentStaff.length,
-      staffMarked: markedStaff.length,
-      staffTotal: activeStaff.length,
-    };
-  }, [staff, staffAttendance, todayKey]);
+  const handleRefresh = () => {
+    setRefreshing(true);
+    reload();
+    setTimeout(() => setRefreshing(false), 600);
+  };
 
-  useEffect(() => {
-    setAttendanceSnapshot((current) => ({
-      ...current,
-      ...staffSnapshot,
-    }));
-  }, [staffSnapshot]);
+  const initialLoading = dashboardLoading;
 
-  const combinedAttendanceRate = useMemo(() => {
-    const rates = [attendanceSnapshot.studentRate, attendanceSnapshot.staffRate].filter(
-      (value) => typeof value === "number"
-    );
+  /* Greeting */
+  const firstName = (authUser?.name || "").trim().split(" ")[0] || "there";
+  const now = new Date();
+  const hour = now.getHours();
+  const greeting =
+    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const dateLabel = now.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
 
-    if (!rates.length) {
-      return null;
-    }
+  const studentsOnCampus = attendanceSnapshot.studentPresent || 0;
+  const totalActiveStudents = useMemo(
+    () =>
+      (students || []).filter((student) => (student.status || "active") === "active")
+        .length,
+    [students]
+  );
 
-    return Math.round(rates.reduce((sum, value) => sum + value, 0) / rates.length);
-  }, [attendanceSnapshot.staffRate, attendanceSnapshot.studentRate]);
-
-  const attendanceRows = useMemo(() => {
-    const rows = [];
-
-    if (typeof attendanceSnapshot.studentRate === "number") {
-      rows.push({
-        label: "Students",
-        value: attendanceSnapshot.studentRate,
-        subtext: `${getNumberFormatter().format(attendanceSnapshot.studentPresent)} present across ${attendanceSnapshot.markedClasses}/${attendanceSnapshot.totalClasses} marked classes`,
-      });
-    }
-
-    if (typeof attendanceSnapshot.staffRate === "number") {
-      rows.push({
-        label: "Staff",
-        value: attendanceSnapshot.staffRate,
-        subtext: `${getNumberFormatter().format(attendanceSnapshot.staffPresent)} present from ${attendanceSnapshot.staffMarked}/${attendanceSnapshot.staffTotal} marked staff records`,
-      });
-    }
-
-    return rows;
-  }, [attendanceSnapshot]);
-
-  const alerts = useMemo(() => {
+  /* Priorities */
+  const priorities = useMemo(() => {
     const items = [];
-
-    if (attendanceSnapshot.totalClasses > attendanceSnapshot.markedClasses) {
+    if (feeDefaultersCount > 0) {
+      const overdue =
+        paymentSnapshot.totalPending != null
+          ? compactINR(paymentSnapshot.totalPending)
+          : null;
       items.push({
-        id: "student-attendance-pending",
-        type: "critical",
-        title: "Student attendance pending",
-        description: `${attendanceSnapshot.totalClasses - attendanceSnapshot.markedClasses} classes still do not have attendance marked for today.`,
-        time: "Today",
-        link: "/classes",
+        id: "fees",
+        kind: "danger",
+        title: overdue
+          ? `${overdue} unpaid fees`
+          : `${feeDefaultersCount} fee defaulters`,
+        body: `${feeDefaultersCount} student${feeDefaultersCount === 1 ? "" : "s"} past cutoff`,
+        meta: "Reminder ready",
+        primary: "Send reminders",
+        onPrimary: () => navigate("/fees"),
       });
     }
-
-    if (attendanceSnapshot.staffTotal > attendanceSnapshot.staffMarked) {
-      items.push({
-        id: "staff-attendance-pending",
-        type: "warning",
-        title: "Staff attendance pending",
-        description: `${attendanceSnapshot.staffTotal - attendanceSnapshot.staffMarked} staff records are still unmarked for today.`,
-        time: "Today",
-        link: "/staffs",
-      });
-    }
-
-    if (dashboardStats.feeDefaultersCount > 0) {
-      items.push({
-        id: "fee-defaulters",
-        type: "warning",
-        title: "Fee follow-up needed",
-        description: `${getNumberFormatter().format(dashboardStats.feeDefaultersCount)} students currently have pending or overdue fees.`,
-        time: "Live",
-        link: "/fees",
-      });
-    }
-
-    if (dashboardStats.upcomingEvents > 0) {
-      items.push({
-        id: "upcoming-events",
-        type: "info",
-        title: "Upcoming events",
-        description: `${getNumberFormatter().format(dashboardStats.upcomingEvents)} events are scheduled on the academic calendar.`,
-        time: "This term",
-        link: "/calendar",
-      });
-    }
-
-    return items;
-  }, [attendanceSnapshot, dashboardStats.feeDefaultersCount, dashboardStats.upcomingEvents]);
-
-  const stats = useMemo(() => ([
-    {
-      label: "Total Students",
-      value: loading ? "—" : getNumberFormatter().format(dashboardStats.totalStudents || 0),
-      subtext: `${getNumberFormatter().format(dashboardStats.totalClasses || 0)} classes active`,
-      icon: GraduationCap,
-      color: "gray",
-    },
-    {
-      label: "Teaching Staff",
-      value: loading ? "—" : getNumberFormatter().format(dashboardStats.totalTeachers || 0),
-      subtext: typeof attendanceSnapshot.staffRate === "number"
-        ? `${getNumberFormatter().format(attendanceSnapshot.staffPresent)} present from ${getNumberFormatter().format(attendanceSnapshot.staffMarked)} marked records`
-        : "Staff attendance not marked yet",
-      icon: Users,
-      color: "gray",
-    },
-    {
-      label: "Pending Fees",
-      value: paymentsLoaded ? getCurrencyFormatter().format(paymentSnapshot.totalPending || 0) : "—",
-      subtext: paymentsLoaded
-        ? paymentSnapshot.today
-          ? `${getCurrencyFormatter().format(paymentSnapshot.today)} collected today`
-          : `${getCurrencyFormatter().format(paymentSnapshot.totalCollected || 0)} collected total`
-        : "Payment data unavailable",
-      icon: IndianRupee,
-      color: "gray",
-    },
-    {
-      label: "Avg Attendance",
-      value: typeof combinedAttendanceRate === "number" ? `${combinedAttendanceRate}%` : "—",
-      subtext: [
-        typeof attendanceSnapshot.studentRate === "number" ? `Students ${attendanceSnapshot.studentRate}%` : null,
-        typeof attendanceSnapshot.staffRate === "number" ? `Staff ${attendanceSnapshot.staffRate}%` : null,
-      ].filter(Boolean).join(" • ") || "Awaiting marked attendance",
-      icon: CheckCircle2,
-      color: "gray",
-    },
-  ]), [attendanceSnapshot, combinedAttendanceRate, dashboardStats, loading, paymentSnapshot, paymentsLoaded]);
-
-  const quickActions = [
-    { label: "Attendance", icon: CheckCircle2, href: "/classes" },
-    { label: "Schedule", icon: Calendar, href: "/calendar" },
-    { label: "Payments", icon: IndianRupee, href: "/fees" },
-    { label: "Announce", icon: AlertCircle, href: "/messaging" },
-  ];
-
-  // ── Role Detection ──
-  const storedUser = getStoredUser();
-  const rawRole = storedUser?.role || "admin";
-  const role = (Array.isArray(rawRole) ? rawRole[0] || "admin" : String(rawRole)).toLowerCase();
-
-  // ── Principal View: Academic Overview + Staff Attendance ──
-  const principalStats = useMemo(() => {
-    if (role !== "principal") return null;
-    return [
-      {
-        label: "Total Students",
-        value: loading ? "—" : getNumberFormatter().format(dashboardStats.totalStudents || 0),
-        subtext: `${getNumberFormatter().format(dashboardStats.totalClasses || 0)} classes active`,
-        icon: GraduationCap,
-        color: "blue",
-      },
-      {
-        label: "Total Staff",
-        value: loading ? "—" : getNumberFormatter().format(dashboardStats.totalStaff || 0),
-        subtext: `${getNumberFormatter().format(dashboardStats.activeStaff || 0)} active staff members`,
-        icon: Users,
-        color: "purple",
-      },
-    ];
-  }, [role, loading, dashboardStats]);
-
-  const principalStaffAttendance = useMemo(() => {
-    if (role !== "principal") return null;
-    return {
-      total: attendanceSnapshot.staffTotal,
-      present: attendanceSnapshot.staffPresent,
-      marked: attendanceSnapshot.staffMarked,
-      rate: attendanceSnapshot.staffRate,
-    };
-  }, [role, attendanceSnapshot]);
-
-  // ── Accountant View: Finance Overview ──
-  const accountantStats = useMemo(() => {
-    if (role !== "accountant") return null;
-    return [
-      {
-        label: "Today's Collections",
-        value: paymentsLoaded ? getCurrencyFormatter().format(paymentSnapshot.today || 0) : "—",
-        subtext: "Fee payments received today",
-        icon: IndianRupee,
-        color: "green",
-      },
-      {
-        label: "Monthly Collections",
-        value: paymentsLoaded ? getCurrencyFormatter().format(paymentSnapshot.month || 0) : "—",
-        subtext: "Total collected this month",
-        icon: IndianRupee,
-        color: "blue",
-      },
-    ];
-  }, [role, paymentsLoaded, paymentSnapshot]);
-
-  // ── Teacher View: My Classes + Pending Tasks ──
-  const teacherData = useMemo(() => {
-    if (role !== "teacher") return null;
-    const teacherId = storedUser?.id || storedUser?._id;
-    const assignedClasses = (classes || []).filter(
-      (c) => c.classTeacherId === teacherId
-    );
-    const classIds = new Set(assignedClasses.map((c) => c.id));
-    const totalClassStudents = (students || []).filter((s) =>
-      classIds.has(s.classId)
-    ).length;
-
-    // Check which assigned classes have attendance marked today
-    const todayStr = new Date().toISOString().split("T")[0];
-    const classesWithAttendance = assignedClasses.map((c) => {
-      const classStudents = (students || []).filter(
-        (s) => s.classId === c.id
-      );
-      // Check attendance snapshot from state for today
-      const hasAttendance = classStudents.some((s) =>
-        (attendanceSnapshot.markedClasses || 0) > 0
-      );
-      return {
-        ...c,
-        studentCount: classStudents.length,
-        attendanceMarked: hasAttendance,
-      };
+    items.push({
+      id: "coverage",
+      kind: "warn",
+      title: "Period 3 · 10-B unstaffed",
+      body: "Substitute not assigned",
+      meta: "10:30 – 11:15",
+      primary: "Assign substitute",
+      onPrimary: () => navigate("/staffs"),
     });
+    items.push({
+      id: "ptm",
+      kind: "info",
+      title: "PTM agenda · Dec 20",
+      body: "Finalize discussion points",
+      meta: "3 days left",
+      primary: "Open agenda",
+      onPrimary: () => navigate("/ptm"),
+    });
+    return items.filter((item) => !dismissed.has(item.id)).slice(0, 3);
+  }, [feeDefaultersCount, paymentSnapshot.totalPending, navigate, dismissed]);
 
-    const unmarkedCount = assignedClasses.length > 0
-      ? assignedClasses.length - (attendanceSnapshot.markedClasses || 0)
-      : 0;
+  const pendingCount = priorities.length;
 
-    return {
-      assignedClasses: classesWithAttendance,
-      totalStudents: totalClassStudents,
-      unmarkedAttendanceCount: Math.max(0, unmarkedCount),
-    };
-  }, [role, storedUser, classes, students, attendanceSnapshot]);
+  /* Schedule */
+  const schedule = useMemo(
+    () => [
+      {
+        time: "09:00",
+        title: "Morning assembly",
+        meta: "Auditorium · You're addressing Grade 9–12",
+        mine: true,
+      },
+      {
+        time: "10:30",
+        title: "Walk-through · Grade 6 wing",
+        meta: "With the coordinator",
+      },
+      {
+        time: "11:30",
+        title: "Parent meet · 10-A",
+        meta: "Concern: math grades · 30 min",
+        mine: true,
+      },
+      {
+        time: "13:30",
+        title: "Staff briefing · 7 leads",
+        meta: "Weekly sync · Conf room A",
+      },
+      {
+        time: "15:30",
+        title: "Annual day rehearsal",
+        meta: "Auditorium · Grade 9–12 · drop-in",
+      },
+    ],
+    []
+  );
 
+  const nowIndex = useMemo(() => {
+    const minutes = now.getHours() * 60 + now.getMinutes();
+    const starts = schedule.map((row) => {
+      const [hr, min] = row.time.split(":").map(Number);
+      return hr * 60 + min;
+    });
+    let idx = -1;
+    for (let i = 0; i < starts.length; i += 1) {
+      if (minutes >= starts[i]) idx = i;
+    }
+    if (idx < 0) return -1;
+    return minutes - starts[idx] < 90 ? idx : -1;
+  }, [now, schedule]);
+
+  /* Render */
   return (
-    <div className="min-h-screen pb-8">
-      <GuidedTour
-        tourId="dashboard-v1"
-        steps={DASHBOARD_TOUR_STEPS}
-        isOpen={isTourOpen}
-        onClose={closeTour}
-      />
-
-      <div className="mb-6">
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-zinc-100">
-          Overview
-        </h1>
-        <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">
-          Welcome back! Here&apos;s what&apos;s happening today.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
-        <div className="xl:col-span-8 space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" data-tour="stat-cards">
-            {stats.map((stat) => (
-              <StatCard key={stat.label} {...stat} />
-            ))}
-          </div>
-
-          <QuickActions actions={quickActions} />
-
-          <div data-tour="fee-chart">
-            <ChartSection
-              attendanceRows={attendanceRows}
-              feeCollectionData={feeCollectionData}
-              loading={loading || dashboardLoading}
-              paymentsLoaded={paymentsLoaded}
+    <div className="page page--principal">
+      {/* ─── Header ─── */}
+      <header className="dash-hero">
+        <div className="dash-hero__text">
+          <h1 className="dash-hero__greet">
+            {greeting}, {firstName}
+          </h1>
+          <p className="dash-hero__date">{dateLabel}</p>
+        </div>
+        <div className="dash-hero__actions">
+          {pendingCount > 0 && (
+            <span className="chip chip--warn">
+              <AlertCircle size={10} />
+              {pendingCount} pending
+            </span>
+          )}
+          <SectionDropdown visible={visible} onToggle={toggleSection} />
+          <button
+            type="button"
+            className="iconbtn iconbtn--sm"
+            onClick={handleRefresh}
+            disabled={refreshing || dashboardLoading}
+            aria-label="Refresh dashboard"
+            title="Refresh dashboard"
+          >
+            <RefreshCw
+              size={12}
+              className={refreshing || dashboardLoading ? "is-spinning" : ""}
             />
-          </div>
+          </button>
+        </div>
+      </header>
 
-          <ActivityFeed
-            payments={recentPayments}
-            announcements={recentAnnouncements}
-            communications={[]}
+      {/* ─── Stats Row ─── */}
+      <section className="stats-row" aria-label="Key metrics">
+        <StatCard
+          icon={GraduationCap}
+          label="Attendance today"
+          value={
+            attendanceSnapshot.studentRate != null
+              ? `${attendanceSnapshot.studentRate}%`
+              : "—"
+          }
+          sub={
+            attendanceSnapshot.studentTotal > 0
+              ? `${attendanceSnapshot.studentPresent} of ${attendanceSnapshot.studentTotal} present`
+              : "Awaiting attendance"
+          }
+          tone="accent"
+          onClick={() => navigate("/students")}
+          loading={initialLoading}
+        />
+        <StatCard
+          icon={IndianRupee}
+          label="Fees this month"
+          value={
+            paymentSnapshot.month != null ? compactINR(paymentSnapshot.month) : "—"
+          }
+          sub={
+            paymentSnapshot.totalPending != null
+              ? `${compactINR(paymentSnapshot.totalPending)} outstanding`
+              : "Awaiting payment data"
+          }
+          tone="ok"
+          onClick={() => navigate("/fees")}
+          loading={initialLoading}
+        />
+      </section>
+
+      {/* ─── Sections Grid ─── */}
+      <div className="dash-grid">
+        {/* Your day */}
+        {visible.yourDay && (
+          <DashboardSection title="Your day" count={schedule.length}>
+            {schedule.length === 0 ? (
+              <EmptyState icon={CalendarDays} message="No events scheduled" />
+            ) : (
+              <div className="timeline">
+                {schedule.map((row, i) => (
+                  <TimelineRow
+                    key={row.time}
+                    time={row.time}
+                    title={row.title}
+                    meta={row.meta}
+                    mine={row.mine}
+                    now={i === nowIndex}
+                    done={nowIndex >= 0 && i < nowIndex}
+                    status={
+                      i === nowIndex ? (
+                        <span className="status status--warn">
+                          <span className="dot" />
+                          Now
+                        </span>
+                      ) : i === nowIndex + 1 ? (
+                        <span className="status status--info">Next</span>
+                      ) : null
+                    }
+                  />
+                ))}
+              </div>
+            )}
+          </DashboardSection>
+        )}
+
+        {/* Actions */}
+        {visible.actions && priorities.length > 0 && (
+          <DashboardSection title="Actions" count={pendingCount}>
+            <div className="action-list">
+              {priorities.map((priority) => (
+                <ActionItem
+                  key={priority.id}
+                  {...priority}
+                  onDismiss={() =>
+                    setDismissed((prev) => {
+                      const next = new Set(prev);
+                      next.add(priority.id);
+                      return next;
+                    })
+                  }
+                />
+              ))}
+            </div>
+          </DashboardSection>
+        )}
+
+        {/* People */}
+        {visible.people && (
+          <PeopleSection
+            staff={staff}
+            students={students}
+            staffAttendance={staffAttendance}
+            classes={classes}
           />
+        )}
 
-          {/* ── Principal View ── */}
-          {role === "principal" && (
-            <div className="space-y-4" data-testid="principal-section">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">
-                Academic Overview
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {principalStats?.map((stat) => (
-                  <StatCard key={stat.label} {...stat} />
+        {/* Notices */}
+        {visible.announcements && (
+          <DashboardSection
+            title="Notices"
+            count={recentAnnouncements?.length || 0}
+          >
+            {!recentAnnouncements || recentAnnouncements.length === 0 ? (
+              <EmptyState icon={Megaphone} message="No recent notices" />
+            ) : (
+              <div className="notice-list">
+                {recentAnnouncements.map((notice) => (
+                  <NoticeRow
+                    key={notice.id}
+                    title={notice.title}
+                    content={notice.content}
+                    date={notice.date}
+                  />
                 ))}
               </div>
-              {principalStaffAttendance && (
-                <div className="bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-3 flex items-center gap-2">
-                    <Users size={16} className="text-purple-500" />
-                    Staff Attendance
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">
-                        {getNumberFormatter().format(principalStaffAttendance.total)}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-zinc-400">Total Staff</p>
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                        {getNumberFormatter().format(principalStaffAttendance.present)}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-zinc-400">Present Today</p>
-                    </div>
-                  </div>
-                  {typeof principalStaffAttendance.rate === "number" && (
-                    <p className="text-xs text-gray-400 dark:text-zinc-500 mt-2">
-                      {principalStaffAttendance.rate}% attendance rate ({principalStaffAttendance.marked} marked)
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
+            )}
+          </DashboardSection>
+        )}
 
-          {/* ── Accountant View ── */}
-          {role === "accountant" && (
-            <div className="space-y-4" data-testid="accountant-section">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">
-                Finance Overview
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {accountantStats?.map((stat) => (
-                  <StatCard key={stat.label} {...stat} />
+        {/* Payments */}
+        {visible.recentPayments && (
+          <DashboardSection
+            title="Payments"
+            count={recentPayments?.length || 0}
+          >
+            {!recentPayments || recentPayments.length === 0 ? (
+              <EmptyState icon={IndianRupee} message="No recent payments" />
+            ) : (
+              <div className="payment-list">
+                {recentPayments.map((payment) => (
+                  <PaymentRow
+                    key={payment.id}
+                    student={payment.student}
+                    className={payment.className}
+                    amount={payment.amount}
+                    date={payment.date}
+                  />
                 ))}
               </div>
-              {feeCollectionData.length > 0 && (
-                <div className="bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-3 flex items-center gap-2">
-                    <IndianRupee size={16} className="text-green-500" />
-                    Monthly Collection Breakdown
-                  </h3>
-                  <div className="space-y-2">
-                    {feeCollectionData.map((month) => (
-                      <div key={month.key} className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600 dark:text-zinc-400">{month.month}</span>
-                        <span className="font-medium text-gray-900 dark:text-zinc-100">
-                          {getCurrencyFormatter().format(month.collected)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {recentPayments.length > 0 && (
-                <div className="bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-3">
-                    Recent Transactions
-                  </h3>
-                  <div className="space-y-3">
-                    {recentPayments.map((payment) => (
-                      <div
-                        key={payment.id}
-                        className="flex items-center justify-between text-sm border-b border-gray-50 dark:border-zinc-800 pb-2 last:border-0"
-                      >
-                        <div>
-                          <p className="font-medium text-gray-900 dark:text-zinc-100">
-                            {payment.student}
-                          </p>
-                          <p className="text-xs text-gray-400 dark:text-zinc-500">
-                            {payment.className}
-                          </p>
-                        </div>
-                        <span className="font-medium text-green-600 dark:text-green-400">
-                          {getCurrencyFormatter().format(payment.amount)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ── Teacher View ── */}
-          {role === "teacher" && teacherData && (
-            <div className="space-y-4" data-testid="teacher-section">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">
-                My Classes
-              </h2>
-              {teacherData.assignedClasses.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {teacherData.assignedClasses.map((cls) => (
-                    <div
-                      key={cls.id}
-                      className="bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800"
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        <BookOpen size={16} className="text-blue-500" />
-                        <span className="font-medium text-gray-900 dark:text-zinc-100">
-                          Class {cls.name}-{cls.section}
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-500 dark:text-zinc-400">
-                        {cls.studentCount} students
-                      </p>
-                      <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
-                        Attendance: {cls.attendanceMarked ? "Marked" : "Not marked"}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500 dark:text-zinc-400">
-                  No classes assigned.
-                </p>
-              )}
-              {teacherData.unmarkedAttendanceCount > 0 && (
-                <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-4" data-testid="pending-tasks">
-                  <div className="flex items-center gap-2">
-                    <Clock size={16} className="text-amber-600 dark:text-amber-400" />
-                    <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-200">
-                      Pending Tasks
-                    </h3>
-                  </div>
-                  <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                    {teacherData.unmarkedAttendanceCount} {teacherData.unmarkedAttendanceCount === 1 ? "class has" : "classes have"} unmarked attendance for today.
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="xl:col-span-4 space-y-4">
-          <SubstitutionAlertPanel />
-          <AlertsPanel alerts={alerts} />
-        </div>
+            )}
+          </DashboardSection>
+        )}
       </div>
 
+      {/* ─── Moments Footer ─── */}
+      <div className="moments">
+        <span className="moments__lab">Week</span>
+        <span>
+          <b>3</b> inter-school finals
+        </span>
+        <span className="moments__dot">·</span>
+        <span>
+          <b>
+            {attendanceSnapshot.studentRate != null
+              ? `${attendanceSnapshot.studentRate}%`
+              : "—"}
+          </b>{" "}
+          attendance
+        </span>
+        <span className="moments__dot">·</span>
+        <span>
+          <b>
+            {paymentSnapshot.month != null
+              ? compactINR(paymentSnapshot.month)
+              : "—"}
+          </b>{" "}
+          collected
+        </span>
+        {totalActiveStudents > 0 && (
+          <>
+            <span className="moments__dot">·</span>
+            <span>
+              <b>{studentsOnCampus.toLocaleString()}</b>/
+              <b>{totalActiveStudents.toLocaleString()}</b> on campus
+            </span>
+          </>
+        )}
+      </div>
+
+      {/* Background panels */}
+      <SubstitutionAlertPanel />
       <NpsSurveyModal />
     </div>
   );

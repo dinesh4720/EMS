@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { ModalHeader, ModalBody, Chip, Button } from '@heroui/react';
-import { FileText, Calendar, Award, Pencil, Send, AlertTriangle } from 'lucide-react';
+import { FileText, Calendar, Award, Eye, Pencil, Send, AlertTriangle } from 'lucide-react';
 import { examsApi, resultsApi, classesApi } from '../../services/api';
 import { MinimalButton } from '../../components/ui';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { formatShortDate } from '../../utils/dateFormatter';
+import logger from '../../utils/logger';
+
 
 const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
   const { t } = useTranslation();
@@ -29,10 +31,10 @@ const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
 
       if (examData?.classId) {
         const resultsData = await resultsApi.getByClassExam(examData.classId, examId);
-        setResults(resultsData || []);
+        setResults(Array.isArray(resultsData) ? resultsData : []);
       }
     } catch (error) {
-      console.error('Error fetching exam details:', error);
+      logger.error('Error fetching exam details:', error);
       toast.error(t('toast.error.failedToLoadExamDetails'));
     } finally {
       setLoading(false);
@@ -47,7 +49,7 @@ const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
       setPublishConfirmOpen(false);
       fetchExamDetails();
     } catch (error) {
-      console.error('Error publishing results:', error);
+      logger.error('Error publishing results:', error);
       toast.error(t('toast.error.failedToPublishResults'));
     } finally {
       setPublishing(false);
@@ -68,20 +70,20 @@ const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
     return (
       <div className="space-y-4 py-4 px-2">
         <div className="flex items-center gap-3">
-          <div className="h-6 w-48 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-          <div className="h-5 w-20 bg-gray-200 dark:bg-zinc-700 rounded-full animate-pulse" />
+          <div className="h-6 w-48 bg-surface-2 rounded animate-pulse" />
+          <div className="h-5 w-20 bg-surface-2 rounded-full animate-pulse" />
         </div>
         <div className="grid grid-cols-2 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="space-y-2 p-3 bg-gray-50 dark:bg-zinc-900 rounded-lg">
-              <div className="h-3 w-16 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-              <div className="h-5 w-24 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+            <div key={i} className="space-y-2 p-3 bg-surface-2 rounded-lg">
+              <div className="h-3 w-16 bg-surface-2 rounded animate-pulse" />
+              <div className="h-5 w-24 bg-surface-2 rounded animate-pulse" />
             </div>
           ))}
         </div>
         <div className="space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-10 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+            <div key={i} className="h-10 bg-surface-2 rounded animate-pulse" />
           ))}
         </div>
       </div>
@@ -91,27 +93,27 @@ const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
   if (!exam) {
     return (
       <div className="text-center py-12">
-        <FileText size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-        <p className="text-gray-500 dark:text-zinc-400">{t('pages.examNotFound')}</p>
+        <FileText size={40} className="mx-auto mb-3 text-fg-faint" />
+        <p className="text-fg-muted">{t('pages.examNotFound')}</p>
         <Button className="mt-4" onPress={onClose}>{t('pages.close2')}</Button>
       </div>
     );
   }
 
-  const passedCount = results.filter(r => r.marksObtained >= (exam.passingMarks || 35)).length;
-  const failedCount = results.length - passedCount;
+  const passedCount = results.filter(r => r.status === 'passed').length;
+  const failedCount = results.filter(r => r.status === 'failed').length;
 
   return (
     <>
-      <ModalHeader className="border-b border-gray-100 dark:border-zinc-800 py-4 px-6">
+      <ModalHeader className="border-b border-divider py-4 px-6">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gray-100 dark:bg-zinc-800 rounded-lg">
-              <FileText size={20} className="text-gray-600 dark:text-zinc-400" />
+            <div className="p-2 bg-surface-2 rounded-lg">
+              <FileText size={20} className="text-fg-muted" />
             </div>
             <div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-zinc-100">{exam.name}</h3>
-              <p className="text-sm text-gray-500 dark:text-zinc-400 font-normal">
+              <h3 className="text-lg font-medium text-fg">{exam.name}</h3>
+              <p className="text-sm text-fg-muted font-normal">
                 {exam.className || (typeof exam.classId === 'object' ? exam.classId?.name : null) || 'Class'} - {exam.subjectName}
               </p>
             </div>
@@ -130,37 +132,37 @@ const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
         <div className="space-y-6">
           {/* Exam Info */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
-              <div className="flex items-center gap-2 text-gray-500 dark:text-zinc-400 mb-1">
+            <div className="bg-surface-2 rounded-lg p-4 border border-divider">
+              <div className="flex items-center gap-2 text-fg-muted mb-1">
                 <Calendar size={14} />
                 <span className="text-xs">{t('pages.startDate1')}</span>
               </div>
-              <p className="font-medium text-gray-900 dark:text-zinc-100">
+              <p className="font-medium text-fg">
                 {exam.startDate ? formatShortDate(exam.startDate) : 'Not set'}
               </p>
             </div>
-            <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
-              <div className="flex items-center gap-2 text-gray-500 dark:text-zinc-400 mb-1">
+            <div className="bg-surface-2 rounded-lg p-4 border border-divider">
+              <div className="flex items-center gap-2 text-fg-muted mb-1">
                 <Calendar size={14} />
                 <span className="text-xs">{t('pages.endDate1')}</span>
               </div>
-              <p className="font-medium text-gray-900 dark:text-zinc-100">
+              <p className="font-medium text-fg">
                 {exam.endDate ? formatShortDate(exam.endDate) : 'Not set'}
               </p>
             </div>
-            <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
-              <div className="flex items-center gap-2 text-gray-500 dark:text-zinc-400 mb-1">
+            <div className="bg-surface-2 rounded-lg p-4 border border-divider">
+              <div className="flex items-center gap-2 text-fg-muted mb-1">
                 <Award size={14} />
                 <span className="text-xs">{t('pages.maxMarks2')}</span>
               </div>
-              <p className="font-medium text-gray-900 dark:text-zinc-100">{exam.maxMarks || exam.totalMarks || 100}</p>
+              <p className="font-medium text-fg">{exam.maxMarks || exam.totalMarks || 100}</p>
             </div>
-            <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
-              <div className="flex items-center gap-2 text-gray-500 dark:text-zinc-400 mb-1">
+            <div className="bg-surface-2 rounded-lg p-4 border border-divider">
+              <div className="flex items-center gap-2 text-fg-muted mb-1">
                 <Award size={14} />
                 <span className="text-xs">{t('pages.passingMarks')}</span>
               </div>
-              <p className="font-medium text-gray-900 dark:text-zinc-100">{exam.passingMarks || 35}</p>
+              <p className="font-medium text-fg">{exam.passingMarks || 35}</p>
             </div>
           </div>
 
@@ -181,24 +183,29 @@ const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
           </div>
 
           {/* Results Table */}
-          {results.length > 0 && (
-            <div className="border border-gray-100 dark:border-zinc-800 rounded-lg overflow-hidden">
+          {results.length === 0 ? (
+            <div className="text-center py-8 border border-divider rounded-lg">
+              <Eye size={32} className="mx-auto mb-2 text-fg-faint" />
+              <p className="text-sm text-fg-muted">{t('pages.noResultsEnteredYet')}</p>
+            </div>
+          ) : (
+            <div className="border border-divider rounded-lg overflow-hidden">
               <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-zinc-900">
+                <thead className="bg-surface-2">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400">{t('pages.student')}</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400">{t('pages.marks')}</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400">{t('pages.status2')}</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400">{t('pages.remarks')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-fg-muted">{t('pages.student')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-fg-muted">{t('pages.marks')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-fg-muted">{t('pages.status2')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-fg-muted">{t('pages.remarks')}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-zinc-800">
+                <tbody className="divide-y divide-divider">
                   {results.map((result) => (
-                    <tr key={result._id} className="hover:bg-gray-50 dark:hover:bg-zinc-900">
-                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-zinc-100">
+                    <tr key={result._id} className="hover:bg-surface-2">
+                      <td className="px-4 py-3 text-sm text-fg">
                         {result.studentName || result.studentId}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-zinc-400">
+                      <td className="px-4 py-3 text-sm text-fg-muted">
                         {result.marksObtained} / {exam.maxMarks || 100}
                       </td>
                       <td className="px-4 py-3">
@@ -219,7 +226,7 @@ const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
                           );
                         })()}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-500 dark:text-zinc-400">
+                      <td className="px-4 py-3 text-sm text-fg-muted">
                         {result.remarks || '-'}
                       </td>
                     </tr>
@@ -252,7 +259,7 @@ const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
           )}
 
           {/* Actions */}
-          <div className="flex justify-between items-center pt-4 border-t border-gray-100 dark:border-zinc-800">
+          <div className="flex justify-between items-center pt-4 border-t border-divider">
             <Button variant="light" onPress={onClose}>
               Close
             </Button>

@@ -1,28 +1,56 @@
-import { useEffect, useState, useMemo } from 'react';
-import { BookOpen, Plus, Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
-import { changelogAdminApi } from '../../services/api';
+import { useEffect, useMemo, useState } from 'react';
+import { BookOpen, Eye, EyeOff, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { formatShortDate } from '../../utils/dateFormatter';
-import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import {
+  Alert,
+  Button,
+  Card,
+  Checkbox,
+  Chip,
+  ConfirmDialog,
+  EmptyState,
+  ErrorState,
+  IconButton,
+  Input,
+  Select,
+  Skeleton,
+  Textarea,
+} from '../../components/ui';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
+import { changelogAdminApi } from '../../services/api';
+import { formatShortDate } from '../../utils/dateFormatter';
 
-const CATEGORY_COLORS = {
-  new_feature: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-  improvement: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
-  bug_fix: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-  announcement: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
+const CATEGORY_CHIP_COLOR = {
+  new_feature: 'success',
+  improvement: 'info',
+  bug_fix: 'warning',
+  announcement: 'primary',
 };
 
-const EMPTY_ENTRY = { title: '', body: '', version: '', category: 'new_feature', isPublished: false };
+const EMPTY_ENTRY = {
+  title: '',
+  body: '',
+  version: '',
+  category: 'new_feature',
+  isPublished: false,
+};
 
 export default function ChangelogPanel() {
   const { t } = useTranslation();
-  const CATEGORY_LABELS = useMemo(() => ({
-    new_feature: t('constants.changelog.newFeature'),
-    improvement: t('constants.changelog.improvement'),
-    bug_fix: t('constants.changelog.bugFix'),
-    announcement: t('constants.changelog.announcement'),
-  }), [t]);
+  const CATEGORY_LABELS = useMemo(
+    () => ({
+      new_feature: t('constants.changelog.newFeature'),
+      improvement: t('constants.changelog.improvement'),
+      bug_fix: t('constants.changelog.bugFix'),
+      announcement: t('constants.changelog.announcement'),
+    }),
+    [t]
+  );
+  const categoryOptions = useMemo(
+    () => Object.entries(CATEGORY_LABELS).map(([value, label]) => ({ value, label })),
+    [CATEGORY_LABELS]
+  );
+
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -46,6 +74,12 @@ export default function ChangelogPanel() {
   };
 
   useEffect(() => { load(); }, []);
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setForm(EMPTY_ENTRY);
+  };
 
   const openCreate = () => {
     setForm(EMPTY_ENTRY);
@@ -75,9 +109,7 @@ export default function ChangelogPanel() {
       } else {
         await changelogAdminApi.create(form);
       }
-      setShowForm(false);
-      setEditingId(null);
-      setForm(EMPTY_ENTRY);
+      closeForm();
       await load();
     } catch (err) {
       setError(err.message || 'Save failed');
@@ -113,164 +145,164 @@ export default function ChangelogPanel() {
   };
 
   return (
-    <div className="rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
-      <div className="mb-5 flex items-center justify-between">
+    <Card padding="md" radius="lg">
+      <div className="mb-5 flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold text-slate-950 dark:text-zinc-100">{t('pages.changelog')}</h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
+          <h2 className="flex items-center gap-2 text-base font-semibold text-fg">
+            <BookOpen size={16} aria-hidden="true" className="text-fg-muted" />
+            {t('pages.changelog')}
+          </h2>
+          <p className="mt-1 text-xs text-fg-muted">
             Manage release notes and platform announcements.
           </p>
         </div>
-        <button
-          type="button"
+        <Button
+          variant="outline"
+          size="sm"
+          icon={<Plus size={14} aria-hidden="true" />}
           onClick={openCreate}
-          className="inline-flex items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600"
         >
-          <Plus size={14} /> New Entry
-        </button>
+          New Entry
+        </Button>
       </div>
 
       {error && (
-        <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300">
+        <Alert variant="danger" className="mb-4" onClose={() => setError('')}>
           {error}
-        </div>
+        </Alert>
       )}
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="mb-5 rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <input
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder={t('pages.title1')}
+        <Card padding="md" radius="lg" className="mb-5 bg-surface-2">
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Input
+                label={t('pages.title1')}
+                required
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+              />
+              <Input
+                label="Version"
+                required
+                value={form.version}
+                onChange={(e) => setForm({ ...form, version: e.target.value })}
+                placeholder={t('pages.versionEG240')}
+              />
+            </div>
+            <Textarea
+              label="Body"
               required
-              className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+              rows={3}
+              value={form.body}
+              onChange={(e) => setForm({ ...form, body: e.target.value })}
+              placeholder={t('pages.changelogBodyPlaceholder')}
             />
-            <input
-              value={form.version}
-              onChange={(e) => setForm({ ...form, version: e.target.value })}
-              placeholder={t('pages.versionEG240')}
-              required
-              className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
-            />
-          </div>
-          <textarea
-            value={form.body}
-            onChange={(e) => setForm({ ...form, body: e.target.value })}
-            placeholder={t('pages.changelogBodyPlaceholder')}
-            required
-            rows={3}
-            className="mt-3 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
-          />
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <select
-                value={form.category}
-                onChange={(e) => setForm({ ...form, category: e.target.value })}
-                className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300"
-              >
-                {Object.entries(CATEGORY_LABELS).map(([val, label]) => (
-                  <option key={val} value={val}>{label}</option>
-                ))}
-              </select>
-              <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-zinc-400">
-                <input
-                  type="checkbox"
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-4">
+                <Select
+                  label="Category"
+                  value={form.category}
+                  onChange={(e) => setForm({ ...form, category: e.target.value })}
+                  options={categoryOptions}
+                  wrapperClassName="min-w-[180px]"
+                />
+                <Checkbox
+                  label="Published"
                   checked={form.isPublished}
                   onChange={(e) => setForm({ ...form, isPublished: e.target.checked })}
-                  className="rounded"
                 />
-                Published
-              </label>
+              </div>
+              <div className="flex gap-2">
+                <Button type="button" variant="ghost" size="sm" onClick={closeForm}>
+                  Cancel
+                </Button>
+                <Button type="submit" variant="primary" size="sm" loading={submitting}>
+                  {editingId ? 'Update' : 'Create'}
+                </Button>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => { setShowForm(false); setEditingId(null); setForm(EMPTY_ENTRY); }}
-                className="rounded-xl px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="rounded-xl bg-slate-950 px-4 py-1.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-              >
-                {submitting ? 'Saving...' : editingId ? 'Update' : 'Create'}
-              </button>
-            </div>
-          </div>
-        </form>
+          </form>
+        </Card>
       )}
 
       {loading ? (
-        <div className="rounded-2xl border border-dashed border-gray-200 px-4 py-10 text-center text-sm text-gray-500 dark:border-zinc-700 dark:text-zinc-400">
-          Loading changelog...
+        <div className="space-y-3" aria-busy="true" aria-live="polite">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              className="rounded-lg border border-divider p-4"
+            >
+              <Skeleton variant="text" className="h-4 w-1/3" />
+              <Skeleton variant="text" className="mt-2 h-3 w-2/3" />
+              <Skeleton variant="text" className="mt-2 h-3 w-1/2" />
+            </div>
+          ))}
         </div>
+      ) : error && entries.length === 0 ? (
+        <ErrorState error={error} onRetry={load} />
+      ) : entries.length === 0 ? (
+        <EmptyState
+          icon={BookOpen}
+          title={t('pages.noChangelogEntriesYet')}
+          description="Publish your first release note using the New Entry button above."
+        />
       ) : (
         <div className="space-y-3">
           {entries.map((entry) => (
-            <div
-              key={entry._id}
-              className="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-zinc-800 dark:bg-zinc-900"
-            >
+            <Card key={entry._id} padding="md" radius="lg" className="bg-surface-2">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-medium text-gray-900 dark:text-zinc-100">{entry.title}</h3>
-                    <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-zinc-700 dark:text-zinc-300">
-                      v{entry.version}
-                    </span>
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${CATEGORY_COLORS[entry.category] || 'bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400'}`}>
+                    <h3 className="font-medium text-fg">{entry.title}</h3>
+                    <Chip size="sm" color="neutral">v{entry.version}</Chip>
+                    <Chip size="sm" color={CATEGORY_CHIP_COLOR[entry.category] || 'neutral'}>
                       {CATEGORY_LABELS[entry.category] || entry.category}
-                    </span>
+                    </Chip>
                     {!entry.isPublished && (
-                      <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs text-gray-500 dark:bg-zinc-700 dark:text-zinc-400">{t('pages.draft')}</span>
+                      <Chip size="sm" color="neutral">{t('pages.draft')}</Chip>
                     )}
                   </div>
-                  <p className="mt-1.5 text-sm text-gray-600 dark:text-zinc-400 line-clamp-2">{entry.body}</p>
+                  <p className="mt-1.5 line-clamp-2 text-sm text-fg-muted">{entry.body}</p>
                   {entry.publishedAt && (
-                    <div className="mt-2 text-xs text-gray-400 dark:text-zinc-500">
+                    <div className="mt-2 text-xs text-fg-faint">
                       {formatShortDate(entry.publishedAt)}
                     </div>
                   )}
                 </div>
                 <div className="flex shrink-0 gap-1">
-                  <button
-                    type="button"
-                    onClick={() => togglePublish(entry)}
-                    className="rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 dark:text-zinc-500 dark:hover:bg-zinc-800"
+                  <IconButton
+                    aria-label={entry.isPublished ? 'Unpublish' : 'Publish'}
                     title={entry.isPublished ? 'Unpublish' : 'Publish'}
-                  >
-                    {entry.isPublished ? <EyeOff size={14} /> : <Eye size={14} />}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openEdit(entry)}
-                    className="rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 dark:text-zinc-500 dark:hover:bg-zinc-800"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => togglePublish(entry)}
+                    icon={entry.isPublished ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
+                  />
+                  <IconButton
+                    aria-label={t('pages.edit1')}
                     title={t('pages.edit1')}
-                  >
-                    <Pencil size={14} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(entry._id)}
-                    className="rounded-lg p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-600 dark:text-zinc-500 dark:hover:bg-red-900/30 dark:hover:text-red-400"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => openEdit(entry)}
+                    icon={<Pencil size={14} aria-hidden="true" />}
+                  />
+                  <IconButton
+                    aria-label={t('pages.delete1')}
                     title={t('pages.delete1')}
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                    size="sm"
+                    variant="danger"
+                    onClick={() => handleDelete(entry._id)}
+                    icon={<Trash2 size={14} aria-hidden="true" />}
+                  />
                 </div>
               </div>
-            </div>
+            </Card>
           ))}
-          {entries.length === 0 && (
-            <div className="py-8 text-center text-sm text-gray-400 dark:text-zinc-500">{t('pages.noChangelogEntriesYet')}</div>
-          )}
         </div>
       )}
 
       <ConfirmDialog {...confirmState} onClose={closeConfirm} />
-    </div>
+    </Card>
   );
 }

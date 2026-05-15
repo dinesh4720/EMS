@@ -78,10 +78,10 @@ function RoleQualificationsStep({
               ))}
             </div>
           )}
-          <p className="text-xs text-gray-500 dark:text-zinc-400">{t('staff.form.selectAllRoles')}</p>
+          <p className="text-xs text-fg-muted">{t('staff.form.selectAllRoles')}</p>
         </div>
 
-        <div className="space-y-3 pt-5 border-t border-gray-100 dark:border-zinc-800">
+        <div className="space-y-3 pt-5 border-t border-divider">
           <SectionHeader icon={Hash} title={t('staff.form.staffDetails')} />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
@@ -115,13 +115,13 @@ function RoleQualificationsStep({
         </div>
 
         {(Array.isArray(formData.staffType) ? formData.staffType.includes("Teacher") : formData.staffType === "Teaching") && (
-          <div className="space-y-3 pt-5 border-t border-gray-100 dark:border-zinc-800">
+          <div className="space-y-3 pt-5 border-t border-divider">
             <SectionHeader icon={BookOpen} title={t('staff.form.teachingAssignments')} />
             <div className="p-4 border border-gray-200 rounded-lg space-y-3">
               <div className="flex justify-between items-center">
                 <div>
-                  <span className="text-sm font-medium text-gray-800 dark:text-zinc-200">{t('staff.form.isClassTeacher')}</span>
-                  <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">{t('staff.form.isClassTeacherDesc')}</p>
+                  <span className="text-sm font-medium text-fg">{t('staff.form.isClassTeacher')}</span>
+                  <p className="text-xs text-fg-muted mt-0.5">{t('staff.form.isClassTeacherDesc')}</p>
                 </div>
                 <Switch size="sm" isSelected={formData.isClassTeacher} onValueChange={(v) => updateField("isClassTeacher", v)} />
               </div>
@@ -144,7 +144,7 @@ function RoleQualificationsStep({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-gray-600 dark:text-zinc-400">{t('staff.form.subjectTeachingClasses')}</label>
+              <label className="text-xs font-medium text-fg-muted">{t('staff.form.subjectTeachingClasses')}</label>
               <Select
                 selectionMode="multiple"
                 placeholder={loadingClasses ? "Loading classes..." : "Select classes"}
@@ -170,15 +170,15 @@ function RoleQualificationsStep({
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <SectionHeader icon={GraduationCap} title={t('staff.about.professionalQualifications')} />
-          {formData.professionalQualifications.length > 0 && (
+          {(formData.professionalQualifications || []).length > 0 && (
             <button type="button" onClick={addQualification} className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-primary-600 transition-colors px-2 py-1 rounded-md hover:bg-primary/5">
               <Plus size={12} /> {t('staff.form.addDegree')}
             </button>
           )}
         </div>
 
-        {formData.professionalQualifications.map((qual, i) => (
-          <div key={qual._id || `qual-${i}`} className="p-4 border border-gray-200 dark:border-zinc-700 rounded-lg space-y-3 relative group hover:border-gray-300 dark:hover:border-zinc-600 transition-colors">
+        {(formData.professionalQualifications || []).map((qual, i) => (
+          <div key={qual._id || `qual-${i}`} className="p-4 border border-border-token rounded-lg space-y-3 relative group hover:border-gray-300 dark:hover:border-zinc-600 transition-colors">
             <button className="absolute top-3 right-3 text-gray-400 hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded-md" onClick={() => removeQualification(i)}>
               <X size={14} />
             </button>
@@ -207,8 +207,8 @@ function RoleQualificationsStep({
                 <Input label={t('staff.form.yearLabel')} labelPlacement="outside" placeholder={t('staff.form.yearPlaceholder')} value={qual.year} onValueChange={v => { if (v.length <= 4 && /^\d*$/.test(v)) updateQualification(i, "year", v); }} variant="bordered" radius="sm" size="sm" isInvalid={!!errors[`qualYear_${i}`]} errorMessage={errors[`qualYear_${i}`]} classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-9" }} />
               </div>
             </div>
-            <div className="flex items-center gap-3 pt-2 border-t border-gray-100 dark:border-zinc-800">
-              <button className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-zinc-400 hover:text-gray-800 transition-colors px-2 py-1 rounded-md hover:bg-gray-100" onClick={() => document.getElementById(`qual-doc-${i}`).click()}>
+            <div className="flex items-center gap-3 pt-2 border-t border-divider">
+              <button className="inline-flex items-center gap-1.5 text-xs font-medium text-fg-muted hover:text-gray-800 transition-colors px-2 py-1 rounded-md hover:bg-gray-100" onClick={() => document.getElementById(`qual-doc-${i}`).click()}>
                 <Upload size={12} /> {t('staff.form.uploadCertificate')}
               </button>
               {qual.documents && qual.documents.length > 0 && (
@@ -230,18 +230,18 @@ function RoleQualificationsStep({
           </div>
         ))}
 
-        {formData.professionalQualifications.length === 0 && (
-          <div className="text-center py-10 border-2 border-dashed border-gray-200 dark:border-zinc-700 rounded-lg flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-gray-300 transition-colors" onClick={addQualification}>
-            <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-400 dark:text-zinc-500">
+        {(formData.professionalQualifications || []).length === 0 && (
+          <div className="text-center py-10 border-2 border-dashed border-border-token rounded-lg flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-gray-300 transition-colors" onClick={addQualification}>
+            <div className="w-10 h-10 rounded-full bg-surface-2 flex items-center justify-center text-fg-faint">
               <GraduationCap size={20} />
             </div>
-            <p className="text-xs text-gray-500 dark:text-zinc-400">{t('staff.form.noDegreesAdded')}</p>
+            <p className="text-xs text-fg-muted">{t('staff.form.noDegreesAdded')}</p>
           </div>
         )}
-        {errors.qualifications && <p className="text-xs text-danger">{errors.qualifications}</p>}
+        {errors.qualifications && <p id="qualifications-error" role="alert" aria-live="polite" className="text-xs text-danger">{errors.qualifications}</p>}
       </div>
 
-      <div className="space-y-3 pt-5 border-t border-gray-100 dark:border-zinc-800">
+      <div className="space-y-3 pt-5 border-t border-divider">
         <SectionHeader icon={Briefcase} title={t('staff.form.workExperience')} optional />
         <div className="space-y-3">
           <div className="flex gap-4">

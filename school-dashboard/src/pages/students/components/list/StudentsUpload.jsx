@@ -9,6 +9,8 @@ import {
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import { toTodayDateString } from "../../../../utils/dateFormatter";
+import logger from '../../../../utils/logger';
+
 
 /**
  * useStudentsUpload
@@ -53,23 +55,7 @@ export function useStudentsUpload({
 
     // Helper — load ALL students for duplicate checking during import
     const loadAllStudentsForImport = useCallback(async () => {
-        const firstPage = await studentsApi.list(
-            { page: 1, limit: 100 },
-            { skipCache: true }
-        );
-
-        const allStudents = [...(firstPage.data || [])];
-        const totalPages = firstPage.pagination?.totalPages || 1;
-
-        for (let page = 2; page <= totalPages; page += 1) {
-            const nextPage = await studentsApi.list(
-                { page, limit: 100 },
-                { skipCache: true }
-            );
-            allStudents.push(...(nextPage.data || []));
-        }
-
-        return allStudents;
+        return studentsApi.getAll({ skipCache: true });
     }, []);
 
     // Helper — parse class and section from combined class field (e.g. "7-b")
@@ -169,7 +155,8 @@ export function useStudentsUpload({
             toast.dismiss("csv-upload");
 
             setValidatedStudents(validated);
-            setPreviewFilter("all");
+            const hasErrors = validated.some(s => !s.valid && !s.isDuplicate);
+            setPreviewFilter(hasErrors ? "invalid" : "all");
             onCsvUploadClose();
             onPreviewOpen();
         } catch (error) {
@@ -178,7 +165,7 @@ export function useStudentsUpload({
                 `Failed to process CSV: ${error.message || "Unknown error"}`,
                 { duration: 4000, icon: "❌" }
             );
-            console.error("❌ CSV Upload Error:", error);
+            logger.error("❌ CSV Upload Error:", error);
         } finally {
             setCsvProcessing(false);
         }
@@ -223,7 +210,7 @@ export function useStudentsUpload({
                         error: error.message,
                         details: error.details || error,
                     });
-                    console.error(
+                    logger.error(
                         `❌ Error importing student ${studentData.name}:`,
                         {
                             message: error.message,
@@ -252,7 +239,7 @@ export function useStudentsUpload({
                     `Import complete: ${successCount} successful, ${errorCount} failed\n\n${errorSummary}${errors.length > 3 ? "\n...and more" : ""}`,
                     { duration: 8000, icon: "⚠️" }
                 );
-                console.error("❌ Import errors:", errors);
+                logger.error("❌ Import errors:", errors);
             } else {
                 toast.success(
                     `Import complete: ${successCount} successful, ${duplicateCount} duplicate${duplicateCount > 1 ? "s" : ""} skipped`,
@@ -266,7 +253,7 @@ export function useStudentsUpload({
             await refreshStudentsList();
         } catch (error) {
             toast.error("Failed to import students", { duration: 4000, icon: "❌" });
-            console.error("Import error:", error);
+            logger.error("Import error:", error);
         } finally {
             setCsvProcessing(false);
             setImportProgress({ current: 0, total: 0 });

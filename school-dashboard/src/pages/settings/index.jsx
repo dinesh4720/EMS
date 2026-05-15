@@ -66,6 +66,8 @@ const PeriodSettings = lazyWithRetry(() => import("./PeriodSettings"));
 const SeedDataSettings = lazyWithRetry(() => import("./SeedDataSettings"));
 const DataCleanupSettings = lazyWithRetry(() => import("./DataCleanupSettings"));
 const ActiveSessions = lazyWithRetry(() => import("./ActiveSessions"));
+const FeeTemplatesPage = lazyWithRetry(() => import("./FeeTemplatesPage"));
+const SSOSettings = lazyWithRetry(() => import("./SSOSettings"));
 
 function SettingsPageSkeleton() {
   return (
@@ -109,6 +111,7 @@ export default function SettingsPage() {
       title: "General",
       items: [
         { key: "institution", label: "General settings", icon: Building, path: "/settings" },
+        { key: "workspace", label: "Workspace", icon: Building, path: "/settings/workspace" },
         { key: "academics", label: "Academics", icon: GraduationCap, path: "/settings/academics", isNew: true },
         { key: "admission-form", label: "Admission Form", icon: FileText, path: "/settings/admission-form", isNew: true },
         { key: "intakeforms", label: "Intake Forms", icon: FileText, path: "/settings/intake-forms" },
@@ -293,6 +296,9 @@ export default function SettingsPage() {
               <Route index element={
                 <SettingsErrorBoundary><InstitutionSettings /></SettingsErrorBoundary>
               } />
+              <Route path="workspace" element={
+                <SettingsErrorBoundary><WorkspaceSettings /></SettingsErrorBoundary>
+              } />
               <Route path="academics" element={
                 <SettingsErrorBoundary><AcademicSettings /></SettingsErrorBoundary>
               } />
@@ -323,6 +329,9 @@ export default function SettingsPage() {
               <Route path="fees" element={
                 <SettingsErrorBoundary><FeeManagementSettings /></SettingsErrorBoundary>
               } />
+              <Route path="fee-templates" element={
+                <SettingsErrorBoundary><FeeTemplatesPage /></SettingsErrorBoundary>
+              } />
               <Route path="holidays" element={
                 <SettingsErrorBoundary><HolidaySettings /></SettingsErrorBoundary>
               } />
@@ -346,6 +355,9 @@ export default function SettingsPage() {
               } />
               <Route path="scim" element={
                 <SettingsErrorBoundary><RequirePermission adminOnly><SCIMSettings /></RequirePermission></SettingsErrorBoundary>
+              } />
+              <Route path="sso" element={
+                <SettingsErrorBoundary><SSOSettings /></SettingsErrorBoundary>
               } />
               <Route path="periods" element={
                 <SettingsErrorBoundary><PeriodSettings /></SettingsErrorBoundary>

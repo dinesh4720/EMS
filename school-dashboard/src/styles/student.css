@@ -1,0 +1,608 @@
+/* ============================================================
+   Student dashboard styles — Phase 5a (Variation A only).
+   Heatmap, activity timeline, subject list. Variation B
+   (modal-style sheet) lands later as Phase 5b.
+   ============================================================ */
+
+/* REVAMP-12 — Detail page composition.
+   Mirrors the canonical .detail-pane__metrics grid (staff.css) so the
+   StudentDashboard's KPI strip renders the same way as StaffDetailPane. */
+.student-dashboard__metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--divider);
+  margin: 0 24px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.student-dashboard__metrics .dp-metric {
+  background: var(--surface);
+}
+.student-dashboard__tabs {
+  padding: 16px 24px 0;
+  border-bottom: 1px solid var(--divider);
+}
+.student-dashboard__overview-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 1023px) {
+  .student-dashboard__metrics { grid-template-columns: repeat(2, 1fr); }
+  .student-dashboard__overview-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .student-dashboard__metrics { grid-template-columns: 1fr 1fr; margin: 0 16px; }
+  .student-dashboard__tabs { padding: 12px 16px 0; }
+}
+
+/* Subject list (variation A) */
+.subjects {
+  display: flex;
+  flex-direction: column;
+}
+.subject {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--divider);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.subject:last-child { border-bottom: none; }
+.subject__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* Heatmap */
+.heatmap {
+  display: grid;
+  grid-template-columns: repeat(15, 1fr);
+  gap: 4px;
+}
+.hm-cell {
+  aspect-ratio: 1;
+  border-radius: 3px;
+  background: var(--surface-2);
+}
+.hm-cell--ok { background: var(--ok); opacity: 0.85; }
+.hm-cell--absent { background: var(--danger); }
+.hm-cell--off { background: var(--surface-2); border: 1px solid var(--divider); }
+
+/* Timeline */
+.timeline__day {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-subtle);
+  padding: 12px 14px 6px;
+  border-bottom: 1px solid var(--divider);
+}
+.timeline__item {
+  display: grid;
+  grid-template-columns: 56px 24px 1fr;
+  gap: 12px;
+  padding: 10px 14px;
+  align-items: center;
+  border-bottom: 1px solid var(--divider);
+}
+.timeline__item:last-child { border-bottom: none; }
+.timeline__time {
+  font-size: 11px;
+  color: var(--fg-subtle);
+  text-align: right;
+}
+.timeline__icon {
+  width: 24px; height: 24px;
+  border-radius: 6px;
+  display: grid; place-items: center;
+  background: var(--surface-2);
+  color: var(--fg-muted);
+  border: 1px solid var(--border);
+}
+.timeline__icon--fee { background: var(--accent-bg); color: var(--accent); border-color: transparent; }
+.timeline__icon--grade { background: var(--info-bg); color: var(--info); border-color: transparent; }
+.timeline__icon--att { background: var(--ok-bg); color: var(--ok); border-color: transparent; }
+.timeline__icon--note { background: var(--warn-bg); color: var(--warn); border-color: transparent; }
+
+/* ============================================================
+   REVAMP-13 — Promotion wizard + TC + Form Submissions.
+   Composer-style multi-step page with step-rail header,
+   mono tnum metrics, and a sticky foot. Mirrors the AddStaffComposer
+   .composer__head / .composer__foot patterns but inline on the page.
+   ============================================================ */
+.promo-page { display: flex; flex-direction: column; gap: 16px; }
+.promo-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: max-content;
+}
+.promo-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--fg-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+.promo-tab:hover { color: var(--fg); }
+.promo-tab.is-active {
+  background: var(--surface);
+  color: var(--fg);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05), inset 0 0 0 1px var(--border);
+}
+.promo-tab__count {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 10.5px;
+  color: var(--fg-faint);
+}
+
+/* Step rail (linear top breadcrumb-style indicator) */
+.steprail {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow-x: auto;
+}
+.steprail__step {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--fg-faint);
+  background: transparent;
+  border: none;
+  cursor: not-allowed;
+  white-space: nowrap;
+}
+.steprail__step.is-active { color: var(--fg); background: var(--surface-2); }
+.steprail__step.is-done { color: var(--fg-muted); cursor: pointer; }
+.steprail__step.is-done:hover { background: var(--surface-hover); }
+.steprail__num {
+  width: 18px; height: 18px;
+  border-radius: 999px;
+  display: grid; place-items: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--fg-faint);
+  flex-shrink: 0;
+}
+.steprail__step.is-active .steprail__num {
+  background: var(--accent); color: white; border-color: var(--accent);
+}
+.steprail__step.is-done .steprail__num {
+  background: var(--ok); color: white; border-color: var(--ok);
+}
+.steprail__sep {
+  width: 18px;
+  height: 1px;
+  background: var(--divider);
+  flex-shrink: 0;
+}
+.steprail__sep.is-done { background: var(--ok); opacity: 0.5; }
+@media (max-width: 640px) {
+  .steprail__label { display: none; }
+}
+
+/* Metrics row (used in mapping / review / confirm / results) */
+.promo-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--divider);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.promo-metrics--5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.promo-metrics--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.promo-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  background: var(--surface);
+}
+.promo-metric__label {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-subtle);
+}
+.promo-metric__value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+}
+.promo-metric--ok .promo-metric__value { color: var(--ok); }
+.promo-metric--warn .promo-metric__value { color: var(--warn); }
+.promo-metric--danger .promo-metric__value { color: var(--danger); }
+.promo-metric--info .promo-metric__value { color: var(--info); }
+.promo-metric--accent .promo-metric__value { color: var(--accent); }
+@media (max-width: 768px) {
+  .promo-metrics,
+  .promo-metrics--5,
+  .promo-metrics--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Class mapping row */
+.cmap-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: border-color 120ms, background 120ms;
+}
+.cmap-row:hover { border-color: var(--border-strong); }
+.cmap-row.is-disabled { opacity: 0.5; background: var(--surface-2); }
+.cmap-row.is-graduate {
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+}
+.cmap-row__from {
+  display: flex; flex-direction: column; gap: 2px;
+  min-width: 0;
+  flex: 0 0 160px;
+}
+.cmap-row__class-name {
+  font-size: 13px;
+  font-weight: 520;
+  color: var(--fg);
+}
+.cmap-row__sub {
+  font-size: 11.5px;
+  color: var(--fg-subtle);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.cmap-row__arrow { color: var(--fg-faint); flex-shrink: 0; }
+.cmap-row__to { flex: 1; min-width: 180px; }
+
+/* Sticky foot for wizard steps */
+.promo-foot {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 -2px 8px -4px rgba(0,0,0,0.06);
+  margin-top: 8px;
+}
+.promo-foot__progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--fg-subtle);
+}
+.promo-foot__progress .num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--fg);
+  font-weight: 520;
+}
+
+/* Student decision row (StepStudentReview) */
+.sdec-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--divider);
+  border-radius: 6px;
+  transition: background 120ms;
+}
+.sdec-row + .sdec-row { margin-top: 4px; }
+.sdec-row__name { font-size: 13px; font-weight: 520; color: var(--fg); }
+.sdec-row__meta {
+  font-size: 11px; color: var(--fg-subtle);
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+}
+.sdec-row--promoted { border-left: 2px solid var(--ok); }
+.sdec-row--detained { border-left: 2px solid var(--warn); }
+.sdec-row--graduated { border-left: 2px solid var(--accent); }
+.sdec-row--transferred { border-left: 2px solid var(--info); }
+
+/* Transfer Certificate page list + preview pane */
+.tc-page { display: flex; flex-direction: column; gap: 12px; }
+.tc-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.tc-toolbar__count {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 11.5px;
+  color: var(--fg-subtle);
+}
+
+.tc-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--divider);
+  cursor: pointer;
+  transition: background 80ms;
+  background: var(--surface);
+}
+.tc-row:hover { background: var(--surface-hover); }
+.tc-row.is-selected {
+  background: var(--accent-bg);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.tc-row__name {
+  font-size: 13px; font-weight: 520; color: var(--fg);
+}
+.tc-row__meta {
+  font-size: 11.5px; color: var(--fg-subtle);
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+}
+.tc-list-frame {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.tc-list-frame .tc-row:last-child { border-bottom: none; }
+
+/* TC generator split layout: form left, preview right */
+.tcgen {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  min-height: 60vh;
+  max-height: 80vh;
+}
+.tcgen__form { padding: 16px 20px; overflow: auto; }
+.tcgen__preview {
+  background: var(--surface-2);
+  border-left: 1px solid var(--divider);
+  padding: 18px;
+  overflow: auto;
+}
+.tcgen__preview-card {
+  background: white;
+  color: #111;
+  border: 1px solid #ddd;
+  padding: 18px 20px;
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.tcgen__preview-card h3 {
+  font-size: 13px; font-weight: 800;
+  text-align: center; margin: 0 0 6px;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.tcgen__preview-card .tcrow {
+  display: grid;
+  grid-template-columns: 18px 1fr 6px 1fr;
+  gap: 4px;
+  border-bottom: 1px dotted #999;
+  padding: 1px 0;
+}
+.tcgen__preview-card .tcrow b { font-weight: 700; }
+@media (max-width: 900px) {
+  .tcgen { grid-template-columns: 1fr; max-height: none; }
+  .tcgen__preview { border-left: none; border-top: 1px solid var(--divider); }
+}
+
+/* TC print signature row — REVAMP-13 bug-fix:
+   The pre-revamp template used three fixed-width 14rem columns inside
+   a flex justify-between, which overflowed on narrow A4 templates that
+   already had small horizontal padding. Constrain them to share the row
+   evenly and clamp the max width so all three signatures always fit. */
+.tc-print-signatures {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  align-items: end;
+  margin-top: 32px;
+  padding-bottom: 16px;
+}
+.tc-print-signatures > div {
+  width: 100%;
+  max-width: 14rem;
+  margin: 0 auto;
+}
+
+/* Form submissions toolbar */
+.formsub-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: max-content;
+}
+.formsub-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--fg-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.formsub-tab:hover { color: var(--fg); }
+.formsub-tab.is-active {
+  background: var(--surface);
+  color: var(--fg);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05), inset 0 0 0 1px var(--border);
+}
+.formsub-tab__num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 10.5px;
+  color: var(--fg-faint);
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: var(--surface-2);
+}
+.formsub-tab.is-active .formsub-tab__num {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+/* ============================================================
+   Student list — two-pane layout (mirrors StaffList)
+   ============================================================ */
+
+/* Students page shell — matches .staffs-page */
+.students-page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Full-bleed list container inside the page chrome */
+.students-page__listframe {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.students-page__listframe > .page {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
+}
+
+/* Card container for attendance / submissions tabs */
+.student-page__content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Student list row — same density as stafflist__row */
+.studentlist__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--divider);
+  text-align: left;
+  transition: background 80ms;
+  background: transparent;
+  cursor: pointer;
+}
+.studentlist__row:hover { background: var(--surface-2); }
+.studentlist__row.is-active {
+  background: var(--surface);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+/* Keyboard-nav focus ring on the list scroller */
+[role="listbox"][aria-label="Student list"]:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--accent-bg);
+}
+
+/* Profile arrow icon on row — visible on row hover */
+.studentlist__profile-arrow {
+  opacity: 0;
+  transition: opacity 120ms, background 120ms, color 120ms;
+}
+.studentlist__row:hover .studentlist__profile-arrow,
+.studentlist__row.is-active .studentlist__profile-arrow {
+  opacity: 1;
+}
+.studentlist__profile-arrow:hover {
+  background: var(--surface-3);
+  color: var(--fg);
+}
+
+/* Clickable avatar in detail pane */
+.avatar-btn {
+  transition: box-shadow 120ms;
+}
+.avatar-btn:hover {
+  box-shadow: 0 0 0 2px var(--accent-bg);
+}
+.avatar-btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent-bg);
+  outline: none;
+}
+
+/* Clickable name in detail pane */
+.profile-name-btn {
+  transition: color 120ms;
+}
+.profile-name-btn:hover {
+  color: var(--accent);
+}
+.profile-name-btn:hover svg {
+  opacity: 1 !important;
+  color: var(--accent);
+}
+.profile-name-btn:focus-visible {
+  outline: 2px solid var(--accent-bg);
+  outline-offset: 2px;
+  border-radius: 4px;
+}

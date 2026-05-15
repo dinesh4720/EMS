@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Card, CardBody, Button, Checkbox, Chip } from '@heroui/react';
 import {
-  AlertTriangle, ArrowUpCircle, GraduationCap, Minus, ArrowRight,
+  Card, CardBody, Button, Checkbox,
+  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
+  Input, useDisclosure,
+} from '@heroui/react';
+import {
+  AlertTriangle, ArrowUpCircle, ArrowRight,
 } from 'lucide-react';
 import { promotionApi } from '../../../services/api/extensions';
 import toast from 'react-hot-toast';
@@ -9,8 +13,11 @@ import toast from 'react-hot-toast';
 export default function StepConfirm({ onNext, onBack, wizardState, setWizardState }) {
   const [executing, setExecuting] = useState(false);
   const [generateRolls, setGenerateRolls] = useState(false);
+  const [confirmText, setConfirmText] = useState('');
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
-  // AUDIT-111: Nav guard -- warn on browser close/refresh before promotion is executed
+  const CONFIRM_PHRASE = 'CONFIRM';
+
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       if (!executing) {
@@ -24,10 +31,21 @@ export default function StepConfirm({ onNext, onBack, wizardState, setWizardStat
 
   const { classMappings, summary, fromYear, toYear } = wizardState;
 
+  const total =
+    (summary?.totalPromoting || 0) +
+    (summary?.totalDetained || 0) +
+    (summary?.totalGraduating || 0) +
+    (summary?.totalTransferred || 0);
+
+  const openConfirmModal = () => {
+    setConfirmText('');
+    onOpen();
+  };
+
   const handleExecute = async () => {
+    onClose();
     setExecuting(true);
     try {
-      // Build the execute-all payload
       const payload = {
         fromAcademicYear: fromYear,
         toAcademicYear: toYear,
@@ -62,55 +80,51 @@ export default function StepConfirm({ onNext, onBack, wizardState, setWizardStat
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* Warning banner */}
       <Card shadow="sm" className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800">
         <CardBody className="p-4">
           <div className="flex items-start gap-3">
-            <AlertTriangle size={20} className="text-yellow-600 dark:text-yellow-400 mt-0.5 shrink-0" />
+            <AlertTriangle size={18} className="text-yellow-600 dark:text-yellow-400 mt-0.5 shrink-0" />
             <div>
               <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
                 Confirm Year-End Promotion
               </p>
               <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
-                This will move students from {fromYear} to {toYear}. Fee structures will be reset
-                and new ones created. You can rollback this operation from the History tab if needed.
+                This will move students from <span className="mono tnum">{fromYear}</span> to{' '}
+                <span className="mono tnum">{toYear}</span>. Fee structures will be reset and new ones created.
+                You can rollback this operation from the History tab if needed.
               </p>
             </div>
           </div>
         </CardBody>
       </Card>
 
-      {/* Summary totals */}
-      <div className="grid grid-cols-4 gap-3">
-        <div className="bg-green-50 dark:bg-green-950/30 border border-green-100 dark:border-green-900 rounded-lg p-3 text-center">
-          <ArrowUpCircle size={20} className="text-green-600 dark:text-green-400 mx-auto mb-1" />
-          <p className="text-2xl font-bold text-green-700 dark:text-green-300">{summary?.totalPromoting || 0}</p>
-          <p className="text-xs text-green-600 dark:text-green-400">Promoting</p>
+      {/* Metrics */}
+      <div className="promo-metrics">
+        <div className="promo-metric promo-metric--ok">
+          <span className="promo-metric__label">Promoting</span>
+          <span className="promo-metric__value">{summary?.totalPromoting || 0}</span>
         </div>
-        <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-100 dark:border-yellow-900 rounded-lg p-3 text-center">
-          <Minus size={20} className="text-yellow-600 dark:text-yellow-400 mx-auto mb-1" />
-          <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">{summary?.totalDetained || 0}</p>
-          <p className="text-xs text-yellow-600 dark:text-yellow-400">Detained</p>
+        <div className="promo-metric promo-metric--warn">
+          <span className="promo-metric__label">Detained</span>
+          <span className="promo-metric__value">{summary?.totalDetained || 0}</span>
         </div>
-        <div className="bg-purple-50 dark:bg-purple-950/30 border border-purple-100 dark:border-purple-900 rounded-lg p-3 text-center">
-          <GraduationCap size={20} className="text-purple-600 dark:text-purple-400 mx-auto mb-1" />
-          <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">{summary?.totalGraduating || 0}</p>
-          <p className="text-xs text-purple-600 dark:text-purple-400">Graduating</p>
+        <div className="promo-metric promo-metric--accent">
+          <span className="promo-metric__label">Graduating</span>
+          <span className="promo-metric__value">{summary?.totalGraduating || 0}</span>
         </div>
-        <div className="bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-lg p-3 text-center">
-          <p className="text-2xl font-bold text-gray-700 dark:text-zinc-300 mt-5">
-            {(summary?.totalPromoting || 0) + (summary?.totalDetained || 0) + (summary?.totalGraduating || 0) + (summary?.totalTransferred || 0)}
-          </p>
-          <p className="text-xs text-gray-500 dark:text-zinc-400">Total Students</p>
+        <div className="promo-metric">
+          <span className="promo-metric__label">Total</span>
+          <span className="promo-metric__value">{total}</span>
         </div>
       </div>
 
       {/* Class-wise breakdown */}
-      <Card shadow="sm" className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800">
+      <Card shadow="sm" className="bg-surface border border-border-token">
         <CardBody className="p-4">
-          <p className="text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-3">Class-wise Breakdown</p>
-          <div className="space-y-2">
+          <p className="text-sm font-semibold text-fg mb-3">Class-wise breakdown</p>
+          <div className="space-y-1.5">
             {classMappings.map((m) => {
               const decisions = m.studentDecisions || [];
               const promoting = decisions.filter((d) => d.decision === 'promoted').length;
@@ -119,42 +133,21 @@ export default function StepConfirm({ onNext, onBack, wizardState, setWizardStat
               const transferred = decisions.filter((d) => d.decision === 'transferred').length;
 
               return (
-                <div
-                  key={m.fromClassId}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-800 dark:text-zinc-200">
-                        {m.fromClassName}{m.fromSection ? ` (${m.fromSection})` : ''}
-                      </span>
-                      <ArrowRight size={14} className="text-gray-400" />
-                      <span className="text-sm text-gray-600 dark:text-zinc-400">
-                        {m.graduate ? 'Graduate' : m.toClassName}
-                      </span>
-                    </div>
+                <div key={m.fromClassId} className="cmap-row">
+                  <div className="cmap-row__from">
+                    <span className="cmap-row__class-name">
+                      {m.fromClassName}{m.fromSection ? ` (${m.fromSection})` : ''}
+                    </span>
                   </div>
+                  <ArrowRight size={13} className="cmap-row__arrow" />
+                  <span className="cmap-row__class-name flex-1">
+                    {m.graduate ? 'Graduate' : m.toClassName}
+                  </span>
                   <div className="flex gap-1.5 shrink-0">
-                    {promoting > 0 && (
-                      <Chip size="sm" variant="flat" className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
-                        {promoting}
-                      </Chip>
-                    )}
-                    {detained > 0 && (
-                      <Chip size="sm" variant="flat" className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300">
-                        {detained}
-                      </Chip>
-                    )}
-                    {graduating > 0 && (
-                      <Chip size="sm" variant="flat" className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
-                        {graduating}
-                      </Chip>
-                    )}
-                    {transferred > 0 && (
-                      <Chip size="sm" variant="flat" className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-                        {transferred}
-                      </Chip>
-                    )}
+                    {promoting > 0 && <span className="chip chip--ok mono tnum">{promoting}</span>}
+                    {detained > 0 && <span className="chip chip--warn mono tnum">{detained}</span>}
+                    {graduating > 0 && <span className="chip chip--accent mono tnum">{graduating}</span>}
+                    {transferred > 0 && <span className="chip chip--info mono tnum">{transferred}</span>}
                   </div>
                 </div>
               );
@@ -164,35 +157,94 @@ export default function StepConfirm({ onNext, onBack, wizardState, setWizardStat
       </Card>
 
       {/* Options */}
-      <Card shadow="sm" className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800">
+      <Card shadow="sm" className="bg-surface border border-border-token">
         <CardBody className="p-4">
           <Checkbox
             isSelected={generateRolls}
             onChange={(e) => setGenerateRolls(e.target.checked)}
             size="sm"
           >
-            <span className="text-sm text-gray-700 dark:text-zinc-300">
+            <span className="text-sm text-fg">
               Auto-generate roll numbers for promoted students
             </span>
           </Checkbox>
         </CardBody>
       </Card>
 
-      {/* Navigation */}
-      <div className="flex justify-between pt-2">
+      {/* Sticky foot */}
+      <div className="promo-foot">
+        <div className="promo-foot__progress">
+          <span className="num">{total}</span>
+          <span>students will be processed</span>
+        </div>
+        <div style={{ flex: 1 }} />
         <Button variant="flat" onPress={onBack}>
           Back
         </Button>
         <Button
           color="primary"
           className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900"
-          onPress={handleExecute}
+          onPress={openConfirmModal}
           isLoading={executing}
           startContent={!executing && <ArrowUpCircle size={16} />}
         >
           Execute Year-End Promotion
         </Button>
       </div>
+
+      {/* Type-to-confirm modal */}
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        size="sm"
+        classNames={{ backdrop: 'bg-black/40', base: 'bg-surface' }}
+      >
+        <ModalContent>
+          <ModalHeader className="border-b border-divider py-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-100 dark:bg-red-950 rounded-lg">
+                <AlertTriangle size={18} className="text-red-600 dark:text-red-400" />
+              </div>
+              <h3 className="text-base font-medium text-fg">
+                Confirm Year-End Promotion
+              </h3>
+            </div>
+          </ModalHeader>
+          <ModalBody className="py-4 space-y-3">
+            <p className="text-sm text-fg">
+              This will permanently move all students from{' '}
+              <strong className="mono tnum">{fromYear}</strong> to{' '}
+              <strong className="mono tnum">{toYear}</strong> and reset
+              current-year fee structures. This action cannot be undone without a rollback.
+            </p>
+            <p className="text-sm text-fg-muted">
+              Type <strong className="text-red-600 dark:text-red-400">{CONFIRM_PHRASE}</strong> to proceed:
+            </p>
+            <Input
+              autoFocus
+              placeholder={CONFIRM_PHRASE}
+              value={confirmText}
+              onValueChange={setConfirmText}
+              variant="bordered"
+              size="sm"
+              classNames={{ input: 'font-mono tracking-widest' }}
+            />
+          </ModalBody>
+          <ModalFooter className="border-t border-divider">
+            <Button variant="light" onPress={onClose}>
+              Cancel
+            </Button>
+            <Button
+              color="danger"
+              onPress={handleExecute}
+              isDisabled={confirmText !== CONFIRM_PHRASE}
+              startContent={<ArrowUpCircle size={15} />}
+            >
+              Execute Promotion
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

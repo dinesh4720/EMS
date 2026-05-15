@@ -74,7 +74,7 @@ export default function MessageActionsMenu({
       <Dropdown placement="bottom-end">
         <DropdownTrigger>
           <button
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-500 dark:text-gray-400 transition-all duration-150 opacity-0 group-hover:opacity-100 hover:text-gray-700 dark:hover:text-gray-200"
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-2 text-gray-500 dark:text-gray-400 transition-all duration-150 opacity-0 group-hover:opacity-100 hover:text-gray-700 dark:hover:text-gray-200"
             onClick={(e) => e.stopPropagation()}
           >
             <MoreVertical size={18} />
@@ -84,7 +84,7 @@ export default function MessageActionsMenu({
         <DropdownMenu
           aria-label={t('aria.menus.messageActions')}
           onAction={(key) => handleAction(key)}
-          className="min-w-48 p-1 rounded-xl border border-gray-200 dark:border-zinc-700 dark:shadow-zinc-900/50"
+          className="min-w-48 p-1 rounded-xl border border-border-token dark:shadow-zinc-900/50"
           itemClasses={{
             base: "rounded-lg px-3 py-2.5 text-sm data-[hover=true]:bg-gray-100 dark:data-[hover=true]:bg-zinc-700 transition-colors",
           }}

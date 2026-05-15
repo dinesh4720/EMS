@@ -159,12 +159,12 @@ export default function RemindersList({
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         {/* Search Input */}
         <div className="flex items-center gap-2 flex-1 max-w-md">
-          <div className="flex items-center gap-2 flex-1 px-4 py-2.5 bg-gray-50 dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700 transition-all duration-200 focus-within:border-indigo-300 dark:focus-within:border-indigo-500/50 focus-within:ring-2 focus-within:ring-indigo-500/10">
-            <Search size={16} className="text-gray-400 dark:text-gray-500" />
+          <div className="flex items-center gap-2 flex-1 px-4 py-2.5 bg-surface-2 rounded-xl border border-border-token transition-all duration-200 focus-within:border-accent-border focus-within:ring-2 focus-within:ring-accent/10">
+            <Search size={16} className="text-fg-faint" />
             <input
               type="text"
               placeholder={t('pages.searchReminders')}
-              className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-500"
+              className="flex-1 bg-transparent outline-none text-sm text-fg placeholder:text-fg-muted"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -179,11 +179,11 @@ export default function RemindersList({
               <Button
                 size="sm"
                 variant="flat"
-                className="bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl px-4 py-2.5 h-auto font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-all duration-200"
+                className="bg-surface-2 border border-border-token rounded-xl px-4 py-2.5 h-auto font-medium text-fg-muted hover:bg-surface-hover transition-all duration-200"
               >
                 <Filter size={14} className="text-gray-400" />
                 <span>Type: </span>
-                <span className="text-gray-900 dark:text-white">
+                <span className="text-fg">
                   {typeFilter === 'all' ? t('constants.reminders.types.all') : REMINDER_TYPES[typeFilter]?.label}
                 </span>
                 <ChevronDown size={14} className="text-gray-400 ml-1" />
@@ -211,11 +211,11 @@ export default function RemindersList({
               <Button
                 size="sm"
                 variant="flat"
-                className="bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl px-4 py-2.5 h-auto font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-all duration-200"
+                className="bg-surface-2 border border-border-token rounded-xl px-4 py-2.5 h-auto font-medium text-fg-muted hover:bg-surface-hover transition-all duration-200"
               >
                 <Power size={14} className={statusFilter === 'active' ? 'text-emerald-500' : statusFilter === 'inactive' ? 'text-gray-400' : 'text-gray-400'} />
                 <span>Status: </span>
-                <span className="text-gray-900 dark:text-white">
+                <span className="text-fg">
                   {statusFilter === 'all' ? 'All' : statusFilter === 'active' ? 'Active' : 'Inactive'}
                 </span>
                 <ChevronDown size={14} className="text-gray-400 ml-1" />
@@ -239,8 +239,8 @@ export default function RemindersList({
 
       {/* Results Count */}
       {reminders.length > 0 && (
-        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-          <Sparkles size={12} className="text-indigo-400" />
+        <div className="flex items-center gap-2 text-xs text-fg-muted">
+          <Sparkles size={12} className="text-accent" />
           <span>
             Showing {filteredReminders.length} of {reminders.length} reminders
           </span>
@@ -248,13 +248,13 @@ export default function RemindersList({
       )}
 
       {/* Table */}
-      <div className="w-full overflow-x-auto rounded-xl border border-gray-100 dark:border-zinc-800">
+      <div className="w-full overflow-x-auto rounded-xl border border-divider">
         <Table
           aria-label={t('aria.misc.reminders')}
           removeWrapper
           classNames={{
-            th: "bg-gray-50 dark:bg-zinc-800/50 text-gray-600 dark:text-gray-400 font-semibold text-xs uppercase tracking-wider",
-            tr: "hover:bg-gray-50/50 dark:hover:bg-zinc-800/30 transition-colors duration-150",
+            th: "bg-surface-2 text-fg-muted font-semibold text-xs uppercase tracking-wider",
+            tr: "hover:bg-surface-2/50 transition-colors duration-150",
             td: "py-3",
           }}
         >
@@ -271,7 +271,7 @@ export default function RemindersList({
             <div className="flex flex-col items-center justify-center py-16 px-4">
               <div className="relative mb-6">
                 <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-zinc-800 dark:to-zinc-700 flex items-center justify-center">
-                  <Bell size={32} className="text-gray-400 dark:text-gray-500" />
+                  <Bell size={32} className="text-fg-faint" />
                 </div>
                 <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg">
                   <Sparkles size={14} className="text-white" />
@@ -298,7 +298,7 @@ export default function RemindersList({
                       <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${typeInfo.gradient} flex items-center justify-center shadow-sm`}>
                         <TypeIcon size={14} className="text-white" />
                       </div>
-                      <span className="font-semibold text-gray-900 dark:text-white">{reminder.title}</span>
+                      <span className="font-semibold text-fg">{reminder.title}</span>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[300px] ml-11">
                       {reminder.message}
@@ -318,13 +318,13 @@ export default function RemindersList({
                       {reminder.recipients?.map((recipient) => (
                         <span
                           key={recipient.type}
-                          className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 dark:bg-zinc-700 text-gray-600 dark:text-gray-300"
+                          className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-surface-2 text-fg-muted"
                         >
                           {recipient.type}
                         </span>
                       ))}
                     </div>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 font-medium tracking-wide">
+                    <p className="text-xs text-fg-faint font-medium tracking-wide">
                       {reminder.channels?.join(', ').toUpperCase()}
                     </p>
                   </div>
@@ -351,7 +351,7 @@ export default function RemindersList({
                         )
                       }
                     />
-                    <span className={`text-xs font-medium ${reminder.active ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                    <span className={`text-xs font-medium ${reminder.active ? 'text-emerald-600 dark:text-emerald-400' : 'text-fg-faint'}`}>
                       {reminder.active ? 'On' : 'Off'}
                     </span>
                   </div>
@@ -375,7 +375,7 @@ export default function RemindersList({
                           isIconOnly
                           size="sm"
                           variant="light"
-                          className="rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-500"
+                          className="rounded-lg hover:bg-surface-2 text-gray-500"
                         >
                           <MoreVertical size={15} />
                         </Button>

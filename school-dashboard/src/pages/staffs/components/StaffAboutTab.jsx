@@ -9,11 +9,11 @@ export default function StaffAboutTab({ staff }) {
   return (
     <div className="space-y-4">
       {/* Personal Information */}
-      <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
-        <div className="p-5 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between">
+      <div className="bg-surface rounded-lg border border-border-token overflow-hidden">
+        <div className="p-5 border-b border-border-token flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><User size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-            <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.personalInformation1')}</h3>
+            <div className="w-9 h-9 rounded-lg bg-surface-2 flex items-center justify-center"><User size={16} className="text-fg-muted" /></div>
+            <h3 className="font-medium text-fg text-sm">{t('pages.personalInformation1')}</h3>
           </div>
         </div>
         <div className="p-5 grid grid-cols-2 lg:grid-cols-3 gap-6">
@@ -33,11 +33,11 @@ export default function StaffAboutTab({ staff }) {
       </div>
 
       {/* Employment Details */}
-      <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
-        <div className="p-5 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between">
+      <div className="bg-surface rounded-lg border border-border-token overflow-hidden">
+        <div className="p-5 border-b border-border-token flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Briefcase size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-            <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.employmentDetails')}</h3>
+            <div className="w-9 h-9 rounded-lg bg-surface-2 flex items-center justify-center"><Briefcase size={16} className="text-fg-muted" /></div>
+            <h3 className="font-medium text-fg text-sm">{t('pages.employmentDetails')}</h3>
           </div>
         </div>
         <div className="p-5 grid grid-cols-2 lg:grid-cols-3 gap-6">
@@ -55,26 +55,26 @@ export default function StaffAboutTab({ staff }) {
       </div>
 
       {/* Contact Details */}
-      <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
-        <div className="p-5 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between">
+      <div className="bg-surface rounded-lg border border-border-token overflow-hidden">
+        <div className="p-5 border-b border-border-token flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Phone size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-            <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.contactDetails1')}</h3>
+            <div className="w-9 h-9 rounded-lg bg-surface-2 flex items-center justify-center"><Phone size={16} className="text-fg-muted" /></div>
+            <h3 className="font-medium text-fg text-sm">{t('pages.contactDetails1')}</h3>
           </div>
         </div>
         <div className="p-5 grid grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="col-span-full"><p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{t('pages.address2')}</p><p className="text-sm text-gray-900 dark:text-zinc-100">{staff.address || "—"}</p></div>
+          <div className="col-span-full"><p className="text-xs text-fg-faint mb-1">{t('pages.address2')}</p><p className="text-sm text-fg">{staff.address || "—"}</p></div>
           <InfoItem label={t('pages.phone1')} value={staff.phone} icon={<Phone size={14} />} isLink={staff.phone ? `tel:${staff.phone}` : null} />
           <InfoItem label={t('pages.email1')} value={staff.email} icon={<Mail size={14} />} isLink={staff.email ? `mailto:${staff.email}` : null} />
         </div>
       </div>
 
       {/* Emergency Contact */}
-      <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
-        <div className="p-5 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between">
+      <div className="bg-surface rounded-lg border border-border-token overflow-hidden">
+        <div className="p-5 border-b border-border-token flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Mail size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-            <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.emergencyContact')}</h3>
+            <div className="w-9 h-9 rounded-lg bg-surface-2 flex items-center justify-center"><Mail size={16} className="text-fg-muted" /></div>
+            <h3 className="font-medium text-fg text-sm">{t('pages.emergencyContact')}</h3>
           </div>
         </div>
         <div className="p-5 grid grid-cols-2 lg:grid-cols-3 gap-6">
@@ -99,11 +99,11 @@ export default function StaffAboutTab({ staff }) {
       </div>
 
       {/* Bank Account Details */}
-      <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
-        <div className="p-5 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between">
+      <div className="bg-surface rounded-lg border border-border-token overflow-hidden">
+        <div className="p-5 border-b border-border-token flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center"><Landmark size={16} className="text-gray-600 dark:text-zinc-400" /></div>
-            <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.bankAccountDetails1')}</h3>
+            <div className="w-9 h-9 rounded-lg bg-surface-2 flex items-center justify-center"><Landmark size={16} className="text-fg-muted" /></div>
+            <h3 className="font-medium text-fg text-sm">{t('pages.bankAccountDetails1')}</h3>
           </div>
         </div>
         <div className="p-5 grid grid-cols-2 lg:grid-cols-3 gap-6">
@@ -121,16 +121,16 @@ export default function StaffAboutTab({ staff }) {
 function InfoItem({ label, value, className = "", icon = null, isLink = null }) {
   return (
     <div className={className}>
-      <p className="text-xs text-gray-400 dark:text-zinc-500 mb-1 flex items-center gap-1.5">
-        {icon && <span className="text-gray-400 dark:text-zinc-500">{icon}</span>}
+      <p className="text-xs text-fg-faint mb-1 flex items-center gap-1.5">
+        {icon && <span className="text-fg-faint">{icon}</span>}
         {label}
       </p>
       {isLink && value ? (
-        <a href={isLink} className="text-sm text-gray-900 dark:text-zinc-100 hover:underline transition-colors">
+        <a href={isLink} className="text-sm text-fg hover:underline transition-colors">
           {value || "—"}
         </a>
       ) : (
-        <p className="text-sm text-gray-900 dark:text-zinc-100">{value || "—"}</p>
+        <p className="text-sm text-fg">{value || "—"}</p>
       )}
     </div>
   );

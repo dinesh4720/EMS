@@ -1,19 +1,21 @@
 import { useState, useEffect, useMemo } from "react";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Select, SelectItem } from "@heroui/react";
-import { BookOpen, Plus, Trash2, Users, AlertCircle, GraduationCap } from "lucide-react";
+import {
+  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure,
+  Select, SelectItem,
+} from "@heroui/react";
+import { BookOpen, Plus, Trash2, Users, AlertCircle, GraduationCap, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useApp } from "../../context/AppContext";
 import { usePermissions } from "../../context/PermissionContext";
 import ConfirmDialog from "../../components/ConfirmDialog";
-import { useTranslation } from 'react-i18next';
-import {
-  showErrorToast,
-  executeWithFeedback
-} from "../../utils/errorHandling";
+import { showErrorToast, executeWithFeedback } from "../../utils/errorHandling";
+import logger from "../../utils/logger";
 
 export default function StaffAssignmentPanel({ staffId, onAssignClassTeacher }) {
-  const { t } = useTranslation();
-  const { teacherAssignmentsApi, classesApi, schoolSettings, classesWithTeachers, getStaffById } = useApp();
+  const {
+    teacherAssignmentsApi, classesApi, schoolSettings,
+    classesWithTeachers, getStaffById,
+  } = useApp();
   const { hasPermission } = usePermissions();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -21,66 +23,50 @@ export default function StaffAssignmentPanel({ staffId, onAssignClassTeacher }) 
   const [assignments, setAssignments] = useState([]);
   const [availableClasses, setAvailableClasses] = useState([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [newAssignment, setNewAssignment] = useState({
-    subject: "",
-    classIds: new Set()
-  });
+  const [newAssignment, setNewAssignment] = useState({ subject: "", classIds: new Set() });
   const [errors, setErrors] = useState({});
   const [assignmentToDelete, setAssignmentToDelete] = useState(null);
-  const [classToRemove, setClassToRemove] = useState(null); // { assignmentId, classId, subject, className }
+  const [classToRemove, setClassToRemove] = useState(null);
   const { isOpen: isConfirmDeleteOpen, onOpen: onConfirmDeleteOpen, onClose: onConfirmDeleteClose } = useDisclosure();
   const { isOpen: isConfirmRemoveClassOpen, onOpen: onConfirmRemoveClassOpen, onClose: onConfirmRemoveClassClose } = useDisclosure();
 
-  // Get the staff member to match class teacher assignments
   const staff = getStaffById(staffId);
 
-  // Get classes where this teacher is assigned as class teacher
   const classTeacherAssignments = useMemo(() => {
     if (!staff || !classesWithTeachers) return [];
-    return classesWithTeachers.filter(cls => {
+    return classesWithTeachers.filter((cls) => {
       if (!cls.classTeacherId) return false;
-      return String(cls.classTeacherId) === String(staff.id) || (staff._id && String(cls.classTeacherId) === String(staff._id));
+      return (
+        String(cls.classTeacherId) === String(staff.id) ||
+        (staff._id && String(cls.classTeacherId) === String(staff._id))
+      );
     });
   }, [staff, classesWithTeachers]);
 
-  // Check if user has edit permission
-  const canEdit = hasPermission('staff', 'edit');
+  const canEdit = hasPermission("staff", "edit");
 
-  // Available subjects from school settings - extract names from objects
-  const availableSubjects = schoolSettings?.subjects?.map(s => 
-    typeof s === 'string' ? s : s.name
-  ) || [
-    "Mathematics",
-    "Science",
-    "English",
-    "Hindi",
-    "Social Studies",
-    "Computer Science",
-    "Physical Education",
-    "Art",
-    "Music"
-  ];
+  const availableSubjects =
+    schoolSettings?.subjects?.map((s) => (typeof s === "string" ? s : s.name)) || [
+      "Mathematics", "Science", "English", "Hindi", "Social Studies",
+      "Computer Science", "Physical Education", "Art", "Music",
+    ];
 
-  // Load teacher assignments and available classes on mount
   useEffect(() => {
-    if (staffId) {
-      loadData();
-    }
+    if (staffId) loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [staffId]);
 
   const loadData = async () => {
     try {
       setLoading(true);
-
       const [assignmentsData, classesData] = await Promise.all([
         teacherAssignmentsApi.getAll(staffId),
-        classesApi.getAll()
+        classesApi.getAll(),
       ]);
-
       setAssignments(assignmentsData.assignments || []);
       setAvailableClasses(classesData || []);
     } catch (error) {
-      console.error("Error loading data:", error);
+      logger.error("Error loading data:", error);
       showErrorToast(error, "Failed to load teacher assignments");
     } finally {
       setLoading(false);
@@ -89,112 +75,82 @@ export default function StaffAssignmentPanel({ staffId, onAssignClassTeacher }) 
 
   const validateAssignment = () => {
     const newErrors = {};
-
-    if (!newAssignment.subject) {
-      newErrors.subject = "Please select a subject";
-    }
-
-    if (newAssignment.classIds.size === 0) {
-      newErrors.classes = "Please select at least one class";
-    }
-
-    const existingAssignment = assignments.find(
-      a => a.subject === newAssignment.subject
-    );
-
-    if (existingAssignment) {
-      const selectedClassIds = Array.from(newAssignment.classIds);
-      const existingClassIds = existingAssignment.classes.map(c => c._id || c);
-      const duplicates = selectedClassIds.filter(id =>
-        existingClassIds.includes(id)
-      );
-
-      if (duplicates.length > 0) {
+    if (!newAssignment.subject) newErrors.subject = "Please select a subject";
+    if (newAssignment.classIds.size === 0) newErrors.classes = "Please select at least one class";
+    const existing = assignments.find((a) => a.subject === newAssignment.subject);
+    if (existing) {
+      const selectedIds = Array.from(newAssignment.classIds);
+      const existingIds = existing.classes.map((c) => c._id || c);
+      if (selectedIds.some((id) => existingIds.includes(id))) {
         newErrors.classes = "Some selected classes are already assigned to this subject";
       }
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleAddAssignment = async () => {
-    if (!validateAssignment()) {
-      return;
-    }
-
+    if (!validateAssignment()) return;
     await executeWithFeedback(
       async () => {
         setSaving(true);
-
         const classIds = Array.from(newAssignment.classIds);
         await teacherAssignmentsApi.create({
           teacherId: staffId,
           subject: newAssignment.subject,
-          classIds
+          classIds,
         });
-
         setNewAssignment({ subject: "", classIds: new Set() });
         setIsAddModalOpen(false);
         setErrors({});
-
         await loadData();
       },
       {
-        loadingMessage: 'Adding assignment...',
-        successMessage: 'Assignment added successfully!',
+        loadingMessage: "Adding assignment...",
+        successMessage: "Assignment added successfully!",
         errorMessage: null,
-        onSuccess: () => {
-          setSaving(false);
-        },
-        onError: () => {
-          setSaving(false);
-        }
+        onSuccess: () => setSaving(false),
+        onError: () => setSaving(false),
       }
     );
   };
 
   const handleRemoveClass = (assignment, classObj) => {
-    const classId = typeof classObj === 'string' ? classObj : classObj._id;
-    const className = getClassDisplay(classObj);
+    const classId = typeof classObj === "string" ? classObj : classObj._id;
     setClassToRemove({
       assignmentId: assignment._id,
       classId,
       subject: assignment.subject,
-      className,
-      isLastClass: assignment.classes.length === 1
+      className: getClassDisplay(classObj),
+      isLastClass: assignment.classes.length === 1,
     });
     onConfirmRemoveClassOpen();
   };
 
   const confirmRemoveClass = async () => {
     if (!classToRemove) return;
-
     const { assignmentId, classId, isLastClass } = classToRemove;
-
     await executeWithFeedback(
       async () => {
         setSaving(true);
         if (isLastClass) {
-          // Last class in assignment — delete the whole assignment
           await teacherAssignmentsApi.delete(assignmentId, staffId);
         } else {
-          // Remove just this class from the assignment
-          const assignment = assignments.find(a => a._id === assignmentId);
+          const assignment = assignments.find((a) => a._id === assignmentId);
           const remainingClassIds = assignment.classes
-            .map(c => typeof c === 'string' ? c : c._id)
-            .filter(id => id !== classId);
+            .map((c) => (typeof c === "string" ? c : c._id))
+            .filter((id) => id !== classId);
           await teacherAssignmentsApi.update(assignmentId, {
             teacherId: staffId,
             subject: assignment.subject,
-            classIds: remainingClassIds
+            classIds: remainingClassIds,
           });
         }
         await loadData();
       },
       {
-        loadingMessage: 'Removing class assignment...',
-        successMessage: 'Class removed from assignment!',
+        loadingMessage: "Removing class assignment...",
+        successMessage: "Class removed from assignment!",
         errorMessage: null,
         onSuccess: () => {
           setSaving(false);
@@ -205,19 +161,13 @@ export default function StaffAssignmentPanel({ staffId, onAssignClassTeacher }) 
           setSaving(false);
           setClassToRemove(null);
           onConfirmRemoveClassClose();
-        }
+        },
       }
     );
   };
 
-  const handleRemoveAssignment = (assignmentId) => {
-    setAssignmentToDelete(assignmentId);
-    onConfirmDeleteOpen();
-  };
-
   const confirmRemoveAssignment = async () => {
     if (!assignmentToDelete) return;
-
     await executeWithFeedback(
       async () => {
         setSaving(true);
@@ -225,8 +175,8 @@ export default function StaffAssignmentPanel({ staffId, onAssignClassTeacher }) 
         await loadData();
       },
       {
-        loadingMessage: 'Removing assignment...',
-        successMessage: 'Assignment removed successfully!',
+        loadingMessage: "Removing assignment...",
+        successMessage: "Assignment removed successfully!",
         errorMessage: null,
         onSuccess: () => {
           setSaving(false);
@@ -237,7 +187,7 @@ export default function StaffAssignmentPanel({ staffId, onAssignClassTeacher }) 
           setSaving(false);
           setAssignmentToDelete(null);
           onConfirmDeleteClose();
-        }
+        },
       }
     );
   };
@@ -247,7 +197,6 @@ export default function StaffAssignmentPanel({ staffId, onAssignClassTeacher }) 
     setErrors({});
     setIsAddModalOpen(true);
   };
-
   const handleCloseAddModal = () => {
     setIsAddModalOpen(false);
     setNewAssignment({ subject: "", classIds: new Set() });
@@ -255,34 +204,33 @@ export default function StaffAssignmentPanel({ staffId, onAssignClassTeacher }) 
   };
 
   const getClassDisplay = (classObj) => {
-    if (typeof classObj === 'string') {
-      const foundClass = availableClasses.find(c => c._id === classObj || c.id === classObj);
-      return foundClass ? `${foundClass.name} ${foundClass.section}` : classObj;
+    if (typeof classObj === "string") {
+      const found = availableClasses.find((c) => c._id === classObj || c.id === classObj);
+      return found ? `${found.name} ${found.section}` : classObj;
     }
     return `${classObj.name} ${classObj.section}`;
   };
 
-  // Calculate summary stats
-  const totalClassesAssigned = assignments.reduce((sum, a) => sum + (a.classes?.length || 0), 0);
+  const totalClassesAssigned = assignments.reduce(
+    (sum, a) => sum + (a.classes?.length || 0),
+    0
+  );
 
   if (loading) {
     return (
-      <div className="space-y-4 py-2">
+      <div className="col" style={{ gap: 12, paddingTop: 8 }}>
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
-            <div className="p-5 border-b border-gray-200 dark:border-zinc-800">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-gray-200 dark:bg-zinc-700 animate-pulse" />
-                <div className="space-y-2">
-                  <div className="h-4 w-32 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-                  <div className="h-3 w-48 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-                </div>
+          <div key={i} className="card">
+            <div className="card__head">
+              <div style={{ width: 24, height: 24, background: "var(--surface-2)", borderRadius: 6 }} />
+              <div className="col" style={{ gap: 6 }}>
+                <div style={{ height: 12, width: 120, background: "var(--surface-2)", borderRadius: 4 }} />
+                <div style={{ height: 10, width: 180, background: "var(--surface-2)", borderRadius: 4 }} />
               </div>
             </div>
-            <div className="p-5 space-y-3">
-              {Array.from({ length: 2 }).map((_, j) => (
-                <div key={j} className="h-8 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
-              ))}
+            <div className="card__body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ height: 32, background: "var(--surface-2)", borderRadius: 6 }} />
+              <div style={{ height: 32, background: "var(--surface-2)", borderRadius: 6 }} />
             </div>
           </div>
         ))}
@@ -292,76 +240,70 @@ export default function StaffAssignmentPanel({ staffId, onAssignClassTeacher }) 
 
   return (
     <>
-      <div className="space-y-4">
-
-        {/* Class Teacher Assignments Section */}
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <div className="p-5 border-b border-gray-200 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                <GraduationCap size={16} className="text-gray-600" />
-              </div>
+      <div className="col" style={{ gap: 12 }}>
+        {/* Class teacher section */}
+        <div className="assignsec">
+          <div className="assignsec__head">
+            <div className="assignsec__title">
+              <span className="assignsec__icon"><GraduationCap size={14} /></span>
               <div>
-                <h3 className="font-medium text-gray-900 text-sm">{t('pages.classTeacherAssignment')}</h3>
-                <p className="text-xs text-gray-500">
-                  {classTeacherAssignments.length > 0 ? 'Class assigned as class teacher (homeroom)' : 'Not assigned to any class'}
-                </p>
+                <div className="card__title">Class teacher assignment</div>
+                <div className="subtle" style={{ fontSize: 12 }}>
+                  {classTeacherAssignments.length > 0
+                    ? "Homeroom class assignment for this staff member."
+                    : "Not currently assigned to any class."}
+                </div>
               </div>
             </div>
             {onAssignClassTeacher && canEdit && (
-              <button
-                onClick={onAssignClassTeacher}
-                className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-              >
-                {classTeacherAssignments.length > 0 ? 'Change Class' : 'Assign Class'}
+              <button type="button" className="btn btn--sm" onClick={onAssignClassTeacher}>
+                {classTeacherAssignments.length > 0 ? "Change class" : "Assign class"}
               </button>
             )}
           </div>
-          <div className="p-5">
+          <div className="assignsec__body">
             {classTeacherAssignments.length > 0 ? (
-              <div className="space-y-2">
+              <div className="col" style={{ gap: 6 }}>
                 {classTeacherAssignments.map((cls) => (
-                  <div
+                  <button
                     key={cls.id || cls._id}
-                    className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
+                    type="button"
+                    className="subjrow"
+                    style={{ cursor: "pointer", textAlign: "left" }}
                     onClick={() => navigate(`/classes/${cls.id || cls._id}`)}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-sm font-semibold text-gray-600">
-                        {cls.name}-{cls.section}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{cls.name} - {cls.section}</p>
-                        <p className="text-xs text-gray-500">{cls.studentCount || cls.strength || 0} students</p>
-                      </div>
+                    <div className="col" style={{ gap: 2 }}>
+                      <span className="subjrow__name">
+                        {cls.name} - {cls.section}
+                      </span>
+                      <span className="subtle" style={{ fontSize: 12 }}>
+                        {cls.studentCount || cls.strength || 0} students
+                      </span>
                     </div>
-                    <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded-md">
-                      Class Teacher
-                    </span>
-                  </div>
+                    <span className="chip">Class teacher</span>
+                  </button>
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center text-center py-6">
-                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
-                  <GraduationCap size={20} className="text-gray-400" />
+              <div className="assign-empty">
+                <div className="assign-empty__icon"><GraduationCap size={16} /></div>
+                <div className="assign-empty__title">No class assigned yet</div>
+                <div className="assign-empty__sub">
+                  This staff member isn't a class teacher for any class.
                 </div>
-                <p className="text-sm text-gray-500 mb-1">{t('pages.noClassHasBeenAssignedYet')}</p>
-                <p className="text-xs text-gray-400 mb-4">{t('pages.thisStaffMemberIsNotAClassTeacherForAnyClass')}</p>
                 {onAssignClassTeacher ? (
                   <button
+                    type="button"
                     onClick={onAssignClassTeacher}
                     disabled={!canEdit}
-                    className="text-xs font-medium text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                    className="btn btn--sm"
+                    style={{ marginTop: 8 }}
                   >
-                    Assign as Class Teacher
+                    Assign as class teacher
                   </button>
                 ) : (
-                  <Link
-                    to="/classes"
-                    className="text-xs font-medium text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors no-underline"
-                  >
-                    Assign a Class
+                  <Link to="/classes" className="btn btn--sm" style={{ marginTop: 8, textDecoration: "none" }}>
+                    Assign a class
                   </Link>
                 )}
               </div>
@@ -369,127 +311,118 @@ export default function StaffAssignmentPanel({ staffId, onAssignClassTeacher }) 
           </div>
         </div>
 
-        {/* Info Banner */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
-              <AlertCircle size={16} className="text-gray-600" />
+        {/* Info banner */}
+        <div className="staff-banner">
+          <div className="staff-banner__icon"><AlertCircle size={14} /></div>
+          <div>
+            <div className="staff-banner__title">Note</div>
+            <div className="staff-banner__body">
+              Subject assignments below control which subjects and classes this teacher can teach
+              in the timetable. Class teacher assignment (above) is a separate homeroom role.
             </div>
-            <p className="text-sm text-gray-600">
-              <strong>{t('pages.note1')}</strong> Subject assignments below control which subjects and classes this teacher can teach in the timetable. Class teacher assignment (above) is a separate homeroom role.
-            </p>
           </div>
         </div>
 
-        {/* Subject Assignments Section */}
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <div className="p-5 border-b border-gray-200 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                <BookOpen size={16} className="text-gray-600" />
-              </div>
+        {/* Subject assignments */}
+        <div className="assignsec">
+          <div className="assignsec__head">
+            <div className="assignsec__title">
+              <span className="assignsec__icon"><BookOpen size={14} /></span>
               <div>
-                <h3 className="font-medium text-gray-900 text-sm">{t('pages.subjectAssignments')}</h3>
-                <p className="text-xs text-gray-500">{t('pages.manageWhichSubjectsAndClassesThisTeacherCanTeach')}</p>
+                <div className="card__title">Subject assignments</div>
+                <div className="subtle" style={{ fontSize: 12 }}>
+                  Manage which subjects and classes this teacher can teach.
+                </div>
               </div>
             </div>
             <button
+              type="button"
+              className="btn btn--accent btn--sm"
               onClick={handleOpenAddModal}
               disabled={saving || !canEdit}
-              className="px-4 py-2 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
             >
-              <Plus size={14} />
-              Add Assignment
+              <Plus size={12} /> Add assignment
             </button>
           </div>
-
-          <div className="p-5">
+          <div className="assignsec__body">
             {!canEdit && (
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 flex items-center gap-2 mb-4">
-                <AlertCircle size={16} className="text-orange-500" />
-                <span className="text-sm text-orange-700">
+              <div className="staff-banner staff-banner--warn" style={{ marginBottom: 12 }}>
+                <div className="staff-banner__icon"><AlertCircle size={14} /></div>
+                <div className="staff-banner__body">
                   You don't have permission to edit teacher assignments. Contact an administrator for access.
-                </span>
+                </div>
               </div>
             )}
 
             {assignments.length === 0 ? (
-              <div className="text-center py-10">
-                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                  <BookOpen size={20} className="text-gray-400" />
-                </div>
-                <h4 className="text-sm font-medium text-gray-900 mb-2">{t('pages.noAssignmentsYet')}</h4>
-                <p className="text-sm text-gray-500 mb-4">
+              <div className="assign-empty">
+                <div className="assign-empty__icon"><BookOpen size={16} /></div>
+                <div className="assign-empty__title">No assignments yet</div>
+                <div className="assign-empty__sub">
                   This teacher hasn't been assigned any subjects or classes yet.
-                </p>
+                </div>
                 <button
+                  type="button"
+                  className="btn btn--accent btn--sm"
+                  style={{ marginTop: 8 }}
                   onClick={handleOpenAddModal}
                   disabled={!canEdit}
-                  className="px-4 py-2 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2 mx-auto"
                 >
-                  <Plus size={14} />
-                  Add First Assignment
+                  <Plus size={12} /> Add first assignment
                 </button>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="col" style={{ gap: 6 }}>
                 {assignments.map((assignment) => (
-                  <div
-                    key={assignment._id}
-                    className="border border-gray-100 rounded-lg p-4 hover:border-gray-200 transition-colors"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-3">
-                          <BookOpen size={16} className="text-gray-500" />
-                          <h4 className="text-sm font-semibold text-gray-900">
-                            {assignment.subject}
-                          </h4>
-                        </div>
-
-                        <div className="flex items-start gap-2">
-                          <Users size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
-                          <div className="flex flex-wrap gap-2">
-                            {assignment.classes && assignment.classes.length > 0 ? (
-                              assignment.classes.map((classObj) => (
-                                <span
-                                  key={typeof classObj === 'string' ? classObj : classObj._id}
-                                  className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-md group/chip"
-                                >
-                                  {getClassDisplay(classObj)}
-                                  {canEdit && (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleRemoveClass(assignment, classObj);
-                                      }}
-                                      disabled={saving}
-                                      className="opacity-0 group-hover/chip:opacity-100 hover:bg-gray-200 rounded-full p-0.5 transition-all disabled:opacity-50"
-                                      title={`Remove ${getClassDisplay(classObj)}`}
-                                    >
-                                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                                      </svg>
-                                    </button>
-                                  )}
-                                </span>
-                              ))
-                            ) : (
-                              <span className="text-sm text-gray-500">{t('pages.noClassesAssigned')}</span>
-                            )}
-                          </div>
+                  <div key={assignment._id} className="subjrow">
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="row" style={{ alignItems: "center", gap: 6 }}>
+                        <BookOpen size={13} className="text-fg-muted" />
+                        <span className="subjrow__name">{assignment.subject}</span>
+                      </div>
+                      <div className="row" style={{ alignItems: "flex-start", gap: 6, marginTop: 6 }}>
+                        <Users size={11} className="text-fg-faint" style={{ marginTop: 4 }} />
+                        <div className="subjrow__classes">
+                          {assignment.classes && assignment.classes.length > 0 ? (
+                            assignment.classes.map((classObj) => (
+                              <span
+                                key={typeof classObj === "string" ? classObj : classObj._id}
+                                className="tagchip"
+                              >
+                                {getClassDisplay(classObj)}
+                                {canEdit && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRemoveClass(assignment, classObj);
+                                    }}
+                                    disabled={saving}
+                                    aria-label={`Remove ${getClassDisplay(classObj)}`}
+                                  >
+                                    <X size={10} />
+                                  </button>
+                                )}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="subtle" style={{ fontSize: 12 }}>No classes assigned</span>
+                          )}
                         </div>
                       </div>
-
-                      <button
-                        onClick={() => handleRemoveAssignment(assignment._id)}
-                        disabled={saving || !canEdit}
-                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                      >
-                        <Trash2 size={16} />
-                      </button>
                     </div>
+                    <button
+                      type="button"
+                      className="iconbtn"
+                      onClick={() => {
+                        setAssignmentToDelete(assignment._id);
+                        onConfirmDeleteOpen();
+                      }}
+                      disabled={saving || !canEdit}
+                      aria-label="Remove assignment"
+                    >
+                      <Trash2 size={13} />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -497,150 +430,117 @@ export default function StaffAssignmentPanel({ staffId, onAssignClassTeacher }) 
           </div>
         </div>
 
-        {/* Summary Card */}
+        {/* Summary */}
         {(assignments.length > 0 || classTeacherAssignments.length > 0) && (
-          <div className="bg-white rounded-lg border border-gray-200 p-5">
-            <div className="flex items-center justify-between">
-              {classTeacherAssignments.length > 0 && (
-                <div className="text-center">
-                  <p className="text-xs font-medium text-gray-500 mb-1">{t('pages.classTeacher2')}</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {classTeacherAssignments.length}
-                  </p>
-                  <p className="text-xs text-gray-500">{classTeacherAssignments.length === 1 ? 'class' : 'classes'}</p>
-                </div>
-              )}
-              <div className="text-center">
-                <p className="text-xs font-medium text-gray-500 mb-1">{t('pages.subjectAssignments')}</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {assignments.length}
-                </p>
-                <p className="text-xs text-gray-500">{assignments.length === 1 ? 'subject' : 'subjects'}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs font-medium text-gray-500 mb-1">{t('pages.totalClasses1')}</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {totalClassesAssigned + classTeacherAssignments.length}
-                </p>
-                <p className="text-xs text-gray-500">teaching</p>
-              </div>
+          <div className="detail-pane__metrics" style={{ margin: 0, gridTemplateColumns: "repeat(3, 1fr)" }}>
+            <div className="dp-metric">
+              <span className="dp-metric__label">Class teacher</span>
+              <span className="dp-metric__value mono tnum">{classTeacherAssignments.length}</span>
+            </div>
+            <div className="dp-metric">
+              <span className="dp-metric__label">Subjects</span>
+              <span className="dp-metric__value mono tnum">{assignments.length}</span>
+            </div>
+            <div className="dp-metric">
+              <span className="dp-metric__label">Total classes</span>
+              <span className="dp-metric__value mono tnum">
+                {totalClassesAssigned + classTeacherAssignments.length}
+              </span>
             </div>
           </div>
         )}
       </div>
 
       {/* Add Assignment Modal */}
-      <Modal
-        isOpen={isAddModalOpen}
-        onClose={handleCloseAddModal}
-        size="2xl"
-        classNames={{
-          backdrop: "bg-black/30",
-          base: "bg-white"
-        }}
-      >
+      <Modal isOpen={isAddModalOpen} onClose={handleCloseAddModal} size="2xl">
         <ModalContent>
-          <ModalHeader className="flex flex-col gap-1 border-b border-gray-100 px-6 py-4">
+          <ModalHeader className="flex flex-col gap-1 border-b border-divider px-6 py-4">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                <BookOpen size={16} className="text-gray-600" />
-              </div>
+              <span className="assignsec__icon"><BookOpen size={14} /></span>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">{t('pages.addSubjectAssignment')}</h3>
-                <p className="text-sm text-gray-500 font-normal">{t('pages.assignSubjectsAndClassesToThisTeacher')}</p>
+                <h3 className="text-lg font-semibold text-fg">Add subject assignment</h3>
+                <p className="text-sm text-fg-muted font-normal">
+                  Assign subjects and classes to this teacher
+                </p>
               </div>
             </div>
           </ModalHeader>
           <ModalBody className="py-6 px-6">
-            <div className="space-y-4">
-              {/* Subject Selection */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">
-                  Subject <span className="text-red-500">*</span>
+            <div className="col" style={{ gap: 16 }}>
+              <div className="col" style={{ gap: 6 }}>
+                <label className="text-sm font-medium text-fg">
+                  Subject <span style={{ color: "var(--danger)" }}>*</span>
                 </label>
                 <Select
-                  placeholder={t('pages.selectASubject')}
+                  placeholder="Select a subject"
                   selectedKeys={newAssignment.subject ? new Set([newAssignment.subject]) : new Set()}
                   onSelectionChange={(keys) => {
                     const subject = Array.from(keys)[0];
-                    setNewAssignment(prev => ({ ...prev, subject }));
-                    if (errors.subject) {
-                      setErrors(prev => ({ ...prev, subject: undefined }));
-                    }
+                    setNewAssignment((prev) => ({ ...prev, subject }));
+                    if (errors.subject) setErrors((prev) => ({ ...prev, subject: undefined }));
                   }}
                   isInvalid={!!errors.subject}
                   errorMessage={errors.subject}
                   variant="bordered"
-                  radius="lg"
                   size="md"
-                  classNames={{
-                    trigger: "border-gray-200 hover:border-gray-300",
-                    value: "text-sm text-gray-900"
-                  }}
+                  aria-label="Select subject"
                 >
                   {availableSubjects.map((subject) => (
-                    <SelectItem key={subject} value={subject}>
-                      {subject}
-                    </SelectItem>
+                    <SelectItem key={subject} value={subject}>{subject}</SelectItem>
                   ))}
                 </Select>
               </div>
 
-              {/* Class Selection */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">
-                  Classes <span className="text-red-500">*</span>
+              <div className="col" style={{ gap: 6 }}>
+                <label className="text-sm font-medium text-fg">
+                  Classes <span style={{ color: "var(--danger)" }}>*</span>
                 </label>
-                <Select
-                  label={t('pages.selectClasses')}
-                  placeholder={t('pages.chooseOneOrMoreClasses')}
-                  selectionMode="multiple"
-                  selectedKeys={newAssignment.classIds}
-                  onSelectionChange={(keys) => {
-                    setNewAssignment(prev => ({ ...prev, classIds: keys }));
-                    if (errors.classes) {
-                      setErrors(prev => ({ ...prev, classes: undefined }));
-                    }
-                  }}
-                  isInvalid={!!errors.classes}
-                  errorMessage={errors.classes}
-                  variant="bordered"
-                  radius="lg"
-                  size="md"
-                  classNames={{
-                    trigger: "border-gray-200 hover:border-gray-300",
-                    value: "text-sm text-gray-900"
-                  }}
-                >
-                  {availableClasses.map((classObj) => (
-                    <SelectItem key={classObj._id || classObj.id} value={classObj._id || classObj.id}>
-                      {`${classObj.name} ${classObj.section}`}
-                    </SelectItem>
-                  ))}
-                </Select>
-
+                {/* optgrid for class picker — keyboard friendly, visible state */}
+                <div className="optgrid" role="group" aria-label="Select classes">
+                  {availableClasses.map((cls) => {
+                    const id = cls._id || cls.id;
+                    const isActive = newAssignment.classIds.has(id);
+                    return (
+                      <button
+                        type="button"
+                        key={id}
+                        className={`opt ${isActive ? "is-active" : ""}`}
+                        aria-pressed={isActive}
+                        onClick={() => {
+                          const next = new Set(newAssignment.classIds);
+                          if (isActive) next.delete(id);
+                          else next.add(id);
+                          setNewAssignment((prev) => ({ ...prev, classIds: next }));
+                          if (errors.classes) setErrors((prev) => ({ ...prev, classes: undefined }));
+                        }}
+                      >
+                        <span className="mono tnum">{cls.name}-{cls.section}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {errors.classes && (
+                  <div style={{ fontSize: 12, color: "var(--danger)" }}>{errors.classes}</div>
+                )}
                 {newAssignment.classIds.size > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-3">
+                  <div className="taginput" style={{ marginTop: 4 }}>
                     {Array.from(newAssignment.classIds).map((classId) => {
-                      const classObj = availableClasses.find(c => String(c._id || c.id) === String(classId));
+                      const classObj = availableClasses.find(
+                        (c) => String(c._id || c.id) === String(classId)
+                      );
                       return classObj ? (
-                        <span
-                          key={classId}
-                          className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm font-medium"
-                        >
+                        <span key={classId} className="tagchip">
                           {`${classObj.name} ${classObj.section}`}
                           <button
+                            type="button"
                             onClick={() => {
-                              const newSelection = new Set(newAssignment.classIds);
-                              newSelection.delete(classId);
-                              setNewAssignment(prev => ({ ...prev, classIds: newSelection }));
+                              const next = new Set(newAssignment.classIds);
+                              next.delete(classId);
+                              setNewAssignment((prev) => ({ ...prev, classIds: next }));
                             }}
-                            className="hover:bg-gray-200 rounded-full p-0.5 transition-colors"
+                            aria-label={`Remove ${classObj.name} ${classObj.section}`}
                           >
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <line x1="18" y1="6" x2="6" y2="18"></line>
-                              <line x1="6" y1="6" x2="18" y2="18"></line>
-                            </svg>
+                            <X size={10} />
                           </button>
                         </span>
                       ) : null;
@@ -649,39 +549,31 @@ export default function StaffAssignmentPanel({ staffId, onAssignClassTeacher }) 
                 )}
               </div>
 
-              {/* Info Message */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex gap-3">
-                <AlertCircle size={18} className="text-gray-500 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-gray-600">
-                  <strong>{t('pages.note1')}</strong> This assignment will allow the teacher to be selected when creating timetables for the selected classes and subject.
-                </p>
+              <div className="staff-banner">
+                <div className="staff-banner__icon"><AlertCircle size={14} /></div>
+                <div className="staff-banner__body">
+                  This assignment will allow the teacher to be selected when creating timetables
+                  for the selected classes and subject.
+                </div>
               </div>
             </div>
           </ModalBody>
-          <ModalFooter className="border-t border-gray-100 px-6 py-4">
+          <ModalFooter className="border-t border-divider px-6 py-4">
             <button
+              type="button"
+              className="btn"
               onClick={handleCloseAddModal}
               disabled={saving}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             <button
+              type="button"
+              className="btn btn--accent"
               onClick={handleAddAssignment}
               disabled={saving}
-              className="px-4 py-2 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
             >
-              {saving ? (
-                <>
-                  <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
-                  Adding...
-                </>
-              ) : (
-                <>
-                  <Plus size={14} />
-                  Add Assignment
-                </>
-              )}
+              {saving ? "Adding…" : (<><Plus size={12} /> Add assignment</>)}
             </button>
           </ModalFooter>
         </ModalContent>
@@ -692,25 +584,26 @@ export default function StaffAssignmentPanel({ staffId, onAssignClassTeacher }) 
         isOpen={isConfirmDeleteOpen}
         onClose={onConfirmDeleteClose}
         onConfirm={confirmRemoveAssignment}
-        title={t('pages.removeAssignment')}
+        title="Remove assignment"
         message="Are you sure you want to remove this entire assignment? This will remove all class assignments for this subject."
-        confirmText="Remove All"
+        confirmText="Remove all"
         cancelText="Cancel"
         variant="danger"
         isLoading={saving}
       />
 
-      {/* Confirmation Dialog - Remove single class from assignment */}
+      {/* Confirmation Dialog - Remove single class */}
       <ConfirmDialog
         isOpen={isConfirmRemoveClassOpen}
         onClose={onConfirmRemoveClassClose}
         onConfirm={confirmRemoveClass}
-        title="Remove Class"
-        message={classToRemove
-          ? classToRemove.isLastClass
-            ? `This is the only class for ${classToRemove.subject}. Removing it will delete the entire subject assignment.`
-            : `Remove ${classToRemove.className} from ${classToRemove.subject}?`
-          : ''
+        title="Remove class"
+        message={
+          classToRemove
+            ? classToRemove.isLastClass
+              ? `This is the only class for ${classToRemove.subject}. Removing it will delete the entire subject assignment.`
+              : `Remove ${classToRemove.className} from ${classToRemove.subject}?`
+            : ""
         }
         confirmText="Remove"
         cancelText="Cancel"

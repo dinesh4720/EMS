@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { BookOpen, AlertTriangle, IndianRupee } from "lucide-react";
 import { libraryApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
+import { Card, EmptyState, ErrorState } from '../../components/ui';
 
 export default function LibraryReports() {
   const { t } = useTranslation();
@@ -18,23 +19,27 @@ export default function LibraryReports() {
   }), [t]);
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true);
-        const data = await libraryApi.getReports();
-        setReport(data);
-      } catch {
-        toast.error(t('toast.error.failedToLoadReports'));
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, []);
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
+      setLoadError(null);
+      const data = await libraryApi.getReports();
+      setReport(data);
+    } catch (err) {
+      setLoadError(err);
+      toast.error(t('toast.error.failedToLoadReports'));
+    } finally {
+      setLoading(false);
+    }
+  }, [t]);
+
+  useEffect(() => { load(); }, [load]);
 
   if (loading) return <CardGridPageSkeleton title={false} cards={3} columns="grid-cols-1" />;
+
+  if (loadError) return <ErrorState error={loadError} onRetry={load} />;
 
   if (!report) return null;
 
@@ -42,101 +47,97 @@ export default function LibraryReports() {
 
   return (
     <div className="space-y-6">
-      {/* Most Borrowed Books */}
-      <div className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm dark:shadow-zinc-900/50">
+      <Card padding="md" radius="lg">
         <div className="flex items-center gap-2 mb-4">
-          <BookOpen size={16} className="text-blue-500" />
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.mostBorrowedBooks')}</h3>
+          <BookOpen size={16} className="text-blue-500" aria-hidden="true" />
+          <h3 className="text-sm font-semibold text-fg">{t('pages.mostBorrowedBooks')}</h3>
         </div>
         {report.mostBorrowed?.length ? (
           <div className="space-y-3">
             {report.mostBorrowed.map((item, i) => (
               <div key={item._id || i} className="flex items-center gap-3">
-                <span className="text-xs text-gray-400 dark:text-zinc-500 w-5 text-right">{i + 1}.</span>
+                <span className="text-xs text-fg-faint w-5 text-right">{i + 1}.</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 truncate">{item.bookTitle || "Unknown"}</p>
-                  <div className="mt-1 h-2 rounded-full bg-gray-100 dark:bg-zinc-800 overflow-hidden">
+                  <p className="text-sm font-medium text-fg truncate">{item.bookTitle || "Unknown"}</p>
+                  <div className="mt-1 h-2 rounded-full bg-surface-2 overflow-hidden">
                     <div
                       className="h-full rounded-full bg-blue-500 dark:bg-blue-400"
                       style={{ width: `${(item.count / maxBorrowed) * 100}%` }}
                     />
                   </div>
                 </div>
-                <span className="text-sm font-medium text-gray-700 dark:text-zinc-300 w-10 text-right">{item.count}</span>
+                <span className="text-sm font-medium text-fg w-10 text-right">{item.count}</span>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.noDataYet')}</p>
+          <EmptyState size="sm" icon={BookOpen} title={t('pages.noDataYet')} />
         )}
-      </div>
+      </Card>
 
-      {/* Category Breakdown */}
-      <div className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm dark:shadow-zinc-900/50">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-4">{t('pages.booksByCategory')}</h3>
+      <Card padding="md" radius="lg">
+        <h3 className="text-sm font-semibold text-fg mb-4">{t('pages.booksByCategory')}</h3>
         {report.categoryStats?.length ? (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100 dark:border-zinc-800">
-                  <th className="text-left py-2 font-medium text-gray-500 dark:text-zinc-400">{t('pages.category1')}</th>
-                  <th className="text-right py-2 font-medium text-gray-500 dark:text-zinc-400">{t('pages.books')}</th>
-                  <th className="text-right py-2 font-medium text-gray-500 dark:text-zinc-400">{t('pages.totalCopies')}</th>
-                  <th className="text-right py-2 font-medium text-gray-500 dark:text-zinc-400">{t('pages.available')}</th>
+                <tr className="border-b border-divider">
+                  <th className="text-left py-2 font-medium text-fg-muted">{t('pages.category1')}</th>
+                  <th className="text-right py-2 font-medium text-fg-muted">{t('pages.books')}</th>
+                  <th className="text-right py-2 font-medium text-fg-muted">{t('pages.totalCopies')}</th>
+                  <th className="text-right py-2 font-medium text-fg-muted">{t('pages.available')}</th>
                 </tr>
               </thead>
               <tbody>
                 {report.categoryStats.map((cat) => (
-                  <tr key={cat._id} className="border-b border-gray-50 dark:border-zinc-800">
-                    <td className="py-2 text-gray-900 dark:text-zinc-100 capitalize">{categoryLabels[cat._id] || cat._id || "Other"}</td>
-                    <td className="py-2 text-right text-gray-700 dark:text-zinc-300">{cat.totalBooks}</td>
-                    <td className="py-2 text-right text-gray-700 dark:text-zinc-300">{cat.totalCopies}</td>
-                    <td className="py-2 text-right text-gray-700 dark:text-zinc-300">{cat.availableCopies}</td>
+                  <tr key={cat._id} className="border-b border-gray-50 dark:border-zinc-800 last:border-0">
+                    <td className="py-2 text-fg capitalize">{categoryLabels[cat._id] || cat._id || "Other"}</td>
+                    <td className="py-2 text-right text-fg">{cat.totalBooks}</td>
+                    <td className="py-2 text-right text-fg">{cat.totalCopies}</td>
+                    <td className="py-2 text-right text-fg">{cat.availableCopies}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         ) : (
-          <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.noDataYet')}</p>
+          <EmptyState size="sm" title={t('pages.noDataYet')} />
         )}
-      </div>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Overdue by Student */}
-        <div className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm dark:shadow-zinc-900/50">
+        <Card padding="md" radius="lg">
           <div className="flex items-center gap-2 mb-4">
-            <AlertTriangle size={16} className="text-red-500" />
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.topOverdueStudents')}</h3>
+            <AlertTriangle size={16} className="text-red-500" aria-hidden="true" />
+            <h3 className="text-sm font-semibold text-fg">{t('pages.topOverdueStudents')}</h3>
           </div>
           {report.overdueByStudent?.length ? (
             <div className="space-y-2">
-              {report.overdueByStudent.map((s, i) => (
-                <div key={s._id || i} className="flex items-center justify-between py-2 border-b border-gray-50 dark:border-zinc-800 last:border-0">
+              {report.overdueByStudent.map((student, i) => (
+                <div key={student._id || i} className="flex items-center justify-between py-2 border-b border-gray-50 dark:border-zinc-800 last:border-0">
                   <div>
-                    <p className="text-sm text-gray-900 dark:text-zinc-100">{s.studentName || "Unknown"}</p>
-                    <p className="text-xs text-gray-500 dark:text-zinc-400">{s.admissionNo || ""}</p>
+                    <p className="text-sm text-fg">{student.studentName || "Unknown"}</p>
+                    <p className="text-xs text-fg-muted">{student.admissionNo || ""}</p>
                   </div>
-                  <span className="text-sm font-medium bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 px-2 py-0.5 rounded-full">
-                    {s.count} books
+                  <span className="text-xs font-medium bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 px-2 py-0.5 rounded-full">
+                    {student.count} books
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.noOverdueBooks')}</p>
+            <EmptyState size="sm" icon={AlertTriangle} title={t('pages.noOverdueBooks')} />
           )}
-        </div>
+        </Card>
 
-        {/* Unpaid Fines */}
-        <div className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm dark:shadow-zinc-900/50">
+        <Card padding="md" radius="lg">
           <div className="flex items-center gap-2 mb-4">
-            <IndianRupee size={16} className="text-yellow-600 dark:text-yellow-400" />
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('pages.unpaidFines')}</h3>
+            <IndianRupee size={16} className="text-amber-600 dark:text-amber-400" aria-hidden="true" />
+            <h3 className="text-sm font-semibold text-fg">{t('pages.unpaidFines')}</h3>
           </div>
-          <p className="text-3xl font-bold text-gray-900 dark:text-zinc-100">₹{report.unpaidFines?.total?.toLocaleString() || 0}</p>
-          <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">{report.unpaidFines?.count || 0} unpaid records</p>
-        </div>
+          <p className="text-3xl font-semibold text-fg">₹{report.unpaidFines?.total?.toLocaleString() || 0}</p>
+          <p className="text-sm text-fg-muted mt-1">{report.unpaidFines?.count || 0} unpaid records</p>
+        </Card>
       </div>
     </div>
   );

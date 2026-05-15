@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useValidatedParams } from '../../hooks/useValidatedParams';
 import { getStoredUser } from '../../utils/authSession';
+import { useUnsavedChanges, useBeforeUnloadWarning } from '../../hooks/useUnsavedChanges';
+import { UnsavedChangesModal } from '../../components/modals';
 import {
   Card,
   CardBody,
@@ -18,12 +20,136 @@ import {
   Input
 } from '@heroui/react';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
-import { FileText, Users, ArrowLeft, Save, AlertCircle, Award, CheckCircle2, Search, UserX } from 'lucide-react';
+import { FileText, Users, ArrowLeft, Save, AlertCircle, Award, CheckCircle2, Search, UserX, GraduationCap } from 'lucide-react';
 import { examsApi, resultsApi, classesApi } from '../../services/api';
-import { MinimalButton } from '../../components/ui';
+import { MinimalButton, InlineEdit, StatCard, ErrorState, EmptyState } from '../../components/ui';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { calculateGrade as calculateGradeUtil } from '../../utils/grading';
+import logger from '../../utils/logger';
+
+
+// Shared table used by both standalone and non-standalone modes
+const ResultsTable = ({
+  students,
+  results,
+  exam,
+  calculateGrade,
+  getStatus,
+  handleAbsentToggle,
+  handleMarksChange,
+  handleRemarksChange,
+  t
+}) => (
+  <Card shadow="none" className="gradebook">
+    <CardBody className="p-0">
+      {students.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          title={t('pages.noStudentsFoundInThisClass')}
+          size="md"
+        />
+      ) : (
+        <Table aria-label={t('aria.tables.resultsEntry')} removeWrapper>
+          <TableHeader className="gradebook__head">
+            <TableColumn scope="col">{t('pages.sTUDENT')}</TableColumn>
+            <TableColumn scope="col">{t('pages.rOLLNo')}</TableColumn>
+            <TableColumn scope="col">ABSENT</TableColumn>
+            <TableColumn scope="col">{t('pages.mARKS')}</TableColumn>
+            <TableColumn scope="col">{t('pages.gRADE')}</TableColumn>
+            <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
+            <TableColumn scope="col">{t('pages.rEMARKS')}</TableColumn>
+          </TableHeader>
+          <TableBody emptyContent="No students found">
+            {students.map((student) => {
+              const studentId = student.id || student._id;
+              const isAbsent = results[studentId]?.status === 'absent';
+              const marks = isAbsent ? 0 : (results[studentId]?.marksObtained || 0);
+              const grade = isAbsent ? '-' : calculateGrade(marks);
+              const status = getStatus(studentId, marks);
+
+              return (
+                <TableRow key={studentId} className="gradebook__row hover:bg-surface-hover">
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-surface-2 flex items-center justify-center">
+                        <span className="text-sm font-medium text-fg-muted">
+                          {student.name?.charAt(0)?.toUpperCase() || 'S'}
+                        </span>
+                      </div>
+                      <span className="font-medium text-fg">{student.name}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm text-fg-muted">{student.rollNo || studentId}</span>
+                  </TableCell>
+                  <TableCell>
+                    <Checkbox
+                      size="sm"
+                      isSelected={isAbsent}
+                      onValueChange={(checked) => handleAbsentToggle(studentId, checked)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <InlineEdit
+                      type="number"
+                      numeric
+                      value={marks}
+                      min={0}
+                      max={exam.maxMarks}
+                      disabled={isAbsent}
+                      placeholder="0"
+                      width="6rem"
+                      ariaLabel={t('pages.mARKS')}
+                      validate={(val) => {
+                        if (val === '' || Number.isNaN(val)) return 'Required';
+                        if (val < 0) return t('toast.error.marksCannotBeNegative');
+                        if (val > exam.maxMarks) return t('toast.error.marksExceedMaximum', { maxMarks: exam.maxMarks });
+                        return null;
+                      }}
+                      onSave={(val) => handleMarksChange(studentId, String(val))}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Chip size="sm" variant="flat">{grade || '-'}</Chip>
+                  </TableCell>
+                  <TableCell>
+                    {status === 'absent' ? (
+                      <Chip size="sm" color="warning" variant="flat" startContent={<UserX size={12} />}>
+                        absent
+                      </Chip>
+                    ) : marks > 0 ? (
+                      <Chip
+                        size="sm"
+                        color={status === 'pass' ? 'success' : 'danger'}
+                        variant="flat"
+                        startContent={status === 'pass' ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
+                      >
+                        {status}
+                      </Chip>
+                    ) : (
+                      <span className="text-sm text-fg-faint">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <InlineEdit
+                      type="text"
+                      value={results[studentId]?.remarks || ''}
+                      placeholder={t('pages.addRemarks')}
+                      width="10rem"
+                      ariaLabel={t('pages.rEMARKS')}
+                      onSave={(val) => handleRemarksChange(studentId, val)}
+                    />
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      )}
+    </CardBody>
+  </Card>
+);
 
 // Simple cache for exam data
 // [AUDIT-539] Clear on logout to prevent tenant data leaking across sessions
@@ -51,6 +177,23 @@ const ResultsEntry = ({ standalone = false }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [loadedAt, setLoadedAt] = useState(null);
   const [dirtyStudentIds, setDirtyStudentIds] = useState(new Set());
+  const [pendingNavPath, setPendingNavPath] = useState(null);
+  const [loadError, setLoadError] = useState(null);
+
+  const isDirty = dirtyStudentIds.size > 0;
+
+  // Guard browser close/refresh when marks are entered but not saved
+  const { isBlocked, proceed, reset } = useUnsavedChanges(isDirty && !standalone);
+  useBeforeUnloadWarning(isDirty && standalone);
+
+  // Navigate away only if there are no unsaved marks; otherwise show confirmation
+  const navigateSafe = (path) => {
+    if (isDirty) {
+      setPendingNavPath(path);
+    } else {
+      navigate(path);
+    }
+  };
 
   // For standalone mode, fetch all exams first
   useEffect(() => {
@@ -71,6 +214,7 @@ const ResultsEntry = ({ standalone = false }) => {
 
   const fetchExamsList = async () => {
     setLoadingExams(true);
+    setLoadError(null);
     try {
       const data = await examsApi.getAll();
       setExams(data || []);
@@ -79,7 +223,8 @@ const ResultsEntry = ({ standalone = false }) => {
         setSelectedExamId(new Set([data[0].id || data[0]._id]));
       }
     } catch (error) {
-      console.error('Error fetching exams:', error);
+      logger.error('Error fetching exams:', error);
+      setLoadError(error);
       toast.error(t('toast.error.failedToLoadExams'));
     } finally {
       setLoadingExams(false);
@@ -89,6 +234,7 @@ const ResultsEntry = ({ standalone = false }) => {
   const fetchExamAndStudents = async (id) => {
     setLoadingStudents(true);
     setDirtyStudentIds(new Set());
+    setLoadError(null);
     try {
       // Check cache first
       const cacheKey = `exam-${id}`;
@@ -130,7 +276,8 @@ const ResultsEntry = ({ standalone = false }) => {
         setResults(resultsMap);
       }
     } catch (error) {
-      console.error('Error fetching data:', error);
+      logger.error('Error fetching data:', error);
+      setLoadError(error);
       toast.error(t('toast.error.failedToLoadExamData'));
     } finally {
       setLoading(false);
@@ -147,18 +294,16 @@ const ResultsEntry = ({ standalone = false }) => {
   };
 
   const handleMarksChange = (studentId, value) => {
-    const marks = parseInt(value) || 0;
-    const maxMarks = exam?.maxMarks || 100;
+    const maxMarks = exam?.maxMarks ?? 100;
     const sid = String(studentId);
+    const parsed = parseInt(value, 10);
+    // Always clamp to [0, maxMarks] so the controlled input resets to a valid value
+    const marks = isNaN(parsed) ? 0 : Math.max(0, Math.min(parsed, maxMarks));
 
-    if (marks < 0) {
+    if (!isNaN(parsed) && parsed < 0) {
       toast.error(t('toast.error.marksCannotBeNegative'));
-      return;
-    }
-
-    if (marks > maxMarks) {
-      toast.error(`Marks cannot exceed ${maxMarks}`);
-      return;
+    } else if (!isNaN(parsed) && parsed > maxMarks) {
+      toast.error(t('toast.error.marksExceedMaximum', { maxMarks }));
     }
 
     markDirty(sid);
@@ -229,6 +374,15 @@ const ResultsEntry = ({ standalone = false }) => {
     try {
       const resultsArray = buildResultsArray();
 
+      // Pre-submission guard: reject if any marks exceed maxMarks
+      const maxMarks = exam?.maxMarks || 100;
+      const overMax = resultsArray.filter(r => r.status !== 'absent' && r.marksObtained > maxMarks);
+      if (overMax.length > 0) {
+        toast.error(`${overMax.length} student(s) have marks exceeding the maximum of ${maxMarks}. Please correct before saving.`);
+        setSaving(false);
+        return;
+      }
+
       await resultsApi.bulkCreate(resultsArray, currentExamId, exam.classId, loadedAt, { forceOverwrite });
 
       toast.success(t('toast.success.resultsSavedSuccessfully'));
@@ -238,7 +392,7 @@ const ResultsEntry = ({ standalone = false }) => {
         navigate(`/academics/exams/${examId}`);
       }
     } catch (error) {
-      console.error('Error saving results:', error);
+      logger.error('Error saving results:', error);
       // AUDIT-233: Handle 409 conflict with forceOverwrite option
       if (error?.status === 409) {
         const count = error.details?.staleStudentIds?.length || 0;
@@ -252,6 +406,8 @@ const ResultsEntry = ({ standalone = false }) => {
           // Reload fresh data
           fetchExamAndStudents(currentExamId);
         }
+      } else if (error?.status === 403) {
+        toast.error(t('toast.error.insufficientPermissionsToSaveResults'));
       } else {
         toast.error(t('toast.error.failedToSaveResults'));
       }
@@ -296,6 +452,18 @@ const ResultsEntry = ({ standalone = false }) => {
     );
   }
 
+  // Error state (initial load failed and nothing to show)
+  if (loadError && !exam && exams.length === 0) {
+    return (
+      <ErrorState
+        title={t('toast.error.failedToLoadExamData')}
+        error={loadError}
+        onRetry={() => (standalone ? fetchExamsList() : examId && fetchExamAndStudents(examId))}
+        size="lg"
+      />
+    );
+  }
+
   // Standalone mode - show exam selector
   if (standalone) {
     return (
@@ -309,7 +477,7 @@ const ResultsEntry = ({ standalone = false }) => {
             onSelectionChange={setSelectedExamId}
             className="max-w-xs"
             classNames={{
-              trigger: 'border-gray-200 hover:border-gray-300 dark:border-zinc-700 dark:hover:border-zinc-600'
+              trigger: 'border-border-token hover:border-fg-faint'
             }}
           >
             {exams.map((exam) => (
@@ -330,11 +498,12 @@ const ResultsEntry = ({ standalone = false }) => {
 
         {/* No exam selected */}
         {exams.length === 0 && (
-          <div className="text-center py-12">
-            <FileText size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-            <p className="text-gray-500 dark:text-zinc-400">{t('pages.noExamsAvailable')}</p>
-            <p className="text-sm text-gray-400 dark:text-zinc-500 mt-1">{t('pages.createAnExamFirstToEnterResults')}</p>
-          </div>
+          <EmptyState
+            icon={FileText}
+            title={t('pages.noExamsAvailable')}
+            description={t('pages.createAnExamFirstToEnterResults')}
+            size="md"
+          />
         )}
 
         {/* Loading students */}
@@ -346,33 +515,39 @@ const ResultsEntry = ({ standalone = false }) => {
         {exam && !loadingStudents && (
           <>
             {/* Exam Info */}
-            <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
+            <div className="bg-surface-2 rounded-lg p-4 border border-divider">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-medium text-gray-900 dark:text-zinc-100">{exam.name}</h3>
-                  <p className="text-sm text-gray-500 dark:text-zinc-400">{exam.className || exam.classId} - {exam.subjectName}</p>
+                  <h3 className="font-medium text-fg">{exam.name}</h3>
+                  <p className="text-sm text-fg-muted">{exam.className || exam.classId} - {exam.subjectName}</p>
                 </div>
                 <div className="flex items-center gap-4 text-sm">
-                  <span className="text-gray-500 dark:text-zinc-400">Max: <span className="font-medium text-gray-900 dark:text-zinc-100">{exam.maxMarks}</span></span>
-                  <span className="text-gray-500 dark:text-zinc-400">Pass: <span className="font-medium text-gray-900 dark:text-zinc-100">{exam.passingMarks}</span></span>
+                  <span className="text-fg-muted">Max: <span className="font-medium text-fg">{exam.maxMarks}</span></span>
+                  <span className="text-fg-muted">Pass: <span className="font-medium text-fg">{exam.passingMarks}</span></span>
                 </div>
               </div>
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-3 border border-gray-100 dark:border-zinc-800">
-                <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.totalStudents1')}</p>
-                <p className="text-xl font-semibold text-gray-900 dark:text-zinc-100">{students.length}</p>
-              </div>
-              <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-3 border border-blue-100 dark:border-blue-800">
-                <p className="text-xs text-blue-600 dark:text-blue-400">{t('pages.resultsEntered')}</p>
-                <p className="text-xl font-semibold text-blue-700 dark:text-blue-300">{enteredCount}</p>
-              </div>
-              <div className="bg-green-50 dark:bg-green-950 rounded-lg p-3 border border-green-100 dark:border-green-800">
-                <p className="text-xs text-green-600 dark:text-green-400">{t('pages.passCount')}</p>
-                <p className="text-xl font-semibold text-green-700 dark:text-green-300">{passCount}</p>
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <StatCard
+                label={t('pages.totalStudents1')}
+                value={students.length}
+                icon={Users}
+                color="gray"
+              />
+              <StatCard
+                label={t('pages.resultsEntered')}
+                value={enteredCount}
+                icon={GraduationCap}
+                color="primary"
+              />
+              <StatCard
+                label={t('pages.passCount')}
+                value={passCount}
+                icon={CheckCircle2}
+                color="success"
+              />
             </div>
 
             {/* Search */}
@@ -381,120 +556,26 @@ const ResultsEntry = ({ standalone = false }) => {
                 placeholder={t('pages.searchStudents')}
                 value={searchQuery}
                 onValueChange={setSearchQuery}
-                startContent={<Search size={16} className="text-gray-400 dark:text-zinc-500" />}
+                startContent={<Search size={16} className="text-fg-faint" />}
                 className="max-w-xs"
                 classNames={{
-                  inputWrapper: 'border-gray-200 hover:border-gray-300 dark:border-zinc-700 dark:hover:border-zinc-600'
+                  inputWrapper: 'border-border-token hover:border-fg-faint'
                 }}
               />
             )}
 
             {/* Results Table */}
-            <Card shadow="none" className="border border-gray-100 dark:border-zinc-800 dark:bg-zinc-950">
-              <CardBody className="p-0">
-                {students.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Users size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-                    <p className="text-gray-500 dark:text-zinc-400">{t('pages.noStudentsFoundInThisClass')}</p>
-                  </div>
-                ) : (
-                  <Table aria-label={t('aria.tables.resultsEntry')} removeWrapper>
-                    <TableHeader>
-                      <TableColumn scope="col">{t('pages.sTUDENT')}</TableColumn>
-                      <TableColumn scope="col">{t('pages.rOLLNo')}</TableColumn>
-                      <TableColumn scope="col">ABSENT</TableColumn>
-                      <TableColumn scope="col">{t('pages.mARKS')}</TableColumn>
-                      <TableColumn scope="col">{t('pages.gRADE')}</TableColumn>
-                      <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
-                      <TableColumn scope="col">{t('pages.rEMARKS')}</TableColumn>
-                    </TableHeader>
-                    <TableBody emptyContent="No students found">
-                      {filteredStudents.map((student) => {
-                        const studentId = student.id || student._id;
-                        const isAbsent = results[studentId]?.status === 'absent';
-                        const marks = isAbsent ? 0 : (results[studentId]?.marksObtained || 0);
-                        const grade = isAbsent ? '-' : calculateGrade(marks);
-                        const status = getStatus(studentId, marks);
-
-                        return (
-                          <TableRow key={studentId} className="hover:bg-gray-50 dark:hover:bg-zinc-900">
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
-                                  <span className="text-sm font-medium text-gray-600 dark:text-zinc-400">
-                                    {student.name?.charAt(0)?.toUpperCase() || 'S'}
-                                  </span>
-                                </div>
-                                <span className="font-medium text-gray-900 dark:text-zinc-100">{student.name}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <span className="text-sm text-gray-600 dark:text-zinc-400">{student.rollNo || studentId}</span>
-                            </TableCell>
-                            <TableCell>
-                              <Checkbox
-                                size="sm"
-                                isSelected={isAbsent}
-                                onValueChange={(checked) => handleAbsentToggle(studentId, checked)}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <div className="w-24">
-                                <input
-                                  type="number"
-                                  value={marks}
-                                  onChange={(e) => handleMarksChange(studentId, e.target.value)}
-                                  min={0}
-                                  max={exam.maxMarks}
-                                  disabled={isAbsent}
-                                  className={`w-full px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:border-gray-900 focus:ring-2 focus:ring-gray-100 outline-none text-sm dark:bg-zinc-900 dark:border-zinc-700 dark:focus:border-zinc-100 dark:focus:ring-zinc-800 dark:text-zinc-100 ${isAbsent ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                  placeholder={t('academics.marksInputPlaceholder')}
-                                />
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Chip size="sm" variant="flat">{grade || '-'}</Chip>
-                            </TableCell>
-                            <TableCell>
-                              {status === 'absent' ? (
-                                <Chip
-                                  size="sm"
-                                  color="warning"
-                                  variant="flat"
-                                  startContent={<UserX size={12} />}
-                                >
-                                  absent
-                                </Chip>
-                              ) : marks > 0 ? (
-                                <Chip
-                                  size="sm"
-                                  color={status === 'pass' ? 'success' : 'danger'}
-                                  variant="flat"
-                                  startContent={status === 'pass' ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
-                                >
-                                  {status}
-                                </Chip>
-                              ) : (
-                                <span className="text-sm text-gray-400 dark:text-zinc-500">-</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <input
-                                type="text"
-                                value={results[studentId]?.remarks || ''}
-                                onChange={(e) => handleRemarksChange(studentId, e.target.value)}
-                                placeholder={t('pages.addRemarks')}
-                                className="w-40 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:border-gray-900 focus:ring-2 focus:ring-gray-100 outline-none text-sm dark:bg-zinc-900 dark:border-zinc-700 dark:focus:border-zinc-100 dark:focus:ring-zinc-800 dark:text-zinc-100"
-                              />
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardBody>
-            </Card>
+            <ResultsTable
+              students={filteredStudents}
+              results={results}
+              exam={exam}
+              calculateGrade={calculateGrade}
+              getStatus={getStatus}
+              handleAbsentToggle={handleAbsentToggle}
+              handleMarksChange={handleMarksChange}
+              handleRemarksChange={handleRemarksChange}
+              t={t}
+            />
           </>
         )}
       </div>
@@ -504,40 +585,43 @@ const ResultsEntry = ({ standalone = false }) => {
   // Non-standalone mode (original behavior)
   if (!exam) {
     return (
-      <div className="text-center py-20">
-        <FileText size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-        <p className="text-gray-500 dark:text-zinc-400">{t('pages.examNotFound')}</p>
-        <MinimalButton className="mt-4" onClick={() => navigate('/academics/exams')}>
-          Back to Exams
-        </MinimalButton>
-      </div>
+      <EmptyState
+        icon={FileText}
+        title={t('pages.examNotFound')}
+        size="lg"
+        action={
+          <MinimalButton onClick={() => navigate('/academics/exams')}>
+            Back to Exams
+          </MinimalButton>
+        }
+      />
     );
   }
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 rounded-lg">
+      <div className="bg-surface border border-divider rounded-lg">
         <div className="flex items-center justify-between p-6">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => navigate(`/academics/exams/${examId}`)}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+              onClick={() => navigateSafe(`/academics/exams/${examId}`)}
+              className="p-2 rounded-lg hover:bg-surface-2 transition-colors"
             >
-              <ArrowLeft size={20} className="text-gray-500 dark:text-zinc-400" />
+              <ArrowLeft size={20} className="text-fg-muted" />
             </button>
-            <div className="p-3 bg-gray-100 dark:bg-zinc-800 rounded-lg">
-              <Award size={24} className="text-gray-600 dark:text-zinc-400" />
+            <div className="p-3 bg-surface-2 rounded-lg">
+              <Award size={24} className="text-fg-muted" />
             </div>
             <div>
-              <h1 className="text-xl font-medium text-gray-900 dark:text-zinc-100">Enter Results: {exam.name}</h1>
-              <p className="text-sm text-gray-500 dark:text-zinc-400 mt-0.5">
+              <h1 className="text-xl font-medium text-fg">Enter Results: {exam.name}</h1>
+              <p className="text-sm text-fg-muted mt-0.5">
                 {exam.className || exam.classId} - {exam.subjectName} | Max: {exam.maxMarks} | Pass: {exam.passingMarks}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <MinimalButton variant="ghost" onClick={() => navigate(`/academics/exams/${examId}`)}>
+            <MinimalButton variant="ghost" onClick={() => navigateSafe(`/academics/exams/${examId}`)}>
               Cancel
             </MinimalButton>
             <MinimalButton icon={<Save size={16} />} onClick={handleSave} disabled={saving}>
@@ -548,127 +632,57 @@ const ResultsEntry = ({ standalone = false }) => {
       </div>
 
       {/* Stats Summary */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
-          <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.totalStudents1')}</p>
-          <p className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">{students.length}</p>
-        </div>
-        <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
-          <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.resultsEntered')}</p>
-          <p className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">{enteredCount}</p>
-        </div>
-        <div className="bg-gray-50 dark:bg-zinc-900 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
-          <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.passCount')}</p>
-          <p className="text-2xl font-semibold text-green-600 dark:text-green-400">{passCount}</p>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <StatCard
+          label={t('pages.totalStudents1')}
+          value={students.length}
+          icon={Users}
+          color="gray"
+        />
+        <StatCard
+          label={t('pages.resultsEntered')}
+          value={enteredCount}
+          icon={GraduationCap}
+          color="primary"
+        />
+        <StatCard
+          label={t('pages.passCount')}
+          value={passCount}
+          icon={CheckCircle2}
+          color="success"
+        />
       </div>
 
       {/* Results Table */}
-      <Card shadow="none" className="border border-gray-100 dark:border-zinc-800 dark:bg-zinc-950">
-        <CardBody className="p-0">
-          {students.length === 0 ? (
-            <div className="text-center py-12">
-              <Users size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-              <p className="text-gray-500 dark:text-zinc-400">{t('pages.noStudentsFoundInThisClass')}</p>
-            </div>
-          ) : (
-            <Table aria-label={t('aria.tables.resultsEntry')} removeWrapper>
-              <TableHeader>
-                <TableColumn scope="col">{t('pages.sTUDENT')}</TableColumn>
-                <TableColumn scope="col">{t('pages.rOLLNo')}</TableColumn>
-                <TableColumn scope="col">ABSENT</TableColumn>
-                <TableColumn scope="col">{t('pages.mARKS')}</TableColumn>
-                <TableColumn scope="col">{t('pages.gRADE')}</TableColumn>
-                <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
-                <TableColumn scope="col">{t('pages.rEMARKS')}</TableColumn>
-              </TableHeader>
-              <TableBody emptyContent="No students found">
-                {students.map((student) => {
-                  const studentId = student.id || student._id;
-                  const isAbsent = results[studentId]?.status === 'absent';
-                  const marks = isAbsent ? 0 : (results[studentId]?.marksObtained || 0);
-                  const grade = isAbsent ? '-' : calculateGrade(marks);
-                  const status = getStatus(studentId, marks);
+      <ResultsTable
+        students={students}
+        results={results}
+        exam={exam}
+        calculateGrade={calculateGrade}
+        getStatus={getStatus}
+        handleAbsentToggle={handleAbsentToggle}
+        handleMarksChange={handleMarksChange}
+        handleRemarksChange={handleRemarksChange}
+        t={t}
+      />
 
-                  return (
-                    <TableRow key={studentId} className="hover:bg-gray-50 dark:hover:bg-zinc-900">
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
-                            <span className="text-sm font-medium text-gray-600 dark:text-zinc-400">
-                              {student.name?.charAt(0)?.toUpperCase() || 'S'}
-                            </span>
-                          </div>
-                          <span className="font-medium text-gray-900 dark:text-zinc-100">{student.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-gray-600 dark:text-zinc-400">{student.rollNo || studentId}</span>
-                      </TableCell>
-                      <TableCell>
-                        <Checkbox
-                          size="sm"
-                          isSelected={isAbsent}
-                          onValueChange={(checked) => handleAbsentToggle(studentId, checked)}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div className="w-24">
-                          <input
-                            type="number"
-                            value={marks}
-                            onChange={(e) => handleMarksChange(studentId, e.target.value)}
-                            min={0}
-                            max={exam.maxMarks}
-                            disabled={isAbsent}
-                            className={`w-full px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:border-gray-900 focus:ring-2 focus:ring-gray-100 outline-none text-sm dark:bg-zinc-900 dark:border-zinc-700 dark:focus:border-zinc-100 dark:focus:ring-zinc-800 dark:text-zinc-100 ${isAbsent ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            placeholder={t('academics.marksInputPlaceholder')}
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Chip size="sm" variant="flat">{grade || '-'}</Chip>
-                      </TableCell>
-                      <TableCell>
-                        {status === 'absent' ? (
-                          <Chip
-                            size="sm"
-                            color="warning"
-                            variant="flat"
-                            startContent={<UserX size={12} />}
-                          >
-                            absent
-                          </Chip>
-                        ) : marks > 0 ? (
-                          <Chip
-                            size="sm"
-                            color={status === 'pass' ? 'success' : 'danger'}
-                            variant="flat"
-                            startContent={status === 'pass' ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
-                          >
-                            {status}
-                          </Chip>
-                        ) : (
-                          <span className="text-sm text-gray-400 dark:text-zinc-500">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <input
-                          type="text"
-                          value={results[studentId]?.remarks || ''}
-                          onChange={(e) => handleRemarksChange(studentId, e.target.value)}
-                          placeholder={t('pages.addRemarks')}
-                          className="w-40 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:border-gray-900 focus:ring-2 focus:ring-gray-100 outline-none text-sm dark:bg-zinc-900 dark:border-zinc-700 dark:focus:border-zinc-100 dark:focus:ring-zinc-800 dark:text-zinc-100"
-                        />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </CardBody>
-      </Card>
+      {/* Warn before losing unsaved marks via browser-back or in-app navigation */}
+      <UnsavedChangesModal
+        isOpen={isBlocked || !!pendingNavPath}
+        onDiscard={() => {
+          if (isBlocked) {
+            proceed();
+          } else {
+            const path = pendingNavPath;
+            setPendingNavPath(null);
+            navigate(path);
+          }
+        }}
+        onCancel={() => {
+          reset();
+          setPendingNavPath(null);
+        }}
+      />
     </div>
   );
 };

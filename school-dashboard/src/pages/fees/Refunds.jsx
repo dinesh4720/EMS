@@ -1,24 +1,37 @@
 import { useState, useMemo, useEffect, useRef } from "react";
+import { useEntityFetch } from "../../hooks/useEntityFetch";
 import { useNavigate } from "react-router-dom";
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Textarea, Spinner } from "@heroui/react";
 import { TablePageSkeleton } from "../../components/skeletons/PageSkeletons";
 import { Search, X, Plus, Download } from "lucide-react";
 import { feesApi, studentsApi } from "../../services/api";
+import { useCurrency } from '../../context/hooks/useCurrency';
+import MobileResponsive from "../../components/ui/MobileResponsive";
+import Button from "../../components/ui/Button";
+import ErrorState from "../../components/ui/ErrorState";
+import { createRefundSchema, parseFormSchema } from "../../validators/formSchemas";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import logger from '../../utils/logger';
+
+
+const ITEMS_PER_LOAD = 10;
 
 export default function Refunds() {
   const { t } = useTranslation();
+  const { fmt } = useCurrency();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [refunds, setRefunds] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
   const [actionLoading, setActionLoading] = useState(null); // refund id being actioned
 
   // New Refund modal
   const [newRefundOpen, setNewRefundOpen] = useState(false);
   const [newRefundForm, setNewRefundForm] = useState({ studentId: "", classId: "", amount: "", reason: "", refundMode: "cash", remarks: "" });
+  const [formErrors, setFormErrors] = useState({});
   const [savingRefund, setSavingRefund] = useState(false);
   // BUG-30: track total paid for the selected student to prevent over-refund
   const [studentTotalPaid, setStudentTotalPaid] = useState(null);
@@ -35,10 +48,12 @@ export default function Refunds() {
   const fetchRefunds = async () => {
     try {
       setLoading(true);
+      setFetchError(null);
       const data = await feesApi.getRefunds({});
       setRefunds(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('Error fetching refunds:', error);
+      logger.error('Error fetching refunds:', error);
+      setFetchError(error?.message || t('toast.error.failedToLoadRefunds'));
       toast.error(t('toast.error.failedToLoadRefunds'));
     } finally {
       setLoading(false);
@@ -56,6 +71,56 @@ export default function Refunds() {
     } finally {
       setActionLoading(null);
     }
+  };
+
+  // REVAMP-27 — reject pending refund with a required reason
+  const handleReject = async (refund) => {
+    const reason = window.prompt(
+      t('pages.rejectionReason', 'Reason for rejecting this refund?')
+    );
+    if (!reason || !reason.trim()) return;
+    setActionLoading(refund._id);
+    try {
+      await feesApi.rejectRefund(refund._id, { rejectionReason: reason.trim() });
+      toast.success(t('toast.success.refundRejected', 'Refund rejected'));
+      fetchRefunds();
+    } catch (error) {
+      toast.error(
+        error?.message ||
+          t('toast.error.failedToRejectRefund', 'Failed to reject refund')
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDownloadRefund = (refund) => {
+    const sanitize = (value) => {
+      const str = String(value ?? '');
+      return (/^[=+\-@\t\r]/.test(str) ? "'" : '') + str.replace(/"/g, '""');
+    };
+    const rows = [
+      ['Refund ID', refund._id],
+      ['Student', refund.studentId?.name || ''],
+      ['Class', `${refund.classId?.name || ''} ${refund.classId?.section || ''}`.trim()],
+      ['Amount', refund.amount ?? 0],
+      ['Reason', refund.reason || ''],
+      ['Refund Mode', refund.refundMode || ''],
+      ['Status', refund.status || ''],
+      ['Refund Date', refund.refundDate || ''],
+      ['Remarks', refund.remarks || ''],
+      ['Created At', refund.createdAt || ''],
+    ];
+    const csvContent = ['Field,Value', ...rows.map(r => r.map(c => `"${sanitize(c)}"`).join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `refund-${refund._id}-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const handleProcess = async (refund) => {
@@ -88,7 +153,7 @@ export default function Refunds() {
           setStudentTotalPaid(total);
         })
         .catch((err) => {
-          console.error('Failed to fetch student payments for refund validation:', err);
+          logger.error('Failed to fetch student payments for refund validation:', err);
           toast.error(t('toast.error.failedToLoadPaymentHistory', 'Failed to load payment history — refund limit cannot be verified'));
           setStudentTotalPaid(null);
         });
@@ -132,22 +197,24 @@ export default function Refunds() {
   };
 
   const handleCreateRefund = async () => {
-    if (!newRefundForm.studentId || !newRefundForm.classId || !newRefundForm.amount || !newRefundForm.reason || !newRefundForm.refundMode) {
-      toast.error(t('toast.error.pleaseFillAllRequiredFields'));
-      return;
-    }
+    setFormErrors({});
     if (!selectedStudent) {
+      setFormErrors({ studentId: t('toast.error.pleaseSelectAStudent', 'Please select a student') });
       toast.error(t('toast.error.pleaseSelectAStudent', 'Please select a student'));
       return;
     }
-    const parsedAmount = parseFloat(newRefundForm.amount);
-    if (!parsedAmount || parsedAmount <= 0) {
-      toast.error(t('toast.error.refundAmountMustBeGreaterThanZero'));
+    const { success, errors } = parseFormSchema(createRefundSchema, newRefundForm);
+    if (!success) {
+      setFormErrors(errors);
+      toast.error(Object.values(errors)[0] || t('toast.error.pleaseFillAllRequiredFields'));
       return;
     }
+    const parsedAmount = parseFloat(newRefundForm.amount);
     // BUG-30: prevent refund amount from exceeding total paid
     if (studentTotalPaid !== null && parsedAmount > studentTotalPaid) {
-      toast.error(t('toast.error.refundExceedsTotalPaid', { amount: parsedAmount, totalPaid: studentTotalPaid, defaultValue: `Refund amount (₹${parsedAmount.toLocaleString()}) cannot exceed total paid (₹${studentTotalPaid.toLocaleString()})` }));
+      const msg = t('toast.error.refundExceedsTotalPaid', { amount: parsedAmount, totalPaid: studentTotalPaid, defaultValue: `Refund amount (${fmt(parsedAmount)}) cannot exceed total paid (${fmt(studentTotalPaid)})` });
+      setFormErrors({ amount: msg });
+      toast.error(msg);
       return;
     }
     setSavingRefund(true);
@@ -159,10 +226,11 @@ export default function Refunds() {
       toast.success(t('toast.success.refundRequestCreated'));
       setNewRefundOpen(false);
       setNewRefundForm({ studentId: "", classId: "", amount: "", reason: "", refundMode: "cash", remarks: "" });
+      setFormErrors({});
       handleClearStudent();
       fetchRefunds();
     } catch (error) {
-      toast.error(t('toast.error.failedToCreateRefund'));
+      toast.error(error?.message || t('toast.error.failedToCreateRefund'));
     } finally {
       setSavingRefund(false);
     }
@@ -177,33 +245,10 @@ export default function Refunds() {
     });
   }, [refunds, searchQuery, statusFilter]);
 
-  // Lazy loading
-  const ITEMS_PER_LOAD = 10;
-  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const loaderRef = useRef(null);
-
-  const visibleRefunds = useMemo(() => filteredRefunds.slice(0, visibleCount), [filteredRefunds, visibleCount]);
-  const hasMore = visibleCount < filteredRefunds.length;
-
-  useEffect(() => { setVisibleCount(ITEMS_PER_LOAD); }, [searchQuery, statusFilter]);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
-          setIsLoadingMore(true);
-          setTimeout(() => {
-            setVisibleCount((prev) => prev + ITEMS_PER_LOAD);
-            setIsLoadingMore(false);
-          }, 300);
-        }
-      },
-      { threshold: 0.1 }
-    );
-    if (loaderRef.current) observer.observe(loaderRef.current);
-    return () => observer.disconnect();
-  }, [hasMore, isLoadingMore]);
+  const { visibleItems: visibleRefunds, hasMore, isLoadingMore, loaderRef } = useEntityFetch(
+    filteredRefunds,
+    [searchQuery, statusFilter]
+  );
 
   const totalRefunds = filteredRefunds.reduce((sum, r) => sum + (r.amount || 0), 0);
   const pendingCount = filteredRefunds.filter((r) => r.status === "pending").length;
@@ -213,39 +258,51 @@ export default function Refunds() {
     return <TablePageSkeleton kpiCards={3} columns={5} rows={8} />;
   }
 
+  if (fetchError) {
+    return (
+      <ErrorState
+        title={t('common.somethingWentWrong', 'Something went wrong')}
+        description={fetchError}
+        retryLabel={t('common.tryAgain', 'Try again')}
+        onRetry={fetchRefunds}
+        size="lg"
+      />
+    );
+  }
+
   return (
     <div className="w-full flex flex-col">
       {/* Stats Row */}
       <div className="grid grid-cols-3 gap-4 mb-6 -mx-6 -mt-6 px-6 pt-6">
-        <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
-          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">{t('pages.totalRefunds')}</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">₹{totalRefunds.toLocaleString()}</p>
+        <div className="p-4 border border-border-token rounded-lg bg-surface">
+          <p className="text-xs text-fg-muted uppercase tracking-wider mb-1">{t('pages.totalRefunds')}</p>
+          <p className="text-2xl font-bold text-fg">{fmt(totalRefunds)}</p>
         </div>
-        <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
-          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">{t('pages.pending2')}</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{pendingCount}</p>
+        <div className="p-4 border border-border-token rounded-lg bg-surface">
+          <p className="text-xs text-fg-muted uppercase tracking-wider mb-1">{t('pages.pending2')}</p>
+          <p className="text-2xl font-bold text-fg">{pendingCount}</p>
         </div>
-        <div className="p-4 border border-gray-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-950">
-          <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1">{t('pages.processed')}</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{processedCount}</p>
+        <div className="p-4 border border-border-token rounded-lg bg-surface">
+          <p className="text-xs text-fg-muted uppercase tracking-wider mb-1">{t('pages.processed')}</p>
+          <p className="text-2xl font-bold text-fg">{processedCount}</p>
         </div>
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row justify-between gap-4 items-center border-b border-gray-200 dark:border-zinc-800 py-4 -mx-6 px-6 mb-6">
+      <div className="flex flex-col sm:flex-row justify-between gap-4 items-center border-b border-border-token py-4 -mx-6 px-6 mb-6">
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <div className="flex items-center gap-2 w-full sm:max-w-[250px] px-3 py-2 bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700 focus-within:border-gray-400 dark:focus-within:border-zinc-600 transition-all">
-            <Search size={16} className="text-gray-400 dark:text-zinc-500" />
+          <div className="flex items-center gap-2 w-full sm:max-w-[250px] px-3 py-2 bg-surface rounded-lg border border-border-token hover:border-border-strong focus-within:border-gray-400 dark:focus-within:border-zinc-600 transition-all">
+            <Search size={16} className="text-fg-faint" />
             <input
               type="text"
               placeholder={t('pages.searchStudent')}
-              className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-zinc-100 placeholder:text-gray-500 dark:placeholder:text-zinc-500"
+              className="flex-1 bg-transparent outline-none text-sm text-fg placeholder:text-gray-500 dark:placeholder:text-zinc-500"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery("")} className="p-0.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded">
-                <X size={14} className="text-gray-400 dark:text-zinc-500" />
+              <button onClick={() => setSearchQuery("")} className="p-0.5 hover:bg-surface-2 rounded">
+                <X size={14} className="text-fg-faint" />
               </button>
             )}
           </div>
@@ -258,7 +315,7 @@ export default function Refunds() {
             selectedKeys={new Set([statusFilter])}
             onSelectionChange={(keys) => setStatusFilter(Array.from(keys)[0])}
             className="w-full sm:w-[140px]"
-            classNames={{ trigger: "h-9 min-h-9 bg-white dark:bg-zinc-950 border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700", value: "text-sm" }}
+            classNames={{ trigger: "h-9 min-h-9 bg-surface border-border-token hover:border-border-strong", value: "text-sm" }}
           >
             <SelectItem key="all">{t('pages.allStatus1')}</SelectItem>
             <SelectItem key="pending">{t('pages.pending2')}</SelectItem>
@@ -266,24 +323,24 @@ export default function Refunds() {
             <SelectItem key="processed">{t('pages.processed')}</SelectItem>
           </Select>
 
-          <button
+          <Button
+            size="sm"
+            icon={<Plus size={14} />}
             onClick={() => setNewRefundOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gray-900 border border-gray-900 rounded-lg hover:bg-gray-800 transition-all"
           >
-            <Plus size={14} />
-            <span>{t('pages.newRefund')}</span>
-          </button>
+            {t('pages.newRefund')}
+          </Button>
         </div>
       </div>
 
       {/* Table */}
-      <div className="border border-gray-200 dark:border-zinc-800 rounded-lg overflow-hidden -mx-6 sm:mx-0">
+      <MobileResponsive className="border border-border-token rounded-lg overflow-hidden -mx-6 sm:mx-0">
         <Table
           aria-label={t('aria.misc.refunds')}
           removeWrapper
           classNames={{
-            th: "bg-gray-50 dark:bg-zinc-900 text-gray-500 dark:text-zinc-400 font-medium text-xs uppercase tracking-wider h-11 border-b border-gray-200 dark:border-zinc-800",
-            td: "py-4 border-b border-gray-100 dark:border-zinc-800",
+            th: "bg-surface-2 text-fg-muted font-medium text-xs uppercase tracking-wider h-11 border-b border-border-token",
+            td: "py-4 border-b border-divider",
           }}
         >
           <TableHeader>
@@ -294,27 +351,27 @@ export default function Refunds() {
             <TableColumn scope="col">{t('pages.dATE')}</TableColumn>
             <TableColumn align="end" scope="col">{t('pages.aCTIONS')}</TableColumn>
           </TableHeader>
-          <TableBody emptyContent={<div className="text-center py-8"><p className="text-gray-400 dark:text-zinc-500 text-sm">{t('pages.noRefundRecords')}</p></div>}>
+          <TableBody emptyContent={<div className="text-center py-8"><p className="text-fg-faint text-sm">{t('pages.noRefundRecords')}</p></div>}>
             {visibleRefunds.map((refund) => (
-              <TableRow key={refund._id} className="hover:bg-gray-50 dark:hover:bg-zinc-900">
+              <TableRow key={refund._id} className="hover:bg-surface-2">
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
-                      <span className="text-xs font-medium text-gray-600 dark:text-zinc-400">{refund.studentId?.name?.charAt(0) || '?'}</span>
+                    <div className="w-8 h-8 rounded-full bg-surface-2 flex items-center justify-center">
+                      <span className="text-xs font-medium text-fg-muted">{refund.studentId?.name?.charAt(0) || '?'}</span>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 hover:text-gray-600 dark:hover:text-zinc-400 cursor-pointer" onClick={() => navigate(`/students/${refund.studentId?._id}`)}>
+                      <p className="text-sm font-medium text-fg hover:text-gray-600 dark:hover:text-zinc-400 cursor-pointer" onClick={() => navigate(`/students/${refund.studentId?._id}`)}>
                         {refund.studentId?.name}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-zinc-400">Class {refund.classId?.name} {refund.classId?.section}</p>
+                      <p className="text-xs text-fg-muted">{t('common.class')} {refund.classId?.name} {refund.classId?.section}</p>
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <span className="text-sm font-mono text-gray-900 dark:text-zinc-100">₹{refund.amount?.toLocaleString() || 0}</span>
+                  <span className="text-sm font-mono text-fg">{fmt(refund.amount || 0)}</span>
                 </TableCell>
                 <TableCell>
-                  <span className="text-sm text-gray-600 dark:text-zinc-400">{refund.reason || '—'}</span>
+                  <span className="text-sm text-fg-muted">{refund.reason || '—'}</span>
                 </TableCell>
                 <TableCell>
                   <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium border rounded ${
@@ -333,31 +390,50 @@ export default function Refunds() {
                   </span>
                 </TableCell>
                 <TableCell>
-                  <span className="text-xs text-gray-500 dark:text-zinc-400">{refund.refundDate || '—'}</span>
+                  <span className="text-xs text-fg-muted">{refund.refundDate || '—'}</span>
                 </TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-2">
                     {refund.status === "pending" && (
-                      <button
-                        onClick={() => handleApprove(refund)}
-                        disabled={actionLoading === refund._id}
-                        className="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 transition-all disabled:opacity-50"
-                      >
-                        {actionLoading === refund._id ? '...' : 'Approve'}
-                      </button>
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          loading={actionLoading === refund._id}
+                          disabled={actionLoading === refund._id}
+                          onClick={() => handleReject(refund)}
+                        >
+                          {t('pages.reject', 'Reject')}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          loading={actionLoading === refund._id}
+                          disabled={actionLoading === refund._id}
+                          onClick={() => handleApprove(refund)}
+                        >
+                          {t('pages.approve1')}
+                        </Button>
+                      </>
                     )}
                     {refund.status === "approved" && (
-                      <button
-                        onClick={() => handleProcess(refund)}
+                      <Button
+                        size="sm"
+                        loading={actionLoading === refund._id}
                         disabled={actionLoading === refund._id}
-                        className="px-3 py-1.5 text-xs font-medium text-white bg-gray-900 border border-gray-900 rounded-lg hover:bg-gray-800 transition-all disabled:opacity-50"
+                        onClick={() => handleProcess(refund)}
                       >
-                        {actionLoading === refund._id ? '...' : 'Process'}
-                      </button>
+                        {t('pages.process')}
+                      </Button>
                     )}
-                    <button className="p-1.5 text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded transition-all">
-                      <Download size={14} />
-                    </button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon={<Download size={14} />}
+                      aria-label={t('pages.download', 'Download')}
+                      title={t('pages.download', 'Download refund details')}
+                      onClick={() => handleDownloadRefund(refund)}
+                    />
                   </div>
                 </TableCell>
               </TableRow>
@@ -366,35 +442,35 @@ export default function Refunds() {
         </Table>
 
         {/* Load more */}
-        <div ref={loaderRef} className="flex justify-center py-4 bg-gray-50 dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800">
+        <div ref={loaderRef} className="flex justify-center py-4 bg-surface-2 border-t border-border-token">
           {isLoadingMore && <Spinner size="sm" />}
           {!hasMore && filteredRefunds.length > ITEMS_PER_LOAD && (
-            <span className="text-gray-400 dark:text-zinc-500 text-xs">{t('pages.allRefundsLoaded')}</span>
+            <span className="text-fg-faint text-xs">{t('pages.allRefundsLoaded')}</span>
           )}
         </div>
-      </div>
+      </MobileResponsive>
 
       {/* New Refund Modal */}
-      <Modal isOpen={newRefundOpen} onClose={() => { setNewRefundOpen(false); handleClearStudent(); }} size="lg">
+      <Modal isOpen={newRefundOpen} onClose={() => { setNewRefundOpen(false); setFormErrors({}); handleClearStudent(); }} size="lg">
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="border-b border-gray-200 dark:border-zinc-800">{t('pages.newRefundRequest')}</ModalHeader>
+              <ModalHeader className="border-b border-border-token">{t('pages.newRefundRequest')}</ModalHeader>
               <ModalBody className="py-4 space-y-4">
                 {/* [AUDIT-515] Student search picker — replaces raw ObjectId inputs */}
                 <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1 block">
+                  <label className="text-sm font-medium text-fg mb-1 block">
                     {t('pages.student', 'Student')} <span className="text-danger">*</span>
                   </label>
                   {selectedStudent ? (
-                    <div className="flex items-center gap-2 px-3 py-2 border border-default-200 rounded-lg bg-default-50 dark:bg-zinc-900">
+                    <div className="flex items-center gap-2 px-3 py-2 border border-border-token rounded-lg bg-surface-2 dark:bg-zinc-900">
                       <div className="w-7 h-7 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center flex-shrink-0">
                         <span className="text-xs font-medium text-primary-700 dark:text-primary-300">{selectedStudent.name?.charAt(0)}</span>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 truncate">{selectedStudent.name}</p>
-                        <p className="text-xs text-gray-500 dark:text-zinc-400">
-                          {selectedStudent.admissionNo || selectedStudent.admissionId || ''} — Class {selectedStudent.classId?.name || ''}{selectedStudent.classId?.section ? ` ${selectedStudent.classId.section}` : ''}
+                        <p className="text-sm font-medium text-fg truncate">{selectedStudent.name}</p>
+                        <p className="text-xs text-fg-muted">
+                          {selectedStudent.admissionNo || selectedStudent.admissionId || ''} — {t('common.class')} {selectedStudent.classId?.name || ''}{selectedStudent.classId?.section ? ` ${selectedStudent.classId.section}` : ''}
                         </p>
                       </div>
                       <button
@@ -416,24 +492,24 @@ export default function Refunds() {
                         size="sm"
                       />
                       {studentResults.length > 0 && studentSearch && (
-                        <div className="absolute z-50 w-full border border-gray-200 dark:border-zinc-700 rounded-lg mt-1 max-h-48 overflow-y-auto bg-white dark:bg-zinc-900 shadow-lg">
+                        <div className="absolute z-50 w-full border border-border-token rounded-lg mt-1 max-h-48 overflow-y-auto bg-surface shadow-lg">
                           {studentResults.map((s) => (
                             <button
                               key={s._id}
                               type="button"
                               onClick={() => handleSelectStudent(s)}
-                              className="w-full text-left px-3 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors border-b border-gray-100 dark:border-zinc-800 last:border-b-0"
+                              className="w-full text-left px-3 py-2.5 text-sm hover:bg-surface-2 transition-colors border-b border-divider last:border-b-0"
                             >
-                              <span className="font-medium text-gray-900 dark:text-zinc-100">{s.name}</span>
-                              <span className="text-gray-500 dark:text-zinc-400 ml-2 text-xs">
-                                {s.admissionNo || s.admissionId || ''} — Class {s.classId?.name || ''}{s.classId?.section ? ` ${s.classId.section}` : ''}
+                              <span className="font-medium text-fg">{s.name}</span>
+                              <span className="text-fg-muted ml-2 text-xs">
+                                {s.admissionNo || s.admissionId || ''} — {t('common.class')} {s.classId?.name || ''}{s.classId?.section ? ` ${s.classId.section}` : ''}
                               </span>
                             </button>
                           ))}
                         </div>
                       )}
                       {studentSearch.length >= 2 && studentResults.length === 0 && (
-                        <div className="absolute z-50 w-full border border-gray-200 dark:border-zinc-700 rounded-lg mt-1 bg-white dark:bg-zinc-900 shadow-lg px-3 py-3 text-sm text-gray-500 dark:text-zinc-400">
+                        <div className="absolute z-50 w-full border border-border-token rounded-lg mt-1 bg-surface shadow-lg px-3 py-3 text-sm text-fg-muted">
                           {t('common.noResultsFound', 'No students found')}
                         </div>
                       )}
@@ -442,15 +518,15 @@ export default function Refunds() {
                 </div>
                 <Input
                   type="number"
-                  label="Amount (₹)"
+                  label={t('fees.amountLabel')}
                   placeholder={t('fees.amountPlaceholder')}
                   value={newRefundForm.amount}
                   onValueChange={(v) => setNewRefundForm({ ...newRefundForm, amount: v })}
                   variant="bordered"
                   isRequired
-                  description={studentTotalPaid !== null ? `Max refundable: ₹${studentTotalPaid.toLocaleString()}` : undefined}
-                  isInvalid={studentTotalPaid !== null && parseFloat(newRefundForm.amount) > studentTotalPaid}
-                  errorMessage={studentTotalPaid !== null && parseFloat(newRefundForm.amount) > studentTotalPaid ? `Cannot exceed ₹${studentTotalPaid.toLocaleString()} (total paid)` : undefined}
+                  description={studentTotalPaid !== null ? t('fees.maxRefundable', { amount: studentTotalPaid.toLocaleString() }) : undefined}
+                  isInvalid={Boolean(formErrors.amount) || (studentTotalPaid !== null && parseFloat(newRefundForm.amount) > studentTotalPaid)}
+                  errorMessage={formErrors.amount || (studentTotalPaid !== null && parseFloat(newRefundForm.amount) > studentTotalPaid ? t('fees.cannotExceedTotalPaid', { amount: studentTotalPaid.toLocaleString() }) : undefined)}
                 />
                 <Textarea
                   label={t('pages.reason')}
@@ -460,12 +536,16 @@ export default function Refunds() {
                   variant="bordered"
                   isRequired
                   minRows={2}
+                  isInvalid={Boolean(formErrors.reason)}
+                  errorMessage={formErrors.reason}
                 />
                 <Select
                   label={t('pages.refundMode')}
                   variant="bordered"
                   selectedKeys={[newRefundForm.refundMode]}
                   onChange={(e) => setNewRefundForm({ ...newRefundForm, refundMode: e.target.value })}
+                  isInvalid={Boolean(formErrors.refundMode)}
+                  errorMessage={formErrors.refundMode}
                 >
                   <SelectItem key="cash">{t('pages.cash1')}</SelectItem>
                   <SelectItem key="cheque">{t('pages.cheque1')}</SelectItem>
@@ -480,17 +560,17 @@ export default function Refunds() {
                   minRows={2}
                 />
               </ModalBody>
-              <ModalFooter className="border-t border-gray-200 dark:border-zinc-800 gap-3">
-                <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900 transition-all">
-                  Cancel
-                </button>
-                <button
+              <ModalFooter className="border-t border-border-token gap-3">
+                <Button variant="outline" onClick={onClose} disabled={savingRefund}>
+                  {t('common.cancel')}
+                </Button>
+                <Button
                   onClick={handleCreateRefund}
+                  loading={savingRefund}
                   disabled={savingRefund}
-                  className="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {savingRefund ? t('common.creating', 'Creating...') : t('fees.createRefund', 'Create Refund')}
-                </button>
+                </Button>
               </ModalFooter>
             </>
           )}

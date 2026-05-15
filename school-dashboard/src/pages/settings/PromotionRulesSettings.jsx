@@ -65,7 +65,7 @@ export default function PromotionRulesSettings() {
   if (loadError) {
     return (
       <div className="max-w-2xl flex flex-col items-center justify-center py-16 text-center">
-        <p className="text-sm text-gray-500 dark:text-zinc-400 mb-4">
+        <p className="text-sm text-fg-muted mb-4">
           Could not load promotion rules. Please check your connection and try again.
         </p>
         <Button variant="bordered" size="sm" onPress={fetchRules}>
@@ -84,8 +84,8 @@ export default function PromotionRulesSettings() {
             <ArrowUpCircle size={18} className="text-blue-600 dark:text-blue-400" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Promotion Rules</h2>
-            <p className="text-sm text-gray-500 dark:text-zinc-400">
+            <h2 className="text-lg font-semibold text-fg">Promotion Rules</h2>
+            <p className="text-sm text-fg-muted">
               Configure eligibility criteria for student bulk promotion
             </p>
           </div>
@@ -98,13 +98,13 @@ export default function PromotionRulesSettings() {
       <div className="space-y-2">
         <div>
           <div className="flex items-center gap-1.5">
-            <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Minimum Attendance</p>
+            <p className="text-sm font-medium text-fg">Minimum Attendance</p>
             <HelpIcon
               text="Students whose attendance percentage falls below this value will be flagged as ineligible during the year-end promotion process. Set to 0% to ignore attendance when promoting."
               size="sm"
             />
           </div>
-          <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
+          <p className="text-xs text-fg-muted mt-0.5">
             Students below this threshold will be flagged as ineligible for promotion
           </p>
         </div>
@@ -118,11 +118,11 @@ export default function PromotionRulesSettings() {
             onChange={e => setMinAttendance(Number(e.target.value))}
             className="flex-1 accent-blue-600"
           />
-          <div className="w-16 text-center px-3 py-1.5 rounded-lg border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-900 text-sm font-semibold text-gray-900 dark:text-zinc-100 tabular-nums">
+          <div className="w-16 text-center px-3 py-1.5 rounded-lg border border-border-token bg-surface-2 text-sm font-semibold text-fg tabular-nums">
             {minAttendance}%
           </div>
         </div>
-        <p className="text-xs text-gray-400 dark:text-zinc-500">
+        <p className="text-xs text-fg-faint">
           Set to 0% to disable attendance-based blocking
         </p>
       </div>
@@ -133,13 +133,13 @@ export default function PromotionRulesSettings() {
       <div className="space-y-2">
         <div>
           <div className="flex items-center gap-1.5">
-            <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Fee Requirement</p>
+            <p className="text-sm font-medium text-fg">Fee Requirement</p>
             <HelpIcon
               text="Controls whether outstanding fees can block a student from being promoted to the next class. 'None' means fees are ignored; 'Partial' blocks students with zero payment; 'Full' requires complete payment."
               size="sm"
             />
           </div>
-          <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
+          <p className="text-xs text-fg-muted mt-0.5">
             Determines which fee statuses block a student from being promoted
           </p>
         </div>
@@ -148,7 +148,7 @@ export default function PromotionRulesSettings() {
           onSelectionChange={keys => setFeeRequirement([...keys][0] || 'none')}
           variant="bordered"
           size="sm"
-          classNames={{ trigger: 'dark:border-zinc-700' }}
+          classNames={{ trigger: '' }}
         >
           {FEE_OPTIONS.map(opt => (
             <SelectItem key={opt.key} value={opt.key}>
@@ -156,10 +156,10 @@ export default function PromotionRulesSettings() {
             </SelectItem>
           ))}
         </Select>
-        <div className="p-3 rounded-lg bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 text-xs text-gray-500 dark:text-zinc-400 space-y-1">
-          <p><span className="font-medium text-gray-700 dark:text-zinc-300">none</span> — All students eligible regardless of fee status</p>
-          <p><span className="font-medium text-gray-700 dark:text-zinc-300">partial</span> — Students with status "pending" are blocked</p>
-          <p><span className="font-medium text-gray-700 dark:text-zinc-300">full</span> — Only students with status "paid" are eligible</p>
+        <div className="p-3 rounded-lg bg-surface-2 border border-divider text-xs text-fg-muted space-y-1">
+          <p><span className="font-medium text-fg">none</span> — All students eligible regardless of fee status</p>
+          <p><span className="font-medium text-fg">partial</span> — Students with status "pending" are blocked</p>
+          <p><span className="font-medium text-fg">full</span> — Only students with status "paid" are eligible</p>
         </div>
       </div>
 
@@ -167,7 +167,7 @@ export default function PromotionRulesSettings() {
 
       <div className="flex justify-end">
         <Button
-          className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900"
+          className="bg-surface dark:bg-surface-2 text-white"
           startContent={<Save size={15} />}
           onPress={handleSave}
           isLoading={saving}

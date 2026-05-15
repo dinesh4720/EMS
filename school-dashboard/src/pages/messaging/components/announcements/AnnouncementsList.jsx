@@ -1,14 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-  Chip,
-  Button,
-  Spinner,
   Dropdown,
   DropdownTrigger,
   DropdownMenu,
@@ -23,14 +14,13 @@ import {
   Copy,
   Send,
   MoreVertical,
-  Calendar,
   Megaphone,
-  Sparkles,
   Filter,
   X,
   CheckCircle,
   Clock,
   FileText,
+  Paperclip,
 } from 'lucide-react';
 import { announcementsApi } from '../../../../services/api';
 import toast from 'react-hot-toast';
@@ -39,78 +29,104 @@ import { useTranslation } from 'react-i18next';
 import SkeletonList from '../../../../components/skeletons/SkeletonList';
 import ConfirmDialog from '../../../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../../../hooks/useConfirmDialog';
+import logger from '../../../../utils/logger';
 
+const STATUS_TONE = {
+  sent: { tone: 'ok', label: 'Sent', icon: CheckCircle },
+  scheduled: { tone: 'warn', label: 'Scheduled', icon: Clock },
+  draft: { tone: 'info', label: 'Draft', icon: FileText },
+};
 
-export default function AnnouncementsList({
-  onView, onEdit, onRefresh }) {
+const AUDIENCE_LABELS = {
+  all: 'All',
+  staff: 'Staff',
+  students: 'Students',
+  parents: 'Parents',
+  class: 'Class',
+};
+
+function getAudienceChips(recipients) {
+  if (!Array.isArray(recipients) || recipients.length === 0) {
+    return [{ key: 'none', label: 'No audience', tone: 'info' }];
+  }
+  if (recipients.some((r) => r.type === 'all')) {
+    return [{ key: 'all', label: 'Whole School', tone: 'accent' }];
+  }
+  return recipients.map((r, i) => {
+    const baseLabel = AUDIENCE_LABELS[r.type] || r.type;
+    const label = r.classLabel || r.className || (r.type === 'class' && r.classId ? `Class ${r.classId}` : baseLabel);
+    return { key: `${r.type}-${i}`, label, tone: 'info' };
+  });
+}
+
+export default function AnnouncementsList({ onView, onEdit, onRefresh }) {
   const { t } = useTranslation();
   const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
+  const mountedRef = useRef(true);
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchFocused, setSearchFocused] = useState(false);
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [channelFilter, setChannelFilter] = useState('all');
-  const [dateFilter, setDateFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState(() => {
+    if (typeof window === 'undefined') return 'all';
+    return window.localStorage.getItem('announcements:statusFilter') || 'all';
+  });
+  const [audienceFilter, setAudienceFilter] = useState(() => {
+    if (typeof window === 'undefined') return 'all';
+    return window.localStorage.getItem('announcements:audienceFilter') || 'all';
+  });
 
   useEffect(() => {
+    mountedRef.current = true;
     loadAnnouncements();
+    return () => { mountedRef.current = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('announcements:statusFilter', statusFilter);
+  }, [statusFilter]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('announcements:audienceFilter', audienceFilter);
+  }, [audienceFilter]);
 
   const loadAnnouncements = async () => {
     setLoading(true);
     setError(null);
     try {
-      const params = {};
-      if (statusFilter !== 'all') {
-        params.status = statusFilter;
+      const response = await announcementsApi.getAll();
+      if (mountedRef.current) {
+        setAnnouncements(response.announcements || response || []);
       }
-      const response = await announcementsApi.getAll(params);
-      // Backend returns { announcements: [], ... }
-      setAnnouncements(response.announcements || response || []);
-    } catch (error) {
-      console.error('Error loading announcements:', error);
-      const errorMsg = error.message || 'Unknown error';
-      setError(errorMsg);
-      toast.error(`Failed to load announcements: ${errorMsg}`);
+    } catch (err) {
+      logger.error('Error loading announcements:', err);
+      if (mountedRef.current) {
+        const errorMsg = err.message || 'Unknown error';
+        setError(errorMsg);
+        toast.error(`Failed to load announcements: ${errorMsg}`);
+      }
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   };
 
   const filteredAnnouncements = useMemo(() => {
-    return announcements.filter((announcement) => {
-      const matchesSearch =
-        announcement.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        announcement.content?.toLowerCase().includes(searchQuery.toLowerCase());
-
-      const matchesStatus = statusFilter === 'all' || announcement.status === statusFilter;
-      const matchesChannel = channelFilter === 'all' ||
-        announcement.channels?.includes(channelFilter);
-
-      let matchesDate = true;
-      const announcementDate = new Date(announcement.createdAt);
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const thisWeek = new Date(today);
-      thisWeek.setDate(thisWeek.getDate() - 7);
-
-      if (dateFilter === 'today') {
-        matchesDate = announcementDate >= today;
-      } else if (dateFilter === 'week') {
-        matchesDate = announcementDate >= thisWeek;
-      } else if (dateFilter === 'month') {
-        const thisMonth = new Date(today);
-        thisMonth.setMonth(thisMonth.getMonth() - 1);
-        matchesDate = announcementDate >= thisMonth;
-      }
-
-      return matchesSearch && matchesStatus && matchesChannel && matchesDate;
+    return announcements.filter((a) => {
+      const q = searchQuery.trim().toLowerCase();
+      const matchesSearch = !q
+        || a.title?.toLowerCase().includes(q)
+        || a.content?.toLowerCase().includes(q);
+      const matchesStatus = statusFilter === 'all' || a.status === statusFilter;
+      const matchesAudience = audienceFilter === 'all'
+        || a.recipients?.some((r) => r.type === audienceFilter);
+      return matchesSearch && matchesStatus && matchesAudience;
     });
-  }, [announcements, searchQuery, statusFilter, channelFilter, dateFilter]);
+  }, [announcements, searchQuery, statusFilter, audienceFilter]);
 
-  const handleDelete = (announcementId) => {
+  const handleDelete = (id) => {
     showConfirm({
       title: 'Delete Announcement',
       message: t('confirm.deleteAnnouncement'),
@@ -118,12 +134,12 @@ export default function AnnouncementsList({
       confirmText: 'Delete',
       onConfirm: async () => {
         try {
-          await announcementsApi.delete(announcementId);
+          await announcementsApi.delete(id);
           toast.success(t('toast.success.announcementDeleted'));
           loadAnnouncements();
           onRefresh?.();
-        } catch (error) {
-          console.error('Error deleting announcement:', error);
+        } catch (err) {
+          logger.error('Error deleting announcement:', err);
           toast.error(t('toast.error.failedToDeleteAnnouncement'));
         }
       },
@@ -132,32 +148,30 @@ export default function AnnouncementsList({
 
   const handleDuplicate = async (announcement) => {
     try {
-      const duplicate = {
+      await announcementsApi.create({
         title: `${announcement.title} (Copy)`,
         content: announcement.content,
-        recipients: announcement.recipients,
-        channels: announcement.channels,
+        recipients: announcement.recipients?.length ? announcement.recipients : [{ type: 'all' }],
+        channels: announcement.channels?.length ? announcement.channels : ['inapp'],
         status: 'draft',
-      };
-
-      await announcementsApi.create(duplicate);
+      });
       toast.success(t('toast.success.announcementDuplicated'));
       loadAnnouncements();
       onRefresh?.();
-    } catch (error) {
-      console.error('Error duplicating announcement:', error);
+    } catch (err) {
+      logger.error('Error duplicating announcement:', err);
       toast.error(t('toast.error.failedToDuplicateAnnouncement'));
     }
   };
 
-  const handleResend = async (announcementId) => {
+  const handleResend = async (id) => {
     try {
-      await announcementsApi.resend(announcementId);
+      await announcementsApi.resend(id);
       toast.success(t('toast.success.announcementResentSuccessfully'));
       loadAnnouncements();
       onRefresh?.();
-    } catch (error) {
-      console.error('Error resending announcement:', error);
+    } catch (err) {
+      logger.error('Error resending announcement:', err);
       toast.error(t('toast.error.failedToResendAnnouncement'));
     }
   };
@@ -165,9 +179,8 @@ export default function AnnouncementsList({
   const formatDate = (dateString) => {
     if (!dateString) return '—';
     const date = new Date(dateString);
-    if (isNaN(date.getTime())) return '—';
+    if (Number.isNaN(date.getTime())) return '—';
     return date.toLocaleDateString(getDateLocale(), {
-      year: 'numeric',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
@@ -175,456 +188,355 @@ export default function AnnouncementsList({
     });
   };
 
-  const getStatusConfig = (status) => {
-    switch (status) {
-      case 'sent':
-        return {
-          color: 'success',
-          icon: CheckCircle,
-          label: 'Sent',
-          gradient: 'from-emerald-500 to-teal-600',
-          bgLight: 'bg-emerald-50',
-          bgDark: 'dark:bg-emerald-500/10',
-          textLight: 'text-emerald-700',
-          textDark: 'dark:text-emerald-400',
-        };
-      case 'scheduled':
-        return {
-          color: 'warning',
-          icon: Clock,
-          label: 'Scheduled',
-          gradient: 'from-amber-500 to-orange-600',
-          bgLight: 'bg-amber-50',
-          bgDark: 'dark:bg-amber-500/10',
-          textLight: 'text-amber-700',
-          textDark: 'dark:text-amber-400',
-        };
-      case 'draft':
-      default:
-        return {
-          color: 'default',
-          icon: FileText,
-          label: 'Draft',
-          gradient: 'from-gray-400 to-gray-500',
-          bgLight: 'bg-gray-100',
-          bgDark: 'dark:bg-zinc-700',
-          textLight: 'text-gray-600',
-          textDark: 'dark:text-zinc-400',
-        };
-    }
-  };
-
-  const getRecipientsLabel = (recipients) => {
-    if (recipients?.some(r => r.type === 'all')) return 'Whole School';
-    return recipients?.map(r => r.type).join(', ') || 'None';
-  };
-
-  const getChannelsLabel = (channels) => {
-    if (!channels || channels.length === 0) return 'None';
-    return channels.join(', ').toUpperCase();
-  };
-
   const clearFilters = () => {
     setStatusFilter('all');
-    setChannelFilter('all');
-    setDateFilter('all');
+    setAudienceFilter('all');
     setSearchQuery('');
   };
 
-  const hasActiveFilters = statusFilter !== 'all' || channelFilter !== 'all' || dateFilter !== 'all' || searchQuery;
+  const hasActiveFilters = statusFilter !== 'all' || audienceFilter !== 'all' || !!searchQuery;
 
-  // Modern pill-style filter button component
-  const FilterPill = ({ label, icon: Icon, active, onClick, options, value, onChange }) => (
-    <Dropdown>
-      <DropdownTrigger>
-        <button
-          className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200
-            ${active
-              ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30'
-              : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-200 dark:hover:bg-zinc-700 border border-transparent'
-            }`}
-        >
-          {Icon && <Icon size={14} />}
-          <span>{label}</span>
-          <svg className={`w-4 h-4 transition-transform ${active ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-      </DropdownTrigger>
-      <DropdownMenu
-        selectedKeys={[value]}
-        onSelectionChange={(keys) => onChange(Array.from(keys)[0])}
-        classNames={{
-          base: "min-w-[180px]",
-          list: "py-1",
-        }}
-      >
-        {options.map((option) => (
-          <DropdownItem
-            key={option.value}
-            classNames={{
-              base: `px-3 py-2 ${value === option.value ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : ''}`,
-            }}
-          >
-            {option.label}
-          </DropdownItem>
-        ))}
-      </DropdownMenu>
-    </Dropdown>
-  );
-
-  if (loading) {
-    return (
-      <SkeletonList items={5} avatar subtitle />
-    );
-  }
+  if (loading) return <SkeletonList items={5} avatar subtitle />;
 
   if (error && announcements.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 gap-4">
-        <div className="w-20 h-20 rounded-2xl bg-red-100 dark:bg-red-500/10 flex items-center justify-center">
-          <svg className="w-10 h-10 text-red-500 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
+      <div className="col gap-3" style={{ alignItems: 'center', padding: '48px 16px', textAlign: 'center' }}>
+        <div className="subtle" style={{ fontSize: 13 }}>
+          {t('pages.failedToLoadAnnouncements')}
         </div>
-        <div className="text-center">
-          <p className="text-lg font-semibold text-red-600 dark:text-red-400">{t('pages.failedToLoadAnnouncements')}</p>
-          <p className="text-sm text-gray-500 dark:text-zinc-400 max-w-md text-center mt-2">{error}</p>
-        </div>
-        <Button
-          color="primary"
-          size="sm"
-          onPress={() => loadAnnouncements()}
-          className="mt-2 bg-gradient-to-r from-indigo-500 to-indigo-600"
-          startContent={
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-          }
-        >
-          Try Again
-        </Button>
+        <div className="faint" style={{ fontSize: 12 }}>{error}</div>
+        <button type="button" className="btn btn--accent btn--sm" onClick={loadAnnouncements}>
+          Try again
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-5 w-full">
-      {/* Filter Section */}
-      <div className="flex flex-col gap-4">
-        {/* Search and Filters Row */}
-        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-          {/* Enhanced Search Input */}
-          <div className="relative w-full sm:w-80">
-            <div
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all duration-200
-                ${searchFocused
-                  ? 'bg-white dark:bg-zinc-800 border-indigo-300 dark:border-indigo-500/50 shadow-sm ring-2 ring-indigo-500/10'
-                  : 'bg-gray-50 dark:bg-zinc-800/50 border-gray-200 dark:border-zinc-700'
-                }`}
-            >
-              <Search
-                size={18}
-                className={`transition-colors duration-200 ${searchFocused ? 'text-indigo-500' : 'text-gray-400 dark:text-zinc-500'}`}
-              />
-              <input
-                type="text"
-                placeholder={t('pages.searchAnnouncements')}
-                className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setSearchFocused(false)}
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-zinc-600 transition-colors"
-                >
-                  <X size={14} className="text-gray-400 dark:text-zinc-500" />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Modern Pill-style Filters */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <FilterPill
-              label={`Status: ${statusFilter === 'all' ? 'All' : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}`}
-              active={statusFilter !== 'all'}
-              value={statusFilter}
-              onChange={setStatusFilter}
-              options={[
-                { value: 'all', label: 'All Status' },
-                { value: 'draft', label: 'Draft' },
-                { value: 'scheduled', label: 'Scheduled' },
-                { value: 'sent', label: 'Sent' },
-              ]}
-            />
-
-            <FilterPill
-              label={`Channel: ${channelFilter === 'all' ? 'All' : channelFilter.toUpperCase()}`}
-              active={channelFilter !== 'all'}
-              value={channelFilter}
-              onChange={setChannelFilter}
-              options={[
-                { value: 'all', label: 'All Channels' },
-                { value: 'inapp', label: 'In-App' },
-                { value: 'email', label: 'Email' },
-                { value: 'sms', label: 'SMS' },
-                { value: 'whatsapp', label: 'WhatsApp' },
-              ]}
-            />
-
-            <FilterPill
-              label={`Date: ${dateFilter === 'all' ? 'All' : dateFilter === 'today' ? 'Today' : dateFilter === 'week' ? 'This Week' : 'This Month'}`}
-              icon={Calendar}
-              active={dateFilter !== 'all'}
-              value={dateFilter}
-              onChange={setDateFilter}
-              options={[
-                { value: 'all', label: 'All Time' },
-                { value: 'today', label: 'Today' },
-                { value: 'week', label: 'This Week' },
-                { value: 'month', label: 'This Month' },
-              ]}
-            />
-
-            {hasActiveFilters && (
-              <button
-                onClick={clearFilters}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
-              >
-                <X size={14} />
-                <span>{t('pages.clear1')}</span>
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Results Count */}
-        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-zinc-400">
-          <Filter size={12} />
-          <span>
-            {filteredAnnouncements.length} of {announcements.length} announcements
-            {hasActiveFilters && ' (filtered)'}
-          </span>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="w-full overflow-x-auto rounded-xl border border-gray-100 dark:border-zinc-800">
-        <Table
-          aria-label={t('aria.misc.announcements')}
-          removeWrapper
-          classNames={{
-            th: "bg-gray-50 dark:bg-zinc-800/50 text-gray-600 dark:text-zinc-400 font-medium text-xs uppercase tracking-wider",
-            tr: "hover:bg-gray-50 dark:hover:bg-zinc-800/30 transition-colors border-b border-gray-100 dark:border-zinc-800/50 last:border-0",
-            td: "py-4",
+    <div className="col gap-3" style={{ width: '100%' }}>
+      {/* Toolbar: search + filters */}
+      <div className="toolbar" style={{ flexWrap: 'wrap', gap: 8 }}>
+        <div
+          className="row gap-2"
+          style={{
+            flex: '1 1 240px',
+            minWidth: 200,
+            padding: '6px 10px',
+            background: 'var(--surface-2)',
+            border: '1px solid var(--border)',
+            borderRadius: 8,
           }}
         >
-          <TableHeader>
-            <TableColumn scope="col">{t('pages.aNNOUNCEMENT')}</TableColumn>
-            <TableColumn scope="col">{t('pages.rECIPIENTS')}</TableColumn>
-            <TableColumn scope="col">{t('pages.cHANNELS')}</TableColumn>
-            <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
-            <TableColumn scope="col">{t('pages.dATE')}</TableColumn>
-            <TableColumn align="end" scope="col">{t('pages.aCTIONS')}</TableColumn>
-          </TableHeader>
-          <TableBody
-            emptyContent={
-              <div className="text-center py-16">
-                <Megaphone size={48} className="mx-auto mb-4 text-gray-300 dark:text-zinc-600" />
-                <p className="text-gray-500 dark:text-zinc-400 font-medium">{t('pages.noAnnouncementsFound')}</p>
-                <p className="text-sm text-gray-400 dark:text-zinc-500 mt-1">{t('pages.tryAdjustingYourFilters')}</p>
-              </div>
-            }
+          <Search size={14} className="subtle" aria-hidden />
+          <input
+            type="text"
+            placeholder={t('pages.searchAnnouncements')}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            aria-label="Search announcements"
+            style={{
+              flex: 1,
+              minWidth: 0,
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
+              fontSize: 13,
+              color: 'var(--fg)',
+            }}
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="iconbtn"
+              aria-label="Clear search"
+              style={{ width: 20, height: 20 }}
+            >
+              <X size={12} />
+            </button>
+          )}
+        </div>
+
+        <div className="seg" role="tablist" aria-label="Filter by status">
+          {['all', 'draft', 'scheduled', 'sent'].map((key) => (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={statusFilter === key}
+              className={`seg__btn ${statusFilter === key ? 'is-active' : ''}`}
+              onClick={() => setStatusFilter(key)}
+            >
+              {key === 'all' ? 'All' : key.charAt(0).toUpperCase() + key.slice(1)}
+            </button>
+          ))}
+        </div>
+
+        <div className="seg" role="tablist" aria-label="Filter by audience">
+          {[
+            { key: 'all', label: 'Any' },
+            { key: 'parents', label: 'Parents' },
+            { key: 'staff', label: 'Staff' },
+            { key: 'students', label: 'Students' },
+          ].map((opt) => (
+            <button
+              key={opt.key}
+              type="button"
+              role="tab"
+              aria-selected={audienceFilter === opt.key}
+              className={`seg__btn ${audienceFilter === opt.key ? 'is-active' : ''}`}
+              onClick={() => setAudienceFilter(opt.key)}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        {hasActiveFilters && (
+          <button
+            type="button"
+            className="btn btn--ghost btn--sm"
+            onClick={clearFilters}
+            style={{ color: 'var(--fg-muted)' }}
           >
-            {filteredAnnouncements.map((announcement, index) => {
-              const statusConfig = getStatusConfig(announcement.status);
-              const StatusIcon = statusConfig.icon;
-
-              return (
-                <TableRow
-                  key={announcement._id}
-                  className="group animate-in fade-in slide-in-from-bottom-2 duration-200"
-                  style={{ animationDelay: `${index * 30}ms` }}
-                >
-                  <TableCell>
-                    <div className="max-w-md">
-                      <p className="font-medium text-gray-900 dark:text-white text-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                        {announcement.title}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-zinc-400 truncate mt-0.5">
-                        {announcement.content}
-                      </p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-zinc-800 text-xs font-medium text-gray-600 dark:text-zinc-300">
-                      {getRecipientsLabel(announcement.recipients)}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-xs text-gray-600 dark:text-zinc-300 font-medium">
-                      {getChannelsLabel(announcement.channels)}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full ${statusConfig.bgLight} ${statusConfig.bgDark}`}>
-                      <StatusIcon size={12} className={`${statusConfig.textLight} ${statusConfig.textDark}`} />
-                      <span className={`text-xs font-medium ${statusConfig.textLight} ${statusConfig.textDark}`}>
-                        {statusConfig.label}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-xs">
-                      <p className="text-gray-600 dark:text-zinc-300">
-                        {formatDate(announcement.createdAt)}
-                      </p>
-                      {announcement.scheduledFor && (
-                        <p className="text-amber-600 dark:text-amber-400 flex items-center gap-1 mt-0.5">
-                          <Clock size={10} />
-                          Scheduled: {formatDate(announcement.scheduledFor)}
-                        </p>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-0.5 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Tooltip content="View Details" placement="top">
-                        <button
-                          onClick={() => onView(announcement)}
-                          className="p-2 rounded-lg text-gray-500 dark:text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
-                        >
-                          <Eye size={16} />
-                        </button>
-                      </Tooltip>
-
-                      {announcement.status === 'draft' && (
-                        <Tooltip content="Edit" placement="top">
-                          <button
-                            onClick={() => onEdit(announcement)}
-                            className="p-2 rounded-lg text-gray-500 dark:text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
-                          >
-                            <Edit size={16} />
-                          </button>
-                        </Tooltip>
-                      )}
-
-                      {announcement.status === 'sent' && (
-                        <Tooltip content="Resend" placement="top">
-                          <button
-                            onClick={() => handleResend(announcement._id)}
-                            className="p-2 rounded-lg text-gray-500 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
-                          >
-                            <Send size={16} />
-                          </button>
-                        </Tooltip>
-                      )}
-
-                      <Dropdown>
-                        <DropdownTrigger>
-                          <button className="p-2 rounded-lg text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors">
-                            <MoreVertical size={16} />
-                          </button>
-                        </DropdownTrigger>
-                        <DropdownMenu
-                          classNames={{
-                            list: "py-1 min-w-[160px]",
-                          }}
-                        >
-                          <DropdownItem
-                            key="view"
-                            startContent={<Eye size={16} className="text-gray-500 dark:text-zinc-400" />}
-                            onPress={() => onView(announcement)}
-                            className="hover:bg-gray-50 dark:hover:bg-zinc-700"
-                          >
-                            View Details
-                          </DropdownItem>
-                          {announcement.status === 'draft' && (
-                            <DropdownItem
-                              key="edit"
-                              startContent={<Edit size={16} className="text-gray-500 dark:text-zinc-400" />}
-                              onPress={() => onEdit(announcement)}
-                              className="hover:bg-gray-50 dark:hover:bg-zinc-700"
-                            >
-                              Edit
-                            </DropdownItem>
-                          )}
-                          <DropdownItem
-                            key="duplicate"
-                            startContent={<Copy size={16} className="text-gray-500 dark:text-zinc-400" />}
-                            onPress={() => handleDuplicate(announcement)}
-                            className="hover:bg-gray-50 dark:hover:bg-zinc-700"
-                          >
-                            Duplicate
-                          </DropdownItem>
-                          {announcement.status === 'sent' && (
-                            <DropdownItem
-                              key="resend"
-                              startContent={<Send size={16} className="text-gray-500 dark:text-zinc-400" />}
-                              onPress={() => handleResend(announcement._id)}
-                              className="hover:bg-gray-50 dark:hover:bg-zinc-700"
-                            >
-                              Resend
-                            </DropdownItem>
-                          )}
-                          <DropdownItem
-                            key="delete"
-                            startContent={<Trash2 size={16} className="text-red-500" />}
-                            onPress={() => handleDelete(announcement._id)}
-                            className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10"
-                          >
-                            Delete
-                          </DropdownItem>
-                        </DropdownMenu>
-                      </Dropdown>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+            <X size={12} aria-hidden /> Clear
+          </button>
+        )}
       </div>
 
-      {/* Empty State */}
-      {filteredAnnouncements.length === 0 && !loading && announcements.length > 0 && (
-        <div className="text-center py-16 px-4">
-          <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-zinc-800 dark:to-zinc-700 flex items-center justify-center">
-            <Search size={32} className="text-gray-400 dark:text-zinc-500" />
-          </div>
-          <p className="text-gray-600 dark:text-zinc-300 font-medium text-lg">{t('pages.noMatchingAnnouncements')}</p>
-          <p className="text-sm text-gray-400 dark:text-zinc-500 mt-2 max-w-sm mx-auto">
-            We couldn't find any announcements matching your current filters. Try adjusting your search criteria.
-          </p>
-          <button
-            onClick={clearFilters}
-            className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors"
-          >
-            <X size={14} />
-            Clear all filters
-          </button>
-        </div>
-      )}
+      {/* Result count */}
+      <div className="row gap-2 subtle" style={{ fontSize: 11, padding: '0 4px' }}>
+        <Filter size={11} aria-hidden />
+        <span className="mono tnum">{filteredAnnouncements.length}</span>
+        <span>of</span>
+        <span className="mono tnum">{announcements.length}</span>
+        <span>announcements{hasActiveFilters ? ' (filtered)' : ''}</span>
+      </div>
 
-      {/* Empty State - No Announcements at all */}
-      {announcements.length === 0 && !loading && (
-        <div className="text-center py-16 px-4">
-          <div className="w-24 h-24 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-500/20 dark:to-purple-500/20 flex items-center justify-center">
-            <Megaphone size={40} className="text-indigo-500 dark:text-indigo-400" />
+      {/* Rows */}
+      <div
+        role="list"
+        aria-label={t('aria.misc.announcements')}
+        className="announce-list"
+      >
+        {filteredAnnouncements.length === 0 && announcements.length > 0 && (
+          <div className="col gap-2" style={{ alignItems: 'center', padding: '48px 16px', textAlign: 'center' }}>
+            <Search size={28} className="faint" aria-hidden />
+            <div style={{ fontSize: 13, fontWeight: 520 }}>{t('pages.noMatchingAnnouncements')}</div>
+            <div className="subtle" style={{ fontSize: 12 }}>{t('pages.tryAdjustingYourFilters')}</div>
+            <button type="button" className="btn btn--sm" onClick={clearFilters}>
+              <X size={12} aria-hidden /> Clear filters
+            </button>
           </div>
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Sparkles size={16} className="text-amber-500" />
-            <p className="text-gray-700 dark:text-zinc-200 font-semibold text-lg">{t('pages.noAnnouncementsYet')}</p>
+        )}
+
+        {announcements.length === 0 && (
+          <div className="col gap-2" style={{ alignItems: 'center', padding: '48px 16px', textAlign: 'center' }}>
+            <Megaphone size={32} className="faint" aria-hidden />
+            <div style={{ fontSize: 13, fontWeight: 520 }}>{t('pages.noAnnouncementsYet')}</div>
+            <div className="subtle" style={{ fontSize: 12, maxWidth: 320 }}>
+              Create your first announcement to start communicating with your school community.
+            </div>
           </div>
-          <p className="text-sm text-gray-500 dark:text-zinc-400 mt-2 max-w-sm mx-auto">
-            Create your first announcement to start communicating with your school community.
-          </p>
-        </div>
-      )}
+        )}
+
+        {filteredAnnouncements.map((announcement) => {
+          const cfg = STATUS_TONE[announcement.status] || STATUS_TONE.draft;
+          const StatusIcon = cfg.icon;
+          const audienceChips = getAudienceChips(announcement.recipients);
+          const channels = announcement.channels || [];
+          const attachmentCount = announcement.attachments?.length || 0;
+
+          return (
+            <div
+              key={announcement._id}
+              role="listitem"
+              className="stafflist__row announce-list__row"
+              onClick={() => onView(announcement)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onView(announcement);
+                }
+              }}
+              tabIndex={0}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="col" style={{ flex: 1, minWidth: 0, gap: 4, alignItems: 'flex-start' }}>
+                <div className="row gap-2" style={{ width: '100%', minWidth: 0 }}>
+                  <span
+                    style={{
+                      fontWeight: 520,
+                      fontSize: 13,
+                      letterSpacing: '-0.01em',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      minWidth: 0,
+                      flex: 1,
+                    }}
+                  >
+                    {announcement.title || 'Untitled announcement'}
+                  </span>
+                  <span className={`status status--${cfg.tone}`} style={{ flexShrink: 0 }}>
+                    <StatusIcon size={10} aria-hidden />
+                    {cfg.label}
+                  </span>
+                </div>
+
+                <div
+                  className="subtle"
+                  style={{
+                    fontSize: 12,
+                    width: '100%',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {announcement.content || ''}
+                </div>
+
+                <div className="row gap-2" style={{ flexWrap: 'wrap', width: '100%' }}>
+                  {audienceChips.slice(0, 4).map((chip) => (
+                    <span key={chip.key} className={`chip chip--${chip.tone}`}>
+                      {chip.label}
+                    </span>
+                  ))}
+                  {audienceChips.length > 4 && (
+                    <span className="chip">+{audienceChips.length - 4}</span>
+                  )}
+                  {channels.length > 0 && (
+                    <span className="chip mono tnum" title={channels.join(', ')}>
+                      {channels.map((c) => c.toUpperCase()).join(' · ')}
+                    </span>
+                  )}
+                  {attachmentCount > 0 && (
+                    <span className="chip">
+                      <Paperclip size={10} aria-hidden /> {attachmentCount}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="col gap-1" style={{ alignItems: 'flex-end', flexShrink: 0, minWidth: 0 }}>
+                <span className="subtle mono tnum" style={{ fontSize: 11 }}>
+                  {formatDate(announcement.createdAt)}
+                </span>
+                {announcement.scheduledFor && (
+                  <span className="chip chip--warn" title="Scheduled for">
+                    <Clock size={10} aria-hidden /> {formatDate(announcement.scheduledFor)}
+                  </span>
+                )}
+                {announcement.status === 'sent' && announcement.deliveredCount != null && (
+                  <span className="subtle mono tnum" style={{ fontSize: 11 }}>
+                    {announcement.deliveredCount}/{announcement.recipientCount || announcement.deliveredCount} delivered
+                  </span>
+                )}
+              </div>
+
+              <div
+                className="row gap-1"
+                style={{ flexShrink: 0 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Tooltip content="View analytics" placement="top">
+                  <button
+                    type="button"
+                    className="iconbtn"
+                    style={{ width: 28, height: 28 }}
+                    onClick={() => onView(announcement)}
+                    aria-label="View analytics"
+                  >
+                    <Eye size={14} />
+                  </button>
+                </Tooltip>
+                {announcement.status === 'draft' && (
+                  <Tooltip content="Edit" placement="top">
+                    <button
+                      type="button"
+                      className="iconbtn"
+                      style={{ width: 28, height: 28 }}
+                      onClick={() => onEdit(announcement)}
+                      aria-label="Edit"
+                    >
+                      <Edit size={14} />
+                    </button>
+                  </Tooltip>
+                )}
+                {announcement.status === 'sent' && (
+                  <Tooltip content="Resend" placement="top">
+                    <button
+                      type="button"
+                      className="iconbtn"
+                      style={{ width: 28, height: 28 }}
+                      onClick={() => handleResend(announcement._id)}
+                      aria-label="Resend"
+                    >
+                      <Send size={14} />
+                    </button>
+                  </Tooltip>
+                )}
+                <Dropdown>
+                  <DropdownTrigger>
+                    <button
+                      type="button"
+                      className="iconbtn"
+                      style={{ width: 28, height: 28 }}
+                      aria-label="More actions"
+                    >
+                      <MoreVertical size={14} />
+                    </button>
+                  </DropdownTrigger>
+                  <DropdownMenu aria-label="Announcement actions">
+                    <DropdownItem
+                      key="view"
+                      startContent={<Eye size={14} />}
+                      onPress={() => onView(announcement)}
+                    >
+                      View analytics
+                    </DropdownItem>
+                    {announcement.status === 'draft' ? (
+                      <DropdownItem
+                        key="edit"
+                        startContent={<Edit size={14} />}
+                        onPress={() => onEdit(announcement)}
+                      >
+                        Edit
+                      </DropdownItem>
+                    ) : null}
+                    <DropdownItem
+                      key="duplicate"
+                      startContent={<Copy size={14} />}
+                      onPress={() => handleDuplicate(announcement)}
+                    >
+                      Duplicate
+                    </DropdownItem>
+                    {announcement.status === 'sent' ? (
+                      <DropdownItem
+                        key="resend"
+                        startContent={<Send size={14} />}
+                        onPress={() => handleResend(announcement._id)}
+                      >
+                        Resend
+                      </DropdownItem>
+                    ) : null}
+                    <DropdownItem
+                      key="delete"
+                      startContent={<Trash2 size={14} />}
+                      className="text-danger"
+                      color="danger"
+                      onPress={() => handleDelete(announcement._id)}
+                    >
+                      Delete
+                    </DropdownItem>
+                  </DropdownMenu>
+                </Dropdown>
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
       <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </div>

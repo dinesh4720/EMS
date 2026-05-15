@@ -1,18 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  Card,
-  CardBody,
-  Button,
-  Switch,
-  Select,
-  SelectItem,
-  Divider,
-  Chip,
-  Tabs,
-  Tab,
-  Input,
-} from '@heroui/react';
-import {
   Bell,
   Mail,
   MessageSquare,
@@ -25,17 +12,53 @@ import {
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { notificationsApi } from '../../../../services/api';
+import {
+  Alert,
+  Card,
+  Chip,
+  Divider,
+  ErrorState,
+  Input,
+  MinimalButton,
+  SectionHeading,
+  Select,
+  Skeleton,
+  Switch,
+} from '../../../../components/ui';
 import ConfirmDialog from '../../../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../../../hooks/useConfirmDialog';
+import logger from '../../../../utils/logger';
+import { cn } from '../../../../utils/cn';
 
-const CHANNEL_ICONS = {
-  email: { icon: Mail, color: 'primary', label: 'Email' },
-  sms: { icon: MessageSquare, color: 'secondary', label: 'SMS' },
-  whatsapp: { icon: Phone, color: 'success', label: 'WhatsApp' },
-  inApp: { icon: Bell, color: 'warning', label: 'In-App' },
+const CHANNEL_META = {
+  email: {
+    icon: Mail,
+    label: 'Email',
+    activeClasses: 'border-blue-500 bg-blue-50 dark:bg-blue-950/40',
+    iconClasses: 'text-blue-600 dark:text-blue-400',
+  },
+  sms: {
+    icon: MessageSquare,
+    label: 'SMS',
+    activeClasses: 'border-purple-500 bg-purple-50 dark:bg-purple-950/40',
+    iconClasses: 'text-purple-600 dark:text-purple-400',
+  },
+  whatsapp: {
+    icon: Phone,
+    label: 'WhatsApp',
+    activeClasses: 'border-green-500 bg-green-50 dark:bg-green-950/40',
+    iconClasses: 'text-green-600 dark:text-green-400',
+  },
+  inApp: {
+    icon: Bell,
+    label: 'In-App',
+    activeClasses: 'border-amber-500 bg-amber-50 dark:bg-amber-950/40',
+    iconClasses: 'text-amber-600 dark:text-amber-400',
+  },
 };
 
-// Maps frontend category keys to backend category enum values
+const CHANNEL_KEYS = ['email', 'sms', 'whatsapp', 'inApp'];
+
 const CATEGORY_MAP = {
   fee_reminders: 'payment',
   attendance_alerts: 'attendance',
@@ -58,7 +81,6 @@ const CATEGORY_MAP = {
 };
 
 const DEFAULT_PREFERENCES = {
-  // Parent preferences
   parent: {
     fee_reminders: { email: true, sms: true, whatsapp: false, inApp: true },
     attendance_alerts: { email: true, sms: true, whatsapp: false, inApp: true },
@@ -67,7 +89,6 @@ const DEFAULT_PREFERENCES = {
     homework_notifications: { email: false, sms: false, whatsapp: false, inApp: true },
     event_reminders: { email: true, sms: false, whatsapp: false, inApp: true },
   },
-  // Staff preferences
   staff: {
     announcement_updates: { email: true, sms: true, whatsapp: false, inApp: true },
     meeting_reminders: { email: true, sms: true, whatsapp: false, inApp: true },
@@ -75,7 +96,6 @@ const DEFAULT_PREFERENCES = {
     payroll_notifications: { email: true, sms: false, whatsapp: false, inApp: true },
     holiday_calendars: { email: true, sms: false, whatsapp: false, inApp: true },
   },
-  // Student preferences
   student: {
     assignment_reminders: { email: true, sms: true, whatsapp: false, inApp: true },
     exam_schedules: { email: true, sms: true, whatsapp: false, inApp: true },
@@ -83,7 +103,6 @@ const DEFAULT_PREFERENCES = {
     announcement_updates: { email: true, sms: false, whatsapp: false, inApp: true },
     event_notifications: { email: true, sms: false, whatsapp: false, inApp: true },
   },
-  // Admin preferences
   admin: {
     system_alerts: { email: true, sms: true, whatsapp: false, inApp: true },
     enrollment_notifications: { email: true, sms: false, whatsapp: false, inApp: true },
@@ -93,59 +112,63 @@ const DEFAULT_PREFERENCES = {
   },
 };
 
-
 export default function NotificationSettings({ userRole = 'staff' }) {
   const { t } = useTranslation();
   const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
-  const NOTIFICATION_LABELS = useMemo(() => ({
-    parent: {
-      fee_reminders: t('constants.notifications.labels.parent.feeReminders'),
-      attendance_alerts: t('constants.notifications.labels.parent.attendanceAlerts'),
-      announcement_updates: t('constants.notifications.labels.parent.announcementUpdates'),
-      exam_results: t('constants.notifications.labels.parent.examResults'),
-      homework_notifications: t('constants.notifications.labels.parent.homeworkNotifications'),
-      event_reminders: t('constants.notifications.labels.parent.eventReminders'),
-    },
-    staff: {
-      announcement_updates: t('constants.notifications.labels.staff.announcementUpdates'),
-      meeting_reminders: t('constants.notifications.labels.staff.meetingReminders'),
-      student_attendance: t('constants.notifications.labels.staff.studentAttendance'),
-      payroll_notifications: t('constants.notifications.labels.staff.payrollNotifications'),
-      holiday_calendars: t('constants.notifications.labels.staff.holidayCalendars'),
-    },
-    student: {
-      assignment_reminders: t('constants.notifications.labels.student.assignmentReminders'),
-      exam_schedules: t('constants.notifications.labels.student.examSchedules'),
-      attendance_alerts: t('constants.notifications.labels.student.attendanceAlerts'),
-      announcement_updates: t('constants.notifications.labels.student.announcementUpdates'),
-      event_notifications: t('constants.notifications.labels.student.eventNotifications'),
-    },
-    admin: {
-      system_alerts: t('constants.notifications.labels.admin.systemAlerts'),
-      enrollment_notifications: t('constants.notifications.labels.admin.enrollmentNotifications'),
-      staff_updates: t('constants.notifications.labels.admin.staffUpdates'),
-      payment_alerts: t('constants.notifications.labels.admin.paymentAlerts'),
-      daily_reports: t('constants.notifications.labels.admin.dailyReports'),
-    },
-  }), [t]);
-  const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES[userRole] || DEFAULT_PREFERENCES.staff);
+  const NOTIFICATION_LABELS = useMemo(
+    () => ({
+      parent: {
+        fee_reminders: t('constants.notifications.labels.parent.feeReminders'),
+        attendance_alerts: t('constants.notifications.labels.parent.attendanceAlerts'),
+        announcement_updates: t('constants.notifications.labels.parent.announcementUpdates'),
+        exam_results: t('constants.notifications.labels.parent.examResults'),
+        homework_notifications: t('constants.notifications.labels.parent.homeworkNotifications'),
+        event_reminders: t('constants.notifications.labels.parent.eventReminders'),
+      },
+      staff: {
+        announcement_updates: t('constants.notifications.labels.staff.announcementUpdates'),
+        meeting_reminders: t('constants.notifications.labels.staff.meetingReminders'),
+        student_attendance: t('constants.notifications.labels.staff.studentAttendance'),
+        payroll_notifications: t('constants.notifications.labels.staff.payrollNotifications'),
+        holiday_calendars: t('constants.notifications.labels.staff.holidayCalendars'),
+      },
+      student: {
+        assignment_reminders: t('constants.notifications.labels.student.assignmentReminders'),
+        exam_schedules: t('constants.notifications.labels.student.examSchedules'),
+        attendance_alerts: t('constants.notifications.labels.student.attendanceAlerts'),
+        announcement_updates: t('constants.notifications.labels.student.announcementUpdates'),
+        event_notifications: t('constants.notifications.labels.student.eventNotifications'),
+      },
+      admin: {
+        system_alerts: t('constants.notifications.labels.admin.systemAlerts'),
+        enrollment_notifications: t('constants.notifications.labels.admin.enrollmentNotifications'),
+        staff_updates: t('constants.notifications.labels.admin.staffUpdates'),
+        payment_alerts: t('constants.notifications.labels.admin.paymentAlerts'),
+        daily_reports: t('constants.notifications.labels.admin.dailyReports'),
+      },
+    }),
+    [t],
+  );
+
+  const [preferences, setPreferences] = useState(
+    DEFAULT_PREFERENCES[userRole] || DEFAULT_PREFERENCES.staff,
+  );
   const [quietHoursEnabled, setQuietHoursEnabled] = useState(false);
   const [quietHoursStart, setQuietHoursStart] = useState('22:00');
   const [quietHoursEnd, setQuietHoursEnd] = useState('08:00');
   const [digestFrequency, setDigestFrequency] = useState('immediate');
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
-
-  useEffect(() => {
-    loadPreferences();
-  }, [userRole]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const loadPreferences = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
       const data = await notificationsApi.getPreferences();
       if (data) {
-        // Parse backend preferences array into frontend { category: { channel: bool } } format.
-        // Each notification entry is stored with type = frontend category key.
         if (data.preferences && data.preferences.length > 0) {
           const roleDefaults = DEFAULT_PREFERENCES[userRole] || DEFAULT_PREFERENCES.staff;
           const rolePrefs = { ...roleDefaults };
@@ -166,23 +189,29 @@ export default function NotificationSettings({ userRole = 'staff' }) {
         }
         if (data.quietHours) {
           setQuietHoursEnabled(data.quietHours.enabled ?? false);
-          // Backend uses startTime/endTime field names
           setQuietHoursStart(data.quietHours.startTime || '22:00');
           setQuietHoursEnd(data.quietHours.endTime || '08:00');
         }
         if (data.digestFrequency) {
-          // Backend enum uses 'instant', frontend UI uses 'immediate'
-          setDigestFrequency(data.digestFrequency === 'instant' ? 'immediate' : data.digestFrequency);
+          setDigestFrequency(
+            data.digestFrequency === 'instant' ? 'immediate' : data.digestFrequency,
+          );
         }
       }
-    } catch (error) {
-      console.error('Error loading preferences:', error);
-      // Fall back to defaults — don't show error toast since this is non-critical
+    } catch (err) {
+      logger.error('Error loading preferences:', err);
+      setError(err);
+    } finally {
+      setLoading(false);
     }
   }, [userRole]);
 
+  useEffect(() => {
+    loadPreferences();
+  }, [loadPreferences, reloadKey]);
+
   const handleChannelToggle = (category, channel) => {
-    setPreferences(prev => ({
+    setPreferences((prev) => ({
       ...prev,
       [category]: {
         ...prev[category],
@@ -195,36 +224,35 @@ export default function NotificationSettings({ userRole = 'staff' }) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Convert frontend { category: { channel: bool } } to backend array format.
-      // Each entry uses the frontend category key as notification type for round-trip fidelity.
       const prefArray = Object.entries(preferences).map(([frontendCat, channels]) => ({
         category: CATEGORY_MAP[frontendCat] || 'announcement',
-        notifications: [{
-          type: frontendCat,
-          channels: {
-            email: channels.email,
-            sms: channels.sms,
-            whatsapp: channels.whatsapp,
-            inapp: channels.inApp,  // backend field is 'inapp' (lowercase)
+        notifications: [
+          {
+            type: frontendCat,
+            channels: {
+              email: channels.email,
+              sms: channels.sms,
+              whatsapp: channels.whatsapp,
+              inapp: channels.inApp,
+            },
+            enabled: true,
           },
-          enabled: true,
-        }],
+        ],
       }));
 
       await notificationsApi.updatePreferences({
         preferences: prefArray,
         quietHours: {
           enabled: quietHoursEnabled,
-          startTime: quietHoursStart,  // backend uses startTime/endTime
+          startTime: quietHoursStart,
           endTime: quietHoursEnd,
         },
-        // Backend enum uses 'instant'; frontend UI uses 'immediate'
         digestFrequency: digestFrequency === 'immediate' ? 'instant' : digestFrequency,
       });
       toast.success(t('toast.success.notificationPreferencesSavedSuccessfully'));
       setHasChanges(false);
-    } catch (error) {
-      console.error('Error saving preferences:', error);
+    } catch (err) {
+      logger.error('Error saving preferences:', err);
       toast.error(t('toast.error.failedToSavePreferences'));
     } finally {
       setSaving(false);
@@ -247,206 +275,314 @@ export default function NotificationSettings({ userRole = 'staff' }) {
           setDigestFrequency('immediate');
           toast.success(t('toast.success.preferencesResetToDefault'));
           setHasChanges(false);
-        } catch (error) {
-          console.error('Error resetting preferences:', error);
+        } catch (err) {
+          logger.error('Error resetting preferences:', err);
           toast.error(t('toast.error.failedToResetPreferences'));
         }
       },
     });
   };
 
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton variant="rect" className="h-20 w-full" />
+        <Skeleton variant="rect" className="h-20 w-full" />
+        <Skeleton variant="rect" className="h-40 w-full" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <ErrorState
+        error={error}
+        onRetry={() => setReloadKey((prev) => prev + 1)}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-xl font-semibold">{t('pages.notificationSettings')}</h2>
-          <p className="text-sm text-default-500 mt-1">
-            Customize how you receive notifications
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="flat"
-            onPress={handleReset}
-            startContent={<RotateCcw size={16} />}
-            isDisabled={!hasChanges || saving}
-          >
-            Reset
-          </Button>
-          <Button
-            color="primary"
-            onPress={handleSave}
-            startContent={<Save size={16} />}
-            isDisabled={!hasChanges}
-            isLoading={saving}
-          >
-            Save Changes
-          </Button>
-        </div>
-      </div>
+      <SectionHeading
+        size="md"
+        description="Customize how you receive notifications"
+        actions={
+          <>
+            <MinimalButton
+              variant="secondary"
+              size="sm"
+              icon={<RotateCcw size={14} />}
+              onClick={handleReset}
+              disabled={!hasChanges || saving}
+            >
+              Reset
+            </MinimalButton>
+            <MinimalButton
+              size="sm"
+              icon={<Save size={14} />}
+              onClick={handleSave}
+              disabled={!hasChanges}
+              loading={saving}
+            >
+              Save changes
+            </MinimalButton>
+          </>
+        }
+      >
+        {t('pages.notificationSettings')}
+      </SectionHeading>
 
       {/* Quiet Hours */}
-      <Card className="border border-default-200">
-        <CardBody className="gap-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
-                <Clock size={20} className="text-warning" />
-              </div>
-              <div>
-                <h3 className="font-semibold">{t('pages.quietHours')}</h3>
-                <p className="text-sm text-default-500">
-                  Disable notifications during specific hours
+      <Card padding="md">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-lg bg-amber-50 dark:bg-amber-950 flex items-center justify-center shrink-0">
+              <Clock size={18} className="text-amber-600 dark:text-amber-400" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="font-semibold text-sm text-fg">
+                {t('pages.quietHours')}
+              </h3>
+              <p className="text-xs text-fg-muted">
+                Disable notifications during specific hours
+              </p>
+              {quietHoursEnabled && (
+                <p className="text-xs text-fg-muted mt-1 font-mono tabular-nums">
+                  {quietHoursStart} – {quietHoursEnd}
+                  {quietHoursStart > quietHoursEnd && (
+                    <span className="ml-1 text-fg-faint">(next day)</span>
+                  )}
                 </p>
-              </div>
+              )}
             </div>
-            <Switch
-              isSelected={quietHoursEnabled}
-              onValueChange={(v) => { setQuietHoursEnabled(v); setHasChanges(true); }}
-              size="lg"
-            >
-              {quietHoursEnabled ? 'Enabled' : 'Disabled'}
-            </Switch>
           </div>
+          <Switch
+            size="lg"
+            checked={quietHoursEnabled}
+            onChange={(e) => {
+              setQuietHoursEnabled(e.target.checked);
+              setHasChanges(true);
+            }}
+            aria-label="Toggle quiet hours"
+          />
+        </div>
 
-          {quietHoursEnabled && (
-            <div className="grid grid-cols-2 gap-4 mt-2">
-              <Input
-                type="time"
-                label={t('pages.startTime1')}
-                value={quietHoursStart}
-                onValueChange={(v) => { setQuietHoursStart(v); setHasChanges(true); }}
-                variant="bordered"
-              />
-              <Input
-                type="time"
-                label={t('pages.endTime1')}
-                value={quietHoursEnd}
-                onValueChange={(v) => { setQuietHoursEnd(v); setHasChanges(true); }}
-                variant="bordered"
-              />
-            </div>
-          )}
-        </CardBody>
+        {quietHoursEnabled && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+            <Input
+              type="time"
+              label={t('pages.startTime1')}
+              value={quietHoursStart}
+              onChange={(e) => {
+                setQuietHoursStart(e.target.value);
+                setHasChanges(true);
+              }}
+              className="font-mono tabular-nums"
+            />
+            <Input
+              type="time"
+              label={t('pages.endTime1')}
+              value={quietHoursEnd}
+              onChange={(e) => {
+                setQuietHoursEnd(e.target.value);
+                setHasChanges(true);
+              }}
+              className="font-mono tabular-nums"
+            />
+          </div>
+        )}
       </Card>
 
       {/* Digest Frequency */}
-      <Card className="border border-default-200">
-        <CardBody className="gap-4">
-          <div>
-            <h3 className="font-semibold mb-2">{t('pages.digestFrequency')}</h3>
-            <p className="text-sm text-default-500 mb-4">
-              Choose how often you receive notification summaries
-            </p>
-            <Select
-              label={t('pages.frequency')}
-              placeholder={t('pages.selectFrequency')}
-              selectedKeys={[digestFrequency]}
-              onSelectionChange={(keys) => {
-                const value = Array.from(keys)[0];
-                setDigestFrequency(value);
-                setHasChanges(true);
-              }}
-              variant="bordered"
-              className="max-w-xs"
-            >
-              <SelectItem key="immediate">{t('pages.immediate')}</SelectItem>
-              <SelectItem key="hourly">{t('pages.hourlyDigest')}</SelectItem>
-              <SelectItem key="daily">{t('pages.dailyDigest')}</SelectItem>
-              <SelectItem key="weekly">{t('pages.weeklyDigest')}</SelectItem>
-            </Select>
-          </div>
-        </CardBody>
+      <Card padding="md">
+        <h3 className="font-semibold text-sm text-fg mb-1">
+          {t('pages.digestFrequency')}
+        </h3>
+        <p className="text-xs text-fg-muted mb-4">
+          Choose how often you receive notification summaries
+        </p>
+        <Select
+          label={t('pages.frequency')}
+          value={digestFrequency}
+          onChange={(e) => {
+            setDigestFrequency(e.target.value);
+            setHasChanges(true);
+          }}
+          options={[
+            { value: 'immediate', label: t('pages.immediate') },
+            { value: 'hourly', label: t('pages.hourlyDigest') },
+            { value: 'daily', label: t('pages.dailyDigest') },
+            { value: 'weekly', label: t('pages.weeklyDigest') },
+          ]}
+          wrapperClassName="max-w-xs"
+        />
       </Card>
 
-      {/* Channel Preferences by Category */}
-      <Card className="border border-default-200">
-        <CardBody className="gap-6">
-          <div>
-            <h3 className="font-semibold mb-4">{t('pages.notificationChannels')}</h3>
-            <p className="text-sm text-default-500">
-              Select which channels to use for each notification type
-            </p>
-          </div>
+      {/* Channel Preferences Matrix */}
+      <Card padding="md">
+        <div>
+          <h3 className="font-semibold text-sm text-fg mb-1">
+            {t('pages.notificationChannels')}
+          </h3>
+          <p className="text-xs text-fg-muted">
+            Select which channels to use for each notification type
+          </p>
+        </div>
 
-          <Divider />
+        <Divider className="my-4" />
 
-          <div className="space-y-6">
-            {Object.entries(preferences).map(([category, channels]) => (
-              <div key={category} className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium text-sm">
+        {/* Desktop / tablet: matrix grid */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border-token">
+                <th scope="col" className="text-left font-medium text-fg-muted py-2 pr-3">
+                  Event
+                </th>
+                {CHANNEL_KEYS.map((channel) => {
+                  const meta = CHANNEL_META[channel];
+                  const Icon = meta.icon;
+                  return (
+                    <th
+                      key={channel}
+                      scope="col"
+                      className="text-center font-medium text-fg-muted py-2 px-2"
+                    >
+                      <div className="flex flex-col items-center gap-1">
+                        <Icon size={14} className={meta.iconClasses} aria-hidden="true" />
+                        <span>{meta.label}</span>
+                      </div>
+                    </th>
+                  );
+                })}
+                <th scope="col" className="text-right font-medium text-fg-muted py-2 pl-3 w-24">
+                  Active
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(preferences).map(([category, channels]) => {
+                const activeCount = Object.values(channels).filter(Boolean).length;
+                return (
+                  <tr
+                    key={category}
+                    className="border-b border-border-token last:border-b-0 hover:bg-surface-2/40 transition-colors"
+                  >
+                    <th
+                      scope="row"
+                      className="text-left font-medium text-fg py-3 pr-3 align-middle"
+                    >
                       {NOTIFICATION_LABELS[userRole]?.[category] || category}
-                    </h4>
-                  </div>
-                  {Object.values(channels).filter(Boolean).length > 0 && (
-                    <Chip size="sm" color="success" variant="flat" startContent={<CheckCircle size={12} />}>
-                      {Object.values(channels).filter(Boolean).length} channels
+                    </th>
+                    {CHANNEL_KEYS.map((channel) => {
+                      const enabled = !!channels[channel];
+                      const meta = CHANNEL_META[channel];
+                      return (
+                        <td key={channel} className="py-3 px-2 text-center align-middle">
+                          <Switch
+                            size="sm"
+                            checked={enabled}
+                            onChange={() => handleChannelToggle(category, channel)}
+                            wrapperClassName="inline-flex"
+                            aria-label={`Toggle ${meta.label} for ${
+                              NOTIFICATION_LABELS[userRole]?.[category] || category
+                            }`}
+                          />
+                        </td>
+                      );
+                    })}
+                    <td className="py-3 pl-3 text-right align-middle">
+                      {activeCount > 0 ? (
+                        <Chip
+                          size="sm"
+                          color="success"
+                          startContent={<CheckCircle size={12} aria-hidden="true" />}
+                        >
+                          {activeCount}/{CHANNEL_KEYS.length}
+                        </Chip>
+                      ) : (
+                        <span className="text-xs text-fg-faint">Off</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile: stacked list */}
+        <div className="md:hidden space-y-4">
+          {Object.entries(preferences).map(([category, channels]) => {
+            const activeCount = Object.values(channels).filter(Boolean).length;
+            return (
+              <div
+                key={category}
+                className="rounded-lg border border-border-token p-3 space-y-3"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className="font-medium text-sm text-fg">
+                    {NOTIFICATION_LABELS[userRole]?.[category] || category}
+                  </h4>
+                  {activeCount > 0 && (
+                    <Chip
+                      size="sm"
+                      color="success"
+                      startContent={<CheckCircle size={12} aria-hidden="true" />}
+                    >
+                      {activeCount}/{CHANNEL_KEYS.length}
                     </Chip>
                   )}
                 </div>
-
-                <div className="grid grid-cols-4 gap-3">
-                  {Object.entries(channels).map(([channel, enabled]) => {
-                    const ChannelIcon = CHANNEL_ICONS[channel]?.icon || Bell;
-                    const channelColor = CHANNEL_ICONS[channel]?.color || 'default';
-                    const channelLabel = CHANNEL_ICONS[channel]?.label || channel;
-
+                <div className="space-y-2">
+                  {CHANNEL_KEYS.map((channel) => {
+                    const enabled = !!channels[channel];
+                    const meta = CHANNEL_META[channel];
+                    const Icon = meta.icon;
                     return (
-                      <div
+                      <label
                         key={channel}
-                        className={`
-                          flex items-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer
-                          ${enabled
-                            ? `border-${channelColor} bg-${channelColor}/5`
-                            : 'border-default-200 hover:border-default-300'
-                          }
-                        `}
-                        onClick={() => handleChannelToggle(category, channel)}
+                        className={cn(
+                          'flex items-center gap-2 p-2 rounded-md cursor-pointer',
+                          'focus-within:ring-2 focus-within:ring-accent/30',
+                        )}
                       >
-                        <ChannelIcon size={16} className={`text-${channelColor}`} />
-                        <span className="text-sm font-medium">{channelLabel}</span>
+                        <Icon
+                          size={16}
+                          className={enabled ? meta.iconClasses : 'text-fg-faint'}
+                          aria-hidden="true"
+                        />
+                        <span className="text-sm font-medium text-fg">{meta.label}</span>
                         <Switch
                           size="sm"
-                          isSelected={enabled}
-                          onValueChange={() => handleChannelToggle(category, channel)}
-                          classNames={{
-                            wrapper: 'ml-auto',
-                          }}
+                          checked={enabled}
+                          onChange={() => handleChannelToggle(category, channel)}
+                          wrapperClassName="ml-auto"
+                          aria-label={`Toggle ${meta.label} for ${category}`}
                         />
-                      </div>
+                      </label>
                     );
                   })}
                 </div>
               </div>
-            ))}
-          </div>
-        </CardBody>
+            );
+          })}
+        </div>
       </Card>
 
-      {/* Summary Card */}
       {hasChanges && (
-        <Card className="bg-warning/10 border-warning/20">
-          <CardBody className="flex items-center gap-3">
-            <Save size={20} className="text-warning flex-shrink-0" />
-            <div className="flex-1">
-              <p className="font-medium text-sm">{t('pages.youHaveUnsavedChanges')}</p>
-              <p className="text-xs text-default-500">
-                Don't forget to save your notification preferences
-              </p>
-            </div>
-            <Button
-              color="warning"
-              size="sm"
-              onPress={handleSave}
-              isLoading={saving}
-            >
-              Save Now
-            </Button>
-          </CardBody>
-        </Card>
+        <Alert
+          variant="warning"
+          title={t('pages.youHaveUnsavedChanges')}
+          action={
+            <MinimalButton size="sm" onClick={handleSave} loading={saving}>
+              Save now
+            </MinimalButton>
+          }
+        >
+          Don&apos;t forget to save your notification preferences
+        </Alert>
       )}
 
       <ConfirmDialog {...confirmState} onClose={closeConfirm} />

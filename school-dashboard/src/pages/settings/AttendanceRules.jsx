@@ -3,6 +3,8 @@ import { Card, CardBody, CardHeader, Button, Input, Switch, Divider, Select, Sel
 import { Save, AlertCircle } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import { settingsApi } from "../../services/api";
+import logger from '../../utils/logger';
+
 
 const DEFAULT_PERMISSIONS = [
   { role: "Super Admin", canMark: true, canEdit: true, canLock: true },
@@ -41,7 +43,7 @@ export default function AttendanceRules() {
       setRules(merged);
       setTempRules(merged);
     } catch (err) {
-      console.error('Failed to fetch attendance rules:', err);
+      logger.error('Failed to fetch attendance rules:', err);
       setError('Failed to load attendance rules. Using defaults.');
       // Keep defaults on error
     } finally {
@@ -87,7 +89,7 @@ export default function AttendanceRules() {
       setEditingSection(null);
       setTimeout(() => setSaveMessage(null), 3000);
     } catch (err) {
-      console.error('Failed to save attendance rules:', err);
+      logger.error('Failed to save attendance rules:', err);
       setSaveMessage({ type: 'error', text: err.message || 'Failed to save settings' });
       setTimeout(() => setSaveMessage(null), 5000);
     } finally {
@@ -115,8 +117,8 @@ export default function AttendanceRules() {
   }, [editingSection]);
 
   const SectionHeader = ({ title, section }) => (
-    <div className="flex justify-between items-center py-4 px-4 bg-default-50/50 border-b border-default-100">
-      <h3 className="text-sm font-semibold text-default-700">{title}</h3>
+    <div className="flex justify-between items-center py-4 px-4 bg-surface-2/50 border-b border-divider">
+      <h3 className="text-sm font-semibold text-fg">{title}</h3>
       {editingSection === section ? (
         <div className="flex items-center gap-2">
           <Button size="sm" variant="light" color="danger" onPress={handleCancel} isDisabled={saving} className="h-8 min-w-0 px-2 text-xs">{t('pages.cancel2')}</Button>
@@ -136,7 +138,7 @@ export default function AttendanceRules() {
     return (
       <div className="w-full flex flex-col items-center justify-center py-12 space-y-3">
         <Spinner size="lg" color="primary" />
-        <p className="text-sm text-default-500">Loading attendance rules...</p>
+        <p className="text-sm text-fg-muted">Loading attendance rules...</p>
       </div>
     );
   }
@@ -158,7 +160,7 @@ export default function AttendanceRules() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card className={`shadow-sm border transition-all duration-200 ${editingSection === 'defaulter' ? 'border-primary ring-1 ring-primary' : 'border-default-200'}`}>
+        <Card className={`shadow-sm border transition-all duration-200 ${editingSection === 'defaulter' ? 'border-primary ring-1 ring-primary' : 'border-border-token'}`}>
           <SectionHeader title={t('pages.defaulterSettings')} section="defaulter" />
           <CardBody className="p-4 space-y-4">
             {editingSection === 'defaulter' ? (
@@ -190,12 +192,12 @@ export default function AttendanceRules() {
             ) : (
               <>
                 <div className="flex justify-between items-center p-2">
-                  <span className="text-sm text-default-600">{t('pages.threshold')}</span>
-                  <span className="text-lg font-bold text-default-900">{rules.defaulterThreshold}%</span>
+                  <span className="text-sm text-fg-muted">{t('pages.threshold')}</span>
+                  <span className="text-lg font-bold text-fg">{rules.defaulterThreshold}%</span>
                 </div>
                 <div className="flex justify-between items-center p-2">
-                  <span className="text-sm text-default-600">Late Arrival Weight</span>
-                  <span className="text-lg font-bold text-default-900">{rules.lateWeight}%</span>
+                  <span className="text-sm text-fg-muted">Late Arrival Weight</span>
+                  <span className="text-lg font-bold text-fg">{rules.lateWeight}%</span>
                 </div>
               </>
             )}
@@ -208,7 +210,7 @@ export default function AttendanceRules() {
           </CardBody>
         </Card>
 
-        <Card className={`shadow-sm border transition-all duration-200 ${editingSection === 'lock' ? 'border-primary ring-1 ring-primary' : 'border-default-200'}`}>
+        <Card className={`shadow-sm border transition-all duration-200 ${editingSection === 'lock' ? 'border-primary ring-1 ring-primary' : 'border-border-token'}`}>
           <SectionHeader title={t('pages.lockSettings')} section="lock" />
           <CardBody className="p-4 space-y-4">
             {editingSection === 'lock' ? (
@@ -222,16 +224,16 @@ export default function AttendanceRules() {
                 variant="bordered"
               />
             ) : (
-              <div className="flex justify-between items-center p-2 border-b border-default-100">
-                <span className="text-sm text-default-600">{t('pages.autoLockTime')}</span>
-                <span className="text-lg font-bold text-default-900">{rules.lockTime}</span>
+              <div className="flex justify-between items-center p-2 border-b border-divider">
+                <span className="text-sm text-fg-muted">{t('pages.autoLockTime')}</span>
+                <span className="text-lg font-bold text-fg">{rules.lockTime}</span>
               </div>
             )}
 
-            <div className="flex items-center justify-between p-3 bg-default-50 rounded-lg border border-default-200">
+            <div className="flex items-center justify-between p-3 bg-surface-2 rounded-lg border border-border-token">
               <div>
-                <p className="text-sm font-medium text-default-700">{t('pages.allowEditAfterLock')}</p>
-                <p className="text-xs text-default-500">{t('pages.adminsCanEditLockedAttendance')}</p>
+                <p className="text-sm font-medium text-fg">{t('pages.allowEditAfterLock')}</p>
+                <p className="text-xs text-fg-muted">{t('pages.adminsCanEditLockedAttendance')}</p>
               </div>
               <Switch
                 size="sm"
@@ -256,21 +258,21 @@ export default function AttendanceRules() {
                 </Select>
               ) : (
                 <div className="flex justify-between items-center p-2">
-                  <span className="text-sm text-default-600">{t('pages.editWindow')}</span>
-                  <span className="text-sm font-semibold text-default-900">{rules.editWindow} hours</span>
+                  <span className="text-sm text-fg-muted">{t('pages.editWindow')}</span>
+                  <span className="text-sm font-semibold text-fg">{rules.editWindow} hours</span>
                 </div>
               )
             )}
           </CardBody>
         </Card>
 
-        <Card className={`shadow-sm border transition-all duration-200 ${editingSection === 'notifications' ? 'border-primary ring-1 ring-primary' : 'border-default-200'}`}>
+        <Card className={`shadow-sm border transition-all duration-200 ${editingSection === 'notifications' ? 'border-primary ring-1 ring-primary' : 'border-border-token'}`}>
           <SectionHeader title={t('pages.notifications')} section="notifications" />
           <CardBody className="p-4 space-y-4">
-            <div className="flex items-center justify-between p-3 bg-default-50 rounded-lg border border-default-200">
+            <div className="flex items-center justify-between p-3 bg-surface-2 rounded-lg border border-border-token">
               <div>
-                <p className="text-sm font-medium text-default-700">{t('pages.notifyOnAbsence')}</p>
-                <p className="text-xs text-default-500">{t('pages.sendSmsWhenAbsent')}</p>
+                <p className="text-sm font-medium text-fg">{t('pages.notifyOnAbsence')}</p>
+                <p className="text-xs text-fg-muted">{t('pages.sendSmsWhenAbsent')}</p>
               </div>
               <Switch
                 size="sm"
@@ -280,10 +282,10 @@ export default function AttendanceRules() {
               />
             </div>
             <Divider />
-            <div className="flex items-center justify-between p-3 bg-default-50 rounded-lg border border-default-200">
+            <div className="flex items-center justify-between p-3 bg-surface-2 rounded-lg border border-border-token">
               <div>
-                <p className="text-sm font-medium text-default-700">{t('pages.notifyDefaulters')}</p>
-                <p className="text-xs text-default-500">{t('pages.weeklyDefaulterAlert')}</p>
+                <p className="text-sm font-medium text-fg">{t('pages.notifyDefaulters')}</p>
+                <p className="text-xs text-fg-muted">{t('pages.weeklyDefaulterAlert')}</p>
               </div>
               <Switch
                 size="sm"
@@ -295,16 +297,16 @@ export default function AttendanceRules() {
           </CardBody>
         </Card>
 
-        <Card className={`shadow-sm border transition-all duration-200 ${editingSection === 'permissions' ? 'border-primary ring-1 ring-primary' : 'border-default-200'}`}>
+        <Card className={`shadow-sm border transition-all duration-200 ${editingSection === 'permissions' ? 'border-primary ring-1 ring-primary' : 'border-border-token'}`}>
           <SectionHeader title={t('pages.editPermissions')} section="permissions" />
           <CardBody className="p-4 space-y-3">
             {(editingSection === 'permissions' ? tempRules.permissions : rules.permissions).map((item, i) => (
-              <div key={item.role} className="flex items-center justify-between p-4 bg-default-50 rounded-lg border border-default-200">
-                <span className="text-sm font-medium text-default-800">{item.role}</span>
+              <div key={item.role} className="flex items-center justify-between p-4 bg-surface-2 rounded-lg border border-border-token">
+                <span className="text-sm font-medium text-fg">{item.role}</span>
                 {editingSection === 'permissions' ? (
                   <div className="flex gap-3">
                     {['canMark', 'canEdit', 'canLock'].map((perm) => (
-                      <label key={perm} className="flex items-center gap-1.5 text-xs font-medium text-default-600">
+                      <label key={perm} className="flex items-center gap-1.5 text-xs font-medium text-fg-muted">
                         <Switch
                           size="sm"
                           isSelected={item[perm]}
@@ -320,13 +322,13 @@ export default function AttendanceRules() {
                   </div>
                 ) : (
                   <div className="flex gap-2 text-xs font-medium">
-                    <span className={item.canMark ? "text-success-700 bg-success-50 px-2 py-1 rounded-md border border-success-200" : "text-default-400 opacity-50"}>
+                    <span className={item.canMark ? "text-success-700 bg-success-50 px-2 py-1 rounded-md border border-success-200" : "text-fg-faint opacity-50"}>
                       Mark
                     </span>
-                    <span className={item.canEdit ? "text-success-700 bg-success-50 px-2 py-1 rounded-md border border-success-200" : "text-default-400 opacity-50"}>
+                    <span className={item.canEdit ? "text-success-700 bg-success-50 px-2 py-1 rounded-md border border-success-200" : "text-fg-faint opacity-50"}>
                       Edit
                     </span>
-                    <span className={item.canLock ? "text-success-700 bg-success-50 px-2 py-1 rounded-md border border-success-200" : "text-default-400 opacity-50"}>
+                    <span className={item.canLock ? "text-success-700 bg-success-50 px-2 py-1 rounded-md border border-success-200" : "text-fg-faint opacity-50"}>
                       Lock
                     </span>
                   </div>

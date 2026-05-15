@@ -1,48 +1,49 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { inventoryApi } from "../../services/api";
-import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
+import { Card, EmptyState, ErrorState, Progress, SectionHeading } from "../../components/ui";
 
 const conditionColors = {
-  GOOD: "bg-green-500",
-  FAIR: "bg-blue-500",
-  POOR: "bg-yellow-500",
-  DAMAGED: "bg-red-500",
+  GOOD: 'success',
+  FAIR: 'info',
+  POOR: 'warning',
+  DAMAGED: 'danger',
 };
 
 const statusColors = {
-  ACTIVE: "bg-green-500",
-  UNDER_MAINTENANCE: "bg-yellow-500",
-  DISPOSED: "bg-gray-400",
-  LOST: "bg-red-500",
+  ACTIVE: 'success',
+  UNDER_MAINTENANCE: 'warning',
+  DISPOSED: 'primary',
+  LOST: 'danger',
 };
 
-function BarChart({ data, colorMap, label }) {
+function BreakdownChart({ data, colorMap, title }) {
   const { t } = useTranslation();
   const total = data.reduce((sum, d) => sum + d.count, 0) || 1;
 
   return (
-    <div className="bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 rounded-xl shadow-sm dark:shadow-zinc-900/50 p-5">
-      <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-4">{label}</h3>
+    <Card padding="md" elevation="raised">
+      <SectionHeading size="sm" className="mb-4">{title}</SectionHeading>
       <div className="space-y-3">
-        {data.map((d) => (
-          <div key={d._id} className="space-y-1">
-            <div className="flex justify-between text-xs">
-              <span className="text-gray-700 dark:text-zinc-300">{(d._id || "Unknown").replace(/_/g, " ")}</span>
-              <span className="text-gray-500 dark:text-zinc-400">{d.count} ({Math.round((d.count / total) * 100)}%)</span>
-            </div>
-            <div className="h-2 rounded-full bg-gray-100 dark:bg-zinc-700 overflow-hidden">
-              <div
-                className={`h-full rounded-full ${colorMap[d._id] || "bg-gray-400"}`}
-                style={{ width: `${(d.count / total) * 100}%` }}
-              />
-            </div>
-          </div>
-        ))}
-        {data.length === 0 && <p className="text-sm text-gray-500 dark:text-zinc-400 text-center py-4">{t('pages.noData')}</p>}
+        {data.length === 0 ? (
+          <p className="text-sm text-fg-muted text-center py-4">{t('pages.noData')}</p>
+        ) : (
+          data.map((d) => {
+            const pct = Math.round((d.count / total) * 100);
+            return (
+              <div key={d._id || 'unknown'} className="space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span className="text-fg">{(d._id || "Unknown").replace(/_/g, " ")}</span>
+                  <span className="text-fg-muted">{d.count} ({pct}%)</span>
+                </div>
+                <Progress value={d.count} max={total} size="sm" color={colorMap[d._id] || 'primary'} />
+              </div>
+            );
+          })
+        )}
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -50,22 +51,32 @@ export default function Reports() {
   const { t } = useTranslation();
   const [reports, setReports] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true);
-        const data = await inventoryApi.getReports();
-        setReports(data);
-      } catch { toast.error(t('toast.error.failedToLoadReports')); }
-      finally { setLoading(false); }
-    };
-    load();
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
+      setLoadError(null);
+      const data = await inventoryApi.getReports();
+      setReports(data);
+    } catch (err) {
+      setLoadError(err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useEffect(() => { load(); }, [load]);
+
   if (loading) return <CardGridPageSkeleton title={false} cards={4} columns="grid-cols-1 md:grid-cols-2" />;
+  if (loadError) return <ErrorState onRetry={load} error={loadError} title={t('toast.error.failedToLoadReports')} />;
 
   const totals = reports?.totals || {};
+  const categoryBreakdown = reports?.categoryBreakdown || [];
+  const maxCategoryCount = Math.max(...categoryBreakdown.map((c) => c.count), 1);
+  const retentionPct = totals.totalPurchaseValue > 0
+    ? Math.round(((totals.totalCurrentValue || 0) / totals.totalPurchaseValue) * 100)
+    : 0;
 
   return (
     <div className="space-y-6">
@@ -76,82 +87,73 @@ export default function Reports() {
           { label: "Total Purchase Value", value: `₹${(totals.totalPurchaseValue || 0).toLocaleString()}` },
           { label: "Total Current Value", value: `₹${(totals.totalCurrentValue || 0).toLocaleString()}` },
         ].map((card) => (
-          <div key={card.label} className="bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 rounded-xl shadow-sm dark:shadow-zinc-900/50 p-5">
-            <p className="text-sm text-gray-500 dark:text-zinc-400">{card.label}</p>
-            <p className="text-2xl font-semibold text-gray-900 dark:text-zinc-100 mt-1">{card.value}</p>
-          </div>
+          <Card key={card.label} padding="md" elevation="raised">
+            <p className="text-sm text-fg-muted">{card.label}</p>
+            <p className="text-2xl font-semibold text-fg mt-1">{card.value}</p>
+          </Card>
         ))}
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Category Breakdown */}
-        <div className="bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 rounded-xl shadow-sm dark:shadow-zinc-900/50 p-5">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-4">{t('pages.byCategory')}</h3>
+        <Card padding="md" elevation="raised">
+          <SectionHeading size="sm" className="mb-4">{t('pages.byCategory')}</SectionHeading>
           <div className="space-y-3">
-            {(reports?.categoryBreakdown || []).map((cat) => {
-              const maxCount = Math.max(...(reports?.categoryBreakdown || []).map((c) => c.count)) || 1;
-              return (
-                <div key={cat._id} className="space-y-1">
+            {categoryBreakdown.length === 0 ? (
+              <p className="text-sm text-fg-muted text-center py-4">{t('pages.noData')}</p>
+            ) : (
+              categoryBreakdown.map((cat) => (
+                <div key={cat._id || 'unknown'} className="space-y-1">
                   <div className="flex justify-between text-xs">
-                    <span className="text-gray-700 dark:text-zinc-300">{(cat._id || "Unknown").replace(/_/g, " ")}</span>
-                    <span className="text-gray-500 dark:text-zinc-400">{cat.count} items &middot; ₹{(cat.totalValue || 0).toLocaleString()}</span>
+                    <span className="text-fg">{(cat._id || "Unknown").replace(/_/g, " ")}</span>
+                    <span className="text-fg-muted">{cat.count} items &middot; ₹{(cat.totalValue || 0).toLocaleString()}</span>
                   </div>
-                  <div className="h-2 rounded-full bg-gray-100 dark:bg-zinc-700 overflow-hidden">
-                    <div className="h-full rounded-full bg-blue-500" style={{ width: `${(cat.count / maxCount) * 100}%` }} />
-                  </div>
+                  <Progress value={cat.count} max={maxCategoryCount} size="sm" color="info" />
                 </div>
-              );
-            })}
-            {(reports?.categoryBreakdown || []).length === 0 && (
-              <p className="text-sm text-gray-500 dark:text-zinc-400 text-center py-4">{t('pages.noData')}</p>
+              ))
             )}
           </div>
-        </div>
+        </Card>
 
         {/* Condition Summary */}
-        <BarChart
+        <BreakdownChart
           data={reports?.conditionSummary || []}
           colorMap={conditionColors}
-          label={t('pages.byCondition')}
+          title={t('pages.byCondition')}
         />
 
         {/* Status Summary */}
-        <BarChart
+        <BreakdownChart
           data={reports?.statusSummary || []}
           colorMap={statusColors}
-          label={t('pages.byStatus')}
+          title={t('pages.byStatus')}
         />
 
-        {/* Depreciation Note */}
-        <div className="bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 rounded-xl shadow-sm dark:shadow-zinc-900/50 p-5">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-4">{t('pages.depreciationOverview')}</h3>
+        {/* Depreciation Overview */}
+        <Card padding="md" elevation="raised">
+          <SectionHeading size="sm" className="mb-4">{t('pages.depreciationOverview')}</SectionHeading>
           {totals.totalPurchaseValue > 0 ? (
             <div className="space-y-3">
               <div className="flex justify-between items-end">
                 <div>
-                  <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.purchaseValue')}</p>
-                  <p className="text-lg font-semibold text-gray-900 dark:text-zinc-100">₹{(totals.totalPurchaseValue || 0).toLocaleString()}</p>
+                  <p className="text-xs text-fg-muted">{t('pages.purchaseValue')}</p>
+                  <p className="text-lg font-semibold text-fg">₹{(totals.totalPurchaseValue || 0).toLocaleString()}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-gray-500 dark:text-zinc-400">{t('pages.currentValue')}</p>
-                  <p className="text-lg font-semibold text-gray-900 dark:text-zinc-100">₹{(totals.totalCurrentValue || 0).toLocaleString()}</p>
+                  <p className="text-xs text-fg-muted">{t('pages.currentValue')}</p>
+                  <p className="text-lg font-semibold text-fg">₹{(totals.totalCurrentValue || 0).toLocaleString()}</p>
                 </div>
               </div>
-              <div className="h-3 rounded-full bg-gray-100 dark:bg-zinc-700 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-green-500"
-                  style={{ width: `${totals.totalPurchaseValue > 0 ? Math.min(((totals.totalCurrentValue || 0) / totals.totalPurchaseValue) * 100, 100) : 0}%` }}
-                />
-              </div>
-              <p className="text-xs text-gray-500 dark:text-zinc-400 text-center">
-                {totals.totalPurchaseValue > 0 ? Math.round(((totals.totalCurrentValue || 0) / totals.totalPurchaseValue) * 100) : 0}% of original value retained
+              <Progress value={retentionPct} max={100} size="lg" color="success" />
+              <p className="text-xs text-fg-muted text-center">
+                {retentionPct}% of original value retained
               </p>
             </div>
           ) : (
-            <p className="text-sm text-gray-500 dark:text-zinc-400 text-center py-4">{t('pages.noPurchaseValueDataAvailable')}</p>
+            <EmptyState size="sm" title={t('pages.noPurchaseValueDataAvailable')} />
           )}
-        </div>
+        </Card>
       </div>
     </div>
   );

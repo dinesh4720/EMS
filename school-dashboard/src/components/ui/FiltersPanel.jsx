@@ -21,6 +21,8 @@ import {
     Sparkles
 } from "lucide-react";
 import { useTranslation } from 'react-i18next';
+import logger from '../../utils/logger';
+
 
 /**
  * FiltersPanel - A modern, glass-morphism filter panel component
@@ -35,10 +37,10 @@ import { useTranslation } from 'react-i18next';
  *     status: { value: 'active', options: ['active', 'inactive'], counts: { active: 45, inactive: 12 } },
  *     role: { value: 'all', options: ['Teacher', 'Admin'], counts: { Teacher: 30, Admin: 15 } }
  *   }}
- *   onFilterChange={(key, value) => console.log(key, value)}
- *   onClearAll={() => console.log('cleared')}
+ *   onFilterChange={(key, value) => logger.log(key, value)}
+ *   onClearAll={() => logger.log('cleared')}
  *   searchQuery=""
- *   onSearchChange={(value) => console.log(value)}
+ *   onSearchChange={(value) => logger.log(value)}
  *   activeFiltersCount={2}
  * />
  * ```
@@ -166,6 +168,7 @@ const FiltersPanel = ({
                             isIconOnly
                             size="sm"
                             variant="flat"
+                            aria-label="Close filters"
                             className="rounded-full hover:bg-default-200 transition-colors"
                             onPress={onClose}
                         >

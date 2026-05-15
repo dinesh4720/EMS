@@ -1,3 +1,5 @@
+import logger from '../utils/logger';
+
 // Indian States and Union Territories
 // Extracted from AddStudent.jsx for better maintainability
 
@@ -121,6 +123,6 @@ export const normalizeStateName = (apiState) => {
   if (partialMatch) return partialMatch;
 
   // If no match, return null (will require manual selection)
-  console.warn(`State "${apiState}" not found in predefined states list`);
+  logger.warn(`State "${apiState}" not found in predefined states list`);
   return null;
 };

@@ -1,35 +1,107 @@
 /**
  * Utility functions for the Timetable module.
- * Provides subject-to-color mapping and Tailwind class generation.
+ *
+ * Maps subjects → one of five hue families used by the bundle's
+ * preview/calendar_timetable.html design (math / sci / eng / pe / art).
+ * Returns { kind, swatchKind } for use with the .tt-ev--<kind> and
+ * .tt-legend-sw--<kind> CSS classes in styles/classes.css.
  */
 
-export const getSubjectColor = (subject) => {
-  if (!subject) return "default";
-  const colors = {
-    Mathematics: "primary", Math: "primary",
-    Science: "success", Physics: "success", Chemistry: "success", Biology: "success",
-    English: "warning",
-    Hindi: "danger",
-    History: "secondary", Geography: "secondary", "Social Studies": "secondary",
-    Computer: "secondary", "Computer Science": "secondary",
-    Art: "warning",
-    Music: "success",
-    Library: "default",
-    PT: "danger", "Physical Education": "danger"
-  };
-  return colors[subject] || "default";
+export const SUBJECT_KINDS = ["math", "sci", "eng", "pe", "art", "default"];
+
+const SUBJECT_KIND_MAP = {
+  // Math family — indigo
+  Math: "math",
+  Maths: "math",
+  Mathematics: "math",
+
+  // Sciences — teal/blue
+  Science: "sci",
+  Physics: "sci",
+  Chemistry: "sci",
+  Biology: "sci",
+  Bio: "sci",
+  "Computer Science": "sci",
+  Computer: "sci",
+  IT: "sci",
+
+  // Languages / English — peach
+  English: "eng",
+  Hindi: "eng",
+  Sanskrit: "eng",
+  Tamil: "eng",
+  Telugu: "eng",
+  Kannada: "eng",
+  Malayalam: "eng",
+  Marathi: "eng",
+  Bengali: "eng",
+  Urdu: "eng",
+  French: "eng",
+  Spanish: "eng",
+  German: "eng",
+
+  // PE / Sports — green
+  PE: "pe",
+  PT: "pe",
+  "Physical Education": "pe",
+  Sports: "pe",
+  Yoga: "pe",
+  Games: "pe",
+
+  // Art / Music / Humanities — magenta
+  Art: "art",
+  Music: "art",
+  Drama: "art",
+  Dance: "art",
+  Library: "art",
+  History: "art",
+  Geography: "art",
+  Civics: "art",
+  "Social Studies": "art",
+  "Social Science": "art",
+  Sociology: "art",
+  Economics: "art",
 };
 
-// Get Tailwind classes for subject cards — supports dark mode
+export const getSubjectKind = (subject) => {
+  if (!subject) return "default";
+  return SUBJECT_KIND_MAP[subject] || "default";
+};
+
+/**
+ * Returns the CSS class for a subject's event card.
+ * Use directly on the slot element: <div className={getSubjectClass(slot.subject)}>
+ */
+export const getSubjectClass = (subject) => `tt-ev tt-ev--${getSubjectKind(subject)}`;
+
+/**
+ * Legacy helper kept for any callers still expecting Tailwind class objects.
+ * Returns minimal shape so existing JSX doesn't break — text/pill default to
+ * inheriting the parent .tt-ev color.
+ */
 export const getSubjectClasses = (subject) => {
-  const color = getSubjectColor(subject);
-  const colorMap = {
-    primary:   { card: 'bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800',     text: 'text-blue-700 dark:text-blue-300',   pill: 'bg-blue-100/60 dark:bg-blue-900/60' },
-    success:   { card: 'bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800', text: 'text-green-700 dark:text-green-300', pill: 'bg-green-100/60 dark:bg-green-900/60' },
-    warning:   { card: 'bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800', text: 'text-yellow-700 dark:text-yellow-300', pill: 'bg-yellow-100/60 dark:bg-yellow-900/60' },
-    danger:    { card: 'bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800',         text: 'text-red-700 dark:text-red-300',     pill: 'bg-red-100/60 dark:bg-red-900/60' },
-    secondary: { card: 'bg-purple-50 dark:bg-purple-950 border border-purple-200 dark:border-purple-800', text: 'text-purple-700 dark:text-purple-300', pill: 'bg-purple-100/60 dark:bg-purple-900/60' },
-    default:   { card: 'bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700',    text: 'text-gray-700 dark:text-zinc-300',   pill: 'bg-gray-100/60 dark:bg-zinc-700/60' },
+  const kind = getSubjectKind(subject);
+  return {
+    card: `tt-ev tt-ev--${kind}`,
+    text: "",
+    pill: "bg-[var(--surface-2)]/40",
   };
-  return colorMap[color] || colorMap.default;
+};
+
+/**
+ * Legacy helper — returns the HeroUI semantic color name for a subject.
+ * Some callsites may still consume this for Chip/Avatar tinting.
+ */
+export const getSubjectColor = (subject) => {
+  const kind = getSubjectKind(subject);
+  return (
+    {
+      math: "primary",
+      sci: "success",
+      eng: "warning",
+      pe: "success",
+      art: "secondary",
+      default: "default",
+    }[kind] || "default"
+  );
 };

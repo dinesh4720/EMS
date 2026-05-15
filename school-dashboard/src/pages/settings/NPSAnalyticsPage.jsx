@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { formatShortDate } from '../../utils/dateFormatter';
 
 function NpsGauge({ score }) {
-  if (score == null) return <p className="text-3xl font-bold text-gray-300 dark:text-zinc-600">N/A</p>;
+  if (score == null) return <p className="text-3xl font-bold text-fg-faint">N/A</p>;
   const color = score >= 50 ? 'text-green-600 dark:text-green-400' : score >= 0 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400';
   return <p className={`text-4xl font-bold ${color}`}>{score > 0 ? `+${score}` : score}</p>;
 }
@@ -80,19 +80,19 @@ export default function NPSAnalyticsPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">NPS Analytics</h2>
-        <p className="text-sm text-gray-500 dark:text-zinc-400">Net Promoter Score based on staff feedback surveys</p>
+        <h2 className="text-lg font-semibold text-fg">NPS Analytics</h2>
+        <p className="text-sm text-fg-muted">Net Promoter Score based on staff feedback surveys</p>
       </div>
 
       {/* Configuration Section */}
-      <Card shadow="sm" className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800">
+      <Card shadow="sm" className="bg-surface border border-border-token">
         <CardBody className="p-4">
           <div className="flex items-center gap-2 mb-4">
-            <Settings size={16} className="text-gray-400" />
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-zinc-300">Survey Configuration</h3>
+            <Settings size={16} className="text-fg-faint" />
+            <h3 className="text-sm font-semibold text-fg">Survey Configuration</h3>
           </div>
           {configLoading ? (
-            <div className="h-12 animate-pulse bg-gray-100 dark:bg-zinc-800 rounded" />
+            <div className="h-12 animate-pulse bg-surface-2 rounded" />
           ) : (
             <div className="flex flex-wrap items-end gap-4">
               <div className="flex items-center gap-3">
@@ -101,12 +101,12 @@ export default function NPSAnalyticsPage() {
                   isSelected={configDraft.enabled}
                   onValueChange={(val) => setConfigDraft((d) => ({ ...d, enabled: val }))}
                 />
-                <span className="text-sm text-gray-700 dark:text-zinc-300">
+                <span className="text-sm text-fg">
                   {configDraft.enabled ? 'Surveys enabled' : 'Surveys disabled'}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-500 dark:text-zinc-400 whitespace-nowrap">Cooldown (days)</label>
+                <label className="text-sm text-fg-muted whitespace-nowrap">Cooldown (days)</label>
                 <Input
                   type="number"
                   size="sm"
@@ -137,16 +137,16 @@ export default function NPSAnalyticsPage() {
       </Card>
 
       {/* Date Range Filter */}
-      <Card shadow="sm" className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800">
+      <Card shadow="sm" className="bg-surface border border-border-token">
         <CardBody className="p-4">
           <div className="flex flex-wrap items-end gap-3">
-            <Filter size={16} className="text-gray-400 mb-1" />
+            <Filter size={16} className="text-fg-faint mb-1" />
             <div>
-              <label className="text-xs text-gray-500 dark:text-zinc-400">From</label>
+              <label className="text-xs text-fg-muted">From</label>
               <Input type="date" size="sm" className="w-40" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} placeholder="Start date" />
             </div>
             <div>
-              <label className="text-xs text-gray-500 dark:text-zinc-400">To</label>
+              <label className="text-xs text-fg-muted">To</label>
               <Input type="date" size="sm" className="w-40" value={dateTo} onChange={(e) => setDateTo(e.target.value)} placeholder="End date" />
             </div>
             <Button size="sm" color="primary" variant="flat" onPress={handleApplyFilter}>Apply</Button>
@@ -163,18 +163,18 @@ export default function NPSAnalyticsPage() {
         <div className="space-y-4">
           {/* Score Cards */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <Card shadow="sm" className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800">
+            <Card shadow="sm" className="bg-surface border border-border-token">
               <CardBody className="p-4 text-center">
-                <TrendingUp size={20} className="mx-auto mb-2 text-gray-400" />
-                <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">NPS Score</p>
+                <TrendingUp size={20} className="mx-auto mb-2 text-fg-faint" />
+                <p className="text-xs text-fg-muted mb-1">NPS Score</p>
                 <NpsGauge score={data?.npsScore ?? null} />
               </CardBody>
             </Card>
-            <Card shadow="sm" className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800">
+            <Card shadow="sm" className="bg-surface border border-border-token">
               <CardBody className="p-4 text-center">
-                <Users size={20} className="mx-auto mb-2 text-gray-400" />
-                <p className="text-xs text-gray-500 dark:text-zinc-400 mb-1">Total Responses</p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-zinc-100">{data?.total ?? 0}</p>
+                <Users size={20} className="mx-auto mb-2 text-fg-faint" />
+                <p className="text-xs text-fg-muted mb-1">Total Responses</p>
+                <p className="text-3xl font-bold text-fg">{data?.total ?? 0}</p>
               </CardBody>
             </Card>
             <Card shadow="sm" className="bg-green-50 dark:bg-green-950 border border-green-100 dark:border-green-800">
@@ -202,9 +202,9 @@ export default function NPSAnalyticsPage() {
 
           {/* Trend */}
           {data.trend?.length > 0 && (
-            <Card shadow="sm" className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800">
+            <Card shadow="sm" className="bg-surface border border-border-token">
               <CardBody className="p-4">
-                <h3 className="text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-4">Monthly Trend</h3>
+                <h3 className="text-sm font-semibold text-fg mb-4">Monthly Trend</h3>
                 <div className="flex items-end gap-2 h-40">
                   {data.trend.map((t) => {
                     const maxR = Math.max(...data.trend.map((x) => x.responses), 1);
@@ -212,7 +212,7 @@ export default function NPSAnalyticsPage() {
                     const color = t.score >= 50 ? 'bg-green-400' : t.score >= 0 ? 'bg-yellow-400' : 'bg-red-400';
                     return (
                       <div key={t.month} className="flex-1 flex flex-col items-center justify-end h-full">
-                        <span className="text-xs font-semibold text-gray-700 dark:text-zinc-300 mb-1">
+                        <span className="text-xs font-semibold text-fg mb-1">
                           {t.score > 0 ? `+${t.score}` : t.score}
                         </span>
                         <div
@@ -220,7 +220,7 @@ export default function NPSAnalyticsPage() {
                           style={{ height: `${barH}%` }}
                           title={`${t.responses} responses`}
                         />
-                        <span className="text-[10px] text-gray-400 dark:text-zinc-500 mt-1">{t.month}</span>
+                        <span className="text-[10px] text-fg-faint mt-1">{t.month}</span>
                       </div>
                     );
                   })}
@@ -231,9 +231,9 @@ export default function NPSAnalyticsPage() {
 
           {/* Score distribution */}
           {(data?.total ?? 0) > 0 && (
-            <Card shadow="sm" className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800">
+            <Card shadow="sm" className="bg-surface border border-border-token">
               <CardBody className="p-4">
-                <h3 className="text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-4">Score Distribution</h3>
+                <h3 className="text-sm font-semibold text-fg mb-4">Score Distribution</h3>
                 <div className="space-y-2">
                   {Array.from({ length: 11 }, (_, i) => 10 - i).map(score => {
                     const count = data?.distribution?.[score] || 0;
@@ -241,14 +241,14 @@ export default function NPSAnalyticsPage() {
                     const color = score >= 9 ? 'bg-green-400' : score >= 7 ? 'bg-yellow-400' : 'bg-red-400';
                     return (
                       <div key={score} className="flex items-center gap-3">
-                        <span className="text-xs text-gray-500 dark:text-zinc-400 w-4 text-right">{score}</span>
-                        <div className="flex-1 bg-gray-100 dark:bg-zinc-800 rounded-full h-2">
+                        <span className="text-xs text-fg-muted w-4 text-right">{score}</span>
+                        <div className="flex-1 bg-surface-2 rounded-full h-2">
                           <div
                             className={`h-2 rounded-full ${color} transition-all`}
                             style={{ width: `${pct}%` }}
                           />
                         </div>
-                        <span className="text-xs text-gray-500 dark:text-zinc-400 w-6">{count}</span>
+                        <span className="text-xs text-fg-muted w-6">{count}</span>
                       </div>
                     );
                   })}
@@ -259,15 +259,15 @@ export default function NPSAnalyticsPage() {
 
           {/* Recent Comments */}
           {data.comments?.length > 0 && (
-            <Card shadow="sm" className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800">
+            <Card shadow="sm" className="bg-surface border border-border-token">
               <CardBody className="p-4">
                 <div className="flex items-center gap-2 mb-4">
-                  <MessageSquare size={16} className="text-gray-400" />
-                  <h3 className="text-sm font-semibold text-gray-700 dark:text-zinc-300">Recent Comments</h3>
+                  <MessageSquare size={16} className="text-fg-faint" />
+                  <h3 className="text-sm font-semibold text-fg">Recent Comments</h3>
                 </div>
                 <div className="space-y-3 max-h-80 overflow-y-auto">
                   {data.comments.map((c, i) => (
-                    <div key={i} className="p-3 bg-gray-50 dark:bg-zinc-900 rounded-lg">
+                    <div key={i} className="p-3 bg-surface-2 rounded-lg">
                       <div className="flex items-center gap-2 mb-1">
                         <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${
                           c.category === 'promoter' ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300' :
@@ -276,11 +276,11 @@ export default function NPSAnalyticsPage() {
                         }`}>
                           Score: {c.score}
                         </span>
-                        <span className="text-xs text-gray-400 dark:text-zinc-500">
+                        <span className="text-xs text-fg-faint">
                           {formatShortDate(c.createdAt)}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-700 dark:text-zinc-300">{c.comment}</p>
+                      <p className="text-sm text-fg">{c.comment}</p>
                     </div>
                   ))}
                 </div>
@@ -289,10 +289,10 @@ export default function NPSAnalyticsPage() {
           )}
 
           {(data?.total ?? 0) === 0 && (
-            <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-zinc-700 rounded-xl">
-              <TrendingUp size={40} className="mx-auto mb-3 text-gray-300 dark:text-zinc-600" />
-              <p className="text-gray-500 dark:text-zinc-400">No NPS survey responses yet</p>
-              <p className="text-sm text-gray-400 dark:text-zinc-500 mt-1">Staff will be prompted to complete surveys periodically</p>
+            <div className="text-center py-12 border-2 border-dashed border-border-token rounded-xl">
+              <TrendingUp size={40} className="mx-auto mb-3 text-fg-faint" />
+              <p className="text-fg-muted">No NPS survey responses yet</p>
+              <p className="text-sm text-fg-faint mt-1">Staff will be prompted to complete surveys periodically</p>
             </div>
           )}
         </div>

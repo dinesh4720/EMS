@@ -126,7 +126,7 @@ export default function FormSubmissions() {
   };
 
   const renderFieldValue = (field, value) => {
-    if (!value) return <span className="text-gray-400 dark:text-zinc-500">{t('formSubmissions.notProvided')}</span>;
+    if (!value) return <span className="text-fg-faint">{t('formSubmissions.notProvided')}</span>;
 
     if (field.type === "file") {
       return (
@@ -155,10 +155,10 @@ export default function FormSubmissions() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">
+          <h2 className="text-2xl font-semibold text-fg">
             {t('formSubmissions.title')}
           </h2>
-          <p className="text-sm text-gray-600 dark:text-zinc-400 mt-1">
+          <p className="text-sm text-fg-muted mt-1">
             {t('formSubmissions.subtitle')}
           </p>
         </div>
@@ -174,7 +174,7 @@ export default function FormSubmissions() {
             color={filterStatus === status ? "primary" : "default"}
             onPress={() => setFilterStatus(status)}
           >
-            {t(`formSubmissions.status.${status}`)}
+            {t(`formSubmissions.status.${status.replace(/_(.)/g, (_, c) => c.toUpperCase())}`)}
           </Button>
         ))}
       </div>
@@ -182,11 +182,12 @@ export default function FormSubmissions() {
       {/* Submissions Table */}
       <Card>
         <CardBody className="p-0">
+          <div className="overflow-x-auto">
           <Table
             aria-label={t('aria.tables.formSubmissions')}
             removeWrapper
             classNames={{
-              th: "bg-gray-50 dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 font-semibold",
+              th: "bg-surface-2 text-fg font-semibold",
               td: "py-4",
             }}
           >
@@ -207,10 +208,10 @@ export default function FormSubmissions() {
               {(submission) => (
                 <TableRow key={submission._id || submission.id}>
                   <TableCell>
-                    <div className="font-medium text-gray-900 dark:text-zinc-100">
+                    <div className="font-medium text-fg">
                       {submission.formId?.formName || submission.formName || '-'}
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-zinc-500">
+                    <div className="text-xs text-fg-faint">
                       {submission.formId?.formType || submission.formType || '-'}
                     </div>
                   </TableCell>
@@ -242,7 +243,7 @@ export default function FormSubmissions() {
                   <TableCell>
                     <Dropdown>
                       <DropdownTrigger>
-                        <Button isIconOnly size="sm" variant="light">
+                        <Button isIconOnly size="sm" variant="light" aria-label="More actions">
                           <MoreVertical size={16} />
                         </Button>
                       </DropdownTrigger>
@@ -272,6 +273,7 @@ export default function FormSubmissions() {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardBody>
       </Card>
 
@@ -287,7 +289,7 @@ export default function FormSubmissions() {
             <div>
               <h3 className="text-xl font-semibold">{t('formSubmissions.modalTitle')}</h3>
               {selectedSubmission && (
-                <p className="text-sm text-gray-600 dark:text-zinc-400 font-normal mt-1">
+                <p className="text-sm text-fg-muted font-normal mt-1">
                   {selectedSubmission.formId?.formName || '-'} - Submitted by{" "}
                   {selectedSubmission.submittedByEmail || selectedSubmission.submittedByPhone || '-'}
                 </p>
@@ -312,13 +314,13 @@ export default function FormSubmissions() {
                             : "col-span-1"
                         }`}
                       >
-                        <label className="text-sm font-medium text-gray-600 dark:text-zinc-400 block mb-1">
+                        <label className="text-sm font-medium text-fg-muted block mb-1">
                           {field.label}
                           {field.required && (
                             <span className="text-danger ml-1">*</span>
                           )}
                         </label>
-                        <div className="text-sm text-gray-900 dark:text-zinc-100">
+                        <div className="text-sm text-fg">
                           {renderFieldValue(
                             field,
                             selectedSubmission.submissionData[field.mapTo || field.label]
@@ -353,7 +355,7 @@ export default function FormSubmissions() {
                     </h4>
                     <div className="space-y-3">
                       <div>
-                        <label className="text-sm font-medium text-gray-600 dark:text-zinc-400">
+                        <label className="text-sm font-medium text-fg-muted">
                           {t('formSubmissions.colStatus')}
                         </label>
                         <div className="mt-1">
@@ -369,7 +371,7 @@ export default function FormSubmissions() {
                         </div>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600 dark:text-zinc-400">
+                        <label className="text-sm font-medium text-fg-muted">
                           {t('formSubmissions.colReviewedBy')}
                         </label>
                         <p className="text-sm">
@@ -377,7 +379,7 @@ export default function FormSubmissions() {
                         </p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600 dark:text-zinc-400">
+                        <label className="text-sm font-medium text-fg-muted">
                           {t('formSubmissions.reviewedAt')}
                         </label>
                         <p className="text-sm">
@@ -389,7 +391,7 @@ export default function FormSubmissions() {
                       </div>
                       {selectedSubmission.reviewNotes && (
                         <div>
-                          <label className="text-sm font-medium text-gray-600 dark:text-zinc-400">
+                          <label className="text-sm font-medium text-fg-muted">
                             {t('formSubmissions.reviewNotesLabel')}
                           </label>
                           <p className="text-sm">

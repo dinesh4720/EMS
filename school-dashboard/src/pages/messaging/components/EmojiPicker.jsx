@@ -27,7 +27,7 @@ export default function EmojiPicker({ onSelect, onClose }) {
   return (
     <div
       ref={pickerRef}
-      className="absolute bottom-full right-0 mb-2 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-700 rounded-2xl shadow-xl dark:shadow-zinc-900/50 z-50 p-2 animate-in fade-in zoom-in-95 duration-200"
+      className="absolute bottom-full right-0 mb-2 bg-surface border border-border-token rounded-2xl shadow-xl dark:shadow-zinc-900/50 z-50 p-2 animate-in fade-in zoom-in-95 duration-200"
     >
       {/* Single row of emojis */}
       <div className="flex gap-0.5">

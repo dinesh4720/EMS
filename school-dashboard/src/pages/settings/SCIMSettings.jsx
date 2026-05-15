@@ -114,8 +114,8 @@ export default function SCIMSettings() {
             <Shield size={18} className="text-indigo-600 dark:text-indigo-400" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">SCIM Provisioning</h2>
-            <p className="text-sm text-gray-500 dark:text-zinc-400">
+            <h2 className="text-lg font-semibold text-fg">SCIM Provisioning</h2>
+            <p className="text-sm text-fg-muted">
               Automate staff account management via your identity provider (Okta, Azure AD, etc.)
             </p>
           </div>
@@ -125,10 +125,10 @@ export default function SCIMSettings() {
       <Divider />
 
       {/* Enable Toggle */}
-      <div className="flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800/50">
+      <div className="flex items-center justify-between p-4 rounded-xl border border-border-token bg-surface-2">
         <div>
-          <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Enable SCIM</p>
-          <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
+          <p className="text-sm font-medium text-fg">Enable SCIM</p>
+          <p className="text-xs text-fg-muted mt-0.5">
             Allow your IdP to create, update, and deactivate staff accounts automatically
           </p>
         </div>
@@ -163,8 +163,8 @@ export default function SCIMSettings() {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">Bearer Token</p>
-            <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
+            <p className="text-sm font-medium text-fg">Bearer Token</p>
+            <p className="text-xs text-fg-muted mt-0.5">
               Use this as the Authorization header in your IdP's SCIM configuration
             </p>
           </div>
@@ -179,7 +179,7 @@ export default function SCIMSettings() {
         </div>
 
         {/* Token display row */}
-        <div className="flex items-center gap-2 p-3 rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 font-mono text-xs text-gray-700 dark:text-zinc-300 min-h-[44px]">
+        <div className="flex items-center gap-2 p-3 rounded-lg border border-border-token bg-surface font-mono text-xs text-fg min-h-[44px]">
           <div className="flex-1 truncate">
             {revealedToken
               ? maskedToken
@@ -192,13 +192,13 @@ export default function SCIMSettings() {
             <button
               type="button"
               onClick={() => setIsTokenVisible((v) => !v)}
-              className="p-1 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded transition-colors flex-shrink-0"
+              className="p-1 hover:bg-surface-2 rounded transition-colors flex-shrink-0"
               title={isTokenVisible ? "Hide token" : "Show token"}
             >
               {isTokenVisible ? (
-                <EyeOff size={14} className="text-gray-500" />
+                <EyeOff size={14} className="text-fg-muted" />
               ) : (
-                <Eye size={14} className="text-gray-500" />
+                <Eye size={14} className="text-fg-muted" />
               )}
             </button>
           )}
@@ -207,10 +207,10 @@ export default function SCIMSettings() {
             <button
               type="button"
               onClick={handleCopy}
-              className="p-1 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded transition-colors flex-shrink-0"
+              className="p-1 hover:bg-surface-2 rounded transition-colors flex-shrink-0"
               title="Copy token"
             >
-              <Copy size={14} className="text-gray-500" />
+              <Copy size={14} className="text-fg-muted" />
             </button>
           )}
         </div>
@@ -258,7 +258,7 @@ export default function SCIMSettings() {
 
       {/* Supported Operations */}
       <div>
-        <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-3">
+        <p className="text-sm font-medium text-fg mb-3">
           Supported SCIM Operations
         </p>
         <div className="grid grid-cols-2 gap-2">
@@ -270,12 +270,12 @@ export default function SCIMSettings() {
           ].map((op) => (
             <div
               key={op.label}
-              className="flex items-start gap-2 p-3 rounded-lg border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800/50"
+              className="flex items-start gap-2 p-3 rounded-lg border border-border-token bg-surface-2"
             >
               <CheckCircle size={14} className="text-success-600 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-xs font-medium text-gray-900 dark:text-zinc-100">{op.label}</p>
-                <p className="text-xs text-gray-500 dark:text-zinc-400">{op.desc}</p>
+                <p className="text-xs font-medium text-fg">{op.label}</p>
+                <p className="text-xs text-fg-muted">{op.desc}</p>
               </div>
             </div>
           ))}

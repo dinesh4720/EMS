@@ -1,10 +1,5 @@
 import { useState, useEffect } from 'react';
 import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Button,
   Input,
   Textarea,
@@ -15,7 +10,7 @@ import {
   CardBody,
   Chip,
 } from '@heroui/react';
-import { Save, Bell, DollarSign, Calendar, BookOpen, Users } from 'lucide-react';
+import { Save, Bell, DollarSign, Calendar, BookOpen, Users, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { getStoredUser } from '../../../../utils/authSession';
@@ -171,24 +166,38 @@ export default function ReminderForm({
   const selectedTypeData = REMINDER_TYPES.find(rt => rt.key === formData.type);
   const TypeIcon = selectedTypeData?.icon || Bell;
 
+  if (!isOpen) return null;
+
+  const handleBackdropClose = () => {
+    onClose();
+    setErrors({});
+  };
+
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={() => { onClose(); setErrors({}); }}
-      size="3xl"
-      scrollBehavior="inside"
-    >
-      <ModalContent>
-        <ModalHeader>
-          <h3 className="text-lg font-semibold">
+    <div className="frosted-overlay__backdrop" role="dialog" aria-modal="true">
+      <div className="frosted-overlay" style={{ width: 'min(820px, calc(100vw - 48px))' }}>
+        <button
+          type="button"
+          className="frosted-overlay__close"
+          onClick={handleBackdropClose}
+          aria-label="Close"
+        >
+          <X size={16} />
+        </button>
+
+        <div className="announce-overlay__hero">
+          <h3 className="announce-overlay__title">
             {editData ? 'Edit Reminder' : 'Create Reminder'}
           </h3>
-        </ModalHeader>
+          <p className="announce-overlay__subtitle">
+            Set the trigger, message, and channels for automated reminders.
+          </p>
+        </div>
 
-        <ModalBody className="space-y-4">
+        <div className="frosted-overlay__body space-y-4">
           {/* Type Selection */}
           <div>
-            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">{t('pages.reminderType')}</label>
+            <label className="text-sm font-medium mb-2 block text-fg-muted">{t('pages.reminderType')}</label>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {REMINDER_TYPES.map((type) => {
                 const Icon = type.icon;
@@ -228,7 +237,7 @@ export default function ReminderForm({
 
           {/* Trigger Condition */}
           <div>
-            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">{t('pages.triggerCondition')}</label>
+            <label className="text-sm font-medium mb-2 block text-fg-muted">{t('pages.triggerCondition')}</label>
             <Select
               placeholder={t('pages.selectWhenToSendThisReminder')}
               selectedKeys={formData.trigger ? [formData.trigger] : []}
@@ -246,7 +255,7 @@ export default function ReminderForm({
 
           {/* Message Template */}
           <div>
-            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">{t('pages.message1')}</label>
+            <label className="text-sm font-medium mb-2 block text-fg-muted">{t('pages.message1')}</label>
             <Textarea
               placeholder={t('pages.enterReminderMessage1')}
               value={formData.message}
@@ -281,7 +290,7 @@ export default function ReminderForm({
 
           {/* Recipients */}
           <div>
-            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">{t('pages.sendTo')}</label>
+            <label className="text-sm font-medium mb-2 block text-fg-muted">{t('pages.sendTo')}</label>
             <div className="flex flex-wrap gap-2">
               {[
                 { key: 'parents', label: 'Parents' },
@@ -297,12 +306,12 @@ export default function ReminderForm({
                 </Checkbox>
               ))}
             </div>
-            {errors.recipients && <p className="text-xs text-red-500 mt-1">{errors.recipients}</p>}
+            {errors.recipients && <p className="text-xs text-danger-token mt-1">{errors.recipients}</p>}
           </div>
 
           {/* Channels */}
           <div>
-            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">{t('pages.sendVia')}</label>
+            <label className="text-sm font-medium mb-2 block text-fg-muted">{t('pages.sendVia')}</label>
             <div className="flex flex-wrap gap-2">
               {[
                 { key: 'inapp', label: 'In-App' },
@@ -319,13 +328,13 @@ export default function ReminderForm({
                 </Checkbox>
               ))}
             </div>
-            {errors.channels && <p className="text-xs text-red-500 mt-1">{errors.channels}</p>}
+            {errors.channels && <p className="text-xs text-danger-token mt-1">{errors.channels}</p>}
           </div>
 
           {/* Schedule */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">{t('pages.startDate1')}</label>
+              <label className="text-sm font-medium mb-2 block text-fg-muted">{t('pages.startDate1')}</label>
               <Input
                 type="date"
                 value={formData.startDate || ''}
@@ -334,7 +343,7 @@ export default function ReminderForm({
               />
             </div>
             <div>
-              <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">{t('pages.endDate1')}</label>
+              <label className="text-sm font-medium mb-2 block text-fg-muted">{t('pages.endDate1')}</label>
               <Input
                 type="date"
                 value={formData.endDate || ''}
@@ -346,7 +355,7 @@ export default function ReminderForm({
 
           {/* Frequency */}
           <div>
-            <label className="text-sm font-medium mb-2 block text-gray-700 dark:text-zinc-300">{t('pages.frequency')}</label>
+            <label className="text-sm font-medium mb-2 block text-fg-muted">{t('pages.frequency')}</label>
             <Select
               selectedKeys={[formData.frequency]}
               onSelectionChange={(keys) => setFormData({ ...formData, frequency: Array.from(keys)[0] })}
@@ -366,9 +375,9 @@ export default function ReminderForm({
           >
             Active (Enable this reminder)
           </Checkbox>
-        </ModalBody>
+        </div>
 
-        <ModalFooter>
+        <div className="frosted-overlay__footer">
           <Button
             variant="flat"
             onPress={onClose}
@@ -382,8 +391,8 @@ export default function ReminderForm({
           >
             {editData ? 'Update' : 'Create'} Reminder
           </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+        </div>
+      </div>
+    </div>
   );
 }

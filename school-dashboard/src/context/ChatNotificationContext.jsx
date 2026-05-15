@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import socketService from '../services/socketServiceEnhanced';
-import chatService from '../services/chatServiceEnhanced';
+import chatService from '../services/chatService';
 import toast from 'react-hot-toast';
 import { MessageCircle, X, Reply, Send } from 'lucide-react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Textarea } from '@heroui/react';
@@ -23,30 +23,32 @@ export function ChatNotificationProvider({ children }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
+  const [socketOffline, setSocketOffline] = useState(false);
   const [replyModalOpen, setReplyModalOpen] = useState(false);
   const [replyingTo, setReplyingTo] = useState(null);
   const [replyMessage, setReplyMessage] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
   const locationRef = useRef(location.pathname);
   const dismissTimersRef = useRef(new Map());
-  // [AUDIT-162] Track AudioContext instances so we can close them on unmount
-  const audioContextsRef = useRef(new Set());
+  // [AUDIT-959] Single shared AudioContext — reused across all notifications to avoid
+  // hitting the browser's ~6 simultaneous AudioContext limit during rapid messages.
+  const audioContextRef = useRef(null);
 
   // Update location ref when location changes
   useEffect(() => {
     locationRef.current = location.pathname;
   }, [location.pathname]);
 
-  // [AUDIT-162] Cleanup all dismiss timers and AudioContext instances on unmount
+  // [AUDIT-959] Cleanup dismiss timers and the shared AudioContext on unmount
   useEffect(() => {
     const timers = dismissTimersRef.current;
-    const audioContexts = audioContextsRef.current;
     return () => {
       timers.forEach(clearTimeout);
       timers.clear();
-      // Close all AudioContext instances to prevent memory/resource leaks
-      audioContexts.forEach((ctx) => ctx.close().catch(() => {}));
-      audioContexts.clear();
+      if (audioContextRef.current) {
+        audioContextRef.current.close().catch(() => {});
+        audioContextRef.current = null;
+      }
     };
   }, []);
 
@@ -84,13 +86,44 @@ export function ChatNotificationProvider({ children }) {
         // Listen for message notifications
         socketService.on('message_notification', handleMessageNotification);
 
+        const handleConnectError = () => {
+          setSocketOffline(true);
+        };
+
+        const handleReconnectFailed = () => {
+          setSocketOffline(true);
+          toast.error(t('socket.offlineMessage', 'Real-time features are offline. Please refresh the page.'), {
+            id: 'socket-offline',
+            duration: Infinity,
+          });
+        };
+
+        const handleAuthenticated = () => {
+          setSocketOffline(false);
+          toast.dismiss('socket-offline');
+        };
+
+        const handleDisconnected = () => {
+          setSocketOffline(true);
+        };
+
+        socketService.on('connect_error', handleConnectError);
+        socketService.on('reconnect_failed', handleReconnectFailed);
+        socketService.on('authenticated', handleAuthenticated);
+        socketService.on('disconnected', handleDisconnected);
+
         // Return cleanup function
         return () => {
           socketService.off('message_notification', handleMessageNotification);
+          socketService.off('connect_error', handleConnectError);
+          socketService.off('reconnect_failed', handleReconnectFailed);
+          socketService.off('authenticated', handleAuthenticated);
+          socketService.off('disconnected', handleDisconnected);
         };
 
       } catch (error) {
         logger.error('❌ Failed to initialize chat notifications:', error);
+        setSocketOffline(true);
       }
     };
 
@@ -104,8 +137,10 @@ export function ChatNotificationProvider({ children }) {
     return () => {
       isSubscribed = false;
       if (cleanup) cleanup();
-      // [AUDIT-536] Disconnect socket on unmount to prevent leaks after logout
-      socketService.disconnect();
+      // Do NOT call socketService.disconnect() here — it is a shared singleton also
+      // used by useSocketSync. Disconnecting on unmount kills real-time updates for
+      // the entire app whenever this context remounts (e.g. during navigation).
+      // Socket teardown on logout is handled by AuthContext via socketService.destroyAll().
       setIsConnected(false);
     };
   }, [isAuthenticated, user?.id]); // Removed location.pathname from dependencies
@@ -161,57 +196,52 @@ export function ChatNotificationProvider({ children }) {
   };
 
   const playNotificationSound = () => {
-    // Create a pleasant notification sound using Web Audio API
+    // [AUDIT-959] Reuse a single shared AudioContext to avoid hitting the browser's
+    // ~6 simultaneous context limit during rapid message bursts.
     try {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      // [AUDIT-162] Track for cleanup on unmount
-      audioContextsRef.current.add(audioContext);
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      const audioContext = audioContextRef.current;
 
-      // Create a two-tone notification sound (like WhatsApp/Messenger)
-      const playTone = (frequency, startTime, duration, volume) => {
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
+      const playTones = () => {
+        const playTone = (frequency, startTime, duration, volume) => {
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
 
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
 
-        oscillator.frequency.value = frequency;
-        oscillator.type = 'sine';
+          oscillator.frequency.value = frequency;
+          oscillator.type = 'sine';
 
-        // Envelope for smooth sound with increased volume
-        gainNode.gain.setValueAtTime(0, startTime);
-        gainNode.gain.linearRampToValueAtTime(volume, startTime + 0.01);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+          gainNode.gain.setValueAtTime(0, startTime);
+          gainNode.gain.linearRampToValueAtTime(volume, startTime + 0.01);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
 
-        oscillator.start(startTime);
-        oscillator.stop(startTime + duration);
+          oscillator.start(startTime);
+          oscillator.stop(startTime + duration);
+        };
+
+        const now = audioContext.currentTime;
+        playTone(800, now, 0.15, 0.3);
+        playTone(600, now + 0.1, 0.2, 0.3);
       };
 
-      const now = audioContext.currentTime;
-
-      // First tone (higher pitch) - increased volume to 0.3
-      playTone(800, now, 0.15, 0.3);
-
-      // Second tone (slightly lower pitch) - increased volume to 0.3
-      playTone(600, now + 0.1, 0.2, 0.3);
-
-      // Close AudioContext after tones finish to prevent resource leak
-      const timerKey = 'audio-' + Date.now();
-      const closeTimer = setTimeout(() => {
-        audioContext.close().catch(() => {});
-        audioContextsRef.current.delete(audioContext);
-        dismissTimersRef.current.delete(timerKey);
-      }, 500);
-      dismissTimersRef.current.set(timerKey, closeTimer);
+      // Browsers may auto-suspend the context after inactivity — resume before playing
+      if (audioContext.state === 'suspended') {
+        audioContext.resume().then(playTones).catch(() => {});
+      } else {
+        playTones();
+      }
 
     } catch (error) {
-      console.warn('Could not play notification sound:', error);
+      logger.warn('Could not play notification sound:', error);
     }
   };
 
   const goToChat = (conversationId) => {
-    navigate('/messaging');
-    // The chat page will handle opening the specific conversation
+    navigate('/messaging', { state: { conversationId } });
   };
 
   const handleReply = (notification) => {
@@ -258,9 +288,17 @@ export function ChatNotificationProvider({ children }) {
   };
 
   return (
-    <ChatNotificationContext.Provider value={{ unreadCount, isConnected }}>
+    <ChatNotificationContext.Provider value={{ unreadCount, isConnected, socketOffline }}>
       {children}
       
+      {/* Socket offline banner */}
+      {socketOffline && isAuthenticated && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-2 bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200 text-sm px-4 py-2 rounded-lg shadow-md">
+          <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
+          {t('socket.offlineBanner', 'Real-time features are offline')}
+        </div>
+      )}
+
       {/* Notification Toasts */}
       <div className="fixed top-16 right-4 z-[9999] space-y-2 max-w-sm">
         {notifications.map((notification) => (

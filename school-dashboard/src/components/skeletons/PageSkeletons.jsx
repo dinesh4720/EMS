@@ -8,7 +8,7 @@ import SkeletonCard from './SkeletonCard';
 import SkeletonForm from './SkeletonForm';
 
 const Bone = ({ className = "" }) => (
-  <div className={`bg-gray-200 dark:bg-zinc-700 rounded animate-pulse ${className}`} />
+  <div className={`bg-surface-hover rounded animate-pulse ${className}`} />
 );
 
 /** Full table page skeleton with optional title, search bar, KPI cards, and table */
@@ -30,7 +30,7 @@ export const TablePageSkeleton = ({
         {Array.from({ length: kpiCards }).map((_, i) => (
           <div
             key={`kpi-${i}`}
-            className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 p-4 space-y-2"
+            className="bg-surface rounded-lg border border-border-token p-4 space-y-2"
           >
             <Bone className="h-3 w-20" />
             <Bone className="h-6 w-16" />
@@ -82,7 +82,7 @@ export const DetailPageSkeleton = ({
         <Bone className="h-4 w-32" />
       </div>
     </div>
-    <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 p-6">
+    <div className="bg-surface rounded-lg border border-border-token p-6">
       <SkeletonForm fields={fields} showSubmit={false} />
     </div>
   </div>

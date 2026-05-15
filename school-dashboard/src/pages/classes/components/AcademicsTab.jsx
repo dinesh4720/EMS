@@ -46,31 +46,31 @@ export function AcademicsTab({ id, cls, classesEnhancedApi }) {
       {/* Stats Row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: t('pages.totalExams'), value: exams.length, color: 'text-gray-900 dark:text-zinc-100' },
+          { label: t('pages.totalExams'), value: exams.length, color: 'text-fg' },
           { label: t('pages.scheduled'), value: examsByStatus.scheduled.length, color: 'text-blue-600' },
           { label: t('pages.ongoing'), value: examsByStatus.ongoing.length, color: 'text-amber-600' },
           { label: t('pages.completed'), value: examsByStatus.completed.length, color: 'text-green-600' },
         ].map(stat => (
-          <div key={stat.label} className="bg-white dark:bg-zinc-950 rounded-lg p-4 border border-gray-100 dark:border-zinc-800">
-            <p className="text-xs text-gray-500 dark:text-zinc-400">{stat.label}</p>
+          <div key={stat.label} className="bg-surface rounded-lg p-4 border border-divider">
+            <p className="text-xs text-fg-muted">{stat.label}</p>
             <p className={`text-xl font-semibold ${stat.color}`}>{stat.value}</p>
           </div>
         ))}
       </div>
 
       {/* Exams List */}
-      <div className="bg-white dark:bg-zinc-950 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-hidden">
-        <div className="p-4 border-b border-gray-100 dark:border-zinc-800 flex items-center justify-between">
+      <div className="bg-surface rounded-lg border border-border-token overflow-hidden">
+        <div className="p-4 border-b border-divider flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
-              <FileText size={14} className="text-gray-600 dark:text-zinc-400" />
+            <div className="w-8 h-8 rounded-lg bg-surface-2 flex items-center justify-center">
+              <FileText size={14} className="text-fg-muted" />
             </div>
             <div>
-              <h3 className="font-medium text-gray-900 dark:text-zinc-100 text-sm">{t('pages.classExams')}</h3>
-              <p className="text-[11px] text-gray-500 dark:text-zinc-400">{t('pages.allScheduledAndCompletedExams')}</p>
+              <h3 className="font-medium text-fg text-sm">{t('pages.classExams')}</h3>
+              <p className="text-[11px] text-fg-muted">{t('pages.allScheduledAndCompletedExams')}</p>
             </div>
           </div>
-          <Button size="sm" className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900" startContent={<FileText size={14} />}
+          <Button size="sm" className="bg-accent text-accent-fg" startContent={<FileText size={14} />}
             onPress={() => navigate('/academics/exams')}>{t('classes.manageExams', 'Manage Exams')}</Button>
         </div>
 
@@ -80,29 +80,29 @@ export function AcademicsTab({ id, cls, classesEnhancedApi }) {
           </div>
         ) : exams.length === 0 ? (
           <div className="p-8 text-center">
-            <FileText size={40} className="mx-auto text-gray-200 dark:text-zinc-700 mb-4" />
-            <p className="text-sm text-gray-500 dark:text-zinc-400">{t('pages.noExamsScheduledForThisClassYet')}</p>
-            <Button className="mt-4 bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900" startContent={<FileText size={16} />}
+            <FileText size={40} className="mx-auto text-fg-faint mb-4" />
+            <p className="text-sm text-fg-muted">{t('pages.noExamsScheduledForThisClassYet')}</p>
+            <Button className="mt-4 bg-accent text-accent-fg" startContent={<FileText size={16} />}
               onPress={() => navigate('/academics/exams')}>{t('classes.createExam', 'Create Exam')}</Button>
           </div>
         ) : (
-          <div className="divide-y divide-gray-50 dark:divide-zinc-800">
+          <div className="divide-y divide-divider">
             {exams.map((exam) => (
-              <div key={exam._id || exam.id} className="px-5 py-4 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-zinc-900 transition-colors cursor-pointer"
+              <div key={exam._id || exam.id} className="px-5 py-4 flex items-center justify-between hover:bg-surface-2 transition-colors cursor-pointer"
                 onClick={() => navigate(`/academics/exams/${exam._id || exam.id}`)}>
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center">
-                    <FileText size={18} className="text-gray-600 dark:text-zinc-400" />
+                  <div className="w-10 h-10 rounded-lg bg-surface-2 flex items-center justify-center">
+                    <FileText size={18} className="text-fg-muted" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{exam.name}</p>
-                    <p className="text-xs text-gray-500 dark:text-zinc-400">{exam.subjectName || t('classes.general', 'General')} · {exam.type?.replace(/_/g, ' ') || t('classes.exam', 'Exam')}</p>
+                    <p className="text-sm font-medium text-fg">{exam.name}</p>
+                    <p className="text-xs text-fg-muted">{exam.subjectName || t('classes.general', 'General')} · {exam.type?.replace(/_/g, ' ') || t('classes.exam', 'Exam')}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right hidden sm:block">
-                    <p className="text-xs text-gray-500 dark:text-zinc-400">{exam.startDate ? formatShortDate(exam.startDate) : t('classes.notScheduled', 'Not scheduled')}</p>
-                    <p className="text-xs text-gray-400 dark:text-zinc-500">{t('classes.max', 'Max')}: {exam.maxMarks || 100} | {t('classes.pass', 'Pass')}: {exam.passingMarks || 35}</p>
+                    <p className="text-xs text-fg-muted">{exam.startDate ? formatShortDate(exam.startDate) : t('classes.notScheduled', 'Not scheduled')}</p>
+                    <p className="text-xs text-fg-faint">{t('classes.max', 'Max')}: {exam.maxMarks || 100} | {t('classes.pass', 'Pass')}: {exam.passingMarks || 35}</p>
                   </div>
                   <Chip size="sm" color={getStatusColor(exam.status)} variant="flat">{t(`classes.examStatus.${exam.status || 'scheduled'}`, exam.status?.replace(/_/g, ' ') || 'scheduled')}</Chip>
                 </div>

@@ -1,4 +1,23 @@
 @import "tailwindcss";
+/* EMS Revamp Phase 0 — design tokens, app shell, dashboard, staff list */
+@import "./styles/tokens.css";
+@import "./styles/shell.css";
+@import "./styles/dashboard.css";
+@import "./styles/command-palette.css";
+@import "./styles/staff.css";
+@import "./styles/student.css";
+@import "./styles/create.css";
+@import "./styles/classes.css";
+@import "./styles/frosted-overlay.css";
+@import "./styles/feedback-primitives.css";
+@import "./styles/student-overlay.css";
+@import "./styles/fees.css";
+@import "./styles/calendar.css";
+@import "./styles/front-desk.css";
+@import "./styles/messaging.css";
+@import "./styles/academics.css";
+@import "./styles/auth.css";
+@import "./styles/styleguide.css";
 /* CSS-09: Component-level print utilities (page breaks, color-adjust, image/table handling) */
 @import "./styles/print.css";
 @variant dark (&:where(.dark, .dark *));
@@ -8,25 +27,112 @@
 @source not "../../playwright-report/**";
 @source not "../../test-results/**";
 
-@theme {
-  --font-sans: "Inter", sans-serif;
+/* ===== EMS REVAMP — Tailwind utility ↔ design-token mapping =====
+ * `@theme inline` makes utilities resolve to var(--*) at runtime, so
+ * theme switching via [data-theme="dark"] flips colors automatically.
+ * Aliased names (border-token / danger-token / info-token) avoid
+ * clobbering the existing `--color-border` / `--color-error` tokens
+ * already in use across pages — those get rationalised in Phase 4.
+ */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-hover: var(--surface-hover);
+  --color-border-token: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-divider: var(--divider);
 
-  /* ===== COLOR TOKENS ===== */
-  --color-primary: #374151;
-  --color-primary-hover: #1f2937;
-  --color-bg: #ffffff;
-  --color-bg-secondary: #fafafa;
-  --color-bg-tertiary: #f5f5f5;
-  --color-border: #f0f0f0;
-  --color-border-strong: #e5e5e5;
-  --color-text-primary: #171717;
-  --color-text-secondary: #525252;
-  --color-text-muted: #a3a3a3;
-  --color-text-light: #d4d4d4;
-  --color-accent: #0d9488;
-  --color-accent-hover: #0f766e;
-  --color-error: #ef4444;
-  --color-success: #22c55e;
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-fg-faint: var(--fg-faint);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-bg: var(--accent-bg);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-border: var(--accent-border);
+
+  --color-ok: var(--ok);
+  --color-ok-bg: var(--ok-bg);
+  --color-warn: var(--warn);
+  --color-warn-bg: var(--warn-bg);
+  --color-danger-token: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-info-token: var(--info);
+  --color-info-bg: var(--info-bg);
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+}
+
+@theme {
+  /* ===== TYPOGRAPHY TOKENS ===== */
+  /* Font family */
+  --font-sans: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+
+  /* Font size scale — minimalist, 14px base.
+   * Generates utilities: text-3xs, text-2xs, text-xs, text-sm, text-base, text-lg, text-xl, text-2xl, etc. */
+  --text-3xs: 0.5625rem;   /* 9px  — micro labels (e.g., calendar pills) */
+  --text-2xs: 0.625rem;    /* 10px — dense table/calendar metadata */
+  --text-xs: 0.75rem;      /* 12px — captions, hints */
+  --text-sm: 0.875rem;     /* 14px — body default */
+  --text-base: 1rem;       /* 16px — large body */
+  --text-lg: 1.125rem;     /* 18px — subheadings */
+  --text-xl: 1.25rem;      /* 20px — section titles */
+  --text-2xl: 1.5rem;      /* 24px — page titles */
+  --text-3xl: 1.875rem;    /* 30px — hero titles */
+  --text-4xl: 2.25rem;     /* 36px — marketing / display */
+
+  /* Font weight scale */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Line height scale */
+  --leading-tight: 1.25;
+  --leading-snug: 1.375;
+  --leading-normal: 1.5;
+  --leading-body: 1.6;      /* matches html body — minimalist readability */
+  --leading-relaxed: 1.75;
+
+  /* Letter-spacing scale — minimalist uses slightly tightened tracking */
+  --tracking-tight: -0.02em;
+  --tracking-normal: -0.01em;  /* matches html body */
+  --tracking-wide: 0.02em;
+
+  /* ===== COLOR TOKENS =====
+   * EMS Revamp Phase 0/4 — aliased to the new design-system tokens
+   * (--bg / --surface / --fg / --accent etc.) defined in tokens.css.
+   * Legacy `var(--color-*)` references and Tailwind utilities like
+   * `bg-bg`, `text-text-primary`, `border-border-strong` therefore
+   * resolve through this alias layer to the new theme. New code should
+   * use the `--bg` / `--surface` / `--fg` tokens directly. */
+  --color-primary: var(--accent);
+  --color-primary-hover: var(--accent-hover);
+  --color-bg: var(--bg);
+  --color-bg-secondary: var(--surface-2);
+  --color-bg-tertiary: var(--surface-hover);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text-primary: var(--fg);
+  --color-text-secondary: var(--fg-muted);
+  --color-text-muted: var(--fg-subtle);
+  /* Decorative only — does not meet AA contrast; do not use for body text. */
+  --color-text-light: var(--fg-faint);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-error: var(--danger);
+  --color-success: var(--ok);
 
   /* ===== CHART COLOR TOKENS ===== */
   /* Used in Recharts fill/stroke props — consumed via chartTheme.js */
@@ -37,16 +143,55 @@
   --color-chart-5: #6b7280;   /* gray-500    — neutral bars */
   --color-chart-6: #3b82f6;   /* blue-500    — secondary metric */
 
-  /* ===== SPACING & SIZING ===== */
-  --radius-lg: 8px;
-  --radius-md: 6px;
-  --radius-sm: 4px;
-  --spacing-content: 24px;
+  /* ===== RADIUS TOKENS ===== */
+  --radius-sm: 4px;        /* chips, badges */
+  --radius-md: 6px;        /* inputs, small buttons */
+  --radius-lg: 8px;        /* cards, large buttons */
+  --radius-xl: 12px;       /* drawers, prominent panels */
+  --radius-2xl: 16px;      /* hero cards */
+  --radius-full: 9999px;   /* pills, avatars */
+
+  /* ===== SPACING TOKENS ===== */
+  /* Tailwind v4 base spacing unit is 0.25rem (4px) — all p-*, m-*, gap-* utilities
+   * scale from that. The semantic aliases below name common values used across
+   * the app (consumed as var(--spacing-*) in custom CSS / as gap-section etc.). */
+  --spacing-content: 24px;    /* page content padding */
+  --spacing-section: 32px;    /* gap between sections */
+  --spacing-gutter: 16px;     /* default grid gutter */
+
+  /* ===== SHADOW TOKENS ===== */
+  /* Minimalist elevation scale — subtle, never heavy. Dark mode uses the same
+   * shadows (rgba alpha blends on black backgrounds → near-invisible, which is
+   * the intended "no elevation" look in dark). */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05), 0 1px 1px 0 rgb(0 0 0 / 0.03);
+  --shadow-md: 0 2px 4px -1px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.04);
+  --shadow-lg: 0 8px 16px -4px rgb(0 0 0 / 0.08), 0 4px 6px -2px rgb(0 0 0 / 0.04);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.05);
+  --shadow-focus: 0 0 0 3px rgb(13 148 136 / 0.25);  /* accent ring for focus */
+  --shadow-inner: inset 0 1px 2px 0 rgb(0 0 0 / 0.05);
+
+  /* ===== MOTION TOKENS ===== */
+  /* Duration — short, purposeful. Matches existing 0.15s / 0.2s transitions. */
+  --duration-instant: 75ms;
+  --duration-fast: 100ms;
+  --duration-base: 150ms;   /* default — hover, color changes */
+  --duration-slow: 200ms;   /* default — enter/exit animations */
+  --duration-slower: 300ms; /* drawers, modals */
+
+  /* Easing — generates ease-* utilities in Tailwind v4 */
+  --ease-linear: linear;
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* ===== SIDEBAR DIMENSIONS ===== */
-  /* Referenced in App.jsx as ml-[var(--sidebar-width)] */
-  --sidebar-width: 240px;
-  --sidebar-width-collapsed: 64px;
+  /* EMS Revamp Phase 1 — retuned to match the new shell spec (224 / 56).
+   * Both legacy (--sidebar-width) and new (--sidebar-w from tokens.css)
+   * names point to the same values until Phase 4 hygiene unifies them. */
+  --sidebar-width: 224px;
+  --sidebar-width-collapsed: 56px;
 
   /* ===== CONTENT AREA DIMENSIONS ===== */
   /* Common heights used in chart containers, modals, and panels */
@@ -65,7 +210,7 @@
   --width-panel-xl: 900px;
 
   /* ===== TOPBAR ===== */
-  --topbar-height: 60px;
+  --topbar-height: 44px;
 
   /* ===== Z-INDEX SCALE ===== */
   /*
@@ -109,31 +254,12 @@
     min-height: 100%;
   }
 
-  html.dark {
-    --color-primary: #d4d4d8;
-    --color-primary-hover: #e4e4e7;
-    --color-bg: #0a0a0a;
-    --color-bg-secondary: #09090b;
-    --color-bg-tertiary: #18181b;
-    --color-border: #27272a;
-    --color-border-strong: #3f3f46;
-    --color-text-primary: #fafafa;
-    --color-text-secondary: #a1a1aa;
-    --color-text-muted: #71717a;
-    --color-text-light: #52525b;
-    --color-accent: #2dd4bf;
-    --color-accent-hover: #14b8a6;
-    --color-error: #f87171;
-    --color-success: #4ade80;
-    --color-surface: #18181b;
-    --color-surface-hover: #27272a;
-  }
-
-  html.dark,
-  html.dark body,
-  html.dark #root {
-    background-color: #09090b;
-  }
+  /* Phase 4 token migration: dark-mode overrides are now driven by
+   * tokens.css (`[data-theme="dark"], .dark { ... }`). The legacy
+   * `--color-*` tokens above are aliased to the new `--bg`/`--surface`/
+   * `--fg`/`--accent` tokens, which auto-flip — so this html.dark block
+   * is no longer needed. Body bg also lands via `body { background:
+   * var(--bg) }` in tokens.css. */
 
   button {
     cursor: pointer;
@@ -288,23 +414,12 @@
   min-height: 100%;
 }
 
-/* Section */
-.section {
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-}
-
-/* Section header */
-.section-header {
-  padding: 20px 24px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-/* Section content */
-.section-content {
-  padding: 24px;
-}
+/* `.section`, `.section-header`, `.section-content` were stale carded
+   wrappers from an earlier design pass. They clashed with the composer's
+   `.section` (which is just a `margin-bottom` spacer per styles/create.css)
+   by adding a grey card background, border, and radius. Nothing else in
+   the codebase uses these class names — keep this comment so they don't
+   come back as a global card style. */
 
 /* Minimal tabs container */
 .minimal-tabs {
@@ -433,6 +548,75 @@ html.dark.scrollbar-visible * {
   animation: slide-in-top 0.2s ease-out forwards;
 }
 
+/* Indeterminate progress — used by Progress primitive */
+@keyframes progress-indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+
+.animate-progress-indeterminate {
+  animation: progress-indeterminate 1.4s ease-in-out infinite;
+}
+
+/* Scale In — used for popovers, dialogs, dropdown menus */
+@keyframes scale-in {
+  from { transform: scale(0.96); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.15s cubic-bezier(0, 0, 0.2, 1) forwards;
+  transform-origin: var(--scale-origin, center);
+}
+
+/* Shimmer — preferred skeleton effect (more polished than animate-pulse).
+ * Uses a solid base + a sweeping highlight band so the animation reads as
+ * motion, not a faint hue change. Was nearly invisible when the stops
+ * resolved to alpha-blended border tokens; now uses explicit OKLCH stops
+ * that contrast against the parent surface in both light and dark mode. */
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.animate-shimmer {
+  background-color: oklch(94% 0.004 80);
+  background-image: linear-gradient(
+    100deg,
+    transparent 0%,
+    transparent 35%,
+    oklch(99% 0 0 / 0.95) 50%,
+    transparent 65%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.dark .animate-shimmer {
+  background-color: oklch(26% 0.008 280);
+  background-image: linear-gradient(
+    100deg,
+    transparent 0%,
+    transparent 35%,
+    oklch(40% 0.01 280 / 0.85) 50%,
+    transparent 65%,
+    transparent 100%
+  );
+}
+
+/* Pop — used for success ticks / checkmark feedback */
+@keyframes pop {
+  0% { transform: scale(0.7); opacity: 0; }
+  60% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-pop {
+  animation: pop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
 /*
  * CSS-10: Reduced motion support
  * Users with vestibular disorders or motion sensitivity prefer less animation.
@@ -444,10 +628,22 @@ html.dark.scrollbar-visible * {
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in,
   .animate-slide-up,
-  .animate-slide-in-top {
+  .animate-slide-in-top,
+  .animate-scale-in,
+  .animate-pop {
     animation: none;
     opacity: 1;
     transform: none;
+  }
+
+  .animate-progress-indeterminate,
+  .animate-shimmer {
+    animation: none;
+  }
+
+  .animate-shimmer {
+    background-image: none;
+    background-color: var(--color-bg-tertiary);
   }
 
   /* Suppress transition durations across the board */
@@ -514,7 +710,7 @@ html.dark.scrollbar-visible * {
   --chart-height-lg: 300px;    /* Large chart areas (DashboardCharts) */
   --chart-height-md: 200px;    /* Medium chart areas (ChartSection) */
   --chart-height-sm: 160px;    /* Compact chart areas */
-  --topbar-height: 56px;       /* Topbar — matches mt-14 (3.5rem) in App.jsx */
+  --topbar-height: 44px;       /* Topbar — matches mt-11 (2.75rem) in App.jsx */
 }
 
 /*

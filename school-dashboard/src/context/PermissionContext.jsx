@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { useAuth } from "./AuthContext";
+import { getStoredUser } from "../utils/authSession";
 import { request } from "../services/api.js";
 import logger from "../utils/logger";
 
@@ -7,149 +8,215 @@ const PermissionContext = createContext();
 
 export const usePermissions = () => useContext(PermissionContext);
 
+// ---------------------------------------------------------------------------
+// Pure helper — compute role-based default permissions for a user object.
+// Called synchronously on mount so the UI always starts with sensible defaults
+// rather than an empty-permission state that requires a full-screen spinner.
+//
+// SECURITY: `_roleVerified` is intentionally excluded from sessionStorage
+// (see authSession.js STORED_USER_FIELDS). So stored users always have
+// _roleVerified === undefined → defaults are always conservative (view-only)
+// until AuthContext confirms the role from the server and triggers a re-fetch.
+// ---------------------------------------------------------------------------
+function getDefaultPermissionsForUser(u) {
+  if (!u) return [];
+
+  const roleVerified = u._roleVerified === true;
+  const roleStr = typeof u.role === 'string' ? u.role : (u.role?.toString?.() || '');
+  const normalizedRole = roleStr.toLowerCase().trim();
+
+  if (!roleVerified) {
+    // Unverified role — grant minimal view-only permissions. The user will
+    // get proper permissions once /permissions/me resolves or the role is
+    // server-verified.
+    return [
+      { module: 'dashboard', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'staff', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'students', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'classes', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'academics', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'attendance', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'timetable', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'messaging', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'front-desk', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'inventory', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'hostel', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'transport', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'library', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'intake-forms', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'dataTools', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'analytics', view: true, create: false, edit: false, delete: false, publish: false },
+    ];
+  }
+
+  if (normalizedRole === 'super admin' || normalizedRole === 'admin' || normalizedRole === 'superadmin') {
+    return [{ module: '*', view: true, create: true, edit: true, delete: true, publish: true }];
+  }
+  if (normalizedRole === 'principal') {
+    return [
+      { module: '*', view: true, create: true, edit: true, delete: true, publish: true },
+      { module: 'settings', view: true, create: true, edit: true, delete: false, publish: false },
+    ];
+  }
+  if (normalizedRole === 'vice principal' || normalizedRole === 'vice-principal') {
+    return [
+      { module: 'dashboard', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'staff', view: true, create: true, edit: true, delete: false, publish: false },
+      { module: 'students', view: true, create: true, edit: true, delete: false, publish: false },
+      { module: 'classes', view: true, create: true, edit: true, delete: false, publish: false },
+      { module: 'academics', view: true, create: true, edit: true, delete: false, publish: true },
+      { module: 'attendance', view: true, create: true, edit: true, delete: false, publish: false },
+      { module: 'timetable', view: true, create: true, edit: true, delete: false, publish: false },
+      { module: 'fees', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'payroll', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'messaging', view: true, create: true, edit: true, delete: false, publish: false },
+      { module: 'reports', view: true, create: true, edit: false, delete: false, publish: false },
+      { module: 'front-desk', view: true, create: true, edit: true, delete: false, publish: false },
+      { module: 'inventory', view: true, create: true, edit: true, delete: false, publish: false },
+      { module: 'hostel', view: true, create: true, edit: true, delete: false, publish: false },
+      { module: 'transport', view: true, create: true, edit: true, delete: false, publish: false },
+      { module: 'library', view: true, create: true, edit: true, delete: false, publish: false },
+      { module: 'intake-forms', view: true, create: true, edit: true, delete: false, publish: false },
+      { module: 'dataTools', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'analytics', view: true, create: false, edit: false, delete: false, publish: false },
+    ];
+  }
+  if (normalizedRole === 'teacher') {
+    return [
+      { module: 'dashboard', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'staff', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'students', view: true, create: false, edit: true, delete: false, publish: false },
+      { module: 'classes', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'academics', view: true, create: true, edit: true, delete: false, publish: false },
+      { module: 'attendance', view: true, create: true, edit: true, delete: false, publish: false },
+      { module: 'timetable', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'fees', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'messaging', view: true, create: true, edit: false, delete: false, publish: false },
+      { module: 'reports', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'front-desk', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'inventory', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'hostel', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'transport', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'library', view: true, create: true, edit: false, delete: false, publish: false },
+      { module: 'intake-forms', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'dataTools', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'analytics', view: true, create: false, edit: false, delete: false, publish: false },
+    ];
+  }
+  if (normalizedRole === 'accountant') {
+    return [
+      { module: 'dashboard', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'staff', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'students', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'academics', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'fees', view: true, create: true, edit: true, delete: true, publish: false },
+      { module: 'payroll', view: true, create: true, edit: true, delete: false, publish: false },
+      { module: 'reports', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'front-desk', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'inventory', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'hostel', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'transport', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'library', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'intake-forms', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'dataTools', view: true, create: false, edit: false, delete: false, publish: false },
+      { module: 'analytics', view: true, create: false, edit: false, delete: false, publish: false },
+    ];
+  }
+  // Grant basic view permissions for other roles
+  return [
+    { module: 'dashboard', view: true, create: false, edit: false, delete: false, publish: false },
+    { module: 'staff', view: true, create: false, edit: false, delete: false, publish: false },
+    { module: 'students', view: true, create: false, edit: false, delete: false, publish: false },
+    { module: 'classes', view: true, create: false, edit: false, delete: false, publish: false },
+    { module: 'academics', view: true, create: false, edit: false, delete: false, publish: false },
+    { module: 'attendance', view: true, create: false, edit: false, delete: false, publish: false },
+    { module: 'timetable', view: true, create: false, edit: false, delete: false, publish: false },
+    { module: 'messaging', view: true, create: true, edit: false, delete: false, publish: false },
+    { module: 'front-desk', view: true, create: false, edit: false, delete: false, publish: false },
+    { module: 'inventory', view: true, create: false, edit: false, delete: false, publish: false },
+    { module: 'hostel', view: true, create: false, edit: false, delete: false, publish: false },
+    { module: 'transport', view: true, create: false, edit: false, delete: false, publish: false },
+    { module: 'library', view: true, create: false, edit: false, delete: false, publish: false },
+    { module: 'intake-forms', view: true, create: false, edit: false, delete: false, publish: false },
+    { module: 'dataTools', view: true, create: false, edit: false, delete: false, publish: false },
+    { module: 'analytics', view: true, create: false, edit: false, delete: false, publish: false },
+  ];
+}
+
 export const PermissionProvider = ({ children }) => {
   const { user, isAuthenticated } = useAuth();
-  const [permissions, setPermissions] = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      fetchUserPermissions(user.id);
-    } else {
-      setPermissions([]);
-      setLoading(false);
-    }
-  // Use user?.id instead of user object to avoid re-running on every render
-  // when AuthContext creates a new user object reference (AP-13).
-  // Also depend on _roleVerified so permissions are re-fetched once the
-  // server confirms the role (transitions from false -> true).
-  }, [isAuthenticated, user?.id, user?._roleVerified]);
+  // Initialize synchronously from stored user so the app renders immediately
+  // with conservative defaults — no spinner needed. Permissions update silently
+  // when /permissions/me resolves and again when the role is server-verified.
+  const [permissions, setPermissions] = useState(() => getDefaultPermissionsForUser(getStoredUser()));
+  const [loading, setLoading] = useState(false);
 
-  // [AUDIT-563] Accept userId as parameter to avoid stale closure over user object
-  const fetchUserPermissions = async (userId) => {
-    const id = userId || user?.id;
+  // Track whether the initial fetch already ran to avoid duplicate requests.
+  const initialFetchDoneRef = useRef(false);
+
+  // ---------------------------------------------------------------------------
+  // Fetch permissions from the server. Accepts a targetUser so it can be
+  // called before AuthContext's user state is set (e.g. on mount from stored user).
+  // ---------------------------------------------------------------------------
+  const fetchUserPermissions = async (targetUser) => {
+    const id = targetUser?.id;
     if (!id) return;
     try {
       setLoading(true);
-
-      // [AUDIT-595] Use /permissions/me to derive userId from auth token server-side,
-      // eliminating IDOR risk from client-controlled userId in the URL
+      // /permissions/me derives the user from the auth cookie server-side — safe
+      // to call immediately on mount without waiting for isAuthenticated.
       const data = await request(`/permissions/me`);
       const apiPermissions = data.permissions || [];
-
-      // If API returns empty or incomplete permissions, merge with role defaults
       if (apiPermissions.length === 0) {
-        grantDefaultPermissions();
+        setPermissions(getDefaultPermissionsForUser(targetUser));
       } else {
         setPermissions(apiPermissions);
       }
     } catch (error) {
-      console.warn('Permissions system not available, using role-based fallback:', error.message);
-      grantDefaultPermissions();
+      logger.warn('Permissions system not available, using role-based fallback:', error.message);
+      setPermissions(getDefaultPermissionsForUser(targetUser));
     } finally {
       setLoading(false);
     }
   };
 
-  const grantDefaultPermissions = () => {
-    // SECURITY: The role used here may come from sessionStorage, which a user
-    // can tamper with via the browser console. Only grant elevated (admin/
-    // principal) permissions when the role has been verified by the server
-    // (i.e. _roleVerified === true, set by AuthContext after a successful
-    // /auth/session or /auth/login response). When the role is unverified,
-    // fall through to basic view-only permissions to prevent privilege
-    // escalation via sessionStorage manipulation.
-    const roleVerified = user?._roleVerified === true;
-
-    // Normalize role for case-insensitive comparison - handle various types safely
-    const roleStr = typeof user?.role === 'string' ? user.role :
-                    user?.role?.toString?.() || '';
-    const normalizedRole = roleStr.toLowerCase().trim();
-
-    // Only trust elevated roles when verified by the server
-    if (!roleVerified) {
-      // Unverified role — grant minimal view-only permissions regardless of
-      // what the role field says. The user will get proper permissions once
-      // the /auth/session call succeeds and re-triggers this flow.
-      console.warn(
-        'PermissionContext: role not server-verified, granting view-only fallback permissions'
-      );
-      setPermissions([
-        { module: 'dashboard', view: true, create: false, edit: false, delete: false, publish: false },
-        { module: 'staff', view: true, create: false, edit: false, delete: false, publish: false },
-        { module: 'students', view: true, create: false, edit: false, delete: false, publish: false },
-        { module: 'classes', view: true, create: false, edit: false, delete: false, publish: false },
-        { module: 'academics', view: true, create: false, edit: false, delete: false, publish: false },
-        { module: 'attendance', view: true, create: false, edit: false, delete: false, publish: false },
-        { module: 'timetable', view: true, create: false, edit: false, delete: false, publish: false },
-        { module: 'messaging', view: true, create: false, edit: false, delete: false, publish: false },
-      ]);
-      return;
-    }
-
-    // Grant all permissions for Admin roles (role verified by server)
-    if (normalizedRole === 'super admin' || normalizedRole === 'admin' || normalizedRole === 'superadmin') {
-      setPermissions([{ module: '*', view: true, create: true, edit: true, delete: true, publish: true }]);
-    } else if (normalizedRole === 'principal') {
-      // Principal has full access except settings delete
-      setPermissions([
-        { module: '*', view: true, create: true, edit: true, delete: true, publish: true },
-        { module: 'settings', view: true, create: true, edit: true, delete: false, publish: false }
-      ]);
-    } else if (normalizedRole === 'vice principal' || normalizedRole === 'vice-principal') {
-      // Vice Principal has access without delete
-      setPermissions([
-        { module: 'dashboard', view: true, create: false, edit: false, delete: false, publish: false },
-        { module: 'staff', view: true, create: true, edit: true, delete: false, publish: false },
-        { module: 'students', view: true, create: true, edit: true, delete: false, publish: false },
-        { module: 'classes', view: true, create: true, edit: true, delete: false, publish: false },
-        { module: 'academics', view: true, create: true, edit: true, delete: false, publish: true },
-        { module: 'attendance', view: true, create: true, edit: true, delete: false, publish: false },
-        { module: 'timetable', view: true, create: true, edit: true, delete: false, publish: false },
-        { module: 'fees', view: true, create: false, edit: false, delete: false, publish: false },
-        { module: 'payroll', view: true, create: false, edit: false, delete: false, publish: false },
-        { module: 'messaging', view: true, create: true, edit: true, delete: false, publish: false },
-        { module: 'reports', view: true, create: true, edit: false, delete: false, publish: false },
-      ]);
-    } else if (normalizedRole === 'teacher') {
-      // Teacher has access to classes, attendance, academics
-      setPermissions([
-        { module: 'dashboard', view: true, create: false, edit: false, delete: false, publish: false },
-        { module: 'staff', view: true, create: false, edit: false, delete: false, publish: false },
-        { module: 'students', view: true, create: false, edit: true, delete: false, publish: false },
-        { module: 'classes', view: true, create: false, edit: false, delete: false, publish: false },
-        { module: 'academics', view: true, create: true, edit: true, delete: false, publish: false },
-        { module: 'attendance', view: true, create: true, edit: true, delete: false, publish: false },
-        { module: 'timetable', view: true, create: false, edit: false, delete: false, publish: false },
-        { module: 'fees', view: true, create: false, edit: false, delete: false, publish: false },
-        { module: 'messaging', view: true, create: true, edit: false, delete: false, publish: false },
-        { module: 'reports', view: true, create: false, edit: false, delete: false, publish: false },
-      ]);
-    } else if (normalizedRole === 'accountant') {
-      // Accountant has access to fees and payroll
-      setPermissions([
-        { module: 'dashboard', view: true, create: false, edit: false, delete: false, publish: false },
-        { module: 'staff', view: true, create: false, edit: false, delete: false, publish: false },
-        { module: 'students', view: true, create: false, edit: false, delete: false, publish: false },
-        { module: 'academics', view: true, create: false, edit: false, delete: false, publish: false },
-        { module: 'fees', view: true, create: true, edit: true, delete: true, publish: false },
-        { module: 'payroll', view: true, create: true, edit: true, delete: false, publish: false },
-        { module: 'reports', view: true, create: false, edit: false, delete: false, publish: false },
-      ]);
+  // ---------------------------------------------------------------------------
+  // On mount: fire /permissions/me from the stored user immediately — runs
+  // in parallel with appDataQuery and settingsDataQuery (both of which also
+  // read from stored user rather than waiting for isAuthenticated).
+  // This eliminates the sequential auth → permissions waterfall.
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    const stored = getStoredUser();
+    if (stored?.id) {
+      initialFetchDoneRef.current = true;
+      fetchUserPermissions(stored);
     } else {
-      // Grant basic view permissions for other roles
-      setPermissions([
-        { module: 'dashboard', view: true, create: false, edit: false, delete: false, publish: false },
-        { module: 'staff', view: true, create: false, edit: false, delete: false, publish: false },
-        { module: 'students', view: true, create: false, edit: false, delete: false, publish: false },
-        { module: 'classes', view: true, create: false, edit: false, delete: false, publish: false },
-        { module: 'academics', view: true, create: false, edit: false, delete: false, publish: false },
-        { module: 'attendance', view: true, create: false, edit: false, delete: false, publish: false },
-        { module: 'timetable', view: true, create: false, edit: false, delete: false, publish: false },
-        { module: 'messaging', view: true, create: true, edit: false, delete: false, publish: false },
-      ]);
+      setPermissions([]);
+      setLoading(false);
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // Re-fetch when the role is server-verified by AuthContext. This upgrades
+  // permissions from conservative defaults to accurate role-specific values.
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (isAuthenticated && user?._roleVerified) {
+      fetchUserPermissions(user);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, user?._roleVerified]);
+
+  // Clear permissions on logout.
+  useEffect(() => {
+    if (!isAuthenticated && !getStoredUser()) {
+      setPermissions([]);
+      setLoading(false);
+    }
+  }, [isAuthenticated]);
 
   const hasPermission = (module, action = 'view') => {
     // SECURITY: Only trust the role for admin short-circuit when the role has
@@ -195,7 +262,6 @@ export const PermissionProvider = ({ children }) => {
 
   const requestPermission = async (module, action, reason) => {
     try {
-
       return await request('/permissions/request', {
         method: 'POST',
         body: JSON.stringify({
@@ -228,7 +294,7 @@ export const PermissionProvider = ({ children }) => {
 
   const refreshPermissions = () => {
     if (isAuthenticated && user) {
-      fetchUserPermissions();
+      fetchUserPermissions(user);
     }
   };
 
@@ -243,13 +309,7 @@ export const PermissionProvider = ({ children }) => {
         refreshPermissions,
       }}
     >
-      {loading ? (
-        <div className="h-screen w-screen flex items-center justify-center bg-background">
-          <div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
-        </div>
-      ) : (
-        children
-      )}
+      {children}
     </PermissionContext.Provider>
   );
 };

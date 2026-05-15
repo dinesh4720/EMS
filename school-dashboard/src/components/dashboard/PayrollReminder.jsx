@@ -4,6 +4,8 @@ import { AlertCircle, X } from "lucide-react";
 import { settingsApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import logger from '../../utils/logger';
+
 
 /**
  * PayrollReminder Component
@@ -29,15 +31,15 @@ export default function PayrollReminder() {
           setReminder(data);
           // Show toast notification
           toast.custom((toastInstance) => (
-            <div className="bg-white dark:bg-zinc-950 border-l-4 border-warning shadow-lg rounded-lg p-4 max-w-md flex items-start gap-3">
+            <div className="bg-surface border-l-4 border-warning shadow-lg rounded-lg p-4 max-w-md flex items-start gap-3">
               <AlertCircle className="text-warning flex-shrink-0 mt-0.5" size={20} />
               <div className="flex-1">
-                <p className="font-semibold text-sm text-default-800">{t('components.payrollReminder')}</p>
-                <p className="text-xs text-default-600 mt-1">{data.message}</p>
+                <p className="font-semibold text-sm text-fg">{t('components.payrollReminder')}</p>
+                <p className="text-xs text-fg-muted mt-1">{data.message}</p>
               </div>
               <button
                 onClick={() => toast.dismiss(toastInstance.id)}
-                className="text-default-400 hover:text-default-600 transition-colors"
+                className="text-fg-faint hover:text-fg-muted transition-colors"
               >
                 <X size={16} />
               </button>
@@ -45,7 +47,7 @@ export default function PayrollReminder() {
           ), { duration: 10000, id: 'payroll-reminder' });
         }
       } catch (error) {
-        console.error('Failed to check payroll reminder:', error);
+        logger.error('Failed to check payroll reminder:', error);
       } finally {
         setLoading(false);
       }
@@ -67,7 +69,7 @@ export default function PayrollReminder() {
 
   return (
     <div className="fixed bottom-4 right-4 z-50 max-w-md animate-slide-up">
-      <div className="bg-white dark:bg-zinc-950 border border-warning shadow-xl rounded-lg overflow-hidden">
+      <div className="bg-surface border border-warning shadow-xl rounded-lg overflow-hidden">
         <div className="bg-warning/10 px-4 py-3 flex items-start gap-3">
           <AlertCircle className="text-warning flex-shrink-0 mt-0.5" size={20} />
           <div className="flex-1 min-w-0">
@@ -112,7 +114,7 @@ export function usePayrollReminder() {
       setLoading(false);
       return data;
     } catch (error) {
-      console.error('Failed to check payroll reminder:', error);
+      logger.error('Failed to check payroll reminder:', error);
       setLoading(false);
       return null;
     }

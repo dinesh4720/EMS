@@ -1,30 +1,25 @@
-import { request } from './api';
+import { request, requestUpload } from './api/core.js';
 import logger from '../utils/logger';
 
 class ChatService {
-  // Get all conversations for a user (identity derived from session)
+  async getPermissions() {
+    try {
+      return await request('/messages/permissions');
+    } catch (error) {
+      logger.error('Error getting permissions:', error);
+      throw error;
+    }
+  }
+
   async getConversations() {
     try {
       return await request('/messages/conversations');
     } catch (error) {
-      logger.error('Error fetching conversations:', error);
-      throw error;
+      logger.error('Error getting conversations:', error?.message || error);
+      return [];
     }
   }
 
-  // Get messages for a conversation
-  async getMessages(conversationId, limit = 50, before = null) {
-    try {
-      const params = new URLSearchParams({ limit });
-      if (before) params.set('before', before);
-      return await request(`/messages/conversations/${conversationId}/messages?${params}`);
-    } catch (error) {
-      logger.error('Error fetching messages:', error);
-      throw error;
-    }
-  }
-
-  // Create or get conversation (caller identity derived from session)
   async createConversation(user2Id, user2Type) {
     try {
       return await request('/messages/conversations', {
@@ -34,6 +29,17 @@ class ChatService {
     } catch (error) {
       logger.error('Error creating conversation:', error);
       throw error;
+    }
+  }
+
+  async getMessages(conversationId, limit = 50, before = null) {
+    try {
+      let endpoint = `/messages/conversations/${conversationId}/messages?limit=${limit}`;
+      if (before) endpoint += `&before=${before}`;
+      return await request(endpoint);
+    } catch (error) {
+      logger.error('Error getting messages:', error);
+      return [];
     }
   }
 
@@ -52,7 +58,6 @@ class ChatService {
     }
   }
 
-  // Mark messages as read (identity derived from session)
   async markAsRead(conversationId) {
     try {
       return await request('/messages/read', {
@@ -60,57 +65,54 @@ class ChatService {
         body: JSON.stringify({ conversationId })
       });
     } catch (error) {
-      logger.error('Error marking messages as read:', error);
+      logger.error('Error marking as read:', error);
       throw error;
     }
   }
 
-  // Delete message (identity derived from session)
   async deleteMessage(messageId) {
     try {
-      return await request(`/messages/${messageId}`, { method: 'DELETE' });
+      return await request(`/messages/${messageId}`, {
+        method: 'DELETE'
+      });
     } catch (error) {
       logger.error('Error deleting message:', error);
       throw error;
     }
   }
 
-  // Search messages (identity derived from session)
   async searchMessages(query, limit = 20) {
     try {
-      const params = new URLSearchParams({ query, limit });
-      return await request(`/messages/search?${params}`);
+      return await request(`/messages/search?query=${encodeURIComponent(query)}&limit=${limit}`);
     } catch (error) {
       logger.error('Error searching messages:', error);
-      throw error;
+      return [];
     }
   }
 
-  // Get user presence
   async getUserPresence(userId) {
     try {
       return await request(`/messages/presence/${userId}`);
     } catch (error) {
-      logger.error('Error fetching user presence:', error);
-      throw error;
+      logger.error('Error getting presence:', error);
+      return { status: 'offline', lastSeen: null };
     }
   }
 
-  // Get online users
   async getOnlineUsers() {
     try {
       return await request('/messages/presence/online');
     } catch (error) {
-      logger.error('Error fetching online users:', error);
-      throw error;
+      logger.error('Error getting online users:', error);
+      return [];
     }
   }
 
-  // Upload file for chat
   async uploadFile(file) {
     try {
-      const { uploadApi } = await import('./api');
-      return await uploadApi.uploadFile(file);
+      const formData = new FormData();
+      formData.append('file', file);
+      return await requestUpload('/upload', formData);
     } catch (error) {
       logger.error('Error uploading file:', error);
       throw error;
@@ -118,5 +120,4 @@ class ChatService {
   }
 }
 
-const chatService = new ChatService();
-export default chatService;
+export default new ChatService();

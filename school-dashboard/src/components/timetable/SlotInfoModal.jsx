@@ -25,7 +25,7 @@ const colorStyles = {
   yellow: { header: 'bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800', accent: 'text-yellow-700 dark:text-yellow-300', dot: 'bg-yellow-500' },
   red:    { header: 'bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800', accent: 'text-red-700 dark:text-red-300', dot: 'bg-red-500' },
   purple: { header: 'bg-purple-50 dark:bg-purple-950 border-purple-200 dark:border-purple-800', accent: 'text-purple-700 dark:text-purple-300', dot: 'bg-purple-500' },
-  gray:   { header: 'bg-gray-50 dark:bg-zinc-800 border-gray-200 dark:border-zinc-700', accent: 'text-gray-700 dark:text-zinc-300', dot: 'bg-gray-500' },
+  gray:   { header: 'bg-surface-2 border-border-token', accent: 'text-fg', dot: 'bg-gray-500' },
 };
 
 export default function SlotInfoModal({
@@ -150,7 +150,7 @@ export default function SlotInfoModal({
               </Chip>
             )}
           </div>
-          <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1.5 ml-6">
+          <p className="text-sm text-fg-muted mt-1.5 ml-6">
             {day} &bull; {period?.name} ({period?.startTime} &ndash; {period?.endTime})
           </p>
         </div>
@@ -158,21 +158,21 @@ export default function SlotInfoModal({
         <ModalBody className="px-6 py-5 space-y-5">
 
           {/* Teacher */}
-          <div className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-zinc-800 rounded-xl">
+          <div className="flex items-start gap-4 p-4 bg-surface-2 rounded-xl">
             <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
               <User size={20} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-gray-900 dark:text-zinc-100">
+              <p className="font-semibold text-fg">
                 {teacher?.name || 'No teacher assigned'}
               </p>
               {nextClass && (
-                <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">
-                  Next class: <span className="font-medium text-gray-700 dark:text-zinc-300">{nextClass.day} {nextClass.period}</span> ({nextClass.subject})
+                <p className="text-xs text-fg-muted mt-1">
+                  Next class: <span className="font-medium text-fg">{nextClass.day} {nextClass.period}</span> ({nextClass.subject})
                 </p>
               )}
               {teacherSchedule.length > 0 && (
-                <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
+                <p className="text-xs text-fg-muted mt-0.5">
                   {teacherSchedule.length + 1} total periods this week
                 </p>
               )}
@@ -181,21 +181,21 @@ export default function SlotInfoModal({
 
           {/* Subject quick stats */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-xl text-center">
-              <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{subjectPeriodsPerWeek.length}</p>
-              <p className="text-xs text-gray-500 dark:text-zinc-400">Periods / week</p>
+            <div className="p-3 bg-surface-2 rounded-xl text-center">
+              <p className="text-2xl font-bold text-fg">{subjectPeriodsPerWeek.length}</p>
+              <p className="text-xs text-fg-muted">Periods / week</p>
             </div>
-            <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-xl text-center">
-              <p className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{exams.length}</p>
-              <p className="text-xs text-gray-500 dark:text-zinc-400">Exams</p>
+            <div className="p-3 bg-surface-2 rounded-xl text-center">
+              <p className="text-2xl font-bold text-fg">{exams.length}</p>
+              <p className="text-xs text-fg-muted">Exams</p>
             </div>
           </div>
 
           {/* Homework */}
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <BookOpen size={16} className="text-gray-400 dark:text-zinc-500" />
-              <h4 className="text-sm font-semibold text-gray-700 dark:text-zinc-300">Recent Homework</h4>
+              <BookOpen size={16} className="text-fg-faint" />
+              <h4 className="text-sm font-semibold text-fg">Recent Homework</h4>
             </div>
             {loadingData ? (
               <div className="flex items-center justify-center py-4">
@@ -204,11 +204,11 @@ export default function SlotInfoModal({
             ) : homework.length > 0 ? (
               <div className="space-y-2">
                 {homework.map((hw, i) => (
-                  <div key={hw._id || i} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg">
+                  <div key={hw._id || i} className="flex items-center justify-between p-3 bg-surface-2 rounded-lg">
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 truncate">{hw.title}</p>
+                      <p className="text-sm font-medium text-fg truncate">{hw.title}</p>
                       {hw.dueDate && (
-                        <p className="text-xs text-gray-500 dark:text-zinc-400">
+                        <p className="text-xs text-fg-muted">
                           Due: {formatDate(hw.dueDate)}
                         </p>
                       )}
@@ -225,15 +225,15 @@ export default function SlotInfoModal({
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-gray-400 dark:text-zinc-500 py-2">No recent homework for {subject}</p>
+              <p className="text-xs text-fg-faint py-2">No recent homework for {subject}</p>
             )}
           </div>
 
           {/* Exams */}
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <GraduationCap size={16} className="text-gray-400 dark:text-zinc-500" />
-              <h4 className="text-sm font-semibold text-gray-700 dark:text-zinc-300">Exams</h4>
+              <GraduationCap size={16} className="text-fg-faint" />
+              <h4 className="text-sm font-semibold text-fg">Exams</h4>
             </div>
             {loadingData ? (
               <div className="flex items-center justify-center py-4">
@@ -242,11 +242,11 @@ export default function SlotInfoModal({
             ) : exams.length > 0 ? (
               <div className="space-y-2">
                 {exams.map((exam, i) => (
-                  <div key={exam._id || i} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg">
+                  <div key={exam._id || i} className="flex items-center justify-between p-3 bg-surface-2 rounded-lg">
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 truncate">{exam.name}</p>
+                      <p className="text-sm font-medium text-fg truncate">{exam.name}</p>
                       {exam.startDate && (
-                        <p className="text-xs text-gray-500 dark:text-zinc-400">
+                        <p className="text-xs text-fg-muted">
                           {formatDate(exam.startDate)}
                         </p>
                       )}
@@ -263,7 +263,7 @@ export default function SlotInfoModal({
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-gray-400 dark:text-zinc-500 py-2">No exams for {subject}</p>
+              <p className="text-xs text-fg-faint py-2">No exams for {subject}</p>
             )}
           </div>
 
@@ -271,8 +271,8 @@ export default function SlotInfoModal({
           {subjectPeriodsPerWeek.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <Calendar size={16} className="text-gray-400 dark:text-zinc-500" />
-                <h4 className="text-sm font-semibold text-gray-700 dark:text-zinc-300">Weekly Schedule</h4>
+                <Calendar size={16} className="text-fg-faint" />
+                <h4 className="text-sm font-semibold text-fg">Weekly Schedule</h4>
               </div>
               <div className="flex flex-wrap gap-2">
                 {subjectPeriodsPerWeek.map((sp, i) => (
@@ -291,7 +291,7 @@ export default function SlotInfoModal({
           )}
         </ModalBody>
 
-        <ModalFooter className="border-t border-gray-100 dark:border-zinc-800">
+        <ModalFooter className="border-t border-divider">
           <Button variant="light" onPress={onClose}>Close</Button>
           <Button
             color="primary"

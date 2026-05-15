@@ -1,12 +1,15 @@
 import { useRef, useMemo, useState } from "react";
 import { Button } from "@heroui/react";
-import { ArrowLeft, ArrowRight, User, Users, FileText } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import toast from "react-hot-toast";
 import { useStudentForm } from "../hooks/useStudentForm";
 import PersonalInfoStep from "./steps/PersonalInfoStep";
 import ParentsStep from "./steps/ParentsStep";
 import DocumentsStep from "./steps/DocumentsStep";
+import { Stepper } from "../../../components/ui";
 import { useTranslation } from 'react-i18next';
+import logger from '../../../utils/logger';
+
 
 /**
  * Refactored Student Form Component
@@ -62,9 +65,9 @@ export default function StudentForm({
 
   const steps = useMemo(
     () => [
-      { number: 1, title: "Personal Info", icon: User },
-      { number: 2, title: "Parents & Health", icon: Users },
-      { number: 3, title: "Documents", icon: FileText },
+      { n: 1, label: "Personal Info" },
+      { n: 2, label: "Parents & Health" },
+      { n: 3, label: "Documents" },
     ],
     []
   );
@@ -122,7 +125,7 @@ export default function StudentForm({
     try {
       await onSave(formData);
     } catch (error) {
-      console.error("Submit error:", error);
+      logger.error("Submit error:", error);
       toast.error(error?.message || "Failed to save student. Please try again.");
     } finally {
       setIsSubmitting(false);
@@ -182,36 +185,9 @@ export default function StudentForm({
 
   return (
     <div className="h-full flex flex-col bg-background">
-      {/* Stepper */}
-      <div className="px-4 py-3">
-        <div className="flex items-center justify-between relative">
-          {steps.map((s) => {
-            const isActive = step >= s.number;
-            const isCurrent = step === s.number;
-            return (
-              <div key={s.number} className="flex flex-col items-center relative z-10 bg-background px-2">
-                <div
-                  className={`w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all ${
-                    isCurrent
-                      ? "border-primary text-primary bg-primary-50 dark:bg-primary-900/20"
-                      : isActive
-                      ? "border-primary text-white bg-primary"
-                      : "border-default-200 text-default-400 bg-white dark:bg-default-50"
-                  }`}
-                >
-                  <s.icon size={16} strokeWidth={2} />
-                </div>
-                <span
-                  className={`text-[11px] font-semibold mt-2 uppercase tracking-wide hidden sm:block ${
-                    isCurrent ? "text-primary" : "text-default-400"
-                  }`}
-                >
-                  {s.title}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+      {/* Stepper — design-system primitive */}
+      <div className="px-4 pt-4 pb-3">
+        <Stepper steps={steps} current={step} />
       </div>
 
       {/* Content */}
@@ -219,33 +195,47 @@ export default function StudentForm({
         {renderStep()}
       </div>
 
-      {/* Footer */}
-      <div className="flex-none px-4 py-3 border-t border-default-200 bg-background z-10">
-        <div className="flex items-center justify-between gap-2">
+      {/* Footer — bundle pattern: saved-state indicator on left, Back / Continue on right */}
+      <div className="flex-none px-4 py-3 border-t border-divider bg-surface-2">
+        <div className="flex items-center gap-2">
+          <span className="flex items-center gap-1.5 text-[11.5px] text-fg-faint">
+            {hasUnsavedChanges ? (
+              <>
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--warn)]" aria-hidden />
+                {t('common.unsavedChanges', 'Unsaved changes')}
+              </>
+            ) : (
+              <>
+                <Check size={11} aria-hidden />
+                {initialData
+                  ? t('common.editing', 'Editing existing student')
+                  : t('common.draftReady', 'New student · ready')}
+              </>
+            )}
+          </span>
+          <span className="flex-1" />
           {step > 1 && (
-            <Button variant="light" onPress={handlePrev} className="font-medium">
-              <ArrowLeft size={16} />
+            <Button
+              size="sm"
+              variant="bordered"
+              onPress={handlePrev}
+              className="border-border-token text-fg font-medium"
+              startContent={<ArrowLeft size={12} />}
+            >
               {t('common.back', 'Back')}
             </Button>
           )}
-          <div className="flex-1 flex items-center justify-center">
-            {hasUnsavedChanges && (
-              <span className="text-xs text-gray-400 dark:text-zinc-500">{t('common.unsavedChanges', 'Unsaved changes')}</span>
-            )}
-          </div>
           <Button
+            size="sm"
             color="primary"
             onPress={step === 3 ? handleSubmit : handleNext}
             isLoading={isSubmitting}
-            className="font-medium min-w-fit whitespace-nowrap"
+            className="font-medium whitespace-nowrap"
+            endContent={step === 3 ? null : <ArrowRight size={12} />}
           >
-            {step === 3 ? (
-              initialData ? "Update Student" : "Add Student"
-            ) : (
-              <>
-                Next Step <ArrowRight size={16} />
-              </>
-            )}
+            {step === 3
+              ? (initialData ? "Update student" : "Add student")
+              : "Continue"}
           </Button>
         </div>
       </div>

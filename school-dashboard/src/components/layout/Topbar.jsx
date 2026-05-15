@@ -1,310 +1,343 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { Search, Command, ChevronRight, MessageCircle, Bell, Globe, Check } from "lucide-react";
-import { useLocation, Link, useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import GlobalSearch from "./GlobalSearch";
-import { AiAssistantToggle } from "../AiAssistant/AiAssistantPanel";
-import { useChatNotifications } from "../../context/ChatNotificationContext";
-import { Tooltip, Popover, PopoverTrigger, PopoverContent } from "@heroui/react";
-import NotificationCenter from "../../pages/messaging/components/notifications/NotificationCenter";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { Search, ChevronRight, Sun, Moon, Menu, Home, Star, Share2 } from "lucide-react";
+import { useLocation, Link } from "react-router-dom";
+import { useTheme } from "next-themes";
+import toast from "react-hot-toast";
+import CommandPalette from "./CommandPalette";
+import NotificationBell from "./NotificationBell";
+import UserMenu from "./UserMenu";
 import { useApp } from "../../context/AppContext";
+import { useAuth } from "../../context/AuthContext";
+import { isSuperAdminRole } from "../../utils/roleUtils";
 import { isObjectId } from "../../utils/objectIdHelper";
-import { studentsApi, notificationsApi } from "../../services/api";
-import { SUPPORTED_LANGUAGES, setLanguage } from "../../i18n";
+import { studentsApi } from "../../services/api";
+import { isPagePinned, togglePinnedPage, subscribePinnedPages } from "../../utils/pinnedPages";
 
-function Topbar({ isSidebarOpen }) {
-    const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform);
-    const [searchOpen, setSearchOpen] = useState(false);
-    const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-    const [isLangOpen, setIsLangOpen] = useState(false);
-    const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
-    const location = useLocation();
-    const navigate = useNavigate();
-    const { i18n } = useTranslation();
-    const chatNotifications = useChatNotifications();
-    const unreadCount = chatNotifications?.unreadCount || 0;
-    const { staff } = useApp();
-    const [resolvedStudentLabel, setResolvedStudentLabel] = useState(null);
+const PATH_LABELS = {
+  staffs: "Staff",
+  students: "Students",
+  classes: "Classes",
+  calendar: "Schedule",
+  messaging: "Messages",
+  fees: "Fees",
+  settings: "Settings",
+  "front-desk": "Front Desk",
+  analytics: "Analytics",
+  accounts: "Accounts",
+  hostel: "Hostel",
+  transport: "Transport",
+  library: "Library",
+  academics: "Academics",
+  reports: "Reports",
+  "data-tools": "Data Tools",
+  inventory: "Inventory",
+  ptm: "PTM",
+  "intake-forms": "Intake Forms",
+  "ai-assistant": "AI Assistant",
+  "timetable-wizard": "Timetable Wizard",
+  "super-admin": "Super Admin",
+  homework: "Homework",
+};
 
-    useEffect(() => {
-        const fetchUnreadCount = () => {
-            notificationsApi.getUnreadCount()
-                .then((data) => {
-                    setNotificationUnreadCount(data?.count ?? 0);
-                })
-                .catch(() => {
-                    setNotificationUnreadCount(0);
-                });
-        };
+function Topbar({ isSidebarOpen, onOpenMobileNav }) {
+  const isMac =
+    typeof navigator !== "undefined" &&
+    /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const location = useLocation();
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
+  const { staff } = useApp();
+  const { user } = useAuth();
+  const isSuperAdmin = isSuperAdminRole(user?.role);
+  const [resolvedStudentLabel, setResolvedStudentLabel] = useState(null);
+  const searchBtnRef = useRef(null);
 
-        fetchUnreadCount();
+  // Keyboard shortcuts:
+  //   ⌘K / Ctrl+K → open command palette
+  //   /          → focus the search trigger (mirrors Linear/GitHub)
+  //   Esc        → blur the search trigger when it is focused
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setSearchOpen(true);
+        return;
+      }
+      if (e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        const t = e.target;
+        const tag = t?.tagName;
+        const isEditable =
+          tag === "INPUT" ||
+          tag === "TEXTAREA" ||
+          tag === "SELECT" ||
+          t?.isContentEditable;
+        if (isEditable) return;
+        e.preventDefault();
+        setSearchOpen(true);
+        return;
+      }
+      if (e.key === "Escape" && document.activeElement === searchBtnRef.current) {
+        searchBtnRef.current?.blur();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
-        // Poll every 60 seconds for new notifications
-        const interval = setInterval(fetchUnreadCount, 60000);
-        return () => clearInterval(interval);
-    }, []);
+  // External openers (e.g. Dashboard hero cmd-bar) dispatch this event
+  useEffect(() => {
+    const open = () => setSearchOpen(true);
+    window.addEventListener("ems:open-command-palette", open);
+    return () => window.removeEventListener("ems:open-command-palette", open);
+  }, []);
 
-    useEffect(() => {
-        const handleKeyDown = (e) => {
-            if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-                e.preventDefault();
-                setSearchOpen(true);
-            }
-        };
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, []);
+  const studentIdFromPath = useMemo(() => {
+    const parts = location.pathname.split("/").filter(Boolean);
+    const studentIndex = parts.indexOf("students");
+    const id = studentIndex >= 0 ? parts[studentIndex + 1] : null;
+    if (
+      !id ||
+      id === "attendance" ||
+      id === "submissions" ||
+      (!isObjectId(id) && !/^[a-f\d]{20,}$/i.test(id))
+    ) {
+      return null;
+    }
+    return id;
+  }, [location.pathname]);
 
-    const studentIdFromPath = useMemo(() => {
-        const parts = location.pathname.split("/").filter(Boolean);
-        const studentIndex = parts.indexOf("students");
-        const id = studentIndex >= 0 ? parts[studentIndex + 1] : null;
-        if (
-            !id ||
-            id === "attendance" ||
-            id === "submissions" ||
-            (!isObjectId(id) && !/^[a-f\d]{20,}$/i.test(id))
-        ) {
-            return null;
+  useEffect(() => {
+    if (!studentIdFromPath) {
+      setResolvedStudentLabel(null);
+      return;
+    }
+    let isActive = true;
+    studentsApi
+      .getById(studentIdFromPath)
+      .then((student) => {
+        if (!isActive) return;
+        const label =
+          student?.name && !isObjectId(student.name)
+            ? student.name
+            : student?.admissionId
+            ? `Student ${student.admissionId}`
+            : `...${studentIdFromPath.slice(-8)}`;
+        setResolvedStudentLabel({ id: studentIdFromPath, label });
+      })
+      .catch(() => {
+        if (isActive) {
+          setResolvedStudentLabel({
+            id: studentIdFromPath,
+            label: `...${studentIdFromPath.slice(-8)}`,
+          });
         }
-        return id;
-    }, [location.pathname]);
+      });
+    return () => {
+      isActive = false;
+    };
+  }, [studentIdFromPath]);
 
-    useEffect(() => {
-        if (!studentIdFromPath) {
-            setResolvedStudentLabel(null);
-            return;
+  const currentLabel = useMemo(() => {
+    const parts = location.pathname.split("/").filter(Boolean);
+    if (parts.length === 0) return "Dashboard";
+    const first = parts[0];
+    return PATH_LABELS[first] || first.charAt(0).toUpperCase() + first.slice(1);
+  }, [location.pathname]);
+
+  const [pinned, setPinned] = useState(() => isPagePinned(location.pathname));
+  useEffect(() => {
+    setPinned(isPagePinned(location.pathname));
+    return subscribePinnedPages(() => setPinned(isPagePinned(location.pathname)));
+  }, [location.pathname]);
+
+  const handlePin = useCallback(() => {
+    const nowPinned = togglePinnedPage({ href: location.pathname, label: currentLabel });
+    setPinned(nowPinned);
+    toast.success(nowPinned ? `Pinned "${currentLabel}"` : `Unpinned "${currentLabel}"`);
+  }, [location.pathname, currentLabel]);
+
+  const handleShare = useCallback(async () => {
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    if (!url) return;
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({ title: currentLabel, url });
+        return;
+      } catch {
+        // user cancelled or share unavailable — fall through to clipboard
+      }
+    }
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+        toast.success("Link copied to clipboard");
+      } else {
+        toast.error("Sharing is not supported in this browser");
+      }
+    } catch {
+      toast.error("Could not copy link");
+    }
+  }, [currentLabel]);
+
+  const breadcrumbs = useMemo(() => {
+    const parts = location.pathname.split("/").filter(Boolean);
+    if (parts.length === 0) return [{ label: "Dashboard", path: "/" }];
+
+    return parts.map((part, index) => {
+      const currentPath = `/${parts.slice(0, index + 1).join("/")}`;
+      let label =
+        PATH_LABELS[part] || part.charAt(0).toUpperCase() + part.slice(1);
+
+      if (isObjectId(part) || /^[a-f\d]{20,}$/i.test(part)) {
+        const prevPart = parts[index - 1];
+        if (prevPart === "staffs" && staff) {
+          const member = staff.find(
+            (m) => m.id === part || m._id === part
+          );
+          if (member?.name && !isObjectId(member.name)) label = member.name;
+          else if (member?.code) label = `Staff ${member.code}`;
+          else label = `...${part.slice(-8)}`;
+        } else if (prevPart === "students" && resolvedStudentLabel?.id === part) {
+          label = resolvedStudentLabel.label;
+        } else {
+          label = `...${part.slice(-8)}`;
         }
+      }
+      return { label, path: currentPath };
+    });
+  }, [location.pathname, staff, resolvedStudentLabel]);
 
-        let isActive = true;
+  const stackClass = `topbar-stack fixed top-0 right-0 z-40 left-0 ${
+    isSidebarOpen
+      ? "lg:!left-[var(--sidebar-width)]"
+      : "lg:!left-[var(--sidebar-width-collapsed)]"
+  }`;
 
-        studentsApi.getById(studentIdFromPath)
-            .then((student) => {
-                if (!isActive) {
-                    return;
-                }
+  return (
+    <div className={stackClass} style={{ position: "fixed" }}>
+      <CommandPalette isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
 
-                const label = student?.name && !isObjectId(student.name)
-                    ? student.name
-                    : student?.admissionId
-                        ? `Student ${student.admissionId}`
-                        : `...${studentIdFromPath.slice(-8)}`;
+      {/* Single primary bar — breadcrumbs live inline now (no secondary bar). */}
+      <header aria-label="Application header" className="topbar">
+        {/* Left: mobile menu + breadcrumbs */}
+        <div className="row gap-3" style={{ minWidth: 0 }}>
+          {onOpenMobileNav && (
+            <button
+              type="button"
+              onClick={onOpenMobileNav}
+              aria-label="Open navigation menu"
+              className="iconbtn md:hidden"
+            >
+              <Menu size={15} />
+            </button>
+          )}
+          <nav
+            aria-label="Breadcrumb"
+            className="topbar__crumbs"
+            style={{ minWidth: 0 }}
+          >
+            <Link to="/" className="topbar__crumbs-home" aria-label="Home">
+              <Home size={12} aria-hidden />
+            </Link>
+            {breadcrumbs.map((crumb, i) => {
+              const isLast = i === breadcrumbs.length - 1;
+              return (
+                <React.Fragment key={crumb.path}>
+                  <ChevronRight
+                    size={12}
+                    className="topbar__crumbs-sep"
+                    aria-hidden
+                  />
+                  {isLast ? (
+                    <span className="topbar__crumbs-cur" aria-current="page">
+                      {crumb.label}
+                    </span>
+                  ) : (
+                    <Link to={crumb.path}>{crumb.label}</Link>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </nav>
+        </div>
 
-                setResolvedStudentLabel({ id: studentIdFromPath, label });
-            })
-            .catch(() => {
-                if (isActive) {
-                    setResolvedStudentLabel({ id: studentIdFromPath, label: `...${studentIdFromPath.slice(-8)}` });
-                }
-            });
-
-        return () => {
-            isActive = false;
-        };
-    }, [studentIdFromPath]);
-
-    const breadcrumbs = useMemo(() => {
-        const path = location.pathname;
-        const parts = path.split("/").filter(Boolean);
-
-        const pathMap = {
-            "staffs": "Staff",
-            "students": "Students",
-            "classes": "Classes",
-            "calendar": "Schedule",
-            "messaging": "Messages",
-            "fees": "Fees",
-            "settings": "Settings",
-            "front-desk": "Front Desk",
-            "analytics": "Analytics",
-            "accounts": "Accounts",
-            "hostel": "Hostel",
-            "transport": "Transport",
-            "library": "Library"
-        };
-
-        if (parts.length === 0) return [{ label: "Dashboard", path: "/" }];
-
-        return parts.map((part, index) => {
-            const currentPath = `/${parts.slice(0, index + 1).join("/")}`;
-            let label = pathMap[part] || part.charAt(0).toUpperCase() + part.slice(1);
-
-            // If this looks like an ObjectId or MongoDB ID, try to resolve it to a name
-            if (isObjectId(part) || /^[a-f\d]{20,}$/i.test(part)) {
-                const prevPart = parts[index - 1];
-
-                // Check if it's a staff ID
-                if (prevPart === 'staffs' && staff) {
-                    const staffMember = staff.find(s => s.id === part || s._id === part);
-                    if (staffMember && staffMember.name && !isObjectId(staffMember.name)) {
-                        label = staffMember.name;
-                    } else if (staffMember && staffMember.code) {
-                        label = `Staff ${staffMember.code}`;
-                    }
-                }
-                // Check if it's a student ID
-                else if (prevPart === 'students' && resolvedStudentLabel?.id === part) {
-                    label = resolvedStudentLabel.label;
-                }
-                // If we couldn't resolve it, show a shortened version
-                else {
-                    label = `...${part.slice(-8)}`;
-                }
-            }
-
-            return {
-                label,
-                path: currentPath
-            };
-        });
-    }, [location.pathname, staff, resolvedStudentLabel]);
-
-    return (
-        <header
-            aria-label="Application header"
-            className="
-                fixed top-0 right-0 z-40 h-14 px-5
-                flex items-center justify-between
-                bg-white dark:bg-zinc-950
-                border-b border-gray-200 dark:border-zinc-800
-                transition-all duration-300
-            "
-            style={{ left: isSidebarOpen ? 'var(--sidebar-width)' : 'var(--sidebar-width-collapsed)' }}
+        {/* Center: ⌘K search button (NOT an input — opens command palette).
+            On desktop renders the full pill; on mobile collapses to an icon. */}
+        <button
+          ref={searchBtnRef}
+          type="button"
+          onClick={() => setSearchOpen(true)}
+          aria-label="Open global search"
+          aria-keyshortcuts="/ Control+K"
+          className="topbar__search"
+          data-coach="topbar-search"
         >
-            <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+          <Search size={13} style={{ color: "var(--fg-subtle)" }} aria-hidden />
+          <span
+            className="subtle"
+            style={{ flex: 1, textAlign: "left", fontSize: 13 }}
+          >
+            Search students, staff, fees…
+          </span>
+          <span className="row gap-1" aria-hidden>
+            <span className="kbd">/</span>
+            <span className="kbd">{isMac ? "⌘" : "Ctrl"}</span>
+            <span className="kbd">K</span>
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setSearchOpen(true)}
+          aria-label="Open global search"
+          className="topbar__search topbar__search-icon-only"
+        >
+          <Search size={14} aria-hidden />
+        </button>
 
-            {/* Left: Breadcrumbs */}
-            <div className="flex-1 flex items-center gap-2 text-sm min-w-0">
-                {breadcrumbs.map((crumb, index) => (
-                    <div key={crumb.path} className="flex items-center gap-2 shrink-0">
-                        {index > 0 && (
-                            <ChevronRight size={14} className="text-gray-300 dark:text-zinc-600" />
-                        )}
-                        <Link
-                            to={crumb.path}
-                            className={`font-medium transition-colors truncate max-w-[140px] ${
-                                index === breadcrumbs.length - 1
-                                    ? "text-gray-800 dark:text-zinc-200"
-                                    : "text-gray-500 hover:text-gray-700 dark:text-zinc-400 dark:hover:text-zinc-200"
-                            }`}
-                        >
-                            {crumb.label}
-                        </Link>
-                    </div>
-                ))}
-            </div>
-
-            {/* Center: Search */}
-            <div className="flex-1 flex justify-center max-w-md">
-                <button
-                    onClick={() => setSearchOpen(true)}
-                    className="flex items-center gap-2 px-3 py-2.5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg focus-within:border-gray-400 transition-colors w-full max-w-xs hover:bg-gray-50 dark:hover:bg-zinc-800"
-                >
-                    <Search className="text-gray-400 dark:text-zinc-500" size={16} />
-                    <span className="text-gray-400 dark:text-zinc-500 text-sm flex-1 text-left">Search...</span>
-                    <div className="flex items-center gap-1 text-gray-400 dark:text-zinc-500 bg-gray-50 dark:bg-zinc-800 px-2 py-1 rounded border border-gray-200 dark:border-zinc-700">
-                        {isMac ? <Command size={11} /> : <span className="text-[10px] font-medium">Ctrl</span>}
-                        <span className="text-[10px] font-medium">K</span>
-                    </div>
-                </button>
-            </div>
-
-            {/* Right: Actions */}
-            <div className="flex-1 flex items-center justify-end gap-1">
-                {/* Notifications */}
-                <Popover
-                    isOpen={isNotificationOpen}
-                    onOpenChange={(open) => {
-                        setIsNotificationOpen(open);
-                        // Reset badge when closing (user has seen notifications)
-                        if (!open) setNotificationUnreadCount(0);
-                    }}
-                    placement="bottom-end"
-                    offset={8}
-                    shouldBlockScroll={false}
-                >
-                    <PopoverTrigger>
-                        <button
-                            data-tour="notifications"
-                            aria-label={notificationUnreadCount > 0 ? `${notificationUnreadCount} unread notifications` : 'Notifications'}
-                            className="relative h-9 w-9 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800 rounded-lg transition-colors"
-                        >
-                            <Bell size={16} />
-                            {notificationUnreadCount > 0 && (
-                                <span aria-hidden="true" className="absolute top-1.5 right-1.5 w-2 h-2 bg-gray-900 dark:bg-zinc-100 rounded-full" />
-                            )}
-                        </button>
-                    </PopoverTrigger>
-                    <PopoverContent className="p-0 w-[380px]">
-                        {isNotificationOpen && (
-                            <NotificationCenter onClose={() => setIsNotificationOpen(false)} isPopover={true} />
-                        )}
-                    </PopoverContent>
-                </Popover>
-
-                {/* Chat Button */}
-                <Tooltip
-                    content={unreadCount > 0 ? `${unreadCount} unread` : "Messages"}
-                    placement="bottom"
-                >
-                    <button
-                        onClick={() => navigate('/messaging')}
-                        className="relative h-9 w-9 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800 rounded-lg transition-colors"
-                    >
-                        <MessageCircle size={16} />
-                        {unreadCount > 0 && (
-                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full" />
-                        )}
-                    </button>
-                </Tooltip>
-
-                {/* Language Switcher — hidden while i18n is disabled */}
-                {/* TODO: Re-enable when I18N_ENABLED is set to true in i18n/index.js */}
-                {false && (
-                <Popover
-                    isOpen={isLangOpen}
-                    onOpenChange={setIsLangOpen}
-                    placement="bottom-end"
-                    offset={8}
-                    shouldBlockScroll={false}
-                >
-                    <PopoverTrigger>
-                        <button className="h-9 w-9 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800 rounded-lg transition-colors">
-                            <Globe size={16} />
-                        </button>
-                    </PopoverTrigger>
-                    <PopoverContent className="p-0 w-[180px]">
-                        <div className="py-1">
-                            {SUPPORTED_LANGUAGES.map((lang) => (
-                                <button
-                                    key={lang.code}
-                                    onClick={() => {
-                                        setLanguage(lang.code);
-                                        setIsLangOpen(false);
-                                    }}
-                                    className="w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
-                                >
-                                    <span className={`${i18n.language === lang.code ? 'text-gray-900 dark:text-zinc-100 font-medium' : 'text-gray-600 dark:text-zinc-400'}`}>
-                                        {lang.name}
-                                    </span>
-                                    {i18n.language === lang.code && (
-                                        <Check size={14} className="text-gray-900 dark:text-zinc-100" />
-                                    )}
-                                </button>
-                            ))}
-                        </div>
-                    </PopoverContent>
-                </Popover>
-                )}
-
-                {/* Divider */}
-                <div className="h-5 w-px bg-gray-200 dark:bg-zinc-700 mx-2" />
-
-                {/* AI Assistant Toggle Button */}
-                <AiAssistantToggle />
-            </div>
-        </header>
-    );
+        {/* Right: page actions + theme + notifications + user menu */}
+        <div className="row gap-1">
+          <button
+            type="button"
+            onClick={handlePin}
+            aria-pressed={pinned}
+            className="btn btn--sm btn--ghost hidden md:inline-flex"
+            aria-label={pinned ? "Unpin this page" : "Pin this page"}
+            data-coach="topbar-pin"
+          >
+            <Star
+              size={12}
+              aria-hidden
+              fill={pinned ? "currentColor" : "none"}
+            />
+            <span className="hidden xl:inline">{pinned ? "Pinned" : "Pin"}</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleShare}
+            className="btn btn--sm btn--ghost hidden md:inline-flex"
+            aria-label="Share this page"
+          >
+            <Share2 size={12} aria-hidden />
+            <span className="hidden xl:inline">Share</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setTheme(isDark ? "light" : "dark")}
+            aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            className="iconbtn"
+          >
+            {isDark ? <Sun size={15} /> : <Moon size={15} />}
+          </button>
+          <NotificationBell />
+          <UserMenu
+            placement="bottom-end"
+            showSchoolSwitcher={isSuperAdmin}
+          />
+        </div>
+      </header>
+    </div>
+  );
 }
 
 export default React.memo(Topbar);

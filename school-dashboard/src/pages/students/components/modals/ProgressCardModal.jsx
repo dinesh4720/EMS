@@ -1,13 +1,16 @@
-import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import {
-  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button
-} from "@heroui/react";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { BarChart4, Download, ExternalLink } from "lucide-react";
 import toast from "react-hot-toast";
+import Modal from "../../../../components/ui/Modal";
 import { escapeHtml } from "../../../../utils/sanitize";
 
-export default function ProgressCardModal({ isOpen, onClose, student, onNavigateToAcademics }) {
+export default function ProgressCardModal({
+  isOpen,
+  onClose,
+  student,
+  onNavigateToAcademics,
+}) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
 
@@ -15,75 +18,140 @@ export default function ProgressCardModal({ isOpen, onClose, student, onNavigate
 
   const handleDownload = () => {
     setLoading(true);
-    // If a navigate callback is provided, redirect to the academics tab which has the real print/PDF feature
     if (onNavigateToAcademics) {
       onClose();
       onNavigateToAcademics();
-      toast.success('Opening academics tab — use the Download Report Card button there.', { duration: 4000 });
-    } else {
-      // Fallback: open a print window with basic student info
-      const printWindow = window.open('', '_blank', 'width=800,height=600');
-      if (printWindow) {
-        printWindow.document.write(`
-          <html><head><title>Progress Card - ${escapeHtml(student.name)}</title>
-          <style>body{font-family:sans-serif;padding:20px;max-width:800px;margin:0 auto}h1{font-size:24px}table{width:100%;border-collapse:collapse;margin-top:16px}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#f3f4f6}@media print{button{display:none}}</style>
-          </head><body>
-          <h1>Student Progress Card</h1>
-          <p><strong>Name:</strong> ${escapeHtml(student.name)}</p>
-          <p><strong>Class:</strong> ${escapeHtml(student.class || 'N/A')} &nbsp; <strong>Roll No:</strong> ${escapeHtml(student.rollNo || 'N/A')}</p>
-          <p><strong>Admission No:</strong> ${escapeHtml(student.admissionNo || 'N/A')}</p>
-          <p style="margin-top:16px;color:#6b7280;font-size:14px">For detailed marks and grades, visit the Academics tab of the student profile.</p>
-          <script>window.onload=function(){window.print()}</script>
-          </body></html>
-        `);
-        printWindow.document.close();
-        toast.success('Print window opened');
-      } else {
-        toast.error('Pop-up blocked. Please allow pop-ups and try again.');
-      }
-      onClose();
+      toast.success(
+        "Opening academics tab — use the Download Report Card button there.",
+        { duration: 4000 }
+      );
+      setLoading(false);
+      return;
     }
+    const printWindow = window.open("", "_blank", "width=800,height=600");
+    if (printWindow) {
+      printWindow.document.write(`
+        <html><head><title>Progress Card - ${escapeHtml(student.name)}</title>
+        <style>
+          body{font-family:sans-serif;padding:20px;max-width:800px;margin:0 auto}
+          h1{font-size:24px}
+          table{width:100%;border-collapse:collapse;margin-top:16px}
+          th,td{border:1px solid #ddd;padding:8px;text-align:left}
+          th{background:#f3f4f6}
+          @page { size: A4; margin: 20mm; }
+          @media print{button{display:none}}
+        </style>
+        </head><body>
+        <h1>Student Progress Card</h1>
+        <p><strong>Name:</strong> ${escapeHtml(student.name)}</p>
+        <p><strong>Class:</strong> ${escapeHtml(student.class || "N/A")} &nbsp; <strong>Roll No:</strong> ${escapeHtml(student.rollNo || "N/A")}</p>
+        <p><strong>Admission No:</strong> ${escapeHtml(student.admissionNo || "N/A")}</p>
+        <p style="margin-top:16px;color:#6b7280;font-size:14px">For detailed marks and grades, visit the Academics tab of the student profile.</p>
+        <script>window.onload=function(){window.print()}</script>
+        </body></html>
+      `);
+      printWindow.document.close();
+      toast.success("Print window opened");
+    } else {
+      toast.error("Pop-up blocked. Please allow pop-ups and try again.");
+    }
+    onClose();
     setLoading(false);
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
-      <ModalContent>
-        <ModalHeader>{t('students.profile.overview.studentProgressCard', 'Student Progress Card')}</ModalHeader>
-        <ModalBody>
-          <div className="flex flex-col items-center gap-4 py-6 text-center">
-            <div className="p-4 bg-primary/10 rounded-full text-primary">
-              <BarChart4 size={48} />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold">{student.name}</h3>
-              <p className="text-default-500">{t('students.profile.overview.classRollInfo', 'Class {{class}} • Roll {{roll}}', { class: student.class, roll: student.rollNo })}</p>
-            </div>
-            <p className="text-sm text-default-500 max-w-xs">
-              {t('students.profile.overview.generateProgressCardDesc', 'Generate and download the detailed academic performance report card for the current academic year.')}
-            </p>
-            <p className="text-xs text-default-400 max-w-xs bg-default-100 rounded-lg px-3 py-2">
-              Preview will be available in the downloaded PDF. The report includes marks, grades, and attendance summary.
-            </p>
-            {onNavigateToAcademics && (
-              <p className="text-xs text-default-400 max-w-xs">
-                This will open the Academics tab where you can download the full report card with marks and grades.
-              </p>
-            )}
-          </div>
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="flat" onPress={onClose}>{t('common.cancel', 'Cancel')}</Button>
-          <Button
-            color="primary"
-            startContent={onNavigateToAcademics ? <ExternalLink size={18} /> : <Download size={18} />}
-            onPress={handleDownload}
-            isLoading={loading}
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={t(
+        "students.profile.overview.studentProgressCard",
+        "Student progress card"
+      )}
+      description={
+        student?.class
+          ? t(
+              "students.profile.overview.classRollInfo",
+              "Class {{class}} • Roll {{roll}}",
+              { class: student.class, roll: student.rollNo || "—" }
+            )
+          : undefined
+      }
+      size="sm"
+      footer={
+        <>
+          <button type="button" className="btn" onClick={onClose}>
+            {t("common.cancel", "Cancel")}
+          </button>
+          <button
+            type="button"
+            className="btn btn--accent"
+            onClick={handleDownload}
+            disabled={loading}
+            aria-busy={loading || undefined}
           >
-            {onNavigateToAcademics ? 'Open Academics' : t('students.profile.overview.downloadReport', 'Download Report')}
-          </Button>
-        </ModalFooter>
-      </ModalContent>
+            {onNavigateToAcademics ? (
+              <>
+                <ExternalLink size={13} aria-hidden /> Open Academics
+              </>
+            ) : (
+              <>
+                <Download size={13} aria-hidden />{" "}
+                {t(
+                  "students.profile.overview.downloadReport",
+                  "Download Report"
+                )}
+              </>
+            )}
+          </button>
+        </>
+      }
+    >
+      <div
+        className="col"
+        style={{
+          gap: 12,
+          alignItems: "center",
+          textAlign: "center",
+          padding: "8px 4px",
+        }}
+      >
+        <span
+          className="opt__icon"
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: 999,
+            background: "var(--accent-bg)",
+            color: "var(--accent)",
+          }}
+          aria-hidden
+        >
+          <BarChart4 size={28} />
+        </span>
+        <div className="col" style={{ gap: 2 }}>
+          <span style={{ fontSize: 15, fontWeight: 600 }}>{student.name}</span>
+          <span className="subtle" style={{ fontSize: 12.5 }}>
+            {t(
+              "students.profile.overview.generateProgressCardDesc",
+              "Generate and download the detailed academic performance report card for the current academic year."
+            )}
+          </span>
+        </div>
+        <span
+          className="field__hint"
+          style={{
+            background: "var(--surface-2)",
+            border: "1px solid var(--border)",
+            padding: "8px 10px",
+            borderRadius: 8,
+            maxWidth: 320,
+          }}
+        >
+          {onNavigateToAcademics
+            ? "Opens the Academics tab where you can download the full report card with marks and grades."
+            : "The report includes marks, grades, and attendance summary."}
+        </span>
+      </div>
     </Modal>
   );
 }

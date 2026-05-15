@@ -40,6 +40,7 @@ import { format } from "date-fns";
 import { useTranslation } from 'react-i18next';
 import { useAuth } from "../../context/AuthContext";
 import logger from "../../utils/logger";
+import "../../styles/student.css";
 
 export default function StudentFormSubmissions() {
   const { t } = useTranslation();
@@ -61,6 +62,7 @@ export default function StudentFormSubmissions() {
   const [reviewLoading, setReviewLoading] = useState(false);
   const loading = fetchLoading || reviewLoading;
   const [submissions, setSubmissions] = useState([]);
+  const [allSubmissions, setAllSubmissions] = useState([]);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [filterStatus, setFilterStatus] = useState("pending");
   const [reviewNotes, setReviewNotes] = useState("");
@@ -81,6 +83,20 @@ export default function StudentFormSubmissions() {
         (s) => s.formType === "student" || s.form?.formType === "student"
       );
       setSubmissions(studentSubmissions);
+
+      // Pre-fetch all-status counts on first load so the segmented tabs show
+      // accurate tnum counts without re-fetching for every tab switch.
+      if (filterStatus === "pending" && allSubmissions.length === 0) {
+        try {
+          const allData = await intakeFormsApi.getSubmissions(null, null);
+          const allStudent = allData.filter(
+            (s) => s.formType === "student" || s.form?.formType === "student"
+          );
+          setAllSubmissions(allStudent);
+        } catch {
+          /* counts are nice-to-have — silent fail */
+        }
+      }
     } catch (error) {
       toast.error(t('toast.error.failedToLoadSubmissions'));
       logger.error("Failed to load student form submissions", error);
@@ -88,6 +104,15 @@ export default function StudentFormSubmissions() {
       setFetchLoading(false);
     }
   };
+
+  const statusCounts = (() => {
+    const counts = { pending: 0, needs_revision: 0, approved: 0, rejected: 0, all: 0 };
+    for (const s of allSubmissions) {
+      counts.all++;
+      if (s.reviewStatus in counts) counts[s.reviewStatus]++;
+    }
+    return counts;
+  })();
 
   const handleViewSubmission = async (submissionId) => {
     try {
@@ -184,7 +209,7 @@ export default function StudentFormSubmissions() {
   };
 
   const renderFieldValue = (field, value) => {
-    if (!value) return <span className="text-gray-400 dark:text-zinc-500">{t('pages.notProvided1')}</span>;
+    if (!value) return <span className="text-fg-faint">{t('pages.notProvided1')}</span>;
 
     if (field.type === "file") {
       return (
@@ -231,42 +256,53 @@ export default function StudentFormSubmissions() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">
+          <h2 className="text-2xl font-semibold text-fg">
             Student Admission Submissions
           </h2>
-          <p className="text-sm text-gray-600 dark:text-zinc-400 mt-1">
+          <p className="text-sm text-fg-muted mt-1">
             Review and approve student admission form submissions
           </p>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-2 flex-wrap">
+      {/* Segmented tabs with mono tnum counts */}
+      <div className="formsub-tabs" role="tablist" aria-label="Filter submissions">
         {["pending", "needs_revision", "approved", "rejected", "all"].map(
           (status) => (
-            <Button
+            <button
               key={status}
-              size="sm"
-              variant={filterStatus === status ? "solid" : "flat"}
-              color={filterStatus === status ? "primary" : "default"}
-              onPress={() => setFilterStatus(status)}
+              type="button"
+              role="tab"
+              aria-selected={filterStatus === status}
+              onClick={() => setFilterStatus(status)}
+              className={`formsub-tab ${filterStatus === status ? 'is-active' : ''}`}
             >
-              {status === "needs_revision"
-                ? "Needs Revision"
-                : status.charAt(0).toUpperCase() + status.slice(1)}
-            </Button>
+              <span>
+                {status === "needs_revision"
+                  ? "Needs Revision"
+                  : status.charAt(0).toUpperCase() + status.slice(1)}
+              </span>
+              {statusCounts[status] > 0 && (
+                <span className="formsub-tab__num">{statusCounts[status]}</span>
+              )}
+            </button>
           )
         )}
       </div>
 
+      <p className="text-xs text-fg-muted">
+        Showing <span className="mono tnum">{submissions.length}</span> submission{submissions.length !== 1 ? 's' : ''}
+      </p>
+
       {/* Submissions Table */}
       <Card>
         <CardBody className="p-0">
+          <div className="overflow-x-auto">
           <Table
             aria-label={t('aria.tables.studentFormSubmissions')}
             removeWrapper
             classNames={{
-              th: "bg-gray-50 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 font-semibold",
+              th: "bg-surface-2 text-fg font-semibold",
               td: "py-4",
             }}
           >
@@ -287,10 +323,10 @@ export default function StudentFormSubmissions() {
               {(submission) => (
                 <TableRow key={submission._id}>
                   <TableCell>
-                    <div className="font-medium text-gray-900 dark:text-zinc-100">
+                    <div className="font-medium text-fg">
                       {submission.formName || submission.form?.formName}
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-zinc-400">
+                    <div className="text-xs text-fg-muted">
                       {submission.formType || submission.form?.formType}
                     </div>
                   </TableCell>
@@ -326,7 +362,7 @@ export default function StudentFormSubmissions() {
                   <TableCell>
                     <Dropdown>
                       <DropdownTrigger>
-                        <Button isIconOnly size="sm" variant="light">
+                        <Button isIconOnly size="sm" variant="light" aria-label="More actions">
                           <MoreVertical size={16} />
                         </Button>
                       </DropdownTrigger>
@@ -356,6 +392,7 @@ export default function StudentFormSubmissions() {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardBody>
       </Card>
 
@@ -371,7 +408,7 @@ export default function StudentFormSubmissions() {
             <div>
               <h3 className="text-xl font-semibold">{t('pages.reviewAdmissionSubmission')}</h3>
               {selectedSubmission && (
-                <p className="text-sm text-gray-600 dark:text-zinc-400 font-normal mt-1">
+                <p className="text-sm text-fg-muted font-normal mt-1">
                   {selectedSubmission.formId?.formName || selectedSubmission.formName} -{" "}
                   {getStudentName(selectedSubmission)}
                 </p>
@@ -396,13 +433,13 @@ export default function StudentFormSubmissions() {
                             : "col-span-1"
                         }`}
                       >
-                        <label className="text-sm font-medium text-gray-600 dark:text-zinc-400 block mb-1">
+                        <label className="text-sm font-medium text-fg-muted block mb-1">
                           {field.label}
                           {field.required && (
                             <span className="text-danger ml-1">*</span>
                           )}
                         </label>
-                        <div className="text-sm text-gray-900 dark:text-zinc-100">
+                        <div className="text-sm text-fg">
                           {renderFieldValue(
                             field,
                             selectedSubmission.submissionData[
@@ -439,7 +476,7 @@ export default function StudentFormSubmissions() {
                     </h4>
                     <div className="space-y-3">
                       <div>
-                        <label className="text-sm font-medium text-gray-600 dark:text-zinc-400">
+                        <label className="text-sm font-medium text-fg-muted">
                           Status
                         </label>
                         <div className="mt-1">
@@ -455,7 +492,7 @@ export default function StudentFormSubmissions() {
                         </div>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600 dark:text-zinc-400">
+                        <label className="text-sm font-medium text-fg-muted">
                           Reviewed By
                         </label>
                         <p className="text-sm">
@@ -463,7 +500,7 @@ export default function StudentFormSubmissions() {
                         </p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600 dark:text-zinc-400">
+                        <label className="text-sm font-medium text-fg-muted">
                           Reviewed At
                         </label>
                         <p className="text-sm">
@@ -477,7 +514,7 @@ export default function StudentFormSubmissions() {
                       </div>
                       {selectedSubmission.reviewNotes && (
                         <div>
-                          <label className="text-sm font-medium text-gray-600 dark:text-zinc-400">
+                          <label className="text-sm font-medium text-fg-muted">
                             Notes
                           </label>
                           <p className="text-sm">
@@ -547,7 +584,7 @@ export default function StudentFormSubmissions() {
               </div>
               <div>
                 <h3 className="text-xl font-semibold">{t('pages.requestEditReSubmit')}</h3>
-                <p className="text-sm text-gray-600 dark:text-zinc-400 font-normal mt-1">
+                <p className="text-sm text-fg-muted font-normal mt-1">
                   Send the form back to parent for corrections
                 </p>
               </div>

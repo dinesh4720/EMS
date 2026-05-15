@@ -1,176 +1,179 @@
-import { useState, useEffect, useRef } from "react";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Select, SelectItem, Textarea, DatePicker } from "@heroui/react";
-import { Check, ArrowRight, ArrowLeft, Printer } from "lucide-react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Textarea } from "@heroui/react";
+import { ArrowRight, ArrowLeft, Printer } from "lucide-react";
 import toast from "react-hot-toast";
 import { TransferCertificateTemplate } from "./TransferCertificateTemplate";
-import { useReactToPrint } from "react-to-print";
 import { useTranslation } from 'react-i18next';
 import { request } from "../../services/api";
 import { DetailPageSkeleton } from "../../components/skeletons/PageSkeletons";
 import { toTodayDateString, formatDate } from '../../utils/dateFormatter';
+import logger from '../../utils/logger';
 
 export default function TCGeneratorModal({ isOpen, onClose, students }) {
   const { t } = useTranslation();
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [allFormData, setAllFormData] = useState({});
-    const [isGenerating, setIsGenerating] = useState(false);
-    const [generationProgress, setGenerationProgress] = useState(0);
-    const [hasMovedNext, setHasMovedNext] = useState(false);
-    const [baseNumber, setBaseNumber] = useState(null); // fetched from backend
-    const [formLoading, setFormLoading] = useState(true);
-    const printRef = useRef();
-    const generatingRef = useRef(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [allFormData, setAllFormData] = useState({});
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState(0);
+  const [hasMovedNext, setHasMovedNext] = useState(false);
+  const [baseNumber, setBaseNumber] = useState(null);
+  const [formLoading, setFormLoading] = useState(true);
+  const printRef = useRef();
+  const generatingRef = useRef(false);
 
-    const currentStudent = students[currentIndex];
-    const isLastStudent = currentIndex === students.length - 1;
-    const canGoBack = currentIndex > 0;
+  const currentStudent = students[currentIndex];
+  const isLastStudent = currentIndex === students.length - 1;
+  const canGoBack = currentIndex > 0;
 
-    // Reset when students change or modal opens; fetch next TC number
-    useEffect(() => {
-        if (isOpen && students.length > 0) {
-            setCurrentIndex(0);
-            setAllFormData({});
-            setHasMovedNext(false);
-            setIsGenerating(false);
-            setGenerationProgress(0);
-            setFormLoading(true);
-            // Fetch next TC number from backend, then init forms
-            request('/students/tc/next-number')
-                .then(res => {
-                    const fetchedNumber = res?.tcNumber || '';
-                    setBaseNumber(fetchedNumber);
-                    initializeForm(students[0], 0, fetchedNumber);
-                })
-                .catch(() => {
-                    // Fallback: use a local counter
-                    const fallback = `TC-${new Date().getFullYear()}-0001`;
-                    setBaseNumber(fallback);
-                    initializeForm(students[0], 0, fallback);
-                })
-                .finally(() => setFormLoading(false));
+  useEffect(() => {
+    if (isOpen && students.length > 0) {
+      setCurrentIndex(0);
+      setAllFormData({});
+      setHasMovedNext(false);
+      setIsGenerating(false);
+      setGenerationProgress(0);
+      setFormLoading(true);
+      request('/students/tc/next-number')
+        .then(res => {
+          const fetchedNumber = res?.tcNumber || '';
+          setBaseNumber(fetchedNumber);
+          initializeForm(students[0], 0, fetchedNumber);
+        })
+        .catch(() => {
+          const fallback = `TC-${new Date().getFullYear()}-0001`;
+          setBaseNumber(fallback);
+          initializeForm(students[0], 0, fallback);
+        })
+        .finally(() => setFormLoading(false));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, students]);
+
+  const buildTcNumber = (base, index) => {
+    if (!base) return '';
+    const match = base.match(/^(.*?)(\d+)$/);
+    if (!match) return base;
+    const prefix = match[1];
+    const num = parseInt(match[2], 10) + index;
+    return `${prefix}${String(num).padStart(match[2].length, '0')}`;
+  };
+
+  const initializeForm = (student, index = 0, tcBase = baseNumber) => {
+    const formData = {
+      tcNumber: buildTcNumber(tcBase, index),
+      studentName: student.name || "",
+      admissionNo: student.admissionId || "",
+      gender: student.gender || "",
+      motherName: student.parents?.find(p => p.relationship?.toLowerCase() === 'mother')?.name || "",
+      fatherName: student.parents?.find(p => p.relationship?.toLowerCase() === 'father')?.name || student.parentName || "",
+      dob: student.dob || "",
+      dobInWords: student.dob ? formatDate(student.dob) : "",
+      admissionClass: student.admissionClass || "I",
+      standardLeaving: student.class || "",
+      dateOfAdmission: student.admissionDate || "",
+      nationality: student.nationality || "",
+      religion: student.religion || "",
+      community: student.category || student.community || "",
+      motherTongue: student.motherTongue || "",
+      isScSt: "No",
+      examResult: "Passed",
+      whetherFailed: "No",
+      subjects: "English, Tamil, Maths, Science, Social Science",
+      qualifiedForPromotion: "Yes",
+      paidFees: "Yes",
+      scholarship: "No",
+      workingDays: "220",
+      presentDays: "210",
+      nccDetails: "Nil",
+      extraCurricular: "Nil",
+      generalConduct: "Good",
+      applicationDate: toTodayDateString(),
+      issueDate: toTodayDateString(),
+      reasonForLeaving: "Parents Request",
+      remarks: "Nil",
+    };
+    setAllFormData(prev => ({ ...prev, [student.admissionId]: formData }));
+  };
+
+  const getCurrentFormData = () => allFormData[currentStudent?.admissionId] || {};
+
+  const handleInputChange = (field, value) => {
+    setAllFormData(prev => ({
+      ...prev,
+      [currentStudent.admissionId]: {
+        ...prev[currentStudent.admissionId],
+        [field]: value,
+      },
+    }));
+  };
+
+  // Bug-fix license: TC serial number uniqueness.
+  // If a user manually edits the TC number for one student, ensure subsequent
+  // students still get unique numbers (don't clash with the manual entry).
+  const allUsedTcNumbers = useMemo(() => {
+    const set = new Set();
+    Object.values(allFormData).forEach(f => { if (f?.tcNumber) set.add(f.tcNumber); });
+    return set;
+  }, [allFormData]);
+
+  const handleNext = () => {
+    const currentFormData = allFormData[currentStudent?.admissionId] || {};
+    if (!currentFormData.studentName?.trim()) {
+      toast.error(t('toast.error.studentNameIsRequiredBeforeProceeding'));
+      return;
+    }
+    if (!currentFormData.tcNumber?.trim()) {
+      toast.error('TC number is required');
+      return;
+    }
+
+    if (isLastStudent) {
+      startGeneration();
+    } else {
+      setHasMovedNext(true);
+      const nextIndex = currentIndex + 1;
+      setCurrentIndex(nextIndex);
+      if (!allFormData[students[nextIndex]?.admissionId]) {
+        // Walk forward through the offset until we find an unused TC number
+        let offset = nextIndex;
+        let candidate = buildTcNumber(baseNumber, offset);
+        while (candidate && allUsedTcNumbers.has(candidate) && offset < nextIndex + students.length + 10) {
+          offset++;
+          candidate = buildTcNumber(baseNumber, offset);
         }
-    }, [isOpen, students]);
+        initializeForm(students[nextIndex], offset, baseNumber);
+      }
+    }
+  };
 
-    const buildTcNumber = (base, index) => {
-        if (!base) return '';
-        // Increment the numeric part of the TC number for each student
-        const match = base.match(/^(.*?)(\d+)$/);
-        if (!match) return base;
-        const prefix = match[1];
-        const num = parseInt(match[2], 10) + index;
-        return `${prefix}${String(num).padStart(match[2].length, '0')}`;
-    };
+  const handlePrevious = () => {
+    if (canGoBack) setCurrentIndex(prev => prev - 1);
+  };
 
-    const initializeForm = (student, index = 0, tcBase = baseNumber) => {
-        const formData = {
-            tcNumber: buildTcNumber(tcBase, index),
-            studentName: student.name || "",
-            admissionNo: student.admissionId || "",
-            gender: student.gender || "",
-            motherName: student.parents?.find(p => p.relationship?.toLowerCase() === 'mother')?.name || "",
-            fatherName: student.parents?.find(p => p.relationship?.toLowerCase() === 'father')?.name || student.parentName || "",
-            dob: student.dob || "",
-            dobInWords: student.dob ? formatDate(student.dob) : "",
-            admissionClass: student.admissionClass || "I",
-            standardLeaving: student.class || "",
-            dateOfAdmission: student.admissionDate || "",
-            nationality: student.nationality || "",
-            religion: student.religion || "",
-            community: student.category || student.community || "",
-            motherTongue: student.motherTongue || "",
-            isScSt: "No",
-            examResult: "Passed",
-            whetherFailed: "No",
-            subjects: "English, Tamil, Maths, Science, Social Science",
-            qualifiedForPromotion: "Yes",
-            paidFees: "Yes",
-            scholarship: "No",
-            workingDays: "220",
-            presentDays: "210",
-            nccDetails: "Nil",
-            extraCurricular: "Nil",
-            generalConduct: "Good",
-            applicationDate: toTodayDateString(),
-            issueDate: toTodayDateString(),
-            reasonForLeaving: "Parents Request",
-            remarks: "Nil",
-        };
-        setAllFormData(prev => ({ ...prev, [student.admissionId]: formData }));
-    };
+  const startGeneration = () => {
+    setIsGenerating(true);
+    setGenerationProgress(0);
+    generateAllTCs();
+  };
 
-    const getCurrentFormData = () => {
-        return allFormData[currentStudent?.admissionId] || {};
-    };
+  const escapeHtmlTitle = (str) => String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-    const handleInputChange = (field, value) => {
-        setAllFormData(prev => ({
-            ...prev,
-            [currentStudent.admissionId]: {
-                ...prev[currentStudent.admissionId],
-                [field]: value
-            }
-        }));
-    };
+  const handlePrint = (formData) => {
+    return new Promise((resolve) => {
+      const content = printRef.current;
+      if (!content) { resolve(); return; }
 
-    const handleNext = () => {
-        const currentFormData = allFormData[currentStudent?.admissionId] || {};
-        if (!currentFormData.studentName?.trim()) {
-            toast.error(t('toast.error.studentNameIsRequiredBeforeProceeding'));
-            return;
-        }
+      const clonedContent = content.cloneNode(true);
 
-        if (isLastStudent) {
-            startGeneration();
-        } else {
-            setHasMovedNext(true);
-            const nextIndex = currentIndex + 1;
-            setCurrentIndex(nextIndex);
-            if (!allFormData[students[nextIndex]?.admissionId]) {
-                initializeForm(students[nextIndex], nextIndex, baseNumber);
-            }
-        }
-    };
-
-    const handlePrevious = () => {
-        if (canGoBack) {
-            setCurrentIndex(prev => prev - 1);
-        }
-    };
-
-    const startGeneration = () => {
-        setIsGenerating(true);
-        setGenerationProgress(0);
-        generateAllTCs();
-    };
-
-    const escapeHtmlTitle = (str) => String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-
-    const handlePrint = (formData) => {
-        return new Promise((resolve) => {
-            const content = printRef.current;
-
-            if (!content) {
-                resolve();
-                return;
-            }
-
-            // Clone and serialize the template with current data
-            const clonedContent = content.cloneNode(true);
-
-            const html = `<html>
+      const html = `<html>
               <head>
                 <title>Transfer Certificate - ${escapeHtmlTitle(formData.studentName)}</title>
                 <style>
-                    /* Preflight reset */
                     *, *::before, *::after { box-sizing: border-box; border-width: 0; border-style: solid; border-color: #e5e7eb; }
                     body { margin: 0; padding: 0; }
-
-                    /* Display */
                     .hidden { display: none; }
                     .flex { display: flex; }
                     .grid { display: grid; }
-
-                    /* Flex */
                     .flex-col { flex-direction: column; }
                     .flex-grow { flex-grow: 1; }
                     .flex-shrink-0 { flex-shrink: 0; }
@@ -178,21 +181,14 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
                     .justify-center { justify-content: center; }
                     .items-center { align-items: center; }
                     .items-end { align-items: end; }
-
-                    /* Grid */
                     .grid-cols-\\[24px_1fr_10px_1fr\\] { grid-template-columns: 24px 1fr 10px 1fr; }
                     .gap-1\\.5 { gap: 0.375rem; }
-
-                    /* Sizing */
                     .h-full { height: 100%; }
                     .w-full { width: 100%; }
                     .w-12 { width: 3rem; }
                     .h-12 { height: 3rem; }
-                    .w-56 { width: 14rem; }
                     .w-\\[210mm\\] { width: 210mm; }
                     .h-\\[297mm\\] { height: 297mm; }
-
-                    /* Spacing */
                     .mx-auto { margin-left: auto; margin-right: auto; }
                     .mt-8 { margin-top: 2rem; }
                     .mb-0 { margin-bottom: 0; }
@@ -207,8 +203,6 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
                     .pb-1 { padding-bottom: 0.25rem; }
                     .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
                     .space-y-1\\.5 > * + * { margin-top: 0.375rem; }
-
-                    /* Typography */
                     .font-serif { font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif; }
                     .font-extrabold { font-weight: 800; }
                     .font-bold { font-weight: 700; }
@@ -228,13 +222,9 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
                     .underline { text-decoration-line: underline; }
                     .decoration-2 { text-decoration-thickness: 2px; }
                     .underline-offset-2 { text-underline-offset: 2px; }
-
-                    /* Colors */
                     .bg-white { background-color: #fff; }
                     .bg-gray-200 { background-color: #e5e7eb; }
                     .text-black { color: #000; }
-
-                    /* Borders */
                     .rounded-full { border-radius: 9999px; }
                     .border-2 { border-width: 2px; }
                     .border-b-2 { border-bottom-width: 2px; }
@@ -242,11 +232,31 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
                     .border-t { border-top-width: 1px; }
                     .border-black { border-color: #000; }
                     .border-dotted { border-style: dotted; }
-
-                    /* Other */
                     .opacity-0 { opacity: 0; }
 
-                    /* Print */
+                    /* REVAMP-13 bug-fix: signature row uses CSS grid so all three
+                       columns fit within the printable area without overflowing. */
+                    .tc-print-signatures {
+                      display: grid;
+                      grid-template-columns: repeat(3, minmax(0, 1fr));
+                      gap: 12px;
+                      align-items: end;
+                      margin-top: 32px;
+                      padding-bottom: 16px;
+                    }
+                    .tc-print-signatures > div {
+                      width: 100%;
+                      max-width: 14rem;
+                      margin: 0 auto;
+                      text-align: center;
+                    }
+                    .tc-print-signatures > div > div {
+                      border-top: 1px solid #000;
+                      padding-top: 0.5rem;
+                      font-weight: 700;
+                      font-size: 0.875rem;
+                    }
+
                     @media print {
                         @page { size: A4; margin: 0; }
                         body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -271,333 +281,295 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
               </body>
             </html>`;
 
-            const blob = new Blob([html], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            const printWindow = window.open(url, '', 'width=800,height=600');
-            const revoke = () => URL.revokeObjectURL(url);
-            if (printWindow) {
-                printWindow.addEventListener('afterprint', revoke);
-                // Fallback: revoke blob URL even if afterprint never fires (e.g. window closed)
-                const tid = setInterval(() => { if (printWindow.closed) { clearInterval(tid); revoke(); } }, 1000);
-            } else {
-                revoke();
-            }
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const printWindow = window.open(url, '', 'width=800,height=600');
+      const revoke = () => URL.revokeObjectURL(url);
+      if (printWindow) {
+        printWindow.addEventListener('afterprint', revoke);
+        const tid = setInterval(() => { if (printWindow.closed) { clearInterval(tid); revoke(); } }, 1000);
+      } else {
+        revoke();
+      }
 
-            // Resolve after print dialog opens
-            setTimeout(resolve, 1500);
-        });
-    };
+      setTimeout(resolve, 1500);
+    });
+  };
 
-    const generateAllTCs = async () => {
-        if (generatingRef.current) return;
-        generatingRef.current = true;
-        const errors = [];
-        let savedCount = 0;
+  const generateAllTCs = async () => {
+    if (generatingRef.current) return;
+    generatingRef.current = true;
+    const errors = [];
+    let savedCount = 0;
+    const usedNumbers = new Set();
 
-        for (let i = 0; i < students.length; i++) {
-            const student = students[i];
-            const formData = allFormData[student.admissionId];
+    for (let i = 0; i < students.length; i++) {
+      const student = students[i];
+      const formData = allFormData[student.admissionId];
 
-            setGenerationProgress(i + 1);
-            setCurrentIndex(i);
+      setGenerationProgress(i + 1);
+      setCurrentIndex(i);
 
-            if (formData) {
-                // Save TC record to backend (non-blocking)
-                try {
-                    await request(`/students/${student._id}/transfer-certificate`, {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            tcNumber: formData.tcNumber || buildTcNumber(baseNumber, i),
-                            issueDate: formData.issueDate || toTodayDateString(),
-                            reasonForLeaving: formData.reasonForLeaving || '',
-                            lastClassAttended: formData.standardLeaving || '',
-                            daysPresent: parseInt(formData.presentDays, 10) || undefined,
-                            workingDays: parseInt(formData.workingDays, 10) || undefined,
-                            generalConduct: formData.generalConduct || 'Good',
-                            remarks: formData.remarks || '',
-                        }),
-                    });
-                    savedCount++;
-                } catch (err) {
-                    console.warn(`[TC] Failed to record TC for ${student.name}:`, err?.message);
-                    errors.push(student.name);
-                }
+      if (formData) {
+        // Bug-fix license: guarantee uniqueness of TC numbers in this batch
+        let tcNumber = formData.tcNumber || buildTcNumber(baseNumber, i);
+        if (usedNumbers.has(tcNumber)) {
+          // Fall through to the next available offset
+          let offset = i;
+          let candidate = buildTcNumber(baseNumber, offset);
+          while (usedNumbers.has(candidate) && offset < i + students.length + 10) {
+            offset++;
+            candidate = buildTcNumber(baseNumber, offset);
+          }
+          tcNumber = candidate || tcNumber;
+        }
+        usedNumbers.add(tcNumber);
+        const finalFormData = { ...formData, tcNumber };
 
-                // Print TC
-                try {
-                    await handlePrint({ ...formData, serialNo: formData.tcNumber || '', emisNo: student.emisNo || '' });
-                } catch (err) {
-                    console.error(`Failed to print TC for ${student.name}:`, err);
-                    errors.push(student.name);
-                }
-            }
-
-            await new Promise(resolve => setTimeout(resolve, 2000));
+        try {
+          await request(`/students/${student._id}/transfer-certificate`, {
+            method: 'POST',
+            body: JSON.stringify({
+              tcNumber,
+              issueDate: finalFormData.issueDate || toTodayDateString(),
+              reasonForLeaving: finalFormData.reasonForLeaving || '',
+              lastClassAttended: finalFormData.standardLeaving || '',
+              daysPresent: parseInt(finalFormData.presentDays, 10) || undefined,
+              workingDays: parseInt(finalFormData.workingDays, 10) || undefined,
+              generalConduct: finalFormData.generalConduct || 'Good',
+              remarks: finalFormData.remarks || '',
+            }),
+          });
+          savedCount++;
+        } catch (err) {
+          logger.warn(`[TC] Failed to record TC for ${student.name}:`, err?.message);
+          errors.push(student.name);
         }
 
-        if (errors.length > 0) {
-            toast.error(`Failed to generate TC for: ${errors.join(", ")}`);
-        } else {
-            toast.success(t('toast.success.allTcsGeneratedSuccessfully'));
+        try {
+          await handlePrint({ ...finalFormData, serialNo: tcNumber, emisNo: student.emisNo || '' });
+        } catch (err) {
+          logger.error(`Failed to print TC for ${student.name}:`, err);
+          errors.push(student.name);
         }
+      }
 
-        if (savedCount > 0) {
-            toast.success(`${savedCount} TC record${savedCount > 1 ? 's' : ''} saved`);
-        }
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
 
-        generatingRef.current = false;
-        setTimeout(() => {
-            onClose();
-        }, 1000);
-    };
+    if (errors.length > 0) {
+      toast.error(`Failed to generate TC for: ${errors.join(", ")}`);
+    } else {
+      toast.success(t('toast.success.allTcsGeneratedSuccessfully'));
+    }
 
-    if (!currentStudent) return null;
+    if (savedCount > 0) {
+      toast.success(`${savedCount} TC record${savedCount > 1 ? 's' : ''} saved`);
+    }
 
-    const formData = getCurrentFormData();
+    generatingRef.current = false;
+    setTimeout(() => { onClose(); }, 1000);
+  };
 
-    return (
-        <Modal isOpen={isOpen} onClose={onClose} size="4xl" scrollBehavior="inside" isDismissable={!isGenerating}>
-            <ModalContent>
-                {/* Header with prominent student name and count */}
-                <ModalHeader className="flex flex-col gap-1 bg-gradient-to-r from-primary/10 to-primary/5">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            {isGenerating ? (
-                                <div className="text-sm">
-                                    <span className="font-bold text-primary">{t('pages.generating')}</span>
-                                    <span className="text-default-500 ml-2">{generationProgress}/{students.length}</span>
-                                </div>
-                            ) : (
-                                <div className="text-2xl font-bold text-primary">
-                                    {currentIndex + 1} <span className="text-default-400 text-lg">of {students.length}</span>
-                                </div>
-                            )}
-                        </div>
+  if (!currentStudent) return null;
+
+  const formData = getCurrentFormData();
+  const dup = formData.tcNumber && Array.from(allUsedTcNumbers).filter(n => n === formData.tcNumber).length > 1;
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="5xl" scrollBehavior="inside" isDismissable={!isGenerating}>
+      <ModalContent>
+        <ModalHeader className="flex flex-col gap-1 border-b border-divider">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-semibold">
+                {isGenerating ? 'Generating Transfer Certificate' : 'Enter Details'}
+              </h2>
+              <p className="text-sm text-fg-muted">
+                <span className="font-medium text-fg">{currentStudent.name}</span>
+                <span className="ml-2 text-fg-faint">Class {currentStudent.class || '—'}</span>
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {isGenerating ? (
+                <span className="chip chip--info mono tnum">
+                  {generationProgress}/{students.length}
+                </span>
+              ) : (
+                <span className="chip mono tnum">
+                  {currentIndex + 1}/{students.length}
+                </span>
+              )}
+            </div>
+          </div>
+        </ModalHeader>
+
+        <ModalBody className="p-0">
+          {formLoading ? (
+            <div className="p-6"><DetailPageSkeleton fields={8} /></div>
+          ) : !isGenerating ? (
+            <div className="tcgen">
+              {/* Left — form */}
+              <div className="tcgen__form">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="col-span-full text-sm font-semibold border-b border-divider pb-2 text-fg">
+                    Certificate Details
+                  </div>
+                  <Input
+                    label="TC Number *"
+                    value={formData.tcNumber || ""}
+                    onValueChange={(v) => handleInputChange("tcNumber", v)}
+                    description={dup ? 'Duplicate TC number — please change' : 'Auto-generated · editable'}
+                    isInvalid={dup}
+                    classNames={{ input: 'font-mono' }}
+                  />
+                  <Input
+                    label="Admission No."
+                    value={formData.admissionNo || ""}
+                    onValueChange={(v) => handleInputChange("admissionNo", v)}
+                    classNames={{ input: 'font-mono' }}
+                  />
+
+                  <div className="col-span-full text-sm font-semibold border-b border-divider pb-2 mt-2 text-fg">
+                    {t('pages.personalDetails')}
+                  </div>
+                  <Input label={t('pages.name1')} value={formData.studentName || ""} onValueChange={(v) => handleInputChange("studentName", v)} />
+                  <Input label={t('pages.motherSName')} value={formData.motherName || ""} onValueChange={(v) => handleInputChange("motherName", v)} />
+                  <Input label={t('pages.fatherSName1')} value={formData.fatherName || ""} onValueChange={(v) => handleInputChange("fatherName", v)} />
+                  <Input label={t('pages.nationality1')} value={formData.nationality || ""} onValueChange={(v) => handleInputChange("nationality", v)} />
+                  <Input label={t('pages.religion1')} value={formData.religion || ""} onValueChange={(v) => handleInputChange("religion", v)} />
+                  <Input label={t('pages.community')} value={formData.community || ""} onValueChange={(v) => handleInputChange("community", v)} />
+                  <Input label={t('pages.motherTongue1')} value={formData.motherTongue || ""} onValueChange={(v) => handleInputChange("motherTongue", v)} />
+                  <Input label="SC/ST?" value={formData.isScSt || ""} onValueChange={(v) => handleInputChange("isScSt", v)} />
+                  <Input label={t('pages.dateOfBirth2')} type="date" value={formData.dob || ""} onValueChange={(v) => handleInputChange("dob", v)} />
+
+                  <div className="col-span-full text-sm font-semibold border-b border-divider pb-2 mt-2 text-fg">
+                    {t('pages.academicDetails')}
+                  </div>
+                  <Input label={t('pages.dateOfAdmission')} value={formData.dateOfAdmission || ""} onValueChange={(v) => handleInputChange("dateOfAdmission", v)} />
+                  <Input label={t('pages.admissionClass')} value={formData.admissionClass || ""} onValueChange={(v) => handleInputChange("admissionClass", v)} />
+                  <Input label={t('pages.classLeaving')} value={formData.standardLeaving || ""} onValueChange={(v) => handleInputChange("standardLeaving", v)} />
+                  <Input label={t('pages.examResult')} value={formData.examResult || ""} onValueChange={(v) => handleInputChange("examResult", v)} />
+                  <Input label={t('pages.failed1')} value={formData.whetherFailed || ""} onValueChange={(v) => handleInputChange("whetherFailed", v)} />
+                  <Textarea label={t('pages.subjectsStudied')} value={formData.subjects || ""} onValueChange={(v) => handleInputChange("subjects", v)} className="col-span-full" />
+                  <Input label={t('pages.qualifiedForPromotion')} value={formData.qualifiedForPromotion || ""} onValueChange={(v) => handleInputChange("qualifiedForPromotion", v)} />
+
+                  <div className="col-span-full text-sm font-semibold border-b border-divider pb-2 mt-2 text-fg">
+                    {t('pages.otherDetails')}
+                  </div>
+                  <Input label={t('pages.feesPaid')} value={formData.paidFees || ""} onValueChange={(v) => handleInputChange("paidFees", v)} />
+                  <Input label={t('pages.scholarship')} value={formData.scholarship || ""} onValueChange={(v) => handleInputChange("scholarship", v)} />
+                  <Input label={t('pages.workingDays')} value={formData.workingDays || ""} onValueChange={(v) => handleInputChange("workingDays", v)} classNames={{ input: 'font-mono' }} />
+                  <Input label={t('pages.presentDays')} value={formData.presentDays || ""} onValueChange={(v) => handleInputChange("presentDays", v)} classNames={{ input: 'font-mono' }} />
+                  <Input label={t('pages.generalConduct')} value={formData.generalConduct || ""} onValueChange={(v) => handleInputChange("generalConduct", v)} />
+                  <Input label={t('pages.reasonForLeaving')} value={formData.reasonForLeaving || ""} onValueChange={(v) => handleInputChange("reasonForLeaving", v)} />
+                  <Input label={t('pages.applicationDate')} type="date" value={formData.applicationDate || ""} onValueChange={(v) => handleInputChange("applicationDate", v)} />
+                  <Input label={t('pages.issueDate')} type="date" value={formData.issueDate || ""} onValueChange={(v) => handleInputChange("issueDate", v)} />
+                </div>
+              </div>
+
+              {/* Right — preview pane */}
+              <div className="tcgen__preview" aria-label="Preview">
+                <p className="text-xs font-medium text-fg-muted mb-2 uppercase tracking-wide">Preview</p>
+                <div className="tcgen__preview-card">
+                  <h3>Transfer Certificate</h3>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, marginBottom: 6 }}>
+                    <span>Serial No.: <b>{formData.tcNumber || '—'}</b></span>
+                    <span>Adm No.: <b>{formData.admissionNo || '—'}</b></span>
+                  </div>
+                  {[
+                    ['Name', formData.studentName],
+                    ['Mother', formData.motherName],
+                    ['Father', formData.fatherName],
+                    ['Date of Birth', formData.dob],
+                    ['Class on leaving', formData.standardLeaving],
+                    ['Exam result', formData.examResult],
+                    ['Qualified for promotion', formData.qualifiedForPromotion],
+                    ['Fees paid', formData.paidFees],
+                    ['Working days', formData.workingDays],
+                    ['Present days', formData.presentDays],
+                    ['Conduct', formData.generalConduct],
+                    ['Reason', formData.reasonForLeaving],
+                    ['Issue date', formData.issueDate],
+                  ].map(([label, value], idx) => (
+                    <div className="tcrow" key={idx}>
+                      <b>{idx + 1}.</b>
+                      <span>{label}</span>
+                      <span>:</span>
+                      <span>{value || ''}</span>
                     </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="animate-pulse mb-4">
+                <Printer size={48} className="text-primary" />
+              </div>
+              <p className="text-base font-semibold mb-2">{t('pages.generatingTransferCertificates')}</p>
+              <p className="text-sm text-fg-muted">{t('pages.pleaseWaitWhileAllTcsAreBeingPrinted')}</p>
+              <div className="mt-4 w-64 bg-default-200 rounded-full h-1.5">
+                <div
+                  className="bg-primary h-1.5 rounded-full transition-all duration-300"
+                  style={{ width: `${(generationProgress / students.length) * 100}%` }}
+                />
+              </div>
+              <p className="text-xs text-fg-faint mt-2 mono tnum">
+                {generationProgress} / {students.length}
+              </p>
+            </div>
+          )}
 
-                    {/* Student Name */}
-                    <div className="mt-2">
-                        <h2 className="text-xl font-bold">
-                            {isGenerating ? 'Generating Transfer Certificate' : 'Enter Details'}
-                        </h2>
-                        <p className="text-lg text-primary font-semibold">
-                            {currentStudent.name}
-                            <span className="text-sm text-default-500 font-normal ml-2">
-                                (Class {currentStudent.class})
-                            </span>
-                        </p>
-                    </div>
-                </ModalHeader>
+          {/* Hidden template for printing */}
+          <div className="hidden">
+            <TransferCertificateTemplate
+              ref={printRef}
+              data={{ ...formData, serialNo: formData.tcNumber || '', emisNo: currentStudent?.emisNo || '' }}
+            />
+          </div>
+        </ModalBody>
 
-                <ModalBody>
-                    {formLoading ? (
-                        <DetailPageSkeleton fields={8} />
-                    ) : !isGenerating ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {/* TC Number */}
-                            <div className="col-span-full font-bold text-lg border-b pb-2 mt-2">Certificate Details</div>
-                            <Input
-                                label="TC Number *"
-                                value={formData.tcNumber || ""}
-                                onValueChange={(v) => handleInputChange("tcNumber", v)}
-                                placeholder={t('students.form.tcNumberPlaceholder')}
-                                description="Auto-generated from backend"
-                            />
-                            {/* Personal Details */}
-                            <div className="col-span-full font-bold text-lg border-b pb-2 mt-2">{t('pages.personalDetails')}</div>
-                            <Input
-                                label={t('pages.name1')}
-                                value={formData.studentName || ""}
-                                onValueChange={(v) => handleInputChange("studentName", v)}
-                            />
-                            <Input
-                                label={t('pages.motherSName')}
-                                value={formData.motherName || ""}
-                                onValueChange={(v) => handleInputChange("motherName", v)}
-                            />
-                            <Input
-                                label={t('pages.fatherSName1')}
-                                value={formData.fatherName || ""}
-                                onValueChange={(v) => handleInputChange("fatherName", v)}
-                            />
-                            <Input
-                                label={t('pages.nationality1')}
-                                value={formData.nationality || ""}
-                                onValueChange={(v) => handleInputChange("nationality", v)}
-                            />
-                            <Input
-                                label={t('pages.religion1')}
-                                value={formData.religion || ""}
-                                onValueChange={(v) => handleInputChange("religion", v)}
-                            />
-                            <Input
-                                label={t('pages.community')}
-                                value={formData.community || ""}
-                                onValueChange={(v) => handleInputChange("community", v)}
-                            />
-                            <Input
-                                label={t('pages.motherTongue1')}
-                                value={formData.motherTongue || ""}
-                                onValueChange={(v) => handleInputChange("motherTongue", v)}
-                            />
-                            <Input
-                                label="SC/ST?"
-                                value={formData.isScSt || ""}
-                                onValueChange={(v) => handleInputChange("isScSt", v)}
-                            />
-                            <Input
-                                label={t('pages.dateOfBirth2')}
-                                type="date"
-                                value={formData.dob || ""}
-                                onValueChange={(v) => handleInputChange("dob", v)}
-                            />
+        <ModalFooter className="border-t border-divider">
+          {!isGenerating ? (
+            <div className="flex justify-between w-full items-center">
+              <div className="flex gap-2">
+                {hasMovedNext && (
+                  <Button
+                    variant="flat"
+                    onPress={handlePrevious}
+                    isDisabled={!canGoBack}
+                    startContent={<ArrowLeft size={14} />}
+                  >
+                    Previous
+                  </Button>
+                )}
+              </div>
 
-                            {/* Admission & School Details */}
-                            <div className="col-span-full font-bold text-lg border-b pb-2 mt-4">{t('pages.academicDetails')}</div>
-                            <Input
-                                label={t('pages.dateOfAdmission')}
-                                value={formData.dateOfAdmission || ""}
-                                onValueChange={(v) => handleInputChange("dateOfAdmission", v)}
-                            />
-                            <Input
-                                label={t('pages.admissionClass')}
-                                value={formData.admissionClass || ""}
-                                onValueChange={(v) => handleInputChange("admissionClass", v)}
-                                placeholder={t('students.form.admissionClassPlaceholder')}
-                            />
-                            <Input
-                                label={t('pages.classLeaving')}
-                                value={formData.standardLeaving || ""}
-                                onValueChange={(v) => handleInputChange("standardLeaving", v)}
-                            />
-                            <Input
-                                label={t('pages.examResult')}
-                                value={formData.examResult || ""}
-                                onValueChange={(v) => handleInputChange("examResult", v)}
-                            />
-                            <Input
-                                label={t('pages.failed1')}
-                                value={formData.whetherFailed || ""}
-                                onValueChange={(v) => handleInputChange("whetherFailed", v)}
-                            />
-                            <Textarea
-                                label={t('pages.subjectsStudied')}
-                                value={formData.subjects || ""}
-                                onValueChange={(v) => handleInputChange("subjects", v)}
-                                className="col-span-full md:col-span-2"
-                            />
-                            <Input
-                                label={t('pages.qualifiedForPromotion')}
-                                value={formData.qualifiedForPromotion || ""}
-                                onValueChange={(v) => handleInputChange("qualifiedForPromotion", v)}
-                            />
-
-                            {/* Other Details */}
-                            <div className="col-span-full font-bold text-lg border-b pb-2 mt-4">{t('pages.otherDetails')}</div>
-                            <Input
-                                label={t('pages.feesPaid')}
-                                value={formData.paidFees || ""}
-                                onValueChange={(v) => handleInputChange("paidFees", v)}
-                            />
-                            <Input
-                                label={t('pages.scholarship')}
-                                value={formData.scholarship || ""}
-                                onValueChange={(v) => handleInputChange("scholarship", v)}
-                            />
-                            <Input
-                                label={t('pages.workingDays')}
-                                value={formData.workingDays || ""}
-                                onValueChange={(v) => handleInputChange("workingDays", v)}
-                            />
-                            <Input
-                                label={t('pages.presentDays')}
-                                value={formData.presentDays || ""}
-                                onValueChange={(v) => handleInputChange("presentDays", v)}
-                            />
-                            <Input
-                                label={t('pages.generalConduct')}
-                                value={formData.generalConduct || ""}
-                                onValueChange={(v) => handleInputChange("generalConduct", v)}
-                            />
-                            <Input
-                                label={t('pages.reasonForLeaving')}
-                                value={formData.reasonForLeaving || ""}
-                                onValueChange={(v) => handleInputChange("reasonForLeaving", v)}
-                            />
-                            <Input
-                                label={t('pages.applicationDate')}
-                                type="date"
-                                value={formData.applicationDate || ""}
-                                onValueChange={(v) => handleInputChange("applicationDate", v)}
-                            />
-                            <Input
-                                label={t('pages.issueDate')}
-                                type="date"
-                                value={formData.issueDate || ""}
-                                onValueChange={(v) => handleInputChange("issueDate", v)}
-                            />
-                        </div>
-                    ) : (
-                        <div className="flex flex-col items-center justify-center py-12">
-                            <div className="animate-pulse mb-4">
-                                <Printer size={64} className="text-primary" />
-                            </div>
-                            <p className="text-lg font-semibold mb-2">{t('pages.generatingTransferCertificates')}</p>
-                            <p className="text-default-500">{t('pages.pleaseWaitWhileAllTcsAreBeingPrinted')}</p>
-                            <div className="mt-4 w-64 bg-default-200 rounded-full h-2">
-                                <div
-                                    className="bg-primary h-2 rounded-full transition-all duration-300"
-                                    style={{ width: `${(generationProgress / students.length) * 100}%` }}
-                                />
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Hidden Template for Printing */}
-                    <div className="hidden">
-                        <TransferCertificateTemplate
-                            ref={printRef}
-                            data={{ ...formData, serialNo: formData.tcNumber || '', emisNo: currentStudent?.emisNo || '' }}
-                        />
-                    </div>
-                </ModalBody>
-
-                <ModalFooter>
-                    {!isGenerating ? (
-                        <div className="flex justify-between w-full items-center">
-                            <div className="flex gap-2">
-                                {hasMovedNext && (
-                                    <Button
-                                        variant="flat"
-                                        onPress={handlePrevious}
-                                        isDisabled={!canGoBack}
-                                        startContent={<ArrowLeft size={16} />}
-                                    >
-                                        Previous Student
-                                    </Button>
-                                )}
-                            </div>
-
-                            <div className="flex gap-2">
-                                <Button variant="flat" onPress={onClose}>
-                                    Cancel
-                                </Button>
-                                <Button
-                                    color="primary"
-                                    onPress={handleNext}
-                                    endContent={isLastStudent ? <Printer size={16} /> : <ArrowRight size={16} />}
-                                >
-                                    {isLastStudent ? "Generate All TCs" : "Next Student"}
-                                </Button>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="flex justify-center w-full">
-                            <p className="text-default-400 text-sm">{t('pages.pleaseWait')}</p>
-                        </div>
-                    )}
-                </ModalFooter>
-            </ModalContent>
-        </Modal>
-    );
+              <div className="flex gap-2 items-center">
+                <span className="text-xs text-fg-faint mono tnum">
+                  {currentIndex + 1} of {students.length}
+                </span>
+                <Button variant="flat" onPress={onClose}>
+                  Cancel
+                </Button>
+                <Button
+                  color="primary"
+                  onPress={handleNext}
+                  endContent={isLastStudent ? <Printer size={14} /> : <ArrowRight size={14} />}
+                  isDisabled={dup}
+                >
+                  {isLastStudent ? "Generate all TCs" : "Next"}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-center w-full">
+              <p className="text-fg-faint text-sm">{t('pages.pleaseWait')}</p>
+            </div>
+          )}
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  );
 }
