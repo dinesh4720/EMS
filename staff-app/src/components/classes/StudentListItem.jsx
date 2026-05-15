@@ -64,8 +64,10 @@ const StudentListItem = ({
             <Text style={[typography.bodySmall, { color: colors.onSurfaceVariant }]}> • {student.gender}</Text>
           )}
         </View>
-        {showContact && student.parentPhone && (
-          <Text style={[typography.labelSmall, { color: colors.primary, marginTop: 2 }]}>Parent: {student.parentPhone}</Text>
+        {showContact && (
+          <Text style={[typography.labelSmall, { color: colors.primary, marginTop: 2 }]}>
+            Parent: {student.parents?.find(p => p.isParent !== false)?.phone || student.parents?.[0]?.phone || 'N/A'}
+          </Text>
         )}
       </View>
 
