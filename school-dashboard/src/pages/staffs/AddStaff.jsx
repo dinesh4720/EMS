@@ -52,12 +52,16 @@ const emptyForm = {
   whatsappNumber: "", email: "", fatherName: "", bloodGroup: "", gender: "", maritalStatus: "",
   employmentType: "Full-time", idDocuments: [], customDocuments: [],
   emergencyContacts: [{ _key: 1, name: "", relationship: "", phone: "" }], address: "",
+  nationality: "Indian",
   // Qualifications
   professionalQualifications: [], totalExperience: "", experience: 0, previousOrganization: "", roleInOrganization: "", qualificationDocs: [],
+  qualification: "",
   // Staff Info
   staffNumber: "", staffType: [], department: "", shift: "Morning", joinDate: "", assignedClasses: [], isClassTeacher: false, classTeacherOf: "",
+  designation: "",
   // Salary Details
-  accountNumber: "", ifscCode: "", bankName: "", branchName: "", salaryTemplate: "", salaryBreakdown: []
+  accountNumber: "", ifscCode: "", bankName: "", branchName: "", salaryTemplate: "", salaryBreakdown: [],
+  panNumber: ""
 };
 
 const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
@@ -135,6 +139,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
         customDocuments: editingStaff.customDocuments || [],
         emergencyContacts: editingStaff.emergencyContacts ? editingStaff.emergencyContacts.map((c, i) => ({ ...c, _key: i + 1 })) : [{ _key: 1, name: "", relationship: "", phone: "" }],
         address: editingStaff.address || "",
+        nationality: editingStaff.nationality || "Indian",
         // Qualifications
         professionalQualifications: editingStaff.professionalQualifications || [],
         totalExperience: editingStaff.totalExperience || "",
@@ -142,6 +147,7 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
         previousOrganization: editingStaff.previousOrganization || "",
         roleInOrganization: editingStaff.roleInOrganization || "",
         qualificationDocs: editingStaff.qualificationDocs || [],
+        qualification: editingStaff.qualification || "",
         // Staff Info
         staffNumber: editingStaff.staffNumber || editingStaff.code || "",
         // Prefer `role` (canonical) over `staffType` (deprecated) to avoid stale data on re-edit
@@ -157,13 +163,15 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
         // Derive isClassTeacher from multiple sources — the flag may be stale
         isClassTeacher: editingStaff.isClassTeacher || !!editingStaff.classTeacherOf || !!editingStaff.assignedClassId || false,
         classTeacherOf: editingStaff.classTeacherOf || editingStaff.assignedClassId || "",
+        designation: editingStaff.designation || "",
         // Salary Details
         accountNumber: editingStaff.accountNumber || "",
         ifscCode: editingStaff.ifscCode || "",
         bankName: editingStaff.bankName || "",
         branchName: editingStaff.branchName || "",
         salaryTemplate: editingStaff.salaryTemplate || "",
-        salaryBreakdown: editingStaff.salaryBreakdown || []
+        salaryBreakdown: editingStaff.salaryBreakdown || [],
+        panNumber: editingStaff.panNumber || ""
       });
     }
     // In CREATE mode, staffNumber is left empty — the backend auto-generates it
@@ -274,6 +282,11 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
       case "ifscCode":
         if (value.trim() && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(value.toUpperCase())) {
           newError = "Invalid IFSC format (e.g., SBIN0001234)";
+        }
+        break;
+      case "panNumber":
+        if (value.trim() && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value.toUpperCase())) {
+          newError = "Invalid PAN format (e.g., ABCDE1234F)";
         }
         break;
     }
@@ -404,6 +417,9 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
       // Salary details validation (optional, but IFSC should be validated if provided)
       if (formData.ifscCode && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(formData.ifscCode.toUpperCase())) {
         newErrors.ifscCode = "Invalid IFSC format (e.g., SBIN0001234)";
+      }
+      if (formData.panNumber && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber.toUpperCase())) {
+        newErrors.panNumber = "Invalid PAN format (e.g., ABCDE1234F)";
       }
     }
     setErrors(newErrors);
@@ -873,6 +889,16 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
           >
             {bloodGroups.map(bg => <SelectItem key={bg}>{bg}</SelectItem>)}
           </Select>
+          <Input
+            label="Nationality"
+            labelPlacement="outside"
+            placeholder="e.g. Indian"
+            value={formData.nationality}
+            onValueChange={v => updateField("nationality", v)}
+            variant="bordered"
+            radius="sm"
+            classNames={{ label: "text-xs font-medium text-default-600 mb-1", inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }}
+          />
         </div>
       </div>
 
@@ -1107,6 +1133,17 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
               <SelectItem key={dept}>{dept}</SelectItem>
             ))}
           </Select>
+
+          <Input
+            label="Designation"
+            labelPlacement="outside"
+            placeholder="e.g. Senior Teacher"
+            value={formData.designation}
+            onValueChange={v => updateField("designation", v)}
+            variant="bordered"
+            radius="sm"
+            classNames={{ label: "text-xs font-medium text-default-600 mb-1", inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }}
+          />
 
           <div className="grid grid-cols-2 gap-4">
             <DatePicker
@@ -1363,6 +1400,20 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
       </div>
 
       <div className="space-y-4 pt-6 border-t border-dashed border-default-200">
+        <h4 className="text-sm font-semibold text-default-900">General Qualification</h4>
+        <Input
+          label="Qualification"
+          labelPlacement="outside"
+          placeholder="e.g. M.Sc Mathematics, B.Ed"
+          value={formData.qualification}
+          onValueChange={v => updateField("qualification", v)}
+          variant="bordered"
+          radius="sm"
+          classNames={{ label: "text-xs font-medium text-default-600 mb-1", inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }}
+        />
+      </div>
+
+      <div className="space-y-4 pt-6 border-t border-dashed border-default-200">
         <h4 className="text-sm font-semibold text-default-900">Work Experience</h4>
 
         <div className="space-y-3">
@@ -1517,6 +1568,19 @@ const AddStaff = forwardRef(({ onClose, onSave, editingStaff }, ref) => {
             <Input label={t('pages.iFSCCode')} labelPlacement="outside" placeholder={t('pages.iFSCEGSbin0001234')} value={formData.ifscCode} onValueChange={v => updateField("ifscCode", v)} variant="bordered" radius="sm" errorMessage={errors.ifscCode} classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }} />
             <Input label={t('pages.bankName')} labelPlacement="outside" placeholder={t('pages.bankName')} value={formData.bankName} onValueChange={v => updateField("bankName", v)} variant="bordered" radius="sm" classNames={{ inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }} />
             <Input label={t('pages.branchName')} labelPlacement="outside" placeholder={t('pages.branch')} value={formData.branchName} onValueChange={v => updateField("branchName", v)} variant="bordered" radius="sm" classNames={{ label: "text-xs font-medium text-default-600 mb-1", inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }} />
+            <Input
+              label="PAN Number"
+              labelPlacement="outside"
+              placeholder="e.g. ABCDE1234F"
+              value={formData.panNumber}
+              onValueChange={v => updateField("panNumber", v.toUpperCase())}
+              variant="bordered"
+              radius="sm"
+              isInvalid={!!errors.panNumber}
+              errorMessage={errors.panNumber}
+              maxLength={10}
+              classNames={{ label: "text-xs font-medium text-default-600 mb-1", inputWrapper: "bg-default-50 dark:bg-default-100/50 border-1 border-default-200 hover:border-default-300 h-10" }}
+            />
           </div>
         </div>
 
