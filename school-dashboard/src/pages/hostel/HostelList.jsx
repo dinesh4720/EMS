@@ -222,7 +222,6 @@ export default function HostelList() {
                 {getWardenName(hostel) && (
                   <p className="text-fg-muted">Warden: {getWardenName(hostel)}</p>
                 )}
-                )}
               </div>
             </div>
           ))}
