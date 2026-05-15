@@ -33,6 +33,9 @@ export default function StudentForm({
     updateSibling,
     addSibling,
     removeSibling,
+    updateHealthInfoItem,
+    addHealthInfoItem,
+    removeHealthInfoItem,
     handleFileUpload,
     handleMultiFileUpload,
     removeFile,
@@ -159,6 +162,9 @@ export default function StudentForm({
             classesWithTeachers={classesWithTeachers}
             parentNameRef={parentNameRef}
             parentPhoneRef={parentPhoneRef}
+            updateHealthInfoItem={updateHealthInfoItem}
+            addHealthInfoItem={addHealthInfoItem}
+            removeHealthInfoItem={removeHealthInfoItem}
           />
         );
       case 3:

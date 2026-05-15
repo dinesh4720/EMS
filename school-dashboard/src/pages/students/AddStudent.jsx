@@ -35,6 +35,11 @@ const emptyForm = {
   siblings: [],
   // Health & Safety
   medicalConditions: "", emergencyContactName: "", emergencyContactPhone: "",
+  healthInfo: {
+    allergies: [],
+    medications: [],
+    emergencyContacts: []
+  },
   // Transport & Hostel
   transportRequired: false, hostelRequired: false,
   // Documents
@@ -390,6 +395,8 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classesWith
         }],
         // Siblings array
         siblings: initialData.siblings || [],
+        // Health Info
+        healthInfo: initialData.healthInfo || { allergies: [], medications: [], emergencyContacts: [] },
         // Parse class and section
         classGrade,
         section,
@@ -649,6 +656,27 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classesWith
 
   const removeSibling = (index) => {
     updateField("siblings", formData.siblings.filter((_, i) => i !== index));
+  };
+
+  // Health Info helpers
+  const updateHealthInfoItem = (arrayName, index, field, value) => {
+    const updated = [...(formData.healthInfo?.[arrayName] || [])];
+    updated[index] = { ...updated[index], [field]: value };
+    updateField("healthInfo", { ...formData.healthInfo, [arrayName]: updated });
+  };
+
+  const addHealthInfoItem = (arrayName, defaultItem) => {
+    updateField("healthInfo", {
+      ...formData.healthInfo,
+      [arrayName]: [...(formData.healthInfo?.[arrayName] || []), defaultItem],
+    });
+  };
+
+  const removeHealthInfoItem = (arrayName, index) => {
+    updateField("healthInfo", {
+      ...formData.healthInfo,
+      [arrayName]: (formData.healthInfo?.[arrayName] || []).filter((_, i) => i !== index),
+    });
   };
 
   const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -1179,6 +1207,7 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classesWith
         medicalConditions: formData.medicalConditions,
         emergencyContactName: formData.emergencyContactName,
         emergencyContactPhone: formData.emergencyContactPhone,
+        healthInfo: formData.healthInfo,
         alternatePhone: formData.alternatePhone,
         isWhatsapp: formData.isWhatsapp,
         whatsappNumber: formData.whatsappNumber,
@@ -2199,8 +2228,8 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classesWith
           </button>
         </div>
 
-        {/* Health & Safety */}
-        <div className="space-y-3 pt-5 border-t border-gray-100 dark:border-zinc-700">
+        {/* Health Information */}
+        <div className="space-y-4 pt-5 border-t border-gray-100 dark:border-zinc-700">
           <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100">{t('pages.healthSafety')}</h3>
           <Textarea
             label={t('pages.medicalConditions1')}
@@ -2213,6 +2242,285 @@ const AddStudent = forwardRef(function AddStudent({ onClose, onSave, classesWith
             minRows={2}
             classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300" }}
           />
+
+          {/* Allergies */}
+          <div className="space-y-3 pt-3 border-t border-dashed border-default-200">
+            <div className="flex justify-between items-center">
+              <label className="text-xs font-semibold text-default-700">Allergies</label>
+              <span className="text-xs text-default-400">(Optional)</span>
+            </div>
+            {(formData.healthInfo?.allergies || []).map((allergy, idx) => (
+              <div key={`allergy-${idx}`} className="p-3 bg-default-50 rounded-lg border border-default-200 space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-medium text-default-600">Allergy {idx + 1}</span>
+                  <Button size="sm" variant="light" color="danger" onPress={() => removeHealthInfoItem("allergies", idx)}>
+                    <X size={14} /> Remove
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <Input
+                    label="Name"
+                    labelPlacement="outside"
+                    placeholder="e.g. Peanuts"
+                    value={allergy.name || ""}
+                    onValueChange={val => updateHealthInfoItem("allergies", idx, "name", val)}
+                    variant="bordered"
+                    radius="sm"
+                    classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                  />
+                  <Select
+                    label="Type"
+                    labelPlacement="outside"
+                    placeholder="Select type"
+                    selectedKeys={allergy.type ? [allergy.type] : []}
+                    onSelectionChange={keys => updateHealthInfoItem("allergies", idx, "type", Array.from(keys)[0])}
+                    variant="bordered"
+                    radius="sm"
+                    classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                  >
+                    {["food", "medication", "environmental", "insect", "latex", "other"].map(t => (
+                      <SelectItem key={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</SelectItem>
+                    ))}
+                  </Select>
+                  <Select
+                    label="Severity"
+                    labelPlacement="outside"
+                    placeholder="Select severity"
+                    selectedKeys={allergy.severity ? [allergy.severity] : []}
+                    onSelectionChange={keys => updateHealthInfoItem("allergies", idx, "severity", Array.from(keys)[0])}
+                    variant="bordered"
+                    radius="sm"
+                    classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                  >
+                    {["mild", "moderate", "severe", "life-threatening"].map(s => (
+                      <SelectItem key={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
+                    ))}
+                  </Select>
+                  <Input
+                    label="Reaction"
+                    labelPlacement="outside"
+                    placeholder="e.g. Skin rash"
+                    value={allergy.reaction || ""}
+                    onValueChange={val => updateHealthInfoItem("allergies", idx, "reaction", val)}
+                    variant="bordered"
+                    radius="sm"
+                    classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                  />
+                  <Input
+                    label="Notes"
+                    labelPlacement="outside"
+                    placeholder="Additional notes"
+                    value={allergy.notes || ""}
+                    onValueChange={val => updateHealthInfoItem("allergies", idx, "notes", val)}
+                    variant="bordered"
+                    radius="sm"
+                    className="col-span-2"
+                    classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                  />
+                </div>
+              </div>
+            ))}
+            <button
+              className="text-sm font-medium text-primary hover:text-primary-600 transition-colors"
+              onClick={() => addHealthInfoItem("allergies", { name: "", type: "", severity: "", reaction: "", notes: "" })}
+            >
+              + Add Allergy
+            </button>
+          </div>
+
+          {/* Medications */}
+          <div className="space-y-3 pt-3 border-t border-dashed border-default-200">
+            <div className="flex justify-between items-center">
+              <label className="text-xs font-semibold text-default-700">Medications</label>
+              <span className="text-xs text-default-400">(Optional)</span>
+            </div>
+            {(formData.healthInfo?.medications || []).map((med, idx) => (
+              <div key={`med-${idx}`} className="p-3 bg-default-50 rounded-lg border border-default-200 space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-medium text-default-600">Medication {idx + 1}</span>
+                  <Button size="sm" variant="light" color="danger" onPress={() => removeHealthInfoItem("medications", idx)}>
+                    <X size={14} /> Remove
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <Input
+                    label="Name"
+                    labelPlacement="outside"
+                    placeholder="e.g. Paracetamol"
+                    value={med.name || ""}
+                    onValueChange={val => updateHealthInfoItem("medications", idx, "name", val)}
+                    variant="bordered"
+                    radius="sm"
+                    classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                  />
+                  <Input
+                    label="Dosage"
+                    labelPlacement="outside"
+                    placeholder="e.g. 500mg"
+                    value={med.dosage || ""}
+                    onValueChange={val => updateHealthInfoItem("medications", idx, "dosage", val)}
+                    variant="bordered"
+                    radius="sm"
+                    classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                  />
+                  <Input
+                    label="Frequency"
+                    labelPlacement="outside"
+                    placeholder="e.g. Twice daily"
+                    value={med.frequency || ""}
+                    onValueChange={val => updateHealthInfoItem("medications", idx, "frequency", val)}
+                    variant="bordered"
+                    radius="sm"
+                    classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                  />
+                  <Input
+                    label="Prescribed By"
+                    labelPlacement="outside"
+                    placeholder="Doctor name"
+                    value={med.prescribedBy || ""}
+                    onValueChange={val => updateHealthInfoItem("medications", idx, "prescribedBy", val)}
+                    variant="bordered"
+                    radius="sm"
+                    classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                  />
+                  <Input
+                    label="Start Date"
+                    labelPlacement="outside"
+                    placeholder="DD/MM/YYYY"
+                    value={med.startDate || ""}
+                    onValueChange={val => updateHealthInfoItem("medications", idx, "startDate", val)}
+                    variant="bordered"
+                    radius="sm"
+                    classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                  />
+                  <Input
+                    label="End Date"
+                    labelPlacement="outside"
+                    placeholder="DD/MM/YYYY"
+                    value={med.endDate || ""}
+                    onValueChange={val => updateHealthInfoItem("medications", idx, "endDate", val)}
+                    variant="bordered"
+                    radius="sm"
+                    classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                  />
+                  <Input
+                    label="Notes"
+                    labelPlacement="outside"
+                    placeholder="Additional notes"
+                    value={med.notes || ""}
+                    onValueChange={val => updateHealthInfoItem("medications", idx, "notes", val)}
+                    variant="bordered"
+                    radius="sm"
+                    className="col-span-2"
+                    classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                  />
+                </div>
+              </div>
+            ))}
+            <button
+              className="text-sm font-medium text-primary hover:text-primary-600 transition-colors"
+              onClick={() => addHealthInfoItem("medications", { name: "", dosage: "", frequency: "", startDate: "", endDate: "", prescribedBy: "", notes: "" })}
+            >
+              + Add Medication
+            </button>
+          </div>
+
+          {/* Health Emergency Contacts */}
+          <div className="space-y-3 pt-3 border-t border-dashed border-default-200">
+            <div className="flex justify-between items-center">
+              <label className="text-xs font-semibold text-default-700">Health Emergency Contacts</label>
+              <span className="text-xs text-default-400">(Optional)</span>
+            </div>
+            {(formData.healthInfo?.emergencyContacts || []).map((contact, idx) => (
+              <div key={`he-contact-${idx}`} className="p-3 bg-default-50 rounded-lg border border-default-200 space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-medium text-default-600">Emergency Contact {idx + 1}</span>
+                  <Button size="sm" variant="light" color="danger" onPress={() => removeHealthInfoItem("emergencyContacts", idx)}>
+                    <X size={14} /> Remove
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <Input
+                    label="Name"
+                    labelPlacement="outside"
+                    placeholder="Contact name"
+                    value={contact.name || ""}
+                    onValueChange={val => updateHealthInfoItem("emergencyContacts", idx, "name", val)}
+                    variant="bordered"
+                    radius="sm"
+                    classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                  />
+                  <Input
+                    label="Relationship"
+                    labelPlacement="outside"
+                    placeholder="e.g. Uncle"
+                    value={contact.relationship || ""}
+                    onValueChange={val => updateHealthInfoItem("emergencyContacts", idx, "relationship", val)}
+                    variant="bordered"
+                    radius="sm"
+                    classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                  />
+                  <Input
+                    label="Phone"
+                    labelPlacement="outside"
+                    startContent={<span className="text-default-400 text-xs">+91</span>}
+                    placeholder="10-digit mobile"
+                    value={contact.phone || ""}
+                    onValueChange={val => {
+                      const digitsOnly = val.replace(/\D/g, '').slice(0, 10);
+                      updateHealthInfoItem("emergencyContacts", idx, "phone", digitsOnly);
+                    }}
+                    variant="bordered"
+                    radius="sm"
+                    maxLength={10}
+                    classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                  />
+                  <Input
+                    label="Alternate Phone"
+                    labelPlacement="outside"
+                    startContent={<span className="text-default-400 text-xs">+91</span>}
+                    placeholder="10-digit mobile"
+                    value={contact.alternatePhone || ""}
+                    onValueChange={val => {
+                      const digitsOnly = val.replace(/\D/g, '').slice(0, 10);
+                      updateHealthInfoItem("emergencyContacts", idx, "alternatePhone", digitsOnly);
+                    }}
+                    variant="bordered"
+                    radius="sm"
+                    maxLength={10}
+                    classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                  />
+                  <Input
+                    label="Email"
+                    labelPlacement="outside"
+                    placeholder="Email address"
+                    value={contact.email || ""}
+                    onValueChange={val => updateHealthInfoItem("emergencyContacts", idx, "email", val)}
+                    variant="bordered"
+                    radius="sm"
+                    classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                  />
+                  <Input
+                    label="Priority"
+                    labelPlacement="outside"
+                    placeholder="e.g. 1"
+                    type="number"
+                    value={contact.priority?.toString() || ""}
+                    onValueChange={val => updateHealthInfoItem("emergencyContacts", idx, "priority", val ? parseInt(val) : "")}
+                    variant="bordered"
+                    radius="sm"
+                    classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                  />
+                </div>
+              </div>
+            ))}
+            <button
+              className="text-sm font-medium text-primary hover:text-primary-600 transition-colors"
+              onClick={() => addHealthInfoItem("emergencyContacts", { name: "", relationship: "", phone: "", alternatePhone: "", email: "", priority: 1 })}
+            >
+              + Add Emergency Contact
+            </button>
+          </div>
         </div>
 
         {/* Transport & Hostel */}

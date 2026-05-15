@@ -134,6 +134,43 @@ export function useStudentForm(initialData = null) {
   }, []);
 
   /**
+   * Update a health info array item
+   */
+  const updateHealthInfoItem = useCallback((arrayName, index, field, value) => {
+    setFormData((prev) => {
+      const updated = [...(prev.healthInfo?.[arrayName] || [])];
+      updated[index] = { ...updated[index], [field]: value };
+      return { ...prev, healthInfo: { ...prev.healthInfo, [arrayName]: updated } };
+    });
+  }, []);
+
+  /**
+   * Add a new health info item
+   */
+  const addHealthInfoItem = useCallback((arrayName, defaultItem) => {
+    setFormData((prev) => ({
+      ...prev,
+      healthInfo: {
+        ...prev.healthInfo,
+        [arrayName]: [...(prev.healthInfo?.[arrayName] || []), defaultItem],
+      },
+    }));
+  }, []);
+
+  /**
+   * Remove a health info item
+   */
+  const removeHealthInfoItem = useCallback((arrayName, index) => {
+    setFormData((prev) => ({
+      ...prev,
+      healthInfo: {
+        ...prev.healthInfo,
+        [arrayName]: (prev.healthInfo?.[arrayName] || []).filter((_, i) => i !== index),
+      },
+    }));
+  }, []);
+
+  /**
    * Handle single file upload
    */
   const handleFileUpload = useCallback((field, file) => {
@@ -253,6 +290,9 @@ export function useStudentForm(initialData = null) {
     handleMultiFileUpload,
     removeFile,
     validateStep,
+    updateHealthInfoItem,
+    addHealthInfoItem,
+    removeHealthInfoItem,
     resetForm,
   };
 }
@@ -302,6 +342,7 @@ function normalizeInitialData(initialData) {
           isParent: true,
         }],
     siblings: initialData.siblings || [],
+    healthInfo: initialData.healthInfo || { allergies: [], medications: [], emergencyContacts: [] },
     classGrade,
     section,
   };

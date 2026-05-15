@@ -82,6 +82,11 @@ export const DEFAULT_STUDENT_FORM = {
   medicalConditions: "",
   emergencyContactName: "",
   emergencyContactPhone: "",
+  healthInfo: {
+    allergies: [],
+    medications: [],
+    emergencyContacts: []
+  },
   
   // Transport & Hostel
   transportRequired: false,
