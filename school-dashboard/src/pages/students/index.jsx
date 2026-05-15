@@ -3,13 +3,13 @@ import logger from "../../utils/logger";
 import lazyWithRetry from "../../utils/lazyWithRetry";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter as ModalFooterUI, Chip } from "@heroui/react";
-import { Plus, UserPlus, Send, FileText, CheckCircle2, ChevronDown, Mail, Phone, Eye, Check } from "lucide-react";
+import { UserPlus, Send, FileText, CheckCircle2, ChevronDown, Mail, Phone, Check } from "lucide-react";
 import StudentsList from "./StudentsList";
 import StudentDashboard from "./StudentDashboard";
 import StudentAttendance from "./StudentAttendance";
 import StudentFormSubmissions from "./StudentFormSubmissions";
 const AddStudent = lazyWithRetry(() => import("./AddStudent"));
-import FormInput from "../../components/FormInput";
+// FormInput removed — no longer used
 import { useApp } from "../../context/AppContext";
 import { intakeFormsApi } from "../../services/api";
 import toast from "react-hot-toast";
@@ -97,7 +97,7 @@ export default function StudentsPage() {
 
   const handleRemovePhone = (phone) => setRecipientPhones(recipientPhones.filter(p => p !== phone));
 
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   const handleSelectMethod = (method) => {
     setIsMethodModalOpen(false);
@@ -161,12 +161,6 @@ export default function StudentsPage() {
 
   const handleCloseAddStudent = () => setIsAddStudentOpen(false);
 
-  const getActiveTab = () => {
-    if (location.pathname === "/students/attendance") return "attendance";
-    if (location.pathname === "/students/submissions") return "submissions";
-    return "list";
-  };
-
   const handleSaveStudent = async (studentData) => {
     try {
       await addStudent(studentData);
@@ -180,33 +174,15 @@ export default function StudentsPage() {
     }
   };
 
-  const activeTab = getActiveTab();
-
-  const tabHeaderInfo = {
-    list: { title: "All Students", description: "View and manage student records" },
-    attendance: { title: "Student Attendance", description: "Track daily attendance" },
-    submissions: { title: "Form Submissions", description: "Review admission form submissions" }
-  };
-
-  const tabs = [
-    { key: "list", title: "All Students" },
-    { key: "attendance", title: "Attendance" },
-    { key: "submissions", title: "Form Submissions" }
-  ];
-
-  const handleTabChange = (key) => {
-    // Use replace to avoid building up history entries for tab switches
-    if (key === "list") navigate("/students", { replace: true });
-    else if (key === "attendance") navigate("/students/attendance", { replace: true });
-    else if (key === "submissions") navigate("/students/submissions", { replace: true });
-  };
-
   const pathParts = location.pathname.split('/').filter(Boolean);
   const isProfileView = pathParts.length === 2 &&
     pathParts[0] === 'students' &&
     pathParts[1] !== 'attendance' &&
     pathParts[1] !== 'submissions' &&
     pathParts[1] !== '';
+
+  const isAttendance = location.pathname === "/students/attendance";
+  const isSubmissions = location.pathname === "/students/submissions";
 
   if (isProfileView) {
     return (
@@ -219,57 +195,32 @@ export default function StudentsPage() {
   }
 
   return (
-    <div className="flex flex-col h-full min-h-0 overflow-hidden">
-      <PageLayout
-        tabs={tabs}
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-        header={tabHeaderInfo[activeTab]}
-        className="flex-1 min-h-0"
-        noPadding
-        actions={activeTab === "list" && (
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => navigate('/students/promotion')}
-              className="btn"
-            >
-              Promotion
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/students/transfer-certificate')}
-              className="btn"
-            >
-              Transfer Certificate
-            </button>
-            <button
-              type="button"
-              onClick={handleOpenAddStudent}
-              className="btn btn--accent"
-            >
-              <Plus size={13} aria-hidden />
-              New Student
-            </button>
-          </div>
-        )}
-      >
-        {activeTab === "list" && (
-          <div className="flex-1 flex flex-col min-h-0">
-            <StudentsList />
-          </div>
-        )}
-        {activeTab === "attendance" && (
+    <div className="students-page animate-fade-in">
+      {isAttendance ? (
+        <PageLayout
+          header={{ title: "Student Attendance", description: "Track daily attendance" }}
+          className="flex-1 min-h-0"
+          noPadding
+        >
           <div className="p-6 overflow-auto">
             <StudentAttendance />
           </div>
-        )}
-        {activeTab === "submissions" && (
+        </PageLayout>
+      ) : isSubmissions ? (
+        <PageLayout
+          header={{ title: "Form Submissions", description: "Review admission form submissions" }}
+          className="flex-1 min-h-0"
+          noPadding
+        >
           <div className="p-6 overflow-auto">
             <StudentFormSubmissions />
           </div>
-        )}
-      </PageLayout>
+        </PageLayout>
+      ) : (
+        <div className="students-page__listframe">
+          <StudentsList onAddStudent={handleOpenAddStudent} />
+        </div>
+      )}
 
       {/* Add Student composer — frosted overlay, renders via portal */}
       {isAddStudentOpen && (

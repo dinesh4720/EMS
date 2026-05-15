@@ -1,31 +1,41 @@
-import { useMemo, useRef, useEffect, useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
+import { useSearchParams } from "react-router-dom";
+// Translations removed — all text is plain English to match StaffList style
+import { Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useStudentsListData } from "./hooks/useStudentsListData";
 import EditStudentDrawer from "./EditStudentDrawer";
 import ScrollToTopButton from "../../components/ui/ScrollToTopButton";
 import Skeleton from "../../components/ui/Skeleton";
 import { StudentCsvUploadModal, StudentCsvPreviewModal } from "./components/modals/StudentImportModals";
 import StudentsFiltersBar from "./components/list/StudentsFiltersBar";
-import StudentsTableVirtualized from "./components/list/StudentsTableVirtualized";
 import StudentsBulkModals from "./components/list/StudentsBulkModals";
-import { StudentsTableProvider } from "./components/list/StudentsTableContext";
-import StudentOverlay from "../../components/students/StudentOverlay";
-import useStudentOverlay from "../../hooks/useStudentOverlay";
+// Removed StudentsTableProvider — no longer needed with row-list layout
+import StudentListRow from "./StudentListRow";
+import StudentDetailPane from "./StudentDetailPane";
+import toast from "react-hot-toast";
+
+// Mobile breakpoint — below this the right pane collapses to a Drawer
+const MOBILE_MAX = 1099;
 
 function StudentsListSkeleton() {
   return (
     <div className="w-full flex flex-col flex-1 min-h-0" aria-busy="true" aria-live="polite">
-      {/* Toolbar skeleton — matches .toolbar density */}
+      {/* Toolbar skeleton */}
       <div className="toolbar" role="presentation">
         <Skeleton variant="rect" className="h-7" style={{ flex: "0 1 280px" }} />
         <Skeleton variant="rect" className="h-7 w-56" />
         <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
           <Skeleton variant="rect" className="h-7 w-7" />
-          <Skeleton variant="rect" className="h-7 w-20" />
-          <Skeleton variant="rect" className="h-7 w-7" />
         </div>
       </div>
-      {/* Row skeletons — match .stafflist__row density */}
+      {/* Row skeletons */}
       <div className="flex-1 min-h-0 overflow-hidden">
         {Array.from({ length: 12 }).map((_, i) => (
           <div
@@ -53,38 +63,25 @@ function StudentsListSkeleton() {
   );
 }
 
-export default function StudentsList() {
-  const { t } = useTranslation();
+export default function StudentsList({ onAddStudent }) {
+  const navigate = useNavigate();
   const {
     // loading
     contextLoading, listLoading,
     // students data
-    students, filteredItems, visibleItems, selectedCount, currentAcademicYear, classes,
+    students, filteredItems, visibleItems, selectedCount, classes,
     // filter state
-    searchQuery, setSearchQuery, deferredSearchQuery, statusFilter, setStatusFilter,
+    searchQuery, setSearchQuery, statusFilter, setStatusFilter,
     // filter helpers
-    filtersConfig, filterPresets, activeFiltersCount, isSearching,
-    handleFilterChange, handlePresetClick, clearAllFilters,
+    filtersConfig, activeFiltersCount, isSearching,
+    handleFilterChange, clearAllFilters,
     // dropdown state
-    statusDropdownOpen, setStatusDropdownOpen,
     bulkDropdownOpen, setBulkDropdownOpen,
-    filtersDropdownOpen, setFiltersDropdownOpen,
-    sortDropdownOpen, setSortDropdownOpen,
-    columnsDropdownOpen, setColumnsDropdownOpen,
     moreDropdownOpen, setMoreDropdownOpen,
-    closeAllDropdowns,
     // sort / selection
     sortDescriptor, setSortDescriptor, selectedKeys, setSelectedKeys, statusCounts,
     // column visibility
-    visibleColumns, toggleColumn, visibleColumnsArray,
-    // table
-    tableContainerRef, rowVirtualizer,
-    // fee structures
-    studentFeeStructures,
-    // phone editing
-    editingPhoneId, setEditingPhoneId, phoneInput, setPhoneInput, handleSavePhone,
-    // pin
-    handlePinStudent, handleUnpinStudent,
+    visibleColumns, toggleColumn,
     // edit drawer
     isEditDrawerOpen, setIsEditDrawerOpen, selectedStudent, setSelectedStudent,
     // local override
@@ -93,11 +90,11 @@ export default function StudentsList() {
     refreshStudentsList,
     // bulk modals
     isBulkActionOpen, onBulkActionClose,
-    isPromoteOpen, onPromoteOpen, onPromoteClose, promotionPreview,
+    isPromoteOpen, onPromoteClose, promotionPreview,
     isReminderOpen, onReminderClose, reminderMessage, setReminderMessage, reminderTime, setReminderTime, reminderTargetCount,
-    isTcModalOpen, onTcModalOpen, onTcModalClose, tcStudents, setTcStudents,
-    isDeleteOpen, onDeleteClose, onDeleteOpen, studentToDelete, setStudentToDelete, isDeleting, setIsDeleting,
-    isStatusChangeOpen, onStatusChangeClose, onStatusChangeOpen, statusChangeData, setStatusChangeData,
+    isTcModalOpen, onTcModalClose, tcStudents,
+    isDeleteOpen, onDeleteClose, studentToDelete, setStudentToDelete, isDeleting, setIsDeleting,
+    isStatusChangeOpen, onStatusChangeClose, statusChangeData, setStatusChangeData,
     isCsvUploadOpen, onCsvUploadClose, onCsvUploadOpen,
     isPreviewOpen, onPreviewClose,
     // bulk handlers
@@ -111,63 +108,174 @@ export default function StudentsList() {
     getClassOptions,
   } = useStudentsListData();
 
-  const studentOverlay = useStudentOverlay();
-  const visibleRowIds = useMemo(
-    () => (filteredItems || []).map((s) => String(s.id || s._id)),
-    [filteredItems]
+  // ============ Routing (URL-driven selection) ============
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedId = searchParams.get("id") || null;
+
+  const setSelectedId = useCallback(
+    (id) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (id) next.set("id", id);
+          else next.delete("id");
+          return next;
+        },
+        { replace: false }
+      );
+    },
+    [setSearchParams]
   );
 
-  // ── Keyboard nav (UI-revamp acceptance) ──────────────────────────────────
-  // "/" focuses search, "Esc" clears selection, ArrowUp/Down navigates rows
-  // (using studentOverlay when present, else the filtered list cursor).
-  const searchRef = useRef(null);
-  const cursorRef = useRef(null);
+  // ============ Mobile viewport detection ============
+  const [isMobileViewport, setIsMobileViewport] = useState(() =>
+    typeof window !== "undefined"
+      ? window.innerWidth <= MOBILE_MAX
+      : false
+  );
 
   useEffect(() => {
-    const handler = (e) => {
-      const tag = document.activeElement?.tagName;
-      const isTyping = tag === "INPUT" || tag === "TEXTAREA" || document.activeElement?.isContentEditable;
+    const onResize = () => setIsMobileViewport(window.innerWidth <= MOBILE_MAX);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
-      if (e.key === "/" && !isTyping) {
+  // ============ Selected student ============
+  const selectedStudentRecord = useMemo(() => {
+    if (!selectedId) return null;
+    return visibleItems.find((st) => String(st.id || st._id) === selectedId) || null;
+  }, [selectedId, visibleItems]);
+
+  const handleViewProfile = useCallback(
+    (student) => {
+      const id = student.id || student._id;
+      navigate(`/students/${id}`);
+    },
+    [navigate]
+  );
+
+  // Auto-select first visible student on desktop when nothing is selected
+  useEffect(() => {
+    if (isMobileViewport) return;
+    if (selectedId) return;
+    if (visibleItems.length === 0) return;
+    const first = visibleItems[0];
+    const firstId = String(first.id || first._id);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("id", firstId);
+        return next;
+      },
+      { replace: true }
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMobileViewport, selectedId, visibleItems.length]);
+
+  // ============ Keyboard nav ============
+  const listRef = useRef(null);
+  const rowRefs = useRef(new Map());
+
+  const moveSelection = useCallback(
+    (delta) => {
+      if (visibleItems.length === 0) return;
+      const ids = visibleItems.map((st) => String(st.id || st._id));
+      const currentIdx = ids.indexOf(selectedId);
+      const nextIdx =
+        currentIdx === -1
+          ? delta > 0
+            ? 0
+            : visibleItems.length - 1
+          : Math.min(visibleItems.length - 1, Math.max(0, currentIdx + delta));
+      const nextStudent = visibleItems[nextIdx];
+      if (!nextStudent) return;
+      const nextId = String(nextStudent.id || nextStudent._id);
+      setSelectedId(nextId);
+      requestAnimationFrame(() => {
+        rowRefs.current.get(nextId)?.scrollIntoView({ block: "nearest" });
+        rowRefs.current.get(nextId)?.focus({ preventScroll: true });
+      });
+    },
+    [visibleItems, selectedId, setSelectedId]
+  );
+
+  const handleListKeyDown = useCallback(
+    (e) => {
+      const tag = e.target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (e.key === "ArrowDown") {
         e.preventDefault();
-        searchRef.current?.focus();
-        return;
-      }
-      if (e.key === "Escape" && !isTyping) {
-        if (selectedKeys && selectedKeys.size > 0) {
-          e.preventDefault();
+        moveSelection(1);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        moveSelection(-1);
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (selectedStudentRecord) {
+          handleViewProfile(selectedStudentRecord);
+        }
+      } else if (e.key === "Escape") {
+        if (selectedCount > 0) {
           setSelectedKeys(new Set([]));
+          return;
         }
-        return;
-      }
-      if ((e.key === "ArrowDown" || e.key === "ArrowUp") && !isTyping) {
-        const ids = visibleRowIds;
-        if (ids.length === 0) return;
-        const activeId = studentOverlay.studentId
-          ? String(studentOverlay.studentId)
-          : cursorRef.current;
-        const idx = activeId ? ids.indexOf(activeId) : -1;
-        const nextIdx =
-          e.key === "ArrowDown"
-            ? Math.min(ids.length - 1, idx + 1)
-            : Math.max(0, idx === -1 ? 0 : idx - 1);
-        const nextId = ids[nextIdx];
-        if (!nextId) return;
         e.preventDefault();
-        cursorRef.current = nextId;
-        if (studentOverlay.studentId) {
-          studentOverlay.navigate?.(nextId);
+        setSelectedId(null);
+      }
+    },
+    [moveSelection, setSelectedId, selectedCount, setSelectedKeys, selectedStudentRecord, handleViewProfile]
+  );
+
+  // ============ Bulk toggle ============
+  const toggleCheck = useCallback(
+    (student, event) => {
+      const id = String(student.id || student._id);
+      if (event?.shiftKey) {
+        // Simple range select
+        const ids = visibleItems.map((st) => String(st.id || st._id));
+        const lastId = rowRefs.current.get("__lastClicked__");
+        if (lastId) {
+          const idxA = ids.indexOf(lastId);
+          const idxB = ids.indexOf(id);
+          if (idxA !== -1 && idxB !== -1) {
+            const [lo, hi] = idxA < idxB ? [idxA, idxB] : [idxB, idxA];
+            const newKeys = new Set(selectedKeys);
+            for (let i = lo; i <= hi; i++) {
+              newKeys.add(ids[i]);
+            }
+            setSelectedKeys(newKeys);
+            rowRefs.current.set("__lastClicked__", id);
+            return;
+          }
         }
       }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [selectedKeys, setSelectedKeys, visibleRowIds, studentOverlay]);
+      const newKeys = new Set(selectedKeys);
+      if (newKeys.has(id)) newKeys.delete(id);
+      else newKeys.add(id);
+      setSelectedKeys(newKeys);
+      rowRefs.current.set("__lastClicked__", id);
+    },
+    [visibleItems, selectedKeys, setSelectedKeys]
+  );
 
   const handleClearSelection = useCallback(
     () => setSelectedKeys(new Set([])),
     [setSelectedKeys]
   );
+
+  const handleMessageParent = useCallback(() => {
+    if (!selectedStudentRecord) return;
+    const parentPhone = selectedStudentRecord.parentPhone || selectedStudentRecord.fatherPhone || selectedStudentRecord.motherPhone;
+    const parentEmail = selectedStudentRecord.parentEmail || selectedStudentRecord.fatherEmail || selectedStudentRecord.motherEmail;
+    if (!parentPhone && !parentEmail) {
+      toast("No parent contact available.");
+      return;
+    }
+    navigate(`/messaging?to=${encodeURIComponent(parentPhone || parentEmail)}`);
+  }, [selectedStudentRecord, navigate]);
+
+  const closeDetail = () => setSelectedId(null);
+  const detailVisible = !!selectedStudentRecord;
 
   const {
     csvFile, setCsvFile, csvDragActive, csvProcessing,
@@ -181,101 +289,160 @@ export default function StudentsList() {
   }
 
   return (
-    <div className="w-full flex flex-col flex-1 min-h-0 overflow-hidden">
-      {/* ── Toolbar ──────────────────────────────────────────────────────── */}
-      <StudentsFiltersBar
-        ref={searchRef}
-        statusFilter={statusFilter}
-        setStatusFilter={setStatusFilter}
-        statusDropdownOpen={statusDropdownOpen}
-        setStatusDropdownOpen={setStatusDropdownOpen}
-        statusCounts={statusCounts}
-        students={students}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        isSearching={isSearching}
-        selectedCount={selectedCount}
-        bulkDropdownOpen={bulkDropdownOpen}
-        setBulkDropdownOpen={setBulkDropdownOpen}
-        handleBulkAction={handleBulkAction}
-        downloadSelectedStudents={downloadSelectedStudents}
-        onClearSelection={handleClearSelection}
-        filtersConfig={filtersConfig}
-        handleFilterChange={handleFilterChange}
-        clearAllFilters={clearAllFilters}
-        activeFiltersCount={activeFiltersCount}
-        filterPresets={filterPresets}
-        handlePresetClick={handlePresetClick}
-        filtersDropdownOpen={filtersDropdownOpen}
-        setFiltersDropdownOpen={setFiltersDropdownOpen}
-        sortDescriptor={sortDescriptor}
-        setSortDescriptor={setSortDescriptor}
-        sortDropdownOpen={sortDropdownOpen}
-        setSortDropdownOpen={setSortDropdownOpen}
-        visibleColumns={visibleColumns}
-        toggleColumn={toggleColumn}
-        columnsDropdownOpen={columnsDropdownOpen}
-        setColumnsDropdownOpen={setColumnsDropdownOpen}
-        moreDropdownOpen={moreDropdownOpen}
-        setMoreDropdownOpen={setMoreDropdownOpen}
-        csvInputRef={csvInputRef}
-        handleCSVUpload={handleCSVUpload}
-        setCsvFile={setCsvFile}
-        onCsvUploadOpen={onCsvUploadOpen}
-        downloadStudentList={downloadStudentList}
-      />
+    <div
+      className="page"
+      style={
+        isMobileViewport
+          ? { display: "flex", flexDirection: "column", minHeight: 0 }
+          : {
+              display: "grid",
+              gridTemplateColumns: "minmax(420px, 1fr) 380px",
+              gap: 0,
+              minHeight: 0,
+            }
+      }
+    >
+      {/* Left list */}
+      <div
+        style={{
+          borderRight: isMobileViewport ? "none" : "1px solid var(--border)",
+          display: "flex",
+          flexDirection: "column",
+          minHeight: 0,
+        }}
+      >
+        <div className="page__head" style={{ paddingBottom: 12 }}>
+          <div>
+            <h1 className="page__title">Students</h1>
+            <div className="page__sub">
+              <span className="mono tnum">{filteredItems.length}</span> of{" "}
+              <span className="mono tnum">{students.length}</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="btn btn--accent"
+            onClick={onAddStudent}
+          >
+            <Plus size={13} aria-hidden />
+            New Student
+          </button>
+        </div>
 
-      {/* ── Virtualized Table ─────────────────────────────────────────────── */}
-      <StudentsTableProvider actions={{
-        setSelectedKeys,
-        setSortDescriptor,
-        setEditingPhoneId,
-        setPhoneInput,
-        handleSavePhone,
-        handlePinStudent,
-        handleUnpinStudent,
-        setSelectedStudent,
-        setIsEditDrawerOpen,
-        setStudentToDelete,
-        onDeleteOpen,
-        setStatusChangeData,
-        onStatusChangeOpen,
-        setTcStudents,
-        onTcModalOpen,
-        handleBulkAction,
-        onPromoteOpen,
-        closeAllDropdowns,
-        onClearFilters: clearAllFilters,
-      }}>
-        <StudentsTableVirtualized
-          visibleItems={visibleItems}
-          filteredItems={filteredItems}
-          visibleColumnsArray={visibleColumnsArray}
-          studentFeeStructures={studentFeeStructures}
-          currentAcademicYear={currentAcademicYear}
-          selectedKeys={selectedKeys}
-          rowVirtualizer={rowVirtualizer}
-          tableContainerRef={tableContainerRef}
+        {/* Toolbar */}
+        <StudentsFiltersBar
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
+          statusCounts={statusCounts}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          isSearching={isSearching}
+          selectedCount={selectedCount}
+          bulkDropdownOpen={bulkDropdownOpen}
+          setBulkDropdownOpen={setBulkDropdownOpen}
+          handleBulkAction={handleBulkAction}
+          downloadSelectedStudents={downloadSelectedStudents}
+          onClearSelection={handleClearSelection}
+          filtersConfig={filtersConfig}
+          handleFilterChange={handleFilterChange}
+          clearAllFilters={clearAllFilters}
+          activeFiltersCount={activeFiltersCount}
           sortDescriptor={sortDescriptor}
-          editingPhoneId={editingPhoneId}
-          phoneInput={phoneInput}
-          searchQuery={deferredSearchQuery}
-          hasActiveFilters={activeFiltersCount > 0}
-          openStudent={studentOverlay.open}
-          activeStudentId={studentOverlay.studentId}
+          setSortDescriptor={setSortDescriptor}
+          visibleColumns={visibleColumns}
+          toggleColumn={toggleColumn}
+          moreDropdownOpen={moreDropdownOpen}
+          setMoreDropdownOpen={setMoreDropdownOpen}
+          csvInputRef={csvInputRef}
+          handleCSVUpload={handleCSVUpload}
+          setCsvFile={setCsvFile}
+          onCsvUploadOpen={onCsvUploadOpen}
+          downloadStudentList={downloadStudentList}
+          onNavigateToTC={() => navigate('/students/transfer-certificate')}
         />
-      </StudentsTableProvider>
 
-      {/* ── Footer: row count ──────────────────────────────────────────────── */}
-      <div className="border-t border-border-token px-6 py-3 shrink-0">
-        <span className="text-fg-muted text-sm">
-          {filteredItems.length === students.length
-            ? t('pages.showingStudents', { count: students.length })
-            : t('pages.showingFilteredStudents', { filtered: filteredItems.length, total: students.length })}
-        </span>
+        {/* List rows */}
+        <div
+          ref={listRef}
+          role="listbox"
+          aria-label="Student list"
+          tabIndex={0}
+          onKeyDown={handleListKeyDown}
+          style={{
+            flex: 1,
+            overflow: "auto",
+            outline: "none",
+            minHeight: 0,
+          }}
+        >
+          {visibleItems.length === 0 ? (
+            <div
+              className="subtle"
+              style={{ padding: 32, textAlign: "center", fontSize: 13 }}
+            >
+              No students matched.
+            </div>
+          ) : (
+            visibleItems.map((student) => {
+              const id = String(student.id || student._id);
+              return (
+                <StudentListRow
+                  key={id}
+                  ref={(el) => {
+                    if (el) rowRefs.current.set(id, el);
+                    else rowRefs.current.delete(id);
+                  }}
+                  student={student}
+                  isActive={selectedId === id}
+                  isChecked={selectedKeys.has(id)}
+                  onSelect={() => setSelectedId(id)}
+                  onToggleCheck={toggleCheck}
+                  onViewProfile={handleViewProfile}
+                  attendancePct={student.attendancePercentage}
+                />
+              );
+            })
+          )}
+        </div>
+
       </div>
 
-      {/* ── Bulk Modals ────────────────────────────────────────────────────── */}
+      {/* Right detail pane — desktop only */}
+      {!isMobileViewport && (
+        <StudentDetailPane
+          student={selectedStudentRecord}
+          onClose={closeDetail}
+          onViewProfile={() => selectedStudentRecord && handleViewProfile(selectedStudentRecord)}
+          onMessageParent={handleMessageParent}
+        />
+      )}
+
+      {/* Mobile: slide-over drawer for detail */}
+      {isMobileViewport && detailVisible && (
+        <div
+          className="stafflist__drawer-overlay"
+          role="presentation"
+          onClick={closeDetail}
+        >
+          <div
+            className="stafflist__drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Profile: ${selectedStudentRecord?.name}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <StudentDetailPane
+              student={selectedStudentRecord}
+              isMobile
+              onClose={closeDetail}
+              onViewProfile={() => selectedStudentRecord && handleViewProfile(selectedStudentRecord)}
+              onMessageParent={handleMessageParent}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ── Bulk Modals ── */}
       <StudentsBulkModals
         isBulkDeleteOpen={isBulkDeleteOpen}
         onBulkDeleteClose={onBulkDeleteClose}
@@ -317,7 +484,7 @@ export default function StudentsList() {
         updateStudent={updateStudent}
       />
 
-      {/* ── CSV Upload Modal ───────────────────────────────────────────────── */}
+      {/* ── CSV Upload Modal ── */}
       <StudentCsvUploadModal
         isOpen={isCsvUploadOpen}
         onClose={onCsvUploadClose}
@@ -333,7 +500,7 @@ export default function StudentsList() {
         processCsvUpload={processCsvUpload}
       />
 
-      {/* ── CSV Preview Modal ──────────────────────────────────────────────── */}
+      {/* ── CSV Preview Modal ── */}
       <StudentCsvPreviewModal
         isOpen={isPreviewOpen}
         onClose={onPreviewClose}
@@ -345,7 +512,7 @@ export default function StudentsList() {
         importValidStudents={importValidStudents}
       />
 
-      {/* ── Edit Student Drawer ────────────────────────────────────────────── */}
+      {/* ── Edit Student Drawer ── */}
       <EditStudentDrawer
         isOpen={isEditDrawerOpen}
         onClose={() => { setIsEditDrawerOpen(false); setSelectedStudent(null); }}
@@ -361,13 +528,6 @@ export default function StudentsList() {
       />
 
       <ScrollToTopButton />
-
-      <StudentOverlay
-        studentId={studentOverlay.studentId}
-        rowIds={visibleRowIds}
-        onClose={studentOverlay.close}
-        onNavigate={studentOverlay.navigate}
-      />
     </div>
   );
 }

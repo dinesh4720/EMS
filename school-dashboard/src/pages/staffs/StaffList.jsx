@@ -10,6 +10,7 @@ import { Plus, MessageSquare, CheckCircle2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import ToolbarSearch from "../../components/ui/ToolbarSearch";
 import BulkActionBar from "../../components/ui/BulkActionBar";
+import FilterPillsBar from "../../components/ui/FilterPillsBar";
 import useBulkSelection from "../../hooks/useBulkSelection";
 import StaffListRow from "./StaffListRow";
 import StaffDetailPane from "./StaffDetailPane";
@@ -47,12 +48,26 @@ function searchMatch(s, q) {
   );
 }
 
+/* ── sessionStorage helpers for staff filters ── */
+const parseArrayFilter = (key) => {
+  const raw = sessionStorage.getItem(`staff-filter-${key}`);
+  if (!raw || raw === "all") return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : parsed !== "all" ? [parsed] : [];
+  } catch {
+    return raw !== "all" ? [raw] : [];
+  }
+};
+const parseStringFilter = (key, defaultValue = "all") => {
+  const raw = sessionStorage.getItem(`staff-filter-${key}`);
+  return raw && raw !== "all" ? raw : defaultValue;
+};
+
 export default function StaffList({ onStaffClick, onAddStaff }) {
   const { staff = [], staffAttendance } = useApp();
 
   // ============ Routing first (Step 1) ============
-  // ?id=EMP002 selects a row. useSearchParams gives us back/forward + direct
-  // URL load support out of the box.
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedId = searchParams.get("id") || null;
   const initialQ = searchParams.get("q") || "";
@@ -90,8 +105,6 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
   );
 
   // ============ Local UI state ============
-  // `q` is the committed (debounced) search string. ToolbarSearch syncs it
-  // with the URL via urlParam="q" and gives us 200ms debounce + Esc clear.
   const [q, setQ] = useState(initialQ);
   const [isMobileViewport, setIsMobileViewport] = useState(() =>
     typeof window !== "undefined"
@@ -105,8 +118,13 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
+  // ── Pills-based filter state ──
+  const [roleFilter, setRoleFilter] = useState(() => parseArrayFilter("role"));
+  const [departmentFilter, setDepartmentFilter] = useState(() => parseStringFilter("department"));
+  const [employmentTypeFilter, setEmploymentTypeFilter] = useState(() => parseStringFilter("employmentType"));
+  const [genderFilter, setGenderFilter] = useState(() => parseStringFilter("gender"));
+
   // Today's attendance lookup for a given staff member.
-  // staffAttendance shape (from existing AppContext): { [staffId]: { [YYYY-MM-DD]: { status } } }
   const todayKey = useMemo(
     () => new Date().toISOString().slice(0, 10),
     []
@@ -121,13 +139,161 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
     [staffAttendance, todayKey]
   );
 
+  // ── Derived unique filter values ──
+  const uniqueRoles = useMemo(() => {
+    const set = new Set();
+    staff.forEach((s) => {
+      if (Array.isArray(s.role)) s.role.forEach((r) => { if (r) set.add(r); });
+      else if (s.role) set.add(s.role);
+    });
+    return [...set].sort();
+  }, [staff]);
+
+  const uniqueDepartments = useMemo(() => {
+    const set = new Set();
+    staff.forEach((s) => { if (s.department) set.add(s.department); });
+    return [...set].sort();
+  }, [staff]);
+
+  const uniqueEmploymentTypes = useMemo(() => {
+    const set = new Set();
+    staff.forEach((s) => { if (s.employmentType) set.add(s.employmentType); });
+    return [...set].sort();
+  }, [staff]);
+
+  const uniqueGenders = useMemo(() => {
+    const set = new Set();
+    staff.forEach((s) => { if (s.gender) set.add(s.gender); });
+    return [...set].sort();
+  }, [staff]);
+
+  // ── Filter counts ──
+  const filterCounts = useMemo(() => {
+    const roleCounts = {};
+    const deptCounts = {};
+    const empCounts = {};
+    const genderCounts = {};
+    staff.forEach((s) => {
+      if (Array.isArray(s.role)) {
+        s.role.forEach((r) => { if (r) roleCounts[r] = (roleCounts[r] || 0) + 1; });
+      } else if (s.role) {
+        roleCounts[s.role] = (roleCounts[s.role] || 0) + 1;
+      }
+      if (s.department) deptCounts[s.department] = (deptCounts[s.department] || 0) + 1;
+      if (s.employmentType) empCounts[s.employmentType] = (empCounts[s.employmentType] || 0) + 1;
+      if (s.gender) genderCounts[s.gender] = (genderCounts[s.gender] || 0) + 1;
+    });
+    return { role: roleCounts, department: deptCounts, employmentType: empCounts, gender: genderCounts };
+  }, [staff]);
+
+  // ── Active filter count ──
+  const activeFiltersCount =
+    roleFilter.length +
+    (departmentFilter !== "all" ? 1 : 0) +
+    (employmentTypeFilter !== "all" ? 1 : 0) +
+    (genderFilter !== "all" ? 1 : 0);
+
+  // ── Filter config for FilterPillsBar ──
+  const filtersConfig = useMemo(() => ({
+    role: {
+      label: "Role",
+      value: roleFilter,
+      mode: "multi",
+      options: uniqueRoles,
+      counts: filterCounts.role,
+      displayLabels: {},
+    },
+    department: {
+      label: "Department",
+      value: departmentFilter,
+      mode: "single",
+      options: uniqueDepartments,
+      counts: filterCounts.department,
+      displayLabels: {},
+    },
+    employmentType: {
+      label: "Employment Type",
+      value: employmentTypeFilter,
+      mode: "single",
+      options: uniqueEmploymentTypes,
+      counts: filterCounts.employmentType,
+      displayLabels: {},
+    },
+    gender: {
+      label: "Gender",
+      value: genderFilter,
+      mode: "single",
+      options: uniqueGenders,
+      counts: filterCounts.gender,
+      displayLabels: {},
+    },
+  }), [roleFilter, departmentFilter, employmentTypeFilter, genderFilter, uniqueRoles, uniqueDepartments, uniqueEmploymentTypes, uniqueGenders, filterCounts]);
+
+  // ── Filter change handler ──
+  const handleFilterChange = useCallback((filterKey, value) => {
+    const setters = {
+      role: setRoleFilter,
+      department: setDepartmentFilter,
+      employmentType: setEmploymentTypeFilter,
+      gender: setGenderFilter,
+    };
+    const setter = setters[filterKey];
+    if (!setter) return;
+
+    if (filterKey === "role") {
+      setter((prev) => {
+        if (value === "all") {
+          sessionStorage.setItem("staff-filter-role", JSON.stringify([]));
+          return [];
+        }
+        const next = prev.includes(value)
+          ? prev.filter((v) => v !== value)
+          : [...prev, value];
+        sessionStorage.setItem("staff-filter-role", JSON.stringify(next));
+        return next;
+      });
+    } else {
+      const next = value === "all" ? "all" : value;
+      setter(next);
+      sessionStorage.setItem(`staff-filter-${filterKey}`, next);
+    }
+  }, []);
+
+  const clearAllFilters = useCallback(() => {
+    setRoleFilter([]);
+    setDepartmentFilter("all");
+    setEmploymentTypeFilter("all");
+    setGenderFilter("all");
+    ["role", "department", "employmentType", "gender"].forEach((k) =>
+      sessionStorage.removeItem(`staff-filter-${k}`)
+    );
+    toast.success("All filters cleared");
+  }, []);
+
   // Search + filter pass — preserves underlying ordering
   const visible = useMemo(() => {
-    return staff.filter(
-      (s) =>
-        searchMatch(s, q) && staffMatchesFilter(s, filter, todayStatusOf)
-    );
-  }, [staff, q, filter, todayStatusOf]);
+    return staff.filter((s) => {
+      if (!searchMatch(s, q)) return false;
+      if (!staffMatchesFilter(s, filter, todayStatusOf)) return false;
+
+      // Role filter (multi-select, OR)
+      if (roleFilter.length > 0) {
+        const staffRoles = Array.isArray(s.role) ? s.role : [s.role].filter(Boolean);
+        if (!roleFilter.some((r) => staffRoles.includes(r))) return false;
+      }
+
+      // Department filter (single-select)
+      if (departmentFilter !== "all" && s.department !== departmentFilter) return false;
+
+      // Employment type filter (single-select)
+      if (employmentTypeFilter !== "all" && s.employmentType !== employmentTypeFilter) return false;
+
+      // Gender filter (single-select)
+      if (genderFilter !== "all" && s.gender !== genderFilter) return false;
+
+      return true;
+    });
+  }, [staff, q, filter, todayStatusOf, roleFilter, departmentFilter, employmentTypeFilter, genderFilter]);
 
   // Stable id list for the shared bulk-selection hook.
   const visibleIds = useMemo(
@@ -142,14 +308,17 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
     totalMatching: visible.length,
   });
 
-  const presentTodayCount = useMemo(
-    () =>
-      staff.reduce(
-        (n, s) => (todayStatusOf(s) === "present" ? n + 1 : n),
-        0
-      ),
-    [staff, todayStatusOf]
-  );
+  const statusCounts = useMemo(() => {
+    let all = staff.length;
+    let active = 0;
+    let today = 0;
+    for (const s of staff) {
+      if ((s.status || "active") === "active") active++;
+      const tStatus = todayStatusOf(s);
+      if (tStatus === "present" || tStatus === "absent" || tStatus === "leave") today++;
+    }
+    return { all, active, today };
+  }, [staff, todayStatusOf]);
 
   // Selected staff record from the URL
   const selectedStaff = useMemo(() => {
@@ -278,6 +447,8 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
   // The detail pane in mobile mode is a slide-over Drawer
   const detailVisible = !!selectedStaff;
 
+  const showClearButton = filter !== "all" || q || activeFiltersCount > 0;
+
   return (
     <div
       className="page"
@@ -307,8 +478,6 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
             <div className="page__sub">
               <span className="mono tnum">{visible.length}</span> of{" "}
               <span className="mono tnum">{staff.length}</span>
-              {" · "}
-              <span className="mono tnum">{presentTodayCount}</span> present today
             </div>
           </div>
           <button
@@ -321,38 +490,45 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
           </button>
         </div>
 
-        {/* Toolbar: search + segmented + bulk-action chip */}
+        {/* Toolbar: segmented + search + bulk-action chip */}
         <div className="toolbar">
+          <div className="seg" role="tablist" aria-label="Filter staff">
+            {FILTERS.map((f) => {
+              const count = statusCounts?.[f.key] ?? 0;
+              return (
+                <button
+                  key={f.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={filter === f.key}
+                  className={`seg__btn ${filter === f.key ? "is-active" : ""}`}
+                  onClick={() => setFilter(f.key)}
+                >
+                  {f.label}
+                  <span className="mono tnum" style={{ marginLeft: 6, color: "var(--fg-subtle)", fontSize: 11 }}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
           <ToolbarSearch
             value={q}
             onChange={setQ}
             urlParam="q"
             placeholder="Search staff…"
             ariaLabel="Search staff"
-            style={{ flex: 1 }}
+            style={{ marginLeft: "auto", flex: "0 1 280px", minWidth: 0 }}
           />
 
-          <div className="seg" role="tablist" aria-label="Filter staff">
-            {FILTERS.map((f) => (
-              <button
-                key={f.key}
-                type="button"
-                role="tab"
-                aria-selected={filter === f.key}
-                className={`seg__btn ${filter === f.key ? "is-active" : ""}`}
-                onClick={() => setFilter(f.key)}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-
-          {(filter !== "all" || q) && (
+          {showClearButton && (
             <button
               type="button"
               className="btn btn--ghost btn--sm"
               onClick={() => {
                 setQ("");
+                clearAllFilters();
                 setSearchParams(
                   (prev) => {
                     const next = new URLSearchParams(prev);
@@ -373,7 +549,6 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
           <BulkActionBar
             selection={selection}
             totalMatching={visible.length}
-            style={{ marginLeft: "auto" }}
           >
             <button
               type="button"
@@ -391,6 +566,14 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
             </button>
           </BulkActionBar>
         </div>
+
+        {/* Filter pills bar */}
+        <FilterPillsBar
+          filters={filtersConfig}
+          onFilterChange={handleFilterChange}
+          onClearAll={clearAllFilters}
+          activeFiltersCount={activeFiltersCount}
+        />
 
         {/* List rows */}
         <div

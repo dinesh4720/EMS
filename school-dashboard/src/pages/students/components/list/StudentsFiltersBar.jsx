@@ -1,16 +1,18 @@
-import { forwardRef } from "react";
+import { forwardRef, useState } from "react";
 import {
     Dropdown, DropdownTrigger, DropdownMenu, DropdownItem,
     DropdownSection, Checkbox,
 } from "@heroui/react";
 import {
-    ArrowUpDown, MoreVertical, ChevronDown, Search, X,
+    MoreVertical, ChevronDown, Search, X,
+    ArrowUpDown, Columns3,
     Check, Download, UserX,
-    ArrowUpCircle, Columns3, MessageSquare, FileText, Trash2,
+    ArrowUpCircle, MessageSquare, FileText, Trash2,
     GraduationCap, FileSpreadsheet,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import FiltersDropdown from "../../../../components/FiltersDropdown";
+import FilterPillsBar from "../../../../components/ui/FilterPillsBar";
+
 import BulkActionBar from "../../../../components/ui/BulkActionBar";
 import { ALL_COLUMNS } from "../../utils/studentImportUtils";
 
@@ -41,18 +43,12 @@ const StudentsFiltersBar = forwardRef(function StudentsFiltersBar({
     handleFilterChange,
     clearAllFilters,
     activeFiltersCount,
-    filterPresets,
-    handlePresetClick,
 
     sortDescriptor,
     setSortDescriptor,
-    sortDropdownOpen,
-    setSortDropdownOpen,
 
     visibleColumns,
     toggleColumn,
-    columnsDropdownOpen,
-    setColumnsDropdownOpen,
 
     moreDropdownOpen,
     setMoreDropdownOpen,
@@ -63,13 +59,161 @@ const StudentsFiltersBar = forwardRef(function StudentsFiltersBar({
     setCsvFile,
     onCsvUploadOpen,
     downloadStudentList,
+    onNavigateToTC,
 }, searchRef) {
     const { t } = useTranslation();
+    const [sortOpen, setSortOpen] = useState(false);
+    const [columnsOpen, setColumnsOpen] = useState(false);
+
+    // Clear only clears search and pill filters — status segments are primary
+    // navigation tabs, not filters that need clearing.
+    const showClear = activeFiltersCount > 0 || searchQuery;
+
+    const rightActions = (
+        <>
+            {/* Sort dropdown */}
+            <Dropdown isOpen={sortOpen} onOpenChange={setSortOpen}>
+                <DropdownTrigger>
+                    <button type="button" className="btn btn--sm">
+                        <ArrowUpDown size={13} aria-hidden />
+                        <span className="hidden sm:inline">{t("pages.sort")}</span>
+                        <ChevronDown size={11} aria-hidden />
+                    </button>
+                </DropdownTrigger>
+                <DropdownMenu aria-label={t("aria.menus.sortOptions")} className="min-w-[180px]">
+                    <DropdownSection title={t("pages.sortBy")}>
+                        <DropdownItem
+                            key="sort-name-asc"
+                            onPress={() => {
+                                setSortDescriptor({ column: "name", direction: "ascending" });
+                                setSortOpen(false);
+                            }}
+                            startContent={sortDescriptor.column === "name" && sortDescriptor.direction === "ascending"
+                                ? <Check size={14} className="text-teal-600" /> : <span className="w-3.5" />}
+                        >{t("pages.nameAZ")}</DropdownItem>
+                        <DropdownItem
+                            key="sort-name-desc"
+                            onPress={() => {
+                                setSortDescriptor({ column: "name", direction: "descending" });
+                                setSortOpen(false);
+                            }}
+                            startContent={sortDescriptor.column === "name" && sortDescriptor.direction === "descending"
+                                ? <Check size={14} className="text-teal-600" /> : <span className="w-3.5" />}
+                        >{t("pages.nameZA")}</DropdownItem>
+                        <DropdownItem
+                            key="sort-class-asc"
+                            onPress={() => {
+                                setSortDescriptor({ column: "class", direction: "ascending" });
+                                setSortOpen(false);
+                            }}
+                            startContent={sortDescriptor.column === "class" && sortDescriptor.direction === "ascending"
+                                ? <Check size={14} className="text-teal-600" /> : <span className="w-3.5" />}
+                        >{t("pages.classAscending")}</DropdownItem>
+                        <DropdownItem
+                            key="sort-class-desc"
+                            onPress={() => {
+                                setSortDescriptor({ column: "class", direction: "descending" });
+                                setSortOpen(false);
+                            }}
+                            startContent={sortDescriptor.column === "class" && sortDescriptor.direction === "descending"
+                                ? <Check size={14} className="text-teal-600" /> : <span className="w-3.5" />}
+                        >{t("pages.classDescending")}</DropdownItem>
+                    </DropdownSection>
+                </DropdownMenu>
+            </Dropdown>
+
+            {/* Columns dropdown */}
+            <Dropdown closeOnSelect={false} isOpen={columnsOpen} onOpenChange={setColumnsOpen}>
+                <DropdownTrigger>
+                    <button type="button" className="btn btn--sm">
+                        <Columns3 size={13} aria-hidden />
+                        <span className="hidden sm:inline">{t("pages.columns")}</span>
+                        <ChevronDown size={11} aria-hidden />
+                    </button>
+                </DropdownTrigger>
+                <DropdownMenu
+                    aria-label={t("aria.menus.toggleColumns")}
+                    closeOnSelect={false}
+                    onAction={(key) => toggleColumn(key)}
+                    className="min-w-[180px]"
+                >
+                    <DropdownSection title={t("pages.columns")}>
+                        {ALL_COLUMNS.filter((col) => !col.required).map((column) => (
+                            <DropdownItem key={column.key} textValue={column.label}>
+                                <div className="flex items-center gap-2 w-full">
+                                    <Checkbox
+                                        isSelected={visibleColumns.has(column.key)}
+                                        size="sm"
+                                        tabIndex={-1}
+                                        classNames={{ wrapper: "pointer-events-none" }}
+                                    />
+                                    <span>{column.label}</span>
+                                </div>
+                            </DropdownItem>
+                        ))}
+                    </DropdownSection>
+                </DropdownMenu>
+            </Dropdown>
+
+            {/* More — data actions only */}
+            <Dropdown isOpen={moreDropdownOpen} onOpenChange={setMoreDropdownOpen}>
+                <DropdownTrigger>
+                    <button type="button" className="btn btn--sm" aria-label="More options">
+                        <MoreVertical size={13} aria-hidden />
+                    </button>
+                </DropdownTrigger>
+                <DropdownMenu aria-label="More options" className="min-w-[200px]">
+                    <DropdownSection title="Actions">
+                        <DropdownItem
+                            key="tc"
+                            startContent={<FileText size={14} />}
+                            onPress={() => { onNavigateToTC(); setMoreDropdownOpen(false); }}
+                        >Transfer Certificate</DropdownItem>
+                    </DropdownSection>
+                    <DropdownSection title="Import / Export">
+                        <DropdownItem
+                            key="upload"
+                            startContent={<FileSpreadsheet size={14} />}
+                            onPress={() => { setCsvFile(null); onCsvUploadOpen(); setMoreDropdownOpen(false); }}
+                        >Bulk Upload CSV</DropdownItem>
+                        <DropdownItem
+                            key="download"
+                            startContent={<Download size={14} />}
+                            onPress={() => { downloadStudentList(); setMoreDropdownOpen(false); }}
+                        >Download List CSV</DropdownItem>
+                    </DropdownSection>
+                </DropdownMenu>
+            </Dropdown>
+        </>
+    );
 
     return (
+        <>
         <div className="toolbar" role="toolbar" aria-label="Students toolbar">
+            {/* Status segmented filter */}
+            <div className="seg" role="tablist" aria-label="Filter by status">
+                {STATUS_SEGMENTS.map((s) => {
+                    const count = statusCounts?.[s.key] ?? 0;
+                    return (
+                        <button
+                            key={s.key}
+                            type="button"
+                            role="tab"
+                            aria-selected={statusFilter === s.key}
+                            className={`seg__btn ${statusFilter === s.key ? "is-active" : ""}`}
+                            onClick={() => setStatusFilter(s.key)}
+                        >
+                            {s.label}
+                            <span className="mono tnum" style={{ marginLeft: 6, color: "var(--fg-subtle)", fontSize: 11 }}>
+                                {count}
+                            </span>
+                        </button>
+                    );
+                })}
+            </div>
+
             {/* Search */}
-            <label className="toolbar__search" style={{ flex: "0 1 280px", minWidth: 0 }}>
+            <label className="toolbar__search" style={{ flex: "0 1 280px", minWidth: 0, marginLeft: "auto" }}>
                 {isSearching ? (
                     <span
                         aria-hidden
@@ -109,33 +253,8 @@ const StudentsFiltersBar = forwardRef(function StudentsFiltersBar({
                 )}
             </label>
 
-            {/* Status segmented filter */}
-            <div className="seg" role="tablist" aria-label="Filter by status">
-                {STATUS_SEGMENTS.map((s) => {
-                    const count = statusCounts?.[s.key] ?? 0;
-                    return (
-                        <button
-                            key={s.key}
-                            type="button"
-                            role="tab"
-                            aria-selected={statusFilter === s.key}
-                            className={`seg__btn ${statusFilter === s.key ? "is-active" : ""}`}
-                            onClick={() => setStatusFilter(s.key)}
-                        >
-                            {s.label}
-                            {count > 0 && (
-                                <span className="mono tnum" style={{ marginLeft: 6, color: "var(--fg-subtle)", fontSize: 11 }}>
-                                    {count}
-                                </span>
-                            )}
-                        </button>
-                    );
-                })}
-            </div>
-
-            {/* Clear-all link — shown when any filter is active.
-                REVAMP-102: keeps the toolbar consistent with StaffList reference. */}
-            {(activeFiltersCount > 0 || (statusFilter && statusFilter !== "active") || searchQuery) && (
+            {/* Clear-all link — shown when any filter is active. */}
+            {showClear && (
                 <button
                     type="button"
                     className="btn btn--ghost btn--sm"
@@ -150,10 +269,7 @@ const StudentsFiltersBar = forwardRef(function StudentsFiltersBar({
                 </button>
             )}
 
-            {/* Bulk action chip — appears once rows are selected.
-                Uses shared <BulkActionBar/> for consistent count/clear behavior
-                (REVAMP-101). Selection state lives in useStudentsListData for now;
-                future revamp can migrate it to useBulkSelection in full. */}
+            {/* Bulk action chip — appears once rows are selected. */}
             <BulkActionBar
                 selection={{
                     count: selectedCount,
@@ -218,122 +334,25 @@ const StudentsFiltersBar = forwardRef(function StudentsFiltersBar({
                 </Dropdown>
             </BulkActionBar>
 
-            {/* Right-aligned tool group */}
-            <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
-                <FiltersDropdown
-                    filters={filtersConfig}
-                    onFilterChange={handleFilterChange}
-                    onClearAll={clearAllFilters}
-                    onApply={() => {}}
-                    searchQuery={searchQuery}
-                    onSearchChange={setSearchQuery}
-                    activeFiltersCount={activeFiltersCount}
-                    presets={filterPresets}
-                    onPresetClick={handlePresetClick}
-                    placement="bottom-end"
-                />
-
-                {/* Sort dropdown — minimal trigger */}
-                <Dropdown isOpen={sortDropdownOpen} onOpenChange={setSortDropdownOpen}>
-                    <DropdownTrigger>
-                        <button type="button" className="btn" aria-label={t("aria.menus.sortOptions")}>
-                            <ArrowUpDown size={13} aria-hidden />
-                        </button>
-                    </DropdownTrigger>
-                    <DropdownMenu aria-label={t("aria.menus.sortOptions")} className="max-h-[400px] overflow-y-auto">
-                        <DropdownSection title={t("pages.sortBy")}>
-                            <DropdownItem
-                                key="name-asc"
-                                onPress={() => setSortDescriptor({ column: "name", direction: "ascending" })}
-                                startContent={sortDescriptor.column === "name" && sortDescriptor.direction === "ascending"
-                                    ? <Check size={14} className="text-teal-600" /> : <span className="w-3.5" />}
-                            >{t("pages.nameAZ")}</DropdownItem>
-                            <DropdownItem
-                                key="name-desc"
-                                onPress={() => setSortDescriptor({ column: "name", direction: "descending" })}
-                                startContent={sortDescriptor.column === "name" && sortDescriptor.direction === "descending"
-                                    ? <Check size={14} className="text-teal-600" /> : <span className="w-3.5" />}
-                            >{t("pages.nameZA")}</DropdownItem>
-                            <DropdownItem
-                                key="class-asc"
-                                onPress={() => setSortDescriptor({ column: "class", direction: "ascending" })}
-                                startContent={sortDescriptor.column === "class" && sortDescriptor.direction === "ascending"
-                                    ? <Check size={14} className="text-teal-600" /> : <span className="w-3.5" />}
-                            >{t("pages.classAscending")}</DropdownItem>
-                            <DropdownItem
-                                key="class-desc"
-                                onPress={() => setSortDescriptor({ column: "class", direction: "descending" })}
-                                startContent={sortDescriptor.column === "class" && sortDescriptor.direction === "descending"
-                                    ? <Check size={14} className="text-teal-600" /> : <span className="w-3.5" />}
-                            >{t("pages.classDescending")}</DropdownItem>
-                        </DropdownSection>
-                    </DropdownMenu>
-                </Dropdown>
-
-                {/* Columns dropdown */}
-                <Dropdown closeOnSelect={false} isOpen={columnsDropdownOpen} onOpenChange={setColumnsDropdownOpen}>
-                    <DropdownTrigger>
-                        <button type="button" className="btn">
-                            <Columns3 size={13} aria-hidden />
-                            <span className="hidden sm:inline">{t("pages.columns")}</span>
-                            <ChevronDown size={11} aria-hidden />
-                        </button>
-                    </DropdownTrigger>
-                    <DropdownMenu
-                        aria-label={t("aria.menus.toggleColumns")}
-                        closeOnSelect={false}
-                        onAction={(key) => toggleColumn(key)}
-                        className="max-h-[400px] overflow-y-auto"
-                    >
-                        <DropdownSection title="Show/Hide Columns">
-                            {ALL_COLUMNS.filter((col) => !col.required).map((column) => (
-                                <DropdownItem key={column.key} textValue={column.label}>
-                                    <div className="flex items-center gap-2 w-full">
-                                        <Checkbox
-                                            isSelected={visibleColumns.has(column.key)}
-                                            size="sm"
-                                            tabIndex={-1}
-                                            classNames={{ wrapper: "pointer-events-none" }}
-                                        />
-                                        <span>{column.label}</span>
-                                    </div>
-                                </DropdownItem>
-                            ))}
-                        </DropdownSection>
-                    </DropdownMenu>
-                </Dropdown>
-
-                {/* Hidden file input (legacy CSV path) */}
-                <input
-                    ref={csvInputRef}
-                    type="file"
-                    accept=".csv"
-                    className="hidden"
-                    onChange={handleCSVUpload}
-                />
-
-                {/* More-actions menu (CSV import / export) */}
-                <Dropdown isOpen={moreDropdownOpen} onOpenChange={setMoreDropdownOpen}>
-                    <DropdownTrigger>
-                        <button type="button" className="btn" aria-label={t("aria.menus.moreActions")}>
-                            <MoreVertical size={13} aria-hidden />
-                        </button>
-                    </DropdownTrigger>
-                    <DropdownMenu aria-label={t("aria.menus.moreActions")} className="max-h-[400px] overflow-y-auto">
-                        <DropdownItem
-                            key="upload"
-                            startContent={<FileSpreadsheet size={14} />}
-                            onPress={() => { setCsvFile(null); onCsvUploadOpen(); }}
-                        >Bulk Upload CSV</DropdownItem>
-                        <DropdownItem
-                            key="download"
-                            startContent={<Download size={14} />}
-                            onPress={downloadStudentList}
-                        >Download List CSV</DropdownItem>
-                    </DropdownMenu>
-                </Dropdown>
-            </div>
+            {/* Hidden file input (legacy CSV path) */}
+            <input
+                ref={csvInputRef}
+                type="file"
+                accept=".csv"
+                className="hidden"
+                onChange={handleCSVUpload}
+            />
         </div>
+
+        {/* Filter pills bar — active filters + add filter + view controls */}
+        <FilterPillsBar
+            filters={filtersConfig}
+            onFilterChange={handleFilterChange}
+            onClearAll={clearAllFilters}
+            activeFiltersCount={activeFiltersCount}
+            rightActions={rightActions}
+        />
+        </>
     );
 });
 
