@@ -210,8 +210,10 @@ function AuthenticatedApp() {
   // sit flush against the viewport edge.
   const isStaffListPage =
     location.pathname === "/staffs" || location.pathname === "/staffs/" || location.pathname === "/staffs/list";
+  const isStudentListPage =
+    location.pathname === "/students" || location.pathname === "/students/";
   const isFullWidthPage =
-    isSettingsPage || location.pathname === "/timetable-wizard" || isStaffListPage;
+    isSettingsPage || location.pathname === "/timetable-wizard" || isStaffListPage || isStudentListPage;
 
   return (
     <>
@@ -239,7 +241,7 @@ function AuthenticatedApp() {
           </Suspense>
         )}
         <AiAssistantLayout>
-          <div className={`flex-1 flex flex-col ${isStaffListPage ? 'h-screen overflow-hidden' : 'min-h-screen'} transition-all duration-300 ${isSidebarOpen ? 'ml-[var(--sidebar-width)]' : 'ml-0 lg:ml-[var(--sidebar-width-collapsed)]'} relative z-10 bg-bg`}>
+          <div className={`flex-1 flex flex-col ${(isStaffListPage || isStudentListPage) ? 'h-screen overflow-hidden' : 'min-h-screen'} transition-all duration-300 ${isSidebarOpen ? 'ml-[var(--sidebar-width)]' : 'ml-0 lg:ml-[var(--sidebar-width-collapsed)]'} relative z-10 bg-bg`}>
             <Topbar
               isSidebarOpen={isSidebarOpen}
               onOpenMobileNav={() => setIsSidebarOpen(true)}
