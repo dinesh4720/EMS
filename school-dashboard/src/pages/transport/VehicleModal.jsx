@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   Button, Input, Select, SelectItem, Textarea, Divider,
@@ -22,6 +22,8 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
     notes: "",
     driverId: "",
     conductorId: "",
+    driverLicenseNumber: "",
+    driverLicenseExpiry: "",
   });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
@@ -43,11 +45,14 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
           notes: vehicle.notes || "",
           driverId: vehicle.driverId?._id || vehicle.driverId || "",
           conductorId: vehicle.conductorId?._id || vehicle.conductorId || "",
+          driverLicenseNumber: vehicle.driverLicenseNumber || "",
+          driverLicenseExpiry: vehicle.driverLicenseExpiry?.split("T")[0] || "",
         });
       } else {
         setForm({
           registrationNumber: "", make: "", model: "", year: "", capacity: "", color: "",
           status: "active", notes: "", driverId: "", conductorId: "",
+          driverLicenseNumber: "", driverLicenseExpiry: "",
         });
       }
     }
@@ -61,8 +66,7 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
       .then((res) => {
         if (cancelled) return;
         const list = Array.isArray(res) ? res : res?.data || [];
-        // Filter to active staff only for new assignments
-        setStaffList(list.filter((s) => s.status !== 'terminated' && s.status !== 'suspended'));
+        setStaffList(list);
       })
       .catch(() => {
         if (!cancelled) toast.error(t('toast.error.failedToLoadStaff'));
@@ -72,6 +76,23 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
       });
     return () => { cancelled = true; };
   }, [isOpen, t]);
+
+  // Ensure currently assigned staff (even inactive) appear in dropdowns
+  const driverOptions = useMemo(() => {
+    const assignedId = vehicle?.driverId?._id || vehicle?.driverId;
+    if (!assignedId) return staffList;
+    const alreadyIncluded = staffList.some((s) => (s._id || s.id) === assignedId);
+    if (alreadyIncluded) return staffList;
+    return [...staffList, vehicle.driverId];
+  }, [staffList, vehicle]);
+
+  const conductorOptions = useMemo(() => {
+    const assignedId = vehicle?.conductorId?._id || vehicle?.conductorId;
+    if (!assignedId) return staffList;
+    const alreadyIncluded = staffList.some((s) => (s._id || s.id) === assignedId);
+    if (alreadyIncluded) return staffList;
+    return [...staffList, vehicle.conductorId];
+  }, [staffList, vehicle]);
 
   const updateField = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -96,8 +117,10 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
         color: form.color.trim() || undefined,
         status: form.status,
         notes: form.notes.trim() || undefined,
-        driverId: form.driverId || undefined,
-        conductorId: form.conductorId || undefined,
+        driverId: form.driverId || null,
+        conductorId: form.conductorId || null,
+        driverLicenseNumber: form.driverLicenseNumber.trim() || undefined,
+        driverLicenseExpiry: form.driverLicenseExpiry || undefined,
       };
 
       if (isEdit) {
@@ -119,7 +142,8 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
   const renderStaffLabel = (staff) => {
     if (!staff) return '';
     const roles = Array.isArray(staff.role) ? staff.role.join(', ') : staff.role || '';
-    return `${staff.name}${staff.code ? ` (${staff.code})` : ''}${roles ? ` — ${roles}` : ''}`;
+    const statusLabel = staff.status && staff.status !== 'active' ? ` [${staff.status}]` : '';
+    return `${staff.name}${staff.code ? ` (${staff.code})` : ''}${roles ? ` — ${roles}` : ''}${statusLabel}`;
   };
 
   return (
@@ -171,20 +195,36 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
           {/* Driver */}
           <div>
             <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-3">{t('pages.driverDetails')}</h3>
-            <Select
-              label={t('pages.driver')}
-              placeholder={t('pages.selectDriver')}
-              selectedKeys={form.driverId ? [form.driverId] : []}
-              onSelectionChange={(keys) => updateField("driverId", [...keys][0] || "")}
-              isLoading={staffLoading}
-            >
-              <SelectItem key="">{t('pages.none')}</SelectItem>
-              {staffList.map((staff) => (
-                <SelectItem key={staff._id || staff.id}>
-                  {renderStaffLabel(staff)}
-                </SelectItem>
-              ))}
-            </Select>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Select
+                label={t('pages.driver')}
+                placeholder={t('pages.selectDriver')}
+                selectedKeys={form.driverId ? [form.driverId] : []}
+                onSelectionChange={(keys) => updateField("driverId", [...keys][0] || "")}
+                isLoading={staffLoading}
+              >
+                <SelectItem key="">{t('pages.none')}</SelectItem>
+                {driverOptions.map((staff) => (
+                  <SelectItem key={staff._id || staff.id}>
+                    {renderStaffLabel(staff)}
+                  </SelectItem>
+                ))}
+              </Select>
+              <Input
+                label={t('pages.licenseNumber')}
+                placeholder="DL-XXXX-XXXX"
+                value={form.driverLicenseNumber}
+                onValueChange={(v) => updateField("driverLicenseNumber", v)}
+              />
+            </div>
+            <div className="mt-3">
+              <Input
+                label={t('pages.licenseExpiry')}
+                type="date"
+                value={form.driverLicenseExpiry}
+                onValueChange={(v) => updateField("driverLicenseExpiry", v)}
+              />
+            </div>
           </div>
 
           <Divider />
@@ -200,7 +240,7 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
               isLoading={staffLoading}
             >
               <SelectItem key="">{t('pages.none')}</SelectItem>
-              {staffList.map((staff) => (
+              {conductorOptions.map((staff) => (
                 <SelectItem key={staff._id || staff.id}>
                   {renderStaffLabel(staff)}
                 </SelectItem>
