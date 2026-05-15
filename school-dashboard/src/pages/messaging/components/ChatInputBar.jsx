@@ -128,7 +128,7 @@ export default function ChatInputBar({
         </div>
       )}
 
-      <div className="chat-input__shell">
+      <div className="chat-input__shell glass">
         <input
           ref={fileInputRef}
           type="file"

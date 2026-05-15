@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import logger from "../../utils/logger";
 import { ErrorState } from "../../components/ui";
@@ -25,6 +25,10 @@ import { useChatSend } from "./hooks/useChatSend";
 import { useTranslation } from 'react-i18next';
 import videoCallService from "../../services/videoCallService";
 
+// Below this viewport the two-pane shell collapses to a single pane with a
+// back button on the message view. Matches StaffList's MOBILE_MAX.
+const MOBILE_MAX = 1099;
+
 export default function ChatFull() {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -39,6 +43,9 @@ export default function ChatFull() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [sending, setSending] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth <= MOBILE_MAX : false
+  );
 
   // Refs
   const messagesEndRef = useRef(null);
@@ -48,6 +55,16 @@ export default function ChatFull() {
   const socketHandlersRef = useRef({});
   const pendingSocketMessagesRef = useRef(new Set());
   const outboxQueueRef = useRef([]);
+  const sidebarListRef = useRef(null);
+  const sidebarSearchInputRef = useRef(null);
+  const rowRefs = useRef(new Map());
+
+  // ── Responsive viewport ────────────────────────────────────────────────────
+  useEffect(() => {
+    const onResize = () => setIsMobileViewport(window.innerWidth <= MOBILE_MAX);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -292,6 +309,65 @@ export default function ChatFull() {
     }
   };
 
+  // ── Keyboard navigation (J/K, Enter, /, Esc) ──────────────────────────────
+  const filteredConversationsForNav = useMemo(
+    () => conversations.filter(c =>
+      c.otherParticipant?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    ),
+    [conversations, searchQuery]
+  );
+
+  const focusRow = useCallback((id) => {
+    requestAnimationFrame(() => {
+      rowRefs.current.get(id)?.scrollIntoView({ block: "nearest" });
+      rowRefs.current.get(id)?.focus({ preventScroll: true });
+    });
+  }, []);
+
+  const moveConversation = useCallback((delta) => {
+    if (filteredConversationsForNav.length === 0) return;
+    const currentId = selectedConversation?.id || selectedConversation?._id;
+    const idx = filteredConversationsForNav.findIndex(c => (c.id || c._id) === currentId);
+    const nextIdx = idx === -1
+      ? (delta > 0 ? 0 : filteredConversationsForNav.length - 1)
+      : Math.min(filteredConversationsForNav.length - 1, Math.max(0, idx + delta));
+    const next = filteredConversationsForNav[nextIdx];
+    if (!next) return;
+    handleSelectConversation(next);
+    focusRow(next.id || next._id);
+  }, [filteredConversationsForNav, selectedConversation, handleSelectConversation, focusRow]);
+
+  const handleListKeyDown = useCallback((e) => {
+    const tag = e.target?.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+    if (e.key === "j" || e.key === "ArrowDown") {
+      e.preventDefault();
+      moveConversation(1);
+    } else if (e.key === "k" || e.key === "ArrowUp") {
+      e.preventDefault();
+      moveConversation(-1);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      messageInputRef.current?.focus?.();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      if (searchQuery) setSearchQuery("");
+    }
+  }, [moveConversation, searchQuery]);
+
+  // Global shortcuts: "/" focuses sidebar search; "Esc" exits message focus.
+  useEffect(() => {
+    const onKey = (e) => {
+      const tag = document.activeElement?.tagName;
+      if (e.key === "/" && tag !== "INPUT" && tag !== "TEXTAREA") {
+        e.preventDefault();
+        sidebarSearchInputRef.current?.focus?.();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   if (loading) {
     return <ChatSkeleton />;
   }
@@ -306,28 +382,40 @@ export default function ChatFull() {
     );
   }
 
+  // On mobile, single-pane: show sidebar OR message view (based on selection)
+  const showSidebar = !isMobileViewport || !selectedConversation;
+  const showMain = !isMobileViewport || !!selectedConversation;
+  const handleBack = () => setSelectedConversation(null);
+
   return (
     <>
-      <div className="flex gap-0 h-full w-full">
+      <div className={`chat-shell ${isMobileViewport ? 'chat-shell--mobile' : ''}`}>
         {/* Sidebar — conversation list + new chat modal */}
-        <ChatSidebar
-          conversations={conversations}
-          selectedConversation={selectedConversation}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          onSelectConversation={handleSelectConversation}
-          socketConnected={socketConnected}
-          showNewChatModal={showNewChatModal}
-          onOpenNewChatModal={() => setShowNewChatModal(true)}
-          onCloseNewChatModal={() => setShowNewChatModal(false)}
-          contacts={contacts}
-          contactSearch={contactSearch}
-          onContactSearchChange={setContactSearch}
-          onStartNewConversation={startNewConversation}
-        />
+        {showSidebar && (
+          <ChatSidebar
+            ref={sidebarListRef}
+            searchInputRef={sidebarSearchInputRef}
+            rowRefs={rowRefs}
+            onListKeyDown={handleListKeyDown}
+            conversations={conversations}
+            selectedConversation={selectedConversation}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            onSelectConversation={handleSelectConversation}
+            socketConnected={socketConnected}
+            showNewChatModal={showNewChatModal}
+            onOpenNewChatModal={() => setShowNewChatModal(true)}
+            onCloseNewChatModal={() => setShowNewChatModal(false)}
+            contacts={contacts}
+            contactSearch={contactSearch}
+            onContactSearchChange={setContactSearch}
+            onStartNewConversation={startNewConversation}
+          />
+        )}
 
         {/* Chat area — message list + input bar */}
-        <div className="flex-1 flex flex-col h-full overflow-hidden">
+        {showMain && (
+        <div className="chat-shell__main">
           <ChatMessageList
             selectedConversation={selectedConversation}
             messages={messages}
@@ -344,6 +432,8 @@ export default function ChatFull() {
             onMessageAction={handleMessageAction}
             onVideoCall={handleVideoCall}
             onOpenNewChatModal={() => setShowNewChatModal(true)}
+            isMobile={isMobileViewport}
+            onBack={isMobileViewport ? handleBack : undefined}
           />
 
           {selectedConversation && (
@@ -372,6 +462,7 @@ export default function ChatFull() {
             />
           )}
         </div>
+        )}
       </div>
 
       {/* Video Call Modal */}

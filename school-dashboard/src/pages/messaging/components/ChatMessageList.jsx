@@ -1,5 +1,5 @@
 import { ScrollShadow } from "@heroui/react";
-import { Search, Phone, Video, MoreVertical, Pin, Check, CheckCheck, Forward, Download, Mic, MessageCircle, Plus } from "lucide-react";
+import { Search, Phone, Video, MoreVertical, Pin, Check, CheckCheck, Forward, Download, Mic, MessageCircle, Plus, ChevronLeft } from "lucide-react";
 import MessageActionsMenu from "./MessageActionsMenu";
 import MessageReactions from "./MessageReactions";
 import EmojiPicker from "./EmojiPicker";
@@ -31,6 +31,8 @@ export default function ChatMessageList({
   onMessageAction,
   onVideoCall,
   onOpenNewChatModal,
+  isMobile,
+  onBack,
 }) {
   const { t } = useTranslation();
 
@@ -75,6 +77,16 @@ export default function ChatMessageList({
       {/* Chat Header */}
       <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--color-border)] shrink-0 bg-[var(--color-bg)]">
         <div className="flex items-center gap-3">
+          {isMobile && onBack && (
+            <button
+              type="button"
+              className="chat-back"
+              onClick={onBack}
+              aria-label={t('common.back', 'Back')}
+            >
+              <ChevronLeft size={18} />
+            </button>
+          )}
           <Avatar
             src={selectedConversation.otherParticipant?.avatar}
             name={selectedConversation.otherParticipant?.name}

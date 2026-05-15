@@ -17,9 +17,9 @@ function ConversationRowSkeleton() {
 
 export default function ChatSkeleton() {
   return (
-    <div className="flex h-full w-full" aria-busy="true" aria-live="polite">
-      <aside className="w-80 shrink-0 border-r border-[var(--color-border)] bg-[var(--color-bg)] flex flex-col">
-        <div className="p-4 border-b border-[var(--color-border)] space-y-3">
+    <div className="chat-shell" aria-busy="true" aria-live="polite">
+      <aside className="chat-shell__sidebar">
+        <div className="chat-sidebar__head">
           <Skeleton variant="rect" className="h-10 w-full" />
           <Skeleton variant="text" className="h-3 w-24" />
         </div>
@@ -29,7 +29,7 @@ export default function ChatSkeleton() {
           ))}
         </div>
       </aside>
-      <div className="flex-1 flex flex-col bg-[var(--color-bg-secondary)]">
+      <div className="chat-shell__main">
         <div className="px-5 py-3 border-b border-[var(--color-border)] flex items-center gap-3">
           <Skeleton variant="circle" className="h-10 w-10" />
           <div className="space-y-2">

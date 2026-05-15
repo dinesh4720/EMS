@@ -1,19 +1,44 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
-  Button,
-  Input,
-  Textarea,
-  Checkbox,
-  Card,
-  CardBody,
-  Progress,
-} from '@heroui/react';
-import { Send, Clock, Upload, X, FileText } from 'lucide-react';
+  Send,
+  Clock,
+  X,
+  FileText,
+  Bold,
+  Italic,
+  List,
+  Link2,
+  Paperclip,
+} from 'lucide-react';
 import { announcementsApi, uploadApi } from '../../../../services/api';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import logger from '../../../../utils/logger';
 
+const AUDIENCE_OPTIONS = [
+  { key: 'all', label: 'Whole School' },
+  { key: 'staff', label: 'Staff' },
+  { key: 'students', label: 'Students' },
+  { key: 'parents', label: 'Parents' },
+];
+
+const CHANNEL_OPTIONS = [
+  { key: 'inapp', label: 'In-App' },
+  { key: 'email', label: 'Email' },
+  { key: 'sms', label: 'SMS' },
+  { key: 'whatsapp', label: 'WhatsApp' },
+];
+
+const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024; // 10 MB ceiling for safety
+
+const INITIAL_FORM = {
+  title: '',
+  content: '',
+  recipients: [{ type: 'all' }],
+  channels: ['inapp'],
+  scheduledFor: null,
+  attachments: [],
+};
 
 export default function AnnouncementForm({
   isOpen,
@@ -22,18 +47,12 @@ export default function AnnouncementForm({
   editData = null,
 }) {
   const { t } = useTranslation();
-  const [formData, setFormData] = useState({
-    title: '',
-    content: '',
-    recipients: [{ type: 'all' }],
-    channels: ['inapp'],
-    scheduledFor: null,
-    attachments: [],
-  });
-
+  const contentRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const [formData, setFormData] = useState(INITIAL_FORM);
   const [loading, setLoading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -41,76 +60,89 @@ export default function AnnouncementForm({
       setFormData({
         title: editData.title || '',
         content: editData.content || '',
-        recipients: editData.recipients || [{ type: 'all' }],
-        channels: editData.channels || ['inapp'],
+        recipients: editData.recipients?.length ? editData.recipients : [{ type: 'all' }],
+        channels: editData.channels?.length ? editData.channels : ['inapp'],
         scheduledFor: editData.scheduledFor || null,
         attachments: editData.attachments || [],
       });
+    } else {
+      setFormData(INITIAL_FORM);
     }
-  }, [editData]);
+    setErrors({});
+  }, [editData, isOpen]);
 
-  const handleRecipientChange = (type) => {
-    setFormData(prev => {
-      const exists = prev.recipients.find(r => r.type === type);
-      if (type === 'all') {
-        return { ...prev, recipients: [{ type: 'all' }] };
-      }
-      const newRecipients = prev.recipients.filter(r => r.type !== 'all');
-      if (exists) {
-        return {
-          ...prev,
-          recipients: newRecipients.filter(r => r.type !== type)
-        };
-      }
-      return {
-        ...prev,
-        recipients: [...newRecipients, { type }]
-      };
+  const handleRecipientToggle = (type) => {
+    setErrors((prev) => ({ ...prev, recipients: '' }));
+    setFormData((prev) => {
+      if (type === 'all') return { ...prev, recipients: [{ type: 'all' }] };
+      const without = prev.recipients.filter((r) => r.type !== 'all');
+      const exists = without.find((r) => r.type === type);
+      const next = exists ? without.filter((r) => r.type !== type) : [...without, { type }];
+      return { ...prev, recipients: next.length ? next : [{ type: 'all' }] };
     });
   };
 
   const handleChannelToggle = (channel) => {
-    setFormData(prev => ({
+    setErrors((prev) => ({ ...prev, channels: '' }));
+    setFormData((prev) => ({
       ...prev,
       channels: prev.channels.includes(channel)
-        ? prev.channels.filter(c => c !== channel)
-        : [...prev.channels, channel]
+        ? prev.channels.filter((c) => c !== channel)
+        : [...prev.channels, channel],
     }));
+  };
+
+  const wrapSelection = (before, after = before) => {
+    const el = contentRef.current;
+    if (!el) return;
+    const start = el.selectionStart ?? 0;
+    const end = el.selectionEnd ?? 0;
+    const value = formData.content;
+    const selected = value.slice(start, end) || 'text';
+    const next = `${value.slice(0, start)}${before}${selected}${after}${value.slice(end)}`;
+    setFormData((prev) => ({ ...prev, content: next }));
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start + before.length, start + before.length + selected.length);
+    });
+  };
+
+  const insertAtCursor = (text) => {
+    const el = contentRef.current;
+    if (!el) return;
+    const start = el.selectionStart ?? formData.content.length;
+    const value = formData.content;
+    const prefix = start > 0 && value[start - 1] !== '\n' ? '\n' : '';
+    const next = `${value.slice(0, start)}${prefix}${text}${value.slice(start)}`;
+    setFormData((prev) => ({ ...prev, content: next }));
   };
 
   const handleFileUpload = async (file) => {
     if (!file) return;
-
-    // Validate file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error(t('toast.error.fileSizeMustBeLessThan5mb'));
+    if (file.size > MAX_ATTACHMENT_BYTES) {
+      toast.error(`File exceeds ${Math.round(MAX_ATTACHMENT_BYTES / (1024 * 1024))}MB limit`);
       return;
     }
-
     setUploadingFile(true);
     setUploadProgress(0);
-
     try {
       const response = await uploadApi.uploadFile(file);
-
-      // Simulate progress for UX
-      for (let i = 0; i <= 100; i += 20) {
-        await new Promise(resolve => setTimeout(resolve, 50));
+      for (let i = 0; i <= 100; i += 25) {
+        // light progress animation for UX
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise((resolve) => setTimeout(resolve, 40));
         setUploadProgress(i);
       }
-
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        attachments: [...prev.attachments, {
-          name: file.name,
-          url: response.url,
-          type: file.type
-        }]
+        attachments: [
+          ...prev.attachments,
+          { name: file.name, url: response.url, type: file.type, size: file.size },
+        ],
       }));
-
       toast.success(t('toast.success.fileUploadedSuccessfully'));
-    } catch (error) {
-      logger.error('Error uploading file:', error);
+    } catch (err) {
+      logger.error('Error uploading file:', err);
       toast.error(t('toast.error.failedToUploadFile'));
     } finally {
       setUploadingFile(false);
@@ -118,121 +150,81 @@ export default function AnnouncementForm({
     }
   };
 
-  const handleRemoveAttachment = (index) => {
-    setFormData(prev => ({
+  const removeAttachment = (index) => {
+    setFormData((prev) => ({
       ...prev,
-      attachments: prev.attachments.filter((_, i) => i !== index)
+      attachments: prev.attachments.filter((_, i) => i !== index),
     }));
   };
 
-  const handleSubmit = async (schedule = false) => {
-    const newErrors = {};
-    if (!formData.title.trim()) newErrors.title = t('toast.error.pleaseFillInTitleAndContent');
-    if (!formData.content.trim()) newErrors.content = t('toast.error.pleaseFillInTitleAndContent');
-    if (formData.channels.length === 0) newErrors.channels = t('toast.error.pleaseSelectAtLeastOneChannel');
-    if (formData.recipients.length === 0) newErrors.recipients = t('toast.error.pleaseSelectRecipients');
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      if (newErrors.title || newErrors.content) toast.error(t('toast.error.pleaseFillInTitleAndContent'));
-      else if (newErrors.channels) toast.error(t('toast.error.pleaseSelectAtLeastOneChannel'));
-      else if (newErrors.recipients) toast.error(t('toast.error.pleaseSelectRecipients'));
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const payload = {
-        ...formData,
-        status: schedule ? 'scheduled' : 'draft',
-      };
-
-      if (schedule && formData.scheduledFor) {
-        payload.scheduledFor = new Date(formData.scheduledFor);
+  const validate = () => {
+    const next = {};
+    if (!formData.title.trim()) next.title = 'Title is required';
+    if (!formData.content.trim()) next.content = 'Content is required';
+    if (formData.channels.length === 0) next.channels = 'Select at least one channel';
+    if (formData.recipients.length === 0) next.recipients = 'Select recipients';
+    if (formData.scheduledFor) {
+      const dt = new Date(formData.scheduledFor);
+      if (Number.isNaN(dt.getTime())) {
+        next.scheduledFor = 'Invalid date';
+      } else if (dt.getTime() <= Date.now()) {
+        next.scheduledFor = 'Scheduled time must be in the future';
       }
-
-      if (editData?._id) {
-        await announcementsApi.update(editData._id, payload);
-        toast.success(t('toast.success.announcementUpdatedSuccessfully'));
-      } else {
-        await announcementsApi.create(payload);
-        toast.success(schedule ? 'Announcement scheduled' : 'Announcement created');
-      }
-
-      onSave();
-      handleClose();
-    } catch (error) {
-      logger.error('Error saving announcement:', error);
-      toast.error(error.message || 'Failed to save announcement');
-    } finally {
-      setLoading(false);
     }
-  };
-
-  const handleSendNow = async () => {
-    const newErrors = {};
-    if (!formData.title.trim()) newErrors.title = t('toast.error.pleaseFillInTitleAndContent');
-    if (!formData.content.trim()) newErrors.content = t('toast.error.pleaseFillInTitleAndContent');
-    if (formData.channels.length === 0) newErrors.channels = t('toast.error.pleaseSelectAtLeastOneChannel');
-    if (formData.recipients.length === 0) newErrors.recipients = t('toast.error.pleaseSelectRecipients');
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      if (newErrors.title || newErrors.content) toast.error(t('toast.error.pleaseFillInTitleAndContent'));
-      else if (newErrors.channels) toast.error(t('toast.error.pleaseSelectAtLeastOneChannel'));
-      else if (newErrors.recipients) toast.error(t('toast.error.pleaseSelectRecipients'));
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      let result;
-      if (editData?._id) {
-        result = await announcementsApi.send(editData._id);
-      } else {
-        // Create first, then send
-        const created = await announcementsApi.create({
-          ...formData,
-          status: 'sent',
-        });
-        result = await announcementsApi.send(created._id);
-      }
-
-      if (result?.status === 'partial') {
-        toast(`Announcement partially sent — ${result.sent} delivered, ${result.failed} failed`, {
-          icon: '⚠️',
-        });
-      } else if (result?.pushFailed) {
-        toast.success(t('toast.success.announcementSentSuccessfully') + ' (push notifications failed)');
-      } else {
-        toast.success(t('toast.success.announcementSentSuccessfully'));
-      }
-
-      onSave();
-      handleClose();
-    } catch (error) {
-      logger.error('Error sending announcement:', error);
-      toast.error(error.message || 'Failed to send announcement');
-    } finally {
-      setLoading(false);
-    }
+    setErrors(next);
+    return Object.keys(next).length === 0;
   };
 
   const handleClose = () => {
-    setFormData({
-      title: '',
-      content: '',
-      recipients: [{ type: 'all' }],
-      channels: ['inapp'],
-      scheduledFor: null,
-      attachments: [],
-    });
+    setFormData(INITIAL_FORM);
     setErrors({});
     setUploadProgress(0);
     setUploadingFile(false);
     onClose();
+  };
+
+  const handleSubmit = async (mode) => {
+    if (!validate()) {
+      const first = Object.values(errors)[0];
+      if (first) toast.error(first);
+      return;
+    }
+    setLoading(true);
+    try {
+      const isScheduled = mode === 'schedule' && !!formData.scheduledFor;
+      const payload = {
+        ...formData,
+        status: mode === 'send' ? 'sent' : isScheduled ? 'scheduled' : 'draft',
+      };
+      if (isScheduled) payload.scheduledFor = new Date(formData.scheduledFor);
+
+      if (mode === 'send') {
+        let id = editData?._id;
+        if (!id) {
+          const created = await announcementsApi.create({ ...payload, status: 'sent' });
+          id = created._id;
+        }
+        const result = await announcementsApi.send(id);
+        if (result?.status === 'partial') {
+          toast(`Sent partially — ${result.sent} delivered, ${result.failed} failed`, { icon: '⚠️' });
+        } else {
+          toast.success(t('toast.success.announcementSentSuccessfully'));
+        }
+      } else if (editData?._id) {
+        await announcementsApi.update(editData._id, payload);
+        toast.success(t('toast.success.announcementUpdatedSuccessfully'));
+      } else {
+        await announcementsApi.create(payload);
+        toast.success(isScheduled ? 'Announcement scheduled' : 'Draft saved');
+      }
+      onSave();
+      handleClose();
+    } catch (err) {
+      logger.error('Error saving announcement:', err);
+      toast.error(err.message || 'Failed to save announcement');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -251,182 +243,254 @@ export default function AnnouncementForm({
 
         <div className="announce-overlay__hero">
           <h3 className="announce-overlay__title">
-            {editData ? 'Edit Announcement' : 'Create Announcement'}
+            {editData ? 'Edit announcement' : 'New announcement'}
           </h3>
           <p className="announce-overlay__subtitle">
-            Compose your message, select recipients, and pick delivery channels.
+            Compose your message, choose audiences and channels, then schedule or send.
           </p>
         </div>
 
-        <div className="frosted-overlay__body space-y-4">
+        <div className="frosted-overlay__body announce-form">
           {/* Title */}
-          <Input
-            label={t('pages.title1')}
-            placeholder={t('pages.enterAnnouncementTitle')}
-            value={formData.title}
-            onChange={(e) => { setFormData({ ...formData, title: e.target.value }); setErrors(prev => ({ ...prev, title: '' })); }}
-            variant="bordered"
-            isRequired
-            isInvalid={!!errors.title}
-            errorMessage={errors.title}
-          />
+          <div className="announce-form__field">
+            <label htmlFor="ann-title" className="announce-form__label">Title</label>
+            <input
+              id="ann-title"
+              type="text"
+              className="announce-form__input"
+              placeholder="Enter announcement title"
+              value={formData.title}
+              onChange={(e) => {
+                setFormData({ ...formData, title: e.target.value });
+                setErrors((prev) => ({ ...prev, title: '' }));
+              }}
+              aria-invalid={!!errors.title}
+            />
+            {errors.title && <span className="announce-form__error">{errors.title}</span>}
+          </div>
 
-          {/* Content */}
-          <Textarea
-            label={t('pages.content')}
-            placeholder={t('pages.enterAnnouncementContent')}
-            value={formData.content}
-            onChange={(e) => { setFormData({ ...formData, content: e.target.value }); setErrors(prev => ({ ...prev, content: '' })); }}
-            variant="bordered"
-            minRows={6}
-            isRequired
-            isInvalid={!!errors.content}
-            errorMessage={errors.content}
-          />
+          {/* Content with rich-text toolbar */}
+          <div className="announce-form__field">
+            <label htmlFor="ann-content" className="announce-form__label">Content</label>
+            <div className="announce-form__editor">
+              <div className="announce-form__toolbar" role="toolbar" aria-label="Formatting">
+                <button type="button" className="iconbtn" onClick={() => wrapSelection('**')} aria-label="Bold" title="Bold">
+                  <Bold size={13} />
+                </button>
+                <button type="button" className="iconbtn" onClick={() => wrapSelection('_')} aria-label="Italic" title="Italic">
+                  <Italic size={13} />
+                </button>
+                <button type="button" className="iconbtn" onClick={() => insertAtCursor('- ')} aria-label="Bullet list" title="Bullet list">
+                  <List size={13} />
+                </button>
+                <button
+                  type="button"
+                  className="iconbtn"
+                  onClick={() => wrapSelection('[', '](https://)')}
+                  aria-label="Insert link"
+                  title="Insert link"
+                >
+                  <Link2 size={13} />
+                </button>
+                <span className="subtle" style={{ marginLeft: 'auto', fontSize: 11 }}>
+                  Markdown supported
+                </span>
+              </div>
+              <textarea
+                id="ann-content"
+                ref={contentRef}
+                className="announce-form__textarea"
+                placeholder="Enter announcement content"
+                value={formData.content}
+                onChange={(e) => {
+                  setFormData({ ...formData, content: e.target.value });
+                  setErrors((prev) => ({ ...prev, content: '' }));
+                }}
+                rows={7}
+                aria-invalid={!!errors.content}
+              />
+            </div>
+            {errors.content && <span className="announce-form__error">{errors.content}</span>}
+          </div>
 
           {/* Recipients */}
-          <div>
-            <label className="text-sm font-medium mb-2 block text-fg-muted">{t('pages.recipients')}</label>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { key: 'all', label: 'Whole School' },
-                { key: 'staff', label: 'Staff' },
-                { key: 'students', label: 'Students' },
-                { key: 'parents', label: 'Parents' },
-              ].map((recipient) => (
-                <Checkbox size="sm"
-                  key={recipient.key}
-                  isSelected={formData.recipients.some(r => r.type === recipient.key)}
-                  onValueChange={() => { handleRecipientChange(recipient.key); setErrors(prev => ({ ...prev, recipients: '' })); }}
-                >
-                  {recipient.label}
-                </Checkbox>
-              ))}
+          <div className="announce-form__field">
+            <span className="announce-form__label">Audience</span>
+            <div className="row gap-2" style={{ flexWrap: 'wrap' }}>
+              {AUDIENCE_OPTIONS.map((opt) => {
+                const active = opt.key === 'all'
+                  ? formData.recipients.some((r) => r.type === 'all')
+                  : formData.recipients.some((r) => r.type === opt.key);
+                return (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => handleRecipientToggle(opt.key)}
+                    className={`chip ${active ? 'chip--accent' : ''}`}
+                    style={{ height: 26, padding: '0 10px', fontSize: 12, cursor: 'pointer' }}
+                    aria-pressed={active}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
             </div>
-            {errors.recipients && <p className="text-xs text-danger-token mt-1">{errors.recipients}</p>}
+            {errors.recipients && <span className="announce-form__error">{errors.recipients}</span>}
           </div>
 
           {/* Channels */}
-          <div>
-            <label className="text-sm font-medium mb-2 block text-fg-muted">{t('pages.sendVia')}</label>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { key: 'inapp', label: 'In-App' },
-                { key: 'email', label: 'Email' },
-                { key: 'sms', label: 'SMS' },
-                { key: 'whatsapp', label: 'WhatsApp' },
-              ].map((channel) => (
-                <Checkbox size="sm"
-                  key={channel.key}
-                  isSelected={formData.channels.includes(channel.key)}
-                  onValueChange={() => { handleChannelToggle(channel.key); setErrors(prev => ({ ...prev, channels: '' })); }}
-                >
-                  {channel.label}
-                </Checkbox>
-              ))}
+          <div className="announce-form__field">
+            <span className="announce-form__label">Send via</span>
+            <div className="row gap-2" style={{ flexWrap: 'wrap' }}>
+              {CHANNEL_OPTIONS.map((opt) => {
+                const active = formData.channels.includes(opt.key);
+                return (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => handleChannelToggle(opt.key)}
+                    className={`chip ${active ? 'chip--accent' : ''}`}
+                    style={{ height: 26, padding: '0 10px', fontSize: 12, cursor: 'pointer' }}
+                    aria-pressed={active}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
             </div>
-            {errors.channels && <p className="text-xs text-danger-token mt-1">{errors.channels}</p>}
+            {errors.channels && <span className="announce-form__error">{errors.channels}</span>}
           </div>
 
           {/* Schedule */}
-          <div className="flex items-center gap-4">
-            <Checkbox size="sm"
-              isSelected={!!formData.scheduledFor}
-              onValueChange={(checked) =>
-                setFormData({ ...formData, scheduledFor: checked ? '' : null })
-              }
-            >
-              Schedule for later
-            </Checkbox>
-            {formData.scheduledFor !== null && (
-              <Input
-                type="datetime-local"
-                value={formData.scheduledFor}
-                onChange={(e) => setFormData({ ...formData, scheduledFor: e.target.value })}
-                variant="bordered"
-                size="sm"
-                className="max-w-[250px]"
+          <div className="announce-form__field">
+            <label className="row gap-2" style={{ alignItems: 'center', fontSize: 13 }}>
+              <input
+                type="checkbox"
+                checked={formData.scheduledFor !== null}
+                onChange={(e) =>
+                  setFormData({ ...formData, scheduledFor: e.target.checked ? '' : null })
+                }
               />
+              <Clock size={13} aria-hidden /> Schedule for later
+            </label>
+            {formData.scheduledFor !== null && (
+              <>
+                <input
+                  type="datetime-local"
+                  className="announce-form__input"
+                  style={{ maxWidth: 260 }}
+                  value={formData.scheduledFor}
+                  onChange={(e) => {
+                    setFormData({ ...formData, scheduledFor: e.target.value });
+                    setErrors((prev) => ({ ...prev, scheduledFor: '' }));
+                  }}
+                  aria-invalid={!!errors.scheduledFor}
+                />
+                {errors.scheduledFor && <span className="announce-form__error">{errors.scheduledFor}</span>}
+              </>
             )}
           </div>
 
           {/* Attachments */}
-          <div>
-            <label className="text-sm font-medium mb-2 block text-fg-muted">{t('pages.attachments')}</label>
-            <div className="space-y-2">
-              {formData.attachments.map((attachment, index) => (
-                <Card key={attachment.name || index} size="sm">
-                  <CardBody className="flex flex-row items-center justify-between py-2">
-                    <div className="flex items-center gap-2">
-                      <FileText size={16} />
-                      <span className="text-sm">{attachment.name}</span>
-                    </div>
-                    <Button
-                      isIconOnly
-                      size="sm"
-                      variant="flat"
-                      onPress={() => handleRemoveAttachment(index)}
-                    >
-                      <X size={14} />
-                    </Button>
-                  </CardBody>
-                </Card>
+          <div className="announce-form__field">
+            <span className="announce-form__label">Attachments</span>
+            <div className="col gap-2" style={{ width: '100%' }}>
+              {formData.attachments.map((att, index) => (
+                <div
+                  key={`${att.url || att.name}-${index}`}
+                  className="row gap-2"
+                  style={{
+                    padding: '8px 10px',
+                    background: 'var(--surface-2)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 8,
+                  }}
+                >
+                  <FileText size={14} className="subtle" aria-hidden />
+                  <span style={{ flex: 1, fontSize: 12, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {att.name}
+                  </span>
+                  <button
+                    type="button"
+                    className="iconbtn"
+                    style={{ width: 24, height: 24 }}
+                    onClick={() => removeAttachment(index)}
+                    aria-label={`Remove ${att.name}`}
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
               ))}
-              <label className="flex items-center gap-2 cursor-pointer">
+              <div className="row gap-2" style={{ alignItems: 'center' }}>
                 <input
+                  ref={fileInputRef}
                   type="file"
-                  className="hidden"
-                  onChange={(e) => handleFileUpload(e.target.files[0])}
+                  hidden
+                  onChange={(e) => {
+                    handleFileUpload(e.target.files?.[0]);
+                    e.target.value = '';
+                  }}
                   disabled={uploadingFile}
                 />
-                <Button
-                  isIconOnly
-                  size="sm"
-                  variant="flat"
-                  onPress={() => document.querySelector('input[type="file"]')?.click()}
-                  isDisabled={uploadingFile}
+                <button
+                  type="button"
+                  className="btn btn--sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingFile}
                 >
-                  <Upload size={16} />
-                </Button>
-                <span className="text-sm text-fg-muted">
-                  {uploadingFile ? `Uploading... ${uploadProgress}%` : 'Upload file'}
+                  <Paperclip size={12} aria-hidden />
+                  {uploadingFile ? `Uploading ${uploadProgress}%` : 'Add attachment'}
+                </button>
+                <span className="faint" style={{ fontSize: 11 }}>
+                  Max {Math.round(MAX_ATTACHMENT_BYTES / (1024 * 1024))}MB per file
                 </span>
-              </label>
+              </div>
               {uploadingFile && (
-                <Progress value={uploadProgress} size="sm" color="primary" />
+                <div
+                  style={{
+                    height: 4,
+                    background: 'var(--surface-2)',
+                    borderRadius: 999,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${uploadProgress}%`,
+                      height: '100%',
+                      background: 'var(--accent)',
+                      transition: 'width 120ms',
+                    }}
+                  />
+                </div>
               )}
             </div>
           </div>
         </div>
 
         <div className="frosted-overlay__footer">
-          <Button
-            variant="flat"
-            onPress={handleClose}
-            isDisabled={loading}
-          >
+          <button type="button" className="btn" onClick={handleClose} disabled={loading}>
             Cancel
-          </Button>
-          <div className="flex items-center gap-2">
-            <Button
-              color="default"
-              variant="flat"
-              onPress={() => handleSubmit(true)}
-              isDisabled={loading}
-              startContent={<Clock size={16} />}
+          </button>
+          <div className="row gap-2">
+            <button
+              type="button"
+              className="btn"
+              onClick={() => handleSubmit('schedule')}
+              disabled={loading}
             >
-              {editData ? 'Update' : 'Save'} Draft
-            </Button>
-            {!editData && (
-              <Button
-                color="primary"
-                onPress={handleSendNow}
-                isLoading={loading}
-                startContent={<Send size={16} />}
-              >
-                Send Now
-              </Button>
-            )}
+              <Clock size={13} aria-hidden />
+              {formData.scheduledFor ? 'Schedule' : (editData ? 'Update draft' : 'Save draft')}
+            </button>
+            <button
+              type="button"
+              className="btn btn--accent"
+              onClick={() => handleSubmit('send')}
+              disabled={loading}
+            >
+              <Send size={13} aria-hidden />
+              Send now
+            </button>
           </div>
         </div>
       </div>
