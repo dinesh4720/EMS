@@ -3,6 +3,46 @@ import { Receipt, Wallet, Undo2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { derivePaymentStatus, PAYMENT_STATUS } from "../../hooks/useFeesData";
 
+// REVAMP-27 — receipt download (CSV). Server has no PDF endpoint yet; the
+// dashboard ships a deterministic CSV row so the cashier can email or print.
+function downloadReceipt(payment) {
+  const sanitize = (value) => {
+    const str = String(value ?? "");
+    return (/^[=+\-@\t\r]/.test(str) ? "'" : "") + str.replace(/"/g, '""');
+  };
+  const rows = [
+    ["Receipt No", payment.receiptNumber || payment.receiptNo || payment._id],
+    ["Student", payment.student?.name || payment.studentName || ""],
+    [
+      "Class",
+      payment.student?.className ||
+        payment.className ||
+        payment.classSection ||
+        "",
+    ],
+    ["Roll", payment.student?.rollNo || payment.rollNo || ""],
+    ["Fee Head", payment.feeHead || payment.headName || payment.term || ""],
+    ["Amount", payment.amount ?? 0],
+    ["Mode", payment.paymentMode || payment.mode || ""],
+    ["Payment Date", payment.paymentDate || payment.paidAt || ""],
+    ["Transaction ID", payment.transactionId || ""],
+    ["Remarks", payment.remarks || ""],
+  ];
+  const csv = [
+    "Field,Value",
+    ...rows.map((r) => r.map((c) => `"${sanitize(c)}"`).join(",")),
+  ].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `receipt-${payment.receiptNumber || payment._id}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 const inrFormatter = new Intl.NumberFormat("en-IN", {
   style: "currency",
   currency: "INR",
@@ -194,9 +234,7 @@ export default function PaymentsTable({
                 <RowAction
                   status={status}
                   onCollect={() => onCollect?.(studentId, p)}
-                  onReceipt={() =>
-                    navigate(`/fees/receipts/${id}`)
-                  }
+                  onReceipt={() => downloadReceipt(p)}
                   onRefund={() =>
                     navigate(`/fees/refunds?payment=${id}`)
                   }
