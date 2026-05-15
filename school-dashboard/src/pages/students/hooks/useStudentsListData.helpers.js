@@ -99,12 +99,18 @@ export function sortWithPinned(items) {
  * @returns {number}
  */
 export function computeActiveFiltersCount(filters) {
+  const countFilter = (filter) => {
+    if (Array.isArray(filter)) return filter.length;
+    if (typeof filter === 'string') return filter !== 'all' && filter ? 1 : 0;
+    return 0;
+  };
+
   return (
     (filters.classFilter && filters.classFilter !== 'all' ? 1 : 0) +
-    (filters.feeStatusFilter?.length || 0) +
-    (filters.academicYearFilter?.length || 0) +
-    (filters.academicPerformanceFilter?.length || 0) +
-    (filters.attendanceFilter?.length || 0)
+    countFilter(filters.feeStatusFilter) +
+    countFilter(filters.academicYearFilter) +
+    countFilter(filters.academicPerformanceFilter) +
+    countFilter(filters.attendanceFilter)
   );
 }
 
