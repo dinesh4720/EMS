@@ -11,7 +11,22 @@ export const ACTIVITY_TYPES = {
   APPOINTMENT: "appointments",
   FEEDBACK: "feedbacks",
   CALL: "calls",
+  ADMISSION: "admissions",
 };
+
+// Local-time "is today" — fixes timezone miscounts where toISOString()
+// would treat late-evening local timestamps as the next UTC day.
+function isToday(value) {
+  if (!value) return false;
+  const d = new Date(value);
+  if (!Number.isFinite(d.getTime())) return false;
+  const now = new Date();
+  return (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  );
+}
 
 export function summarizeKpis({
   visitors = [],
@@ -19,21 +34,37 @@ export function summarizeKpis({
   appointments = [],
   feedbacks = [],
   calls = [],
+  admissions = [],
 } = {}) {
+  const appts = appointments || [];
+  const apptToday = appts.filter((a) =>
+    isToday(a.fromDateTime || a.appointmentDate || a.createdAt)
+  );
+  const callsArr = calls || [];
+  const callsToday = callsArr.filter((c) =>
+    isToday(c.callTime || c.dateTime || c.createdAt)
+  );
+  const admArr = admissions || [];
   return {
     visitorsToday: (visitors || []).length,
-    visitorsCheckedIn: (visitors || []).filter(
-      (v) => !v.checkOutTime
-    ).length,
+    visitorsCheckedIn: (visitors || []).filter((v) => !v.checkOutTime).length,
     gatePassesToday: (gatePasses || []).length,
     gatePassesPending: (gatePasses || []).filter(
       (g) => String(g.approvalStatus || g.status || "").toLowerCase() === "pending"
     ).length,
-    appointmentsCount: (appointments || []).length,
+    appointmentsToday: apptToday.length,
+    appointmentsCount: appts.length,
     feedbacksOpen: (feedbacks || []).filter(
       (f) => String(f.status || "open").toLowerCase() === "open"
     ).length,
-    callsCount: (calls || []).length,
+    callsToday: callsToday.length,
+    callsCount: callsArr.length,
+    admissionsToday: admArr.filter((a) =>
+      isToday(a.applicationDate || a.createdAt)
+    ).length,
+    admissionsPending: admArr.filter(
+      (a) => String(a.status || "").toLowerCase() === "pending"
+    ).length,
   };
 }
 
@@ -92,8 +123,19 @@ export function toActivityRow(entity, type) {
       type,
       name: entity.callerName || "—",
       sub: entity.purpose || "",
-      time: entity.callTime || entity.createdAt,
+      time: entity.callTime || entity.dateTime || entity.createdAt,
       status: String(entity.status || "logged").toLowerCase(),
+      raw: entity,
+    };
+  }
+  if (type === ACTIVITY_TYPES.ADMISSION) {
+    return {
+      id: entity._id || entity.id,
+      type,
+      name: entity.studentName || entity.applicantName || "—",
+      sub: entity.classApplied || entity.grade || "",
+      time: entity.applicationDate || entity.createdAt,
+      status: String(entity.status || "pending").toLowerCase(),
       raw: entity,
     };
   }
@@ -107,6 +149,7 @@ export function combineActivity({
   appointments = [],
   feedbacks = [],
   calls = [],
+  admissions = [],
 } = {}) {
   const rows = [
     ...visitors.map((v) => toActivityRow(v, ACTIVITY_TYPES.VISITOR)),
@@ -114,6 +157,7 @@ export function combineActivity({
     ...appointments.map((a) => toActivityRow(a, ACTIVITY_TYPES.APPOINTMENT)),
     ...feedbacks.map((f) => toActivityRow(f, ACTIVITY_TYPES.FEEDBACK)),
     ...calls.map((c) => toActivityRow(c, ACTIVITY_TYPES.CALL)),
+    ...admissions.map((a) => toActivityRow(a, ACTIVITY_TYPES.ADMISSION)),
   ].filter(Boolean);
   rows.sort((a, b) => {
     const ta = a.time ? new Date(a.time).getTime() : 0;
@@ -141,25 +185,38 @@ export function filterActivity(rows, { type = "all", search = "" } = {}) {
  * Query, then combines + summarizes. KPI cells are derived from raw data.
  */
 export default function useFrontDeskData({ type = "all", search = "" } = {}) {
+  // refetchOnWindowFocus keeps "today" counts fresh when the receptionist
+  // tabs back to the dashboard after using another surface.
+  const queryOpts = { refetchOnWindowFocus: true, staleTime: 30_000 };
   const visitorsQuery = useQuery({
     queryKey: ["fd-visitors-today"],
     queryFn: () => frontDeskApi.getVisitorsToday(),
+    ...queryOpts,
   });
   const gatePassesQuery = useQuery({
     queryKey: ["fd-gate-passes-today"],
     queryFn: () => frontDeskApi.getGatePassesToday(),
+    ...queryOpts,
   });
   const appointmentsQuery = useQuery({
     queryKey: ["fd-appointments"],
     queryFn: () => frontDeskApi.getAppointments(),
+    ...queryOpts,
   });
   const feedbacksQuery = useQuery({
     queryKey: ["fd-feedbacks"],
     queryFn: () => frontDeskApi.getFeedbacks(),
+    ...queryOpts,
   });
   const callsQuery = useQuery({
     queryKey: ["fd-call-logs"],
     queryFn: () => frontDeskApi.getCallLogs(),
+    ...queryOpts,
+  });
+  const admissionsQuery = useQuery({
+    queryKey: ["fd-admissions"],
+    queryFn: () => frontDeskApi.getAdmissions(),
+    ...queryOpts,
   });
 
   const buckets = useMemo(
@@ -173,6 +230,8 @@ export default function useFrontDeskData({ type = "all", search = "" } = {}) {
       feedbacks:
         feedbacksQuery.data?.data || feedbacksQuery.data || [],
       calls: callsQuery.data?.data || callsQuery.data || [],
+      admissions:
+        admissionsQuery.data?.data || admissionsQuery.data || [],
     }),
     [
       visitorsQuery.data,
@@ -180,6 +239,7 @@ export default function useFrontDeskData({ type = "all", search = "" } = {}) {
       appointmentsQuery.data,
       feedbacksQuery.data,
       callsQuery.data,
+      admissionsQuery.data,
     ]
   );
 
@@ -204,6 +264,7 @@ export default function useFrontDeskData({ type = "all", search = "" } = {}) {
       appointmentsQuery.refetch();
       feedbacksQuery.refetch();
       callsQuery.refetch();
+      admissionsQuery.refetch();
     },
   };
 }

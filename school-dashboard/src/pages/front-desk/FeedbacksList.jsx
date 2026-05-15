@@ -285,6 +285,24 @@ const FeedbacksList = forwardRef(({ onSave, ...props }, ref) => {
     return SOURCE_OPTIONS.find(s => s === source)?.replace(/_/g, ' ') || source || '-';
   };
 
+  // Summary aggregations: count by status and by top-level category.
+  // Powers the .fd-summary strip + per-category rating-style bars.
+  const summary = useMemo(() => {
+    const byStatus = { open: 0, in_progress: 0, resolved: 0, closed: 0 };
+    const byCategory = { STAFF: 0, FACILITIES: 0, MANAGEMENT: 0 };
+    feedbacks.forEach((f) => {
+      const status = f.status || 'open';
+      if (byStatus[status] != null) byStatus[status] += 1;
+      const topCat = (f.category || '').split('_')[0];
+      if (byCategory[topCat] != null) byCategory[topCat] += 1;
+    });
+    const total = feedbacks.length;
+    const resolutionRate = total
+      ? Math.round(((byStatus.resolved + byStatus.closed) / total) * 100)
+      : 0;
+    return { byStatus, byCategory, total, resolutionRate };
+  }, [feedbacks]);
+
   const filteredFeedbacks = feedbacks.filter(f => {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
@@ -296,8 +314,44 @@ const FeedbacksList = forwardRef(({ onSave, ...props }, ref) => {
     );
   });
 
+  const maxCategoryCount = Math.max(1, ...Object.values(summary.byCategory));
+
   return (
     <>
+      {summary.total > 0 && (
+        <div className="fd-summary" role="region" aria-label="Feedback summary">
+          <span className="fd-summary__item">
+            Total <span className="fd-summary__item-value">{summary.total}</span>
+          </span>
+          <span className="fd-summary__item">
+            Open <span className="fd-summary__item-value">{summary.byStatus.open}</span>
+          </span>
+          <span className="fd-summary__item">
+            In Progress <span className="fd-summary__item-value">{summary.byStatus.in_progress}</span>
+          </span>
+          <span className="fd-summary__item">
+            Resolved <span className="fd-summary__item-value">{summary.byStatus.resolved}</span>
+          </span>
+          <span className="fd-summary__item">
+            Resolution Rate <span className="fd-summary__item-value">{summary.resolutionRate}%</span>
+          </span>
+          <div className="fd-rating" aria-label="Feedbacks by category">
+            <span className="fd-rating__label">By Category</span>
+            {Object.entries(summary.byCategory).map(([cat, count]) => (
+              <div key={cat} className="fd-rating__row">
+                <span>{FEEDBACK_CATEGORIES[cat]?.label || cat}</span>
+                <div className="fd-rating__bar" aria-hidden="true">
+                  <div
+                    className="fd-rating__fill"
+                    style={{ width: `${(count / maxCategoryCount) * 100}%` }}
+                  />
+                </div>
+                <span className="mono">{count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row justify-between gap-4 mb-4">
         <div className="flex gap-2 items-center flex-wrap">
           <Input

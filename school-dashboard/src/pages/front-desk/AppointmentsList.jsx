@@ -1,10 +1,10 @@
-import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { useState, useEffect, forwardRef, useImperativeHandle, useMemo } from 'react';
 import logger from "../../utils/logger";
 import {
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Textarea, Chip, useDisclosure, Select, SelectItem, Checkbox, Button
 } from '@heroui/react';
-import { Edit, Trash2, Plus, Search } from 'lucide-react';
+import { Edit, Trash2, Plus, Search, AlertTriangle } from 'lucide-react';
 import { frontDeskApi, staffApi, announcementsApi } from '../../services/api';
 import FormInput from '../../components/FormInput';
 import { validatePhone, validateFutureDate, validateDateRange } from '../../utils/validations';
@@ -287,18 +287,54 @@ const AppointmentsList = forwardRef(({ onSave, ...props }, ref) => {
     );
   });
 
+  // Schedule conflict detection — two scheduled appointments collide when their
+  // [fromDateTime, toDateTime) ranges overlap AND target the same staff member.
+  const conflictIdsByStaff = useMemo(() => {
+    const set = new Set();
+    const active = appointments.filter(
+      (a) => (a.status || 'scheduled') === 'scheduled' && a.fromDateTime && a.toDateTime
+    );
+    for (let i = 0; i < active.length; i += 1) {
+      for (let j = i + 1; j < active.length; j += 1) {
+        const a = active[i];
+        const b = active[j];
+        if (!a.meetingWith || a.meetingWith !== b.meetingWith) continue;
+        const aFrom = new Date(a.fromDateTime).getTime();
+        const aTo = new Date(a.toDateTime).getTime();
+        const bFrom = new Date(b.fromDateTime).getTime();
+        const bTo = new Date(b.toDateTime).getTime();
+        if (Number.isNaN(aFrom) || Number.isNaN(bFrom)) continue;
+        if (aFrom < bTo && bFrom < aTo) {
+          set.add(a._id);
+          set.add(b._id);
+        }
+      }
+    }
+    return set;
+  }, [appointments]);
+
+  const conflictCount = conflictIdsByStaff.size;
+
   return (
     <>
       <div className="flex flex-col sm:flex-row justify-between gap-4 mb-4">
-        <Input
-          placeholder="Search appointments..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          startContent={<Search size={16} />}
-          className="max-w-xs"
-          isClearable
-          onClear={() => setSearchTerm('')}
-        />
+        <div className="flex items-center gap-3 flex-wrap">
+          <Input
+            placeholder="Search appointments..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            startContent={<Search size={16} />}
+            className="max-w-xs"
+            isClearable
+            onClear={() => setSearchTerm('')}
+          />
+          {conflictCount > 0 && (
+            <span className="fd-conflict" role="status" aria-live="polite">
+              <AlertTriangle size={11} aria-hidden="true" />
+              {conflictCount} scheduling conflict{conflictCount > 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
         <Button color="primary" startContent={<Plus size={16} />} onPress={onOpen}>
           New Appointment
         </Button>
@@ -322,7 +358,17 @@ const AppointmentsList = forwardRef(({ onSave, ...props }, ref) => {
         >
           {(appointment) => (
             <TableRow key={appointment._id}>
-              <TableCell>{appointment.visitorName}</TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <span>{appointment.visitorName}</span>
+                  {conflictIdsByStaff.has(appointment._id) && (
+                    <span className="fd-conflict" title="Time conflict with another scheduled appointment for this staff member">
+                      <AlertTriangle size={10} aria-hidden="true" />
+                      conflict
+                    </span>
+                  )}
+                </div>
+              </TableCell>
               <TableCell>{appointment.phoneNumber || '-'}</TableCell>
               <TableCell>{appointment.purpose || '-'}</TableCell>
               <TableCell>{formatDateTime(appointment.fromDateTime)}</TableCell>

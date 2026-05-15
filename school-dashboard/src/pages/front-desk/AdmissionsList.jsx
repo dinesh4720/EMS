@@ -8,25 +8,64 @@ import {
 } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { Edit, Eye, History, Plus, Trash2 } from 'lucide-react';
+import { Edit, Eye, LayoutGrid, List as ListIcon, Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import {
-  Button,
-  Chip,
-  ConfirmDialog,
-  DataTable,
-  IconButton,
-} from '../../components/ui';
+import ToolbarSearch from '../../components/ui/ToolbarSearch';
+import { ConfirmDialog } from '../../components/ui';
 import { classesApi, frontDeskApi, staffApi } from '../../services/api';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
 import logger from '../../utils/logger';
 import AdmissionDetailModal from './AdmissionDetailModal';
 import AdmissionFormModal from './AdmissionFormModal';
 import AdmissionTracker from './AdmissionTracker';
-import { getStatusMeta } from './admissionsConstants';
+import {
+  STAGE_OPTIONS,
+  defaultStatusForStage,
+  getStatusMeta,
+  stageOfStatus,
+} from './admissionsConstants';
 
 const extractList = (response) =>
   Array.isArray(response) ? response : response?.data || [];
+
+const FILTERS = [
+  { key: 'all', label: 'All' },
+  ...STAGE_OPTIONS.map((s) => ({ key: s.key, label: s.label, tone: s.tone })),
+];
+
+const TONE_CLASS = {
+  ok: 'status--ok',
+  warn: 'status--warn',
+  danger: 'status--danger',
+  info: 'status--info',
+  neutral: '',
+};
+
+const COLOR_TO_TONE = {
+  success: 'ok',
+  warning: 'warn',
+  danger: 'danger',
+  info: 'info',
+  neutral: 'neutral',
+};
+
+function searchMatch(a, q) {
+  if (!q) return true;
+  const t = q.toLowerCase();
+  return (
+    (a.studentName || '').toLowerCase().includes(t) ||
+    (a.parentName || '').toLowerCase().includes(t) ||
+    (a.phoneNumber || '').toLowerCase().includes(t) ||
+    (a.classApplyingFor || '').toLowerCase().includes(t) ||
+    (a.applicationId || a._id || '').toLowerCase().includes(t)
+  );
+}
+
+const formatApplicationId = (a) => {
+  if (a.applicationId) return a.applicationId;
+  const tail = String(a._id || '').slice(-6).toUpperCase();
+  return tail ? `ADM-${tail}` : 'ADM-—';
+};
 
 const AdmissionsList = forwardRef(function AdmissionsList({ onSave }, ref) {
   const { t } = useTranslation();
@@ -40,10 +79,12 @@ const AdmissionsList = forwardRef(function AdmissionsList({ onSave }, ref) {
 
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
-  const [trackerOpen, setTrackerOpen] = useState(false);
   const [editingAdmission, setEditingAdmission] = useState(null);
   const [selectedForDetail, setSelectedForDetail] = useState(null);
-  const [selectedForTracker, setSelectedForTracker] = useState(null);
+
+  const [view, setView] = useState('list'); // 'list' | 'board'
+  const [stageFilter, setStageFilter] = useState('all');
+  const [search, setSearch] = useState('');
 
   const loadAdmissions = useCallback(async () => {
     setLoading(true);
@@ -104,11 +145,6 @@ const AdmissionsList = forwardRef(function AdmissionsList({ onSave }, ref) {
     setDetailModalOpen(true);
   };
 
-  const handleTracker = (row) => {
-    setSelectedForTracker(row);
-    setTrackerOpen(true);
-  };
-
   const handleDelete = (row) => {
     showConfirm({
       title: 'Delete Admission',
@@ -134,129 +170,240 @@ const AdmissionsList = forwardRef(function AdmissionsList({ onSave }, ref) {
     onSave?.();
   };
 
-  const columns = useMemo(
-    () => [
-      {
-        key: 'studentName',
-        label: t('pages.sTUDENTName'),
-        accessor: (row) => row.studentName,
-      },
-      {
-        key: 'parentName',
-        label: t('pages.pARENTName'),
-        accessor: (row) => row.parentName || '',
-      },
-      {
-        key: 'phoneNumber',
-        label: t('pages.pHONE'),
-        accessor: (row) => row.phoneNumber || '',
-      },
-      {
-        key: 'classApplyingFor',
-        label: t('pages.cLASS'),
-        accessor: (row) => row.classApplyingFor || '',
-      },
-      {
-        key: 'source',
-        label: t('pages.sOURCE'),
-        render: (row) => (
-          <Chip size="sm" color="neutral">
-            {row.source || '—'}
-          </Chip>
-        ),
-      },
-      {
-        key: 'status',
-        label: t('pages.sTATUS'),
-        render: (row) => {
-          const meta = getStatusMeta(row.status);
-          return (
-            <Chip size="sm" color={meta.color}>
-              {meta.label}
-            </Chip>
-          );
-        },
-      },
-      {
-        key: 'paymentStatus',
-        label: t('pages.pAYMENT'),
-        render: (row) =>
-          row.paymentStatus === 'paid' ? (
-            <Chip size="sm" color="success">
-              Paid {row.paymentMode ? `(${row.paymentMode})` : ''}
-            </Chip>
-          ) : (
-            <Chip size="sm" color="warning">
-              Unpaid
-            </Chip>
-          ),
-      },
-    ],
-    [t]
+  // Drag-to-stage handler — validates the destination stage and calls the
+  // existing update endpoint. The optimistic update keeps the board snappy.
+  const handleStageChange = useCallback(
+    async (admissionId, nextStageKey) => {
+      const target = admissions.find((a) => a._id === admissionId);
+      if (!target) return;
+      const currentStage = stageOfStatus(target.status);
+      if (currentStage === nextStageKey) return;
+
+      const nextStatus = defaultStatusForStage(nextStageKey);
+      // Optimistic update
+      setAdmissions((prev) =>
+        prev.map((a) => (a._id === admissionId ? { ...a, status: nextStatus } : a))
+      );
+      try {
+        await frontDeskApi.updateAdmission(admissionId, {
+          ...target,
+          assignedTeacher:
+            target.assignedTeacher?._id || target.assignedTeacher || null,
+          status: nextStatus,
+        });
+        toast.success(`Moved to ${STAGE_OPTIONS.find((s) => s.key === nextStageKey)?.label}`);
+        onSave?.();
+      } catch (err) {
+        logger.error('Failed to update admission stage:', err);
+        toast.error('Could not move admission. Reverted.');
+        // Revert
+        setAdmissions((prev) =>
+          prev.map((a) =>
+            a._id === admissionId ? { ...a, status: target.status } : a
+          )
+        );
+      }
+    },
+    [admissions, onSave]
   );
 
-  const rowActions = (row) => (
-    <div className="flex items-center justify-end gap-1">
-      <IconButton
-        aria-label="View admission history"
-        icon={<History size={14} />}
-        size="sm"
-        onClick={() => handleTracker(row)}
-      />
-      <IconButton
-        aria-label="View admission"
-        icon={<Eye size={14} />}
-        size="sm"
-        onClick={() => handleView(row)}
-      />
-      <IconButton
-        aria-label="Edit admission"
-        icon={<Edit size={14} />}
-        size="sm"
-        onClick={() => handleEdit(row)}
-      />
-      <IconButton
-        aria-label="Delete admission"
-        icon={<Trash2 size={14} />}
-        size="sm"
-        variant="danger"
-        onClick={() => handleDelete(row)}
-      />
-    </div>
-  );
+  const visible = useMemo(() => {
+    return admissions.filter((a) => {
+      if (!searchMatch(a, search)) return false;
+      if (stageFilter !== 'all' && stageOfStatus(a.status) !== stageFilter) return false;
+      return true;
+    });
+  }, [admissions, search, stageFilter]);
+
+  const stageCounts = useMemo(() => {
+    const counts = { all: admissions.length };
+    STAGE_OPTIONS.forEach((s) => { counts[s.key] = 0; });
+    admissions.forEach((a) => {
+      const key = stageOfStatus(a.status);
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    return counts;
+  }, [admissions]);
 
   return (
-    <>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end mb-4">
-        <Button icon={<Plus size={16} />} onClick={openCreateModal}>
-          New Admission Enquiry
-        </Button>
+    <div className="page adm-page">
+      <div className="adm-page__head">
+        <div>
+          <h1 className="page__title">Admissions</h1>
+          <div className="page__sub">
+            <span className="mono tnum">{visible.length}</span> of{' '}
+            <span className="mono tnum">{admissions.length}</span>
+            {stageFilter !== 'all' && (
+              <>{' · '}<span>{STAGE_OPTIONS.find((s) => s.key === stageFilter)?.label}</span></>
+            )}
+          </div>
+        </div>
+        <div className="row gap-2">
+          <div className="seg" role="tablist" aria-label="View mode">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={view === 'list'}
+              className={`seg__btn ${view === 'list' ? 'is-active' : ''}`}
+              onClick={() => setView('list')}
+            >
+              <ListIcon size={11} aria-hidden /> List
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={view === 'board'}
+              className={`seg__btn ${view === 'board' ? 'is-active' : ''}`}
+              onClick={() => setView('board')}
+            >
+              <LayoutGrid size={11} aria-hidden /> Board
+            </button>
+          </div>
+          <button type="button" className="btn btn--accent" onClick={openCreateModal}>
+            <Plus size={13} aria-hidden /> New enquiry
+          </button>
+        </div>
       </div>
 
-      <DataTable
-        ariaLabel={t('aria.tables.admissions')}
-        columns={columns}
-        data={admissions}
-        keyField="_id"
-        loading={loading}
-        error={error}
-        onRetry={loadAdmissions}
-        searchable
-        searchKeys={['studentName', 'parentName', 'phoneNumber', 'classApplyingFor']}
-        searchPlaceholder="Search admissions…"
-        emptyState={{
-          title: 'No admission enquiries yet',
-          description: 'Log a new enquiry to start tracking its admission status.',
-          action: (
-            <Button icon={<Plus size={16} />} size="sm" onClick={openCreateModal}>
-              New Admission Enquiry
-            </Button>
-          ),
-        }}
-        rowActions={rowActions}
-        pagination
-        defaultPageSize={10}
-      />
+      <div className="toolbar">
+        <ToolbarSearch
+          value={search}
+          onChange={setSearch}
+          urlParam="q"
+          placeholder="Search by name, parent, phone, class…"
+          ariaLabel="Search admissions"
+          style={{ flex: 1, maxWidth: 360 }}
+        />
+
+        <div className="seg" role="tablist" aria-label="Filter by stage">
+          {FILTERS.map((f) => (
+            <button
+              key={f.key}
+              type="button"
+              role="tab"
+              aria-selected={stageFilter === f.key}
+              className={`seg__btn ${stageFilter === f.key ? 'is-active' : ''}`}
+              onClick={() => setStageFilter(f.key)}
+            >
+              {f.label}
+              <span className="mono tnum" style={{ marginLeft: 6, color: 'var(--fg-faint)' }}>
+                {stageCounts[f.key] ?? 0}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {(stageFilter !== 'all' || search) && (
+          <button
+            type="button"
+            className="btn btn--ghost btn--sm"
+            onClick={() => { setStageFilter('all'); setSearch(''); }}
+            style={{ color: 'var(--fg-muted)' }}
+            aria-label="Clear filters"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+
+      {loading && (
+        <div className="adm-empty">Loading admissions…</div>
+      )}
+
+      {!loading && error && (
+        <div className="adm-empty">
+          Failed to load admissions.{' '}
+          <button type="button" className="btn btn--sm" onClick={loadAdmissions}>Retry</button>
+        </div>
+      )}
+
+      {!loading && !error && visible.length === 0 && (
+        <div className="adm-empty">
+          No admission enquiries{stageFilter !== 'all' ? ' in this stage' : ''}.{' '}
+          <button type="button" className="btn btn--sm btn--accent" onClick={openCreateModal}>
+            <Plus size={11} aria-hidden /> New enquiry
+          </button>
+        </div>
+      )}
+
+      {!loading && !error && visible.length > 0 && view === 'list' && (
+        <div className="adm-list" role="list">
+          {visible.map((row) => {
+            const meta = getStatusMeta(row.status);
+            const toneKey = COLOR_TO_TONE[meta.color] || 'neutral';
+            const toneCls = TONE_CLASS[toneKey] || '';
+            return (
+              <button
+                key={row._id}
+                type="button"
+                className="adm-row"
+                role="listitem"
+                onClick={() => handleView(row)}
+              >
+                <span className="adm-row__id">{formatApplicationId(row)}</span>
+                <span>
+                  <div className="adm-row__name">{row.studentName || '—'}</div>
+                  <div className="adm-row__sub">
+                    {row.parentName || '—'} · {row.phoneNumber || '—'}
+                  </div>
+                </span>
+                <span className="adm-row__class">
+                  {row.classApplyingFor
+                    ? (Number.isNaN(Number(row.classApplyingFor))
+                        ? row.classApplyingFor
+                        : `Class ${row.classApplyingFor}`)
+                    : '—'}
+                </span>
+                <span className={`status ${toneCls}`}>{row.source || '—'}</span>
+                <span className={`status ${toneCls}`}>{meta.label}</span>
+                <span className={`status ${row.paymentStatus === 'paid' ? 'status--ok' : 'status--warn'}`}>
+                  {row.paymentStatus === 'paid'
+                    ? `Paid${row.paymentMode ? ` (${row.paymentMode})` : ''}`
+                    : 'Unpaid'}
+                </span>
+                <span
+                  className="adm-row__actions"
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
+                >
+                  <button
+                    type="button"
+                    className="iconbtn"
+                    aria-label="View admission"
+                    onClick={() => handleView(row)}
+                  >
+                    <Eye size={13} />
+                  </button>
+                  <button
+                    type="button"
+                    className="iconbtn"
+                    aria-label="Edit admission"
+                    onClick={() => handleEdit(row)}
+                  >
+                    <Edit size={13} />
+                  </button>
+                  <button
+                    type="button"
+                    className="iconbtn"
+                    aria-label="Delete admission"
+                    onClick={() => handleDelete(row)}
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {!loading && !error && visible.length > 0 && view === 'board' && (
+        <AdmissionTracker
+          admissions={visible}
+          onCardClick={handleView}
+          onStageChange={handleStageChange}
+        />
+      )}
 
       <AdmissionFormModal
         isOpen={formModalOpen}
@@ -271,16 +418,15 @@ const AdmissionsList = forwardRef(function AdmissionsList({ onSave }, ref) {
         isOpen={detailModalOpen}
         onClose={() => setDetailModalOpen(false)}
         admission={selectedForDetail}
-      />
-
-      <AdmissionTracker
-        admission={selectedForTracker}
-        isOpen={trackerOpen}
-        onClose={() => setTrackerOpen(false)}
+        onEdit={(row) => {
+          setDetailModalOpen(false);
+          handleEdit(row);
+        }}
+        onSaved={handleSaved}
       />
 
       <ConfirmDialog {...confirmState} onClose={closeConfirm} />
-    </>
+    </div>
   );
 });
 

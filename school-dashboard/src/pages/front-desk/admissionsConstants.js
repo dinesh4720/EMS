@@ -64,6 +64,50 @@ export const FALLBACK_CLASSES = [
 export const getStatusMeta = (value) =>
   STATUS_OPTIONS.find((s) => s.value === value) || { label: value, color: 'neutral' };
 
+/**
+ * Coarse-grained admission stages used for the .seg filter strip and the
+ * kanban tracker columns. Each fine-grained status (above) maps to exactly
+ * one stage here. Tones map to .status--{ok|warn|danger|info} pills.
+ */
+export const STAGE_OPTIONS = [
+  {
+    key: 'inquiry',
+    label: 'Inquiry',
+    tone: 'info',
+    statuses: ['inquiry-logged', 'form-sent'],
+  },
+  {
+    key: 'visited',
+    label: 'Visited',
+    tone: 'info',
+    statuses: ['form-submitted', 'documents-verified'],
+  },
+  {
+    key: 'applied',
+    label: 'Applied',
+    tone: 'warn',
+    statuses: ['test-scheduled', 'test-cleared', 'test-failed', 'test-no-show'],
+  },
+  {
+    key: 'admitted',
+    label: 'Admitted',
+    tone: 'ok',
+    statuses: ['admission-approved', 'fee-paid', 'student-admitted'],
+  },
+  {
+    key: 'rejected',
+    label: 'Rejected',
+    tone: 'danger',
+    statuses: ['admission-rejected'],
+  },
+];
+
+export const stageOfStatus = (status) =>
+  STAGE_OPTIONS.find((stage) => stage.statuses.includes(status))?.key || 'inquiry';
+
+export const defaultStatusForStage = (stageKey) =>
+  STAGE_OPTIONS.find((s) => s.key === stageKey)?.statuses?.[0] || 'inquiry-logged';
+
 export const isHigherSecondary = (className) => {
   if (!className) return false;
   const lower = String(className).toLowerCase();

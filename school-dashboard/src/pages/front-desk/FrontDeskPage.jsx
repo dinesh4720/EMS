@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Users, DoorOpen } from "lucide-react";
+import {
+  Users, DoorOpen, Calendar, GraduationCap, MessageSquare, Phone,
+} from "lucide-react";
 
 import useFrontDeskData, { ACTIVITY_TYPES } from "../../hooks/useFrontDeskData";
 import FrontDeskKpiStrip from "../../components/front-desk/FrontDeskKpiStrip";
@@ -10,9 +12,11 @@ import GatePassSheet from "../../components/front-desk/GatePassSheet";
 import ToolbarSearch from "../../components/ui/ToolbarSearch";
 
 const VALID_TYPES = new Set(["all", ...Object.values(ACTIVITY_TYPES)]);
+const ACTIVITY_PAGE_SIZE = 25;
 
-// Phase 9 — top-level Front Desk page. Single canonical surface;
-// activity type lives in URL via ?type=... so KPI cells become deep-links.
+// REVAMP-29 — Front Desk hub.
+// KPI strip (dp-metric pattern), quick actions (.optgrid), filterable activity
+// stream. Activity type lives in URL via ?type=... so KPI cells deep-link.
 export default function FrontDeskPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const type = (() => {
@@ -22,11 +26,18 @@ export default function FrontDeskPage() {
   const sheet = searchParams.get("sheet"); // "visitor" | "gatepass" | null
 
   const [search, setSearch] = useState(searchParams.get("q") || "");
+  const [visibleCount, setVisibleCount] = useState(ACTIVITY_PAGE_SIZE);
+  const activityRef = useRef(null);
 
   const { kpis, filtered, isLoading, refetch } = useFrontDeskData({
     type,
     search,
   });
+
+  // Reset paging when filter/search changes so users don't see stale offsets.
+  useEffect(() => {
+    setVisibleCount(ACTIVITY_PAGE_SIZE);
+  }, [type, search]);
 
   const setType = (next) => {
     setSearchParams(
@@ -61,11 +72,67 @@ export default function FrontDeskPage() {
     );
   };
 
+  const scrollToActivity = () => {
+    requestAnimationFrame(() => {
+      activityRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
   const todayLabel = new Date().toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",
     day: "numeric",
   });
+
+  // Dense quick actions — the two with sheets (visitor / gate pass) trigger
+  // creation; the rest jump-filter the activity stream and scroll into view.
+  const quickActions = [
+    {
+      key: "visitor",
+      label: "New visitor",
+      icon: Users,
+      action: () => openSheet("visitor"),
+      isActive: false,
+    },
+    {
+      key: "gatepass",
+      label: "Issue gate pass",
+      icon: DoorOpen,
+      action: () => openSheet("gatepass"),
+      isActive: false,
+    },
+    {
+      key: ACTIVITY_TYPES.APPOINTMENT,
+      label: "Appointments",
+      icon: Calendar,
+      action: () => { setType(ACTIVITY_TYPES.APPOINTMENT); scrollToActivity(); },
+      isActive: type === ACTIVITY_TYPES.APPOINTMENT,
+    },
+    {
+      key: ACTIVITY_TYPES.ADMISSION,
+      label: "Admissions",
+      icon: GraduationCap,
+      action: () => { setType(ACTIVITY_TYPES.ADMISSION); scrollToActivity(); },
+      isActive: type === ACTIVITY_TYPES.ADMISSION,
+    },
+    {
+      key: ACTIVITY_TYPES.FEEDBACK,
+      label: "Feedback",
+      icon: MessageSquare,
+      action: () => { setType(ACTIVITY_TYPES.FEEDBACK); scrollToActivity(); },
+      isActive: type === ACTIVITY_TYPES.FEEDBACK,
+    },
+    {
+      key: ACTIVITY_TYPES.CALL,
+      label: "Calls",
+      icon: Phone,
+      action: () => { setType(ACTIVITY_TYPES.CALL); scrollToActivity(); },
+      isActive: type === ACTIVITY_TYPES.CALL,
+    },
+  ];
+
+  const visible = filtered.slice(0, visibleCount);
+  const hasMore = filtered.length > visibleCount;
 
   return (
     <div className="page fd-page">
@@ -100,7 +167,24 @@ export default function FrontDeskPage() {
         onTypeChange={setType}
       />
 
-      <div className="toolbar" style={{ borderBottom: "none", paddingTop: 0 }}>
+      <section className="fd-quick" aria-label="Quick actions">
+        <div className="fd-quick__label">Quick actions</div>
+        <div className="optgrid">
+          {quickActions.map((q) => (
+            <button
+              key={q.key}
+              type="button"
+              className={`opt${q.isActive ? " is-active" : ""}`}
+              onClick={q.action}
+            >
+              <q.icon size={14} className="opt__icon" aria-hidden />
+              <span>{q.label}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <div ref={activityRef} className="toolbar" style={{ borderBottom: "none", paddingTop: 0 }}>
         <ToolbarSearch
           value={search}
           onChange={setSearch}
@@ -116,6 +200,7 @@ export default function FrontDeskPage() {
             { key: ACTIVITY_TYPES.VISITOR, label: "Visitors" },
             { key: ACTIVITY_TYPES.GATE_PASS, label: "Gate passes" },
             { key: ACTIVITY_TYPES.APPOINTMENT, label: "Appointments" },
+            { key: ACTIVITY_TYPES.ADMISSION, label: "Admissions" },
             { key: ACTIVITY_TYPES.FEEDBACK, label: "Feedback" },
             { key: ACTIVITY_TYPES.CALL, label: "Calls" },
           ].map((f) => (
@@ -138,7 +223,23 @@ export default function FrontDeskPage() {
           <div className="fd-table__empty">Loading activity…</div>
         </div>
       ) : (
-        <ActivityTable rows={filtered} />
+        <>
+          <ActivityTable rows={visible} />
+          {hasMore && (
+            <div className="fd-more">
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setVisibleCount((n) => n + ACTIVITY_PAGE_SIZE)}
+              >
+                Show more
+                <span className="mono tnum" style={{ marginLeft: 6, color: "var(--fg-subtle)" }}>
+                  ({filtered.length - visibleCount} more)
+                </span>
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       <VisitorSheet
