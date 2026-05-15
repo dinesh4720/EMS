@@ -1,14 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  Button, Input, Select, SelectItem, Textarea, Divider,
+  Button, Input, Select, SelectItem, Textarea, Divider, Avatar,
 } from "@heroui/react";
 import { transportApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
+import { useApp } from "../../context/AppContext";
 
 export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
   const { t } = useTranslation();
+  const { staff } = useApp();
+  const activeStaff = useMemo(() => (staff || []).filter((s) => s.status === "active"), [staff]);
   const isEdit = !!vehicle;
 
   const [form, setForm] = useState({
@@ -20,8 +23,10 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
     color: "",
     status: "active",
     notes: "",
-    driver: { name: "", phone: "", licenseNumber: "", licenseExpiry: "" },
-    conductor: { name: "", phone: "" },
+    driverId: "",
+    driverLicenseNumber: "",
+    driverLicenseExpiry: "",
+    conductorId: "",
   });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
@@ -39,23 +44,19 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
           color: vehicle.color || "",
           status: vehicle.status || "active",
           notes: vehicle.notes || "",
-          driver: {
-            name: vehicle.driver?.name || "",
-            phone: vehicle.driver?.phone || "",
-            licenseNumber: vehicle.driver?.licenseNumber || "",
-            licenseExpiry: vehicle.driver?.licenseExpiry?.split("T")[0] || "",
-          },
-          conductor: {
-            name: vehicle.conductor?.name || "",
-            phone: vehicle.conductor?.phone || "",
-          },
+          driverId: vehicle.driverId?._id || vehicle.driverId || "",
+          driverLicenseNumber: vehicle.driverLicenseNumber || "",
+          driverLicenseExpiry: vehicle.driverLicenseExpiry?.split("T")[0] || "",
+          conductorId: vehicle.conductorId?._id || vehicle.conductorId || "",
         });
       } else {
         setForm({
           registrationNumber: "", make: "", model: "", year: "", capacity: "", color: "",
           status: "active", notes: "",
-          driver: { name: "", phone: "", licenseNumber: "", licenseExpiry: "" },
-          conductor: { name: "", phone: "" },
+          driverId: "",
+          driverLicenseNumber: "",
+          driverLicenseExpiry: "",
+          conductorId: "",
         });
       }
     }
@@ -65,12 +66,6 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
     setForm((prev) => ({ ...prev, [field]: value }));
     setErrors((e) => ({ ...e, [field]: '' }));
   };
-
-  const updateDriver = (field, value) =>
-    setForm((prev) => ({ ...prev, driver: { ...prev.driver, [field]: value } }));
-
-  const updateConductor = (field, value) =>
-    setForm((prev) => ({ ...prev, conductor: { ...prev.conductor, [field]: value } }));
 
   const handleSave = async () => {
     if (!form.registrationNumber.trim()) {
@@ -90,23 +85,11 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
         color: form.color.trim() || undefined,
         status: form.status,
         notes: form.notes.trim() || undefined,
+        driverId: form.driverId || undefined,
+        driverLicenseNumber: form.driverLicenseNumber.trim() || undefined,
+        driverLicenseExpiry: form.driverLicenseExpiry || undefined,
+        conductorId: form.conductorId || undefined,
       };
-
-      // Only include driver/conductor if any field is filled
-      if (form.driver.name || form.driver.phone || form.driver.licenseNumber) {
-        payload.driver = {
-          name: form.driver.name.trim() || undefined,
-          phone: form.driver.phone.trim() || undefined,
-          licenseNumber: form.driver.licenseNumber.trim() || undefined,
-          licenseExpiry: form.driver.licenseExpiry || undefined,
-        };
-      }
-      if (form.conductor.name || form.conductor.phone) {
-        payload.conductor = {
-          name: form.conductor.name.trim() || undefined,
-          phone: form.conductor.phone.trim() || undefined,
-        };
-      }
 
       if (isEdit) {
         await transportApi.updateVehicle(vehicle._id, payload);
@@ -174,10 +157,23 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
           <div>
             <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-3">{t('pages.driverDetails')}</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input label={t('pages.driverName')} value={form.driver.name} onValueChange={(v) => updateDriver("name", v)} />
-              <Input label={t('pages.phone1')} value={form.driver.phone} onValueChange={(v) => updateDriver("phone", v)} />
-              <Input label={t('pages.licenseNumber')} value={form.driver.licenseNumber} onValueChange={(v) => updateDriver("licenseNumber", v)} />
-              <Input label={t('pages.licenseExpiry')} type="date" value={form.driver.licenseExpiry} onValueChange={(v) => updateDriver("licenseExpiry", v)} />
+              <Select
+                label={t('pages.selectDriver')}
+                placeholder={t('pages.chooseStaffMember')}
+                selectedKeys={form.driverId ? [form.driverId] : []}
+                onSelectionChange={(keys) => updateField("driverId", [...keys][0] || "")}
+              >
+                {activeStaff.map((s) => (
+                  <SelectItem key={s._id || s.id} textValue={s.name}>
+                    <div className="flex items-center gap-2">
+                      <Avatar src={s.picture || s.photo} name={s.name} className="w-6 h-6 text-tiny" />
+                      <span>{s.name}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </Select>
+              <Input label={t('pages.licenseNumber')} value={form.driverLicenseNumber} onValueChange={(v) => updateField("driverLicenseNumber", v)} />
+              <Input label={t('pages.licenseExpiry')} type="date" value={form.driverLicenseExpiry} onValueChange={(v) => updateField("driverLicenseExpiry", v)} />
             </div>
           </div>
 
@@ -186,10 +182,21 @@ export default function VehicleModal({ isOpen, onClose, vehicle, onSaved }) {
           {/* Conductor */}
           <div>
             <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-3">{t('pages.conductorDetails')}</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input label={t('pages.conductorName')} value={form.conductor.name} onValueChange={(v) => updateConductor("name", v)} />
-              <Input label={t('pages.phone1')} value={form.conductor.phone} onValueChange={(v) => updateConductor("phone", v)} />
-            </div>
+            <Select
+              label={t('pages.selectConductor')}
+              placeholder={t('pages.chooseStaffMember')}
+              selectedKeys={form.conductorId ? [form.conductorId] : []}
+              onSelectionChange={(keys) => updateField("conductorId", [...keys][0] || "")}
+            >
+              {activeStaff.map((s) => (
+                <SelectItem key={s._id || s.id} textValue={s.name}>
+                  <div className="flex items-center gap-2">
+                    <Avatar src={s.picture || s.photo} name={s.name} className="w-6 h-6 text-tiny" />
+                    <span>{s.name}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </Select>
           </div>
         </ModalBody>
         <ModalFooter>
