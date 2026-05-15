@@ -41,6 +41,31 @@ const healthInfoSchema = z.object({
   emergencyContacts: z.array(healthEmergencyContactSchema).optional(),
 }).optional();
 
+/**
+ * Strip empty health info items before sending to backend.
+ * An allergy/medication is empty if name is blank.
+ * An emergency contact is empty if name or phone is blank.
+ */
+export function cleanHealthInfo(healthInfo) {
+  if (!healthInfo) return undefined;
+  const cleaned = {
+    allergies: (healthInfo.allergies || []).filter((a) => a.name?.trim()),
+    medications: (healthInfo.medications || []).filter((m) => m.name?.trim()),
+    emergencyContacts: (healthInfo.emergencyContacts || []).filter(
+      (c) => c.name?.trim() && c.phone?.trim()
+    ),
+  };
+  // If all arrays are empty, omit healthInfo entirely
+  if (
+    cleaned.allergies.length === 0 &&
+    cleaned.medications.length === 0 &&
+    cleaned.emergencyContacts.length === 0
+  ) {
+    return undefined;
+  }
+  return cleaned;
+}
+
 // ── Parent/Guardian validation schema ──
 export const parentZodSchema = z.object({
   name: z.string().min(1, 'Parent name is required').max(100, 'Name must not exceed 100 characters'),
@@ -119,6 +144,23 @@ export function validateStep(stepNum, formData) {
         newErrors[`additionalParentEmail_${i + 1}`] = 'Invalid email format';
       }
     });
+    // Validate health info: empty cards are fine (they get stripped), but
+    // partially-filled cards with missing required fields should block.
+    const hi = formData.healthInfo;
+    if (hi) {
+      const emptyAllergy = (hi.allergies || []).findIndex((a) => !a.name?.trim());
+      const emptyMed = (hi.medications || []).findIndex((m) => !m.name?.trim());
+      const emptyContact = (hi.emergencyContacts || []).findIndex(
+        (c) => !c.name?.trim() || !c.phone?.trim()
+      );
+      if (emptyAllergy !== -1) {
+        newErrors.healthInfo = `Allergy #${emptyAllergy + 1} is missing a name`;
+      } else if (emptyMed !== -1) {
+        newErrors.healthInfo = `Medication #${emptyMed + 1} is missing a name`;
+      } else if (emptyContact !== -1) {
+        newErrors.healthInfo = `Emergency contact #${emptyContact + 1} is missing a name or phone`;
+      }
+    }
   }
 
   return { isValid: Object.keys(newErrors).length === 0, errors: newErrors };
@@ -180,7 +222,7 @@ export function buildStudentPayload(formData, {
     medicalConditions: formData.medicalConditions,
     emergencyContactName: formData.emergencyContactName,
     emergencyContactPhone: formData.emergencyContactPhone,
-    healthInfo: formData.healthInfo,
+    healthInfo: cleanHealthInfo(formData.healthInfo),
     alternatePhone: formData.alternatePhone,
     isWhatsapp: formData.isWhatsapp,
     whatsappNumber: formData.whatsappNumber,
