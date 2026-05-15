@@ -5,11 +5,18 @@ import { transportApi } from "../../services/api";
 import toast from "react-hot-toast";
 import VehicleModal from "./VehicleModal";
 import { useTranslation } from 'react-i18next';
+import { useApp } from "../../context/AppContext";
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 
 export default function VehiclesTab() {
   const { t } = useTranslation();
+  const { staff } = useApp();
+  const staffMap = useMemo(() => {
+    const map = {};
+    (staff || []).forEach((s) => { map[s._id || s.id] = s; });
+    return map;
+  }, [staff]);
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -39,12 +46,17 @@ export default function VehiclesTab() {
     if (statusFilter !== "all") list = list.filter((v) => v.status === statusFilter);
     if (search.trim()) {
       const q = search.toLowerCase();
-      list = list.filter((v) =>
-        v.registrationNumber?.toLowerCase().includes(q) ||
-        v.make?.toLowerCase().includes(q) ||
-        v.model?.toLowerCase().includes(q) ||
-        v.driver?.name?.toLowerCase().includes(q)
-      );
+      list = list.filter((v) => {
+        const driverName = v.driverId?.name || staffMap[v.driverId]?.name || "";
+        const conductorName = v.conductorId?.name || staffMap[v.conductorId]?.name || "";
+        return (
+          v.registrationNumber?.toLowerCase().includes(q) ||
+          v.make?.toLowerCase().includes(q) ||
+          v.model?.toLowerCase().includes(q) ||
+          driverName.toLowerCase().includes(q) ||
+          conductorName.toLowerCase().includes(q)
+        );
+      });
     }
     return list;
   }, [vehicles, statusFilter, search]);
@@ -151,19 +163,19 @@ export default function VehiclesTab() {
 
               {/* Driver & Conductor */}
               <div className="mt-3 pt-3 border-t border-gray-50 dark:border-zinc-800 space-y-1.5">
-                {vehicle.driver?.name && (
+                {(vehicle.driverId?.name || staffMap[vehicle.driverId]?.name) && (
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-500 dark:text-zinc-400">{t('pages.driver')}</span>
-                    <span className="text-gray-900 dark:text-zinc-100 font-medium">{vehicle.driver.name}</span>
+                    <span className="text-gray-900 dark:text-zinc-100 font-medium">{vehicle.driverId?.name || staffMap[vehicle.driverId]?.name}</span>
                   </div>
                 )}
-                {vehicle.conductor?.name && (
+                {(vehicle.conductorId?.name || staffMap[vehicle.conductorId]?.name) && (
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-500 dark:text-zinc-400">{t('pages.conductor')}</span>
-                    <span className="text-gray-900 dark:text-zinc-100 font-medium">{vehicle.conductor.name}</span>
+                    <span className="text-gray-900 dark:text-zinc-100 font-medium">{vehicle.conductorId?.name || staffMap[vehicle.conductorId]?.name}</span>
                   </div>
                 )}
-                {!vehicle.driver?.name && !vehicle.conductor?.name && (
+                {!vehicle.driverId && !vehicle.conductorId && (
                   <p className="text-xs text-gray-400 dark:text-zinc-500 italic">{t('pages.noStaffAssigned')}</p>
                 )}
               </div>
