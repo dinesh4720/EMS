@@ -227,8 +227,8 @@ export default function Payments() {
 
       // Amount range filter
       let matchesAmount = true;
-      if (amountMin) matchesAmount = p.pending >= parseInt(amountMin);
-      if (amountMax) matchesAmount = matchesAmount && p.pending <= parseInt(amountMax);
+      if (amountMin) matchesAmount = p.pending >= parseFloat(amountMin);
+      if (amountMax) matchesAmount = matchesAmount && p.pending <= parseFloat(amountMax);
 
       return matchesSearch && matchesStatus && matchesDate && matchesAmount;
     });

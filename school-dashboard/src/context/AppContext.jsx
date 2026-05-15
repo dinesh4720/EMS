@@ -109,6 +109,7 @@ function AppContextCore({ children }) {
     salarySettings,
     staffSalaries,
     payrollHistory,
+    loadingSalarySettings,
     updateSalarySettings,
     updateStaffSalary,
     processPayroll,
@@ -494,7 +495,7 @@ function AppContextCore({ children }) {
       // Fee Heads actions
       addFeeHead, updateFeeHead, deleteFeeHead,
       // Salary
-      salarySettings, staffSalaries, payrollHistory,
+      salarySettings, staffSalaries, payrollHistory, loadingSalarySettings,
       updateSalarySettings, updateStaffSalary, processPayroll, fetchPayrollHistory, getPayrollForMonth,
       // Academic & other
       lessonPlans, documents, remarks,
