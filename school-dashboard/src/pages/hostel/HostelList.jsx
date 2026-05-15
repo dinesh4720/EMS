@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { Input, Button, Select, SelectItem, useDisclosure, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Chip } from "@heroui/react";
+import { Input, Button, Select, SelectItem, useDisclosure, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Chip, Avatar } from "@heroui/react";
 import { Plus, Search, Building2, Edit2, Trash2, Users, DoorOpen } from "lucide-react";
-import { hostelApi } from "../../services/api";
+import { hostelApi, staffApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
@@ -9,7 +9,7 @@ import { ConfirmDialog, EmptyState, ErrorState } from '../../components/ui';
 import { hostelSchema, parseFormSchema } from '../../validators/formSchemas';
 
 const INITIAL_FORM = {
-  name: "", type: "boys", wardenName: "", wardenPhone: "", wardenEmail: "",
+  name: "", type: "boys", wardenId: "",
   address: "", description: "",
 };
 
@@ -27,6 +27,7 @@ export default function HostelList() {
   const [saving, setSaving] = useState(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [staffList, setStaffList] = useState([]);
 
   useEffect(() => {
     const timerId = setTimeout(() => { setSearch(searchInput); }, 300);
@@ -52,10 +53,23 @@ export default function HostelList() {
 
   useEffect(() => { fetchHostels(); }, [fetchHostels]);
 
+  useEffect(() => {
+    let cancelled = false;
+    staffApi.getAll().then((data) => {
+      if (cancelled) return;
+      setStaffList(Array.isArray(data) ? data : data?.data || []);
+    }).catch(() => {
+      if (!cancelled) toast.error('Failed to load staff list');
+    });
+    return () => { cancelled = true; };
+  }, []);
+
   const validateForm = () => {
-    const { success, errors: zodErrors } = parseFormSchema(hostelSchema, formData);
-    setErrors(zodErrors);
-    return success;
+    const e = {};
+    if (!formData.name.trim()) e.name = "Name is required";
+    if (!formData.type) e.type = "Type is required";
+    setErrors(e);
+    return Object.keys(e).length === 0;
   };
 
   const handleSubmit = async (e) => {
@@ -63,11 +77,13 @@ export default function HostelList() {
     if (!validateForm()) return;
     setSaving(true);
     try {
+      const payload = { ...formData };
+      if (!payload.wardenId) delete payload.wardenId;
       if (editingId) {
-        await hostelApi.updateHostel(editingId, formData);
+        await hostelApi.updateHostel(editingId, payload);
         toast.success(t('toast.success.hostelUpdated'));
       } else {
-        await hostelApi.createHostel(formData);
+        await hostelApi.createHostel(payload);
         toast.success(t('toast.success.hostelCreated'));
       }
       handleClose();
@@ -83,8 +99,8 @@ export default function HostelList() {
     setEditingId(hostel._id);
     setFormData({
       name: hostel.name || "", type: hostel.type || "boys",
-      wardenName: hostel.wardenName || "", wardenPhone: hostel.wardenPhone || "",
-      wardenEmail: hostel.wardenEmail || "", address: hostel.address || "",
+      wardenId: hostel.wardenId?._id || hostel.wardenId || "",
+      address: hostel.address || "",
       description: hostel.description || "",
     });
     setErrors({});
@@ -119,6 +135,12 @@ export default function HostelList() {
   };
 
   const typeColors = { boys: "primary", girls: "secondary", mixed: "warning" };
+
+  const getWardenName = (hostel) => {
+    if (hostel.wardenId?.name) return hostel.wardenId.name;
+    if (typeof hostel.wardenId === 'object' && hostel.wardenId?.name) return hostel.wardenId.name;
+    return hostel.wardenName || '';
+  };
 
   if (isLoading) return <CardGridPageSkeleton title={false} cards={6} columns="grid-cols-1 md:grid-cols-2 lg:grid-cols-3" />;
 
@@ -197,8 +219,9 @@ export default function HostelList() {
                   <Users size={14} />
                   <span>{hostel.occupiedBeds || 0} / {hostel.totalCapacity || 0} beds occupied</span>
                 </div>
-                {hostel.wardenName && (
-                  <p className="text-fg-muted">Warden: {hostel.wardenName}</p>
+                {getWardenName(hostel) && (
+                  <p className="text-fg-muted">Warden: {getWardenName(hostel)}</p>
+                )}
                 )}
               </div>
             </div>
@@ -240,24 +263,27 @@ export default function HostelList() {
               <SelectItem key="girls">{t('pages.girls')}</SelectItem>
               <SelectItem key="mixed">{t('pages.mixed')}</SelectItem>
             </Select>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input
-                label={t('pages.wardenName')}
-                value={formData.wardenName}
-                onValueChange={(v) => setFormData(p => ({ ...p, wardenName: v }))}
-              />
-              <Input
-                label={t('pages.wardenPhone')}
-                value={formData.wardenPhone}
-                onValueChange={(v) => setFormData(p => ({ ...p, wardenPhone: v }))}
-              />
-            </div>
-            <Input
-              label={t('pages.wardenEmail')}
-              value={formData.wardenEmail}
-              onValueChange={(v) => setFormData(p => ({ ...p, wardenEmail: v }))}
-              isInvalid={!!errors.wardenEmail} errorMessage={errors.wardenEmail}
-            />
+            <Select
+              label="Warden"
+              selectedKeys={formData.wardenId ? [formData.wardenId] : []}
+              onSelectionChange={(keys) => {
+                const value = [...keys][0] || "";
+                setFormData(p => ({ ...p, wardenId: value }));
+              }}
+            >
+              {staffList.map((staff) => (
+                <SelectItem key={staff.id || staff._id} textValue={staff.name}>
+                  <div className="flex items-center gap-2">
+                    <Avatar
+                      name={staff.name}
+                      src={staff.photo || staff.picture}
+                      className="w-6 h-6 text-tiny"
+                    />
+                    <span>{staff.name}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </Select>
             <Input
               label={t('pages.address2')}
               value={formData.address}

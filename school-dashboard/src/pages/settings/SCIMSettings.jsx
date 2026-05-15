@@ -21,14 +21,18 @@ export default function SCIMSettings() {
 
   // Load config on first render
   useEffect(() => {
-    ssoApi.getConfig().then((data) => {
+    const controller = new AbortController();
+    ssoApi.getConfig({ signal: controller.signal }).then((data) => {
+      if (controller.signal.aborted) return;
       const scim = data?.ssoConfig?.scim || {};
       setScimEnabled(scim.enabled || false);
       setHasToken(scim.hasToken || false);
       setInitialized(true);
-    }).catch(() => {
+    }).catch((err) => {
+      if (err.name === 'AbortError') return;
       setInitialized(true);
     });
+    return () => controller.abort();
   }, []);
 
   const handleRevealToken = useCallback(async () => {

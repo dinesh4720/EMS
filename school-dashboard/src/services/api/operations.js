@@ -17,7 +17,7 @@ export const announcementsApi = {
     return request(`/announcements${query ? `?${query}` : ''}`);
   },
   getById: (id) => request(`/announcements/${id}`),
-  create: (data) => request('/announcements', { method: 'POST', body: JSON.stringify(data) }),
+  create: (data, options) => request('/announcements', { method: 'POST', body: JSON.stringify(data), ...(options?.signal ? { signal: options.signal } : {}) }),
   update: (id, data) => request(`/announcements/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id) => request(`/announcements/${id}`, { method: 'DELETE' }),
   send: (id) => request(`/announcements/${id}/send`, { method: 'POST' }),

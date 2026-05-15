@@ -3,13 +3,13 @@ import { request } from './core.js';
 export const settingsApi = {
   // School Settings
   getSchoolSettings: (options) => options?.signal ? request('/settings/school', { signal: options.signal }) : request('/settings/school'),
-  updateSchoolSettings: (data) => request('/settings/school', { method: 'PUT', body: JSON.stringify(data) }),
+  updateSchoolSettings: (data, options) => request('/settings/school', { method: 'PUT', body: JSON.stringify(data), ...(options?.signal ? { signal: options.signal } : {}) }),
 
   // Holidays
   getHolidays: (options) => options?.signal ? request('/settings/holidays', { signal: options.signal }) : request('/settings/holidays'),
-  createHoliday: (data) => request('/settings/holidays', { method: 'POST', body: JSON.stringify(data) }),
-  updateHoliday: (id, data) => request(`/settings/holidays/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  deleteHoliday: (id) => request(`/settings/holidays/${id}`, { method: 'DELETE' }),
+  createHoliday: (data, options) => request('/settings/holidays', { method: 'POST', body: JSON.stringify(data), ...(options?.signal ? { signal: options.signal } : {}) }),
+  updateHoliday: (id, data, options) => request(`/settings/holidays/${id}`, { method: 'PUT', body: JSON.stringify(data), ...(options?.signal ? { signal: options.signal } : {}) }),
+  deleteHoliday: (id, options) => request(`/settings/holidays/${id}`, { method: 'DELETE', ...(options?.signal ? { signal: options.signal } : {}) }),
 
   // Leave Types
   getLeaveTypes: (options) => options?.signal ? request('/settings/leave-types', { signal: options.signal }) : request('/settings/leave-types'),
@@ -25,9 +25,9 @@ export const settingsApi = {
 
   // Subjects
   getSubjects: (options) => options?.signal ? request('/settings/subjects', { signal: options.signal }) : request('/settings/subjects'),
-  createSubject: (data) => request('/settings/subjects', { method: 'POST', body: JSON.stringify(data) }),
-  updateSubject: (id, data) => request(`/settings/subjects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  deleteSubject: (id) => request(`/settings/subjects/${id}`, { method: 'DELETE' }),
+  createSubject: (data, options) => request('/settings/subjects', { method: 'POST', body: JSON.stringify(data), ...(options?.signal ? { signal: options.signal } : {}) }),
+  updateSubject: (id, data, options) => request(`/settings/subjects/${id}`, { method: 'PUT', body: JSON.stringify(data), ...(options?.signal ? { signal: options.signal } : {}) }),
+  deleteSubject: (id, options) => request(`/settings/subjects/${id}`, { method: 'DELETE', ...(options?.signal ? { signal: options.signal } : {}) }),
   syncSubjectsToClasses: () => request('/settings/subjects/sync', { method: 'POST' }),
 
   // Salary Templates
@@ -41,6 +41,10 @@ export const settingsApi = {
   updatePayrollSettings: (data) => request('/settings/payroll', { method: 'PUT', body: JSON.stringify(data) }),
   getPayrollReminder: () => request('/settings/payroll/reminder'),
 
+  // Salary Components
+  getSalaryComponents: () => request('/settings/salary-components'),
+  updateSalaryComponents: (data) => request('/settings/salary-components', { method: 'PUT', body: JSON.stringify(data) }),
+
   // Admission Form Configuration
   getAdmissionFormConfig: (fieldType) => request(`/settings/admission-form-config${fieldType ? `?fieldType=${fieldType}` : ''}`),
   createAdmissionFormConfig: (data) => request('/settings/admission-form-config', { method: 'POST', body: JSON.stringify(data) }),
@@ -48,20 +52,21 @@ export const settingsApi = {
   deleteAdmissionFormConfig: (id) => request(`/settings/admission-form-config/${id}`, { method: 'DELETE' }),
 
   // Admission ID Configuration
-  getAdmissionIdConfig: () => request('/settings/admission-id-config'),
+  getAdmissionIdConfig: (options) => options?.signal ? request('/settings/admission-id-config', { signal: options.signal }) : request('/settings/admission-id-config'),
   updateAdmissionIdConfig: (data) => request('/settings/admission-id-config', { method: 'PUT', body: JSON.stringify(data) }),
   previewAdmissionId: (data) => request('/settings/admission-id-config/preview', { method: 'POST', body: JSON.stringify(data) }),
 
   // Roll Number Configuration
-  getRollNumberConfig: () => request('/settings/roll-number-config'),
+  getRollNumberConfig: (options) => options?.signal ? request('/settings/roll-number-config', { signal: options.signal }) : request('/settings/roll-number-config'),
   updateRollNumberConfig: (data) => request('/settings/roll-number-config', { method: 'PUT', body: JSON.stringify(data) }),
 
   // Document Configuration
-  getDocumentConfig: () => request('/settings/document-config'),
+  getDocumentConfig: (options) => options?.signal ? request('/settings/document-config', { signal: options.signal }) : request('/settings/document-config'),
   createDocumentConfig: (data) => request('/settings/document-config', { method: 'POST', body: JSON.stringify(data) }),
   updateDocumentConfig: (id, data) => request(`/settings/document-config/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   bulkUpdateDocumentConfig: (configs) => request('/settings/document-config/bulk', { method: 'PUT', body: JSON.stringify({ configs }) }),
   deleteDocumentConfig: (id) => request(`/settings/document-config/${id}`, { method: 'DELETE' }),
+  saveDocumentConfigAtomic: (configs) => request('/settings/document-config/atomic', { method: 'PUT', body: JSON.stringify({ configs }) }),
 
   // Communication Settings
   getCommunicationSettings: () => request('/settings/communication'),
@@ -198,10 +203,10 @@ export const featureFlagsAdminApi = {
 
 // SSO & SCIM API
 export const ssoApi = {
-  getConfig: () => request('/auth/sso/config'),
+  getConfig: (options) => options?.signal ? request('/auth/sso/config', { signal: options.signal }) : request('/auth/sso/config'),
   updateConfig: (data) => request('/auth/sso/config', { method: 'PUT', body: JSON.stringify(data) }),
-  getScimToken: () => request('/auth/sso/scim/token'),
-  regenerateScimToken: () => request('/auth/sso/scim/regenerate-token', { method: 'POST' }),
+  getScimToken: (options) => options?.signal ? request('/auth/sso/scim/token', { signal: options.signal }) : request('/auth/sso/scim/token'),
+  regenerateScimToken: (options) => request('/auth/sso/scim/regenerate-token', { method: 'POST', ...(options?.signal ? { signal: options.signal } : {}) }),
 };
 
 // Calendar Events API

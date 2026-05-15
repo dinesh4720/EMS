@@ -1,6 +1,7 @@
-import { useState, useCallback } from "react";
-import { payrollApi } from "../../services/api";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { payrollApi, settingsApi } from "../../services/api";
 import logger from "../../utils/logger";
+import toast from "react-hot-toast";
 
 const DEFAULT_SALARY_SETTINGS = {
   disburseDate: "",
@@ -18,22 +19,71 @@ const DEFAULT_SALARY_SETTINGS = {
 };
 
 export function useSalaryState() {
-  // salarySettings stays local — no backend endpoint for salary component config yet
   const [salarySettings, setSalarySettings] = useState(DEFAULT_SALARY_SETTINGS);
   const [staffSalaries, setStaffSalaries] = useState({});
   const [payrollHistory, setPayrollHistory] = useState([]);
+  const [loadingSalarySettings, setLoadingSalarySettings] = useState(false);
+  const prevSettingsRef = useRef(null);
 
-  const updateSalarySettings = (type, action, item) => {
-    setSalarySettings((prev) => {
-      if (action === "add") {
-        return { ...prev, [type]: [...(prev[type] || []), { id: item.name.toLowerCase().replace(/\s+/g, ""), ...item }] };
-      } else if (action === "remove") {
-        return { ...prev, [type]: (prev[type] || []).filter((i) => i.id !== item.id) };
-      } else if (action === "update") {
-        return { ...prev, ...item };
+  // Fetch salary components from backend on mount
+  useEffect(() => {
+    let cancelled = false;
+    const fetchSalaryComponents = async () => {
+      try {
+        setLoadingSalarySettings(true);
+        const res = await settingsApi.getSalaryComponents();
+        if (!cancelled) {
+          const data = res?.data;
+          if (data && (Array.isArray(data.earnings) || Array.isArray(data.deductions))) {
+            setSalarySettings((prev) => ({
+              ...prev,
+              earnings: Array.isArray(data.earnings) ? data.earnings : prev.earnings,
+              deductions: Array.isArray(data.deductions) ? data.deductions : prev.deductions,
+            }));
+          }
+        }
+      } catch (err) {
+        logger.error("Failed to fetch salary components:", err);
+        // Fallback: keep local defaults
+      } finally {
+        if (!cancelled) setLoadingSalarySettings(false);
       }
-      return prev;
-    });
+    };
+    fetchSalaryComponents();
+    return () => { cancelled = true; };
+  }, []);
+
+  const updateSalarySettings = async (type, action, item) => {
+    // Build next state optimistically
+    const nextState = { ...salarySettings };
+    if (action === "add") {
+      const newItem = { id: item.name.toLowerCase().replace(/\s+/g, ""), ...item };
+      nextState[type] = [...(nextState[type] || []), newItem];
+    } else if (action === "remove") {
+      nextState[type] = (nextState[type] || []).filter((i) => i.id !== item.id);
+    } else if (action === "update") {
+      Object.assign(nextState, item);
+    }
+
+    // Optimistically update local state
+    prevSettingsRef.current = salarySettings;
+    setSalarySettings(nextState);
+
+    try {
+      // Persist to backend
+      await settingsApi.updateSalaryComponents({
+        earnings: nextState.earnings,
+        deductions: nextState.deductions,
+      });
+    } catch (err) {
+      logger.error("Failed to persist salary components:", err);
+      toast.error("Failed to save salary component. Changes reverted.");
+      // Rollback on error
+      if (prevSettingsRef.current) {
+        setSalarySettings(prevSettingsRef.current);
+      }
+      throw err;
+    }
   };
 
   const updateStaffSalary = (staffId, salaryData) => {
@@ -70,6 +120,7 @@ export function useSalaryState() {
     salarySettings,
     staffSalaries,
     payrollHistory,
+    loadingSalarySettings,
     updateSalarySettings,
     updateStaffSalary,
     processPayroll,

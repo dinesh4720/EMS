@@ -111,9 +111,9 @@ export function SettingsProvider({ children }) {
   }, [getIsBeforeSchoolHours]);
 
   // School Settings functions
-  const updateSchoolSettings = async (updates) => {
+  const updateSchoolSettings = useCallback(async (updates, options = {}) => {
     try {
-      const updated = await settingsApi.updateSchoolSettings(updates);
+      const updated = await settingsApi.updateSchoolSettings(updates, options);
       setSchoolSettings((prev) => ({ ...prev, ...updated }));
       void invalidateSettingsData();
       toast.success(t('toast.success.schoolSettingsUpdatedSuccessfully', 'School settings updated successfully'));
@@ -123,11 +123,11 @@ export function SettingsProvider({ children }) {
       toast.error(t('toast.error.failedToUpdateSchoolSettings', 'Failed to update school settings'));
       throw err;
     }
-  };
+  }, [t, invalidateSettingsData]);
 
-  const addSubject = async (subject) => {
+  const addSubject = useCallback(async (subject, options = {}) => {
     try {
-      const result = await settingsApi.createSubject(subject);
+      const result = await settingsApi.createSubject(subject, options);
       // Backend now returns { subjects, classesUpdated }
       const subjects = Array.isArray(result) ? result : result.subjects || result;
       const classesUpdated = result.classesUpdated || 0;
@@ -150,11 +150,11 @@ export function SettingsProvider({ children }) {
       setNextSubjectId((prev) => prev + 1);
       return subjectWithId;
     }
-  };
+  }, [t, invalidateSettingsData, nextSubjectId]);
 
-  const updateSubject = async (id, updates) => {
+  const updateSubject = useCallback(async (id, updates, options = {}) => {
     try {
-      const result = await settingsApi.updateSubject(id, updates);
+      const result = await settingsApi.updateSubject(id, updates, options);
       const subjects = Array.isArray(result) ? result : result.subjects || result;
       const classesUpdated = result.classesUpdated || 0;
       setSchoolSettings((prev) => ({ ...prev, subjects }));
@@ -176,11 +176,11 @@ export function SettingsProvider({ children }) {
         }),
       }));
     }
-  };
+  }, [t, invalidateSettingsData]);
 
-  const deleteSubject = async (id) => {
+  const deleteSubject = useCallback(async (id, options = {}) => {
     try {
-      const result = await settingsApi.deleteSubject(id);
+      const result = await settingsApi.deleteSubject(id, options);
       const subjects = Array.isArray(result) ? result : result.subjects || result;
       const classesUpdated = result.classesUpdated || 0;
       setSchoolSettings((prev) => ({ ...prev, subjects }));
@@ -194,10 +194,10 @@ export function SettingsProvider({ children }) {
       toast.error(t('toast.error.failedToDeleteSubject', 'Failed to delete subject'));
       throw err;
     }
-  };
+  }, [t, invalidateSettingsData]);
 
   // Event functions
-  const addEvent = async (newEvent) => {
+  const addEvent = useCallback(async (newEvent, options = {}) => {
     if (newEvent.type === "holiday") {
       try {
         const holidayData = {
@@ -205,7 +205,7 @@ export function SettingsProvider({ children }) {
           date: newEvent.date,
           type: newEvent.holidayType || "National",
         };
-        const created = await settingsApi.createHoliday(holidayData);
+        const created = await settingsApi.createHoliday(holidayData, options);
         const eventWithId = {
           id: created.id,
           title: created.name,
@@ -246,7 +246,7 @@ export function SettingsProvider({ children }) {
           startTime: newEvent.startTime || "",
           endTime: newEvent.endTime || "",
           allDay: newEvent.allDay || false,
-        });
+        }, options);
         // Replace temp event with the real one from API
         setEvents((prev) => prev.map((e) => (e.id === localEvent.id ? created : e)));
         void invalidateSettingsData();
@@ -258,9 +258,9 @@ export function SettingsProvider({ children }) {
         return localEvent;
       }
     }
-  };
+  }, [t, invalidateSettingsData]);
 
-  const updateEvent = async (id, updates) => {
+  const updateEvent = useCallback(async (id, updates, options = {}) => {
     const event = events.find((e) => e.id === id);
     if (event && event.type === "holiday") {
       try {
@@ -269,7 +269,7 @@ export function SettingsProvider({ children }) {
           date: updates.date || event.date,
           type: updates.holidayType || event.holidayType,
         };
-        await settingsApi.updateHoliday(id, holidayData);
+        await settingsApi.updateHoliday(id, holidayData, options);
         setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, ...updates } : e)));
         void invalidateSettingsData();
         toast.success(t('toast.success.holidayUpdatedSuccessfully', 'Holiday updated successfully'));
@@ -280,7 +280,7 @@ export function SettingsProvider({ children }) {
       }
     } else {
       try {
-        await calendarEventsApi.update(id, updates);
+        await calendarEventsApi.update(id, updates, options);
         setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, ...updates } : e)));
         void invalidateSettingsData();
         toast.success(t('toast.success.eventUpdatedSuccessfully', 'Event updated successfully'));
@@ -290,13 +290,13 @@ export function SettingsProvider({ children }) {
         throw err;
       }
     }
-  };
+  }, [events, t, invalidateSettingsData]);
 
-  const deleteEvent = async (id) => {
+  const deleteEvent = useCallback(async (id, options = {}) => {
     const event = events.find((e) => e.id === id);
     if (event && event.type === "holiday") {
       try {
-        await settingsApi.deleteHoliday(id);
+        await settingsApi.deleteHoliday(id, options);
         setEvents((prev) => prev.filter((e) => e.id !== id));
         void invalidateSettingsData();
         toast.success(t('toast.success.holidayDeletedSuccessfully', 'Holiday deleted successfully'));
@@ -307,7 +307,7 @@ export function SettingsProvider({ children }) {
       }
     } else {
       try {
-        await calendarEventsApi.delete(id);
+        await calendarEventsApi.delete(id, options);
         setEvents((prev) => prev.filter((e) => e.id !== id));
         void invalidateSettingsData();
         toast.success(t('toast.success.eventDeletedSuccessfully', 'Event deleted successfully'));
@@ -317,17 +317,19 @@ export function SettingsProvider({ children }) {
         throw err;
       }
     }
-  };
+  }, [events, t, invalidateSettingsData]);
 
-  const getEventsForDate = (date) =>
-    Array.isArray(events) ? events.filter((e) => e.date === date) : [];
+  const getEventsForDate = useCallback(
+    (date) => (Array.isArray(events) ? events.filter((e) => e.date === date) : []),
+    [events]
+  );
 
   // Fee functions
-  const addFeePayment = async (payment) => {
+  const addFeePayment = useCallback(async (payment) => {
     const localPayment = { ...payment, id: payment.id || `temp-${Date.now()}` };
     setFeePayments((prev) => [...prev, localPayment]);
     try {
-      const created = await feesApi.createPayment(payment);
+      const created = await feesApi.createPayment(payment, options);
       setFeePayments((prev) => prev.map((p) => (p.id === localPayment.id ? created : p)));
       void invalidateSettingsData();
       return created;
@@ -336,24 +338,27 @@ export function SettingsProvider({ children }) {
       toast.error(t('toast.error.feePaymentSavedLocally', 'Fee payment saved locally (server unavailable)'));
       return localPayment;
     }
-  };
+  }, [t, invalidateSettingsData]);
 
   // Local-only fee sync for socket events (payment already exists on server)
   const syncFeePaymentLocal = useCallback((payment) => {
     setFeePayments((prev) => [...prev, payment]);
   }, []);
 
-  const getStudentFeeHistory = (studentId) =>
-    Array.isArray(feePayments)
-      ? feePayments.filter((p) => p.studentId === studentId)
-      : [];
+  const getStudentFeeHistory = useCallback(
+    (studentId) =>
+      Array.isArray(feePayments)
+        ? feePayments.filter((p) => p.studentId === studentId)
+        : [],
+    [feePayments]
+  );
 
   // Announcement functions
-  const addAnnouncement = async (announcement) => {
+  const addAnnouncement = useCallback(async (announcement) => {
     const localAnnouncement = { ...announcement, id: `temp-${Date.now()}` };
     setAnnouncements((prev) => [...prev, localAnnouncement]);
     try {
-      const created = await announcementsApi.create(announcement);
+      const created = await announcementsApi.create(announcement, options);
       setAnnouncements((prev) => prev.map((a) => (a.id === localAnnouncement.id ? created : a)));
       void invalidateSettingsData();
       return created;
@@ -362,50 +367,81 @@ export function SettingsProvider({ children }) {
       toast.error(t('toast.error.announcementSavedLocally', 'Announcement saved locally (server unavailable)'));
       return localAnnouncement;
     }
-  };
+  }, [t, invalidateSettingsData]);
 
-  const value = {
-    schoolSettings,
-    currentAcademicYear,
-    events,
-    feePayments,
-    announcements,
-    leaveTypes,
-    feeHeads,
-    isBeforeSchoolHours,
-    setSchoolSettings,
-    setEvents,
-    setFeePayments,
-    setSettingsFromQuery,
-    // School settings actions
-    updateSchoolSettings,
-    addSubject,
-    updateSubject,
-    deleteSubject,
-    // Event actions
-    addEvent,
-    updateEvent,
-    deleteEvent,
-    getEventsForDate,
-    // Fee actions
-    addFeePayment,
-    syncFeePaymentLocal,
-    getStudentFeeHistory,
-    // Announcement actions
-    addAnnouncement,
-    // Leave Types actions
-    addLeaveType,
-    updateLeaveType,
-    deleteLeaveType,
-    // Fee Heads actions
-    addFeeHead,
-    updateFeeHead,
-    deleteFeeHead,
-    // Theme
-    themeSettings,
-    updateThemeSettings,
-    resetThemeSettings,
-  };
+  const value = useMemo(
+    () => ({
+      schoolSettings,
+      currentAcademicYear,
+      events,
+      feePayments,
+      announcements,
+      leaveTypes,
+      feeHeads,
+      isBeforeSchoolHours,
+      setSettingsFromQuery,
+      // School settings actions
+      updateSchoolSettings,
+      addSubject,
+      updateSubject,
+      deleteSubject,
+      // Event actions
+      addEvent,
+      updateEvent,
+      deleteEvent,
+      getEventsForDate,
+      // Fee actions
+      addFeePayment,
+      syncFeePaymentLocal,
+      getStudentFeeHistory,
+      // Announcement actions
+      addAnnouncement,
+      // Leave Types actions
+      addLeaveType,
+      updateLeaveType,
+      deleteLeaveType,
+      // Fee Heads actions
+      addFeeHead,
+      updateFeeHead,
+      deleteFeeHead,
+      // Theme
+      themeSettings,
+      updateThemeSettings,
+      resetThemeSettings,
+    }),
+    [
+      schoolSettings,
+      currentAcademicYear,
+      events,
+      feePayments,
+      announcements,
+      leaveTypes,
+      feeHeads,
+      isBeforeSchoolHours,
+      setSettingsFromQuery,
+      updateSchoolSettings,
+      addSubject,
+      updateSubject,
+      deleteSubject,
+      addEvent,
+      updateEvent,
+      deleteEvent,
+      getEventsForDate,
+      addFeePayment,
+      syncFeePaymentLocal,
+      getStudentFeeHistory,
+      addAnnouncement,
+      addLeaveType,
+      updateLeaveType,
+      deleteLeaveType,
+      addFeeHead,
+      updateFeeHead,
+      deleteFeeHead,
+      themeSettings,
+      updateThemeSettings,
+      resetThemeSettings,
+    ]
+  );
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 }
