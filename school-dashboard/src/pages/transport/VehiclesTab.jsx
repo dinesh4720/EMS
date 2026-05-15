@@ -43,7 +43,8 @@ export default function VehiclesTab() {
         v.registrationNumber?.toLowerCase().includes(q) ||
         v.make?.toLowerCase().includes(q) ||
         v.model?.toLowerCase().includes(q) ||
-        v.driver?.name?.toLowerCase().includes(q)
+        v.driverId?.name?.toLowerCase().includes(q) ||
+        v.conductorId?.name?.toLowerCase().includes(q)
       );
     }
     return list;
@@ -151,19 +152,29 @@ export default function VehiclesTab() {
 
               {/* Driver & Conductor */}
               <div className="mt-3 pt-3 border-t border-gray-50 dark:border-zinc-800 space-y-1.5">
-                {vehicle.driver?.name && (
+                {vehicle.driverId?.name && (
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-500 dark:text-zinc-400">{t('pages.driver')}</span>
-                    <span className="text-gray-900 dark:text-zinc-100 font-medium">{vehicle.driver.name}</span>
+                    <span className="text-gray-900 dark:text-zinc-100 font-medium">
+                      {vehicle.driverId.name}
+                      {vehicle.driverId.status && vehicle.driverId.status !== 'active' && (
+                        <span className="ml-1 text-xs text-amber-600 dark:text-amber-400">({vehicle.driverId.status})</span>
+                      )}
+                    </span>
                   </div>
                 )}
-                {vehicle.conductor?.name && (
+                {vehicle.conductorId?.name && (
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-500 dark:text-zinc-400">{t('pages.conductor')}</span>
-                    <span className="text-gray-900 dark:text-zinc-100 font-medium">{vehicle.conductor.name}</span>
+                    <span className="text-gray-900 dark:text-zinc-100 font-medium">
+                      {vehicle.conductorId.name}
+                      {vehicle.conductorId.status && vehicle.conductorId.status !== 'active' && (
+                        <span className="ml-1 text-xs text-amber-600 dark:text-amber-400">({vehicle.conductorId.status})</span>
+                      )}
+                    </span>
                   </div>
                 )}
-                {!vehicle.driver?.name && !vehicle.conductor?.name && (
+                {!vehicle.driverId?.name && !vehicle.conductorId?.name && (
                   <p className="text-xs text-gray-400 dark:text-zinc-500 italic">{t('pages.noStaffAssigned')}</p>
                 )}
               </div>
