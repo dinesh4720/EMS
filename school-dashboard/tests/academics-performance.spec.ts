@@ -25,32 +25,26 @@ test.describe('Academics — Performance Dashboard & CBSE Reports', () => {
 
   /* ───── 1. Performance dashboard stats ───── */
 
-  test('performance dashboard shows class average, pass percentage, topper info', async ({ page }) => {
+  test('academics page shows exam list and KPI stats', async ({ page }) => {
     const exam = seedExam(state, { name: 'Mid Term', status: 'completed' });
-    // Seed results: 95, 85, 72, 58, 40
-    const marks = [95, 85, 72, 58, 40];
-    state.students.forEach((s, i) => seedResult(state, s.id, exam.id, 'Mathematics', marks[i]));
 
     await page.goto('/academics');
     await page.waitForLoadState('networkidle');
 
-    // Wait for dashboard to render past skeleton
-    await page.waitForFunction(
-      () => document.body.textContent?.toLowerCase().includes('upcoming exams') ||
-             document.body.textContent?.toLowerCase().includes('enter results'),
-      { timeout: 10_000 },
-    ).catch(() => {});
+    // Wait for the academics page to fully render (lazy chunks + API calls)
+    await expect(page.locator('h1').filter({ hasText: 'Academics' })).toBeVisible({ timeout: 15_000 });
 
-    const body = await page.textContent('body');
-    // AcademicsPage shows KPI labels (Phase 11 redesign)
-    expect(body?.toLowerCase()).toContain('upcoming exams');
-    // At least one exam should be counted
-    expect(body).toContain('1');
+    // KPI strip should show exam counts
+    await expect(page.getByText('Upcoming exams').first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('Results published').first()).toBeVisible({ timeout: 10_000 });
+
+    // Exam should appear in the list
+    await expect(page.getByText('Mid Term').first()).toBeVisible({ timeout: 10_000 });
   });
 
   /* ───── 2. Subject-wise breakdown ───── */
 
-  test('subject-wise breakdown with average, highest, lowest per subject', async ({ page }) => {
+  test('academics page lists exams with subjects', async ({ page }) => {
     const exam = seedExam(state, {
       name: 'Unit Test',
       status: 'completed',
@@ -59,50 +53,34 @@ test.describe('Academics — Performance Dashboard & CBSE Reports', () => {
         { name: 'Science', maxMarks: 100, passingMarks: 35 },
       ],
     });
-    state.students.forEach((s, i) => {
-      seedResult(state, s.id, exam.id, 'English', 60 + i * 8);
-      seedResult(state, s.id, exam.id, 'Science', 50 + i * 10);
-    });
 
     await page.goto('/academics');
     await page.waitForLoadState('networkidle');
 
-    await page.waitForFunction(
-      () => document.body.textContent?.toLowerCase().includes('upcoming exams'),
-      { timeout: 10_000 },
-    ).catch(() => {});
+    await expect(page.locator('h1').filter({ hasText: 'Academics' })).toBeVisible({ timeout: 15_000 });
 
-    const body = await page.textContent('body');
-    // AcademicsPage renders KPI strip and exam list (Phase 11 redesign)
-    expect(
-      body?.toLowerCase().includes('upcoming exams') ||
-      body?.toLowerCase().includes('avg performance') ||
-      body?.toLowerCase().includes('results published'),
-    ).toBeTruthy();
+    // Exam name should appear in the list
+    await expect(page.getByText('Unit Test').first()).toBeVisible({ timeout: 10_000 });
   });
 
   /* ───── 3. Charts render (bar/pie) ───── */
 
-  test('bar and pie charts render for subject comparison and grade distribution', async ({ page }) => {
+  test('academics page renders exam list without charts on landing', async ({ page }) => {
     seedExam(state, { name: 'Final Exam', status: 'completed' });
 
     await page.goto('/academics');
     await page.waitForLoadState('networkidle');
 
-    await page.waitForFunction(
-      () => document.body.textContent?.toLowerCase().includes('upcoming exams'),
-      { timeout: 10_000 },
-    ).catch(() => {});
+    await expect(page.locator('h1').filter({ hasText: 'Academics' })).toBeVisible({ timeout: 15_000 });
 
-    // Phase 11 AcademicsPage has no Recharts charts on the landing page.
-    // Verify the exam list or KPI strip rendered instead.
-    const body = await page.textContent('body');
-    expect(body?.toLowerCase()).toContain('upcoming exams');
+    // The landing page shows a KPI strip and exam table (no charts since Phase 11 revamp)
+    await expect(page.getByText('Upcoming exams').first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('Final Exam').first()).toBeVisible({ timeout: 10_000 });
   });
 
   /* ───── 4. Filter performance by exam type ───── */
 
-  test('filter performance by exam type (unit test, midterm, final)', async ({ page }) => {
+  test('academics page shows all seeded exams in list', async ({ page }) => {
     seedExam(state, { name: 'Unit Test 1', status: 'scheduled', classId: CLASS_10A_ID });
     seedExam(state, { name: 'Mid Term', status: 'completed', classId: CLASS_10A_ID });
     seedExam(state, { name: 'Final Exam', status: 'results_published', classId: CLASS_11A_ID });
@@ -110,13 +88,12 @@ test.describe('Academics — Performance Dashboard & CBSE Reports', () => {
     await page.goto('/academics');
     await page.waitForLoadState('networkidle');
 
-    // Wait for the exam table to render
-    await expect(page.locator('.academics-table__row').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('h1').filter({ hasText: 'Academics' })).toBeVisible({ timeout: 15_000 });
 
-    // All three exams should appear in the table
-    await expect(page.getByText('Unit Test 1')).toBeVisible();
-    await expect(page.getByText('Mid Term')).toBeVisible();
-    await expect(page.getByText('Final Exam')).toBeVisible();
+    // Wait for exams table to populate
+    await expect(page.getByText('Unit Test 1').first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('Mid Term').first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('Final Exam').first()).toBeVisible({ timeout: 10_000 });
   });
 
   /* ───── 5. Student-wise performance with exam history ───── */
@@ -405,13 +382,12 @@ test.describe('Academics — Performance Dashboard & CBSE Reports', () => {
     await page.goto('/academics');
     await page.waitForLoadState('networkidle');
 
-    // Wait for the exam table to render
-    await expect(page.locator('.academics-table__row').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('h1').filter({ hasText: 'Academics' })).toBeVisible({ timeout: 15_000 });
 
-    // All 3 exams should appear in the exam list
-    await expect(page.getByText('Unit Test 1')).toBeVisible();
-    await expect(page.getByText('Mid Term')).toBeVisible();
-    await expect(page.getByText('Final Exam')).toBeVisible();
+    // All 3 exams should be listed
+    await expect(page.getByText('Unit Test 1').first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('Mid Term').first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('Final Exam').first()).toBeVisible({ timeout: 10_000 });
 
     // Verify student performance API returns all exam results (use page.evaluate + fetch)
     const perfResult = await page.evaluate(async (studentId) => {
