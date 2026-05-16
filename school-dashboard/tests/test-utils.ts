@@ -196,6 +196,33 @@ export interface ConversationRecord {
   participants: Array<{ userId: string; name: string; userType: string }>;
 }
 
+export interface PTMSlotRecord {
+  _id: string;
+  studentId: string | { _id: string; name: string; admissionId?: string };
+  parentName: string;
+  parentPhone?: string;
+  scheduledTime: string;
+  status: 'booked' | 'completed' | 'cancelled' | 'no-show';
+  notes?: string;
+}
+
+export interface PTMSessionRecord {
+  _id: string; id: string;
+  title: string;
+  description: string;
+  sessionDate: string;
+  startTime: string;
+  endTime: string;
+  slotDuration: number;
+  classId: string | { _id: string; name: string; section?: string };
+  staffId: string | { _id: string; name: string };
+  venue: string;
+  status: 'scheduled' | 'ongoing' | 'completed' | 'cancelled';
+  slots: PTMSlotRecord[];
+  isDeleted?: boolean;
+  schoolId?: string;
+}
+
 export interface NotificationRecord {
   _id: string; id: string; type: string; title: string;
   message: string; read: boolean; createdAt: string; schoolId: string;
@@ -232,6 +259,7 @@ export interface MockState {
   payrollRuns: PayrollRunRecord[];
   conversations: ConversationRecord[];
   chatMessages: Record<string, unknown[]>;
+  ptmSessions: PTMSessionRecord[];
   feeHeads: Array<Record<string, unknown>>;
   feeTemplates: Array<Record<string, unknown>>;
   classFeeStructures: Array<Record<string, unknown>>;
@@ -273,6 +301,7 @@ export interface MockState {
   emailCampaignCounter: number;
   reminderCounter: number;
   paymentCounter: number;
+  ptmSessionCounter: number;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -447,6 +476,7 @@ export function createMockState(userOverride?: User): MockState {
     payrollRuns: [],
     conversations: [],
     chatMessages: {},
+    ptmSessions: [],
     feeHeads: [
       { _id: 'fh-tuition', id: 'fh-tuition', name: 'Tuition Fee', type: 'tuition', amount: 5000, schoolId: SCHOOL_ID },
       { _id: 'fh-transport', id: 'fh-transport', name: 'Transport Fee', type: 'transport', amount: 2000, schoolId: SCHOOL_ID },
@@ -584,6 +614,7 @@ export function createMockState(userOverride?: User): MockState {
     homeworkCounter: 0, calendarEventCounter: 0, visitorCounter: 0,
     gatePassCounter: 0, emailCampaignCounter: 0, reminderCounter: 0,
     paymentCounter: 0,
+    ptmSessionCounter: 0,
   };
 }
 
@@ -1012,6 +1043,39 @@ export function seedCalendarEvent(
     schoolId: SCHOOL_ID,
   };
   state.calendarEvents.push(record);
+  return record;
+}
+
+export function seedPTMSession(
+  state: MockState,
+  overrides: Partial<PTMSessionRecord> = {},
+): PTMSessionRecord {
+  state.ptmSessionCounter++;
+  const id = overrides.id || objectId('ptm-', state.ptmSessionCounter);
+
+  const classId = overrides.classId || CLASS_10A_ID;
+  const staffId = overrides.staffId || TEACHER_A_ID;
+
+  const cls = state.classes.find((c) => c.id === classId || c._id === classId);
+  const teacher = state.staff.find((s) => s.id === staffId || s._id === staffId);
+
+  const record: PTMSessionRecord = {
+    _id: id, id,
+    title: overrides.title || `PTM Session ${state.ptmSessionCounter}`,
+    description: overrides.description || '',
+    sessionDate: overrides.sessionDate || new Date().toISOString().split('T')[0],
+    startTime: overrides.startTime || '09:00',
+    endTime: overrides.endTime || '12:00',
+    slotDuration: overrides.slotDuration ?? 15,
+    classId: cls ? { _id: cls.id, name: cls.name, section: cls.section } : classId,
+    staffId: teacher ? { _id: teacher.id, name: teacher.name } : staffId,
+    venue: overrides.venue || 'Conference Room A',
+    status: overrides.status || 'scheduled',
+    slots: overrides.slots || [],
+    isDeleted: overrides.isDeleted ?? false,
+    schoolId: SCHOOL_ID,
+  };
+  state.ptmSessions.push(record);
   return record;
 }
 
@@ -1706,6 +1770,103 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
       const id = path.split('/')[3];
       state.calendarEvents = state.calendarEvents.filter((e) => e.id !== id);
       return json({ message: 'Deleted' });
+    }
+
+    /* ── PTM ── */
+    if (path === '/ptm' && method === 'GET') {
+      const classId = url.searchParams.get('classId');
+      const staffId = url.searchParams.get('staffId');
+      const status = url.searchParams.get('status');
+      let filtered = state.ptmSessions;
+      if (classId) filtered = filtered.filter((s) => (s.classId as any)?._id === classId || s.classId === classId);
+      if (staffId) filtered = filtered.filter((s) => (s.staffId as any)?._id === staffId || s.staffId === staffId);
+      if (status) filtered = filtered.filter((s) => s.status === status);
+      return json({ success: true, data: filtered });
+    }
+    if (path.match(/^\/ptm\/([^/]+)$/) && method === 'GET') {
+      const id = path.split('/')[2];
+      const session = state.ptmSessions.find((s) => s.id === id || s._id === id);
+      return session ? json({ success: true, data: session }) : json({ error: 'Not found' }, 404);
+    }
+    if (path === '/ptm' && method === 'POST') {
+      const b = body as Record<string, unknown>;
+      const classId = b.classId as string;
+      const staffId = b.staffId as string;
+      const cls = state.classes.find((c) => c.id === classId || c._id === classId);
+      const teacher = state.staff.find((s) => s.id === staffId || s._id === staffId);
+      state.ptmSessionCounter++;
+      const id = objectId('ptm-', state.ptmSessionCounter);
+      const record: PTMSessionRecord = {
+        _id: id, id,
+        title: (b.title as string) || 'New PTM Session',
+        description: (b.description as string) || '',
+        sessionDate: (b.sessionDate as string) || new Date().toISOString().split('T')[0],
+        startTime: (b.startTime as string) || '09:00',
+        endTime: (b.endTime as string) || '12:00',
+        slotDuration: (b.slotDuration as number) ?? 15,
+        classId: cls ? { _id: cls.id, name: cls.name, section: cls.section } : classId,
+        staffId: teacher ? { _id: teacher.id, name: teacher.name } : staffId,
+        venue: (b.venue as string) || '',
+        status: 'scheduled',
+        slots: [],
+        schoolId: SCHOOL_ID,
+      };
+      state.ptmSessions.push(record);
+      return json({ success: true, data: record }, 201);
+    }
+    if (path.match(/^\/ptm\/([^/]+)$/) && method === 'PUT') {
+      const id = path.split('/')[2];
+      const idx = state.ptmSessions.findIndex((s) => s.id === id || s._id === id);
+      if (idx >= 0) {
+        const b = body as Record<string, unknown>;
+        Object.assign(state.ptmSessions[idx], b);
+        return json({ success: true, data: state.ptmSessions[idx] });
+      }
+      return json({ error: 'Not found' }, 404);
+    }
+    if (path.match(/^\/ptm\/([^/]+)$/) && method === 'DELETE') {
+      const id = path.split('/')[2];
+      state.ptmSessions = state.ptmSessions.filter((s) => s.id !== id && s._id !== id);
+      return json({ success: true, message: 'PTM session cancelled successfully' });
+    }
+    if (path.match(/^\/ptm\/([^/]+)\/slots$/) && method === 'POST') {
+      const id = path.split('/')[2];
+      const session = state.ptmSessions.find((s) => s.id === id || s._id === id);
+      if (!session) return json({ error: 'Not found' }, 404);
+      const b = body as Record<string, unknown>;
+      const slotId = objectId('slot-', session.slots.length + 1);
+      const student = state.students.find((s) => s.id === b.studentId || s._id === b.studentId);
+      const slot: PTMSlotRecord = {
+        _id: slotId,
+        studentId: student ? { _id: student.id, name: student.name, admissionId: student.admissionId } : (b.studentId as string),
+        parentName: (b.parentName as string) || '',
+        parentPhone: (b.parentPhone as string) || '',
+        scheduledTime: (b.scheduledTime as string) || '',
+        status: 'booked',
+        notes: (b.notes as string) || '',
+      };
+      session.slots.push(slot);
+      return json({ success: true, data: slot });
+    }
+    if (path.match(/^\/ptm\/([^/]+)\/slots\/([^/]+)$/) && method === 'PUT') {
+      const id = path.split('/')[2];
+      const slotId = path.split('/')[4];
+      const session = state.ptmSessions.find((s) => s.id === id || s._id === id);
+      if (!session) return json({ error: 'Not found' }, 404);
+      const slotIdx = session.slots.findIndex((slot) => slot._id === slotId);
+      if (slotIdx >= 0) {
+        Object.assign(session.slots[slotIdx], body);
+        return json({ success: true, data: session.slots[slotIdx] });
+      }
+      return json({ error: 'Slot not found' }, 404);
+    }
+    if (path.match(/^\/ptm\/([^/]+)\/slots\/([^/]+)$/) && method === 'DELETE') {
+      const id = path.split('/')[2];
+      const slotId = path.split('/')[4];
+      const session = state.ptmSessions.find((s) => s.id === id || s._id === id);
+      if (!session) return json({ error: 'Not found' }, 404);
+      session.slots = session.slots.filter((slot) => slot._id !== slotId);
+      return json({ success: true, message: 'Slot cancelled' });
     }
 
     /* ── Timetable ── */
