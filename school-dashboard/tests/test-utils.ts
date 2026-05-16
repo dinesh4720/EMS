@@ -1161,6 +1161,8 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
   await page.addInitScript((u: string) => {
     localStorage.setItem('hasCompletedOnboarding', 'true');
     localStorage.setItem('owlinTrackerEnabled', 'false');
+    // Dismiss cookie consent banner
+    localStorage.setItem('ems_cookie_consent', JSON.stringify({ necessary: true, analytics: false, preferences: false, marketing: false, savedAt: new Date().toISOString() }));
     // Dismiss shell coach marks (REVAMP-107) so they don't intercept clicks
     localStorage.setItem('ems_coach_marks_v1', JSON.stringify({ shell: Date.now() }));
     sessionStorage.setItem('app_user', u);
