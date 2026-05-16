@@ -127,7 +127,7 @@ export interface HostelRecord {
 export interface HostelRoomRecord {
   _id: string; id: string; hostelId: string; roomNumber: string;
   floor: number; type: string; capacity: number;
-  occupants: string[]; status: string; schoolId: string;
+  occupants: string[]; occupiedBeds?: number; status: string; schoolId: string;
 }
 
 export interface HostelAllocationRecord {
@@ -135,6 +135,8 @@ export interface HostelAllocationRecord {
   studentId: string; studentName: string; admissionNo: string;
   roomNumber: string; hostelName: string;
   startDate: string; monthlyFee: number; schoolId: string;
+  status?: 'active' | 'vacated' | 'transferred';
+  endDate?: string;
 }
 
 export interface InventoryAssetRecord {
@@ -896,6 +898,7 @@ export function seedHostelRoom(
     type: overrides.type || 'double',
     capacity: overrides.capacity ?? 2,
     occupants: overrides.occupants || [],
+    occupiedBeds: overrides.occupiedBeds ?? 0,
     status: overrides.status || 'available',
     schoolId: SCHOOL_ID,
   };
@@ -920,6 +923,7 @@ export function seedHostelAllocation(
     hostelName: overrides.hostelName || '',
     startDate: overrides.startDate || new Date().toISOString().split('T')[0],
     monthlyFee: overrides.monthlyFee ?? 5000,
+    status: overrides.status || 'active',
     schoolId: SCHOOL_ID,
   };
   state.hostelAllocations.push(record);
@@ -1573,7 +1577,14 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
       });
     }
     // Hostel CRUD — frontend calls /hostel/hostels
-    if ((path === '/hostels' || path === '/hostel/hostels') && method === 'GET')  return json({ hostels: state.hostels, total: state.hostels.length });
+    if ((path === '/hostels' || path === '/hostel/hostels') && method === 'GET') {
+      const searchParam = url.searchParams.get('search')?.toLowerCase() || '';
+      const typeParam = url.searchParams.get('type') || '';
+      let filtered = state.hostels;
+      if (searchParam) filtered = filtered.filter((h) => (h.name || '').toLowerCase().includes(searchParam));
+      if (typeParam) filtered = filtered.filter((h) => h.type === typeParam);
+      return json({ hostels: filtered, total: filtered.length });
+    }
     if ((path === '/hostels' || path === '/hostel/hostels') && method === 'POST') {
       const h = seedHostel(state, body as Partial<HostelRecord>);
       return json(h, 201);
@@ -1597,8 +1608,10 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
         return json(r, 201);
       }
       const hostelIdParam = url.searchParams.get('hostelId');
+      const typeParam = url.searchParams.get('type');
       const hostelId = path.startsWith('/hostels') && path.includes('/rooms') ? path.split('/')[2] : hostelIdParam;
-      const filtered = hostelId ? state.hostelRooms.filter((r) => r.hostelId === hostelId) : state.hostelRooms;
+      let filtered = hostelId ? state.hostelRooms.filter((r) => r.hostelId === hostelId) : state.hostelRooms;
+      if (typeParam) filtered = filtered.filter((r) => r.type === typeParam);
       return json({ rooms: filtered, total: filtered.length, pages: 1 });
     }
     if (path.match(/^\/hostel\/rooms\/([^/]+)$/) && method === 'PUT') {
@@ -1618,7 +1631,12 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
         const a = seedHostelAllocation(state, body as Partial<HostelAllocationRecord>);
         return json(a, 201);
       }
-      return json({ allocations: state.hostelAllocations, total: state.hostelAllocations.length, pages: 1 });
+      const statusParam = url.searchParams.get('status');
+      const hostelIdParam = url.searchParams.get('hostelId');
+      let filtered = state.hostelAllocations;
+      if (statusParam) filtered = filtered.filter((a) => a.status === statusParam);
+      if (hostelIdParam) filtered = filtered.filter((a) => a.hostelId === hostelIdParam);
+      return json({ allocations: filtered, total: filtered.length, pages: 1 });
     }
     if (path.match(/^\/hostel\/allocations\/([^/]+)\/vacate$/) && method === 'PUT') {
       const id = path.split('/')[3];
