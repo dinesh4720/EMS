@@ -325,7 +325,7 @@ export function SettingsProvider({ children }) {
   );
 
   // Fee functions
-  const addFeePayment = useCallback(async (payment) => {
+  const addFeePayment = useCallback(async (payment, options = {}) => {
     const localPayment = { ...payment, id: payment.id || `temp-${Date.now()}` };
     setFeePayments((prev) => [...prev, localPayment]);
     try {
@@ -354,7 +354,7 @@ export function SettingsProvider({ children }) {
   );
 
   // Announcement functions
-  const addAnnouncement = useCallback(async (announcement) => {
+  const addAnnouncement = useCallback(async (announcement, options = {}) => {
     const localAnnouncement = { ...announcement, id: `temp-${Date.now()}` };
     setAnnouncements((prev) => [...prev, localAnnouncement]);
     try {

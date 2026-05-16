@@ -35,8 +35,10 @@ export default function CommunicationSettings() {
   const [emailDraft, setEmailDraft] = useState(DEFAULT_EMAIL_DRAFT);
 
   useEffect(() => {
-    settingsApi.getCommunicationSettings()
+    const controller = new AbortController();
+    settingsApi.getCommunicationSettings({ signal: controller.signal })
       .then((data) => {
+        if (controller.signal.aborted) return;
         if (data) {
           // AUDIT-645: Strip secrets from state, only track existence flags
           const sms = data.sms || DEFAULT_SMS;
@@ -51,10 +53,14 @@ export default function CommunicationSettings() {
         }
       })
       .catch((err) => {
+        if (err.name === 'AbortError') return;
         logger.error('Failed to load communication settings:', err);
         toast.error(t('toast.error.failedToLoadCommunicationSettings'));
       })
-      .finally(() => setLoadingSettings(false));
+      .finally(() => {
+        if (!controller.signal.aborted) setLoadingSettings(false);
+      });
+    return () => controller.abort();
   }, []);
 
   // AUDIT-127: Warn before leaving with unsaved edits
@@ -118,10 +124,10 @@ export default function CommunicationSettings() {
       // AUDIT-645: Build payload — only include secret fields if user entered a new value
       const smsPayload = section === 'sms'
         ? { enabled: smsDraft.enabled, provider: smsDraft.provider, senderId: smsDraft.senderId, ...(smsDraft.apiKey ? { apiKey: smsDraft.apiKey } : {}) }
-        : { enabled: smsConfig.enabled, provider: smsConfig.provider, senderId: smsConfig.senderId, ...(smsConfig.hasApiKey ? { apiKey: '••••••••' } : {}) };
+        : { enabled: smsConfig.enabled, provider: smsConfig.provider, senderId: smsConfig.senderId };
       const emailPayload = section === 'email'
         ? { enabled: emailDraft.enabled, provider: emailDraft.provider, smtpHost: emailDraft.smtpHost, port: emailDraft.port, username: emailDraft.username, ...(emailDraft.password ? { password: emailDraft.password } : {}) }
-        : { enabled: emailConfig.enabled, provider: emailConfig.provider, smtpHost: emailConfig.smtpHost, port: emailConfig.port, username: emailConfig.username, ...(emailConfig.hasPassword ? { password: '••••••••' } : {}) };
+        : { enabled: emailConfig.enabled, provider: emailConfig.provider, smtpHost: emailConfig.smtpHost, port: emailConfig.port, username: emailConfig.username };
       const payload = { sms: smsPayload, email: emailPayload };
       const updated = await settingsApi.updateCommunicationSettings(payload);
       if (updated) {
@@ -172,6 +178,7 @@ export default function CommunicationSettings() {
         {editingSection === section ? (
           <div className="flex items-center gap-2">
             <button
+              type="button"
               className="text-sm text-danger hover:text-danger-600 font-medium px-3 py-1.5 rounded-lg hover:bg-danger-50 transition-colors"
               onClick={() => handleCancel(section)}
               disabled={saving}
@@ -179,6 +186,7 @@ export default function CommunicationSettings() {
               Cancel
             </button>
             <button
+              type="button"
               className="flex items-center gap-1.5 text-sm bg-primary text-white font-medium px-3 py-1.5 rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50"
               onClick={() => handleSave(section)}
               disabled={saving}
@@ -189,6 +197,7 @@ export default function CommunicationSettings() {
           </div>
         ) : (
           <button
+            type="button"
             className="flex items-center gap-1.5 text-sm text-primary font-medium px-3 py-1.5 rounded-lg hover:bg-primary-50 transition-colors disabled:opacity-50"
             onClick={() => setEditingSection(section)}
             disabled={editingSection !== null}
@@ -293,7 +302,7 @@ export default function CommunicationSettings() {
                       {smsConfig.senderId ? `Sender: ${smsConfig.senderId}` : 'Add API key to enable SMS'}
                     </p>
                   </div>
-                  <button onClick={() => toast.error('SMS test not yet implemented')} className="px-4 py-2 bg-surface text-success-700 dark:text-success-300 rounded-lg border border-success-200 dark:border-success-800 text-xs font-medium hover:bg-success-50 dark:hover:bg-success-950/50">
+                  <button type="button" onClick={() => toast.error('SMS test not yet implemented')} className="px-4 py-2 bg-surface text-success-700 dark:text-success-300 rounded-lg border border-success-200 dark:border-success-800 text-xs font-medium hover:bg-success-50 dark:hover:bg-success-950/50">
                     Test SMS
                   </button>
                 </div>
@@ -400,7 +409,7 @@ export default function CommunicationSettings() {
                 )}
 
                 <div className="md:col-span-2 flex justify-end mt-2">
-                  <button onClick={() => toast.error('Email test not yet implemented')} className="px-4 py-2 bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-300 rounded-lg border border-primary-100 dark:border-primary-800 text-sm font-medium hover:bg-primary-100 dark:hover:bg-primary-950/50">
+                  <button type="button" onClick={() => toast.error('Email test not yet implemented')} className="px-4 py-2 bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-300 rounded-lg border border-primary-100 dark:border-primary-800 text-sm font-medium hover:bg-primary-100 dark:hover:bg-primary-950/50">
                     Send Test Email
                   </button>
                 </div>
@@ -439,16 +448,17 @@ export default function CommunicationSettings() {
             <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-surface-2/50 border-b border-border-token py-4 px-6">
               <div className="w-full sm:w-auto">
                 <div className="flex items-center gap-2 w-full sm:max-w-[250px] px-3 py-2 bg-surface rounded-lg border border-border-token hover:border-primary focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200">
-                  <Search size={16} className="text-fg-faint" />
+                  <Search size={16} className="text-fg-faint" aria-hidden="true" />
                   <input
                     type="text"
+                    aria-label={t('pages.searchTemplates')}
                     placeholder={t('pages.searchTemplates')}
                     className="flex-1 bg-transparent outline-none text-sm text-fg"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                   {searchQuery && (
-                    <button onClick={() => setSearchQuery("")} className="p-0.5 hover:bg-surface-2 rounded cursor-pointer">
+                    <button type="button" aria-label="Clear search" onClick={() => setSearchQuery("")} className="p-0.5 hover:bg-surface-2 rounded cursor-pointer">
                       <X size={14} className="text-fg-faint" />
                     </button>
                   )}
@@ -524,7 +534,7 @@ export default function CommunicationSettings() {
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">
-                        <button onClick={() => toast('Template editing coming soon')} className="p-2 bg-transparent rounded-lg border border-transparent hover:border-primary hover:bg-primary-50 dark:hover:bg-primary-950/30 transition-all duration-200 cursor-pointer text-fg-faint hover:text-primary">
+                        <button type="button" aria-label="Edit template" onClick={() => toast('Template editing coming soon')} className="p-2 bg-transparent rounded-lg border border-transparent hover:border-primary hover:bg-primary-50 dark:hover:bg-primary-950/30 transition-all duration-200 cursor-pointer text-fg-faint hover:text-primary">
                           <Edit size={16} />
                         </button>
                       </div>

@@ -42,14 +42,22 @@ export default function NPSAnalyticsPage() {
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
     fetchAnalytics();
-    npsApi.getConfig()
+    npsApi.getConfig({ signal: controller.signal })
       .then((cfg) => {
+        if (controller.signal.aborted) return;
         setConfig(cfg);
         setConfigDraft(cfg);
       })
-      .catch(() => toast.error('Failed to load NPS config'))
-      .finally(() => setConfigLoading(false));
+      .catch((err) => {
+        if (err.name === 'AbortError') return;
+        toast.error('Failed to load NPS config');
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setConfigLoading(false);
+      });
+    return () => controller.abort();
   }, [fetchAnalytics]);
 
   const handleSaveConfig = async () => {

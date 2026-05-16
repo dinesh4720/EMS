@@ -60,23 +60,27 @@ export default function FeeTemplatesManagement() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState(emptyForm);
 
-  const fetchTemplates = useCallback(async () => {
+  const fetchTemplates = useCallback(async (signal) => {
     try {
       setLoading(true);
       setLoadError(null);
-      const data = await request(`/fee-templates?academicYear=${currentAcademicYear}`);
+      const data = await request(`/fee-templates?academicYear=${currentAcademicYear}`, { signal });
+      if (signal?.aborted) return;
       setTemplates(Array.isArray(data) ? data : []);
     } catch (error) {
+      if (error.name === 'AbortError') return;
       logger.error("Failed to fetch templates:", error);
       setLoadError(error);
       toast.error(t("toast.error.failedToLoadFeeTemplates"));
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   }, [currentAcademicYear, t]);
 
   useEffect(() => {
-    fetchTemplates();
+    const controller = new AbortController();
+    fetchTemplates(controller.signal);
+    return () => controller.abort();
   }, [fetchTemplates]);
 
   const calculateTotalAnnualFee = useCallback(

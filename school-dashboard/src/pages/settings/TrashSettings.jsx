@@ -93,19 +93,15 @@ export default function TrashSettings() {
 
   const { isOpen, onOpen, onClose } = useDisclosure();
 
-  // Load trash data on mount and when page changes
-  useEffect(() => {
-    loadTrashData();
-  }, [page]);
-
   // Load trash items and statistics
-  const loadTrashData = async () => {
+  const loadTrashData = async (signal) => {
     try {
       setLoading(true);
       const [itemsData, statsData] = await Promise.all([
         trashApi.getAll(page, limit),
         trashApi.getStats(),
       ]);
+      if (signal?.aborted) return;
 
       // Handle paginated response
       setTrashItems(itemsData.items || []);
@@ -125,12 +121,20 @@ export default function TrashSettings() {
       };
       setStats(transformedStats);
     } catch (error) {
+      if (error.name === 'AbortError') return;
       logger.error("Failed to load trash data:", error);
       toast.error(t('toast.error.failedToLoadTrashData'));
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   };
+
+  // Load trash data on mount and when page changes
+  useEffect(() => {
+    const controller = new AbortController();
+    loadTrashData(controller.signal);
+    return () => controller.abort();
+  }, [page]);
 
   // Calculate days remaining until permanent deletion
   const getDaysRemaining = (expiresAt) => {
