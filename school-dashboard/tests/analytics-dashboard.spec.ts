@@ -88,46 +88,41 @@ test.describe('Analytics Dashboard', () => {
   // ── Test 3: Attendance summary & weekly trend chart ─────────────────
   test('attendance section shows average and weekly trend chart', async ({ page }) => {
     await page.goto('/analytics');
-    await page.waitForLoadState('domcontentloaded');
+    await page.waitForLoadState('networkidle');
 
     // Wait for analytics page to render
     await expect(page.getByRole('heading', { name: 'Analytics' })).toBeVisible({ timeout: 15000 });
 
-    // Wait for attendance loading to finish (may take time due to request queue throttling)
-    await expect(page.getByText('Loading attendance trends...')).toBeHidden({ timeout: 25000 });
-
     // Attendance Trends chart heading should be visible
-    await expect(page.getByRole('heading', { name: 'Attendance Trends' })).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('heading', { name: 'Attendance Trends' })).toBeVisible({ timeout: 15000 });
 
     // Performance sidebar should show Average Attendance
-    await expect(page.getByText('Average Attendance')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText('Average Attendance')).toBeVisible({ timeout: 15000 });
 
     // The AreaChart container or no-attendance-records fallback should be present
+    // Use longer timeout since Recharts rendering can be slow in parallel runs
     const areaChart = page.locator('.recharts-wrapper').first();
     const noRecords = page.getByText('No attendance records').first();
-    // Either the chart renders or the no-records message shows
-    const chartVisible = await areaChart.isVisible({ timeout: 5000 }).catch(() => false);
-    const noRecordsVisible = await noRecords.isVisible({ timeout: 5000 }).catch(() => false);
-    expect(chartVisible || noRecordsVisible).toBeTruthy();
+    await expect(
+      areaChart.or(noRecords),
+    ).toBeVisible({ timeout: 20000 });
   });
 
   // ── Test 4: Attendance heatmap / weekday data ───────────────────────
   test('attendance trends chart displays weekday data points', async ({ page }) => {
     await page.goto('/analytics');
-    await page.waitForLoadState('domcontentloaded');
+    await page.waitForLoadState('networkidle');
 
     // Wait for analytics page to render
     await expect(page.getByRole('heading', { name: 'Analytics' })).toBeVisible({ timeout: 15000 });
 
-    // Wait for attendance loading (may take time due to request queue throttling)
-    await expect(page.getByText('Loading attendance trends...')).toBeHidden({ timeout: 25000 });
-
     // The chart section or no-records fallback should be visible
+    // Use Promise.race with longer timeout since Recharts rendering can be slow in parallel runs
     const chartSection = page.locator('.recharts-wrapper').last();
     const noRecords = page.getByText('No attendance records').first();
-    const chartVisible = await chartSection.isVisible({ timeout: 5000 }).catch(() => false);
-    const noRecordsVisible = await noRecords.isVisible({ timeout: 5000 }).catch(() => false);
-    expect(chartVisible || noRecordsVisible).toBeTruthy();
+    await expect(
+      chartSection.or(noRecords),
+    ).toBeVisible({ timeout: 20000 });
   });
 
   // ── Test 5: Student distribution PieChart ───────────────────────────
@@ -193,10 +188,12 @@ test.describe('Analytics Dashboard', () => {
     const body = await page.textContent('body');
     expect(body).toContain('0');
 
-    // Attendance section should finish loading
-    // With no active students, the analytics page sets loading to false immediately
-    // and shows either "No attendance records" or the loading disappears
-    await expect(page.getByText(/Loading attendance/i)).toBeHidden({ timeout: 15000 });
+    // Attendance section should stabilise — with no active students the empty state appears immediately
+    const noRecords = page.getByText('No attendance records').first();
+    const chartWrapper = page.locator('.recharts-wrapper').first();
+    await expect(
+      noRecords.or(chartWrapper),
+    ).toBeVisible({ timeout: 15000 });
   });
 
   // ── Test 9: Loading/skeleton states ─────────────────────────────────
@@ -206,10 +203,13 @@ test.describe('Analytics Dashboard', () => {
     // Wait for analytics page to render
     await expect(page.getByRole('heading', { name: 'Analytics' })).toBeVisible({ timeout: 15000 });
 
-    // The loading text appears briefly while attendance data is fetched.
-    // It may have already resolved by the time we check, so we just verify
-    // it eventually becomes hidden (which covers both the flash case and immediate resolution).
-    await expect(page.getByText('Loading attendance trends...')).toBeHidden({ timeout: 15000 });
+    // The ChartCard renders a Skeleton while loading and either the chart
+    // or the empty state once loaded. Wait for the stable end-state.
+    const areaChart = page.locator('.recharts-wrapper').first();
+    const noRecords = page.getByText('No attendance records').first();
+    await expect(
+      areaChart.or(noRecords),
+    ).toBeVisible({ timeout: 20000 });
   });
 
   // ── Test 10: Date filter changes update all charts ──────────────────
@@ -231,8 +231,12 @@ test.describe('Analytics Dashboard', () => {
     // Wait for analytics page to render
     await expect(page.getByRole('heading', { name: 'Analytics' })).toBeVisible({ timeout: 15000 });
 
-    // Wait for loading to finish — attendance calls may retry
-    await expect(page.getByText(/Loading attendance/i)).toBeHidden({ timeout: 30000 });
+    // Wait for attendance section to stabilise — when API fails the empty state appears
+    const noRecords = page.getByText('No attendance records').first();
+    const chartFallback = page.locator('.recharts-wrapper').first();
+    await expect(
+      noRecords.or(chartFallback),
+    ).toBeVisible({ timeout: 30000 });
 
     // When all attendance calls fail, the component shows "No attendance records..."
     // or falls back to showing 0 values. Either way the page should not crash.

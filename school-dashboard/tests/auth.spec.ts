@@ -104,12 +104,12 @@ test.describe('Auth — Login Page (E2E-TEST-37)', () => {
     await page.goto('/login');
     await page.waitForLoadState('networkidle');
 
-    // Email field
-    const emailInput = page.locator('input[type="email"], input[name="email"]').first();
+    // Email field (refactored login uses type="text" with inputMode="email")
+    const emailInput = page.locator('input#login-email');
     await expect(emailInput).toBeVisible({ timeout: 10_000 });
 
     // Password field
-    const passwordInput = page.locator('input[type="password"], input[name="password"]').first();
+    const passwordInput = page.locator('input#login-password');
     await expect(passwordInput).toBeVisible();
 
     // Submit button
@@ -122,8 +122,8 @@ test.describe('Auth — Login Page (E2E-TEST-37)', () => {
     await page.waitForLoadState('networkidle');
 
     // Fill in credentials
-    await page.locator('input[type="email"], input[name="email"]').first().fill('admin@schoolsync.test');
-    await page.locator('input[type="password"], input[name="password"]').first().fill('Admin@123');
+    await page.locator('input#login-email').fill('admin@schoolsync.test');
+    await page.locator('input#login-password').fill('Admin@123');
 
     // Submit
     await page.getByRole('button', { name: /sign in|login|log in/i }).first().click();
@@ -138,8 +138,8 @@ test.describe('Auth — Login Page (E2E-TEST-37)', () => {
     await page.goto('/login');
     await page.waitForLoadState('networkidle');
 
-    await page.locator('input[type="email"], input[name="email"]').first().fill('wrong@test.com');
-    await page.locator('input[type="password"], input[name="password"]').first().fill('WrongPass@1');
+    await page.locator('input#login-email').fill('wrong@test.com');
+    await page.locator('input#login-password').fill('WrongPass@1');
     await page.getByRole('button', { name: /sign in|login|log in/i }).first().click();
 
     // Wait for error message
@@ -182,8 +182,8 @@ test.describe('Auth — Login Page (E2E-TEST-37)', () => {
 
     // Simulate multiple failed attempts
     for (let i = 0; i < 3; i++) {
-      await page.locator('input[type="email"], input[name="email"]').first().fill('wrong@test.com');
-      await page.locator('input[type="password"], input[name="password"]').first().fill(`Wrong@${i}`);
+      await page.locator('input#login-email').fill('wrong@test.com');
+      await page.locator('input#login-password').fill(`Wrong@${i}`);
       await page.getByRole('button', { name: /sign in|login|log in/i }).first().click();
       await page.waitForTimeout(300);
     }
@@ -197,10 +197,10 @@ test.describe('Auth — Login Page (E2E-TEST-37)', () => {
     await page.goto('/login');
     await page.waitForLoadState('networkidle');
 
-    const emailInput = page.locator('input[type="email"], input[name="email"]').first();
+    const emailInput = page.locator('input#login-email');
     await emailInput.fill('not-an-email');
 
-    await page.locator('input[type="password"], input[name="password"]').first().fill('SomePass@1');
+    await page.locator('input#login-password').fill('SomePass@1');
     await page.getByRole('button', { name: /sign in|login|log in/i }).first().click();
 
     // Browser native email validation or custom error
