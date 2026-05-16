@@ -36,14 +36,14 @@ test.describe('Academics — Performance Dashboard & CBSE Reports', () => {
 
     // Wait for dashboard to render past skeleton
     await page.waitForFunction(
-      () => document.body.textContent?.toLowerCase().includes('total exams') ||
+      () => document.body.textContent?.toLowerCase().includes('upcoming exams') ||
              document.body.textContent?.toLowerCase().includes('enter results'),
       { timeout: 10_000 },
     ).catch(() => {});
 
     const body = await page.textContent('body');
-    // Dashboard shows total exams count and stat labels
-    expect(body?.toLowerCase()).toContain('total exams');
+    // AcademicsPage shows KPI labels (Phase 11 redesign)
+    expect(body?.toLowerCase()).toContain('upcoming exams');
     // At least one exam should be counted
     expect(body).toContain('1');
   });
@@ -68,16 +68,16 @@ test.describe('Academics — Performance Dashboard & CBSE Reports', () => {
     await page.waitForLoadState('networkidle');
 
     await page.waitForFunction(
-      () => document.body.textContent?.toLowerCase().includes('total exams'),
+      () => document.body.textContent?.toLowerCase().includes('upcoming exams'),
       { timeout: 10_000 },
     ).catch(() => {});
 
     const body = await page.textContent('body');
-    // Dashboard renders subject averages chart section
+    // AcademicsPage renders KPI strip and exam list (Phase 11 redesign)
     expect(
-      body?.toLowerCase().includes('subject') ||
-      body?.toLowerCase().includes('average') ||
-      body?.toLowerCase().includes('total exams'),
+      body?.toLowerCase().includes('upcoming exams') ||
+      body?.toLowerCase().includes('avg performance') ||
+      body?.toLowerCase().includes('results published'),
     ).toBeTruthy();
   });
 
@@ -90,15 +90,14 @@ test.describe('Academics — Performance Dashboard & CBSE Reports', () => {
     await page.waitForLoadState('networkidle');
 
     await page.waitForFunction(
-      () => document.body.textContent?.toLowerCase().includes('total exams'),
+      () => document.body.textContent?.toLowerCase().includes('upcoming exams'),
       { timeout: 10_000 },
     ).catch(() => {});
 
-    // Recharts renders SVG containers — check for chart presence
-    const svgCharts = page.locator('.recharts-responsive-container svg');
-    const chartCount = await svgCharts.count();
-    // Dashboard has class-wise bar chart, subject averages bar chart, and grade distribution pie
-    expect(chartCount).toBeGreaterThanOrEqual(1);
+    // Phase 11 AcademicsPage has no Recharts charts on the landing page.
+    // Verify the exam list or KPI strip rendered instead.
+    const body = await page.textContent('body');
+    expect(body?.toLowerCase()).toContain('upcoming exams');
   });
 
   /* ───── 4. Filter performance by exam type ───── */
@@ -111,17 +110,13 @@ test.describe('Academics — Performance Dashboard & CBSE Reports', () => {
     await page.goto('/academics');
     await page.waitForLoadState('networkidle');
 
-    await page.waitForFunction(
-      () => document.body.textContent?.toLowerCase().includes('total exams'),
-      { timeout: 10_000 },
-    ).catch(() => {});
+    // Wait for the exam table to render
+    await expect(page.locator('.academics-table__row').first()).toBeVisible({ timeout: 10000 });
 
-    const body = await page.textContent('body');
-    // All three exams should be counted (3 total, or individual status counts visible)
-    expect(body).toBeTruthy();
-    // Dashboard stats reflect exam counts
-    const hasExamCount = body?.includes('3') || body?.includes('Unit Test') || body?.includes('Mid Term') || body?.includes('Final Exam');
-    expect(hasExamCount).toBeTruthy();
+    // All three exams should appear in the table
+    await expect(page.getByText('Unit Test 1')).toBeVisible();
+    await expect(page.getByText('Mid Term')).toBeVisible();
+    await expect(page.getByText('Final Exam')).toBeVisible();
   });
 
   /* ───── 5. Student-wise performance with exam history ───── */
@@ -410,14 +405,13 @@ test.describe('Academics — Performance Dashboard & CBSE Reports', () => {
     await page.goto('/academics');
     await page.waitForLoadState('networkidle');
 
-    await page.waitForFunction(
-      () => document.body.textContent?.toLowerCase().includes('total exams'),
-      { timeout: 10_000 },
-    ).catch(() => {});
+    // Wait for the exam table to render
+    await expect(page.locator('.academics-table__row').first()).toBeVisible({ timeout: 10000 });
 
-    const body = await page.textContent('body');
-    // All 3 exams should be counted
-    expect(body?.includes('3')).toBeTruthy();
+    // All 3 exams should appear in the exam list
+    await expect(page.getByText('Unit Test 1')).toBeVisible();
+    await expect(page.getByText('Mid Term')).toBeVisible();
+    await expect(page.getByText('Final Exam')).toBeVisible();
 
     // Verify student performance API returns all exam results (use page.evaluate + fetch)
     const perfResult = await page.evaluate(async (studentId) => {

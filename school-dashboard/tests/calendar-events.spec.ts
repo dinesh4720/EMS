@@ -28,6 +28,8 @@ test.describe('Calendar — Events & Navigation', () => {
         'ems_cookie_consent',
         JSON.stringify({ necessary: true, analytics: false, preferences: false, marketing: false, savedAt: new Date().toISOString() }),
       );
+      // Dismiss shell coach marks (REVAMP-107)
+      localStorage.setItem('ems_coach_marks_v1', JSON.stringify({ shell: Date.now() }));
     });
     // Seed events on known dates in the current month
     seedCalendarEvent(state, { title: 'Staff Meeting', type: 'meeting', date: day15Key, startTime: '10:00', endTime: '11:00' });
@@ -220,9 +222,9 @@ test.describe('Calendar — Events & Navigation', () => {
     const createBtn = page.getByRole('button', { name: /create event/i }).first();
     await expect(createBtn).toBeVisible({ timeout: 5000 });
 
-    // Fill in the title using the HeroUI Input inside the fixed drawer
-    // The input is inside the drawer (fixed position panel)
-    const titleInput = page.locator('.fixed input').first();
+    // Fill in the title using the HeroUI Input inside the drawer
+    // The drawer uses .frosted-overlay--side (Phase 11 markup)
+    const titleInput = page.locator('[role="dialog"] input').first();
     await titleInput.waitFor({ state: 'visible', timeout: 5000 });
     // Click first to focus, then type character by character for React state updates
     await titleInput.click();
@@ -303,25 +305,27 @@ test.describe('Calendar — Events & Navigation', () => {
     await annualDay.click();
     await page.waitForTimeout(500);
 
-    // Find and click the Delete button in the modal
+    // Click the Delete button in the event detail modal
     const modal = page.locator('[role="dialog"]').first();
-    if (await modal.isVisible({ timeout: 5000 }).catch(() => false)) {
-      const deleteBtn = modal.getByRole('button', { name: /delete/i }).first();
-      if (await deleteBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await deleteBtn.click();
-        await page.waitForTimeout(500);
+    await expect(modal).toBeVisible({ timeout: 5000 });
+    const deleteBtn = modal.getByRole('button', { name: /delete/i }).first();
+    await expect(deleteBtn).toBeVisible({ timeout: 2000 });
+    await deleteBtn.click();
+    await page.waitForTimeout(500);
 
-        // If a confirmation dialog appears, confirm it
-        const confirmBtn = page.getByRole('button', { name: /confirm|yes|delete/i }).last();
-        if (await confirmBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-          await confirmBtn.click();
-          await page.waitForTimeout(500);
-        }
+    // Confirm deletion in the alertdialog.
+    // HeroUI's EventDetailModal intercepts pointer events on sibling portals,
+    // so we use a DOM-based locator and trigger a native click via evaluate()
+    // to bypass React Aria's overlay event interception.
+    const confirmBtn = page.locator('#ds-confirm-root button').filter({ hasText: 'Delete' }).first();
+    await expect(confirmBtn).toBeVisible({ timeout: 2000 });
+    await confirmBtn.evaluate((el) => (el as HTMLButtonElement).click());
 
-        // Verify event was removed from state
-        expect(state.calendarEvents.some(e => e.title === 'Annual Day')).toBeFalsy();
-      }
-    }
+    // Wait for the event to disappear from the calendar UI
+    await expect(page.getByText('Annual Day')).not.toBeVisible({ timeout: 5000 });
+
+    // Verify the event was removed from mock state
+    expect(state.calendarEvents.some(e => e.title === 'Annual Day')).toBeFalsy();
   });
 
   test('11 — filter by event type shows different visual styles', async ({ page }) => {
@@ -336,8 +340,8 @@ test.describe('Calendar — Events & Navigation', () => {
 
     // Events are color-coded by type in the month grid:
     // holiday → danger, exam → warning, event → primary, meeting → secondary
-    // Event elements have "truncate" class within the calendar grid
-    const allEventDivs = page.locator('[class*="truncate"][class*="border"]');
+    // Event elements use the .calendar-event class (Phase 11 MonthView markup)
+    const allEventDivs = page.locator('.calendar-event');
     const count = await allEventDivs.count();
     expect(count).toBeGreaterThan(0);
 
@@ -345,10 +349,11 @@ test.describe('Calendar — Events & Navigation', () => {
     const classPatterns = new Set<string>();
     for (let i = 0; i < Math.min(count, 10); i++) {
       const cls = await allEventDivs.nth(i).getAttribute('class');
-      if (cls?.includes('warning')) classPatterns.add('warning');
-      if (cls?.includes('secondary')) classPatterns.add('secondary');
-      if (cls?.includes('primary')) classPatterns.add('primary');
-      if (cls?.includes('danger')) classPatterns.add('danger');
+      if (cls?.includes('calendar-event--exam')) classPatterns.add('warning');
+      if (cls?.includes('calendar-event--meeting')) classPatterns.add('secondary');
+      if (cls?.includes('calendar-event--holiday')) classPatterns.add('danger');
+      // Default events have no extra modifier — treat as primary
+      if (cls && !cls.includes('--exam') && !cls.includes('--meeting') && !cls.includes('--holiday')) classPatterns.add('primary');
     }
 
     // We seeded meeting (secondary), exam (warning), and event (primary) — at least 2 distinct styles
