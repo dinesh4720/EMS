@@ -761,7 +761,28 @@
     "copyright": "© {{year}} SchoolSync",
     "lockoutError": "बहुत अधिक विफल प्रयास। {{mins}} मिनट {{secs}} सेकंड बाद पुनः प्रयास करें।",
     "lockedFor": "बहुत अधिक विफल प्रयास। खाता {{mins}} मिनट के लिए लॉक है।",
-    "loginFailedAttempts": "{{message}}. {{remaining}} प्रयास शेष।"
+    "loginFailedAttempts": "{{message}}. {{remaining}} प्रयास शेष।",
+    "visualPreviewLabel": "Preview",
+    "visualPanelTitle": "One workspace for every school",
+    "visualPanelSub": "Attendance, fees, results, and parent messaging — calm, dense, fast.",
+    "featureCards": {
+      "attendance": {
+        "title": "Attendance",
+        "desc": "Track daily attendance with automated reports."
+      },
+      "fees": {
+        "title": "Fees",
+        "desc": "Manage fee structures and payment records."
+      },
+      "results": {
+        "title": "Results",
+        "desc": "Publish exam results and generate report cards."
+      },
+      "messaging": {
+        "title": "Parent Messaging",
+        "desc": "Send announcements and chat with parents."
+      }
+    }
   },
   "signup": {
     "title": "अपना विद्यालय आमंत्रण स्वीकार करें",

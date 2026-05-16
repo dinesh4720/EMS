@@ -15,6 +15,13 @@ const MAX_ATTEMPTS = APP_CONFIG.MAX_LOGIN_ATTEMPTS;
 const LOCKOUT_MS = APP_CONFIG.LOCKOUT_DURATION_MS;
 const LOCKOUT_KEY = "login_lockout";
 
+const VISUAL_OPTIONS = [
+  { key: "3d", label: "3D" },
+  { key: "enhanced3d", label: "Enhanced" },
+  { key: "pixel", label: "Pixel" },
+  { key: "cards", label: "Cards" },
+];
+
 function getLockoutState() {
   try {
     const raw = sessionStorage.getItem(LOCKOUT_KEY);
@@ -48,10 +55,37 @@ function formatCountdown(seconds) {
   return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 }
 
+function useVisualVariant() {
+  const location = useLocation();
+  const [variant, setVariant] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const v = params.get("visual");
+    return VISUAL_OPTIONS.some((o) => o.key === v) ? v : "3d";
+  });
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const v = params.get("visual");
+    if (VISUAL_OPTIONS.some((o) => o.key === v) && v !== variant) {
+      setVariant(v);
+    }
+  }, [location.search]);
+
+  const setVisual = useCallback((key) => {
+    setVariant(key);
+    const url = new URL(window.location.href);
+    url.searchParams.set("visual", key);
+    window.history.replaceState({}, "", url);
+  }, []);
+
+  return [variant, setVisual];
+}
+
 export default function Login() {
   const { t } = useTranslation();
   const location = useLocation();
   const { login } = useAuth();
+  const [visualVariant, setVisualVariant] = useVisualVariant();
 
   const [emailOrPhone, setEmailOrPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -307,6 +341,26 @@ export default function Login() {
             <p className="auth-form__notice">{t("login.inviteOnlyNote")}</p>
           </form>
 
+          {/* Visual variant preview toggle */}
+          <div className="auth-form__variant-toggle">
+            <span className="auth-form__variant-label">
+              {t("login.visualPreviewLabel", "Preview")}
+            </span>
+            <div className="auth-form__variant-segment" role="group" aria-label={t("login.visualPreviewLabel", "Preview")}>
+              {VISUAL_OPTIONS.map((opt) => (
+                <button
+                  key={opt.key}
+                  type="button"
+                  className={`auth-form__variant-btn ${visualVariant === opt.key ? "auth-form__variant-btn--active" : ""}`}
+                  onClick={() => setVisualVariant(opt.key)}
+                  aria-pressed={visualVariant === opt.key}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <footer className="auth-form__foot">
             <span>{t("login.copyright", { year: new Date().getFullYear() })}</span>
             <Link to="/privacy">{t("login.privacyPolicy")}</Link>
@@ -314,7 +368,7 @@ export default function Login() {
         </div>
       </section>
 
-      <AuthVisual />
+      <AuthVisual variant={visualVariant} />
     </div>
   );
 }
