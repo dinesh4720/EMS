@@ -201,6 +201,31 @@ export interface NotificationRecord {
   message: string; read: boolean; createdAt: string; schoolId: string;
 }
 
+export interface PtmSlotRecord {
+  _id: string; id: string;
+  parentName: string;
+  studentId: string | { _id: string; name: string };
+  scheduledTime: string;
+  notes: string;
+  status: 'booked' | 'completed' | 'cancelled' | 'no-show';
+}
+
+export interface PtmSessionRecord {
+  _id: string; id: string;
+  title: string;
+  description: string;
+  sessionDate: string;
+  startTime: string;
+  endTime: string;
+  slotDuration: number;
+  classId: string | { _id: string; name: string; section?: string };
+  staffId: string | { _id: string; name: string };
+  venue: string;
+  status: 'scheduled' | 'ongoing' | 'completed' | 'cancelled';
+  slots: PtmSlotRecord[];
+  schoolId: string;
+}
+
 export interface MockState {
   user: User;
   staff: StaffMember[];
@@ -250,6 +275,7 @@ export interface MockState {
   trashItems: Array<Record<string, unknown>>;
   permissionRequests: Array<Record<string, unknown>>;
   activeSessions: Array<Record<string, unknown>>;
+  ptmSessions: PtmSessionRecord[];
   requestLog: Set<string>;
   /* counters */
   studentCounter: number;
@@ -273,6 +299,7 @@ export interface MockState {
   emailCampaignCounter: number;
   reminderCounter: number;
   paymentCounter: number;
+  ptmSlotCounter: number;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -575,6 +602,7 @@ export function createMockState(userOverride?: User): MockState {
     trashItems: [],
     permissionRequests: [],
     activeSessions: [],
+    ptmSessions: [],
     requestLog: new Set(),
     studentCounter: 0, examCounter: 0, resultCounter: 0, bookCounter: 0,
     issuedBookCounter: 0, announcementCounter: 0, appointmentCounter: 0,
@@ -583,7 +611,7 @@ export function createMockState(userOverride?: User): MockState {
     inventoryAssetCounter: 0, inventoryVendorCounter: 0,
     homeworkCounter: 0, calendarEventCounter: 0, visitorCounter: 0,
     gatePassCounter: 0, emailCampaignCounter: 0, reminderCounter: 0,
-    paymentCounter: 0,
+    paymentCounter: 0, ptmSlotCounter: 0,
   };
 }
 
@@ -924,6 +952,31 @@ export function seedHostelAllocation(
   };
   state.hostelAllocations.push(record);
   return record;
+}
+
+export function seedPtmSession(
+  state: MockState,
+  overrides: Partial<PtmSessionRecord> = {},
+): PtmSessionRecord {
+  state.ptmSlotCounter++;
+  const id = overrides.id || objectId('ptm-', state.ptmSlotCounter);
+  const session: PtmSessionRecord = {
+    _id: id, id,
+    title: overrides.title || `PTM Session ${state.ptmSlotCounter}`,
+    description: overrides.description || '',
+    sessionDate: overrides.sessionDate || '2026-05-20',
+    startTime: overrides.startTime || '09:00',
+    endTime: overrides.endTime || '12:00',
+    slotDuration: overrides.slotDuration ?? 15,
+    classId: overrides.classId || CLASS_10A_ID,
+    staffId: overrides.staffId || TEACHER_A_ID,
+    venue: overrides.venue || 'Main Hall',
+    status: (overrides.status as PtmSessionRecord['status']) || 'scheduled',
+    slots: (overrides.slots as PtmSlotRecord[]) || [],
+    schoolId: SCHOOL_ID,
+  };
+  state.ptmSessions.push(session);
+  return session;
 }
 
 export function seedInventoryAsset(
@@ -2035,6 +2088,47 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
         fees: { results: [], total: 0 },
         announcements: { results: [], total: 0 },
       });
+    }
+
+    /* ── PTM (Parent-Teacher Meetings) ── */
+    if (path === '/ptm' && method === 'GET') return json(state.ptmSessions);
+    if (path === '/ptm' && method === 'POST') {
+      const s = seedPtmSession(state, body as Partial<PtmSessionRecord>);
+      return json(s, 201);
+    }
+    if (path.match(/^\/ptm\/([^/]+)$/) && method === 'GET') {
+      const id = path.split('/')[2];
+      const s = state.ptmSessions.find((sess) => sess.id === id || sess._id === id);
+      return s ? json(s) : json({ error: 'Not found' }, 404);
+    }
+    if (path.match(/^\/ptm\/([^/]+)$/) && method === 'PUT') {
+      const id = path.split('/')[2];
+      const idx = state.ptmSessions.findIndex((sess) => sess.id === id || sess._id === id);
+      if (idx >= 0) { Object.assign(state.ptmSessions[idx], body); return json(state.ptmSessions[idx]); }
+      return json({ error: 'Not found' }, 404);
+    }
+    if (path.match(/^\/ptm\/([^/]+)$/) && method === 'DELETE') {
+      const id = path.split('/')[2];
+      state.ptmSessions = state.ptmSessions.filter((sess) => sess.id !== id && sess._id !== id);
+      return json({ message: 'Deleted' });
+    }
+    if (path.match(/^\/ptm\/([^/]+)\/slots$/) && method === 'POST') {
+      const sessionId = path.split('/')[2];
+      const idx = state.ptmSessions.findIndex((sess) => sess.id === sessionId || sess._id === sessionId);
+      if (idx >= 0) {
+        const slotId = objectId('slot-', state.ptmSlotCounter++);
+        const slot: PtmSlotRecord = {
+          _id: slotId, id: slotId,
+          parentName: (body as Record<string, string>)?.parentName || '',
+          studentId: (body as Record<string, string>)?.studentId || '',
+          scheduledTime: (body as Record<string, string>)?.scheduledTime || '',
+          notes: (body as Record<string, string>)?.notes || '',
+          status: 'booked',
+        };
+        state.ptmSessions[idx].slots.push(slot);
+        return json(slot, 201);
+      }
+      return json({ error: 'Not found' }, 404);
     }
 
     /* ── Catch-all ── */
