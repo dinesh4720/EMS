@@ -42,15 +42,12 @@ export default function DataCleanupSettings() {
   const [cleaning, setCleaning] = useState(false);
   const [result, setResult] = useState(null);
 
-  useEffect(() => {
-    fetchCounts();
-  }, []);
-
-  const fetchCounts = async () => {
+  const fetchCounts = async (signal) => {
     try {
       setLoading(true);
       setCountsError(false);
-      const data = await request("/settings/data-counts");
+      const data = await request("/settings/data-counts", { signal });
+      if (signal?.aborted) return;
       if (data && typeof data === "object" && Object.keys(data).length > 0) {
         setCounts({
           students: data.students ?? 0,
@@ -60,13 +57,20 @@ export default function DataCleanupSettings() {
           results: data.results ?? 0,
         });
       }
-    } catch {
+    } catch (err) {
+      if (err.name === 'AbortError') return;
       setCountsError(true);
       setCounts(EMPTY_COUNTS);
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchCounts(controller.signal);
+    return () => controller.abort();
+  }, []);
 
   const totalSelected = Array.from(selected).reduce(
     (sum, key) => sum + (counts[key] || 0),

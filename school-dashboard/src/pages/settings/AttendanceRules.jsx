@@ -34,25 +34,29 @@ export default function AttendanceRules() {
   const [saveMessage, setSaveMessage] = useState(null);
 
   // Fetch attendance rules from backend on mount
-  const fetchRules = useCallback(async () => {
+  const fetchRules = useCallback(async (signal) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await settingsApi.getAttendanceRules();
+      const data = await settingsApi.getAttendanceRules({ signal });
+      if (signal?.aborted) return;
       const merged = { ...DEFAULT_RULES, ...data };
       setRules(merged);
       setTempRules(merged);
     } catch (err) {
+      if (err.name === 'AbortError') return;
       logger.error('Failed to fetch attendance rules:', err);
       setError('Failed to load attendance rules. Using defaults.');
       // Keep defaults on error
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchRules();
+    const controller = new AbortController();
+    fetchRules(controller.signal);
+    return () => controller.abort();
   }, [fetchRules]);
 
   // Save to backend

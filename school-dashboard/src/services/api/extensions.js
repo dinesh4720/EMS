@@ -3,17 +3,18 @@ import { getAuthHeaders, saveStoredUser } from '../../utils/authSession';
 import { API_URL } from '../../config/api.js';
 
 export const parentApi = {
-  getAll: (params = {}) => {
+  getAll: (params = {}, options = {}) => {
     const query = new URLSearchParams(params).toString();
-    return request(`/parents${query ? `?${query}` : ''}`);
+    return request(`/parents${query ? `?${query}` : ''}`, options);
   },
-  getById: (id) => request(`/parents/${id}`),
-  resetPassword: (id) => request(`/parents/${id}/reset-password`, { method: 'POST' }),
-  updateStatus: (id, status) => request(`/parents/${id}/status`, {
+  getById: (id, options = {}) => request(`/parents/${id}`, options),
+  resetPassword: (id, options = {}) => request(`/parents/${id}/reset-password`, { method: 'POST', ...options }),
+  updateStatus: (id, status, options = {}) => request(`/parents/${id}/status`, {
     method: 'PUT',
-    body: JSON.stringify({ status })
+    body: JSON.stringify({ status }),
+    ...options
   }),
-  bulkCreate: () => request('/parents/bulk-create', { method: 'POST' }),
+  bulkCreate: (options = {}) => request('/parents/bulk-create', { method: 'POST', ...options }),
 };
 
 // Inventory API
@@ -363,18 +364,18 @@ export const promotionApi = {
 
 // NPS API
 export const npsApi = {
-  getStatus: () => request('/nps/status'),
-  submit: (data) => request('/nps/submit', { method: 'POST', body: JSON.stringify(data) }),
-  dismiss: () => request('/nps/dismiss', { method: 'POST' }),
-  getAnalytics: (params) => {
+  getStatus: (options = {}) => request('/nps/status', options),
+  submit: (data, options = {}) => request('/nps/submit', { method: 'POST', body: JSON.stringify(data), ...options }),
+  dismiss: (options = {}) => request('/nps/dismiss', { method: 'POST', ...options }),
+  getAnalytics: (params, options = {}) => {
     const qs = new URLSearchParams();
     if (params?.from) qs.set('from', params.from);
     if (params?.to) qs.set('to', params.to);
     const query = qs.toString();
-    return request(`/nps/analytics${query ? `?${query}` : ''}`);
+    return request(`/nps/analytics${query ? `?${query}` : ''}`, options);
   },
-  getConfig: () => request('/nps/config'),
-  updateConfig: (data) => request('/nps/config', { method: 'PUT', body: JSON.stringify(data) }),
+  getConfig: (options = {}) => request('/nps/config', options),
+  updateConfig: (data, options = {}) => request('/nps/config', { method: 'PUT', body: JSON.stringify(data), ...options }),
 };
 
 // CBSE Report Card API

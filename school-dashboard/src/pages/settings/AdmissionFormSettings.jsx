@@ -276,7 +276,7 @@ export default function AdmissionFormSettings() {
                   label={t('pages.numberPadding')}
                   placeholder={t('settings.paddingPlaceholder')}
                   value={String(admissionIdConfig.numberPadding)}
-                  onValueChange={(value) => setAdmissionIdConfig({ ...admissionIdConfig, numberPadding: parseInt(value) || 4 })}
+                  onValueChange={(value) => setAdmissionIdConfig({ ...admissionIdConfig, numberPadding: parseInt(value, 10) || 4 })
                   variant="bordered"
                   description="Number of digits (e.g., 4 = 0001)"
                   min={1}
@@ -288,7 +288,7 @@ export default function AdmissionFormSettings() {
                   label={t('pages.startingNumber')}
                   placeholder={t('settings.startingNumberPlaceholder')}
                   value={String(admissionIdConfig.startingNumber)}
-                  onValueChange={(value) => setAdmissionIdConfig({ ...admissionIdConfig, startingNumber: parseInt(value) || 1 })}
+                  onValueChange={(value) => setAdmissionIdConfig({ ...admissionIdConfig, startingNumber: parseInt(value, 10) || 1 })
                   variant="bordered"
                   description="First number to use"
                   min={1}
@@ -390,7 +390,7 @@ export default function AdmissionFormSettings() {
                   labelPlacement="outside"
                   placeholder={t('settings.startingNumberPlaceholder')}
                   value={rollNumberConfig.startingNumber.toString()}
-                  onValueChange={(value) => setRollNumberConfig({ ...rollNumberConfig, startingNumber: parseInt(value) || 1 })}
+                  onValueChange={(value) => setRollNumberConfig({ ...rollNumberConfig, startingNumber: parseInt(value, 10) || 1 })}
                   description="The first roll number to assign"
                   variant="bordered"
                 />
@@ -513,7 +513,7 @@ export default function AdmissionFormSettings() {
                           type="number"
                           label={t('pages.maxFileSizeMb')}
                           value={String(Math.round(doc.maxFileSize / 1048576))}
-                          onValueChange={(value) => updateDocumentConfig(index, 'maxFileSize', parseInt(value) * 1048576 || 5242880)}
+                          onValueChange={(value) => updateDocumentConfig(index, 'maxFileSize', (parseInt(value, 10) || 5) * 1048576)}
                           variant="bordered"
                           min={1}
                           max={50}
