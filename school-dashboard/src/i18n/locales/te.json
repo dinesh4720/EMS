@@ -761,7 +761,28 @@
     "copyright": "© {{year}} SchoolSync",
     "lockoutError": "చాలా విఫల ప్రయత్నాలు. {{mins}} ని {{secs}} సె లో మళ్ళీ ప్రయత్నించండి.",
     "lockedFor": "చాలా విఫల ప్రయత్నాలు. ఖాతా {{mins}} నిమిషాలు లాక్ చేయబడింది.",
-    "loginFailedAttempts": "{{message}}. {{remaining}} ప్రయత్న{{plural}} మిగిలి ఉన్నాయి."
+    "loginFailedAttempts": "{{message}}. {{remaining}} ప్రయత్న{{plural}} మిగిలి ఉన్నాయి.",
+    "visualPreviewLabel": "Preview",
+    "visualPanelTitle": "One workspace for every school",
+    "visualPanelSub": "Attendance, fees, results, and parent messaging — calm, dense, fast.",
+    "featureCards": {
+      "attendance": {
+        "title": "Attendance",
+        "desc": "Track daily attendance with automated reports."
+      },
+      "fees": {
+        "title": "Fees",
+        "desc": "Manage fee structures and payment records."
+      },
+      "results": {
+        "title": "Results",
+        "desc": "Publish exam results and generate report cards."
+      },
+      "messaging": {
+        "title": "Parent Messaging",
+        "desc": "Send announcements and chat with parents."
+      }
+    }
   },
   "signup": {
     "title": "మీ పాఠశాల ఆహ్వానాన్ని అంగీకరించండి",
