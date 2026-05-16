@@ -93,10 +93,12 @@ async function mockAuthEndpoints(page: import('@playwright/test').Page) {
 test.describe('Auth — Login Page (E2E-TEST-37)', () => {
   test.beforeEach(async ({ page }) => {
     await mockAuthEndpoints(page);
-    // Ensure we are logged out
+    // Ensure we are logged out and dismiss banners/popups
     await page.addInitScript(() => {
       sessionStorage.clear();
       localStorage.removeItem('app_user');
+      localStorage.setItem('ems_cookie_consent', JSON.stringify({ necessary: true, analytics: false, preferences: false, marketing: false, savedAt: new Date().toISOString() }));
+      localStorage.setItem('ems_coach_marks_v1', JSON.stringify({ shell: Date.now() }));
     });
   });
 
@@ -104,12 +106,12 @@ test.describe('Auth — Login Page (E2E-TEST-37)', () => {
     await page.goto('/login');
     await page.waitForLoadState('networkidle');
 
-    // Email field (refactored login uses type="text" with inputMode="email")
-    const emailInput = page.locator('input#login-email');
+    // Email field (login page uses type="text" inputMode="email")
+    const emailInput = page.locator('#login-email');
     await expect(emailInput).toBeVisible({ timeout: 10_000 });
 
     // Password field
-    const passwordInput = page.locator('input#login-password');
+    const passwordInput = page.locator('#login-password');
     await expect(passwordInput).toBeVisible();
 
     // Submit button
@@ -122,8 +124,8 @@ test.describe('Auth — Login Page (E2E-TEST-37)', () => {
     await page.waitForLoadState('networkidle');
 
     // Fill in credentials
-    await page.locator('input#login-email').fill('admin@schoolsync.test');
-    await page.locator('input#login-password').fill('Admin@123');
+    await page.locator('#login-email').fill('admin@schoolsync.test');
+    await page.locator('#login-password').fill('Admin@123');
 
     // Submit
     await page.getByRole('button', { name: /sign in|login|log in/i }).first().click();
@@ -138,29 +140,23 @@ test.describe('Auth — Login Page (E2E-TEST-37)', () => {
     await page.goto('/login');
     await page.waitForLoadState('networkidle');
 
-    await page.locator('input#login-email').fill('wrong@test.com');
-    await page.locator('input#login-password').fill('WrongPass@1');
+    await page.locator('#login-email').fill('wrong@test.com');
+    await page.locator('#login-password').fill('WrongPass@1');
     await page.getByRole('button', { name: /sign in|login|log in/i }).first().click();
 
-    // Wait for error message
+    // Wait for error message to appear (toBeVisible retries, isVisible does not)
     const errorMsg = page.locator('[class*="error"], [role="alert"], [class*="danger"]').first();
-    const hasError = await errorMsg.isVisible({ timeout: 5000 }).catch(() => false);
+    await expect(errorMsg).toBeVisible({ timeout: 5000 });
 
-    if (hasError) {
-      const text = await errorMsg.textContent();
-      expect(text?.toLowerCase()).toMatch(/invalid|incorrect|wrong|failed/i);
-    } else {
-      // Fallback: check body text for error
-      const bodyText = await page.textContent('body');
-      expect(bodyText?.toLowerCase()).toMatch(/invalid|error|failed/i);
-    }
+    const text = await errorMsg.textContent();
+    expect(text?.toLowerCase()).toMatch(/invalid|incorrect|wrong|failed/i);
   });
 
   test('4) password visibility toggle works', async ({ page }) => {
     await page.goto('/login');
     await page.waitForLoadState('networkidle');
 
-    const passwordInput = page.locator('input[type="password"]').first();
+    const passwordInput = page.locator('#login-password');
     await expect(passwordInput).toBeVisible();
 
     // Look for toggle button (eye icon)
@@ -170,9 +166,8 @@ test.describe('Auth — Login Page (E2E-TEST-37)', () => {
     if (hasToggle) {
       await toggleBtn.click();
       // After toggle, the input type should change to text
-      const inputAfterToggle = page.locator('input[type="text"]').first();
-      const isText = await inputAfterToggle.isVisible({ timeout: 2000 }).catch(() => false);
-      expect(isText).toBeTruthy();
+      const inputType = await passwordInput.getAttribute('type');
+      expect(inputType).toBe('text');
     }
   });
 
@@ -182,8 +177,8 @@ test.describe('Auth — Login Page (E2E-TEST-37)', () => {
 
     // Simulate multiple failed attempts
     for (let i = 0; i < 3; i++) {
-      await page.locator('input#login-email').fill('wrong@test.com');
-      await page.locator('input#login-password').fill(`Wrong@${i}`);
+      await page.locator('#login-email').fill('wrong@test.com');
+      await page.locator('#login-password').fill(`Wrong@${i}`);
       await page.getByRole('button', { name: /sign in|login|log in/i }).first().click();
       await page.waitForTimeout(300);
     }
@@ -197,10 +192,10 @@ test.describe('Auth — Login Page (E2E-TEST-37)', () => {
     await page.goto('/login');
     await page.waitForLoadState('networkidle');
 
-    const emailInput = page.locator('input#login-email');
+    const emailInput = page.locator('#login-email');
     await emailInput.fill('not-an-email');
 
-    await page.locator('input#login-password').fill('SomePass@1');
+    await page.locator('#login-password').fill('SomePass@1');
     await page.getByRole('button', { name: /sign in|login|log in/i }).first().click();
 
     // Browser native email validation or custom error
@@ -215,6 +210,8 @@ test.describe('Auth — Signup Page (E2E-TEST-37)', () => {
     await page.addInitScript(() => {
       sessionStorage.clear();
       localStorage.removeItem('app_user');
+      localStorage.setItem('ems_cookie_consent', JSON.stringify({ necessary: true, analytics: false, preferences: false, marketing: false, savedAt: new Date().toISOString() }));
+      localStorage.setItem('ems_coach_marks_v1', JSON.stringify({ shell: Date.now() }));
     });
   });
 
