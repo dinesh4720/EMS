@@ -220,9 +220,8 @@ test.describe('Calendar — Events & Navigation', () => {
     const createBtn = page.getByRole('button', { name: /create event/i }).first();
     await expect(createBtn).toBeVisible({ timeout: 5000 });
 
-    // Fill in the title using the HeroUI Input inside the fixed drawer
-    // The input is inside the drawer (fixed position panel)
-    const titleInput = page.locator('.fixed input').first();
+    // Fill in the title using the HeroUI Input inside the drawer
+    const titleInput = page.locator('[role="dialog"] input').first();
     await titleInput.waitFor({ state: 'visible', timeout: 5000 });
     // Click first to focus, then type character by character for React state updates
     await titleInput.click();
@@ -312,11 +311,14 @@ test.describe('Calendar — Events & Navigation', () => {
         await page.waitForTimeout(500);
 
         // If a confirmation dialog appears, confirm it
-        const confirmBtn = page.getByRole('button', { name: /confirm|yes|delete/i }).last();
+        const confirmBtn = page.locator('.ds-confirm__actions button').last();
         if (await confirmBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-          await confirmBtn.click();
+          await confirmBtn.evaluate((el: HTMLElement) => el.click());
           await page.waitForTimeout(500);
         }
+
+        // Wait for the event to disappear from the DOM
+        await expect(page.getByText('Annual Day').first()).toBeHidden({ timeout: 5000 });
 
         // Verify event was removed from state
         expect(state.calendarEvents.some(e => e.title === 'Annual Day')).toBeFalsy();
@@ -336,8 +338,8 @@ test.describe('Calendar — Events & Navigation', () => {
 
     // Events are color-coded by type in the month grid:
     // holiday → danger, exam → warning, event → primary, meeting → secondary
-    // Event elements have "truncate" class within the calendar grid
-    const allEventDivs = page.locator('[class*="truncate"][class*="border"]');
+    // Event elements use the calendar-event class
+    const allEventDivs = page.locator('.calendar-event');
     const count = await allEventDivs.count();
     expect(count).toBeGreaterThan(0);
 
@@ -345,13 +347,13 @@ test.describe('Calendar — Events & Navigation', () => {
     const classPatterns = new Set<string>();
     for (let i = 0; i < Math.min(count, 10); i++) {
       const cls = await allEventDivs.nth(i).getAttribute('class');
-      if (cls?.includes('warning')) classPatterns.add('warning');
-      if (cls?.includes('secondary')) classPatterns.add('secondary');
-      if (cls?.includes('primary')) classPatterns.add('primary');
-      if (cls?.includes('danger')) classPatterns.add('danger');
+      if (cls?.includes('calendar-event--holiday')) classPatterns.add('holiday');
+      if (cls?.includes('calendar-event--exam')) classPatterns.add('exam');
+      if (cls?.includes('calendar-event--meeting')) classPatterns.add('meeting');
+      if (cls && !cls.includes('calendar-event--')) classPatterns.add('event');
     }
 
-    // We seeded meeting (secondary), exam (warning), and event (primary) — at least 2 distinct styles
+    // We seeded meeting, exam, and event — at least 2 distinct styles
     expect(classPatterns.size).toBeGreaterThanOrEqual(2);
   });
 
