@@ -470,6 +470,7 @@ export function createMockState(userOverride?: User): MockState {
     ],
     schoolSettings: {
       schoolName: 'SchoolSync Demo School',
+      name: 'SchoolSync Demo School',
       academicYear: '2025-2026',
       academicYearStart: '2025-06-01',
       academicYearEnd: '2026-05-31',
@@ -478,6 +479,20 @@ export function createMockState(userOverride?: User): MockState {
       language: 'en',
       attendanceType: 'daily',
       gradingSystem: 'percentage',
+      udiseNumber: '',
+      udiseNo: '',
+      affiliationNumber: '',
+      affiliationNo: '',
+      board: '',
+      boardOfEducation: '',
+      email: 'info@schoolsync.test',
+      phone: '9876500000',
+      address: '123 Education Lane',
+      city: 'Bangalore',
+      state: 'Karnataka',
+      pinCode: '560001',
+      website: '',
+      logo: '',
     },
     intakeForms: [
       {
@@ -1179,6 +1194,9 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
       const tt = state.timetables.find((t: Record<string, unknown>) => t.classId === id);
       return json(tt || { classId: id, periods: [], schedule: {} });
     }
+    if (path.match(/^\/classes\/([^/]+)\/performance/)) {
+      return json({ averageAcademicPerformance: 75, passRate: 88, totalStudents: 5, presentCount: 5, absentCount: 0 });
+    }
 
     /* ── Staff ── */
     if (path === '/staff' && method === 'GET')  return json(state.staff);
@@ -1247,6 +1265,16 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
     if (path === '/exams' && method === 'POST') {
       const e = seedExam(state, body as Partial<ExamRecord>);
       return json(e, 201);
+    }
+    if (path.match(/^\/exams\/([^/]+)\/publish$/) && method === 'POST') {
+      const id = path.split('/')[2];
+      const exam = state.exams.find((ex) => ex.id === id);
+      if (exam) { exam.status = 'results_published'; return json({ success: true }); }
+      return json({ error: 'Not found' }, 404);
+    }
+    if (path.match(/^\/exams\/([^/]+)\/results$/) && method === 'GET') {
+      const id = path.split('/')[2];
+      return json(state.results.filter((r) => r.examId === id));
     }
     if (path === '/results' && method === 'GET')  return json(state.results);
     if (path.match(/^\/results\/exam\//))         return json(state.results.filter((r) => r.examId === path.split('/')[3]));
@@ -1673,6 +1701,7 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
     if (path === '/inventory/reports')      return json({ totals: { totalItems: 0, totalPurchaseValue: 0, totalCurrentValue: 0 }, categoryBreakdown: [], conditionSummary: [], statusSummary: [] });
 
     /* ── Homework ── */
+    if (path.match(/^\/homework\/teacher\//))  return json({ success: true, data: [] });
     if (path === '/homework' && method === 'GET')  return jsonList(state.homework);
     if (path === '/homework' && method === 'POST') {
       const h = seedHomework(state, body as Partial<HomeworkRecord>);
@@ -1802,6 +1831,7 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
     if (path === '/holidays')     return json(state.holidays);
     if (path === '/subjects')     return json(state.subjects);
     if (path === '/permissions')  return json(state.user.permissions);
+    if (path === '/permissions/me')  return json(state.user.permissions || {});
     if (path === '/communication-settings') return json({ emailEnabled: true, smsEnabled: true, pushEnabled: true, whatsappEnabled: false });
 
     /* ── Trash ── */
@@ -1894,6 +1924,7 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
     if (path === '/notifications')  return json(state.notifications ?? []);
     if (path.match(/^\/notifications\/preferences/))  return json({ email: true, push: true, sms: false });
     if (path === '/notification-preferences')  return json({ email: true, push: true, sms: false });
+    if (path === '/notifications/unread-count')  return json({ count: (state.notifications ?? []).filter((n: any) => !n.read).length });
 
     /* ── Intake Forms (CRUD) ── */
     if (path === '/intake-forms' || path === '/intake-forms/') {
