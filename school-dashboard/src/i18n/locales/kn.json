@@ -761,7 +761,28 @@
     "copyright": "© {{year}} SchoolSync",
     "lockoutError": "ಹಲವಾರು ವಿಫಲ ಪ್ರಯತ್ನಗಳು. {{mins}} ನಿ {{secs}} ಸೆ ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
     "lockedFor": "ಹಲವಾರು ವಿಫಲ ಪ್ರಯತ್ನಗಳು. ಖಾತೆ {{mins}} ನಿಮಿಷಗಳ ಕಾಲ ಲಾಕ್ ಆಗಿದೆ.",
-    "loginFailedAttempts": "{{message}}. {{remaining}} ಪ್ರಯತ್ನ{{plural}} ಬಾಕಿ."
+    "loginFailedAttempts": "{{message}}. {{remaining}} ಪ್ರಯತ್ನ{{plural}} ಬಾಕಿ.",
+    "visualPreviewLabel": "Preview",
+    "visualPanelTitle": "One workspace for every school",
+    "visualPanelSub": "Attendance, fees, results, and parent messaging — calm, dense, fast.",
+    "featureCards": {
+      "attendance": {
+        "title": "Attendance",
+        "desc": "Track daily attendance with automated reports."
+      },
+      "fees": {
+        "title": "Fees",
+        "desc": "Manage fee structures and payment records."
+      },
+      "results": {
+        "title": "Results",
+        "desc": "Publish exam results and generate report cards."
+      },
+      "messaging": {
+        "title": "Parent Messaging",
+        "desc": "Send announcements and chat with parents."
+      }
+    }
   },
   "signup": {
     "title": "ನಿಮ್ಮ ಶಾಲೆಯ ಆಮಂತ್ರಣವನ್ನು ಸ್ವೀಕರಿಸಿ",
