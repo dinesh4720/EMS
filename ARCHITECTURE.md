@@ -171,7 +171,7 @@ Every authenticated route is wrapped in `PermissionGuard(module="<name>")`. The 
 
 | Date | Module | Issue | Status |
 |------|--------|-------|--------|
-| *—none yet—* | — | — | — |
+| 2026-05-18 | Front Desk | [DK-179](mention://issue/5498b6ef-b83f-4c88-9909-bfbf42250574) | Awaiting approval |
 
 ---
 
