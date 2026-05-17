@@ -60,6 +60,7 @@ test.describe('TC109: Academic Year Configuration & Propagation', () => {
   test('1) academic settings page loads with current year', async ({ page }) => {
     await page.goto('/settings/academics');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(bodyText?.toLowerCase()).toMatch(/academic|year|settings/i);
@@ -71,6 +72,7 @@ test.describe('TC109: Academic Year Configuration & Propagation', () => {
   test('2) set academic year to 2025-2026 with start and end dates', async ({ page }) => {
     await page.goto('/settings/academics');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Look for academic year input or selector
     const yearInput = page.locator(
@@ -109,6 +111,7 @@ test.describe('TC109: Academic Year Configuration & Propagation', () => {
   test('3) save academic year settings', async ({ page }) => {
     await page.goto('/settings/academics');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Click save button
     const saveBtn = page.getByRole('button', { name: /save|update|submit/i }).first();
@@ -117,6 +120,7 @@ test.describe('TC109: Academic Year Configuration & Propagation', () => {
     if (hasSaveBtn) {
       await saveBtn.click();
       await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
       // Verify settings API was called
       const settingsCalled = [...state.requestLog].some(
@@ -133,6 +137,7 @@ test.describe('TC109: Academic Year Configuration & Propagation', () => {
   test('4) /students reflects correct academic year context', async ({ page }) => {
     await page.goto('/students');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
 
@@ -151,6 +156,7 @@ test.describe('TC109: Academic Year Configuration & Propagation', () => {
   test('5) /academics shows exams for correct year', async ({ page }) => {
     await page.goto('/academics');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
 
@@ -170,6 +176,7 @@ test.describe('TC109: Academic Year Configuration & Propagation', () => {
   test('6) /fees shows fee structures for correct year', async ({ page }) => {
     await page.goto('/fees');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
 
@@ -189,6 +196,7 @@ test.describe('TC109: Academic Year Configuration & Propagation', () => {
   test('7) /staffs/attendance reflects correct year context', async ({ page }) => {
     await page.goto('/staffs/attendance');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     const lowerBody = bodyText?.toLowerCase() || '';

@@ -50,6 +50,16 @@ const PermissionRequests = lazyWithRetry(() => import("./PermissionRequests"));
 const TrashSettings = lazyWithRetry(() => import("./TrashSettings"));
 const FeeTemplatesPage = lazyWithRetry(() => import("./FeeTemplatesPage"));
 const SSOSettings = lazyWithRetry(() => import("./SSOSettings"));
+const WorkspaceSettings = lazyWithRetry(() => import("./WorkspaceSettings"));
+const NPSAnalyticsPage = lazyWithRetry(() => import("./NPSAnalyticsPage"));
+const SCIMSettings = lazyWithRetry(() => import("./SCIMSettings"));
+const WebhooksPage = lazyWithRetry(() => import("./WebhooksPage"));
+const ParentManagement = lazyWithRetry(() => import("./ParentManagement"));
+const DataCleanupSettings = lazyWithRetry(() => import("./DataCleanupSettings"));
+const SeedDataSettings = lazyWithRetry(() => import("./SeedDataSettings"));
+const ActiveSessions = lazyWithRetry(() => import("./ActiveSessions"));
+const PromotionRulesSettings = lazyWithRetry(() => import("./PromotionRulesSettings"));
+const PeriodSettings = lazyWithRetry(() => import("./PeriodSettings"));
 
 function SettingsPageSkeleton() {
   return (

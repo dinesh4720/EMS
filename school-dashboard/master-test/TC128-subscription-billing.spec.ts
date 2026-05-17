@@ -200,6 +200,7 @@ test.describe('TC088 — Subscription & Billing', () => {
   test('1) subscription and billing page loads', async ({ page }) => {
     await page.goto('/settings/subscription');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     await expect(page).not.toHaveURL(/\/login/);
 
@@ -216,6 +217,7 @@ test.describe('TC088 — Subscription & Billing', () => {
   test('2) subscription plan information is displayed', async ({ page }) => {
     await page.goto('/settings/subscription');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(
@@ -231,6 +233,7 @@ test.describe('TC088 — Subscription & Billing', () => {
   test('3) billing information section is visible', async ({ page }) => {
     await page.goto('/settings/subscription');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(
@@ -246,6 +249,7 @@ test.describe('TC088 — Subscription & Billing', () => {
   test('4) invoice history lists past invoices', async ({ page }) => {
     await page.goto('/settings/subscription');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(
@@ -261,6 +265,7 @@ test.describe('TC088 — Subscription & Billing', () => {
   test('5) clicking an invoice shows its details', async ({ page }) => {
     await page.goto('/settings/subscription');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const invoiceLink = page.getByText(/INV-2026-003|INV-2026/).first();
     if (await invoiceLink.isVisible({ timeout: 3000 }).catch(() => false)) {
@@ -282,6 +287,7 @@ test.describe('TC088 — Subscription & Billing', () => {
   test('6) plan features are displayed', async ({ page }) => {
     await page.goto('/settings/subscription');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(
@@ -300,6 +306,7 @@ test.describe('TC088 — Subscription & Billing', () => {
   test('7) upgrade or downgrade button is visible', async ({ page }) => {
     await page.goto('/settings/subscription');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const upgradeBtn = page.getByRole('button', { name: /upgrade|change plan|downgrade/i }).first();
     const managePlanBtn = page.getByRole('button', { name: /manage|plan/i }).first();
@@ -322,6 +329,7 @@ test.describe('TC088 — Subscription & Billing', () => {
   test('8) usage statistics show current resource consumption', async ({ page }) => {
     await page.goto('/settings/subscription');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(

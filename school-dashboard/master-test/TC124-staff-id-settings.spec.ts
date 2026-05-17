@@ -120,6 +120,7 @@ test.describe('TC084 — Staff ID Format Settings', () => {
   test('1) staff ID settings page loads', async ({ page }) => {
     await page.goto('/settings/staff-id');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     await expect(page).not.toHaveURL(/\/login/);
 
@@ -136,6 +137,7 @@ test.describe('TC084 — Staff ID Format Settings', () => {
   test('2) current staff ID format and preview are visible', async ({ page }) => {
     await page.goto('/settings/staff-id');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(
@@ -150,6 +152,7 @@ test.describe('TC084 — Staff ID Format Settings', () => {
   test('3) changing prefix to EMP updates the configuration', async ({ page }) => {
     await page.goto('/settings/staff-id');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const prefixInput = page.locator('input[name="prefix"], input[placeholder*="prefix" i], input[placeholder*="Prefix" i]').first();
     if (await prefixInput.isVisible({ timeout: 3000 }).catch(() => false)) {
@@ -164,6 +167,7 @@ test.describe('TC084 — Staff ID Format Settings', () => {
   test('4) setting starting number to 100', async ({ page }) => {
     await page.goto('/settings/staff-id');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const numberInput = page.locator('input[name="startingNumber"], input[name="starting_number"], input[placeholder*="starting" i], input[placeholder*="number" i]').first();
     if (await numberInput.isVisible({ timeout: 3000 }).catch(() => false)) {
@@ -178,6 +182,7 @@ test.describe('TC084 — Staff ID Format Settings', () => {
   test('5) setting digit padding to 3', async ({ page }) => {
     await page.goto('/settings/staff-id');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const paddingInput = page.locator('input[name="digitPadding"], input[name="digit_padding"], input[name="padding"]').first();
     const paddingSelect = page.locator('select[name="digitPadding"], select[name="padding"]').first();
@@ -197,6 +202,7 @@ test.describe('TC084 — Staff ID Format Settings', () => {
   test('6) toggling year inclusion updates the format', async ({ page }) => {
     await page.goto('/settings/staff-id');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const yearToggle = page.locator('[role="switch"]').first();
     const yearCheckbox = page.getByLabel(/include year|year/i).first();
@@ -215,6 +221,7 @@ test.describe('TC084 — Staff ID Format Settings', () => {
   test('7) selecting a separator character', async ({ page }) => {
     await page.goto('/settings/staff-id');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const separatorSelect = page.locator('select[name="separator"]').first();
     const separatorInput = page.locator('input[name="separator"]').first();
@@ -247,6 +254,7 @@ test.describe('TC084 — Staff ID Format Settings', () => {
 
     await page.goto('/settings/staff-id');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(
@@ -261,6 +269,7 @@ test.describe('TC084 — Staff ID Format Settings', () => {
   test('9) saving staff ID settings persists changes', async ({ page }) => {
     await page.goto('/settings/staff-id');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Change prefix
     const prefixInput = page.locator('input[name="prefix"], input[placeholder*="prefix" i]').first();

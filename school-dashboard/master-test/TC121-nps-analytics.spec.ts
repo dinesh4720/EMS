@@ -138,6 +138,7 @@ test.describe('TC081 — NPS Analytics', () => {
   test('1) NPS analytics page loads', async ({ page }) => {
     await page.goto('/settings/nps');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     await expect(page).not.toHaveURL(/\/login/);
 
@@ -154,6 +155,7 @@ test.describe('TC081 — NPS Analytics', () => {
   test('2) NPS score value is displayed on the dashboard', async ({ page }) => {
     await page.goto('/settings/nps');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     // The NPS score is 17 (calculated from our seed data)
@@ -168,6 +170,7 @@ test.describe('TC081 — NPS Analytics', () => {
   test('3) promoters, passives, and detractors breakdown is visible', async ({ page }) => {
     await page.goto('/settings/nps');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(
@@ -183,6 +186,7 @@ test.describe('TC081 — NPS Analytics', () => {
   test('4) NPS trend chart or trend data is present', async ({ page }) => {
     await page.goto('/settings/nps');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Look for chart canvas, SVG, or trend labels
     const hasCanvas = await page.locator('canvas').isVisible({ timeout: 3000 }).catch(() => false);
@@ -202,6 +206,7 @@ test.describe('TC081 — NPS Analytics', () => {
   test('5) filtering by date range updates the displayed data', async ({ page }) => {
     await page.goto('/settings/nps');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Look for date inputs or date range picker
     const dateFrom = page.locator('input[type="date"], input[placeholder*="from" i], input[placeholder*="start" i]').first();
@@ -234,6 +239,7 @@ test.describe('TC081 — NPS Analytics', () => {
   test('6) total response count is displayed', async ({ page }) => {
     await page.goto('/settings/nps');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(

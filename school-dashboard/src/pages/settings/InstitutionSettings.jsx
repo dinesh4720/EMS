@@ -162,10 +162,10 @@ export default function InstitutionSettings() {
   }, [isDirty, setDirty]);
 
   useEffect(() => {
-    if (schoolSettings && !localSettings) {
+    if (schoolSettings && !isDirty) {
       setLocalSettings(schoolSettings);
     }
-  }, [schoolSettings, localSettings]);
+  }, [schoolSettings, isDirty]);
 
   const updateLocalSettings = (updater) => {
     setLocalSettings(updater);

@@ -76,6 +76,7 @@ test.describe('TC008: Attendance Rules — Thresholds, Locks, Notifications', ()
   test('1) attendance rules page loads with settings', async ({ page }) => {
     await page.goto('/settings/attendance-rules');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(bodyText?.toLowerCase()).toMatch(/attendance|rule|threshold|setting/i);
@@ -84,6 +85,7 @@ test.describe('TC008: Attendance Rules — Thresholds, Locks, Notifications', ()
   test('2) set defaulter threshold to 75%', async ({ page }) => {
     await page.goto('/settings/attendance-rules');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const thresholdInput = page.locator(
       'input[name="defaulterThreshold"], input[name="threshold"], input[placeholder*="threshold" i]',
@@ -104,6 +106,7 @@ test.describe('TC008: Attendance Rules — Thresholds, Locks, Notifications', ()
   test('3) configure auto-lock time to 10:00 AM', async ({ page }) => {
     await page.goto('/settings/attendance-rules');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const lockTimeInput = page.locator(
       'input[name="autoLockTime"], input[name="lockTime"], input[type="time"]',
@@ -122,6 +125,7 @@ test.describe('TC008: Attendance Rules — Thresholds, Locks, Notifications', ()
   test('4) enable "Allow edit after lock" with 2-hour window', async ({ page }) => {
     await page.goto('/settings/attendance-rules');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Toggle "allow edit after lock"
     const editToggle = page.locator(
@@ -151,6 +155,7 @@ test.describe('TC008: Attendance Rules — Thresholds, Locks, Notifications', ()
   test('5) enable absent notifications', async ({ page }) => {
     await page.goto('/settings/attendance-rules');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const absentToggle = page.locator(
       'input[name="absentNotifications"], [role="switch"]:near(:text("absent")), label:has-text("Absent")',
@@ -167,6 +172,7 @@ test.describe('TC008: Attendance Rules — Thresholds, Locks, Notifications', ()
   test('6) enable defaulter notifications', async ({ page }) => {
     await page.goto('/settings/attendance-rules');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const defaulterToggle = page.locator(
       'input[name="defaulterNotifications"], [role="switch"]:near(:text("defaulter")), label:has-text("Defaulter")',
@@ -184,6 +190,7 @@ test.describe('TC008: Attendance Rules — Thresholds, Locks, Notifications', ()
   test('7) save attendance rules and verify success', async ({ page }) => {
     await page.goto('/settings/attendance-rules');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const saveBtn = page.getByRole('button', { name: /save|update|apply/i }).first();
     const hasSave = await saveBtn.isVisible({ timeout: 5000 }).catch(() => false);
@@ -191,6 +198,7 @@ test.describe('TC008: Attendance Rules — Thresholds, Locks, Notifications', ()
     if (hasSave) {
       await saveBtn.click();
       await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
       // Check for success toast
       const toast = page.locator('[class*="toast"], [class*="alert"], [role="status"]').first();
@@ -214,6 +222,7 @@ test.describe('TC008: Attendance Rules — Thresholds, Locks, Notifications', ()
   test('8) page shows attendance configuration sections', async ({ page }) => {
     await page.goto('/settings/attendance-rules');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
 
