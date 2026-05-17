@@ -44,7 +44,7 @@
 | Reports | `src/pages/reports/` | 4+ | Active |
 | Homework | `src/pages/homework/` | 3+ | Active |
 | Intake Forms | `src/pages/intake-forms/` | 3+ | Active |
-| Architecture | `src/pages/StyleGuide.jsx` + styleguide/ | 1+ | Active |
+| Architecture | `src/pages/StyleGuide.jsx` + styleguide/ | 2+ | Active |
 
 ---
 
@@ -54,6 +54,7 @@
 | Page | Route | File | Notes |
 |------|-------|------|-------|
 | Style Guide | `/style-guide` | `src/pages/StyleGuide.jsx` | Tokens, primitives, patterns, icons, a11y |
+| IA & Checklist | `/ia` | `src/pages/IA.jsx` | Product flow, module map, agent coverage checklist |
 
 ### Authentication
 | Page | Route | File | Notes |
@@ -251,7 +252,8 @@ Sidebar Navigation
 ├── Analytics
 ├── Data Tools
 ├── Architecture
-│   └── Style Guide
+│   ├── Style Guide
+│   └── IA & Checklist
 ├── Settings
 │   └── [27+ sub-pages]
 └── Super Admin
@@ -296,13 +298,135 @@ Sidebar Navigation
 
 All design and dev agents MUST follow this workflow. NEVER read the entire codebase in one go.
 
-1. Read this ARCHITECTURE.md to understand the module map (21 modules)
-2. Pick ONE module at a time (e.g. "fees", "hostel", "library")
+1. Open the **IA & Checklist** page in the app (`/ia`) or read this ARCHITECTURE.md
+2. Pick ONE module at a time from the checklist below
 3. Read only that module's pages and components
-4. Document findings in this file under that module's section
+4. Update the IA page (`/ia`) or this file when checks are complete
 5. Move to the next module
 
 This prevents context overflow and keeps work focused.
+
+---
+
+## Page-by-Page Agent Checklist
+
+> This checklist tracks coverage across all pages. Agents update status after completing work on a page.
+> Status: `done` | `wip` | `todo`
+> Checks: Design Audit | Accessibility | Responsive | Tests
+
+| Module | Page | Design | A11y | Responsive | Tests |
+|--------|------|--------|------|------------|-------|
+| **Dashboard** | Main Dashboard | done | wip | todo | todo |
+| | Staff Dashboard | done | todo | todo | todo |
+| | Student Dashboard | done | todo | todo | todo |
+| **Students** | Student List | done | done | done | wip |
+| | Add Student | done | todo | todo | todo |
+| | Edit Student | done | todo | todo | todo |
+| | Student Profile | wip | todo | todo | todo |
+| | Documents | todo | todo | todo | todo |
+| | Bulk Import | todo | todo | todo | todo |
+| | Promotion | todo | todo | todo | todo |
+| | Transfer Certificate | todo | todo | todo | todo |
+| | Attendance | todo | todo | todo | todo |
+| | Form Submissions | todo | todo | todo | todo |
+| **Staff** | Staff List | done | done | done | wip |
+| | Add Staff | done | todo | todo | todo |
+| | Staff Profile | wip | todo | todo | todo |
+| | Attendance | todo | todo | todo | todo |
+| | Payroll | todo | todo | todo | todo |
+| | Leave Management | todo | todo | todo | todo |
+| | Bulk Subject Assignment | todo | todo | todo | todo |
+| **Classes** | Class List | done | todo | todo | todo |
+| | Timetable | todo | todo | todo | todo |
+| | Subjects | todo | todo | todo | todo |
+| | Attendance | todo | todo | todo | todo |
+| | Substitution | todo | todo | todo | todo |
+| **Academics** | Exams | todo | todo | todo | todo |
+| | Marks Entry | todo | todo | todo | todo |
+| | Results | todo | todo | todo | todo |
+| | Performance | todo | todo | todo | todo |
+| | CBSE Report Card | todo | todo | todo | todo |
+| | CCE Grading | todo | todo | todo | todo |
+| | Homework | todo | todo | todo | todo |
+| | PTM | todo | todo | todo | todo |
+| **Fees** | Fee Collection | done | todo | todo | todo |
+| | Fee Structure | todo | todo | todo | todo |
+| | Reports | todo | todo | todo | todo |
+| | Defaulters | todo | todo | todo | todo |
+| | Refunds | todo | todo | todo | todo |
+| **Calendar** | School Calendar | todo | todo | todo | todo |
+| | Events | todo | todo | todo | todo |
+| **Messaging** | Chat | todo | todo | todo | todo |
+| | Announcements | todo | todo | todo | todo |
+| | Notifications | todo | todo | todo | todo |
+| | Reminders | todo | todo | todo | todo |
+| **Front Desk** | Visitors | todo | todo | todo | todo |
+| | Appointments | todo | todo | todo | todo |
+| | Gate Pass | todo | todo | todo | todo |
+| | Call Logs | todo | todo | todo | todo |
+| | Feedbacks | todo | todo | todo | todo |
+| | Admissions | todo | todo | todo | todo |
+| **Hostel** | Hostel Dashboard | todo | todo | todo | todo |
+| | Hostels | todo | todo | todo | todo |
+| | Rooms | todo | todo | todo | todo |
+| | Allocations | todo | todo | todo | todo |
+| **Transport** | Routes | todo | todo | todo | todo |
+| | Vehicles | todo | todo | todo | todo |
+| | Student Assignment | todo | todo | todo | todo |
+| **Library** | Books | todo | todo | todo | todo |
+| | Issued Books | todo | todo | todo | todo |
+| | Reports | todo | todo | todo | todo |
+| **Inventory** | Assets | todo | todo | todo | todo |
+| | Vendors | todo | todo | todo | todo |
+| | Procurement | todo | todo | todo | todo |
+| | Maintenance | todo | todo | todo | todo |
+| | Audits | todo | todo | todo | todo |
+| | Reports | todo | todo | todo | todo |
+| **Reports** | Reports Center | todo | todo | todo | todo |
+| | Export Center | todo | todo | todo | todo |
+| **Analytics** | Analytics Dashboard | todo | todo | todo | todo |
+| **Data Tools** | Bulk Import | todo | todo | todo | todo |
+| | Background Jobs | todo | todo | todo | todo |
+| | Govt Export | todo | todo | todo | todo |
+| **Intake Forms** | Form Assignments | todo | todo | todo | todo |
+| | Submissions | todo | todo | todo | todo |
+| | Enrollment Funnel | todo | todo | todo | todo |
+| **Settings** | Institution | done | wip | todo | todo |
+| | Academic | done | wip | todo | todo |
+| | Fee Heads | done | todo | todo | todo |
+| | Fee Rules | done | todo | todo | todo |
+| | Fee Templates | done | todo | todo | todo |
+| | Payroll | done | todo | todo | todo |
+| | Salary Templates | done | todo | todo | todo |
+| | Leave | done | todo | todo | todo |
+| | Attendance Rules | done | todo | todo | todo |
+| | Period | done | todo | todo | todo |
+| | Hierarchy | done | todo | todo | todo |
+| | Holidays | done | todo | todo | todo |
+| | Communication | done | todo | todo | todo |
+| | Intake Forms | done | todo | todo | todo |
+| | User Management | done | todo | todo | todo |
+| | Roles & Access | done | todo | todo | todo |
+| | Parent Management | done | todo | todo | todo |
+| | Staff ID | done | todo | todo | todo |
+| | Promotion Rules | done | todo | todo | todo |
+| | Subscription | done | todo | todo | todo |
+| | Trash | done | todo | todo | todo |
+| | SSO | done | todo | todo | todo |
+| | SCIM | done | todo | todo | todo |
+| | Webhooks | done | todo | todo | todo |
+| | Data Cleanup | done | todo | todo | todo |
+| | Seed Data | done | todo | todo | todo |
+| | NPS Analytics | done | todo | todo | todo |
+| | Active Sessions | done | todo | todo | todo |
+| | Permission Requests | done | todo | todo | todo |
+| | Admission Form | done | todo | todo | todo |
+| | Workspace | done | todo | todo | todo |
+| **Super Admin** | Schools | todo | todo | todo | todo |
+| | Jobs | todo | todo | todo | todo |
+| | Feature Flags | todo | todo | todo | todo |
+| | Growth Analytics | todo | todo | todo | todo |
+| **AI Assistant** | AI Chat | todo | todo | todo | todo |
 
 ---
 
