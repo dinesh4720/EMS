@@ -314,7 +314,7 @@ export default function LeaveSettings() {
               label={t('pages.annualQuotaDays')}
               placeholder={t('settings.leaveQuotaPlaceholder')}
               value={formData.quota}
-              onValueChange={(v) => setFormData({ ...formData, quota: parseInt(v) || 0 })}
+              onValueChange={(v) => setFormData({ ...formData, quota: parseInt(v, 10) || 0 })}
               min={1}
               isInvalid={formData.quota < 1}
               errorMessage={formData.quota < 1 ? 'Quota must be at least 1 day' : undefined}

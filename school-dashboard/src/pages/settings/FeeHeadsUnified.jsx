@@ -89,23 +89,27 @@ export default function FeeHeadsUnified({ embedded = false }) {
   const { visibleItems: visibleFeeHeads, hasMore, isLoadingMore, loaderRef } =
     useEntityFetch(feeHeads, [feeHeads.length]);
 
-  const fetchFeeHeads = useCallback(async () => {
+  const fetchFeeHeads = useCallback(async (signal) => {
     try {
       setLoading(true);
       setLoadError(null);
-      const data = await request("/fee-heads");
+      const data = await request("/fee-heads", { signal });
+      if (signal?.aborted) return;
       setFeeHeads(Array.isArray(data) ? data : []);
     } catch (error) {
+      if (error.name === 'AbortError') return;
       logger.error("Error fetching fee heads:", error);
       setLoadError(error);
       toast.error(t("toast.error.failedToLoadFeeHeads"));
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   }, [t]);
 
   useEffect(() => {
-    fetchFeeHeads();
+    const controller = new AbortController();
+    fetchFeeHeads(controller.signal);
+    return () => controller.abort();
   }, [fetchFeeHeads]);
 
   const handleOpen = (feeHead = null) => {

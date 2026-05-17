@@ -37,13 +37,13 @@ export const settingsApi = {
   deleteSalaryTemplate: (id) => request(`/settings/salary-templates/${id}`, { method: 'DELETE' }),
 
   // Payroll Settings
-  getPayrollSettings: () => request('/settings/payroll'),
-  updatePayrollSettings: (data) => request('/settings/payroll', { method: 'PUT', body: JSON.stringify(data) }),
-  getPayrollReminder: () => request('/settings/payroll/reminder'),
+  getPayrollSettings: (options) => options?.signal ? request('/settings/payroll', { signal: options.signal }) : request('/settings/payroll'),
+  updatePayrollSettings: (data, options) => request('/settings/payroll', { method: 'PUT', body: JSON.stringify(data), ...(options?.signal ? { signal: options.signal } : {}) }),
+  getPayrollReminder: (options) => options?.signal ? request('/settings/payroll/reminder', { signal: options.signal }) : request('/settings/payroll/reminder'),
 
   // Salary Components
-  getSalaryComponents: () => request('/settings/salary-components'),
-  updateSalaryComponents: (data) => request('/settings/salary-components', { method: 'PUT', body: JSON.stringify(data) }),
+  getSalaryComponents: (options) => options?.signal ? request('/settings/salary-components', { signal: options.signal }) : request('/settings/salary-components'),
+  updateSalaryComponents: (data, options) => request('/settings/salary-components', { method: 'PUT', body: JSON.stringify(data), ...(options?.signal ? { signal: options.signal } : {}) }),
 
   // Admission Form Configuration
   getAdmissionFormConfig: (fieldType) => request(`/settings/admission-form-config${fieldType ? `?fieldType=${fieldType}` : ''}`),
@@ -69,8 +69,8 @@ export const settingsApi = {
   saveDocumentConfigAtomic: (configs) => request('/settings/document-config/atomic', { method: 'PUT', body: JSON.stringify({ configs }) }),
 
   // Communication Settings
-  getCommunicationSettings: () => request('/settings/communication'),
-  updateCommunicationSettings: (data) => request('/settings/communication', { method: 'PUT', body: JSON.stringify(data) }),
+  getCommunicationSettings: (options) => options?.signal ? request('/settings/communication', { signal: options.signal }) : request('/settings/communication'),
+  updateCommunicationSettings: (data, options) => request('/settings/communication', { method: 'PUT', body: JSON.stringify(data), ...(options?.signal ? { signal: options.signal } : {}) }),
 
   // Email Templates
   getEmailTemplates: () => request('/settings/email-templates'),
@@ -109,8 +109,8 @@ export const settingsApi = {
   getAcademicYearTransitionPreview: () => request('/settings/academic-year/transition-preview'),
 
   // Attendance Rules
-  getAttendanceRules: () => request('/settings/attendance-rules'),
-  updateAttendanceRules: (data) => request('/settings/attendance-rules', { method: 'PUT', body: JSON.stringify(data) }),
+  getAttendanceRules: (options) => options?.signal ? request('/settings/attendance-rules', { signal: options.signal }) : request('/settings/attendance-rules'),
+  updateAttendanceRules: (data, options) => request('/settings/attendance-rules', { method: 'PUT', body: JSON.stringify(data), ...(options?.signal ? { signal: options.signal } : {}) }),
 
   // Onboarding
   getOnboardingStatus: () => request('/settings/onboarding-status'),
