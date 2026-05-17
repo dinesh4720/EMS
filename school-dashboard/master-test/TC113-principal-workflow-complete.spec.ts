@@ -189,7 +189,7 @@ test.describe('TC113: Principal Workflow — Full Access Review', () => {
 
   test('8) principal can navigate to settings sub-pages', async ({ page }) => {
     // Test institution settings
-    await page.goto('/settings/institution');
+    await page.goto('/settings');
     await page.waitForLoadState('networkidle');
 
     let bodyText = await page.textContent('body');
@@ -197,7 +197,7 @@ test.describe('TC113: Principal Workflow — Full Access Review', () => {
     expect(lowerBody).not.toMatch(/access denied|unauthorized/i);
 
     // Test academic settings
-    await page.goto('/settings/academic');
+    await page.goto('/settings/academics');
     await page.waitForLoadState('networkidle');
 
     bodyText = await page.textContent('body');

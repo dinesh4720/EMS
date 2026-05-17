@@ -58,7 +58,7 @@ test.describe('TC109: Academic Year Configuration & Propagation', () => {
   });
 
   test('1) academic settings page loads with current year', async ({ page }) => {
-    await page.goto('/settings/academic');
+    await page.goto('/settings/academics');
     await page.waitForLoadState('networkidle');
 
     const bodyText = await page.textContent('body');
@@ -69,7 +69,7 @@ test.describe('TC109: Academic Year Configuration & Propagation', () => {
   });
 
   test('2) set academic year to 2025-2026 with start and end dates', async ({ page }) => {
-    await page.goto('/settings/academic');
+    await page.goto('/settings/academics');
     await page.waitForLoadState('networkidle');
 
     // Look for academic year input or selector
@@ -107,7 +107,7 @@ test.describe('TC109: Academic Year Configuration & Propagation', () => {
   });
 
   test('3) save academic year settings', async ({ page }) => {
-    await page.goto('/settings/academic');
+    await page.goto('/settings/academics');
     await page.waitForLoadState('networkidle');
 
     // Click save button

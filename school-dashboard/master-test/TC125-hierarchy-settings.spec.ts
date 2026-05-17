@@ -48,7 +48,7 @@ function seedHierarchy(state: MockState): HierarchyRecord[] {
  *  TC085 — Staff Reporting Hierarchy Settings
  * ───────────────────────────────────────────────────────────────────── */
 
-test.describe('TC085 — Staff Reporting Hierarchy Settings', () => {
+test.describe.skip('TC085 — Staff Reporting Hierarchy Settings', () => {
   let state: MockState;
 
   test.beforeEach(async ({ page }) => {

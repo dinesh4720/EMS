@@ -80,7 +80,7 @@ test.describe('TC010: Admission Settings — ID Format & Documents', () => {
   });
 
   test('1) admission settings page loads', async ({ page }) => {
-    await page.goto('/settings/admission-forms');
+    await page.goto('/settings/admission-form');
     await page.waitForLoadState('networkidle');
 
     const bodyText = await page.textContent('body');
@@ -88,7 +88,7 @@ test.describe('TC010: Admission Settings — ID Format & Documents', () => {
   });
 
   test('2) configure admission ID prefix to "ADM"', async ({ page }) => {
-    await page.goto('/settings/admission-forms');
+    await page.goto('/settings/admission-form');
     await page.waitForLoadState('networkidle');
 
     const prefixInput = page.locator(
@@ -107,7 +107,7 @@ test.describe('TC010: Admission Settings — ID Format & Documents', () => {
   });
 
   test('3) configure year format to "YYYY"', async ({ page }) => {
-    await page.goto('/settings/admission-forms');
+    await page.goto('/settings/admission-form');
     await page.waitForLoadState('networkidle');
 
     // Year format might be a select or radio
@@ -134,7 +134,7 @@ test.describe('TC010: Admission Settings — ID Format & Documents', () => {
   });
 
   test('4) set separator to "-" and padding to 4', async ({ page }) => {
-    await page.goto('/settings/admission-forms');
+    await page.goto('/settings/admission-form');
     await page.waitForLoadState('networkidle');
 
     // Separator
@@ -164,7 +164,7 @@ test.describe('TC010: Admission Settings — ID Format & Documents', () => {
   });
 
   test('5) verify preview shows correct format (ADM-2026-0001)', async ({ page }) => {
-    await page.goto('/settings/admission-forms');
+    await page.goto('/settings/admission-form');
     await page.waitForLoadState('networkidle');
 
     const bodyText = await page.textContent('body');
@@ -179,7 +179,7 @@ test.describe('TC010: Admission Settings — ID Format & Documents', () => {
   });
 
   test('6) configure roll number: sequential, starting from 1', async ({ page }) => {
-    await page.goto('/settings/admission-forms');
+    await page.goto('/settings/admission-form');
     await page.waitForLoadState('networkidle');
 
     // Roll number type
@@ -208,7 +208,7 @@ test.describe('TC010: Admission Settings — ID Format & Documents', () => {
   });
 
   test('7) add required documents: Birth Certificate (required), Transfer Certificate (optional)', async ({ page }) => {
-    await page.goto('/settings/admission-forms');
+    await page.goto('/settings/admission-form');
     await page.waitForLoadState('networkidle');
 
     // Look for "Add Document" button
@@ -265,7 +265,7 @@ test.describe('TC010: Admission Settings — ID Format & Documents', () => {
   });
 
   test('8) save all admission settings and verify changes saved', async ({ page }) => {
-    await page.goto('/settings/admission-forms');
+    await page.goto('/settings/admission-form');
     await page.waitForLoadState('networkidle');
 
     // Fill at least one field to make form dirty
@@ -305,7 +305,7 @@ test.describe('TC010: Admission Settings — ID Format & Documents', () => {
   });
 
   test('9) existing documents are shown on page load', async ({ page }) => {
-    await page.goto('/settings/admission-forms');
+    await page.goto('/settings/admission-form');
     await page.waitForLoadState('networkidle');
 
     const bodyText = await page.textContent('body');

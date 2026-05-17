@@ -111,7 +111,7 @@ test.describe('TC006: Fee Heads Setup — Add, Edit, List', () => {
   });
 
   test('1) fee heads page loads and shows existing fee heads', async ({ page }) => {
-    await page.goto('/settings/fee-heads');
+    await page.goto('/settings/fees');
     await page.waitForLoadState('networkidle');
 
     const bodyText = await page.textContent('body');
@@ -121,7 +121,7 @@ test.describe('TC006: Fee Heads Setup — Add, Edit, List', () => {
   });
 
   test('2) fee heads show amounts and categories', async ({ page }) => {
-    await page.goto('/settings/fee-heads');
+    await page.goto('/settings/fees');
     await page.waitForLoadState('networkidle');
 
     const bodyText = await page.textContent('body');
@@ -131,7 +131,7 @@ test.describe('TC006: Fee Heads Setup — Add, Edit, List', () => {
   });
 
   test('3) click "Add Fee Head" to open form', async ({ page }) => {
-    await page.goto('/settings/fee-heads');
+    await page.goto('/settings/fees');
     await page.waitForLoadState('networkidle');
 
     const addBtn = page.getByRole('button', { name: /add fee head|new fee head|add new|\+/i }).first();
@@ -156,7 +156,7 @@ test.describe('TC006: Fee Heads Setup — Add, Edit, List', () => {
   });
 
   test('4) fill new fee head: Lab Fee, Academic, 3000, Yearly', async ({ page }) => {
-    await page.goto('/settings/fee-heads');
+    await page.goto('/settings/fees');
     await page.waitForLoadState('networkidle');
 
     // Open add form
@@ -199,7 +199,7 @@ test.describe('TC006: Fee Heads Setup — Add, Edit, List', () => {
   });
 
   test('5) save new fee head and verify it appears in the list', async ({ page }) => {
-    await page.goto('/settings/fee-heads');
+    await page.goto('/settings/fees');
     await page.waitForLoadState('networkidle');
 
     const initialCount = state.feeHeads.length;
@@ -241,7 +241,7 @@ test.describe('TC006: Fee Heads Setup — Add, Edit, List', () => {
   });
 
   test('6) edit an existing fee head (change Tuition Fee amount)', async ({ page }) => {
-    await page.goto('/settings/fee-heads');
+    await page.goto('/settings/fees');
     await page.waitForLoadState('networkidle');
 
     // Look for edit button on Tuition Fee row
@@ -283,7 +283,7 @@ test.describe('TC006: Fee Heads Setup — Add, Edit, List', () => {
   });
 
   test('7) fee heads API was called on page load', async ({ page }) => {
-    await page.goto('/settings/fee-heads');
+    await page.goto('/settings/fees');
     await page.waitForLoadState('networkidle');
 
     const feeHeadsCalled = [...state.requestLog].some(

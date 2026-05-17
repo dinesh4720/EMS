@@ -120,7 +120,7 @@ test.describe('TC058 — Roles & Permissions', () => {
   /* ───────── 1. Roles page loads ───────── */
 
   test('1) roles and permissions page loads with available roles', async ({ page }) => {
-    await page.goto('/settings/roles-access');
+    await page.goto('/settings/roles');
     await page.waitForLoadState('networkidle');
 
     await expect(page).not.toHaveURL(/\/login/);
@@ -135,7 +135,7 @@ test.describe('TC058 — Roles & Permissions', () => {
   /* ───────── 2. All 4 roles are listed ───��───── */
 
   test('2) Principal, Teacher, Admin, and Accountant roles are listed', async ({ page }) => {
-    await page.goto('/settings/roles-access');
+    await page.goto('/settings/roles');
     await page.waitForLoadState('networkidle');
 
     const bodyText = await page.textContent('body');
@@ -153,7 +153,7 @@ test.describe('TC058 — Roles & Permissions', () => {
   /* ───────── 3. Click a role to view permissions ───────── */
 
   test('3) clicking a role shows its permission toggles', async ({ page }) => {
-    await page.goto('/settings/roles-access');
+    await page.goto('/settings/roles');
     await page.waitForLoadState('networkidle');
 
     // Click on Teacher role
@@ -174,7 +174,7 @@ test.describe('TC058 — Roles & Permissions', () => {
   /* ───────── 4. Permission toggles for each module ────��──── */
 
   test('4) permission toggles are visible for modules', async ({ page }) => {
-    await page.goto('/settings/roles-access');
+    await page.goto('/settings/roles');
     await page.waitForLoadState('networkidle');
 
     // Click on a role to expand permissions
@@ -196,7 +196,7 @@ test.describe('TC058 — Roles & Permissions', () => {
   /* ───────── 5. Toggle a permission on/off ───────── */
 
   test('5) toggling a permission switch changes its state', async ({ page }) => {
-    await page.goto('/settings/roles-access');
+    await page.goto('/settings/roles');
     await page.waitForLoadState('networkidle');
 
     // Expand a role
@@ -222,7 +222,7 @@ test.describe('TC058 — Roles & Permissions', () => {
   /* ───���───── 6. Save changes shows success ──────��── */
 
   test('6) saving permission changes shows success notification', async ({ page }) => {
-    await page.goto('/settings/roles-access');
+    await page.goto('/settings/roles');
     await page.waitForLoadState('networkidle');
 
     // Expand role and toggle a permission

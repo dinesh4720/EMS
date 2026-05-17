@@ -55,7 +55,7 @@ test.describe('TC110: Settings Save & Reload Persistence', () => {
   /* ── Institution Settings ── */
 
   test('1) change school name and save', async ({ page }) => {
-    await page.goto('/settings/institution');
+    await page.goto('/settings');
     await page.waitForLoadState('networkidle');
 
     // Find and update the school name input
@@ -90,7 +90,7 @@ test.describe('TC110: Settings Save & Reload Persistence', () => {
     // First, simulate that the setting was already saved
     state.schoolSettings.schoolName = 'Updated School Name';
 
-    await page.goto('/settings/institution');
+    await page.goto('/settings');
     await page.waitForLoadState('networkidle');
 
     // Verify the saved name appears
@@ -109,7 +109,7 @@ test.describe('TC110: Settings Save & Reload Persistence', () => {
   /* ── Academic Settings ── */
 
   test('3) change period duration to 45 minutes and save', async ({ page }) => {
-    await page.goto('/settings/academic');
+    await page.goto('/settings/academics');
     await page.waitForLoadState('networkidle');
 
     // Navigate to schedule/timings tab if present
@@ -145,7 +145,7 @@ test.describe('TC110: Settings Save & Reload Persistence', () => {
     // Simulate saved setting
     (state.schoolSettings as Record<string, unknown>).periodDuration = 45;
 
-    await page.goto('/settings/academic');
+    await page.goto('/settings/academics');
     await page.waitForLoadState('networkidle');
 
     // Navigate to schedule tab if present
