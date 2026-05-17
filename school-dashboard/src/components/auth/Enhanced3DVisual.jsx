@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 /**
@@ -9,6 +10,20 @@ import { useTranslation } from "react-i18next";
 export default function Enhanced3DVisual() {
   const { t } = useTranslation();
 
+  const particles = useMemo(
+    () =>
+      Array.from({ length: 18 }).map((_, i) => ({
+        key: i,
+        left: `${Math.random() * 100}%`,
+        top: `${Math.random() * 100}%`,
+        animationDelay: `${Math.random() * 6}s`,
+        animationDuration: `${4 + Math.random() * 4}s`,
+        width: `${2 + Math.random() * 3}px`,
+        height: `${2 + Math.random() * 3}px`,
+      })),
+    []
+  );
+
   return (
     <div className="auth-visual__inner enhanced-3d-visual" aria-hidden="true">
       {/* Radial sky gradients with subtle pulse */}
@@ -17,17 +32,17 @@ export default function Enhanced3DVisual() {
 
       {/* Floating particles */}
       <div className="e3d-particles">
-        {Array.from({ length: 18 }).map((_, i) => (
+        {particles.map((p) => (
           <div
-            key={i}
+            key={p.key}
             className="e3d-particle"
             style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 6}s`,
-              animationDuration: `${4 + Math.random() * 4}s`,
-              width: `${2 + Math.random() * 3}px`,
-              height: `${2 + Math.random() * 3}px`,
+              left: p.left,
+              top: p.top,
+              animationDelay: p.animationDelay,
+              animationDuration: p.animationDuration,
+              width: p.width,
+              height: p.height,
             }}
           />
         ))}
