@@ -5,7 +5,7 @@ import {
   MessageSquare, IndianRupee, Settings, Award, ClipboardList,
   Wand2, Package, Library, Building2, Bus, FileBarChart, Database,
   DoorOpen, BarChart3, Sparkles, ChevronDown, Palette, Wallet,
-  CalendarCheck, FileText, LayoutTemplate, Sitemap,
+  CalendarCheck, FileText, LayoutTemplate, Layers,
 } from "lucide-react";
 import { useChatNotifications } from "../../context/ChatNotificationContext";
 import { useApp } from "../../context/AppContext";
@@ -225,7 +225,7 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
           />
           <NavRow
             to="/ia"
-            icon={Sitemap}
+            icon={Layers}
             label="IA & Checklist"
             collapsed={collapsed}
             onNav={closeOnMobileNav}
