@@ -276,7 +276,7 @@ export default function AdmissionFormSettings() {
                   label={t('pages.numberPadding')}
                   placeholder={t('settings.paddingPlaceholder')}
                   value={String(admissionIdConfig.numberPadding)}
-                  onValueChange={(value) => setAdmissionIdConfig({ ...admissionIdConfig, numberPadding: parseInt(value, 10) || 4 })
+                  onValueChange={(value) => setAdmissionIdConfig({ ...admissionIdConfig, numberPadding: parseInt(value, 10) || 4 })}
                   variant="bordered"
                   description="Number of digits (e.g., 4 = 0001)"
                   min={1}
@@ -288,7 +288,7 @@ export default function AdmissionFormSettings() {
                   label={t('pages.startingNumber')}
                   placeholder={t('settings.startingNumberPlaceholder')}
                   value={String(admissionIdConfig.startingNumber)}
-                  onValueChange={(value) => setAdmissionIdConfig({ ...admissionIdConfig, startingNumber: parseInt(value, 10) || 1 })
+                  onValueChange={(value) => setAdmissionIdConfig({ ...admissionIdConfig, startingNumber: parseInt(value, 10) || 1 })}
                   variant="bordered"
                   description="First number to use"
                   min={1}

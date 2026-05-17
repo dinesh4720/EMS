@@ -33,8 +33,8 @@ import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 
 // Trash API - Add this to api.js when integrating
 export const trashApi = {
-  getAll: async (page = 1, limit = 50) => {
-    const response = await request(`/trash?page=${page}&limit=${limit}`);
+  getAll: async (page = 1, limit = 50, options = {}) => {
+    const response = await request(`/trash?page=${page}&limit=${limit}`, options);
     // Backend returns { success: true, data: trashItems, total, pagination }
     return {
       items: response.data || [],
@@ -42,8 +42,8 @@ export const trashApi = {
       pagination: response.pagination || { page, limit, totalPages: 1, hasMore: false }
     };
   },
-  getStats: async () => {
-    const response = await request("/trash/stats");
+  getStats: async (options = {}) => {
+    const response = await request("/trash/stats", options);
     // Backend returns { success: true, byType, totalExpiring }
     return response.byType || response;
   },
@@ -98,8 +98,8 @@ export default function TrashSettings() {
     try {
       setLoading(true);
       const [itemsData, statsData] = await Promise.all([
-        trashApi.getAll(page, limit),
-        trashApi.getStats(),
+        trashApi.getAll(page, limit, { signal }),
+        trashApi.getStats({ signal }),
       ]);
       if (signal?.aborted) return;
 
