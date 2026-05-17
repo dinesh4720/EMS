@@ -9,6 +9,8 @@ import DocumentsStep from "./steps/DocumentsStep";
 import { Stepper } from "../../../components/ui";
 import { useTranslation } from 'react-i18next';
 import logger from '../../../utils/logger';
+import { buildStudentPayload } from "../utils/studentFormValidation";
+import { useApp } from "../../../context/AppContext";
 
 
 /**
@@ -36,6 +38,9 @@ export default function StudentForm({
     updateSibling,
     addSibling,
     removeSibling,
+    updateHealthInfoItem,
+    addHealthInfoItem,
+    removeHealthInfoItem,
     handleFileUpload,
     handleMultiFileUpload,
     removeFile,
@@ -105,6 +110,8 @@ export default function StudentForm({
     }, 100);
   };
 
+  const { currentAcademicYear } = useApp();
+
   const handleSubmit = async (e) => {
     e?.preventDefault?.();
     const step1Valid = validateStep(1);
@@ -123,7 +130,18 @@ export default function StudentForm({
 
     setIsSubmitting(true);
     try {
-      await onSave(formData);
+      const selectedClass = classesWithTeachers.find(
+        cls => cls.name === formData.classGrade && cls.section === formData.section
+      );
+      const payload = buildStudentPayload(formData, {
+        classId: selectedClass?._id || selectedClass?.id,
+        admissionId: initialData ? initialData.admissionId : undefined,
+        academicYear: currentAcademicYear,
+        photoUrl: null,
+        documents: [],
+        initialData,
+      });
+      await onSave(payload);
     } catch (error) {
       logger.error("Submit error:", error);
       toast.error(error?.message || "Failed to save student. Please try again.");
@@ -162,6 +180,9 @@ export default function StudentForm({
             classesWithTeachers={classesWithTeachers}
             parentNameRef={parentNameRef}
             parentPhoneRef={parentPhoneRef}
+            updateHealthInfoItem={updateHealthInfoItem}
+            addHealthInfoItem={addHealthInfoItem}
+            removeHealthInfoItem={removeHealthInfoItem}
           />
         );
       case 3:

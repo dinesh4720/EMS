@@ -7,6 +7,65 @@ import { z } from 'zod';
 import { ddmmyyToIso, isoToDdmmyy } from './dateUtils';
 import { VALIDATION_RULES } from '../../../constants/studentConstants';
 
+// ── Health Info sub-schemas ──
+const allergySchema = z.object({
+  name: z.string().min(1, 'Allergy name is required').max(100),
+  type: z.string().max(50).optional(),
+  severity: z.string().max(50).optional(),
+  reaction: z.string().max(500).optional(),
+  notes: z.string().max(500).optional(),
+});
+
+const medicationSchema = z.object({
+  name: z.string().min(1, 'Medication name is required').max(100),
+  dosage: z.string().max(100).optional(),
+  frequency: z.string().max(100).optional(),
+  startDate: z.string().max(20).optional(),
+  endDate: z.string().max(20).optional(),
+  prescribedBy: z.string().max(100).optional(),
+  notes: z.string().max(500).optional(),
+});
+
+const healthEmergencyContactSchema = z.object({
+  name: z.string().min(1, 'Contact name is required').max(100),
+  relationship: z.string().max(50).optional(),
+  phone: z.string().min(1, 'Phone is required').max(20),
+  alternatePhone: z.string().max(20).optional(),
+  email: z.string().email('Invalid email').or(z.literal('')).optional(),
+  priority: z.number().int().min(1).nullish(),
+});
+
+const healthInfoSchema = z.object({
+  allergies: z.array(allergySchema).optional(),
+  medications: z.array(medicationSchema).optional(),
+  emergencyContacts: z.array(healthEmergencyContactSchema).optional(),
+}).optional();
+
+/**
+ * Strip empty health info items before sending to backend.
+ * An allergy/medication is empty if name is blank.
+ * An emergency contact is empty if name or phone is blank.
+ */
+export function cleanHealthInfo(healthInfo) {
+  if (!healthInfo) return undefined;
+  const cleaned = {
+    allergies: (healthInfo.allergies || []).filter((a) => a.name?.trim()),
+    medications: (healthInfo.medications || []).filter((m) => m.name?.trim()),
+    emergencyContacts: (healthInfo.emergencyContacts || []).filter(
+      (c) => c.name?.trim() && c.phone?.trim()
+    ),
+  };
+  // If all arrays are empty, omit healthInfo entirely
+  if (
+    cleaned.allergies.length === 0 &&
+    cleaned.medications.length === 0 &&
+    cleaned.emergencyContacts.length === 0
+  ) {
+    return undefined;
+  }
+  return cleaned;
+}
+
 // ── Parent/Guardian validation schema ──
 export const parentZodSchema = z.object({
   name: z.string().min(1, 'Parent name is required').max(100, 'Name must not exceed 100 characters'),
@@ -85,6 +144,23 @@ export function validateStep(stepNum, formData) {
         newErrors[`additionalParentEmail_${i + 1}`] = 'Invalid email format';
       }
     });
+    // Validate health info: empty cards are fine (they get stripped), but
+    // partially-filled cards with missing required fields should block.
+    const hi = formData.healthInfo;
+    if (hi) {
+      const emptyAllergy = (hi.allergies || []).findIndex((a) => !a.name?.trim());
+      const emptyMed = (hi.medications || []).findIndex((m) => !m.name?.trim());
+      const emptyContact = (hi.emergencyContacts || []).findIndex(
+        (c) => !c.name?.trim() || !c.phone?.trim()
+      );
+      if (emptyAllergy !== -1) {
+        newErrors.healthInfo = `Allergy #${emptyAllergy + 1} is missing a name`;
+      } else if (emptyMed !== -1) {
+        newErrors.healthInfo = `Medication #${emptyMed + 1} is missing a name`;
+      } else if (emptyContact !== -1) {
+        newErrors.healthInfo = `Emergency contact #${emptyContact + 1} is missing a name or phone`;
+      }
+    }
   }
 
   return { isValid: Object.keys(newErrors).length === 0, errors: newErrors };
@@ -146,6 +222,7 @@ export function buildStudentPayload(formData, {
     medicalConditions: formData.medicalConditions,
     emergencyContactName: formData.emergencyContactName,
     emergencyContactPhone: formData.emergencyContactPhone,
+    healthInfo: cleanHealthInfo(formData.healthInfo),
     alternatePhone: formData.alternatePhone,
     isWhatsapp: formData.isWhatsapp,
     whatsappNumber: formData.whatsappNumber,

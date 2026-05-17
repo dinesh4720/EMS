@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { formatShortDate } from '../../../utils/dateFormatter';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../../../context/AppContext';
+import { cleanHealthInfo } from "../utils/studentFormValidation";
 
 /**
  * Hook that encapsulates the student form submission logic:
@@ -185,6 +186,7 @@ function useStudentSubmit() {
       medicalConditions: formData.medicalConditions,
       emergencyContactName: formData.emergencyContactName,
       emergencyContactPhone: formData.emergencyContactPhone,
+      healthInfo: cleanHealthInfo(formData.healthInfo),
       alternatePhone: formData.alternatePhone,
       isWhatsapp: formData.isWhatsapp,
       whatsappNumber: formData.whatsappNumber,
