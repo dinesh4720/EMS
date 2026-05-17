@@ -23,6 +23,7 @@ import {
   Users,
   Activity,
   Webhook,
+  Network,
 } from "lucide-react";
 
 import lazyWithRetry from "../../utils/lazyWithRetry";
@@ -50,6 +51,7 @@ const PermissionRequests = lazyWithRetry(() => import("./PermissionRequests"));
 const TrashSettings = lazyWithRetry(() => import("./TrashSettings"));
 const FeeTemplatesPage = lazyWithRetry(() => import("./FeeTemplatesPage"));
 const SSOSettings = lazyWithRetry(() => import("./SSOSettings"));
+const HierarchySettings = lazyWithRetry(() => import("./HierarchySettings"));
 
 function SettingsPageSkeleton() {
   return (
@@ -107,6 +109,7 @@ export default function SettingsPage() {
         { key: "roles", label: "Roles & Permissions", icon: Shield, path: "/settings/roles" },
         { key: "permission-requests", label: "Permission Requests", icon: Shield, path: "/settings/permission-requests", isNew: true },
         { key: "parents", label: "Parent Accounts", icon: Users, path: "/settings/parents", isNew: true },
+        { key: "hierarchy", label: "Hierarchy", icon: Network, path: "/settings/hierarchy", isNew: true },
       ]
     },
     {
@@ -299,6 +302,9 @@ export default function SettingsPage() {
               } />
               <Route path="permission-requests" element={
                 <SettingsErrorBoundary><PermissionRequests /></SettingsErrorBoundary>
+              } />
+              <Route path="hierarchy" element={
+                <SettingsErrorBoundary><HierarchySettings /></SettingsErrorBoundary>
               } />
               <Route path="parents" element={
                 <SettingsErrorBoundary><ParentManagement /></SettingsErrorBoundary>
