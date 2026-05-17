@@ -52,9 +52,10 @@ export default function SubscriptionSettings() {
     },
   });
 
-  const loadSummary = async (skipCache = true) => {
+  const loadSummary = async (skipCache = true, signal) => {
     try {
       const data = await billingApi.getSummary(skipCache);
+      if (signal?.aborted) return;
       setSummary(data);
       setBillingCycle(data.subscription?.billingCycle || "monthly");
       setAccountForm({
@@ -74,14 +75,17 @@ export default function SubscriptionSettings() {
         },
       });
     } catch (error) {
+      if (signal?.aborted) return;
       toast.error(error.message || "Failed to load billing summary");
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadSummary();
+    const controller = new AbortController();
+    loadSummary(true, controller.signal);
+    return () => controller.abort();
   }, []);
 
   const usageCards = useMemo(() => {

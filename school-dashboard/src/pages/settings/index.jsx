@@ -28,15 +28,6 @@ import {
 import lazyWithRetry from "../../utils/lazyWithRetry";
 import SettingsErrorBoundary from "../../components/SettingsErrorBoundary";
 import TimetableCleanup from "../../components/TimetableCleanup";
-import ParentManagement from "./ParentManagement";
-import WebhooksPage from "./WebhooksPage";
-import NPSAnalyticsPage from "./NPSAnalyticsPage";
-import SCIMSettings from "./SCIMSettings";
-import PromotionRulesSettings from "./PromotionRulesSettings";
-import PeriodSettings from "./PeriodSettings";
-import SeedDataSettings from "./SeedDataSettings";
-import DataCleanupSettings from "./DataCleanupSettings";
-import ActiveSessions from "./ActiveSessions";
 import RequirePermission from "../../components/RequirePermission";
 import { useTranslation } from 'react-i18next';
 
