@@ -5,7 +5,7 @@ import {
   MessageSquare, IndianRupee, Settings, Award, ClipboardList,
   Wand2, Package, Library, Building2, Bus, FileBarChart, Database,
   DoorOpen, BarChart3, Sparkles, ChevronDown, Palette, Wallet,
-  CalendarCheck, FileText, LayoutTemplate,
+  CalendarCheck, FileText, LayoutTemplate, Sitemap,
 } from "lucide-react";
 import { useChatNotifications } from "../../context/ChatNotificationContext";
 import { useApp } from "../../context/AppContext";
@@ -220,6 +220,13 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
             to="/style-guide"
             icon={LayoutTemplate}
             label="Style Guide"
+            collapsed={collapsed}
+            onNav={closeOnMobileNav}
+          />
+          <NavRow
+            to="/ia"
+            icon={Sitemap}
+            label="IA & Checklist"
             collapsed={collapsed}
             onNav={closeOnMobileNav}
           />
