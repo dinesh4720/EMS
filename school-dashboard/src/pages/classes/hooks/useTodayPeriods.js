@@ -106,7 +106,7 @@ function synthSlotsForPeriod(periodIdx, periods, classes, staff) {
  * backend exposes it. Proposed shape documented in the Phase 6 README.
  */
 export default function useTodayPeriods() {
-  const { classes, staff, schoolSettings } = useApp();
+  const { classes, staff, schoolSettings, refetch } = useApp();
 
   // Per-page tick — bumped every 60s so derived states recompute.
   const [tick, setTick] = useState(0);
@@ -121,6 +121,7 @@ export default function useTodayPeriods() {
   const markedSet = useMemo(() => new Set(), []);
 
   return useMemo(() => {
+    try {
     const now = new Date();
     void tick; // ensure recompute on tick
 
@@ -149,6 +150,8 @@ export default function useTodayPeriods() {
           unmarkedCount: 0,
           activePeriodNumber: null,
         },
+        error: null,
+        refetch,
       };
     }
 
@@ -233,6 +236,16 @@ export default function useTodayPeriods() {
         unmarkedCount,
         activePeriodNumber,
       },
+      error: null,
+      refetch,
     };
-  }, [classes, staff, schoolSettings, markedSet, tick]);
+    } catch (err) {
+      return {
+        periods: [],
+        dayMeta: null,
+        error: err?.message || "Failed to compute today’s schedule",
+        refetch,
+      };
+    }
+  }, [classes, staff, schoolSettings, markedSet, tick, refetch]);
 }

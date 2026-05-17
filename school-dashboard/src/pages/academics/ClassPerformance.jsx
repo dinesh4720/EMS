@@ -8,6 +8,7 @@ import {
   TableBody, TableRow, TableCell, Input
 } from '@heroui/react';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+import ErrorState from '../../components/ui/ErrorState';
 import {
   Download, Search, FileText,
   ArrowUpRight, ArrowDownRight, Minus
@@ -213,14 +214,12 @@ const ClassPerformance = () => {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 gap-4">
-        <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-950 flex items-center justify-center">
-          <FileText size={24} className="text-red-500" />
-        </div>
-        <p className="text-sm font-medium text-fg">Failed to load performance data</p>
-        <p className="text-xs text-fg-muted max-w-xs text-center">{error}</p>
-        <Button size="sm" variant="flat" onPress={() => fetchData()}>Retry</Button>
-      </div>
+      <ErrorState
+        title="Failed to load performance data"
+        error={error}
+        onRetry={() => fetchData()}
+        size="lg"
+      />
     );
   }
 

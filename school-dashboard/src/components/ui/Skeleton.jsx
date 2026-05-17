@@ -69,6 +69,16 @@ function SkeletonRow({ showAvatar = true, className }) {
   );
 }
 
+function SkeletonList({ rows = 4, className }) {
+  return (
+    <div className={cn("space-y-1", className)} aria-busy="true" aria-live="polite">
+      {Array.from({ length: rows }).map((_, i) => (
+        <SkeletonRow key={i} />
+      ))}
+    </div>
+  );
+}
+
 function SkeletonCard({ className }) {
   return (
     <div
@@ -118,8 +128,9 @@ function SkeletonTable({ rows = 5, columns = 4, className }) {
 
 Skeleton.Text = SkeletonText;
 Skeleton.Row = SkeletonRow;
+Skeleton.List = SkeletonList;
 Skeleton.Card = SkeletonCard;
 Skeleton.Table = SkeletonTable;
 
-export { SkeletonText, SkeletonRow, SkeletonCard, SkeletonTable };
+export { SkeletonText, SkeletonRow, SkeletonList, SkeletonCard, SkeletonTable };
 export default Skeleton;

@@ -99,6 +99,8 @@ export default function useAcademicsData({ status = "all", search = "" } = {}) {
     filtered,
     kpis,
     isLoading: examsQuery.isPending,
+    isError: examsQuery.isError,
+    error: examsQuery.error,
     refetch: examsQuery.refetch,
   };
 }

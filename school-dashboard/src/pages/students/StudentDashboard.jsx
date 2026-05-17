@@ -43,6 +43,8 @@ import PhotoAvatar from "../../components/PhotoAvatar";
 import { DetailPageSkeleton } from "../../components/skeletons/PageSkeletons";
 import EmptyState from "../../components/ui/EmptyState";
 import ErrorState from "../../components/ui/ErrorState";
+import Button from "../../components/ui/Button";
+import { SkeletonList } from "../../components/ui/Skeleton";
 import MinimalTabs from "../../components/ui/MinimalTabs";
 import SubjectsCard from "../../components/students/SubjectsCard";
 import AttendanceHeatmap from "../../components/students/AttendanceHeatmap";
@@ -242,11 +244,7 @@ function OverviewPanel({
 
 function AttendancePanel({ studentId, attendanceData, attendanceStats, loading, error, refetch }) {
   if (loading) {
-    return (
-      <div className="card" style={{ padding: 24 }}>
-        <span className="subtle">Loading attendance…</span>
-      </div>
-    );
+    return <SkeletonList rows={4} />;
   }
   if (error) {
     return <ErrorState error={error} onRetry={refetch} />;
@@ -342,11 +340,7 @@ function AttendancePanel({ studentId, attendanceData, attendanceStats, loading, 
 
 function ResultsPanel({ studentId, results, loading, error, refetch }) {
   if (loading) {
-    return (
-      <div className="card" style={{ padding: 24 }}>
-        <span className="subtle">Loading results…</span>
-      </div>
-    );
+    return <SkeletonList rows={4} />;
   }
   if (error) return <ErrorState error={error} onRetry={refetch} />;
   const subjects = buildSubjects(results);
@@ -369,11 +363,7 @@ function ResultsPanel({ studentId, results, loading, error, refetch }) {
 
 function FeesPanel({ studentId, feeStructure, loading, error, refetch }) {
   if (loading) {
-    return (
-      <div className="card" style={{ padding: 24 }}>
-        <span className="subtle">Loading fees…</span>
-      </div>
-    );
+    return <SkeletonList rows={4} />;
   }
   if (error) return <ErrorState error={error} onRetry={refetch} />;
   if (!feeStructure) {
@@ -439,11 +429,7 @@ function FeesPanel({ studentId, feeStructure, loading, error, refetch }) {
 function RemarksPanel({ studentId, onAddRemark }) {
   const { remarks, loading, error, refetch } = useStudentRemarks(studentId);
   if (loading) {
-    return (
-      <div className="card" style={{ padding: 24 }}>
-        <span className="subtle">Loading remarks…</span>
-      </div>
-    );
+    return <SkeletonList rows={4} />;
   }
   if (error) return <ErrorState error={error} onRetry={refetch} />;
   // Privacy filter: only show staff-visible remarks here, mark sentToParent
@@ -508,11 +494,7 @@ function DocumentsPanel({ studentId }) {
   const result = useStudentDocuments(studentId) || {};
   const { documents, loading, error, refetch } = result;
   if (loading) {
-    return (
-      <div className="card" style={{ padding: 24 }}>
-        <span className="subtle">Loading documents…</span>
-      </div>
-    );
+    return <SkeletonList rows={4} />;
   }
   if (error) return <ErrorState error={error} onRetry={refetch} />;
   const list = Array.isArray(documents) ? documents : [];
@@ -806,35 +788,42 @@ export default function StudentDashboard() {
 
         {/* Action cluster */}
         <div className="row gap-2">
-          <button
-            type="button"
-            className="btn"
+          <Button
+            variant="outline"
+            size="sm"
+            icon={<Mail size={13} />}
             onClick={handleMessageParent}
             disabled={!parent?.phone && !parent?.email}
           >
-            <Mail size={13} aria-hidden /> Message parent
-          </button>
-          <button type="button" className="btn" onClick={handleReportCard}>
-            <Download size={13} aria-hidden /> Report card
-          </button>
-          <button
-            type="button"
-            className="btn btn--accent"
+            Message parent
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            icon={<Download size={13} />}
+            onClick={handleReportCard}
+          >
+            Report card
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            icon={<Plus size={13} />}
             onClick={handleLogNote}
           >
-            <Plus size={13} aria-hidden /> Log note
-          </button>
+            Log note
+          </Button>
 
           <Dropdown placement="bottom-end">
             <DropdownTrigger>
-              <button
-                type="button"
-                className="iconbtn"
-                style={{ width: 32, height: 32 }}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="!w-8 !h-8 !p-0"
                 aria-label="More student actions"
               >
                 <MoreHorizontal size={16} />
-              </button>
+              </Button>
             </DropdownTrigger>
             <DropdownMenu
               aria-label="Student admin actions"
