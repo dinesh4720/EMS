@@ -44,21 +44,26 @@ export default function ActiveSessions() {
   const [revokingId, setRevokingId] = useState(null);
   const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
 
-  useEffect(() => {
-    fetchSessions();
-  }, []);
-
-  const fetchSessions = async () => {
+  const fetchSessions = async (signal) => {
     try {
       setLoading(true);
-      const data = await request("/auth/sessions");
+      const data = await request("/auth/sessions", { signal });
       setSessions(Array.isArray(data?.sessions) ? data.sessions : []);
     } catch {
+      if (signal?.aborted) return;
       toast.error("Failed to load sessions");
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
   };
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchSessions(controller.signal);
+    return () => controller.abort();
+  }, []);
 
   const handleRevoke = (sessionId) => {
     showConfirm({
@@ -178,11 +183,11 @@ export default function ActiveSessions() {
                     </div>
                     <div className="flex items-center gap-4 mt-1">
                       <span className="text-sm text-fg-muted flex items-center gap-1">
-                        <Globe size={14} />
+                        <Globe size={14} aria-hidden="true" />
                         {session.ipAddress || "Unknown IP"}
                       </span>
                       <span className="text-sm text-fg-muted flex items-center gap-1">
-                        <Clock size={14} />
+                        <Clock size={14} aria-hidden="true" />
                         {formatDate(session.lastActivityAt)}
                       </span>
                     </div>

@@ -47,7 +47,9 @@ export default function SSOSettings() {
   const initialSsoOnly = useRef(false);
 
   useEffect(() => {
-    ssoApi.getConfig().then((data) => {
+    const controller = new AbortController();
+    ssoApi.getConfig({ signal: controller.signal }).then((data) => {
+      if (controller.signal.aborted) return;
       const cfg = data?.ssoConfig || {};
       setGoogle({
         enabled: cfg.google?.enabled || false,
@@ -79,11 +81,13 @@ export default function SSOSettings() {
         microsoftHasSecret: cfg.microsoft?.hasClientSecret || false,
         samlHasCert: cfg.saml?.hasCert || false,
       });
-    }).catch(() => {
+    }).catch((err) => {
+      if (err.name === 'AbortError') return;
       toast.error("Failed to load SSO configuration");
     }).finally(() => {
-      setLoading(false);
+      if (!controller.signal.aborted) setLoading(false);
     });
+    return () => controller.abort();
   }, []);
 
   const doSave = useCallback(async () => {

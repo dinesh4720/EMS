@@ -37,27 +37,33 @@ export default function ParentManagement() {
   const [copiedPassword, setCopiedPassword] = useState(false);
   const [actionLoading, setActionLoading] = useState(null);
 
-  const fetchParents = useCallback(async (page = 1) => {
+  const fetchParents = useCallback(async (page = 1, signal) => {
     setLoading(true);
     try {
       const params = { page, limit: 20 };
       if (search) params.search = search;
       if (statusFilter) params.status = statusFilter;
 
-      const response = await parentApi.getAll(params);
+      const response = await parentApi.getAll(params, { signal });
+      if (signal?.aborted) return;
       if (response.success) {
         setParents(response.data.parents);
         setPagination(response.data.pagination);
       }
     } catch (error) {
+      if (error.name === 'AbortError') return;
       logger.error("Error fetching parents:", error);
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
   }, [search, statusFilter]);
 
   useEffect(() => {
-    fetchParents();
+    const controller = new AbortController();
+    fetchParents(1, controller.signal);
+    return () => controller.abort();
   }, [fetchParents]);
 
   const handleSearch = (e) => {
@@ -246,24 +252,30 @@ export default function ParentManagement() {
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
                       <button
+                        type="button"
                         onClick={() => handleViewDetails(parent)}
                         className="p-1.5 rounded hover:bg-surface-2 text-fg-muted"
+                        aria-label={t('pages.viewDetails2')}
                         title={t('pages.viewDetails2')}
                       >
                         <Eye size={15} />
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleResetPassword(parent._id)}
                         disabled={actionLoading === parent._id}
                         className="p-1.5 rounded hover:bg-surface-2 text-fg-muted"
+                        aria-label={t('pages.resetPassword1')}
                         title={t('pages.resetPassword1')}
                       >
                         <KeyRound size={15} />
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleToggleStatus(parent._id, parent.status)}
                         disabled={actionLoading === parent._id}
                         className="p-1.5 rounded hover:bg-surface-2 text-fg-muted"
+                        aria-label={parent.status === "active" ? "Deactivate" : "Activate"}
                         title={parent.status === "active" ? "Deactivate" : "Activate"}
                       >
                         {parent.status === "active" ? <PowerOff size={15} /> : <Power size={15} />}

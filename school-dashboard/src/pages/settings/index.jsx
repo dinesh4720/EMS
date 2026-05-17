@@ -231,6 +231,7 @@ export default function SettingsPage() {
                       return (
                         <li key={item.key}>
                           <button
+                            type="button"
                             onClick={() => item.isAction ? item.onClick() : navigate(item.path)}
                             className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors
                               ${!item.isAction && active

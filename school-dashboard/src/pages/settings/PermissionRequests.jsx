@@ -70,9 +70,10 @@ export default function PermissionRequests() {
   const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
-    if (isAdmin()) {
-      fetchRequests();
-    }
+    if (!isAdmin()) return;
+    const controller = new AbortController();
+    fetchRequests(controller.signal);
+    return () => controller.abort();
   }, [isAdmin, activeTab]);
 
   // Listen for new permission requests via socket
@@ -94,28 +95,30 @@ export default function PermissionRequests() {
     };
   }, [isAdmin]);
 
-  const fetchRequests = async () => {
+  const fetchRequests = async (signal) => {
     setFetchError(null);
     try {
       setLoading(true);
       const status = activeTab === 'all' ? '' : activeTab;
-      const data = await request(`/permissions/requests${status ? `?status=${status}` : ''}`);
+      const data = await request(`/permissions/requests${status ? `?status=${status}` : ''}`, { signal });
+      if (signal?.aborted) return;
       setRequests(Array.isArray(data) ? data : []);
       // AUDIT-133: Always fetch actual pending count for badge
       if (activeTab === 'pending') {
         setPendingCount(Array.isArray(data) ? data.length : 0);
       } else {
         try {
-          const pendingData = await request('/permissions/requests?status=pending');
-          setPendingCount(Array.isArray(pendingData) ? pendingData.length : 0);
+          const pendingData = await request('/permissions/requests?status=pending', { signal });
+          if (!signal?.aborted) setPendingCount(Array.isArray(pendingData) ? pendingData.length : 0);
         } catch { /* keep previous count */ }
       }
     } catch (error) {
+      if (error.name === 'AbortError') return;
       logger.error('Error fetching requests:', error);
       setFetchError(error.message || 'Failed to load permission requests');
       toast.error(t('toast.error.failedToLoadPermissionRequests'));
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   };
 

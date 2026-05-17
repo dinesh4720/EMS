@@ -105,12 +105,18 @@ export function useSalaryState() {
 
   // Calls the backend payroll API to run payroll and refreshes history
   const processPayroll = async (data) => {
-    const result = await payrollApi.runPayroll(data);
-    // Refresh history for the processed month
-    if (data.month && data.year) {
-      await fetchPayrollHistory({ month: data.month, year: data.year });
+    try {
+      const result = await payrollApi.runPayroll(data);
+      // Refresh history for the processed month
+      if (data.month && data.year) {
+        await fetchPayrollHistory({ month: data.month, year: data.year });
+      }
+      return result;
+    } catch (err) {
+      logger.error("Failed to process payroll:", err);
+      toast.error(err.message || "Failed to process payroll");
+      throw err;
     }
-    return result;
   };
 
   const getPayrollForMonth = (month) =>
