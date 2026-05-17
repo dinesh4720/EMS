@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
     Card,
     CardBody,
@@ -47,7 +47,14 @@ export default function UserManagement() {
     const [generatedPassword, setGeneratedPassword] = useState("");
     const [resetSuccess, setResetSuccess] = useState(false);
     const [copiedPassword, setCopiedPassword] = useState(false);
+    const copiedPasswordTimeoutRef = useRef(null);
     const [showGeneratedPassword, setShowGeneratedPassword] = useState(false);
+
+    useEffect(() => {
+      return () => {
+        if (copiedPasswordTimeoutRef.current) clearTimeout(copiedPasswordTimeoutRef.current);
+      };
+    }, []);
 
     // Secure password generator using crypto.getRandomValues()
     const generateSecurePassword = (length = 12) => {
@@ -90,7 +97,8 @@ export default function UserManagement() {
         try {
             await navigator.clipboard.writeText(generatedPassword);
             setCopiedPassword(true);
-            setTimeout(() => setCopiedPassword(false), 2000);
+            if (copiedPasswordTimeoutRef.current) clearTimeout(copiedPasswordTimeoutRef.current);
+            copiedPasswordTimeoutRef.current = setTimeout(() => setCopiedPassword(false), 2000);
         } catch (err) {
             logger.error('Failed to copy password:', err);
         }

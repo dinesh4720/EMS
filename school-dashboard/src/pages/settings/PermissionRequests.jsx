@@ -1,6 +1,6 @@
 import { request } from '../../services/api.js';
 import { getSocketService } from '../../services/socketServiceEnhanced.js';
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import logger from "../../utils/logger";
 import {
   Card,
@@ -68,6 +68,7 @@ export default function PermissionRequests() {
   const [activeTab, setActiveTab] = useState("pending");
   // AUDIT-133: Track pending count independently so it persists across tab changes
   const [pendingCount, setPendingCount] = useState(0);
+  const fetchVersionRef = useRef(0);
 
   useEffect(() => {
     if (!isAdmin()) return;
@@ -95,30 +96,32 @@ export default function PermissionRequests() {
     };
   }, [isAdmin]);
 
-  const fetchRequests = async (signal) => {
+  const fetchRequests = async () => {
+    const version = ++fetchVersionRef.current;
     setFetchError(null);
     try {
       setLoading(true);
       const status = activeTab === 'all' ? '' : activeTab;
-      const data = await request(`/permissions/requests${status ? `?status=${status}` : ''}`, { signal });
-      if (signal?.aborted) return;
+      const data = await request(`/permissions/requests${status ? `?status=${status}` : ''}`);
+      if (version !== fetchVersionRef.current) return;
       setRequests(Array.isArray(data) ? data : []);
       // AUDIT-133: Always fetch actual pending count for badge
       if (activeTab === 'pending') {
         setPendingCount(Array.isArray(data) ? data.length : 0);
       } else {
         try {
-          const pendingData = await request('/permissions/requests?status=pending', { signal });
-          if (!signal?.aborted) setPendingCount(Array.isArray(pendingData) ? pendingData.length : 0);
+          const pendingData = await request('/permissions/requests?status=pending');
+          if (version !== fetchVersionRef.current) return;
+          setPendingCount(Array.isArray(pendingData) ? pendingData.length : 0);
         } catch { /* keep previous count */ }
       }
     } catch (error) {
-      if (error.name === 'AbortError') return;
+      if (version !== fetchVersionRef.current) return;
       logger.error('Error fetching requests:', error);
       setFetchError(error.message || 'Failed to load permission requests');
       toast.error(t('toast.error.failedToLoadPermissionRequests'));
     } finally {
-      if (!signal?.aborted) setLoading(false);
+      if (version === fetchVersionRef.current) setLoading(false);
     }
   };
 

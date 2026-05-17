@@ -44,25 +44,21 @@ export default function ActiveSessions() {
   const [revokingId, setRevokingId] = useState(null);
   const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
 
-  const fetchSessions = async (signal) => {
-    try {
-      setLoading(true);
-      const data = await request("/auth/sessions", { signal });
-      setSessions(Array.isArray(data?.sessions) ? data.sessions : []);
-    } catch {
-      if (signal?.aborted) return;
-      toast.error("Failed to load sessions");
-    } finally {
-      if (!signal?.aborted) {
-        setLoading(false);
-      }
-    }
-  };
-
   useEffect(() => {
-    const controller = new AbortController();
-    fetchSessions(controller.signal);
-    return () => controller.abort();
+    let cancelled = false;
+    const fetchSessions = async () => {
+      try {
+        setLoading(true);
+        const data = await request("/auth/sessions");
+        if (!cancelled) setSessions(Array.isArray(data?.sessions) ? data.sessions : []);
+      } catch {
+        if (!cancelled) toast.error("Failed to load sessions");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    fetchSessions();
+    return () => { cancelled = true; };
   }, []);
 
   const handleRevoke = (sessionId) => {
