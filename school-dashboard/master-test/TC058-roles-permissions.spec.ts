@@ -122,6 +122,7 @@ test.describe('TC058 — Roles & Permissions', () => {
   test('1) roles and permissions page loads with available roles', async ({ page }) => {
     await page.goto('/settings/roles');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     await expect(page).not.toHaveURL(/\/login/);
 
@@ -137,6 +138,7 @@ test.describe('TC058 — Roles & Permissions', () => {
   test('2) Principal, Teacher, Admin, and Accountant roles are listed', async ({ page }) => {
     await page.goto('/settings/roles');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     // At least some of the role names should appear
@@ -155,6 +157,7 @@ test.describe('TC058 — Roles & Permissions', () => {
   test('3) clicking a role shows its permission toggles', async ({ page }) => {
     await page.goto('/settings/roles');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Click on Teacher role
     const teacherRole = page.getByText('Teacher').first();
@@ -176,6 +179,7 @@ test.describe('TC058 — Roles & Permissions', () => {
   test('4) permission toggles are visible for modules', async ({ page }) => {
     await page.goto('/settings/roles');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Click on a role to expand permissions
     const roleEl = page.getByText(/Teacher|Admin|Principal/).first();
@@ -198,6 +202,7 @@ test.describe('TC058 — Roles & Permissions', () => {
   test('5) toggling a permission switch changes its state', async ({ page }) => {
     await page.goto('/settings/roles');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Expand a role
     const roleEl = page.getByText(/Teacher/).first();
@@ -224,6 +229,7 @@ test.describe('TC058 — Roles & Permissions', () => {
   test('6) saving permission changes shows success notification', async ({ page }) => {
     await page.goto('/settings/roles');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Expand role and toggle a permission
     const roleEl = page.getByText(/Teacher/).first();

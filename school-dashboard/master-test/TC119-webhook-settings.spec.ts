@@ -171,6 +171,7 @@ test.describe('TC079 — Webhook Settings', () => {
   test('1) webhooks settings page loads', async ({ page }) => {
     await page.goto('/settings/webhooks');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     await expect(page).not.toHaveURL(/\/login/);
 
@@ -186,6 +187,7 @@ test.describe('TC079 — Webhook Settings', () => {
   test('2) existing webhooks are shown in the list', async ({ page }) => {
     await page.goto('/settings/webhooks');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(
@@ -200,6 +202,7 @@ test.describe('TC079 — Webhook Settings', () => {
   test('3) create new webhook with URL and events', async ({ page }) => {
     await page.goto('/settings/webhooks');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const addBtn = page.getByRole('button', { name: /add|create|new/i }).first();
     const plusBtn = page.locator('button:has(svg.lucide-plus)').first();
@@ -255,6 +258,7 @@ test.describe('TC079 — Webhook Settings', () => {
 
     await page.goto('/settings/webhooks');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(bodyText?.includes('myapp.com/hooks/new')).toBeTruthy();
@@ -268,6 +272,7 @@ test.describe('TC079 — Webhook Settings', () => {
 
     await page.goto('/settings/webhooks');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const toggle = page.locator('[role="switch"]').first();
     if (await toggle.isVisible({ timeout: 3000 }).catch(() => false)) {
@@ -281,6 +286,7 @@ test.describe('TC079 — Webhook Settings', () => {
   test('6) clicking test webhook sends a test ping', async ({ page }) => {
     await page.goto('/settings/webhooks');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const testBtn = page.getByRole('button', { name: /test|ping|send test/i }).first();
     if (await testBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
@@ -305,6 +311,7 @@ test.describe('TC079 — Webhook Settings', () => {
   test('7) viewing webhook delivery logs shows past deliveries', async ({ page }) => {
     await page.goto('/settings/webhooks');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Click on webhook or logs button
     const whRow = page.getByText('example.com/hooks/student').first();
@@ -334,6 +341,7 @@ test.describe('TC079 — Webhook Settings', () => {
 
     await page.goto('/settings/webhooks');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const deleteBtn = page.getByRole('button', { name: /delete|remove/i }).first();
     const trashBtn = page.locator('button:has(svg.lucide-trash), button:has(svg.lucide-trash-2)').first();

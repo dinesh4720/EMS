@@ -145,6 +145,7 @@ test.describe('TC082 — Trash & Restore', () => {
   test('1) trash page loads and shows header', async ({ page }) => {
     await page.goto('/settings/trash');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     await expect(page).not.toHaveURL(/\/login/);
 
@@ -161,6 +162,7 @@ test.describe('TC082 — Trash & Restore', () => {
   test('2) deleted items are shown in the trash list', async ({ page }) => {
     await page.goto('/settings/trash');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(
@@ -174,6 +176,7 @@ test.describe('TC082 — Trash & Restore', () => {
   test('3) deleted items display type badge and deletion date', async ({ page }) => {
     await page.goto('/settings/trash');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     // Should show item types
@@ -198,6 +201,7 @@ test.describe('TC082 — Trash & Restore', () => {
 
     await page.goto('/settings/trash');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Click on the first item or its checkbox
     const checkbox = page.locator('input[type="checkbox"]').first();
@@ -234,6 +238,7 @@ test.describe('TC082 — Trash & Restore', () => {
 
     await page.goto('/settings/trash');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     // Rahul Kumar should no longer appear
@@ -247,6 +252,7 @@ test.describe('TC082 — Trash & Restore', () => {
   test('6) selecting multiple items enables bulk permanent delete', async ({ page }) => {
     await page.goto('/settings/trash');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const checkboxes = page.locator('input[type="checkbox"]');
     const count = await checkboxes.count();
@@ -274,6 +280,7 @@ test.describe('TC082 — Trash & Restore', () => {
   test('7) permanent deletion shows confirmation dialog', async ({ page }) => {
     await page.goto('/settings/trash');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Select an item
     const checkbox = page.locator('input[type="checkbox"]').first();
@@ -309,6 +316,7 @@ test.describe('TC082 — Trash & Restore', () => {
 
     await page.goto('/settings/trash');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const checkbox = page.locator('input[type="checkbox"]').first();
     if (await checkbox.isVisible({ timeout: 3000 }).catch(() => false)) {

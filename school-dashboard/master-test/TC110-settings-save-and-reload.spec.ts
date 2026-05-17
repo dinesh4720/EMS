@@ -57,6 +57,7 @@ test.describe('TC110: Settings Save & Reload Persistence', () => {
   test('1) change school name and save', async ({ page }) => {
     await page.goto('/settings');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Find and update the school name input
     const nameInput = page.locator(
@@ -75,6 +76,7 @@ test.describe('TC110: Settings Save & Reload Persistence', () => {
     if (hasSaveBtn) {
       await saveBtn.click();
       await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
     }
 
     // Verify settings API call was made
@@ -92,6 +94,7 @@ test.describe('TC110: Settings Save & Reload Persistence', () => {
 
     await page.goto('/settings');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Verify the saved name appears
     const bodyText = await page.textContent('body');
@@ -100,6 +103,7 @@ test.describe('TC110: Settings Save & Reload Persistence', () => {
     // Now reload the page
     await page.reload();
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Verify the name still persists after reload
     const bodyTextAfterReload = await page.textContent('body');
@@ -111,6 +115,7 @@ test.describe('TC110: Settings Save & Reload Persistence', () => {
   test('3) change period duration to 45 minutes and save', async ({ page }) => {
     await page.goto('/settings/academics');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Navigate to schedule/timings tab if present
     const timingsTab = page.getByRole('tab', { name: /schedule|timing/i }).first();
@@ -134,6 +139,7 @@ test.describe('TC110: Settings Save & Reload Persistence', () => {
     if (hasSaveBtn) {
       await saveBtn.click();
       await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
     }
 
     // Verify page still on settings
@@ -147,6 +153,7 @@ test.describe('TC110: Settings Save & Reload Persistence', () => {
 
     await page.goto('/settings/academics');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Navigate to schedule tab if present
     const timingsTab = page.getByRole('tab', { name: /schedule|timing/i }).first();
@@ -167,6 +174,7 @@ test.describe('TC110: Settings Save & Reload Persistence', () => {
     // Reload and re-verify
     await page.reload();
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     if (hasTimingsTab) {
       const timingsTabAfter = page.getByRole('tab', { name: /schedule|timing/i }).first();
@@ -183,6 +191,7 @@ test.describe('TC110: Settings Save & Reload Persistence', () => {
   test('5) navigate to attendance rules settings', async ({ page }) => {
     await page.goto('/settings/attendance-rules');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     const lowerBody = bodyText?.toLowerCase() || '';
@@ -198,6 +207,7 @@ test.describe('TC110: Settings Save & Reload Persistence', () => {
   test('6) change attendance threshold to 80% and save', async ({ page }) => {
     await page.goto('/settings/attendance-rules');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Find threshold input
     const thresholdInput = page.locator(
@@ -216,6 +226,7 @@ test.describe('TC110: Settings Save & Reload Persistence', () => {
     if (hasSaveBtn) {
       await saveBtn.click();
       await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
     }
 
     // Verify the settings API was called
@@ -233,10 +244,12 @@ test.describe('TC110: Settings Save & Reload Persistence', () => {
 
     await page.goto('/settings/attendance-rules');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Reload the page
     await page.reload();
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Verify the page still shows attendance settings
     const bodyText = await page.textContent('body');

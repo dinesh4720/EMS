@@ -119,6 +119,7 @@ test.describe('TC059 — Communication Settings', () => {
   test('1) communication settings page loads', async ({ page }) => {
     await page.goto('/settings/communication');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     await expect(page).not.toHaveURL(/\/login/);
 
@@ -134,6 +135,7 @@ test.describe('TC059 — Communication Settings', () => {
   test('2) SMS tab allows toggling SMS enabled', async ({ page }) => {
     await page.goto('/settings/communication');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Click SMS tab if tabs exist
     const smsTab = page.getByRole('tab', { name: /sms/i }).first();
@@ -162,6 +164,7 @@ test.describe('TC059 — Communication Settings', () => {
   test('3) SMS tab allows filling provider, sender ID, and API key', async ({ page }) => {
     await page.goto('/settings/communication');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Navigate to SMS section
     const smsTab = page.getByRole('tab', { name: /sms/i }).first();
@@ -206,6 +209,7 @@ test.describe('TC059 — Communication Settings', () => {
   test('4) Email tab allows toggling email enabled', async ({ page }) => {
     await page.goto('/settings/communication');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Click Email tab
     const emailTab = page.getByRole('tab', { name: /email/i }).first();
@@ -230,6 +234,7 @@ test.describe('TC059 — Communication Settings', () => {
   test('5) Email tab allows filling SMTP host, port, username, password', async ({ page }) => {
     await page.goto('/settings/communication');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Navigate to email section
     const emailTab = page.getByRole('tab', { name: /email/i }).first();
@@ -276,6 +281,7 @@ test.describe('TC059 — Communication Settings', () => {
   test('6) templates tab shows email templates', async ({ page }) => {
     await page.goto('/settings/communication');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Click templates tab
     const templatesTab = page.getByRole('tab', { name: /template/i }).first();
@@ -301,6 +307,7 @@ test.describe('TC059 — Communication Settings', () => {
   test('7) templates tab shows SMS templates', async ({ page }) => {
     await page.goto('/settings/communication');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Navigate to templates/SMS section
     const templatesTab = page.getByRole('tab', { name: /template/i }).first();
