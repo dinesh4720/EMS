@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 export default function WorkingDaysForm({ settings, onSave, onCancel, saving }) {
   const { t } = useTranslation();
   const [workingDays, setWorkingDays] = useState(settings.workingDays || ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]);
+  const [error, setError] = useState(null);
 
   const days = [
     { key: "Mon", label: "Monday" },
@@ -22,6 +23,15 @@ export default function WorkingDaysForm({ settings, onSave, onCancel, saving }) 
       ? workingDays.filter(d => d !== dayKey)
       : [...workingDays, dayKey];
     setWorkingDays(newDays);
+    if (error) setError(null);
+  };
+
+  const handleSave = () => {
+    if (workingDays.length === 0) {
+      setError("At least one working day must be selected");
+      return;
+    }
+    onSave({ workingDays });
   };
 
   return (
@@ -47,9 +57,12 @@ export default function WorkingDaysForm({ settings, onSave, onCancel, saving }) 
           );
         })}
       </div>
+      {error && (
+        <p className="text-sm text-danger">{error}</p>
+      )}
       <div className="flex justify-end gap-2 pt-4">
         <Button variant="light" onPress={onCancel} isDisabled={saving}>{t('pages.cancel2')}</Button>
-        <Button color="primary" onPress={() => onSave({ workingDays })} isLoading={saving}>
+        <Button color="primary" onPress={handleSave} isLoading={saving}>
           Save Changes
         </Button>
       </div>

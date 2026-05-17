@@ -5,6 +5,8 @@ import toast from "react-hot-toast";
 
 import { useApp } from "../../context/AppContext";
 import { CreateDrawer } from "../../components/create/CreateDrawer";
+import { TablePageSkeleton } from "../../components/skeletons/PageSkeletons";
+import ErrorState from "../../components/ui/ErrorState";
 import useTodayPeriods from "./hooks/useTodayPeriods";
 import TodayView from "./views/TodayView";
 import ByClassView from "./views/ByClassView";
@@ -16,7 +18,8 @@ export default function ClassesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const view = searchParams.get("view") === "class" ? "class" : "today";
 
-  const { dayMeta } = useTodayPeriods();
+  const { loading: appLoading } = useApp();
+  const { dayMeta, error: periodsError, refetch } = useTodayPeriods();
 
   const [isAddOpen, setIsAddOpen] = useState(false);
 
@@ -34,6 +37,7 @@ export default function ClassesPage() {
   };
 
   const subLine = (() => {
+    if (!dayMeta) return "Loading…";
     if (dayMeta.isWeekendOrHoliday) {
       return `${dayMeta.fullDayName || dayMeta.dayName} · School closed`;
     }
@@ -87,7 +91,15 @@ export default function ClassesPage() {
         </div>
       </div>
 
-      {view === "today" ? (
+      {appLoading ? (
+        <TablePageSkeleton kpiCards={0} searchBar={false} rows={4} />
+      ) : periodsError ? (
+        <ErrorState
+          title="Failed to load schedule"
+          error={periodsError}
+          onRetry={refetch}
+        />
+      ) : view === "today" ? (
         <TodayView retrospectiveOverride={false} />
       ) : (
         <ByClassView />

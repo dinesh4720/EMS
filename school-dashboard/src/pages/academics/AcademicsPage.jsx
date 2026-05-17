@@ -6,6 +6,8 @@ import useAcademicsData from "../../hooks/useAcademicsData";
 import AcademicsKpiStrip from "../../components/academics/AcademicsKpiStrip";
 import ExamsTable from "../../components/academics/ExamsTable";
 import ToolbarSearch from "../../components/ui/ToolbarSearch";
+import { SkeletonTable } from "../../components/ui/Skeleton";
+import ErrorState from "../../components/ui/ErrorState";
 
 const VALID_FILTERS = new Set(["all", "upcoming", "drafts", "published", "completed"]);
 
@@ -21,7 +23,7 @@ export default function AcademicsPage() {
   })();
 
   const [search, setSearch] = useState(searchParams.get("q") || "");
-  const { filtered, kpis, isLoading } = useAcademicsData({ status, search });
+  const { filtered, kpis, isLoading, isError, error, refetch } = useAcademicsData({ status, search });
 
   const setStatus = (next) => {
     setSearchParams(
@@ -109,9 +111,13 @@ export default function AcademicsPage() {
       </div>
 
       {isLoading ? (
-        <div className="academics-table">
-          <div className="academics-table__empty">Loading exams…</div>
-        </div>
+        <SkeletonTable rows={6} columns={5} />
+      ) : isError ? (
+        <ErrorState
+          title="Failed to load exams"
+          error={error}
+          onRetry={refetch}
+        />
       ) : (
         <ExamsTable rows={filtered} onEnterResults={onEnterResults} />
       )}

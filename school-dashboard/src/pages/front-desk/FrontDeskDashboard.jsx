@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { frontDeskApi } from '../../services/api';
 import ActivityFeed from '../../components/ui/ActivityFeed';
+import ErrorState from '../../components/ui/ErrorState';
+import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
 import Overview from './Overview';
 import VisitorLog from './VisitorLog';
 import GatePassLog from './GatePassLog';
@@ -48,6 +50,8 @@ export default function FrontDeskDashboard() {
     todayCalls: 0,
   });
   const [recentActivity, setRecentActivity] = useState([]);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
@@ -55,6 +59,8 @@ export default function FrontDeskDashboard() {
   }, []);
 
   const loadStats = async () => {
+    setStatsLoading(true);
+    setStatsError(null);
     try {
       const [visitors, gatePasses, appointments, feedbacks, callLogs] = await Promise.all([
         frontDeskApi.getVisitorsToday(),
@@ -94,7 +100,10 @@ export default function FrontDeskDashboard() {
       setRecentActivity(activities);
     } catch (error) {
       logger.error('Error loading stats:', error);
+      setStatsError(error?.message || 'Failed to load dashboard data');
       toast.error('Failed to load dashboard data');
+    } finally {
+      setStatsLoading(false);
     }
   };
 
@@ -274,6 +283,15 @@ export default function FrontDeskDashboard() {
       {/* ═══════════════════════════════════════════════════════════════════
           CONTENT AREA
       ═══════════════════════════════════════════════════════════════════ */}
+      {statsLoading ? (
+        <CardGridPageSkeleton cards={4} />
+      ) : statsError ? (
+        <ErrorState
+          title="Failed to load dashboard data"
+          error={statsError}
+          onRetry={loadStats}
+        />
+      ) : (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
         {/* MAIN CONTENT - 2/3 */}
@@ -318,6 +336,7 @@ export default function FrontDeskDashboard() {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }

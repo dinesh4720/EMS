@@ -2,10 +2,12 @@ import { request } from '../../services/api.js';
 import { useState, useEffect, useCallback } from "react";
 import logger from "../../utils/logger";
 import {
-  Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
+  Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure,
   Select, SelectItem, Switch
 } from "@heroui/react";
+import ErrorState from '../../components/ui/ErrorState';
+import Button from '../../components/ui/Button';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { Plus, Edit, Trash2, Save } from "lucide-react";
 import toast from "react-hot-toast";
@@ -122,20 +124,20 @@ export function ConcessionsTab() {
   if (loading) return <TablePageSkeleton kpiCards={0} searchBar={false} rows={4} />;
 
   if (fetchError) return (
-    <div className="flex flex-col items-center py-12 gap-4">
-      <p className="text-sm font-medium text-fg">Failed to load concessions</p>
-      <p className="text-xs text-fg-muted">{fetchError}</p>
-      <button onClick={fetchConcessions} className="px-3 py-1.5 text-sm font-medium text-white bg-surface rounded-lg hover:bg-surface-2">Retry</button>
-    </div>
+    <ErrorState
+      title="Failed to load concessions"
+      error={fetchError}
+      onRetry={fetchConcessions}
+    />
   );
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-sm font-semibold text-fg uppercase tracking-wider">{t('pages.concessionsDiscounts')}</h3>
-        <button onClick={() => handleOpen()} className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-surface rounded-lg hover:bg-surface-2">
-          <Plus size={14} /> Add
-        </button>
+        <Button variant="primary" size="sm" icon={<Plus size={14} />} onClick={() => handleOpen()}>
+          Add
+        </Button>
       </div>
 
       <div className="border border-border-token rounded-lg overflow-hidden">
@@ -274,20 +276,20 @@ export function LateFeeTab() {
   if (loading) return <TablePageSkeleton kpiCards={0} searchBar={false} rows={4} />;
 
   if (fetchError) return (
-    <div className="flex flex-col items-center py-12 gap-4">
-      <p className="text-sm font-medium text-fg">Failed to load late fee rules</p>
-      <p className="text-xs text-fg-muted">{fetchError}</p>
-      <button onClick={fetchConfig} className="px-3 py-1.5 text-sm font-medium text-white bg-surface rounded-lg hover:bg-surface-2">Retry</button>
-    </div>
+    <ErrorState
+      title="Failed to load late fee rules"
+      error={fetchError}
+      onRetry={fetchConfig}
+    />
   );
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-sm font-semibold text-fg uppercase tracking-wider">{t('pages.lateFeeRules')}</h3>
-        <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-surface rounded-lg hover:bg-surface-2 disabled:opacity-50">
-          <Save size={14} /> Save
-        </button>
+        <Button variant="primary" size="sm" icon={<Save size={14} />} onClick={handleSave} disabled={saving} loading={saving}>
+          Save
+        </Button>
       </div>
 
       <div className="border border-border-token rounded-lg divide-y divide-divider bg-surface">
@@ -403,11 +405,11 @@ export function PaymentMethodsTab() {
   if (loading) return <TablePageSkeleton kpiCards={0} searchBar={false} rows={4} />;
 
   if (fetchError) return (
-    <div className="flex flex-col items-center py-12 gap-4">
-      <p className="text-sm font-medium text-fg">Failed to load payment methods</p>
-      <p className="text-xs text-fg-muted">{fetchError}</p>
-      <button onClick={fetchConfig} className="px-3 py-1.5 text-sm font-medium text-white bg-surface rounded-lg hover:bg-surface-2">Retry</button>
-    </div>
+    <ErrorState
+      title="Failed to load payment methods"
+      error={fetchError}
+      onRetry={fetchConfig}
+    />
   );
 
   const onlineMethods = [
@@ -427,9 +429,9 @@ export function PaymentMethodsTab() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-sm font-semibold text-fg uppercase tracking-wider">{t('pages.paymentMethods')}</h3>
-        <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-surface rounded-lg hover:bg-surface-2 disabled:opacity-50">
-          <Save size={14} /> Save
-        </button>
+        <Button variant="primary" size="sm" icon={<Save size={14} />} onClick={handleSave} disabled={saving} loading={saving}>
+          Save
+        </Button>
       </div>
 
       {/* Online Payments */}
@@ -517,20 +519,20 @@ export function CollectionPeriodTab() {
   if (loading) return <TablePageSkeleton kpiCards={0} searchBar={false} rows={4} />;
 
   if (fetchError) return (
-    <div className="flex flex-col items-center py-12 gap-4">
-      <p className="text-sm font-medium text-fg">Failed to load collection settings</p>
-      <p className="text-xs text-fg-muted">{fetchError}</p>
-      <button onClick={fetchConfig} className="px-3 py-1.5 text-sm font-medium text-white bg-surface rounded-lg hover:bg-surface-2">Retry</button>
-    </div>
+    <ErrorState
+      title="Failed to load collection settings"
+      error={fetchError}
+      onRetry={fetchConfig}
+    />
   );
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-sm font-semibold text-fg uppercase tracking-wider">{t('pages.collectionSettings')}</h3>
-        <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-surface rounded-lg hover:bg-surface-2 disabled:opacity-50">
-          <Save size={14} /> Save
-        </button>
+        <Button variant="primary" size="sm" icon={<Save size={14} />} onClick={handleSave} disabled={saving} loading={saving}>
+          Save
+        </Button>
       </div>
 
       <div className="border border-border-token rounded-lg divide-y divide-divider bg-surface">
@@ -615,20 +617,20 @@ export function GeneralRulesTab() {
   if (loading) return <TablePageSkeleton kpiCards={0} searchBar={false} rows={4} />;
 
   if (fetchError) return (
-    <div className="flex flex-col items-center py-12 gap-4">
-      <p className="text-sm font-medium text-fg">Failed to load fee rules</p>
-      <p className="text-xs text-fg-muted">{fetchError}</p>
-      <button onClick={fetchConfig} className="px-3 py-1.5 text-sm font-medium text-white bg-surface rounded-lg hover:bg-surface-2">Retry</button>
-    </div>
+    <ErrorState
+      title="Failed to load fee rules"
+      error={fetchError}
+      onRetry={fetchConfig}
+    />
   );
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-sm font-semibold text-fg uppercase tracking-wider">{t('pages.feeRules')}</h3>
-        <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-surface rounded-lg hover:bg-surface-2 disabled:opacity-50">
-          <Save size={14} /> Save
-        </button>
+        <Button variant="primary" size="sm" icon={<Save size={14} />} onClick={handleSave} disabled={saving} loading={saving}>
+          Save
+        </Button>
       </div>
 
       <div className="border border-border-token rounded-lg divide-y divide-divider bg-surface">

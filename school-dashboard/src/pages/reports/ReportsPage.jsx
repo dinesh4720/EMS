@@ -5,6 +5,8 @@ import { getAcademicYearOptions } from '../../utils/constants';
 import PageHeader from '../../components/ui/PageHeader';
 import Tabs from '../../components/ui/Tabs';
 import Select from '../../components/ui/Select';
+import { SkeletonCard } from '../../components/ui/Skeleton';
+import ErrorState from '../../components/ui/ErrorState';
 import AttendanceTab from './components/AttendanceTab';
 import MarksTab from './components/MarksTab';
 import FeesTab from './components/FeesTab';
@@ -19,6 +21,8 @@ export default function ReportsPage() {
   const { currentAcademicYear, selectedAcademicYear, setSelectedAcademicYear } = useApp();
   const [activeTab, setActiveTab] = useState('attendance');
   const [metrics, setMetrics] = useState(null);
+  const [metricsLoading, setMetricsLoading] = useState(false);
+  const [metricsError, setMetricsError] = useState(null);
 
   const academicYearOptions = useMemo(
     () => getAcademicYearOptions(currentAcademicYear, { past: 2, future: 1 }),
@@ -30,12 +34,19 @@ export default function ReportsPage() {
   useEffect(() => {
     if (!academicYear) return undefined;
     let cancelled = false;
+    setMetricsLoading(true);
+    setMetricsError(null);
     (async () => {
       try {
         const data = await reportsApi.dashboardMetrics({ academicYear });
         if (!cancelled) setMetrics(data);
       } catch (err) {
-        console.error('Failed to load dashboard metrics:', err);
+        if (!cancelled) {
+          console.error('Failed to load dashboard metrics:', err);
+          setMetricsError(err?.message || 'Failed to load dashboard metrics');
+        }
+      } finally {
+        if (!cancelled) setMetricsLoading(false);
       }
     })();
     return () => {
@@ -80,11 +91,32 @@ export default function ReportsPage() {
         variant="underline"
       />
 
-      <div>
-        {activeTab === 'attendance' && <AttendanceTab metrics={metrics} />}
-        {activeTab === 'marks' && <MarksTab academicYear={academicYear} />}
-        {activeTab === 'fees' && <FeesTab metrics={metrics} academicYear={academicYear} />}
-      </div>
+      {metricsLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
+      ) : metricsError ? (
+        <ErrorState
+          title="Failed to load dashboard metrics"
+          error={metricsError}
+          onRetry={() => {
+            setMetricsError(null);
+            setMetricsLoading(true);
+            reportsApi.dashboardMetrics({ academicYear })
+              .then(setMetrics)
+              .catch((err) => setMetricsError(err?.message || 'Failed to load dashboard metrics'))
+              .finally(() => setMetricsLoading(false));
+          }}
+        />
+      ) : (
+        <div>
+          {activeTab === 'attendance' && <AttendanceTab metrics={metrics} />}
+          {activeTab === 'marks' && <MarksTab academicYear={academicYear} />}
+          {activeTab === 'fees' && <FeesTab metrics={metrics} academicYear={academicYear} />}
+        </div>
+      )}
     </div>
   );
 }
