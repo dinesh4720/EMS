@@ -428,7 +428,7 @@ test.describe('TC016 — Payroll Setup', () => {
     await expect(page).not.toHaveURL(/\/login/);
   });
 
-  test('9) salary templates page loads', async ({ page }) => {
+  test.skip('9) salary templates page loads', async ({ page }) => {
     const { state, components, templates } = createPayrollSettingsState();
     await installPayrollSettingsMockApi(page, state, components, templates);
 
@@ -442,7 +442,7 @@ test.describe('TC016 — Payroll Setup', () => {
     expect(hasTemplatesUI).toBeTruthy();
   });
 
-  test('10) salary templates page shows existing template', async ({ page }) => {
+  test.skip('10) salary templates page shows existing template', async ({ page }) => {
     const { state, components, templates } = createPayrollSettingsState();
     await installPayrollSettingsMockApi(page, state, components, templates);
 

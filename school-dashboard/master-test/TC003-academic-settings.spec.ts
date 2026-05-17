@@ -57,7 +57,7 @@ test.describe('TC003: Academic Settings — Year, Timings, Classes, Subjects', (
   /* ── Tab: Schedule & Timings ── */
 
   test('1) academic settings page loads with academic year fields', async ({ page }) => {
-    await page.goto('/settings/academic');
+    await page.goto('/settings/academics');
     await page.waitForLoadState('networkidle');
 
     const bodyText = await page.textContent('body');
@@ -68,7 +68,7 @@ test.describe('TC003: Academic Settings — Year, Timings, Classes, Subjects', (
   });
 
   test('2) school start time and end time can be configured', async ({ page }) => {
-    await page.goto('/settings/academic');
+    await page.goto('/settings/academics');
     await page.waitForLoadState('networkidle');
 
     // Navigate to schedule/timings tab if present
@@ -104,7 +104,7 @@ test.describe('TC003: Academic Settings — Year, Timings, Classes, Subjects', (
   });
 
   test('3) period duration and number of periods can be set', async ({ page }) => {
-    await page.goto('/settings/academic');
+    await page.goto('/settings/academics');
     await page.waitForLoadState('networkidle');
 
     // Navigate to schedule tab if present
@@ -137,7 +137,7 @@ test.describe('TC003: Academic Settings — Year, Timings, Classes, Subjects', (
   });
 
   test('4) working days can be toggled (Mon-Sat)', async ({ page }) => {
-    await page.goto('/settings/academic');
+    await page.goto('/settings/academics');
     await page.waitForLoadState('networkidle');
 
     const timingsTab = page.getByRole('tab', { name: /schedule|timing|working/i }).first();
@@ -164,7 +164,7 @@ test.describe('TC003: Academic Settings — Year, Timings, Classes, Subjects', (
   /* ── Tab: Classes & Sections ── */
 
   test('5) classes & sections tab shows default classes', async ({ page }) => {
-    await page.goto('/settings/academic');
+    await page.goto('/settings/academics');
     await page.waitForLoadState('networkidle');
 
     // Navigate to classes tab
@@ -181,7 +181,7 @@ test.describe('TC003: Academic Settings — Year, Timings, Classes, Subjects', (
   });
 
   test('6) add a new section to class 10', async ({ page }) => {
-    await page.goto('/settings/academic');
+    await page.goto('/settings/academics');
     await page.waitForLoadState('networkidle');
 
     // Navigate to classes tab
@@ -222,7 +222,7 @@ test.describe('TC003: Academic Settings — Year, Timings, Classes, Subjects', (
   /* ── Tab: Subjects ── */
 
   test('7) subjects tab shows default subjects', async ({ page }) => {
-    await page.goto('/settings/academic');
+    await page.goto('/settings/academics');
     await page.waitForLoadState('networkidle');
 
     // Navigate to subjects tab
@@ -240,7 +240,7 @@ test.describe('TC003: Academic Settings — Year, Timings, Classes, Subjects', (
   });
 
   test('8) add a new subject "Hindi" with code "HIN"', async ({ page }) => {
-    await page.goto('/settings/academic');
+    await page.goto('/settings/academics');
     await page.waitForLoadState('networkidle');
 
     // Navigate to subjects tab

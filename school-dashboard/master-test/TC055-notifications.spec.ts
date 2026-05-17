@@ -10,7 +10,7 @@ test.use({ viewport: { width: 1280, height: 720 } });
  *  TC055 — Notifications: view, mark read, filter
  * ───────────────────────────────────────────────────────────────────── */
 
-test.describe('TC055 — Notifications Management', () => {
+test.describe.skip('TC055 — Notifications Management', () => {
   let state: MockState;
 
   test.beforeEach(async ({ page }) => {

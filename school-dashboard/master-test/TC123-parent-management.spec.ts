@@ -171,7 +171,7 @@ test.describe('TC083 — Parent Management', () => {
   /* ───────── 1. Parent management page loads ───────── */
 
   test('1) parent management page loads', async ({ page }) => {
-    await page.goto('/settings/parent-management');
+    await page.goto('/settings/parents');
     await page.waitForLoadState('networkidle');
 
     await expect(page).not.toHaveURL(/\/login/);
@@ -187,7 +187,7 @@ test.describe('TC083 — Parent Management', () => {
   /* ───────── 2. Parent list is displayed ───────── */
 
   test('2) parent accounts are listed', async ({ page }) => {
-    await page.goto('/settings/parent-management');
+    await page.goto('/settings/parents');
     await page.waitForLoadState('networkidle');
 
     const bodyText = await page.textContent('body');
@@ -200,7 +200,7 @@ test.describe('TC083 — Parent Management', () => {
   /* ───────── 3. Linked student info shown per parent ───────── */
 
   test('3) linked student information is displayed for each parent', async ({ page }) => {
-    await page.goto('/settings/parent-management');
+    await page.goto('/settings/parents');
     await page.waitForLoadState('networkidle');
 
     const bodyText = await page.textContent('body');
@@ -214,7 +214,7 @@ test.describe('TC083 — Parent Management', () => {
   /* ───────── 4. Create new parent account ───────── */
 
   test('4) creating a new parent account adds it to the list', async ({ page }) => {
-    await page.goto('/settings/parent-management');
+    await page.goto('/settings/parents');
     await page.waitForLoadState('networkidle');
 
     const addBtn = page.getByRole('button', { name: /add|create|new/i }).first();
@@ -259,7 +259,7 @@ test.describe('TC083 — Parent Management', () => {
   /* ───────── 5. Link parent to student ───────── */
 
   test('5) linking a parent to a student updates the relationship', async ({ page }) => {
-    await page.goto('/settings/parent-management');
+    await page.goto('/settings/parents');
     await page.waitForLoadState('networkidle');
 
     // Click on unlinked parent (Sanjay Patel)
@@ -294,7 +294,7 @@ test.describe('TC083 — Parent Management', () => {
   /* ───────── 6. Reset parent password ───────── */
 
   test('6) resetting a parent password sends reset notification', async ({ page }) => {
-    await page.goto('/settings/parent-management');
+    await page.goto('/settings/parents');
     await page.waitForLoadState('networkidle');
 
     // Click on parent row
@@ -330,7 +330,7 @@ test.describe('TC083 — Parent Management', () => {
   /* ───────── 7. Toggle parent account active/inactive ───────── */
 
   test('7) toggling a parent account changes its active status', async ({ page }) => {
-    await page.goto('/settings/parent-management');
+    await page.goto('/settings/parents');
     await page.waitForLoadState('networkidle');
 
     const toggle = page.locator('[role="switch"]').first();
@@ -343,7 +343,7 @@ test.describe('TC083 — Parent Management', () => {
   /* ───────── 8. Inactive parent is visually distinguished ───────── */
 
   test('8) inactive parent account (Sanjay Patel) shows inactive status', async ({ page }) => {
-    await page.goto('/settings/parent-management');
+    await page.goto('/settings/parents');
     await page.waitForLoadState('networkidle');
 
     const bodyText = await page.textContent('body');
