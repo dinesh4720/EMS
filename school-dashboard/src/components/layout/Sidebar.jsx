@@ -5,7 +5,7 @@ import {
   MessageSquare, IndianRupee, Settings, Award, ClipboardList,
   Wand2, Package, Library, Building2, Bus, FileBarChart, Database,
   DoorOpen, BarChart3, Sparkles, ChevronDown, Palette, Wallet,
-  CalendarCheck, FileText,
+  CalendarCheck, FileText, LayoutTemplate,
 } from "lucide-react";
 import { useChatNotifications } from "../../context/ChatNotificationContext";
 import { useApp } from "../../context/AppContext";
@@ -47,7 +47,6 @@ const MORE_NAV = [
   { href: "/reports", icon: FileBarChart, label: "Reports" },
   { href: "/staffs/payroll", icon: Wallet, label: "Staff Payroll" },
   { href: "/staffs/bulk-subjects", icon: BookOpen, label: "Subjects" },
-  { href: "/style-guide", icon: Palette, label: "Style Guide" },
   { href: "/timetable-wizard", icon: Wand2, label: "Timetable Wizard" },
   { href: "/transport", icon: Bus, label: "Transport" },
 ];
@@ -211,6 +210,19 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
               onNav={closeOnMobileNav}
             />
           ))}
+
+          {!collapsed && (
+            <div className="sidebar__heading" style={{ marginTop: 16 }}>
+              Architecture
+            </div>
+          )}
+          <NavRow
+            to="/style-guide"
+            icon={LayoutTemplate}
+            label="Style Guide"
+            collapsed={collapsed}
+            onNav={closeOnMobileNav}
+          />
 
           {!collapsed && pinned.length > 0 && (
             <>
