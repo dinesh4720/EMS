@@ -5,7 +5,7 @@ import {
   MessageSquare, IndianRupee, Settings, Award, ClipboardList,
   Wand2, Package, Library, Building2, Bus, FileBarChart, Database,
   DoorOpen, BarChart3, Sparkles, ChevronDown, Palette, Wallet,
-  CalendarCheck, FileText,
+  CalendarCheck, FileText, Layers, ListChecks,
 } from "lucide-react";
 import { useChatNotifications } from "../../context/ChatNotificationContext";
 import { useApp } from "../../context/AppContext";
@@ -30,6 +30,11 @@ const WORKSPACE_NAV = [
 
 // Alphabetised. First MORE_VISIBLE_LIMIT entries render by default; the
 // rest collapse under a "Show all" disclosure to keep the sidebar calm.
+const ARCHITECTURE_NAV = [
+  { href: "/style-guide", icon: Palette, label: "Style Guide" },
+  { href: "/ia", icon: ListChecks, label: "IA & Checklist" },
+];
+
 const MORE_NAV = [
   { href: "/students/attendance", icon: CalendarCheck, label: "Attendance" },
   { href: "/students/submissions", icon: FileText, label: "Form Submissions" },
@@ -47,7 +52,6 @@ const MORE_NAV = [
   { href: "/reports", icon: FileBarChart, label: "Reports" },
   { href: "/staffs/payroll", icon: Wallet, label: "Staff Payroll" },
   { href: "/staffs/bulk-subjects", icon: BookOpen, label: "Subjects" },
-  { href: "/style-guide", icon: Palette, label: "Style Guide" },
   { href: "/timetable-wizard", icon: Wand2, label: "Timetable Wizard" },
   { href: "/transport", icon: Bus, label: "Transport" },
 ];
@@ -282,6 +286,22 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
               </span>
             </button>
           )}
+
+          {!collapsed && (
+            <div className="sidebar__heading" style={{ marginTop: 16 }}>
+              Architecture
+            </div>
+          )}
+          {ARCHITECTURE_NAV.map((item) => (
+            <NavRow
+              key={item.href}
+              to={item.href}
+              icon={item.icon}
+              label={item.label}
+              collapsed={collapsed}
+              onNav={closeOnMobileNav}
+            />
+          ))}
         </nav>
 
         {/* Footer */}
