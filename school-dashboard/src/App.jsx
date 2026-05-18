@@ -535,6 +535,8 @@ function AppRoutes() {
           <Route path="/form/:token" element={<PublicFormSubmission />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/style-guide" element={<StyleGuidePage />} />
+          <Route path="/ia" element={<IAPage />} />
 
           {/* Auth routes - stable tree, conditional logic in element prop */}
           <Route path="/login" element={
