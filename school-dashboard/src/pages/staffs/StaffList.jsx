@@ -7,6 +7,7 @@ import {
 } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Plus, MessageSquare, CheckCircle2 } from "lucide-react";
+import SkeletonTable from "../../components/skeletons/SkeletonTable";
 import { useApp } from "../../context/AppContext";
 import ToolbarSearch from "../../components/ui/ToolbarSearch";
 import BulkActionBar from "../../components/ui/BulkActionBar";
@@ -65,7 +66,7 @@ const parseStringFilter = (key, defaultValue = "all") => {
 };
 
 export default function StaffList({ onStaffClick, onAddStaff }) {
-  const { staff = [], staffAttendance } = useApp();
+  const { staff = [], staffAttendance, loading } = useApp();
 
   // ============ Routing first (Step 1) ============
   const [searchParams, setSearchParams] = useSearchParams();
@@ -589,7 +590,11 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
             minHeight: 0,
           }}
         >
-          {visible.length === 0 ? (
+          {loading ? (
+            <div style={{ padding: 16 }}>
+              <SkeletonTable columns={4} rows={6} />
+            </div>
+          ) : visible.length === 0 ? (
             <div
               className="subtle"
               style={{ padding: 32, textAlign: "center", fontSize: 13 }}
