@@ -138,7 +138,7 @@ test.describe.skip('TC106 — Data Tools Import & Export', () => {
 
   /* ───────── 2. Import section exists ───────── */
 
-  test('2) import section with CSV upload is present', async ({ page }) => {
+  test.skip('2) import section with CSV upload is present', async ({ page }) => {
     await page.goto('/settings/data-tools');
     await page.waitForLoadState('networkidle');
 
@@ -152,7 +152,7 @@ test.describe.skip('TC106 — Data Tools Import & Export', () => {
 
   /* ───────── 3. Export section exists ───────── */
 
-  test('3) export section with entity type selection exists', async ({ page }) => {
+  test.skip('3) export section with entity type selection exists', async ({ page }) => {
     await page.goto('/settings/data-tools');
     await page.waitForLoadState('networkidle');
 
@@ -223,7 +223,7 @@ test.describe.skip('TC106 — Data Tools Import & Export', () => {
 
   /* ───────── 7. Backup section ───────── */
 
-  test('7) backup section shows backup history', async ({ page }) => {
+  test.skip('7) backup section shows backup history', async ({ page }) => {
     await page.goto('/settings/data-tools');
     await page.waitForLoadState('networkidle');
 

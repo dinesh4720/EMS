@@ -24,8 +24,10 @@
 
 @plugin "./heroui.js";
 @source "../../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}";
-@source not "../../playwright-report/**";
-@source not "../../test-results/**";
+@source not "../playwright-report/**";
+@source not "../playwright-report-master/**";
+@source not "../test-results/**";
+@source not "../test-results-master/**";
 
 /* ===== EMS REVAMP — Tailwind utility ↔ design-token mapping =====
  * `@theme inline` makes utilities resolve to var(--*) at runtime, so

@@ -42,7 +42,7 @@ async function installSubstitutionRoutes(
   const substitutions: SubstitutionRecord[] = [];
   let subCounter = 0;
 
-  await page.route('**/api/substitutions*', async (route) => {
+  await page.route('**/api/substitutions**', async (route) => {
     const method = route.request().method();
     const url = new URL(route.request().url());
     const path = url.pathname;

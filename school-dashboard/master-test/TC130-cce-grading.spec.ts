@@ -196,13 +196,8 @@ test.describe('TC090 — CCE Grading: Setup & View', () => {
 
     await expect(page).not.toHaveURL(/\/login/);
 
-    const bodyText = await page.textContent('body');
-    expect(
-      bodyText?.toLowerCase().includes('cce') ||
-      bodyText?.toLowerCase().includes('grading') ||
-      bodyText?.toLowerCase().includes('evaluation') ||
-      bodyText?.toLowerCase().includes('academic'),
-    ).toBeTruthy();
+    // Wait for page content to load (React Query async)
+    await expect(page.locator('body')).toContainText('CCE', { timeout: 15000 });
   });
 
   /* ───────── 2. Grading scale display ───────── */
@@ -231,6 +226,9 @@ test.describe('TC090 — CCE Grading: Setup & View', () => {
   test('3) select class shows student grades', async ({ page }) => {
     await page.goto('/academics/cce-grading');
     await page.waitForLoadState('networkidle');
+
+    // Wait for page to load
+    await expect(page.locator('body')).toContainText('CCE', { timeout: 15000 });
 
     const classSelector = page.locator('select, button[aria-haspopup="listbox"], [role="combobox"]').first();
     if (await classSelector.isVisible({ timeout: 5_000 }).catch(() => false)) {

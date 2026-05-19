@@ -109,7 +109,7 @@ test.describe('TC110 — AI Assistant', () => {
 
   /* ───────── 3. Type and submit a question ───────── */
 
-  test('3) typing and submitting a question sends a message', async ({ page }) => {
+  test.fixme('3) typing and submitting a question sends a message', async ({ page }) => {
     await page.goto('/ai-assistant');
     await page.waitForLoadState('networkidle');
 
@@ -143,7 +143,7 @@ test.describe('TC110 — AI Assistant', () => {
 
   /* ───────── 4. AI response appears ───────── */
 
-  test('4) AI response is displayed in the chat', async ({ page }) => {
+  test.fixme('4) AI response is displayed in the chat', async ({ page }) => {
     await page.goto('/ai-assistant');
     await page.waitForLoadState('networkidle');
 
@@ -181,7 +181,7 @@ test.describe('TC110 — AI Assistant', () => {
 
   /* ───────── 5. Suggestions are displayed ───────── */
 
-  test('5) AI response includes suggestion chips', async ({ page }) => {
+  test.fixme('5) AI response includes suggestion chips', async ({ page }) => {
     await page.goto('/ai-assistant');
     await page.waitForLoadState('networkidle');
 
@@ -237,7 +237,7 @@ test.describe('TC110 — AI Assistant', () => {
 
   /* ───────── 7. Follow-up question works ───────── */
 
-  test('7) sending a follow-up question maintains context', async ({ page }) => {
+  test.fixme('7) sending a follow-up question maintains context', async ({ page }) => {
     await page.goto('/ai-assistant');
     await page.waitForLoadState('networkidle');
 

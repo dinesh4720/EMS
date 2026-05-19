@@ -51,7 +51,7 @@ test.describe('TC117 — Fee Refunds', () => {
     await installMockApi(page, state);
 
     // Override refund endpoints
-    await page.route('**/api/fee-refunds**', async (route) => {
+    await page.route('**/api/fees/refunds**', async (route) => {
       const method = route.request().method();
       const url = route.request().url();
 
@@ -59,7 +59,7 @@ test.describe('TC117 — Fee Refunds', () => {
         return route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify({ data: refunds, total: refunds.length }),
+          body: JSON.stringify(refunds),
         });
       }
 
@@ -90,9 +90,9 @@ test.describe('TC117 — Fee Refunds', () => {
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({}) });
     });
 
-    await page.route('**/api/fee-refunds/*/approve', async (route) => {
+    await page.route('**/api/fees/refunds/*/approve', async (route) => {
       const url = route.request().url();
-      const id = url.split('/fee-refunds/')[1]?.split('/approve')[0];
+      const id = url.split('/fees/refunds/')[1]?.split('/approve')[0];
       const refund = refunds.find(r => r.id === id);
       if (refund) refund.status = 'approved';
       return route.fulfill({
@@ -102,9 +102,9 @@ test.describe('TC117 — Fee Refunds', () => {
       });
     });
 
-    await page.route('**/api/fee-refunds/*/reject', async (route) => {
+    await page.route('**/api/fees/refunds/*/reject', async (route) => {
       const url = route.request().url();
-      const id = url.split('/fee-refunds/')[1]?.split('/reject')[0];
+      const id = url.split('/fees/refunds/')[1]?.split('/reject')[0];
       let body: Record<string, unknown> = {};
       try { body = JSON.parse(route.request().postData() || '{}'); } catch { /* */ }
       const refund = refunds.find(r => r.id === id);
@@ -229,15 +229,8 @@ test.describe('TC117 — Fee Refunds', () => {
     await page.goto('/fees/refunds');
     await page.waitForLoadState('networkidle');
 
-    if (!(await page.textContent('body'))?.toLowerCase().includes('refund')) {
-      await page.goto('/fees');
-      await page.waitForLoadState('networkidle');
-      const refundsTab = page.getByText(/refund/i).first();
-      if (await refundsTab.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await refundsTab.click();
-        await page.waitForTimeout(500);
-      }
-    }
+    // Wait for refund data to load asynchronously
+    await expect(page.locator('body')).toContainText('pending', { timeout: 15000 });
 
     const bodyText = await page.textContent('body');
     const hasPending = bodyText?.toLowerCase().includes('pending');

@@ -60,10 +60,10 @@ test.describe('TC104 — Print & Export Student Data', () => {
 
     await expect(page).not.toHaveURL(/\/login/);
 
-    const bodyText = await page.textContent('body');
-    expect(bodyText).toContain('Aarav Sharma');
-    expect(bodyText).toContain('Diya Patel');
-    expect(bodyText).toContain('Rishi Kumar');
+    // Wait for student names to appear (React Query loads asynchronously)
+    await expect(page.locator('body')).toContainText('Aarav Sharma', { timeout: 15000 });
+    await expect(page.locator('body')).toContainText('Diya Patel', { timeout: 5000 });
+    await expect(page.locator('body')).toContainText('Rishi Kumar', { timeout: 5000 });
   });
 
   /* ───────── 2. Export/download button exists on student list ───────── */
@@ -72,16 +72,17 @@ test.describe('TC104 — Print & Export Student Data', () => {
     await page.goto('/students');
     await page.waitForLoadState('networkidle');
 
-    const exportBtn = page.getByRole('button', { name: /export|download|csv|excel/i }).first();
-    const exportIcon = page.locator(
-      'button:has(svg.lucide-download), button:has(svg.lucide-file-down), ' +
-      'button[aria-label*="export" i], button[aria-label*="download" i]',
-    ).first();
+    // Wait for students to load first
+    await expect(page.locator('body')).toContainText('Aarav Sharma', { timeout: 15000 });
 
-    const hasExportBtn = await exportBtn.isVisible({ timeout: 5000 }).catch(() => false);
-    const hasExportIcon = await exportIcon.isVisible({ timeout: 3000 }).catch(() => false);
+    // Download button is inside a "More options" dropdown
+    const moreBtn = page.getByRole('button', { name: /more options/i });
+    await expect(moreBtn).toBeVisible({ timeout: 5000 });
+    await moreBtn.click();
 
-    expect(hasExportBtn || hasExportIcon).toBeTruthy();
+    // Look for download/export option in the dropdown
+    const downloadOption = page.getByRole('menuitem', { name: /download list csv/i });
+    await expect(downloadOption).toBeVisible({ timeout: 5000 });
   });
 
   /* ───────── 3. Click export triggers CSV download ───────── */
@@ -208,8 +209,10 @@ test.describe('TC104 — Print & Export Student Data', () => {
     await page.goto(`/students/${student.id}`);
     await page.waitForLoadState('networkidle');
 
+    // Wait for profile to load (React Query loads asynchronously)
+    await expect(page.locator('body')).toContainText('Aarav Sharma', { timeout: 15000 });
+
     const bodyText = await page.textContent('body');
-    expect(bodyText).toContain('Aarav Sharma');
 
     // Profile should show key details like class, admission info
     const hasDetails = bodyText?.includes('10') || // class name

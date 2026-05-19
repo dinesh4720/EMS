@@ -46,7 +46,7 @@ test.describe('TC114 — Reminders Management', () => {
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ data: state.reminders, total: state.reminders.length }),
+        body: JSON.stringify({ reminders: state.reminders, total: state.reminders.length, totalPages: 1, currentPage: 1 }),
       });
     });
 
@@ -108,19 +108,10 @@ test.describe('TC114 — Reminders Management', () => {
     await page.goto('/messaging/reminders');
     await page.waitForLoadState('networkidle');
 
-    let bodyText = await page.textContent('body');
+    // Wait for specific reminder titles to load asynchronously
+    await expect(page.locator('body')).toContainText('Q2 Fee Reminder', { timeout: 15000 });
 
-    // Navigate to reminders tab if needed
-    if (!bodyText?.includes('Fee Reminder') && !bodyText?.includes('PTM')) {
-      await page.goto('/messaging');
-      await page.waitForLoadState('networkidle');
-      const remindersTab = page.getByText(/reminder/i).first();
-      if (await remindersTab.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await remindersTab.click();
-        await page.waitForTimeout(500);
-      }
-      bodyText = await page.textContent('body');
-    }
+    const bodyText = await page.textContent('body');
 
     const hasReminders = bodyText?.includes('Q2 Fee Reminder') ||
       bodyText?.includes('Low Attendance') ||

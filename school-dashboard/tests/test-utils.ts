@@ -1325,6 +1325,10 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
 
     /* ── Exams / Results ── */
     if (path === '/exams' && method === 'GET')  return json(state.exams);
+    if (path.match(/^\/exams\/class\/([^/]+)$/) && method === 'GET') {
+      const classId = path.split('/')[3];
+      return json(state.exams.filter((e) => e.classId === classId));
+    }
     if (path.match(/^\/exams\/([^/]+)$/) && method === 'GET') {
       const id = path.split('/')[2];
       const e = state.exams.find((ex) => ex.id === id);
@@ -1908,7 +1912,14 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
       return json(state.timetables);
     }
     if (path === '/timetable-wizard' || path.match(/^\/timetable-wizard\//)) {
-      return json({ classes: state.classes, timetables: state.timetables, conflicts: [] });
+      return json({
+        classes: state.classes,
+        timetables: state.timetables,
+        conflicts: [],
+        teachers: state.staff.filter((s) => s.role === 'Teacher'),
+        periods: 8,
+        days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+      });
     }
 
     /* ── Transport ── */
