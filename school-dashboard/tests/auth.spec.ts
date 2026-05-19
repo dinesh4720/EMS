@@ -104,7 +104,6 @@ test.describe('Auth — Login Page (E2E-TEST-37)', () => {
 
   test('1) login page shows email and password fields with submit button', async ({ page }) => {
     await page.goto('/login');
-    await page.waitForLoadState('networkidle');
 
     // Email field (login page uses type="text" inputMode="email")
     const emailInput = page.locator('#login-email');
@@ -121,7 +120,6 @@ test.describe('Auth — Login Page (E2E-TEST-37)', () => {
 
   test('2) successful login redirects to dashboard', async ({ page }) => {
     await page.goto('/login');
-    await page.waitForLoadState('networkidle');
 
     // Fill in credentials
     await page.locator('#login-email').fill('admin@schoolsync.test');
@@ -138,8 +136,6 @@ test.describe('Auth — Login Page (E2E-TEST-37)', () => {
 
   test('3) invalid credentials shows error message', async ({ page }) => {
     await page.goto('/login');
-    await page.waitForLoadState('networkidle');
-
     await page.locator('#login-email').fill('wrong@test.com');
     await page.locator('#login-password').fill('WrongPass@1');
     await page.getByRole('button', { name: /sign in|login|log in/i }).first().click();
@@ -154,8 +150,6 @@ test.describe('Auth — Login Page (E2E-TEST-37)', () => {
 
   test('4) password visibility toggle works', async ({ page }) => {
     await page.goto('/login');
-    await page.waitForLoadState('networkidle');
-
     const passwordInput = page.locator('#login-password');
     await expect(passwordInput).toBeVisible();
 
@@ -173,8 +167,6 @@ test.describe('Auth — Login Page (E2E-TEST-37)', () => {
 
   test('5) login lockout triggers after max failed attempts', async ({ page }) => {
     await page.goto('/login');
-    await page.waitForLoadState('networkidle');
-
     // Simulate multiple failed attempts
     for (let i = 0; i < 3; i++) {
       await page.locator('#login-email').fill('wrong@test.com');
@@ -190,8 +182,6 @@ test.describe('Auth — Login Page (E2E-TEST-37)', () => {
 
   test('6) email field validates format before submission', async ({ page }) => {
     await page.goto('/login');
-    await page.waitForLoadState('networkidle');
-
     const emailInput = page.locator('#login-email');
     await emailInput.fill('not-an-email');
 
@@ -217,8 +207,8 @@ test.describe('Auth — Signup Page (E2E-TEST-37)', () => {
 
   test('7) signup page shows invite token requirement', async ({ page }) => {
     await page.goto('/signup');
-    await page.waitForLoadState('networkidle');
-
+    // Wait for the lazy-loaded signup page to render (not the Suspense spinner)
+    await page.locator('.auth-form__inner').waitFor({ state: 'visible', timeout: 10_000 });
     const bodyText = await page.textContent('body');
     // Should show signup form or invite required message
     expect(bodyText?.toLowerCase()).toMatch(/invite|sign up|register|token|school/i);
@@ -226,8 +216,8 @@ test.describe('Auth — Signup Page (E2E-TEST-37)', () => {
 
   test('8) signup with valid invite token pre-fills email', async ({ page }) => {
     await page.goto('/signup?token=valid-invite-token');
-    await page.waitForLoadState('networkidle');
-
+    // Wait for the lazy-loaded signup page to render
+    await page.locator('.auth-form__inner').waitFor({ state: 'visible', timeout: 10_000 });
     // The invite details endpoint returns an email — should be pre-filled
     const emailInput = page.locator('input[type="email"], input[name="email"]').first();
     const hasEmail = await emailInput.isVisible({ timeout: 5000 }).catch(() => false);
@@ -244,8 +234,6 @@ test.describe('Auth — Signup Page (E2E-TEST-37)', () => {
 
   test('9) signup form requires password to meet complexity rules', async ({ page }) => {
     await page.goto('/signup?token=valid-invite-token');
-    await page.waitForLoadState('networkidle');
-
     const passwordInput = page.locator('input[type="password"]').first();
     const hasPassword = await passwordInput.isVisible({ timeout: 5000 }).catch(() => false);
 
@@ -268,8 +256,6 @@ test.describe('Auth — Signup Page (E2E-TEST-37)', () => {
 
   test('10) successful signup navigates user to dashboard or login', async ({ page }) => {
     await page.goto('/signup?token=valid-invite-token');
-    await page.waitForLoadState('networkidle');
-
     const fullNameInput = page.locator('input[name="fullName"], input[placeholder*="name" i]').first();
     const schoolNameInput = page.locator('input[name="schoolName"], input[placeholder*="school" i]').first();
     const emailInput = page.locator('input[type="email"]').first();
@@ -314,8 +300,6 @@ test.describe('Auth — Redirect Behaviour (E2E-TEST-37)', () => {
     });
 
     await page.goto('/students');
-    await page.waitForLoadState('networkidle');
-
     // Should redirect to login
     await expect(page).toHaveURL(/login/, { timeout: 10_000 });
   });
@@ -354,8 +338,6 @@ test.describe('Auth — Redirect Behaviour (E2E-TEST-37)', () => {
     });
 
     await page.goto('/login');
-    await page.waitForLoadState('networkidle');
-
     // Should redirect away from login
     await expect(page).not.toHaveURL(/\/login$/, { timeout: 10_000 });
   });
