@@ -61,6 +61,7 @@ const SeedDataSettings = lazyWithRetry(() => import("./SeedDataSettings"));
 const ActiveSessions = lazyWithRetry(() => import("./ActiveSessions"));
 const PromotionRulesSettings = lazyWithRetry(() => import("./PromotionRulesSettings"));
 const PeriodSettings = lazyWithRetry(() => import("./PeriodSettings"));
+const SalaryTemplates = lazyWithRetry(() => import("./SalaryTemplates"));
 
 function SettingsPageSkeleton() {
   return (
@@ -137,6 +138,7 @@ export default function SettingsPage() {
         { key: "fees", label: "Fee Management", icon: IndianRupee, path: "/settings/fees" },
         { key: "fee-rules", label: "Fee Rules", icon: Percent, path: "/settings/fee-rules" },
         { key: "payroll", label: "Payroll Settings", icon: IndianRupee, path: "/settings/payroll" },
+        { key: "salary-templates", label: "Salary Templates", icon: IndianRupee, path: "/settings/salary-templates", isNew: true },
       ]
     },
     {
@@ -342,6 +344,9 @@ export default function SettingsPage() {
               } />
               <Route path="payroll" element={
                 <SettingsErrorBoundary><PayrollSettings /></SettingsErrorBoundary>
+              } />
+              <Route path="salary-templates" element={
+                <SettingsErrorBoundary><SalaryTemplates /></SettingsErrorBoundary>
               } />
               <Route path="subscription" element={
                 <SettingsErrorBoundary><SubscriptionSettings /></SettingsErrorBoundary>
