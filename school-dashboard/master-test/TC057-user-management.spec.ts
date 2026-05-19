@@ -124,8 +124,9 @@ test.describe('TC057 — User Management', () => {
   /* ───────── 1. User management page loads ───────── */
 
   test('1) user management page loads and shows user list', async ({ page }) => {
-    await page.goto('/settings/user-management');
+    await page.goto('/settings/users');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     await expect(page).not.toHaveURL(/\/login/);
 
@@ -140,8 +141,9 @@ test.describe('TC057 — User Management', () => {
   /* ───────── 2. User list displays key information ───────── */
 
   test('2) user list shows name, email, role for each user', async ({ page }) => {
-    await page.goto('/settings/user-management');
+    await page.goto('/settings/users');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
 
@@ -155,8 +157,9 @@ test.describe('TC057 — User Management', () => {
   /* ───────── 3. Create new user ───────── */
 
   test('3) creating a new user adds them to the list', async ({ page }) => {
-    await page.goto('/settings/user-management');
+    await page.goto('/settings/users');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Look for add user button
     const addBtn = page.getByRole('button', { name: /add user|create user|new user|invite/i }).first();
@@ -196,8 +199,9 @@ test.describe('TC057 — User Management', () => {
   /* ───────── 4. Edit user details ───────── */
 
   test('4) editing a user updates their details', async ({ page }) => {
-    await page.goto('/settings/user-management');
+    await page.goto('/settings/users');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Click on a user or edit button
     const editBtn = page.getByRole('button', { name: /edit/i }).first();
@@ -228,8 +232,9 @@ test.describe('TC057 — User Management', () => {
   /* ───────── 5. Activate/Deactivate a user ───────── */
 
   test('5) toggling user active status works', async ({ page }) => {
-    await page.goto('/settings/user-management');
+    await page.goto('/settings/users');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Look for status toggle or deactivate button
     const toggleBtn = page.locator('button, [role="switch"]').filter({ hasText: /deactivate|disable|suspend/i }).first();
@@ -251,8 +256,9 @@ test.describe('TC057 — User Management', () => {
   /* ───────── 6. Role assignment ───────── */
 
   test('6) role can be assigned via dropdown or select', async ({ page }) => {
-    await page.goto('/settings/user-management');
+    await page.goto('/settings/users');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Look for role-related UI elements
     const roleSelect = page.locator('select, [aria-haspopup="listbox"]').filter({ hasText: /role|teacher|admin/i }).first();
@@ -275,8 +281,9 @@ test.describe('TC057 — User Management', () => {
   /* ───────── 7. Search by name/email ───────── */
 
   test('7) search filters users by name or email', async ({ page }) => {
-    await page.goto('/settings/user-management');
+    await page.goto('/settings/users');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const searchInput = page.locator(
       'input[type="search"], input[placeholder*="search" i], input[placeholder*="filter" i]',

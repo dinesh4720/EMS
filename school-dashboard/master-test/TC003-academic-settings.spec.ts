@@ -57,8 +57,9 @@ test.describe('TC003: Academic Settings — Year, Timings, Classes, Subjects', (
   /* ── Tab: Schedule & Timings ── */
 
   test('1) academic settings page loads with academic year fields', async ({ page }) => {
-    await page.goto('/settings/academic');
+    await page.goto('/settings/academics');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(bodyText?.toLowerCase()).toMatch(/academic|year|settings/i);
@@ -68,8 +69,9 @@ test.describe('TC003: Academic Settings — Year, Timings, Classes, Subjects', (
   });
 
   test('2) school start time and end time can be configured', async ({ page }) => {
-    await page.goto('/settings/academic');
+    await page.goto('/settings/academics');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Navigate to schedule/timings tab if present
     const timingsTab = page.getByRole('tab', { name: /schedule|timing|time/i }).first();
@@ -77,6 +79,7 @@ test.describe('TC003: Academic Settings — Year, Timings, Classes, Subjects', (
     if (hasTimingsTab) {
       await timingsTab.click();
       await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
     }
 
     // Look for start time input
@@ -104,8 +107,9 @@ test.describe('TC003: Academic Settings — Year, Timings, Classes, Subjects', (
   });
 
   test('3) period duration and number of periods can be set', async ({ page }) => {
-    await page.goto('/settings/academic');
+    await page.goto('/settings/academics');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Navigate to schedule tab if present
     const timingsTab = page.getByRole('tab', { name: /schedule|timing/i }).first();
@@ -137,8 +141,9 @@ test.describe('TC003: Academic Settings — Year, Timings, Classes, Subjects', (
   });
 
   test('4) working days can be toggled (Mon-Sat)', async ({ page }) => {
-    await page.goto('/settings/academic');
+    await page.goto('/settings/academics');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const timingsTab = page.getByRole('tab', { name: /schedule|timing|working/i }).first();
     const hasTimingsTab = await timingsTab.isVisible({ timeout: 3000 }).catch(() => false);
@@ -164,8 +169,9 @@ test.describe('TC003: Academic Settings — Year, Timings, Classes, Subjects', (
   /* ── Tab: Classes & Sections ── */
 
   test('5) classes & sections tab shows default classes', async ({ page }) => {
-    await page.goto('/settings/academic');
+    await page.goto('/settings/academics');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Navigate to classes tab
     const classesTab = page.getByRole('tab', { name: /class|section/i }).first();
@@ -173,6 +179,7 @@ test.describe('TC003: Academic Settings — Year, Timings, Classes, Subjects', (
     if (hasClassesTab) {
       await classesTab.click();
       await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
     }
 
     const bodyText = await page.textContent('body');
@@ -181,8 +188,9 @@ test.describe('TC003: Academic Settings — Year, Timings, Classes, Subjects', (
   });
 
   test('6) add a new section to class 10', async ({ page }) => {
-    await page.goto('/settings/academic');
+    await page.goto('/settings/academics');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Navigate to classes tab
     const classesTab = page.getByRole('tab', { name: /class|section/i }).first();
@@ -190,6 +198,7 @@ test.describe('TC003: Academic Settings — Year, Timings, Classes, Subjects', (
     if (hasClassesTab) {
       await classesTab.click();
       await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
     }
 
     // Look for add section button near class 10
@@ -222,8 +231,9 @@ test.describe('TC003: Academic Settings — Year, Timings, Classes, Subjects', (
   /* ── Tab: Subjects ── */
 
   test('7) subjects tab shows default subjects', async ({ page }) => {
-    await page.goto('/settings/academic');
+    await page.goto('/settings/academics');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Navigate to subjects tab
     const subjectsTab = page.getByRole('tab', { name: /subject/i }).first();
@@ -231,6 +241,7 @@ test.describe('TC003: Academic Settings — Year, Timings, Classes, Subjects', (
     if (hasSubjectsTab) {
       await subjectsTab.click();
       await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
     }
 
     const bodyText = await page.textContent('body');
@@ -240,8 +251,9 @@ test.describe('TC003: Academic Settings — Year, Timings, Classes, Subjects', (
   });
 
   test('8) add a new subject "Hindi" with code "HIN"', async ({ page }) => {
-    await page.goto('/settings/academic');
+    await page.goto('/settings/academics');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Navigate to subjects tab
     const subjectsTab = page.getByRole('tab', { name: /subject/i }).first();
@@ -249,6 +261,7 @@ test.describe('TC003: Academic Settings — Year, Timings, Classes, Subjects', (
     if (hasSubjectsTab) {
       await subjectsTab.click();
       await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
     }
 
     // Click add subject
@@ -258,28 +271,27 @@ test.describe('TC003: Academic Settings — Year, Timings, Classes, Subjects', (
     if (hasAddSubject) {
       await addSubjectBtn.click();
 
-      // Fill subject name
-      const nameInput = page.locator(
-        'input[name="name"], input[name="subjectName"], input[placeholder*="subject name" i]',
-      ).first();
-      const hasNameInput = await nameInput.isVisible({ timeout: 3000 }).catch(() => false);
-      if (hasNameInput) {
-        await nameInput.fill('Hindi');
+      // The modal uses HeroUI Input components without name attributes;
+      // target the visible text inputs inside the modal body.
+      const modal = page.locator('[role="dialog"], .modal-content, [data-testid="subject-modal"]').last();
+      const inputs = modal.locator('input[type="text"]').all();
+      const inputEls = await inputs;
+
+      if (inputEls.length > 0) {
+        await inputEls[0].fill('Hindi');
+      }
+      if (inputEls.length > 1) {
+        await inputEls[1].fill('HIN');
       }
 
-      // Fill subject code
-      const codeInput = page.locator(
-        'input[name="code"], input[name="subjectCode"], input[placeholder*="code" i]',
-      ).first();
-      const hasCodeInput = await codeInput.isVisible({ timeout: 3000 }).catch(() => false);
-      if (hasCodeInput) {
-        await codeInput.fill('HIN');
-      }
-
-      // Save
-      const saveBtn = page.getByRole('button', { name: /save|add|create|submit/i }).last();
+      // Save — click the enabled primary button inside the modal footer
+      const saveBtn = modal.locator('button').filter({ hasText: /Add Subject|Update Subject|Save/i }).first();
       const hasSave = await saveBtn.isVisible({ timeout: 3000 }).catch(() => false);
-      if (hasSave) await saveBtn.click();
+      if (hasSave) {
+        // Wait briefly for the button to become enabled after typing
+        await page.waitForTimeout(300);
+        await saveBtn.click();
+      }
     }
 
     // Verify page is still on academic settings

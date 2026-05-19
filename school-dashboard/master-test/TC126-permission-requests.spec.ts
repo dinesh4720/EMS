@@ -166,6 +166,7 @@ test.describe('TC086 — Permission Requests', () => {
   test('1) permission requests page loads', async ({ page }) => {
     await page.goto('/settings/permission-requests');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     await expect(page).not.toHaveURL(/\/login/);
 
@@ -182,6 +183,7 @@ test.describe('TC086 — Permission Requests', () => {
   test('2) pending permission requests are visible', async ({ page }) => {
     await page.goto('/settings/permission-requests');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(
@@ -196,6 +198,7 @@ test.describe('TC086 — Permission Requests', () => {
   test('3) clicking a request shows details (who, module, reason)', async ({ page }) => {
     await page.goto('/settings/permission-requests');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const requestRow = page.getByText('Ananya Sharma').first();
     if (await requestRow.isVisible({ timeout: 3000 }).catch(() => false)) {
@@ -217,6 +220,7 @@ test.describe('TC086 — Permission Requests', () => {
   test('4) approving a request changes its status to approved', async ({ page }) => {
     await page.goto('/settings/permission-requests');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Click on a pending request
     const requestRow = page.getByText('Ananya Sharma').first();
@@ -245,6 +249,7 @@ test.describe('TC086 — Permission Requests', () => {
   test('5) rejecting a request with a reason updates its status', async ({ page }) => {
     await page.goto('/settings/permission-requests');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Click on second pending request
     const requestRow = page.getByText('Ravi Menon').first();
@@ -284,6 +289,7 @@ test.describe('TC086 — Permission Requests', () => {
 
     await page.goto('/settings/permission-requests');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(
@@ -297,6 +303,7 @@ test.describe('TC086 — Permission Requests', () => {
   test('7) historical requests (approved/rejected) are shown', async ({ page }) => {
     await page.goto('/settings/permission-requests');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     // Priya Menon's approved request or Ananya's rejected request

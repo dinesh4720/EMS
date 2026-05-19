@@ -76,16 +76,18 @@ test.describe('TC004: Period Settings — Configure Class Timetable Periods', ()
   });
 
   test('1) period settings page loads', async ({ page }) => {
-    await page.goto('/settings/period');
+    await page.goto('/settings/periods');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(bodyText?.toLowerCase()).toMatch(/period|timing|schedule|timetable|settings/i);
   });
 
   test('2) select class "10-A" from dropdown', async ({ page }) => {
-    await page.goto('/settings/period');
+    await page.goto('/settings/periods');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Look for class selector
     const classSelect = page.locator(
@@ -114,8 +116,9 @@ test.describe('TC004: Period Settings — Configure Class Timetable Periods', ()
   });
 
   test('3) set school start time to 8:00 AM', async ({ page }) => {
-    await page.goto('/settings/period');
+    await page.goto('/settings/periods');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const startTimeInput = page.locator(
       'input[name="startTime"], input[name="schoolStartTime"], input[type="time"]',
@@ -129,8 +132,9 @@ test.describe('TC004: Period Settings — Configure Class Timetable Periods', ()
   });
 
   test('4) set number of periods to 8 and duration to 40 minutes', async ({ page }) => {
-    await page.goto('/settings/period');
+    await page.goto('/settings/periods');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Number of periods
     const periodsInput = page.locator(
@@ -156,8 +160,9 @@ test.describe('TC004: Period Settings — Configure Class Timetable Periods', ()
   });
 
   test('5) configure short break after period 4 (15 min) and lunch after period 6 (30 min)', async ({ page }) => {
-    await page.goto('/settings/period');
+    await page.goto('/settings/periods');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     // Page should show break configuration options
@@ -181,8 +186,9 @@ test.describe('TC004: Period Settings — Configure Class Timetable Periods', ()
   });
 
   test('6) click generate periods and verify 8 periods with correct times', async ({ page }) => {
-    await page.goto('/settings/period');
+    await page.goto('/settings/periods');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Look for generate button
     const generateBtn = page.getByRole('button', { name: /generate|create|auto|build/i }).first();
@@ -191,6 +197,7 @@ test.describe('TC004: Period Settings — Configure Class Timetable Periods', ()
     if (hasGenerate) {
       await generateBtn.click();
       await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
       // Verify generated periods are shown
       const bodyText = await page.textContent('body');
@@ -212,8 +219,9 @@ test.describe('TC004: Period Settings — Configure Class Timetable Periods', ()
   });
 
   test('7) verify breaks are inserted at correct positions', async ({ page }) => {
-    await page.goto('/settings/period');
+    await page.goto('/settings/periods');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
 
@@ -227,8 +235,9 @@ test.describe('TC004: Period Settings — Configure Class Timetable Periods', ()
   });
 
   test('8) save period configuration and verify success', async ({ page }) => {
-    await page.goto('/settings/period');
+    await page.goto('/settings/periods');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const saveBtn = page.getByRole('button', { name: /save|update|submit|apply/i }).first();
     const hasSave = await saveBtn.isVisible({ timeout: 5000 }).catch(() => false);
@@ -236,6 +245,7 @@ test.describe('TC004: Period Settings — Configure Class Timetable Periods', ()
     if (hasSave) {
       await saveBtn.click();
       await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
       // Verify success toast or message
       const bodyText = await page.textContent('body');

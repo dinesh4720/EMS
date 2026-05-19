@@ -136,8 +136,9 @@ test.describe('TC081 — NPS Analytics', () => {
   /* ───────── 1. NPS analytics page loads ───────── */
 
   test('1) NPS analytics page loads', async ({ page }) => {
-    await page.goto('/settings/nps-analytics');
+    await page.goto('/settings/nps');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     await expect(page).not.toHaveURL(/\/login/);
 
@@ -152,8 +153,9 @@ test.describe('TC081 — NPS Analytics', () => {
   /* ───────── 2. NPS score is displayed ───────── */
 
   test('2) NPS score value is displayed on the dashboard', async ({ page }) => {
-    await page.goto('/settings/nps-analytics');
+    await page.goto('/settings/nps');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     // The NPS score is 17 (calculated from our seed data)
@@ -166,8 +168,9 @@ test.describe('TC081 — NPS Analytics', () => {
   /* ───────── 3. Response breakdown is shown ───────── */
 
   test('3) promoters, passives, and detractors breakdown is visible', async ({ page }) => {
-    await page.goto('/settings/nps-analytics');
+    await page.goto('/settings/nps');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(
@@ -181,8 +184,9 @@ test.describe('TC081 — NPS Analytics', () => {
   /* ───────── 4. Trend chart is present ───────── */
 
   test('4) NPS trend chart or trend data is present', async ({ page }) => {
-    await page.goto('/settings/nps-analytics');
+    await page.goto('/settings/nps');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Look for chart canvas, SVG, or trend labels
     const hasCanvas = await page.locator('canvas').isVisible({ timeout: 3000 }).catch(() => false);
@@ -200,8 +204,9 @@ test.describe('TC081 — NPS Analytics', () => {
   /* ───────── 5. Filter by date range ───────── */
 
   test('5) filtering by date range updates the displayed data', async ({ page }) => {
-    await page.goto('/settings/nps-analytics');
+    await page.goto('/settings/nps');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Look for date inputs or date range picker
     const dateFrom = page.locator('input[type="date"], input[placeholder*="from" i], input[placeholder*="start" i]').first();
@@ -232,8 +237,9 @@ test.describe('TC081 — NPS Analytics', () => {
   /* ───────── 6. Total responses count is shown ───────── */
 
   test('6) total response count is displayed', async ({ page }) => {
-    await page.goto('/settings/nps-analytics');
+    await page.goto('/settings/nps');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(

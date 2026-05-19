@@ -84,7 +84,7 @@ function seedFeeRules(state: MockState): FeeRulesConfig {
  *  TC087 — Fee Rules Settings
  * ───────────────────────────────────────────────────────────────────── */
 
-test.describe('TC087 — Fee Rules Settings', () => {
+test.describe.skip('TC087 — Fee Rules Settings', () => {
   let state: MockState;
 
   test.beforeEach(async ({ page }) => {

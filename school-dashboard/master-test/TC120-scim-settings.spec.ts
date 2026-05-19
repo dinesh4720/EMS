@@ -111,6 +111,7 @@ test.describe('TC080 — SCIM Provisioning Settings', () => {
   test('1) SCIM provisioning page loads', async ({ page }) => {
     await page.goto('/settings/scim');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     await expect(page).not.toHaveURL(/\/login/);
 
@@ -126,6 +127,7 @@ test.describe('TC080 — SCIM Provisioning Settings', () => {
   test('2) SCIM is initially disabled', async ({ page }) => {
     await page.goto('/settings/scim');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const config = (state as any).scimConfig as ScimConfig;
     expect(config.enabled).toBe(false);
@@ -143,6 +145,7 @@ test.describe('TC080 — SCIM Provisioning Settings', () => {
   test('3) toggling SCIM enables provisioning', async ({ page }) => {
     await page.goto('/settings/scim');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const toggle = page.locator('[role="switch"]').first();
     const enableBtn = page.getByRole('button', { name: /enable|activate/i }).first();
@@ -163,6 +166,7 @@ test.describe('TC080 — SCIM Provisioning Settings', () => {
 
     await page.goto('/settings/scim');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(
@@ -179,6 +183,7 @@ test.describe('TC080 — SCIM Provisioning Settings', () => {
 
     await page.goto('/settings/scim');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const generateBtn = page.getByRole('button', { name: /generate|create token|new token/i }).first();
     if (await generateBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
@@ -200,6 +205,7 @@ test.describe('TC080 — SCIM Provisioning Settings', () => {
 
     await page.goto('/settings/scim');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(
@@ -217,6 +223,7 @@ test.describe('TC080 — SCIM Provisioning Settings', () => {
 
     await page.goto('/settings/scim');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const regenBtn = page.getByRole('button', { name: /regenerate|rotate|new token/i }).first();
     if (await regenBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
@@ -244,6 +251,7 @@ test.describe('TC080 — SCIM Provisioning Settings', () => {
 
     await page.goto('/settings/scim');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const copyBtn = page.getByRole('button', { name: /copy/i }).first();
     const clipboardIcon = page.locator('button:has(svg.lucide-copy), button:has(svg.lucide-clipboard)').first();

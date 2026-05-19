@@ -123,8 +123,9 @@ test.describe('TC060 — Leave Settings', () => {
   /* ───────── 1. Leave settings page loads ───────── */
 
   test('1) leave settings page loads and shows existing leave types', async ({ page }) => {
-    await page.goto('/settings/leave');
+    await page.goto('/settings/leaves');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     await expect(page).not.toHaveURL(/\/login/);
 
@@ -139,8 +140,9 @@ test.describe('TC060 — Leave Settings', () => {
   /* ───────── 2. Existing leave types are displayed ───────── */
 
   test('2) existing leave types (Earned Leave, Medical Leave) are displayed', async ({ page }) => {
-    await page.goto('/settings/leave');
+    await page.goto('/settings/leaves');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(
@@ -151,8 +153,9 @@ test.describe('TC060 — Leave Settings', () => {
   /* ───────── 3. Add new leave type: Casual Leave ───────── */
 
   test('3) add Casual Leave type with Staff applicability and quota 12', async ({ page }) => {
-    await page.goto('/settings/leave');
+    await page.goto('/settings/leaves');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Click add button
     const addBtn = page.getByRole('button', { name: /add|create|new/i }).first();
@@ -217,8 +220,9 @@ test.describe('TC060 — Leave Settings', () => {
       applicableTo: 'Staff', quota: 12, requiresApproval: true, status: 'active',
     });
 
-    await page.goto('/settings/leave');
+    await page.goto('/settings/leaves');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(bodyText?.includes('Casual Leave')).toBeTruthy();
@@ -227,8 +231,9 @@ test.describe('TC060 — Leave Settings', () => {
   /* ───────── 5. Add Sick Leave ───────── */
 
   test('5) add Sick Leave type with Both applicability and quota 10', async ({ page }) => {
-    await page.goto('/settings/leave');
+    await page.goto('/settings/leaves');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const addBtn = page.getByRole('button', { name: /add|create|new/i }).first();
     const plusBtn = page.locator('button:has(svg.lucide-plus)').first();
@@ -264,8 +269,9 @@ test.describe('TC060 — Leave Settings', () => {
   /* ───────── 6. Edit a leave type ───────── */
 
   test('6) editing a leave type updates its details', async ({ page }) => {
-    await page.goto('/settings/leave');
+    await page.goto('/settings/leaves');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Click edit on Earned Leave
     const editBtn = page.getByRole('button', { name: /edit/i }).first();
@@ -299,8 +305,9 @@ test.describe('TC060 — Leave Settings', () => {
     const initialCount = (state as any).leaveTypes.length;
     expect(initialCount).toBe(2);
 
-    await page.goto('/settings/leave');
+    await page.goto('/settings/leaves');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Click delete button
     const deleteBtn = page.getByRole('button', { name: /delete|remove/i }).first();
