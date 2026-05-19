@@ -38,7 +38,7 @@ import {
   Trash2,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { request } from "../../services/api";
+import { request, requestUpload, requestBlob } from "../../services/api";
 
 const EXPORT_ENTITIES = [
   { key: "students", label: "Students", icon: Users },
@@ -96,10 +96,7 @@ export default function DataToolsSettings() {
       formData.append("file", importFile);
       formData.append("type", importType);
 
-      const response = await request("/data-tools/import", {
-        method: "POST",
-        body: formData,
-      });
+      const response = await requestUpload("/data-tools/import", formData);
 
       setImportResult({
         total: response.totalRecords ?? 0,
@@ -119,9 +116,7 @@ export default function DataToolsSettings() {
   const handleExport = async (entity) => {
     try {
       setExporting(true);
-      const response = await request(`/data-tools/export/${entity}`, {
-        raw: true,
-      });
+      const response = await requestBlob(`/data-tools/export/${entity}`);
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
