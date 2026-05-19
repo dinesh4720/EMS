@@ -90,6 +90,7 @@ test.describe('TC061 — Promotion Rules', () => {
   test('1) promotion rules page loads', async ({ page }) => {
     await page.goto('/settings/promotion-rules');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     await expect(page).not.toHaveURL(/\/login/);
 
@@ -106,6 +107,7 @@ test.describe('TC061 — Promotion Rules', () => {
   test('2) minimum attendance threshold is shown as 75%', async ({ page }) => {
     await page.goto('/settings/promotion-rules');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(
@@ -119,6 +121,7 @@ test.describe('TC061 — Promotion Rules', () => {
   test('3) set minimum attendance threshold to 75%', async ({ page }) => {
     await page.goto('/settings/promotion-rules');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Find attendance input
     const attendanceInput = page.locator(
@@ -148,6 +151,7 @@ test.describe('TC061 — Promotion Rules', () => {
   test('4) select fee requirement as Partial', async ({ page }) => {
     await page.goto('/settings/promotion-rules');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Look for fee requirement selection (radio buttons, dropdown, or segmented control)
     const partialOption = page.getByText(/Partial/i).first();
@@ -182,6 +186,7 @@ test.describe('TC061 — Promotion Rules', () => {
 
     await page.goto('/settings/promotion-rules');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(
@@ -196,6 +201,7 @@ test.describe('TC061 — Promotion Rules', () => {
 
     await page.goto('/settings/promotion-rules');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Select Full option
     const fullOption = page.getByText(/^Full$/i).first();
@@ -228,6 +234,7 @@ test.describe('TC061 — Promotion Rules', () => {
 
     await page.goto('/settings/promotion-rules');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(

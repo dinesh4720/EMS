@@ -54,8 +54,9 @@ test.describe('TC002: Institution Settings — School Profile', () => {
   });
 
   test('1) institution settings page loads with school name', async ({ page }) => {
-    await page.goto('/settings/institution');
+    await page.goto('/settings');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(bodyText).toContain('SchoolSync Demo School');
@@ -65,8 +66,9 @@ test.describe('TC002: Institution Settings — School Profile', () => {
   });
 
   test('2) institution name field shows current school name', async ({ page }) => {
-    await page.goto('/settings/institution');
+    await page.goto('/settings');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Look for the school name input
     const nameInput = page.locator(
@@ -85,8 +87,9 @@ test.describe('TC002: Institution Settings — School Profile', () => {
   });
 
   test('3) fill UDISE number and affiliation number', async ({ page }) => {
-    await page.goto('/settings/institution');
+    await page.goto('/settings');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // UDISE number
     const udiseInput = page.locator(
@@ -116,8 +119,9 @@ test.describe('TC002: Institution Settings — School Profile', () => {
   });
 
   test('4) select board (CBSE) from dropdown', async ({ page }) => {
-    await page.goto('/settings/institution');
+    await page.goto('/settings');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Board selection — could be a select element or a custom dropdown
     const boardSelect = page.locator(
@@ -147,8 +151,18 @@ test.describe('TC002: Institution Settings — School Profile', () => {
   });
 
   test('5) fill email, phone, and address fields', async ({ page }) => {
-    await page.goto('/settings/institution');
+    await page.goto('/settings');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
+
+    // InstitutionSettings renders read-only DataField components by default.
+    // Click the first "Edit" button to enter editing mode so inputs appear.
+    const editBtn = page.getByRole('button', { name: /edit/i }).first();
+    const hasEdit = await editBtn.isVisible({ timeout: 5000 }).catch(() => false);
+    if (hasEdit) {
+      await editBtn.click();
+      await page.waitForTimeout(500);
+    }
 
     // Email
     const emailInput = page.locator(
@@ -185,8 +199,9 @@ test.describe('TC002: Institution Settings — School Profile', () => {
   });
 
   test('6) save institution settings and verify API call', async ({ page }) => {
-    await page.goto('/settings/institution');
+    await page.goto('/settings');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Fill a field to make form dirty
     const nameInput = page.locator(
@@ -205,6 +220,7 @@ test.describe('TC002: Institution Settings — School Profile', () => {
     if (hasSaveBtn) {
       await saveBtn.click();
       await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
       // Verify success toast or message
       const bodyText = await page.textContent('body');
@@ -221,8 +237,9 @@ test.describe('TC002: Institution Settings — School Profile', () => {
   });
 
   test('7) verify settings page has institution-related form sections', async ({ page }) => {
-    await page.goto('/settings/institution');
+    await page.goto('/settings');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
 

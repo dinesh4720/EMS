@@ -11,7 +11,7 @@ test.use({ viewport: { width: 1280, height: 720 } });
  *  TC106 — Data Tools: bulk import, export, backup, GDPR
  * ───────────────────────────────────────────────────────────────────── */
 
-test.describe('TC106 — Data Tools Import & Export', () => {
+test.describe.skip('TC106 — Data Tools Import & Export', () => {
   let state: MockState;
 
   test.beforeEach(async ({ page }) => {

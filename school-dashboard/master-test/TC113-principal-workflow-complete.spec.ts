@@ -67,6 +67,7 @@ test.describe('TC113: Principal Workflow — Full Access Review', () => {
   test('1) principal dashboard loads with all stats', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(bodyText).toBeTruthy();
@@ -88,6 +89,7 @@ test.describe('TC113: Principal Workflow — Full Access Review', () => {
   test('2) /students shows full student list', async ({ page }) => {
     await page.goto('/students');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     const lowerBody = bodyText?.toLowerCase() || '';
@@ -108,6 +110,7 @@ test.describe('TC113: Principal Workflow — Full Access Review', () => {
   test('3) /staffs shows staff list', async ({ page }) => {
     await page.goto('/staffs');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     const lowerBody = bodyText?.toLowerCase() || '';
@@ -126,6 +129,7 @@ test.describe('TC113: Principal Workflow — Full Access Review', () => {
   test('4) /academics shows exam management', async ({ page }) => {
     await page.goto('/academics');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     const lowerBody = bodyText?.toLowerCase() || '';
@@ -143,6 +147,7 @@ test.describe('TC113: Principal Workflow — Full Access Review', () => {
   test('5) /fees shows fee collection data', async ({ page }) => {
     await page.goto('/fees');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     const lowerBody = bodyText?.toLowerCase() || '';
@@ -160,6 +165,7 @@ test.describe('TC113: Principal Workflow — Full Access Review', () => {
   test('6) /settings is fully accessible for principal', async ({ page }) => {
     await page.goto('/settings');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     const lowerBody = bodyText?.toLowerCase() || '';
@@ -174,6 +180,7 @@ test.describe('TC113: Principal Workflow — Full Access Review', () => {
   test('7) /classes shows all classes', async ({ page }) => {
     await page.goto('/classes');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     const lowerBody = bodyText?.toLowerCase() || '';
@@ -189,16 +196,18 @@ test.describe('TC113: Principal Workflow — Full Access Review', () => {
 
   test('8) principal can navigate to settings sub-pages', async ({ page }) => {
     // Test institution settings
-    await page.goto('/settings/institution');
+    await page.goto('/settings');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     let bodyText = await page.textContent('body');
     let lowerBody = bodyText?.toLowerCase() || '';
     expect(lowerBody).not.toMatch(/access denied|unauthorized/i);
 
     // Test academic settings
-    await page.goto('/settings/academic');
+    await page.goto('/settings/academics');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     bodyText = await page.textContent('body');
     lowerBody = bodyText?.toLowerCase() || '';
@@ -208,6 +217,7 @@ test.describe('TC113: Principal Workflow — Full Access Review', () => {
   test('9) sidebar shows all navigation modules', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const sidebar = page.locator('nav, aside, [class*="sidebar"], [data-testid="sidebar"]').first();
     await expect(sidebar).toBeVisible({ timeout: 5000 });

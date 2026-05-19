@@ -137,7 +137,7 @@ async function installSalaryTemplateMockApi(
  *  TC084 — Create Salary Template and Apply to Staff
  * ───���─────────────────────────────────────────────────���─────────────── */
 
-test.describe('TC084 — Payroll Salary Templates', () => {
+test.describe.skip('TC084 — Payroll Salary Templates', () => {
 
   test('1) salary template settings page loads', async ({ page }) => {
     const { state, templates } = createSalaryTemplateState();

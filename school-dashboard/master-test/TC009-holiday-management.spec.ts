@@ -102,8 +102,9 @@ test.describe('TC009: Holiday Management — CRUD & Statistics', () => {
   });
 
   test('1) holiday page loads and shows existing holidays', async ({ page }) => {
-    await page.goto('/settings/holiday');
+    await page.goto('/settings/holidays');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(bodyText).toContain('Republic Day');
@@ -111,8 +112,9 @@ test.describe('TC009: Holiday Management — CRUD & Statistics', () => {
   });
 
   test('2) holidays list shows all seeded holidays', async ({ page }) => {
-    await page.goto('/settings/holiday');
+    await page.goto('/settings/holidays');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(bodyText).toContain('Republic Day');
@@ -122,8 +124,9 @@ test.describe('TC009: Holiday Management — CRUD & Statistics', () => {
   });
 
   test('3) add new holiday: "School Foundation Day"', async ({ page }) => {
-    await page.goto('/settings/holiday');
+    await page.goto('/settings/holidays');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const initialCount = state.holidays.length;
 
@@ -160,6 +163,7 @@ test.describe('TC009: Holiday Management — CRUD & Statistics', () => {
       if (hasSave) {
         await saveBtn.click();
         await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
       }
 
       // Verify API was called
@@ -178,16 +182,18 @@ test.describe('TC009: Holiday Management — CRUD & Statistics', () => {
       _id: 'hol-new', name: 'School Foundation Day', date: '2026-07-15', type: 'school', schoolId: SCHOOL_ID,
     });
 
-    await page.goto('/settings/holiday');
+    await page.goto('/settings/holidays');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
     expect(bodyText).toContain('School Foundation Day');
   });
 
   test('5) edit an existing holiday', async ({ page }) => {
-    await page.goto('/settings/holiday');
+    await page.goto('/settings/holidays');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Look for edit button on Republic Day row
     const editBtn = page.locator(
@@ -213,13 +219,15 @@ test.describe('TC009: Holiday Management — CRUD & Statistics', () => {
       if (hasSave) {
         await saveBtn.click();
         await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
       }
     }
   });
 
   test('6) delete a holiday with confirmation', async ({ page }) => {
-    await page.goto('/settings/holiday');
+    await page.goto('/settings/holidays');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const initialCount = state.holidays.length;
 
@@ -237,6 +245,7 @@ test.describe('TC009: Holiday Management — CRUD & Statistics', () => {
     if (hasDelete) {
       await deleteBtn.click();
       await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
       // Verify API was called
       const deleteCalled = [...state.requestLog].some(
@@ -249,8 +258,9 @@ test.describe('TC009: Holiday Management — CRUD & Statistics', () => {
   });
 
   test('7) verify holiday statistics (total, type counts)', async ({ page }) => {
-    await page.goto('/settings/holiday');
+    await page.goto('/settings/holidays');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
 
@@ -267,8 +277,9 @@ test.describe('TC009: Holiday Management — CRUD & Statistics', () => {
   });
 
   test('8) holidays page shows type labels or badges', async ({ page }) => {
-    await page.goto('/settings/holiday');
+    await page.goto('/settings/holidays');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.textContent('body');
 
