@@ -23,7 +23,6 @@ import {
   Users,
   Activity,
   Webhook,
-  Percent,
 } from "lucide-react";
 
 import lazyWithRetry from "../../utils/lazyWithRetry";
@@ -52,16 +51,6 @@ const TrashSettings = lazyWithRetry(() => import("./TrashSettings"));
 const FeeTemplatesPage = lazyWithRetry(() => import("./FeeTemplatesPage"));
 const FeeRulesSettings = lazyWithRetry(() => import("./FeeRulesSettings"));
 const SSOSettings = lazyWithRetry(() => import("./SSOSettings"));
-const WorkspaceSettings = lazyWithRetry(() => import("./WorkspaceSettings"));
-const NPSAnalyticsPage = lazyWithRetry(() => import("./NPSAnalyticsPage"));
-const SCIMSettings = lazyWithRetry(() => import("./SCIMSettings"));
-const WebhooksPage = lazyWithRetry(() => import("./WebhooksPage"));
-const ParentManagement = lazyWithRetry(() => import("./ParentManagement"));
-const DataCleanupSettings = lazyWithRetry(() => import("./DataCleanupSettings"));
-const SeedDataSettings = lazyWithRetry(() => import("./SeedDataSettings"));
-const ActiveSessions = lazyWithRetry(() => import("./ActiveSessions"));
-const PromotionRulesSettings = lazyWithRetry(() => import("./PromotionRulesSettings"));
-const PeriodSettings = lazyWithRetry(() => import("./PeriodSettings"));
 
 function SettingsPageSkeleton() {
   return (
@@ -160,6 +149,7 @@ export default function SettingsPage() {
         { key: "subscription", label: "Subscription", icon: CreditCard, path: "/settings/subscription" },
         { key: "trash", label: "Trash", icon: Trash2, path: "/settings/trash", isNew: true },
         { key: "seed-data", label: "Seed Data", icon: Zap, path: "/settings/seed-data", isNew: true },
+        { key: "data-tools", label: "Data Tools", icon: Database, path: "/settings/data-tools", isNew: true },
         { key: "data-cleanup", label: "Data Cleanup", icon: Trash2, path: "/settings/data-cleanup", isNew: true },
         { key: "sessions", label: "Active Sessions", icon: Activity, path: "/settings/sessions", isNew: true },
         { key: "onboarding", label: "Setup Wizard", icon: Zap, isAction: true, onClick: () => setShowOnboarding(true) },
@@ -388,6 +378,9 @@ export default function SettingsPage() {
                     <TimetableCleanup />
                   </div>
                 </SettingsErrorBoundary>
+              } />
+              <Route path="data-tools" element={
+                <SettingsErrorBoundary><DataToolsSettings /></SettingsErrorBoundary>
               } />
               <Route path="*" element={
                 <SettingsErrorBoundary>
