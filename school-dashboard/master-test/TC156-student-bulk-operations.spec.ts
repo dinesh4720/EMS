@@ -90,9 +90,9 @@ test.describe('TC116 — Student Bulk Operations', () => {
 
     await expect(page).not.toHaveURL(/\/login/);
 
-    const bodyText = await page.textContent('body');
-    expect(bodyText).toContain('Student 1');
-    expect(bodyText).toContain('Student 10');
+    // Wait for students to load (React Query loads asynchronously)
+    await expect(page.locator('body')).toContainText('Student 1', { timeout: 15000 });
+    await expect(page.locator('body')).toContainText('Student 10', { timeout: 5000 });
     expect(state.students).toHaveLength(10);
   });
 
@@ -101,6 +101,9 @@ test.describe('TC116 — Student Bulk Operations', () => {
   test('2) checkboxes exist for selecting multiple students', async ({ page }) => {
     await page.goto('/students');
     await page.waitForLoadState('networkidle');
+
+    // Wait for students to load
+    await expect(page.locator('body')).toContainText('Student 1', { timeout: 15000 });
 
     // Look for row checkboxes
     const checkboxes = page.locator(
@@ -127,6 +130,9 @@ test.describe('TC116 — Student Bulk Operations', () => {
   test('3) selecting students shows bulk action toolbar', async ({ page }) => {
     await page.goto('/students');
     await page.waitForLoadState('networkidle');
+
+    // Wait for students to load
+    await expect(page.locator('body')).toContainText('Student 1', { timeout: 15000 });
 
     const checkboxes = page.locator('input[type="checkbox"], [role="checkbox"]');
     const count = await checkboxes.count();
@@ -158,6 +164,9 @@ test.describe('TC116 — Student Bulk Operations', () => {
   test('4) bulk deactivate changes selected students to inactive', async ({ page }) => {
     await page.goto('/students');
     await page.waitForLoadState('networkidle');
+
+    // Wait for students to load
+    await expect(page.locator('body')).toContainText('Student 1', { timeout: 15000 });
 
     const checkboxes = page.locator('input[type="checkbox"], [role="checkbox"]');
     const count = await checkboxes.count();

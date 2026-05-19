@@ -54,7 +54,7 @@ async function installWizardRoutes(
         const classId = body.classId || CLASS_10A_ID;
         const cls = state.classes.find((c) => c.id === classId);
         const subjects = cls?.subjects || ['Mathematics', 'Science', 'English', 'Social Studies'];
-        const teachers = state.staff.filter((s) => s.role === 'teacher');
+        const teachers = state.staff.filter((s) => s.role === 'Teacher');
 
         const autoSlots: Array<Record<string, unknown>> = [];
         let subjectIdx = 0;
@@ -117,7 +117,7 @@ async function installWizardRoutes(
           subjects: c.subjects,
           classTeacherId: c.classTeacherId,
         })),
-        teachers: state.staff.filter((s) => s.role === 'teacher').map((t) => ({
+        teachers: state.staff.filter((s) => s.role === 'Teacher').map((t) => ({
           _id: t.id,
           name: t.name,
           subjects: t.subjects,
@@ -398,7 +398,7 @@ test.describe('TC095 — Timetable Wizard: Full-Page Creation', () => {
   test('10) state has 2 classes with subjects and 2 teachers', async ({ page }) => {
     expect(state.classes).toHaveLength(2);
     expect(state.classes[0].subjects).toHaveLength(4);
-    const teachers = state.staff.filter((s) => s.role === 'teacher');
+    const teachers = state.staff.filter((s) => s.role === 'Teacher');
     expect(teachers).toHaveLength(2);
   });
 });

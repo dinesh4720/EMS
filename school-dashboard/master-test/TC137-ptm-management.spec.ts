@@ -51,7 +51,7 @@ async function installPTMRoutes(
   const ptmSessions: PTMSession[] = [];
   let ptmCounter = 0;
 
-  await page.route('**/api/ptm*', async (route) => {
+  await page.route('**/api/ptm**', async (route) => {
     const method = route.request().method();
     const url = new URL(route.request().url());
     const path = url.pathname;

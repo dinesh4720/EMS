@@ -1,0 +1,262 @@
+<testsuites id="" name="" tests="8" failures="4" skipped="0" errors="0" time="48.61468">
+<testsuite name="TC150-ai-assistant.spec.ts" timestamp="2026-05-18T01:05:08.193Z" hostname="chromium" tests="8" failures="4" skipped="0" time="44.153" errors="0">
+<testcase name="TC110 — AI Assistant › 1) AI assistant page loads successfully" classname="TC150-ai-assistant.spec.ts" time="1.296">
+</testcase>
+<testcase name="TC110 — AI Assistant › 2) chat input area is present" classname="TC150-ai-assistant.spec.ts" time="1.242">
+</testcase>
+<testcase name="TC110 — AI Assistant › 3) typing and submitting a question sends a message" classname="TC150-ai-assistant.spec.ts" time="11.496">
+<failure message="TC150-ai-assistant.spec.ts:112:3 3) typing and submitting a question sends a message" type="FAILURE">
+<![CDATA[  [chromium] › TC150-ai-assistant.spec.ts:112:3 › TC110 — AI Assistant › 3) typing and submitting a question sends a message 
+
+    TimeoutError: locator.click: Timeout 10000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: /send|ask|submit/i }).first()
+        - locator resolved to <button disabled type="button" aria-label="Send message" class="w-8 h-8 rounded-full flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:ring-offset-2 bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 scale-100">…</button>
+      - attempting click action
+        2 × waiting for element to be visible, enabled and stable
+          - element is not stable
+        - retrying click action
+        - waiting 20ms
+        - waiting for element to be visible, enabled and stable
+        - element is not stable
+      2 × retrying click action
+          - waiting 100ms
+          - waiting for element to be visible, enabled and stable
+          - element is not enabled
+      18 × retrying click action
+           - waiting 500ms
+           - waiting for element to be visible, enabled and stable
+           - element is not enabled
+      - retrying click action
+        - waiting 500ms
+
+
+      130 |
+      131 |       if (await btn.isVisible({ timeout: 3000 }).catch(() => false)) {
+    > 132 |         await btn.click();
+          |                   ^
+      133 |       } else {
+      134 |         await chatInput.press('Enter');
+      135 |       }
+        at /Users/dinesh/multica_workspaces_desktop-api.multica.ai/88705c1b-fa53-4667-9509-b4453c612d84/85478ec5/workdir/EMS/school-dashboard/master-test/TC150-ai-assistant.spec.ts:132:19
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/TC150-ai-assistant-TC110-—-2e30d--a-question-sends-a-message-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/TC150-ai-assistant-TC110-—-2e30d--a-question-sends-a-message-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/TC150-ai-assistant-TC110-—-2e30d--a-question-sends-a-message-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../test-results/TC150-ai-assistant-TC110-—-2e30d--a-question-sends-a-message-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../test-results/TC150-ai-assistant-TC110-—-2e30d--a-question-sends-a-message-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|../test-results/TC150-ai-assistant-TC110-—-2e30d--a-question-sends-a-message-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|../test-results/TC150-ai-assistant-TC110-—-2e30d--a-question-sends-a-message-chromium/video.webm]]
+
+[[ATTACHMENT|../test-results/TC150-ai-assistant-TC110-—-2e30d--a-question-sends-a-message-chromium/error-context.md]]
+
+[[ATTACHMENT|../test-results/TC150-ai-assistant-TC110-—-2e30d--a-question-sends-a-message-chromium/trace.zip]]
+]]>
+</system-out>
+</testcase>
+<testcase name="TC110 — AI Assistant › 4) AI response is displayed in the chat" classname="TC150-ai-assistant.spec.ts" time="11.51">
+<failure message="TC150-ai-assistant.spec.ts:146:3 4) AI response is displayed in the chat" type="FAILURE">
+<![CDATA[  [chromium] › TC150-ai-assistant.spec.ts:146:3 › TC110 — AI Assistant › 4) AI response is displayed in the chat 
+
+    TimeoutError: locator.click: Timeout 10000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: /send|ask/i }).first()
+        - locator resolved to <button disabled type="button" aria-label="Send message" class="w-8 h-8 rounded-full flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:ring-offset-2 bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 scale-100">…</button>
+      - attempting click action
+        2 × waiting for element to be visible, enabled and stable
+          - element is not stable
+        - retrying click action
+        - waiting 20ms
+        - waiting for element to be visible, enabled and stable
+        - element is not stable
+      2 × retrying click action
+          - waiting 100ms
+          - waiting for element to be visible, enabled and stable
+          - element is not enabled
+      18 × retrying click action
+           - waiting 500ms
+           - waiting for element to be visible, enabled and stable
+           - element is not enabled
+      - retrying click action
+        - waiting 500ms
+
+
+      162 |
+      163 |       if (await btn.isVisible({ timeout: 3000 }).catch(() => false)) {
+    > 164 |         await btn.click();
+          |                   ^
+      165 |       } else {
+      166 |         await chatInput.press('Enter');
+      167 |       }
+        at /Users/dinesh/multica_workspaces_desktop-api.multica.ai/88705c1b-fa53-4667-9509-b4453c612d84/85478ec5/workdir/EMS/school-dashboard/master-test/TC150-ai-assistant.spec.ts:164:19
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/TC150-ai-assistant-TC110-—-8e1c1-se-is-displayed-in-the-chat-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/TC150-ai-assistant-TC110-—-8e1c1-se-is-displayed-in-the-chat-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/TC150-ai-assistant-TC110-—-8e1c1-se-is-displayed-in-the-chat-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../test-results/TC150-ai-assistant-TC110-—-8e1c1-se-is-displayed-in-the-chat-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../test-results/TC150-ai-assistant-TC110-—-8e1c1-se-is-displayed-in-the-chat-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|../test-results/TC150-ai-assistant-TC110-—-8e1c1-se-is-displayed-in-the-chat-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|../test-results/TC150-ai-assistant-TC110-—-8e1c1-se-is-displayed-in-the-chat-chromium/video.webm]]
+
+[[ATTACHMENT|../test-results/TC150-ai-assistant-TC110-—-8e1c1-se-is-displayed-in-the-chat-chromium/error-context.md]]
+
+[[ATTACHMENT|../test-results/TC150-ai-assistant-TC110-—-8e1c1-se-is-displayed-in-the-chat-chromium/trace.zip]]
+]]>
+</system-out>
+</testcase>
+<testcase name="TC110 — AI Assistant › 5) AI response includes suggestion chips" classname="TC150-ai-assistant.spec.ts" time="11.502">
+<failure message="TC150-ai-assistant.spec.ts:184:3 5) AI response includes suggestion chips" type="FAILURE">
+<![CDATA[  [chromium] › TC150-ai-assistant.spec.ts:184:3 › TC110 — AI Assistant › 5) AI response includes suggestion chips 
+
+    TimeoutError: locator.click: Timeout 10000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: /send|ask/i }).first()
+        - locator resolved to <button disabled type="button" aria-label="Send message" class="w-8 h-8 rounded-full flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:ring-offset-2 bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 scale-100">…</button>
+      - attempting click action
+        2 × waiting for element to be visible, enabled and stable
+          - element is not stable
+        - retrying click action
+        - waiting 20ms
+        - waiting for element to be visible, enabled and stable
+        - element is not stable
+      2 × retrying click action
+          - waiting 100ms
+          - waiting for element to be visible, enabled and stable
+          - element is not enabled
+      18 × retrying click action
+           - waiting 500ms
+           - waiting for element to be visible, enabled and stable
+           - element is not enabled
+      - retrying click action
+        - waiting 500ms
+
+
+      199 |
+      200 |       if (await btn.isVisible({ timeout: 3000 }).catch(() => false)) {
+    > 201 |         await btn.click();
+          |                   ^
+      202 |       } else {
+      203 |         await chatInput.press('Enter');
+      204 |       }
+        at /Users/dinesh/multica_workspaces_desktop-api.multica.ai/88705c1b-fa53-4667-9509-b4453c612d84/85478ec5/workdir/EMS/school-dashboard/master-test/TC150-ai-assistant.spec.ts:201:19
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/TC150-ai-assistant-TC110-—-dc907-e-includes-suggestion-chips-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/TC150-ai-assistant-TC110-—-dc907-e-includes-suggestion-chips-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/TC150-ai-assistant-TC110-—-dc907-e-includes-suggestion-chips-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../test-results/TC150-ai-assistant-TC110-—-dc907-e-includes-suggestion-chips-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../test-results/TC150-ai-assistant-TC110-—-dc907-e-includes-suggestion-chips-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|../test-results/TC150-ai-assistant-TC110-—-dc907-e-includes-suggestion-chips-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|../test-results/TC150-ai-assistant-TC110-—-dc907-e-includes-suggestion-chips-chromium/video.webm]]
+
+[[ATTACHMENT|../test-results/TC150-ai-assistant-TC110-—-dc907-e-includes-suggestion-chips-chromium/error-context.md]]
+
+[[ATTACHMENT|../test-results/TC150-ai-assistant-TC110-—-dc907-e-includes-suggestion-chips-chromium/trace.zip]]
+]]>
+</system-out>
+</testcase>
+<testcase name="TC110 — AI Assistant › 6) conversation history is accessible" classname="TC150-ai-assistant.spec.ts" time="1.328">
+</testcase>
+<testcase name="TC110 — AI Assistant › 7) sending a follow-up question maintains context" classname="TC150-ai-assistant.spec.ts" time="4.498">
+<failure message="TC150-ai-assistant.spec.ts:240:3 7) sending a follow-up question maintains context" type="FAILURE">
+<![CDATA[  [chromium] › TC150-ai-assistant.spec.ts:240:3 › TC110 — AI Assistant › 7) sending a follow-up question maintains context 
+
+    Error: expect(received).toBeGreaterThanOrEqual(expected)
+
+    Expected: >= 2
+    Received:    1
+
+      259 |
+      260 |       // Both questions should have been sent
+    > 261 |       expect(aiResponses.length).toBeGreaterThanOrEqual(2);
+          |                                  ^
+      262 |     }
+      263 |   });
+      264 |
+        at /Users/dinesh/multica_workspaces_desktop-api.multica.ai/88705c1b-fa53-4667-9509-b4453c612d84/85478ec5/workdir/EMS/school-dashboard/master-test/TC150-ai-assistant.spec.ts:261:34
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/TC150-ai-assistant-TC110-—-7bb8e--question-maintains-context-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/TC150-ai-assistant-TC110-—-7bb8e--question-maintains-context-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/TC150-ai-assistant-TC110-—-7bb8e--question-maintains-context-chromium/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../test-results/TC150-ai-assistant-TC110-—-7bb8e--question-maintains-context-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace ../test-results/TC150-ai-assistant-TC110-—-7bb8e--question-maintains-context-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|../test-results/TC150-ai-assistant-TC110-—-7bb8e--question-maintains-context-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|../test-results/TC150-ai-assistant-TC110-—-7bb8e--question-maintains-context-chromium/video.webm]]
+
+[[ATTACHMENT|../test-results/TC150-ai-assistant-TC110-—-7bb8e--question-maintains-context-chromium/error-context.md]]
+
+[[ATTACHMENT|../test-results/TC150-ai-assistant-TC110-—-7bb8e--question-maintains-context-chromium/trace.zip]]
+]]>
+</system-out>
+</testcase>
+<testcase name="TC110 — AI Assistant › 8) AI assistant has a chat-like layout with messages" classname="TC150-ai-assistant.spec.ts" time="1.281">
+</testcase>
+</testsuite>
+</testsuites>

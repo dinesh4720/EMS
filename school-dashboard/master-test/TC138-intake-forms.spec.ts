@@ -142,7 +142,7 @@ async function installIntakeFormRoutes(
   });
 
   // Submissions endpoint
-  await page.route('**/api/intake-forms/submissions*', async (route) => {
+  await page.route('**/api/intake-forms/submissions**', async (route) => {
     const method = route.request().method();
     const url = new URL(route.request().url());
     const path = url.pathname;
