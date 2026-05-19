@@ -5,7 +5,7 @@ import {
   MessageSquare, IndianRupee, Settings, Award, ClipboardList,
   Wand2, Package, Library, Building2, Bus, FileBarChart, Database,
   DoorOpen, BarChart3, Sparkles, ChevronDown, Palette, Wallet,
-  CalendarCheck, FileText,
+  CalendarCheck, FileText, ListChecks,
 } from "lucide-react";
 import { useChatNotifications } from "../../context/ChatNotificationContext";
 import { useApp } from "../../context/AppContext";
@@ -48,6 +48,7 @@ const MORE_NAV = [
   { href: "/staffs/payroll", icon: Wallet, label: "Staff Payroll" },
   { href: "/staffs/bulk-subjects", icon: BookOpen, label: "Subjects" },
   { href: "/style-guide", icon: Palette, label: "Style Guide" },
+  { href: "/ia", icon: ListChecks, label: "IA & Checklist" },
   { href: "/timetable-wizard", icon: Wand2, label: "Timetable Wizard" },
   { href: "/transport", icon: Bus, label: "Transport" },
 ];
