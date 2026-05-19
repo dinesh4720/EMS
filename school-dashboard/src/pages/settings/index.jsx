@@ -24,6 +24,8 @@ import {
   Activity,
   Webhook,
   Network,
+  Percent,
+  Database,
 } from "lucide-react";
 
 import lazyWithRetry from "../../utils/lazyWithRetry";
@@ -64,6 +66,7 @@ const PromotionRulesSettings = lazyWithRetry(() => import("./PromotionRulesSetti
 const PeriodSettings = lazyWithRetry(() => import("./PeriodSettings"));
 const SalaryTemplates = lazyWithRetry(() => import("./SalaryTemplates"));
 const HierarchySettings = lazyWithRetry(() => import("./HierarchySettings"));
+const DataToolsSettings = lazyWithRetry(() => import("./DataToolsSettings"));
 
 function SettingsPageSkeleton() {
   return (
