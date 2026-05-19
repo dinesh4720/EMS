@@ -232,6 +232,12 @@ test.describe('TC016 — Payroll Setup', () => {
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(3000);
 
+    // Switch to "Salary Components" tab
+    const componentsTab = page.getByRole('tab', { name: /salary components/i }).first();
+    const hasComponentsTab = await componentsTab.isVisible({ timeout: 5000 }).catch(() => false);
+    if (hasComponentsTab) await componentsTab.click();
+    await page.waitForTimeout(500);
+
     const body = await page.textContent('body');
     // Should show "Basic Salary" as the existing component
     expect(body).toContain('Basic');
@@ -404,10 +410,16 @@ test.describe('TC016 — Payroll Setup', () => {
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(3000);
 
+    // Switch to "Salary Components" tab
+    const componentsTab = page.getByRole('tab', { name: /salary components/i }).first();
+    const hasComponentsTab = await componentsTab.isVisible({ timeout: 5000 }).catch(() => false);
+    if (hasComponentsTab) await componentsTab.click();
+    await page.waitForTimeout(500);
+
     const body = await page.textContent('body');
     expect(body).toContain('HRA');
     expect(body).toContain('DA');
-    expect(body).toContain('PF');
+    expect(body).toContain('Provident Fund');
     expect(body).toContain('TDS');
   });
 
