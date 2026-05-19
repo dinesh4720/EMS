@@ -6,6 +6,7 @@ import { PageLayout, MinimalButton } from "../../components/ui";
 import Announcements from "./Announcements";
 import Reminders from "./Reminders";
 import CommunicationLogs from "./CommunicationLogs";
+import Notifications from "./Notifications";
 import ChatFull from "./ChatFull";
 import { useTranslation } from 'react-i18next';
 
@@ -13,6 +14,7 @@ const tabs = [
   { key: "chat", title: "Chat" },
   { key: "announcements", title: "Announcements" },
   { key: "reminders", title: "Reminders" },
+  { key: "notifications", title: "Notifications" },
 ];
 
 export default function MessagingPage() {
@@ -23,6 +25,7 @@ export default function MessagingPage() {
   const getActiveTab = () => {
     if (location.pathname.includes("/announcements")) return "announcements";
     if (location.pathname.includes("/reminders")) return "reminders";
+    if (location.pathname.includes("/notifications")) return "notifications";
     return "chat";
   };
 
@@ -33,6 +36,7 @@ export default function MessagingPage() {
     if (tabId === "chat") navigate("/messaging");
     else if (tabId === "announcements") navigate("/messaging/announcements");
     else if (tabId === "reminders") navigate("/messaging/reminders");
+    else if (tabId === "notifications") navigate("/messaging/notifications");
   };
 
   const headerActions = activeTab === "announcements" && (
@@ -66,6 +70,7 @@ export default function MessagingPage() {
           />
           <Route path="reminders" element={<Reminders />} />
           <Route path="logs" element={<CommunicationLogs />} />
+          <Route path="notifications" element={<Notifications />} />
         </Routes>
       </div>
     </PageLayout>
