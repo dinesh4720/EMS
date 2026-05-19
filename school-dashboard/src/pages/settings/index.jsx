@@ -23,6 +23,7 @@ import {
   Users,
   Activity,
   Webhook,
+  Percent,
 } from "lucide-react";
 
 import lazyWithRetry from "../../utils/lazyWithRetry";
@@ -49,6 +50,7 @@ const StaffIdSettings = lazyWithRetry(() => import("./StaffIdSettings"));
 const PermissionRequests = lazyWithRetry(() => import("./PermissionRequests"));
 const TrashSettings = lazyWithRetry(() => import("./TrashSettings"));
 const FeeTemplatesPage = lazyWithRetry(() => import("./FeeTemplatesPage"));
+const FeeRulesSettings = lazyWithRetry(() => import("./FeeRulesSettings"));
 const SSOSettings = lazyWithRetry(() => import("./SSOSettings"));
 
 function SettingsPageSkeleton() {
@@ -124,6 +126,7 @@ export default function SettingsPage() {
       title: "Financial",
       items: [
         { key: "fees", label: "Fee Management", icon: IndianRupee, path: "/settings/fees" },
+        { key: "fee-rules", label: "Fee Rules", icon: Percent, path: "/settings/fee-rules" },
         { key: "payroll", label: "Payroll Settings", icon: IndianRupee, path: "/settings/payroll" },
       ]
     },
@@ -314,6 +317,9 @@ export default function SettingsPage() {
               } />
               <Route path="fee-templates" element={
                 <SettingsErrorBoundary><FeeTemplatesPage /></SettingsErrorBoundary>
+              } />
+              <Route path="fee-rules" element={
+                <SettingsErrorBoundary><FeeRulesSettings /></SettingsErrorBoundary>
               } />
               <Route path="holidays" element={
                 <SettingsErrorBoundary><HolidaySettings /></SettingsErrorBoundary>
