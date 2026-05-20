@@ -4,6 +4,7 @@ import { Calendar, CheckCircle, AlertTriangle, Settings, Loader2 } from 'lucide-
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../../../context/SettingsContext';
 import { promotionApi } from '../../../services/api/extensions';
+import { CURRENT_ACADEMIC_YEAR } from '../../../utils/constants';
 import toast from 'react-hot-toast';
 
 function computeNextYear(current) {
@@ -19,7 +20,7 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
   const { currentAcademicYear } = useSettings();
 
   const defaults = useMemo(() => {
-    const from = wizardState.fromYear || currentAcademicYear || '2025-26';
+    const from = wizardState.fromYear || currentAcademicYear || CURRENT_ACADEMIC_YEAR;
     const to = wizardState.toYear || computeNextYear(from);
     return { from, to };
     // eslint-disable-next-line react-hooks/exhaustive-deps

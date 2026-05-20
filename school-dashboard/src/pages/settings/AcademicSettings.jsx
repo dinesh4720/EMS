@@ -12,6 +12,8 @@ import { BookOpen, Calendar, GraduationCap } from "lucide-react";
 import { PageHeader, Tabs, ErrorState } from "../../components/ui";
 import { useApp } from "../../context/AppContext";
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
+import { settingsApi } from '../../services/api';
 
 // Sub-components
 import ScheduleTimingsTab from './components/academic-settings/ScheduleTimingsTab';
@@ -90,6 +92,30 @@ export default function AcademicSettings() {
 
   // Disable a class (delete all sections) — handled in hook; placeholder retained for prop wiring
   const handleDisableClass = async (_classNum) => {};
+
+  // Dedicated academic-year save handler — must use the separate /settings/academic-year
+  // endpoint (with confirm:true) rather than the generic /settings/school endpoint,
+  // because the backend strips academicYear from the general settings update.
+  const handleSaveAcademicYear = async (data, closeModal) => {
+    if (saving || loading || !localSettings) {
+      toast.error('Please wait for settings to load before saving');
+      return;
+    }
+    setSaving(true);
+    try {
+      await settingsApi.updateAcademicYear({ ...data, confirm: true });
+      // Refresh local settings so the UI shows the updated value immediately
+      const refreshed = await settingsApi.getAcademicYear();
+      setLocalSettings((prev) => ({ ...prev, ...refreshed }));
+      toast.success(t('toast.success.settingsSavedSuccessfully'));
+      closeModal();
+    } catch (error) {
+      const msg = error?.response?.data?.error || error?.message || t('toast.error.failedToSaveSettings');
+      toast.error(msg);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const tabs = useMemo(
     () => [
@@ -198,7 +224,7 @@ export default function AcademicSettings() {
           <ModalBody>
             <AcademicYearForm
               settings={localSettings}
-              onSave={(data) => handleSaveSection(data, academicYearModal.onClose)}
+              onSave={(data) => handleSaveAcademicYear(data, academicYearModal.onClose)}
               onCancel={academicYearModal.onClose}
               saving={saving}
             />
