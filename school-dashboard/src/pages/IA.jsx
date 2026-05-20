@@ -70,12 +70,12 @@ const MODULES = [
   {
     name: "Classes",
     pages: [
-      { name: "Classes List", route: "/classes", checks: { design: "pending", a11y: "pending", responsive: "pending", tests: "pending" } },
-      { name: "Class Dashboard", route: "/classes/dashboard", checks: { design: "pending", a11y: "pending", responsive: "pending", tests: "pending" } },
-      { name: "Subjects", route: "/classes/subjects", checks: { design: "pending", a11y: "pending", responsive: "pending", tests: "pending" } },
-      { name: "Timetable", route: "/classes/timetable", checks: { design: "pending", a11y: "pending", responsive: "pending", tests: "pending" } },
-      { name: "Attendance", route: "/classes/attendance", checks: { design: "pending", a11y: "pending", responsive: "pending", tests: "pending" } },
-      { name: "Substitution", route: "/classes/substitution", checks: { design: "pending", a11y: "pending", responsive: "pending", tests: "pending" } },
+      { name: "Classes List", route: "/classes", checks: { design: "in_progress", a11y: "pending", responsive: "pending", tests: "pending" } },
+      { name: "Class Dashboard", route: "/classes/:id", checks: { design: "in_progress", a11y: "pending", responsive: "pending", tests: "pending" } },
+      { name: "Subjects", route: "/classes/subjects", checks: { design: "in_progress", a11y: "pending", responsive: "pending", tests: "pending" } },
+      { name: "Timetable", route: "/classes/timetable", checks: { design: "in_progress", a11y: "pending", responsive: "pending", tests: "pending" } },
+      { name: "Attendance", route: "/classes/attendance", checks: { design: "in_progress", a11y: "pending", responsive: "pending", tests: "pending" } },
+      { name: "Substitution", route: "/classes/substitution", checks: { design: "in_progress", a11y: "pending", responsive: "pending", tests: "pending" } },
     ],
   },
   {

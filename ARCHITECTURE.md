@@ -13,7 +13,7 @@ The canonical reference implementation lives in:
 | Dashboard | ⏳ | ⏳ | ⏳ | ⏳ |
 | Staff | ✅ List/Add | ⏳ | ✅ List | ⏳ |
 | Students | ✅ List/Add | ⏳ | ✅ List | ⏳ |
-| Classes | ⏳ | ⏳ | ⏳ | ⏳ |
+| Classes | 🔍 | ⏳ | ⏳ | ⏳ |
 | Calendar | ⏳ | ⏳ | ⏳ | ⏳ |
 | Messaging | ⏳ | ⏳ | ⏳ | ⏳ |
 | Fees | ⏳ | ⏳ | ⏳ | ⏳ |
@@ -39,6 +39,7 @@ Legend: ✅ Done | ⏳ Pending | 🔍 In Progress | ❌ Blocked
 ### Token Usage
 - ✅ Staff/Student lists use design tokens exclusively
 - ❌ Front Desk lists have hardcoded colors and spacing (audit findings posted, waiting for owner approval)
+- 🔍 Classes module audit in progress (DK-325)
 - ⏳ All other modules need audit
 
 ### Component Patterns
@@ -48,6 +49,22 @@ Legend: ✅ Done | ⏳ Pending | 🔍 In Progress | ❌ Blocked
 - **Bulk action bar**: Staff List, Student List
 - **Detail pane** (frosted, sticky head/foot): Staff Detail Pane, Student Detail Pane
 - **Composer overlay**: Add Staff Composer
+
+### Classes Audit Findings (2026-05-20)
+See issue DK-325 `[Design System Audit] Classes - 2026-05-20` for full details.
+
+1. **Subjects.jsx** — full HeroUI page (Table, Card, Button, Modal, Input, Select, Chip). Uses `text-default-*`, `bg-default-*`, `border-default-*` hardcoded classes. Should use `.card`, `.input`, `.select`, `.btn`, `.chip`, `.table` primitives.
+2. **ClassSettingsPanel.jsx** — HeroUI Card/Input with `border-default-200`, `text-default-800`, etc.
+3. **Substitution.jsx** — full HeroUI page (Table, Button, Select, Modal, Chip, Input, Card). No design-system primitives.
+4. **BulkClassTeacherAssignment.jsx** — HeroUI Table/Button/Chip/Modal mixed with some design-system tokens. Should use shared `.table` component.
+5. **OverviewTab.jsx** — hardcoded semantic colors (`bg-amber-50`, `text-blue-600`, `text-green-600`, `bg-red-50`, etc.) instead of `var(--warn)`, `var(--info)`, `var(--ok)`, `var(--danger)` tokens.
+6. **StudentsTab.jsx** — hardcoded semantic colors for fee/academic/attendance badges. Uses `bg-green-50`, `text-amber-700`, `ring-indigo-200`, etc.
+7. **AcademicsTab.jsx** — hardcoded `text-blue-600`, `text-amber-600`, `text-green-600` for exam status stats.
+8. **ClassDashboard.jsx** — retry button uses `text-red-600 dark:text-red-400` instead of `var(--danger)`.
+9. **Accessibility** — StudentsTab rows have `onClick` without `role`/`tabIndex`/keyboard handlers. Sort headers are not proper buttons.
+10. **Responsive** — ClassDashboard sidebar does not collapse to a Drawer below 1100px (unlike Staff/Student detail panes).
+
+**Status:** Findings posted. Waiting for owner thumbs-up approval on which items to fix.
 
 ### Front Desk Audit Findings (2026-05-18)
 See issue `[Design System Audit] Front Desk - 2026-05-18` for full details.
