@@ -47,9 +47,9 @@ export function AcademicsTab({ id, cls, classesEnhancedApi }) {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: t('pages.totalExams'), value: exams.length, color: 'text-fg' },
-          { label: t('pages.scheduled'), value: examsByStatus.scheduled.length, color: 'text-blue-600' },
-          { label: t('pages.ongoing'), value: examsByStatus.ongoing.length, color: 'text-amber-600' },
-          { label: t('pages.completed'), value: examsByStatus.completed.length, color: 'text-green-600' },
+          { label: t('pages.scheduled'), value: examsByStatus.scheduled.length, color: 'text-[var(--info)]' },
+          { label: t('pages.ongoing'), value: examsByStatus.ongoing.length, color: 'text-[var(--warn)]' },
+          { label: t('pages.completed'), value: examsByStatus.completed.length, color: 'text-[var(--ok)]' },
         ].map(stat => (
           <div key={stat.label} className="bg-surface rounded-lg p-4 border border-divider">
             <p className="text-xs text-fg-muted">{stat.label}</p>

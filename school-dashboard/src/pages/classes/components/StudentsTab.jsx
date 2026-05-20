@@ -75,10 +75,10 @@ export function StudentsTab({ id, cls, navigate, classesEnhancedApi, openStudent
         <span className="px-3 py-1.5 text-xs font-medium bg-surface-2 text-fg rounded-lg">
           {classStudents.length} {t('classes.students', 'Students')}
         </span>
-        <span className="px-3 py-1.5 text-xs font-medium bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 rounded-lg">
+        <span className="px-3 py-1.5 text-xs font-medium bg-[var(--ok-bg)] text-[var(--ok)] rounded-lg">
           {paidCount} {t('classes.paid', 'Paid')}
         </span>
-        <span className="px-3 py-1.5 text-xs font-medium bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 rounded-lg">
+        <span className="px-3 py-1.5 text-xs font-medium bg-[var(--warn-bg)] text-[var(--warn)] rounded-lg">
           {pendingCount} {t('classes.pending', 'Pending')}
         </span>
       </div>
@@ -129,7 +129,7 @@ export function StudentsTab({ id, cls, navigate, classesEnhancedApi, openStudent
               return (
                 <div
                   key={student.id}
-                  className={`sm:grid grid-cols-12 gap-2 px-5 py-3 flex items-center justify-between hover:bg-surface-2 transition-colors cursor-pointer ${String(activeStudentId) === String(student.id) ? "bg-surface-2 ring-1 ring-inset ring-indigo-200 dark:ring-indigo-700" : ""}`}
+                  className={`sm:grid grid-cols-12 gap-2 px-5 py-3 flex items-center justify-between hover:bg-surface-2 transition-colors cursor-pointer ${String(activeStudentId) === String(student.id) ? "bg-surface-2 ring-1 ring-inset ring-[var(--accent)]" : ""}`}
                   onClick={() =>
                     openStudent
                       ? openStudent(student.id)
@@ -158,7 +158,7 @@ export function StudentsTab({ id, cls, navigate, classesEnhancedApi, openStudent
                   {/* Academic */}
                   <div className="col-span-2 hidden sm:block">
                     {academicPct !== null ? (
-                      <span className={`text-sm font-medium ${academicPct >= 75 ? 'text-green-600 dark:text-green-400' : academicPct >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400'}`}>
+                      <span className={`text-sm font-medium ${academicPct >= 75 ? 'text-[var(--ok)]' : academicPct >= 50 ? 'text-[var(--warn)]' : 'text-[var(--danger)]'}`}>
                         {academicPct}%
                       </span>
                     ) : (
@@ -167,7 +167,7 @@ export function StudentsTab({ id, cls, navigate, classesEnhancedApi, openStudent
                   </div>
                   {/* Attendance */}
                   <div className="col-span-2 hidden sm:flex items-center gap-1.5">
-                    <div className={`w-2 h-2 rounded-full ${student.attendanceStatus === 'present' ? "bg-green-500" : student.attendanceStatus === 'absent' ? "bg-red-400" : "bg-surface-2"}`} />
+                    <div className={`w-2 h-2 rounded-full ${student.attendanceStatus === 'present' ? "bg-[var(--ok)]" : student.attendanceStatus === 'absent' ? "bg-[var(--danger)]" : "bg-surface-2"}`} />
                     <span className="text-xs text-fg-muted">
                       {student.attendanceStatus === 'present' ? t('classes.present', 'Present') : student.attendanceStatus === 'absent' ? t('classes.absent', 'Absent') : '—'}
                     </span>
@@ -175,14 +175,14 @@ export function StudentsTab({ id, cls, navigate, classesEnhancedApi, openStudent
                   {/* Fee */}
                   <div className="col-span-2 hidden sm:block">
                     {student.feeStatus === 'paid' ? (
-                      <span className="text-xs px-2 py-0.5 rounded-md font-medium bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400">
+                      <span className="text-xs px-2 py-0.5 rounded-md font-medium bg-[var(--ok-bg)] text-[var(--ok)]">
                         {t('classes.paid', 'Paid')}
                       </span>
                     ) : (
                       <Link
                         to={`/fees?student=${student.id || student._id}`}
                         onClick={(e) => e.stopPropagation()}
-                        className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md font-medium bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40"
+                        className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md font-medium bg-[var(--warn-bg)] text-[var(--warn)] hover:bg-[var(--warn-border)]"
                         title={t('classes.collectPayment', 'Collect payment')}
                       >
                         <Wallet size={11} aria-hidden /> {t('classes.pay', 'Pay')}
@@ -196,14 +196,14 @@ export function StudentsTab({ id, cls, navigate, classesEnhancedApi, openStudent
                   {/* Mobile badges */}
                   <div className="flex items-center gap-2 sm:hidden">
                     {student.feeStatus === 'paid' ? (
-                      <span className="text-xs px-2 py-0.5 rounded-md bg-green-50 text-green-700">
+                      <span className="text-xs px-2 py-0.5 rounded-md bg-[var(--ok-bg)] text-[var(--ok)]">
                         {t('classes.paid', 'Paid')}
                       </span>
                     ) : (
                       <Link
                         to={`/fees?student=${student.id || student._id}`}
                         onClick={(e) => e.stopPropagation()}
-                        className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md bg-amber-50 text-amber-700"
+                        className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md bg-[var(--warn-bg)] text-[var(--warn)]"
                       >
                         <Wallet size={11} aria-hidden /> {t('classes.pay', 'Pay')}
                       </Link>

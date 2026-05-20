@@ -81,12 +81,20 @@
   /* Status — used ONLY for status, never decoration */
   --ok: oklch(58% 0.14 150);
   --ok-bg: oklch(58% 0.14 150 / 0.1);
+  --ok-border: oklch(58% 0.14 150 / 0.25);
+  --ok-hover: oklch(50% 0.14 150);
   --warn: oklch(70% 0.15 75);
   --warn-bg: oklch(70% 0.15 75 / 0.12);
+  --warn-border: oklch(70% 0.15 75 / 0.25);
+  --warn-hover: oklch(60% 0.15 75);
   --danger: oklch(58% 0.2 25);
   --danger-bg: oklch(58% 0.2 25 / 0.1);
+  --danger-border: oklch(58% 0.2 25 / 0.25);
+  --danger-hover: oklch(50% 0.2 25);
   --info: oklch(60% 0.14 240);
   --info-bg: oklch(60% 0.14 240 / 0.1);
+  --info-border: oklch(60% 0.14 240 / 0.25);
+  --info-hover: oklch(50% 0.14 240);
 
   /* Chart series palette — categorical, distinct hues that play well
      with the warm-neutral surface and the indigo accent. Use these for

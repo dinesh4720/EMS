@@ -310,7 +310,7 @@ export default function ClassDashboard() {
                     .catch(e => { logger.error('Retry refresh:', e); setRefreshError(true); })
                     .finally(() => setIsRefreshing(false));
                 }}
-                className="text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40 rounded"
+                className="text-sm font-medium text-[var(--danger)] hover:text-[var(--danger-hover)] whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--danger)]/40 rounded"
               >
                 {t('common.retry', 'Retry')}
               </button>
