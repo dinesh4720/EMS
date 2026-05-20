@@ -1,9 +1,4 @@
 import { useState, useEffect, useMemo } from 'react';
-import {
-  Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
-  Button, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  useDisclosure, Chip, Input, Card, CardBody
-} from '@heroui/react';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { UserCheck, Calendar, Clock, Plus, Search, Filter, X, UserPlus, RefreshCw, UserMinus } from 'lucide-react';
 import { request } from '../../services/api';
@@ -13,6 +8,10 @@ import { DEFAULT_PERIODS } from '../../utils/constants';
 import { useTranslation } from 'react-i18next';
 import { toTodayDateString } from '../../utils/dateFormatter';
 import logger from '../../utils/logger';
+import Modal from '../../components/ui/Modal';
+import Input from '../../components/ui/Input';
+import Select from '../../components/ui/Select';
+import Chip from '../../components/ui/Chip';
 
 
 export default function Substitution() {
@@ -26,7 +25,7 @@ export default function Substitution() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all"); // all, assigned, not_assigned
 
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [formData, setFormData] = useState({
     date: toTodayDateString(),
     classId: '',
@@ -40,8 +39,8 @@ export default function Substitution() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Additional modals for assign/change teacher
-  const { isOpen: isAssignOpen, onOpen: onAssignOpen, onClose: onAssignClose } = useDisclosure();
-  const { isOpen: isChangeOpen, onOpen: onChangeOpen, onClose: onChangeClose } = useDisclosure();
+  const [isAssignOpen, setIsAssignOpen] = useState(false);
+  const [isChangeOpen, setIsChangeOpen] = useState(false);
   const [selectedSubstitution, setSelectedSubstitution] = useState(null);
   const [selectedTeacher, setSelectedTeacher] = useState("");
 
@@ -129,7 +128,7 @@ export default function Substitution() {
     try {
       await request('/substitutions', { method: 'POST', body: JSON.stringify(formData) });
       toast.success(t('toast.success.substitutionAssignedSuccessfully'));
-      onClose();
+      setIsCreateOpen(false);
       resetForm();
       loadSubstitutions();
     } catch (error) {
@@ -161,7 +160,7 @@ export default function Substitution() {
         body: JSON.stringify({ substituteTeacherId: selectedTeacher, status: 'assigned' })
       });
       toast.success(t('toast.success.teacherAssignedSuccessfully'));
-      onAssignClose();
+      setIsAssignOpen(false);
       setSelectedSubstitution(null);
       setSelectedTeacher("");
       loadSubstitutions();
@@ -182,7 +181,7 @@ export default function Substitution() {
         body: JSON.stringify({ substituteTeacherId: selectedTeacher })
       });
       toast.success(t('toast.success.teacherChangedSuccessfully'));
-      onChangeClose();
+      setIsChangeOpen(false);
       setSelectedSubstitution(null);
       setSelectedTeacher("");
       loadSubstitutions();
@@ -222,17 +221,17 @@ export default function Substitution() {
   const getStatusChip = (status) => {
     switch (status) {
       case 'assigned':
-        return <Chip size="sm" color="success" variant="flat">{t('pages.assigned1')}</Chip>;
+        return <Chip size="sm" color="success">{t('pages.assigned1')}</Chip>;
       case 'not_assigned':
-        return <Chip size="sm" color="warning" variant="flat">{t('pages.notAssigned1')}</Chip>;
+        return <Chip size="sm" color="warning">{t('pages.notAssigned1')}</Chip>;
       case 'pending':
-        return <Chip size="sm" color="warning" variant="flat">{t('classes.pending', 'Pending')}</Chip>;
+        return <Chip size="sm" color="warning">{t('classes.pending', 'Pending')}</Chip>;
       case 'completed':
-        return <Chip size="sm" color="default" variant="flat">{t('pages.completed')}</Chip>;
+        return <Chip size="sm" color="neutral">{t('pages.completed')}</Chip>;
       case 'cancelled':
-        return <Chip size="sm" color="danger" variant="flat">{t('classes.cancelled', 'Cancelled')}</Chip>;
+        return <Chip size="sm" color="danger">{t('classes.cancelled', 'Cancelled')}</Chip>;
       default:
-        return <Chip size="sm" color="default" variant="flat">{status || t('classes.pending', 'Pending')}</Chip>;
+        return <Chip size="sm" color="neutral">{status || t('classes.pending', 'Pending')}</Chip>;
     }
   };
 
@@ -311,7 +310,7 @@ export default function Substitution() {
         >
           <RefreshCw size={13} aria-hidden />
         </button>
-        <button type="button" className="btn btn--accent btn--sm" onClick={onOpen}>
+        <button type="button" className="btn btn--accent btn--sm" onClick={() => setIsCreateOpen(true)}>
           <Plus size={13} aria-hidden /> {t('classes.newSubstitution', 'New Substitution')}
         </button>
       </div>
@@ -319,33 +318,31 @@ export default function Substitution() {
       {/* Filter Summary */}
       <div className="flex gap-2 flex-wrap mb-4 px-1">
         {filteredSubstitutions.length > 0 && (
-          <Chip size="sm" variant="flat" className="h-6">
+          <Chip size="sm" color="neutral" className="h-6">
             {filteredSubstitutions.length} {t('classes.substitutionsFound', 'substitution(s) found')}
           </Chip>
         )}
         {substitutions.filter(s => s.status === 'assigned' || s.substituteTeacherId).length > 0 && (
-          <Chip size="sm" color="success" variant="flat" className="h-6">
+          <Chip size="sm" color="success" className="h-6">
             {substitutions.filter(s => s.status === 'assigned' || s.substituteTeacherId).length} {t('classes.assigned', 'assigned')}
           </Chip>
         )}
         {substitutions.filter(s => !s.substituteTeacherId || s.status === 'not_assigned').length > 0 && (
-          <Chip size="sm" color="warning" variant="flat" className="h-6">
+          <Chip size="sm" color="warning" className="h-6">
             {substitutions.filter(s => !s.substituteTeacherId || s.status === 'not_assigned').length} {t('classes.pending', 'pending')}
           </Chip>
         )}
         {(searchQuery || statusFilter !== 'all') && (
-          <Button
-            size="sm"
-            color="danger"
-            variant="light"
-            onPress={() => {
+          <button
+            type="button"
+            className="btn btn--ghost btn--sm h-6 px-2 text-xs"
+            onClick={() => {
               setSearchQuery("");
               setStatusFilter("all");
             }}
-            className="h-6 min-w-0 px-2 text-xs"
           >
             {t('common.clearFilters', 'Clear Filters')}
-          </Button>
+          </button>
         )}
       </div>
 
@@ -353,339 +350,358 @@ export default function Substitution() {
       {loading ? (
         <TablePageSkeleton />
       ) : filteredSubstitutions.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center bg-default-50/50 rounded-lg border border-dashed border-default-200">
-          <Calendar size={48} className="text-default-300 mb-4" />
-          <p className="text-default-500 font-medium">{t('pages.noSubstitutionsFound')}</p>
-          <p className="text-default-400 text-sm mt-1">{t('pages.tryChangingTheDateOrFilters')}</p>
-          <Button
-            color="primary"
-            variant="flat"
-            size="sm"
-            className="mt-4"
-            onPress={onOpen}
+        <div className="flex flex-col items-center justify-center py-12 text-center bg-surface-2 rounded-lg border border-dashed border-divider">
+          <Calendar size={48} className="text-fg-faint mb-4" />
+          <p className="text-fg-muted font-medium">{t('pages.noSubstitutionsFound')}</p>
+          <p className="text-fg-subtle text-sm mt-1">{t('pages.tryChangingTheDateOrFilters')}</p>
+          <button
+            type="button"
+            className="btn btn--accent btn--sm mt-4"
+            onClick={() => setIsCreateOpen(true)}
           >
             {t('classes.createSubstitution', 'Create Substitution')}
-          </Button>
+          </button>
         </div>
       ) : (
-        <Table
-          aria-label={t('aria.tables.substitutions')}
-          removeWrapper
-          radius="none"
-          classNames={{
-            base: "-mx-6 overflow-visible [&_table]:w-[calc(100%+3rem)] [&_table]:border-spacing-0 [&_table]:select-text",
-            thead: "[&>tr]:first:shadow-none [&>tr>th:first-child]:pl-6 [&>tr>th:first-child]:pr-3 [&>tr>th:first-child]:w-24",
-            th: "bg-transparent text-default-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200 last:pr-6 hover:bg-default-100 transition-colors cursor-pointer [&_svg]:text-default-300 [&:hover_svg]:text-default-500 [&_svg]:opacity-100 first:hover:bg-transparent first:cursor-default select-none",
-            td: "py-0 border-b border-default-200 group-data-[last=true]:border-none last:pr-6 select-text",
-            tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-24 [&>tr:first-child>td]:pt-0",
-            tr: "hover:bg-default-50/50 transition-colors",
-          }}
-        >
-          <TableHeader>
-            <TableColumn scope="col">{t('pages.cLASS')}</TableColumn>
-            <TableColumn scope="col">{t('classes.periodSubject', 'PERIOD / SUBJECT')}</TableColumn>
-            <TableColumn scope="col">{t('pages.tEACHERAbsent')}</TableColumn>
-            <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
-            <TableColumn scope="col">{t('pages.rEASON')}</TableColumn>
-            <TableColumn align="center" scope="col">{t('pages.aCTIONS')}</TableColumn>
-          </TableHeader>
-          <TableBody items={filteredSubstitutions} emptyContent={
-            <div className="py-12 text-center">
-              <p className="text-sm font-medium text-default-600 mb-1">{t('classes.noSubstitutionsScheduled', 'No substitutions scheduled')}</p>
-              <p className="text-xs text-default-400">{t('classes.createSubstitutionWhenAbsent', 'Create a substitution when a teacher is absent')}</p>
-            </div>
-          }>
-            {(sub) => (
-              <TableRow key={sub._id}>
-                <TableCell>
-                  <div className="py-4">
-                    <p className="font-semibold text-default-800">{getClassName(sub.classId)}</p>
+        <table className="table" aria-label={t('aria.tables.substitutions')}>
+          <thead>
+            <tr>
+              <th scope="col">{t('pages.cLASS')}</th>
+              <th scope="col">{t('classes.periodSubject', 'PERIOD / SUBJECT')}</th>
+              <th scope="col">{t('pages.tEACHERAbsent')}</th>
+              <th scope="col">{t('pages.sTATUS')}</th>
+              <th scope="col">{t('pages.rEASON')}</th>
+              <th scope="col" className="text-center">{t('pages.aCTIONS')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredSubstitutions.map((sub) => (
+              <tr key={sub._id}>
+                <td>
+                  <div className="py-3">
+                    <p className="font-semibold text-fg">{getClassName(sub.classId)}</p>
                   </div>
-                </TableCell>
-                <TableCell>
-                  <div className="py-4 flex items-center gap-2">
-                    <Clock size={14} className="text-default-400" />
-                    <span className="font-medium text-sm">{t('classes.periodN', 'Period {{n}}', { n: sub.period })}</span>
+                </td>
+                <td>
+                  <div className="py-3 flex items-center gap-2">
+                    <Clock size={14} className="text-fg-muted" />
+                    <span className="font-medium text-sm text-fg">{t('classes.periodN', 'Period {{n}}', { n: sub.period })}</span>
                   </div>
-                </TableCell>
-                <TableCell>
-                  <div className="py-4">
-                    <p className="font-medium text-default-800 text-sm">{getTeacherName(sub.absentTeacherId)}</p>
+                </td>
+                <td>
+                  <div className="py-3">
+                    <p className="font-medium text-fg text-sm">{getTeacherName(sub.absentTeacherId)}</p>
                   </div>
-                </TableCell>
-                <TableCell>
-                  <div className="py-4 space-y-1">
+                </td>
+                <td>
+                  <div className="py-3 space-y-1">
                     {getStatusChip(sub.status || (sub.substituteTeacherId ? 'assigned' : 'not_assigned'))}
                     {sub.substituteTeacherId && (
-                      <p className="text-xs text-default-500 flex items-center gap-1 mt-1">
+                      <p className="text-xs text-fg-muted flex items-center gap-1 mt-1">
                         <span>→</span>
-                        <span className="font-medium text-default-700">{getTeacherName(sub.substituteTeacherId)}</span>
+                        <span className="font-medium text-fg">{getTeacherName(sub.substituteTeacherId)}</span>
                       </p>
                     )}
                   </div>
-                </TableCell>
-                <TableCell>
-                  <div className="py-4">
-                    <p className="text-sm text-default-600 truncate max-w-[200px]" title={sub.reason}>{sub.reason || '-'}</p>
+                </td>
+                <td>
+                  <div className="py-3">
+                    <p className="text-sm text-fg-muted truncate max-w-[200px]" title={sub.reason}>{sub.reason || '-'}</p>
                   </div>
-                </TableCell>
-                <TableCell>
-                  <div className="py-4 flex justify-center gap-2">
+                </td>
+                <td>
+                  <div className="py-3 flex justify-center gap-2">
                     {!sub.substituteTeacherId || sub.status === 'not_assigned' ? (
-                      <Button
-                        size="sm"
-                        color="primary"
-                        variant="flat"
-                        onPress={() => {
+                      <button
+                        type="button"
+                        className="btn btn--primary btn--sm font-medium"
+                        onClick={() => {
                           setSelectedSubstitution(sub);
-                          onAssignOpen();
+                          setIsAssignOpen(true);
                         }}
-                        className="font-medium"
                       >
                         {t('classes.assign', 'Assign')}
-                      </Button>
+                      </button>
                     ) : (
                       <>
-                        <Button
-                          size="sm"
-                          variant="flat"
-                          onPress={() => {
+                        <button
+                          type="button"
+                          className="btn btn--sm"
+                          onClick={() => {
                             setSelectedSubstitution(sub);
-                            onChangeOpen();
+                            setIsChangeOpen(true);
                           }}
                         >
                           {t('classes.change', 'Change')}
-                        </Button>
-                        <Button
-                          isIconOnly
-                          size="sm"
-                          color="danger"
-                          variant="light"
-                          onPress={() => setDeleteConfirmId(sub._id)}
+                        </button>
+                        <button
+                          type="button"
+                          className="iconbtn"
+                          onClick={() => setDeleteConfirmId(sub._id)}
                         >
                           <UserMinus size={16} />
-                        </Button>
+                        </button>
                       </>
                     )}
                   </div>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
 
-      <Modal isOpen={isOpen} onClose={() => { onClose(); setFormErrors({}); }} size="2xl">
-        <ModalContent>
-          <ModalHeader>{t('pages.createSubstitution')}</ModalHeader>
-          <ModalBody>
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                type="date"
-                label={t('pages.date2')}
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                isRequired
-              />
-              <Select
-                label={t('pages.class1')}
-                placeholder={t('pages.selectClass2')}
-                selectedKeys={formData.classId ? [formData.classId] : []}
-                onSelectionChange={(keys) => {
-                  const selectedId = Array.from(keys)[0];
-                  setFormData({ ...formData, classId: selectedId || '' });
-                  setFormErrors(prev => ({ ...prev, classId: '' }));
-                }}
-                isRequired
-                isInvalid={!!formErrors.classId}
-                errorMessage={formErrors.classId}
-              >
-                {classes.map((cls) => (
-                  <SelectItem key={cls.id} value={cls.id}>
-                    {cls.name}-{cls.section}
-                  </SelectItem>
-                ))}
-              </Select>
-              <Select
-                label={t('pages.period2')}
-                placeholder={t('pages.selectPeriod')}
-                selectedKeys={formData.period ? [formData.period] : []}
-                onSelectionChange={(keys) => {
-                  const selectedPeriod = Array.from(keys)[0];
-                  setFormData({ ...formData, period: selectedPeriod || '' });
-                  setFormErrors(prev => ({ ...prev, period: '' }));
-                }}
-                isRequired
-                isInvalid={!!formErrors.period}
-                errorMessage={formErrors.period}
-              >
-                {periods.map((p) => (
-                  <SelectItem key={p} value={p}>
-                    {t('classes.periodN', 'Period {{n}}', { n: p })}
-                  </SelectItem>
-                ))}
-              </Select>
-              <Select
-                label={t('pages.absentTeacherOptional')}
-                placeholder={t('pages.selectTeacher')}
-                selectedKeys={formData.absentTeacherId ? [formData.absentTeacherId] : []}
-                onSelectionChange={(keys) => {
-                  const selectedId = Array.from(keys)[0];
-                  setFormData({ ...formData, absentTeacherId: selectedId || '' });
-                }}
-              >
-                {teachers.filter(t => {
-                  const roles = Array.isArray(t.role) ? t.role : (t.role ? [t.role] : []);
-                  return roles.includes('Teacher');
-                }).map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.name} ({t.department})
-                  </SelectItem>
-                ))}
-              </Select>
-              <Select
-                label={t('pages.substituteTeacher')}
-                placeholder={t('pages.selectSubstitute')}
-                selectedKeys={formData.substituteTeacherId ? [formData.substituteTeacherId] : []}
-                onSelectionChange={(keys) => {
-                  const selectedId = Array.from(keys)[0];
-                  setFormData({ ...formData, substituteTeacherId: selectedId || '' });
-                  setFormErrors(prev => ({ ...prev, substituteTeacherId: '' }));
-                }}
-                isRequired
-                className="col-span-2"
-                isInvalid={!!formErrors.substituteTeacherId}
-                errorMessage={formErrors.substituteTeacherId}
-              >
-                {teachers.filter(t => {
-                  const roles = Array.isArray(t.role) ? t.role : (t.role ? [t.role] : []);
-                  return roles.includes('Teacher');
-                }).map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.name} ({t.department})
-                  </SelectItem>
-                ))}
-              </Select>
-              <Input
-                label={t('pages.reason')}
-                placeholder={t('pages.enterReasonForSubstitution')}
-                value={formData.reason}
-                onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                className="col-span-2"
-              />
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={onClose}>
+      <Modal
+        isOpen={isCreateOpen}
+        onClose={() => { setIsCreateOpen(false); setFormErrors({}); }}
+        size="lg"
+        title={t('pages.createSubstitution')}
+        footer={
+          <>
+            <button
+              type="button"
+              className="btn btn--ghost"
+              onClick={() => setIsCreateOpen(false)}
+            >
               {t('common.cancel', 'Cancel')}
-            </Button>
-            <Button color="primary" onPress={handleSubmit} isLoading={isSubmitting}>
-              {t('classes.createSubstitution', 'Create Substitution')}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
+            </button>
+            <button
+              type="button"
+              className="btn btn--accent"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Creating…' : t('classes.createSubstitution', 'Create Substitution')}
+            </button>
+          </>
+        }
+      >
+        <div className="grid grid-cols-2 gap-4">
+          <Input
+            type="date"
+            label={t('pages.date2')}
+            value={formData.date}
+            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+            required
+          />
+          <Select
+            label={t('pages.class1')}
+            placeholder={t('pages.selectClass2')}
+            value={formData.classId}
+            onChange={(e) => {
+              setFormData({ ...formData, classId: e.target.value });
+              setFormErrors(prev => ({ ...prev, classId: '' }));
+            }}
+            required
+            error={formErrors.classId}
+          >
+            <option value="">{t('pages.selectClass2')}</option>
+            {classes.map((cls) => (
+              <option key={cls.id} value={cls.id}>
+                {cls.name}-{cls.section}
+              </option>
+            ))}
+          </Select>
+          <Select
+            label={t('pages.period2')}
+            placeholder={t('pages.selectPeriod')}
+            value={formData.period}
+            onChange={(e) => {
+              setFormData({ ...formData, period: e.target.value });
+              setFormErrors(prev => ({ ...prev, period: '' }));
+            }}
+            required
+            error={formErrors.period}
+          >
+            <option value="">{t('pages.selectPeriod')}</option>
+            {periods.map((p) => (
+              <option key={p} value={p}>
+                {t('classes.periodN', 'Period {{n}}', { n: p })}
+              </option>
+            ))}
+          </Select>
+          <Select
+            label={t('pages.absentTeacherOptional')}
+            placeholder={t('pages.selectTeacher')}
+            value={formData.absentTeacherId}
+            onChange={(e) => {
+              setFormData({ ...formData, absentTeacherId: e.target.value });
+            }}
+          >
+            <option value="">{t('pages.selectTeacher')}</option>
+            {teachers.filter(t => {
+              const roles = Array.isArray(t.role) ? t.role : (t.role ? [t.role] : []);
+              return roles.includes('Teacher');
+            }).map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name} ({t.department})
+              </option>
+            ))}
+          </Select>
+          <div className="col-span-2">
+            <Select
+              label={t('pages.substituteTeacher')}
+              placeholder={t('pages.selectSubstitute')}
+              value={formData.substituteTeacherId}
+              onChange={(e) => {
+                setFormData({ ...formData, substituteTeacherId: e.target.value });
+                setFormErrors(prev => ({ ...prev, substituteTeacherId: '' }));
+              }}
+              required
+              error={formErrors.substituteTeacherId}
+            >
+              <option value="">{t('pages.selectSubstitute')}</option>
+              {teachers.filter(t => {
+                const roles = Array.isArray(t.role) ? t.role : (t.role ? [t.role] : []);
+                return roles.includes('Teacher');
+              }).map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name} ({t.department})
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div className="col-span-2">
+            <Input
+              label={t('pages.reason')}
+              placeholder={t('pages.enterReasonForSubstitution')}
+              value={formData.reason}
+              onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+            />
+          </div>
+        </div>
       </Modal>
 
       {/* Assign Teacher Modal */}
-      <Modal isOpen={isAssignOpen} onClose={onAssignClose}>
-        <ModalContent>
-          <ModalHeader>{t('pages.assignSubstituteTeacher1')}</ModalHeader>
-          <ModalBody className="space-y-4">
-            {selectedSubstitution && (
-              <>
-                <div className="bg-default-50 rounded-lg p-4 space-y-2">
-                  <p><strong>{t('pages.class2')}</strong> {getClassName(selectedSubstitution.classId)}</p>
-                  <p><strong>{t('pages.period3')}</strong> {selectedSubstitution.period}</p>
-                  <p><strong>{t('pages.absentTeacher1')}</strong> {getTeacherName(selectedSubstitution.absentTeacherId)}</p>
-                </div>
-
-                <Select
-                  label={t('pages.selectSubstituteTeacher')}
-                  placeholder={t('pages.chooseATeacher')}
-                  selectedKeys={selectedTeacher ? [selectedTeacher] : []}
-                  onSelectionChange={(keys) => setSelectedTeacher(Array.from(keys)[0])}
-                  isRequired
-                >
-                  {getAvailableTeachers(selectedSubstitution.absentTeacherId).map(teacher => (
-                    <SelectItem key={teacher.id || teacher._id} value={teacher.id || teacher._id}>
-                      {teacher.name} ({teacher.department || 'Teacher'})
-                    </SelectItem>
-                  ))}
-                </Select>
-              </>
-            )}
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="flat" onPress={onAssignClose}>
-              {t('common.cancel', 'Cancel')}
-            </Button>
-            <Button
-              color="primary"
-              onPress={handleAssignTeacher}
-              isDisabled={!selectedTeacher}
+      <Modal
+        isOpen={isAssignOpen}
+        onClose={() => setIsAssignOpen(false)}
+        size="md"
+        title={t('pages.assignSubstituteTeacher1')}
+        footer={
+          <>
+            <button
+              type="button"
+              className="btn btn--ghost"
+              onClick={() => setIsAssignOpen(false)}
             >
-              {t('classes.assignTeacher', 'Assign Teacher')}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
+              {t('common.cancel', 'Cancel')}
+            </button>
+            <button
+              type="button"
+              className="btn btn--accent"
+              onClick={handleAssignTeacher}
+              disabled={!selectedTeacher || isSubmitting}
+            >
+              {isSubmitting ? 'Assigning…' : t('classes.assignTeacher', 'Assign Teacher')}
+            </button>
+          </>
+        }
+      >
+        {selectedSubstitution && (
+          <div className="space-y-4">
+            <div className="bg-surface-2 rounded-lg p-4 space-y-2">
+              <p className="text-fg"><strong>{t('pages.class2')}</strong> {getClassName(selectedSubstitution.classId)}</p>
+              <p className="text-fg"><strong>{t('pages.period3')}</strong> {selectedSubstitution.period}</p>
+              <p className="text-fg"><strong>{t('pages.absentTeacher1')}</strong> {getTeacherName(selectedSubstitution.absentTeacherId)}</p>
+            </div>
+
+            <Select
+              label={t('pages.selectSubstituteTeacher')}
+              placeholder={t('pages.chooseATeacher')}
+              value={selectedTeacher}
+              onChange={(e) => setSelectedTeacher(e.target.value)}
+              required
+            >
+              <option value="">{t('pages.chooseATeacher')}</option>
+              {getAvailableTeachers(selectedSubstitution.absentTeacherId).map(teacher => (
+                <option key={teacher.id || teacher._id} value={teacher.id || teacher._id}>
+                  {teacher.name} ({teacher.department || 'Teacher'})
+                </option>
+              ))}
+            </Select>
+          </div>
+        )}
       </Modal>
 
       {/* Change Teacher Modal */}
-      <Modal isOpen={isChangeOpen} onClose={onChangeClose}>
-        <ModalContent>
-          <ModalHeader>{t('pages.changeSubstituteTeacher')}</ModalHeader>
-          <ModalBody className="space-y-4">
-            {selectedSubstitution && (
-              <>
-                <div className="bg-default-50 rounded-lg p-4 space-y-2">
-                  <p><strong>{t('pages.class2')}</strong> {getClassName(selectedSubstitution.classId)}</p>
-                  <p><strong>{t('pages.currentSubstitute')}</strong> {getTeacherName(selectedSubstitution.substituteTeacherId)}</p>
-                  <p><strong>{t('pages.absentTeacher1')}</strong> {getTeacherName(selectedSubstitution.absentTeacherId)}</p>
-                </div>
-
-                <Select
-                  label={t('pages.selectNewTeacher')}
-                  placeholder={t('pages.chooseANewTeacher')}
-                  selectedKeys={selectedTeacher ? [selectedTeacher] : []}
-                  onSelectionChange={(keys) => setSelectedTeacher(Array.from(keys)[0])}
-                  isRequired
-                >
-                  {getAvailableTeachers(selectedSubstitution.absentTeacherId).map(teacher => (
-                    <SelectItem key={teacher.id || teacher._id} value={teacher.id || teacher._id}>
-                      {teacher.name} ({teacher.department || 'Teacher'})
-                    </SelectItem>
-                  ))}
-                </Select>
-              </>
-            )}
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="flat" onPress={onChangeClose}>
-              {t('common.cancel', 'Cancel')}
-            </Button>
-            <Button
-              color="primary"
-              onPress={handleChangeTeacher}
-              isDisabled={!selectedTeacher}
+      <Modal
+        isOpen={isChangeOpen}
+        onClose={() => setIsChangeOpen(false)}
+        size="md"
+        title={t('pages.changeSubstituteTeacher')}
+        footer={
+          <>
+            <button
+              type="button"
+              className="btn btn--ghost"
+              onClick={() => setIsChangeOpen(false)}
             >
-              {t('classes.changeTeacher', 'Change Teacher')}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
+              {t('common.cancel', 'Cancel')}
+            </button>
+            <button
+              type="button"
+              className="btn btn--accent"
+              onClick={handleChangeTeacher}
+              disabled={!selectedTeacher || isSubmitting}
+            >
+              {isSubmitting ? 'Changing…' : t('classes.changeTeacher', 'Change Teacher')}
+            </button>
+          </>
+        }
+      >
+        {selectedSubstitution && (
+          <div className="space-y-4">
+            <div className="bg-surface-2 rounded-lg p-4 space-y-2">
+              <p className="text-fg"><strong>{t('pages.class2')}</strong> {getClassName(selectedSubstitution.classId)}</p>
+              <p className="text-fg"><strong>{t('pages.currentSubstitute')}</strong> {getTeacherName(selectedSubstitution.substituteTeacherId)}</p>
+              <p className="text-fg"><strong>{t('pages.absentTeacher1')}</strong> {getTeacherName(selectedSubstitution.absentTeacherId)}</p>
+            </div>
+
+            <Select
+              label={t('pages.selectNewTeacher')}
+              placeholder={t('pages.chooseANewTeacher')}
+              value={selectedTeacher}
+              onChange={(e) => setSelectedTeacher(e.target.value)}
+              required
+            >
+              <option value="">{t('pages.chooseANewTeacher')}</option>
+              {getAvailableTeachers(selectedSubstitution.absentTeacherId).map(teacher => (
+                <option key={teacher.id || teacher._id} value={teacher.id || teacher._id}>
+                  {teacher.name} ({teacher.department || 'Teacher'})
+                </option>
+              ))}
+            </Select>
+          </div>
+        )}
       </Modal>
 
       {/* Delete Confirmation Modal */}
-      <Modal isOpen={!!deleteConfirmId} onClose={() => setDeleteConfirmId(null)} size="sm">
-        <ModalContent>
-          <ModalHeader>{t('confirm.removeSubstitutionTitle', 'Remove Substitution')}</ModalHeader>
-          <ModalBody>
-            <p className="text-default-600">{t('confirm.removeSubstitution', 'Are you sure you want to remove this substitution?')}</p>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="flat" onPress={() => setDeleteConfirmId(null)}>{t('common.cancel', 'Cancel')}</Button>
-            <Button color="danger" onPress={() => handleDelete(deleteConfirmId)}>{t('common.remove', 'Remove')}</Button>
-          </ModalFooter>
-        </ModalContent>
+      <Modal
+        isOpen={!!deleteConfirmId}
+        onClose={() => setDeleteConfirmId(null)}
+        size="sm"
+        title={t('confirm.removeSubstitutionTitle', 'Remove Substitution')}
+        footer={
+          <>
+            <button
+              type="button"
+              className="btn btn--ghost"
+              onClick={() => setDeleteConfirmId(null)}
+            >
+              {t('common.cancel', 'Cancel')}
+            </button>
+            <button
+              type="button"
+              className="btn btn--danger"
+              onClick={() => handleDelete(deleteConfirmId)}
+            >
+              {t('common.remove', 'Remove')}
+            </button>
+          </>
+        }
+      >
+        <p className="text-fg-muted">{t('confirm.removeSubstitution', 'Are you sure you want to remove this substitution?')}</p>
       </Modal>
     </div>
   );

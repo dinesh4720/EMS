@@ -1,9 +1,4 @@
 import { useState, useMemo } from "react";
-import {
-  Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
-  Button, Avatar, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  Select, SelectItem, User
-} from "@heroui/react";
 import { Users, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { useApp } from "../../context/AppContext";
@@ -13,6 +8,10 @@ import logger from '../../utils/logger';
 import SearchInput from "../../components/ui/SearchInput";
 import Alert from "../../components/ui/Alert";
 import EmptyState from "../../components/ui/EmptyState";
+import Modal from "../../components/ui/Modal";
+import Chip from "../../components/ui/Chip";
+import Avatar from "../../components/ui/Avatar";
+import Select from "../../components/ui/Select";
 
 
 export default function BulkClassTeacherAssignment() {
@@ -187,7 +186,7 @@ export default function BulkClassTeacherAssignment() {
       <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-bg border-b border-divider py-4 -mx-6 -mt-6 px-6 mb-4">
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold text-fg">{t('pages.classTeachers1')}</h2>
-          <Chip size="sm" variant="flat" color={stats.unassigned > 0 ? "warning" : "success"}>
+          <Chip size="sm" color={stats.unassigned > 0 ? "warning" : "success"}>
             {stats.assigned} {t('classes.assigned', 'Assigned')} • {stats.unassigned} {t('classes.unassigned', 'Unassigned')}
           </Chip>
         </div>
@@ -200,152 +199,156 @@ export default function BulkClassTeacherAssignment() {
         />
       </div>
 
-      <Table
-        aria-label={t('aria.tables.classTeachers')}
-        removeWrapper
-        radius="none"
-        classNames={{
-          base: "-mx-6 overflow-visible [&_table]:w-[calc(100%+3rem)] [&_table]:border-spacing-0 [&_table]:select-text",
-          thead: "[&>tr]:first:shadow-none [&>tr>th:first-child]:pl-6 [&>tr>th:first-child]:pr-3 [&>tr>th:first-child]:w-12",
-          th: "bg-transparent text-fg-faint font-medium text-xs uppercase tracking-wider h-12 border-b border-divider last:pr-6 hover:bg-surface-2 transition-colors cursor-pointer [&_svg]:text-fg-faint [&:hover_svg]:text-fg-muted [&_svg]:opacity-100 first:hover:bg-transparent first:cursor-default select-none",
-          td: "py-0 border-b border-divider group-data-[last=true]:border-none last:pr-6 select-text",
-          tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-12 [&>tr:first-child>td]:pt-0",
-          tr: "hover:bg-surface-2 transition-colors",
-        }}
-      >
-        <TableHeader>
-          <TableColumn scope="col">{t('pages.cLASS')}</TableColumn>
-          <TableColumn scope="col">{t('pages.cLASSTeacher')}</TableColumn>
-          <TableColumn scope="col">{t('pages.sTUDENTS')}</TableColumn>
-          <TableColumn align="center" scope="col">{t('pages.aCTIONS')}</TableColumn>
-        </TableHeader>
-        <TableBody items={filteredClasses} emptyContent={
-          <EmptyState
-            icon={Users}
-            title={t('classes.noClassesFound', 'No classes found')}
-            description={t('classes.createClassesFirst', 'Create classes first before assigning teachers')}
-            size="lg"
-          />
-        }>
-          {(cls) => (
-            <TableRow key={cls.id}>
-              <TableCell>
-                <div className="py-4 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                    <span className="font-semibold text-sm">{cls.name}</span>
+      <table className="table" aria-label={t('aria.tables.classTeachers')}>
+        <thead>
+          <tr>
+            <th scope="col">{t('pages.cLASS')}</th>
+            <th scope="col">{t('pages.cLASSTeacher')}</th>
+            <th scope="col">{t('pages.sTUDENTS')}</th>
+            <th scope="col" className="text-center">{t('pages.aCTIONS')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredClasses.length === 0 ? (
+            <tr>
+              <td colSpan={4}>
+                <EmptyState
+                  icon={Users}
+                  title={t('classes.noClassesFound', 'No classes found')}
+                  description={t('classes.createClassesFirst', 'Create classes first before assigning teachers')}
+                  size="lg"
+                />
+              </td>
+            </tr>
+          ) : (
+            filteredClasses.map((cls) => (
+              <tr key={cls.id}>
+                <td>
+                  <div className="py-3 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-md bg-accent-bg flex items-center justify-center text-accent shrink-0">
+                      <span className="font-semibold text-sm">{cls.name}</span>
+                    </div>
+                    <span className="font-medium text-fg">
+                      {t('classes.classLabel', 'Class')} {cls.name}-{cls.section}
+                    </span>
                   </div>
-                  <span className="font-medium text-fg">
-                    {t('classes.classLabel', 'Class')} {cls.name}-{cls.section}
-                  </span>
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="py-4">
-                  {cls.classTeacherId ? (
-                    <User
-                      name={cls.teacher || 'Unknown'}
-                      description={t('classes.classTeacher', 'Class Teacher')}
-                      avatarProps={{
-                        src: cls.teacherPhoto,
-                        size: "sm",
-                        className: "bg-surface-2"
-                      }}
-                    />
-                  ) : (
-                    <Chip size="sm" color="warning" variant="flat">{t('pages.unassigned1')}</Chip>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="py-4 text-sm text-fg-muted">
-                  {cls.studentCount || 0} {t('classes.students', 'students')}
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="py-4 flex justify-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="flat"
-                    color="primary"
-                    onPress={() => handleOpenAssign(cls)}
-                    isDisabled={!canEdit}
-                  >
-                    {cls.classTeacherId ? t('classes.change', 'Change') : t('classes.assign', 'Assign')}
-                  </Button>
-                  {cls.classTeacherId && (
-                    <Button
-                      size="sm"
-                      variant="light"
-                      color="danger"
-                      isIconOnly
-                      onPress={() => handleUnassign(cls)}
-                      isDisabled={!canEdit}
-                      title={t('pages.removeTeacher')}
+                </td>
+                <td>
+                  <div className="py-3">
+                    {cls.classTeacherId ? (
+                      <div className="flex items-center gap-2">
+                        <Avatar
+                          src={cls.teacherPhoto}
+                          name={cls.teacher || 'Unknown'}
+                          size="sm"
+                          shape="square"
+                        />
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-fg">{cls.teacher || 'Unknown'}</span>
+                          <span className="text-xs text-fg-muted">{t('classes.classTeacher', 'Class Teacher')}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <Chip size="sm" color="warning">{t('pages.unassigned1')}</Chip>
+                    )}
+                  </div>
+                </td>
+                <td>
+                  <div className="py-3 text-sm text-fg-muted">
+                    {cls.studentCount || 0} {t('classes.students', 'students')}
+                  </div>
+                </td>
+                <td>
+                  <div className="py-3 flex justify-center gap-2">
+                    <button
+                      type="button"
+                      className="btn btn--primary btn--sm"
+                      onClick={() => handleOpenAssign(cls)}
+                      disabled={!canEdit}
                     >
-                      <X size={16} />
-                    </Button>
-                  )}
-                </div>
-              </TableCell>
-            </TableRow>
+                      {cls.classTeacherId ? t('classes.change', 'Change') : t('classes.assign', 'Assign')}
+                    </button>
+                    {cls.classTeacherId && (
+                      <button
+                        type="button"
+                        className="iconbtn"
+                        onClick={() => handleUnassign(cls)}
+                        disabled={!canEdit}
+                        title={t('pages.removeTeacher')}
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))
           )}
-        </TableBody>
-      </Table>
+        </tbody>
+      </table>
 
-      <Modal isOpen={modal.isOpen} onClose={handleClose} size="md">
-        <ModalContent>
-          <ModalHeader className="flex flex-col gap-1">
+      <Modal
+        isOpen={modal.isOpen}
+        onClose={handleClose}
+        size="md"
+        title={
+          <div className="flex flex-col gap-1">
             {t('classes.assignClassTeacher', 'Assign Class Teacher')}
             {modal.targetClass && (
               <span className="text-sm font-normal text-fg-muted">
                 {t('classes.classLabel', 'Class')} {modal.targetClass.name}-{modal.targetClass.section}
               </span>
             )}
-          </ModalHeader>
-          <ModalBody>
-            <Select
-              label={t('pages.selectTeacher1')}
-              placeholder={t('pages.chooseATeacher')}
-              selectedKeys={modal.selectedTeacherId ? [modal.selectedTeacherId] : []}
-              onSelectionChange={(keys) => {
-                const arr = Array.from(keys);
-                setModal(prev => ({ ...prev, selectedTeacherId: arr[0] || "" }));
-              }}
-              variant="bordered"
-              classNames={{ popoverContent: "max-h-[300px]" }}
+          </div>
+        }
+        footer={
+          <>
+            <button
+              type="button"
+              className="btn btn--ghost"
+              onClick={handleClose}
+              disabled={isProcessing}
             >
-              {teachers.map(t => (
-                <SelectItem key={String(t.id || t._id)} value={String(t.id || t._id)} textValue={t.name}>
-                  <div className="flex items-center gap-2">
-                    <Avatar alt={t.name} className="flex-shrink-0" size="sm" src={t.picture} />
-                    <div className="flex flex-col">
-                      <span className="text-small">{t.name}</span>
-                      <span className="text-tiny text-fg-faint">{t.department || 'Teacher'}</span>
-                    </div>
-                  </div>
-                </SelectItem>
-              ))}
-            </Select>
-
-            {modal.selectedTeacherId && selectedTeacherCurrentClasses.length > 0 && (
-              <Alert
-                variant="warning"
-                title={t('pages.alreadyAssignedToOtherClasses')}
-                className="mt-4"
-              >
-                {t('classes.teacherAlreadyAssignedWarning', 'This teacher is currently the class teacher for: {{classes}}. They will manage multiple classes.', { classes: selectedTeacherCurrentClasses.map(c => `${c.name}-${c.section}`).join(', ') })}
-              </Alert>
-            )}
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="flat" onPress={handleClose} isDisabled={isProcessing}>
               {t('common.cancel', 'Cancel')}
-            </Button>
-            <Button color="primary" onPress={handleSaveAssignment} isLoading={isProcessing}>
-              {t('common.save', 'Save')}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
+            </button>
+            <button
+              type="button"
+              className="btn btn--accent"
+              onClick={handleSaveAssignment}
+              disabled={isProcessing}
+            >
+              {isProcessing ? 'Saving…' : t('common.save', 'Save')}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <Select
+            label={t('pages.selectTeacher1')}
+            placeholder={t('pages.chooseATeacher')}
+            value={modal.selectedTeacherId}
+            onChange={(e) => {
+              setModal(prev => ({ ...prev, selectedTeacherId: e.target.value }));
+            }}
+          >
+            <option value="">{t('pages.chooseATeacher')}</option>
+            {teachers.map(t => (
+              <option key={String(t.id || t._id)} value={String(t.id || t._id)}>
+                {t.name} {t.department ? `(${t.department})` : ''}
+              </option>
+            ))}
+          </Select>
+
+          {modal.selectedTeacherId && selectedTeacherCurrentClasses.length > 0 && (
+            <Alert
+              variant="warning"
+              title={t('pages.alreadyAssignedToOtherClasses')}
+              className="mt-4"
+            >
+              {t('classes.teacherAlreadyAssignedWarning', 'This teacher is currently the class teacher for: {{classes}}. They will manage multiple classes.', { classes: selectedTeacherCurrentClasses.map(c => `${c.name}-${c.section}`).join(', ') })}
+            </Alert>
+          )}
+        </div>
       </Modal>
     </div>
   );
