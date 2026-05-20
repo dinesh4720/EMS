@@ -395,7 +395,7 @@ const AddStudentComposer = forwardRef(function AddStudentComposer(
 
   const docConfigMap = useMemo(() => {
     const map = {};
-    for (const cfg of documentConfigs) {
+    for (const cfg of Array.isArray(documentConfigs) ? documentConfigs : []) {
       const name = (cfg.documentName || "").toLowerCase().trim();
       if (name.includes("birth")) map.birthCertificate = cfg;
       else if (name.includes("transfer") || name.includes("tc"))

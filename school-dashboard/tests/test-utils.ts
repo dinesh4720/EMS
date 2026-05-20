@@ -2000,6 +2000,7 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
     if (path === '/settings/leave-types') return json(state.leaveTypes ?? []);
     if (path === '/settings/fee-heads')   return json(state.feeHeads);
     if (path === '/settings/subjects')    return json(state.subjects);
+    if (path === '/settings/document-config') return json([]);
     if (path === '/settings' || path.match(/^\/settings\//)) {
       if (method === 'PUT' || method === 'PATCH') { Object.assign(state.schoolSettings, body); return json(state.schoolSettings); }
       return json(state.schoolSettings);

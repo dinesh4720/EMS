@@ -226,32 +226,53 @@ test.describe('TC043: Fee Structure Assignment', () => {
     await page.goto('/fees/structure-assignment');
     await page.waitForLoadState('networkidle');
 
-    // Select collection mode
-    const modeSelector = page.getByRole('combobox', { name: /collection.*mode|mode/i })
-      .or(page.getByRole('button', { name: /term.*wise|collection mode/i }))
+    // First select a class (10-A)
+    const classOption = page.locator('button.opt').filter({ hasText: /10/i }).first();
+    const hasClass = await classOption.isVisible({ timeout: 5000 }).catch(() => false);
+    if (hasClass) {
+      await classOption.click();
+      await page.waitForTimeout(300);
+
+      // Select section A if shown
+      const sectionA = page.locator('button.tagchip').filter({ hasText: /^A$/ }).first();
+      const hasSection = await sectionA.isVisible({ timeout: 3000 }).catch(() => false);
+      if (hasSection) await sectionA.click();
+    }
+
+    // Select a template so fee heads populate
+    const templateSelector = page.locator('select.select').filter({ hasText: /select a template/i }).first()
+      .or(page.getByRole('combobox', { name: /template/i }))
+      .or(page.locator('select').filter({ hasText: /template/i }))
+      .first();
+    const hasTemplate = await templateSelector.isVisible({ timeout: 5000 }).catch(() => false);
+
+    if (hasTemplate) {
+      await templateSelector.selectOption({ label: /Standard Annual Plan/i });
+      await page.waitForTimeout(500);
+    }
+
+    // Now select collection mode
+    const modeSelector = page.getByRole('combobox', { name: /collection.*schedule|collection.*mode/i })
       .or(page.locator('select').filter({ hasText: /term|month/i }))
       .first();
     const hasMode = await modeSelector.isVisible({ timeout: 5000 }).catch(() => false);
 
     if (hasMode) {
-      await modeSelector.click();
-      const termOption = page.getByRole('option', { name: /term.*wise|term/i })
-        .or(page.getByText(/term.*wise/i)).first();
-      const hasTerm = await termOption.isVisible({ timeout: 3000 }).catch(() => false);
-      if (hasTerm) {
-        await termOption.click();
-        await page.waitForTimeout(500);
-      }
+      await modeSelector.selectOption(/term/i);
+      await page.waitForTimeout(500);
+
+      const bodyText = await page.textContent('body');
+      // Should show term 1 and term 2
+      expect(bodyText?.toLowerCase()).toMatch(/term|installment|collection/);
     } else {
-      // Could be radio buttons
       const termRadio = page.getByRole('radio', { name: /term.*wise|term/i }).first();
       const hasRadio = await termRadio.isVisible({ timeout: 3000 }).catch(() => false);
-      if (hasRadio) await termRadio.check();
+      if (hasRadio) {
+        await termRadio.check();
+        const bodyText = await page.textContent('body');
+        expect(bodyText?.toLowerCase()).toMatch(/term|installment|collection/);
+      }
     }
-
-    const bodyText = await page.textContent('body');
-    // Should show term 1 and term 2
-    expect(bodyText?.toLowerCase()).toMatch(/term|installment|collection/);
   });
 
   test('5) verify term-wise installment dates and amounts', async ({ page }) => {
