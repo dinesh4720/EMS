@@ -7,10 +7,12 @@ import {
 test.use({ viewport: { width: 1280, height: 720 } });
 
 /* ─────────────────────────────────────────────────────────────────────
- *  TC055 — Notifications: view, mark read, filter
+ *  TC055 — Notifications Management
+ *  Covers: NotificationCenter (list, filters, actions) +
+ *          NotificationSettings (preferences, quiet hours, digest)
  * ───────────────────────────────────────────────────────────────────── */
 
-test.describe.skip('TC055 — Notifications Management', () => {
+test.describe('TC055 — Notifications Management', () => {
   let state: MockState;
 
   test.beforeEach(async ({ page }) => {
@@ -30,80 +32,53 @@ test.describe.skip('TC055 — Notifications Management', () => {
       title: 'New Announcement Published',
       message: 'A new announcement about the Annual Day has been published.',
       read: false,
-      createdAt: '2026-03-30T10:00:00.000Z',
+      createdAt: new Date().toISOString(),
     });
     seedNotification(state, {
       type: 'fee',
       title: 'Fee Payment Received',
       message: 'Fee payment of INR 5000 received from Rahul Sharma.',
       read: false,
-      createdAt: '2026-03-29T14:00:00.000Z',
+      createdAt: new Date(Date.now() - 3600000).toISOString(),
     });
     seedNotification(state, {
       type: 'attendance',
       title: 'Attendance Alert',
       message: 'Class 10-A attendance is below 80% today.',
       read: false,
-      createdAt: '2026-03-29T09:00:00.000Z',
+      createdAt: new Date(Date.now() - 7200000).toISOString(),
     });
     seedNotification(state, {
       type: 'exam',
       title: 'Exam Results Published',
       message: 'Mid-term exam results for Class 10-A have been published.',
       read: true,
-      createdAt: '2026-03-28T11:00:00.000Z',
+      createdAt: new Date(Date.now() - 86400000).toISOString(),
     });
     seedNotification(state, {
       type: 'system',
       title: 'System Maintenance',
       message: 'Scheduled maintenance on March 27th from 2 AM to 4 AM.',
       read: true,
-      createdAt: '2026-03-27T08:00:00.000Z',
+      createdAt: new Date(Date.now() - 172800000).toISOString(),
     });
 
-    // Extend mock API with richer notification handling
     await installMockApi(page, state);
-
-    // Override notification routes for mark-as-read and mark-all-read
-    await page.route('**/api/notifications/**', async (route) => {
-      const request = route.request();
-      const url = new URL(request.url());
-      const path = url.pathname.replace(/\/+$/, '');
-      const method = request.method();
-
-      const json = (data: unknown, status = 200) =>
-        route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(data) });
-
-      // PUT /api/notifications/:id/read — mark single as read
-      const readMatch = path.match(/^\/api\/notifications\/([^/]+)\/read$/);
-      if (readMatch && method === 'PUT') {
-        const id = readMatch[1];
-        const notif = state.notifications.find(n => n.id === id);
-        if (notif) {
-          notif.read = true;
-          return json(notif);
-        }
-        return json({ error: 'Not found' }, 404);
-      }
-
-      // PUT /api/notifications/mark-all-read — mark all as read
-      if (path === '/api/notifications/mark-all-read' && method === 'PUT') {
-        state.notifications.forEach(n => { n.read = true; });
-        return json({ message: 'All marked as read' });
-      }
-
-      // Fall through to base handler
-      await route.continue();
-    });
   });
 
-  /* ───────── 1. Notification list loads ───────── */
+  /* ═══════════════════════════════════════════════════════════════════
+   *  SECTION 1 — NOTIFICATION CENTER
+   *  ═══════════════════════════════════════════════════════════════════ */
 
+  /* ── 1. Page loads ── */
   test('1) notifications page loads and displays notification list', async ({ page }) => {
     await page.goto('/messaging/notifications');
     await page.waitForLoadState('networkidle');
 
     await expect(page).not.toHaveURL(/\/login/);
+
+    // Wait for async notification data to render
+    await page.getByText('New Announcement Published').first().waitFor({ state: 'visible', timeout: 10000 });
 
     const bodyText = await page.textContent('body');
     expect(bodyText).toContain('New Announcement Published');
@@ -111,11 +86,12 @@ test.describe.skip('TC055 — Notifications Management', () => {
     expect(bodyText).toContain('Attendance Alert');
   });
 
-  /* ───────── 2. All 5 notifications are visible ───────── */
-
+  /* ── 2. All 5 seeded notifications visible ── */
   test('2) all 5 seeded notifications are displayed', async ({ page }) => {
     await page.goto('/messaging/notifications');
     await page.waitForLoadState('networkidle');
+
+    await page.getByText('New Announcement Published').first().waitFor({ state: 'visible', timeout: 10000 });
 
     const bodyText = await page.textContent('body');
     expect(bodyText).toContain('New Announcement Published');
@@ -125,130 +101,384 @@ test.describe.skip('TC055 — Notifications Management', () => {
     expect(bodyText).toContain('System Maintenance');
   });
 
-  /* ───────── 3. Unread count shows correctly ───────── */
-
+  /* ── 3. Unread count badge ── */
   test('3) unread count badge reflects 3 unread notifications', async ({ page }) => {
     await page.goto('/messaging/notifications');
     await page.waitForLoadState('networkidle');
 
-    // The unread count should be visible somewhere (badge, header, tab)
-    const bodyText = await page.textContent('body');
+    await page.getByText('New Announcement Published').first().waitFor({ state: 'visible', timeout: 10000 });
+
     const unreadCount = state.notifications.filter(n => !n.read).length;
     expect(unreadCount).toBe(3);
 
-    // Look for badge or count indicator on the page
-    expect(
-      bodyText?.includes('3') || bodyText?.toLowerCase().includes('unread'),
-    ).toBeTruthy();
+    // Badge on the "Notifications" heading or in the tab list
+    const bodyText = await page.textContent('body');
+    expect(bodyText).toMatch(/3\s*new|Unread\s*\(\s*3\s*\)/i);
   });
 
-  /* ───────── 4. Click on unread notification marks it as read ───────── */
-
+  /* ── 4. Click unread notification marks it as read ── */
   test('4) clicking an unread notification marks it as read', async ({ page }) => {
     await page.goto('/messaging/notifications');
     await page.waitForLoadState('networkidle');
 
-    // Click on the first unread notification
-    const notifEl = page.getByText('New Announcement Published').first();
-    if (await notifEl.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await notifEl.click();
-      await page.waitForTimeout(500);
+    const notifTitle = page.getByText('New Announcement Published').first();
+    await notifTitle.waitFor({ state: 'visible', timeout: 10000 });
 
-      // Verify the notification was marked as read in state
-      const notif = state.notifications.find(n => n.title === 'New Announcement Published');
-      // The click may or may not trigger mark-as-read depending on UI impl
-      // Verify the page doesn't error and the notification is still accessible
-      const bodyText = await page.textContent('body');
-      expect(bodyText).toContain('New Announcement Published');
-    }
+    // Click the notification row (unread items are clickable)
+    await notifTitle.click();
+    await page.waitForTimeout(500);
+
+    // The notification should no longer have the "New" chip
+    const newChip = page.locator('[role="button"]')
+      .filter({ hasText: 'New Announcement Published' })
+      .locator('.text-xs')
+      .filter({ hasText: 'New' });
+
+    // After marking as read, the "New" chip should disappear
+    await expect(newChip).not.toBeVisible();
+
+    // Verify state updated
+    const notif = state.notifications.find(n => n.title === 'New Announcement Published');
+    expect(notif?.read).toBe(true);
   });
 
-  /* ───────── 5. Mark all as read ───────── */
-
+  /* ── 5. Mark all as read ── */
   test('5) "Mark all as read" sets all notifications to read', async ({ page }) => {
     await page.goto('/messaging/notifications');
     await page.waitForLoadState('networkidle');
 
-    const markAllBtn = page.getByRole('button', { name: /mark all.*read|mark all as read/i }).first();
-    const markAllLink = page.getByText(/mark all.*read/i).first();
+    await page.getByText('New Announcement Published').first().waitFor({ state: 'visible', timeout: 10000 });
 
-    const btn = (await markAllBtn.isVisible({ timeout: 3000 }).catch(() => false))
-      ? markAllBtn
-      : markAllLink;
+    const markAllBtn = page.getByRole('button', { name: /mark all read/i }).first();
+    await expect(markAllBtn).toBeVisible({ timeout: 5000 });
 
-    if (await btn.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await btn.click();
-      await page.waitForTimeout(500);
+    await markAllBtn.click();
+    await page.waitForTimeout(500);
 
-      // Verify all notifications are now read in state
-      const unreadCount = state.notifications.filter(n => !n.read).length;
-      expect(unreadCount).toBe(0);
-    }
+    // All notifications should now be read
+    const unreadCount = state.notifications.filter(n => !n.read).length;
+    expect(unreadCount).toBe(0);
   });
 
-  /* ───────── 6. Unread count updates to 0 after mark all read ───────── */
-
+  /* ── 6. Unread count becomes 0 after mark all ── */
   test('6) unread count updates to 0 after marking all as read', async ({ page }) => {
-    // Mark all as read in state before navigating
-    state.notifications.forEach(n => { n.read = true; });
-
     await page.goto('/messaging/notifications');
     await page.waitForLoadState('networkidle');
 
-    const unreadCount = state.notifications.filter(n => !n.read).length;
-    expect(unreadCount).toBe(0);
+    await page.getByText('New Announcement Published').first().waitFor({ state: 'visible', timeout: 10000 });
 
-    // The page should not show any unread indicators
+    const markAllBtn = page.getByRole('button', { name: /mark all read/i }).first();
+    await markAllBtn.click();
+    await page.waitForTimeout(500);
+
+    // The "Mark all read" button should disappear when unread count is 0
+    await expect(markAllBtn).not.toBeVisible();
+
+    // All notifications still visible
     const bodyText = await page.textContent('body');
-    // All notifications should still be listed
     expect(bodyText).toContain('New Announcement Published');
     expect(bodyText).toContain('System Maintenance');
   });
 
-  /* ───────── 7. Notification type filtering ───────── */
-
-  test('7) filtering by notification type shows relevant notifications', async ({ page }) => {
+  /* ── 7. Filter tabs show correct counts ── */
+  test('7) All / Unread / Read tabs show correct notification counts', async ({ page }) => {
     await page.goto('/messaging/notifications');
     await page.waitForLoadState('networkidle');
 
-    // Look for type filter (tabs, dropdown, or buttons)
-    const typeFilter = page.locator('button, [role="tab"]').filter({ hasText: /fee|attendance|exam|announcement/i }).first();
+    await page.getByText('New Announcement Published').first().waitFor({ state: 'visible', timeout: 10000 });
 
-    if (await typeFilter.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await typeFilter.click();
-      await page.waitForTimeout(500);
+    // Verify the three filter tabs exist with correct counts
+    const bodyText = await page.textContent('body');
+    expect(bodyText).toMatch(/All\s*\(\s*5\s*\)/);
+    expect(bodyText).toMatch(/Unread\s*\(\s*3\s*\)/);
+    expect(bodyText).toMatch(/Read\s*\(\s*2\s*\)/);
 
-      // After filtering, verify at least one notification of that type is shown
-      const bodyText = await page.textContent('body');
-      expect(bodyText).toBeTruthy();
-    } else {
-      // If no filter, all notifications should still be visible
-      const bodyText = await page.textContent('body');
-      expect(bodyText).toContain('New Announcement Published');
+    // Click the Read tab and verify content updates
+    const readTab = page.getByRole('button', { name: 'Read (2)' }).first();
+    if (await readTab.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await readTab.click();
+      await page.waitForTimeout(800);
+
+      // After filtering to Read, unread items should not have the "New" chip visible
+      const newChips = page.locator('.text-xs').filter({ hasText: 'New' });
+      expect(await newChips.count()).toBe(0);
+    }
+
+    // Click the Unread tab
+    const unreadTab = page.getByRole('button', { name: 'Unread (3)' }).first();
+    if (await unreadTab.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await unreadTab.click();
+      await page.waitForTimeout(800);
+
+      // Should see 3 "New" chips for unread notifications
+      const newChips = page.locator('.text-xs').filter({ hasText: 'New' });
+      expect(await newChips.count()).toBe(3);
     }
   });
 
-  /* ───────── 8. Read vs unread visual distinction ───────── */
-
+  /* ── 8. Read vs unread visual distinction ── */
   test('8) read and unread notifications have visual distinction', async ({ page }) => {
     await page.goto('/messaging/notifications');
     await page.waitForLoadState('networkidle');
 
-    // Read notifications (Exam Results, System Maintenance) and
-    // unread notifications (Announcement, Fee, Attendance) should have different styling
-    // Check that both types exist on the page
-    const bodyText = await page.textContent('body');
-    expect(bodyText).toContain('Exam Results Published'); // read
-    expect(bodyText).toContain('New Announcement Published'); // unread
+    await page.getByText('New Announcement Published').first().waitFor({ state: 'visible', timeout: 10000 });
+
+    // Unread notification should have "New" chip
+    const unreadRow = page.locator('[role="button"]').filter({ hasText: 'New Announcement Published' }).first();
+    const hasNewChip = await unreadRow.locator('.text-xs').filter({ hasText: 'New' }).isVisible().catch(() => false);
+    expect(hasNewChip).toBe(true);
+
+    // Read notification should NOT have "New" chip
+    const readRow = page.locator('div').filter({ hasText: 'System Maintenance' }).first();
+    const readHasNewChip = await readRow.locator('.text-xs').filter({ hasText: 'New' }).isVisible().catch(() => false);
+    expect(readHasNewChip).toBe(false);
   });
 
-  /* ───────── 9. State integrity check ───────── */
+  /* ── 9. Delete a notification ── */
+  test('9) deleting a notification removes it from the list', async ({ page }) => {
+    await page.goto('/messaging/notifications');
+    await page.waitForLoadState('networkidle');
 
-  test('9) state has 5 notifications with correct read/unread split', async ({ page }) => {
+    await page.getByText('Exam Results Published').first().waitFor({ state: 'visible', timeout: 10000 });
+
+    const notifTitle = page.getByText('Exam Results Published').first();
+
+    // Click the delete button that follows the notification heading in the DOM
+    const deleteBtn = page.locator('h4')
+      .filter({ hasText: 'Exam Results Published' })
+      .locator('xpath=following::button[@aria-label="Delete notification"][1]');
+    await expect(deleteBtn).toBeVisible({ timeout: 3000 });
+
+    await deleteBtn.click();
+    await page.waitForTimeout(500);
+
+    // Confirm dialog should appear — click Delete to confirm
+    const confirmBtn = page.getByRole('button', { name: /^Delete$/i }).first();
+    await expect(confirmBtn).toBeVisible({ timeout: 5000 });
+    await confirmBtn.click({ force: true });
+    await page.waitForTimeout(2000);
+
+    // Notification should be removed from state and UI
+    await expect(notifTitle).not.toBeVisible();
+    expect(state.notifications.find(n => n.title === 'Exam Results Published')).toBeUndefined();
+  });
+
+  /* ── 10. Clear all notifications ── */
+  test('10) "Clear all" removes every notification', async ({ page }) => {
+    await page.goto('/messaging/notifications');
+    await page.waitForLoadState('networkidle');
+
+    await page.getByText('New Announcement Published').first().waitFor({ state: 'visible', timeout: 10000 });
+
+    const clearAllBtn = page.getByRole('button', { name: /clear all/i }).first();
+    await expect(clearAllBtn).toBeVisible({ timeout: 5000 });
+
+    await clearAllBtn.click();
+    await page.waitForTimeout(500);
+
+    // Confirm dialog
+    const confirmBtn = page.getByRole('button', { name: /^Delete All$/i }).first();
+    await expect(confirmBtn).toBeVisible({ timeout: 5000 });
+    await confirmBtn.click({ force: true });
+    await page.waitForTimeout(2000);
+
+    // Empty state should appear — wait for it
+    await page.waitForSelector('[role="status"]', { timeout: 10000 });
+    const emptyText = await page.textContent('body');
+    expect(emptyText).toMatch(/no notifications|you.re all caught up/i);
+    // Verify all notification titles are gone from the UI
+    expect(emptyText).not.toContain('New Announcement Published');
+    expect(emptyText).not.toContain('Exam Results Published');
+  });
+
+  /* ── 11. Empty state ── */
+  test('11) empty state shown when no notifications exist', async ({ page }) => {
+    state.notifications = [];
+
+    await page.goto('/messaging/notifications');
+    await page.waitForLoadState('networkidle');
+
+    // Wait for empty state to render (skeletons disappear)
+    await page.waitForSelector('[role="status"]', { timeout: 10000 });
+
+    const bodyText = await page.textContent('body');
+    expect(bodyText).toMatch(/no notifications|you.re all caught up/i);
+  });
+
+  /* ── 12. State integrity ── */
+  test('12) state has 5 notifications with correct read/unread split', async ({ page }) => {
     expect(state.notifications).toHaveLength(5);
     expect(state.notifications.filter(n => n.read)).toHaveLength(2);
     expect(state.notifications.filter(n => !n.read)).toHaveLength(3);
     expect(state.notifications[0].type).toBe('announcement');
     expect(state.notifications[3].type).toBe('exam');
+  });
+
+  /* ═══════════════════════════════════════════════════════════════════
+   *  SECTION 2 — NOTIFICATION SETTINGS
+   *  ═══════════════════════════════════════════════════════════════════ */
+
+  /* ── 13. Settings tab loads ── */
+  test('13) notification settings tab loads with preferences', async ({ page }) => {
+    await page.goto('/messaging/notifications');
+    await page.waitForLoadState('networkidle');
+
+    await page.getByText('New Announcement Published').first().waitFor({ state: 'visible', timeout: 10000 });
+
+    // Switch to Settings tab
+    const settingsTab = page.locator('[role="tab"]').filter({ hasText: /settings/i }).first();
+    await expect(settingsTab).toBeVisible({ timeout: 5000 });
+    await settingsTab.click();
+    await page.waitForTimeout(800);
+
+    // Settings heading should be visible
+    const bodyText = await page.textContent('body');
+    expect(bodyText).toMatch(/notification settings|customize how you receive/i);
+  });
+
+  /* ── 14. Quiet hours toggle ── */
+  test('14) quiet hours toggle shows time inputs when enabled', async ({ page }) => {
+    await page.goto('/messaging/notifications');
+    await page.waitForLoadState('networkidle');
+
+    await page.getByText('New Announcement Published').first().waitFor({ state: 'visible', timeout: 10000 });
+
+    const settingsTab = page.locator('[role="tab"]').filter({ hasText: /settings/i }).first();
+    await settingsTab.click();
+    await page.waitForTimeout(800);
+
+    const toggle = page.locator('[aria-label="Toggle quiet hours"]').first();
+    await expect(toggle).toBeVisible({ timeout: 5000 });
+
+    // Time inputs should not be visible initially
+    const startInput = page.locator('input[type="time"]').first();
+    expect(await startInput.isVisible().catch(() => false)).toBe(false);
+
+    // Enable quiet hours
+    await toggle.click({ force: true });
+    await page.waitForTimeout(500);
+
+    // Time inputs should now appear
+    await expect(startInput).toBeVisible();
+  });
+
+  /* ── 15. Digest frequency select ── */
+  test('15) digest frequency can be changed', async ({ page }) => {
+    await page.goto('/messaging/notifications');
+    await page.waitForLoadState('networkidle');
+
+    await page.getByText('New Announcement Published').first().waitFor({ state: 'visible', timeout: 10000 });
+
+    const settingsTab = page.locator('[role="tab"]').filter({ hasText: /settings/i }).first();
+    await settingsTab.click();
+    await page.waitForTimeout(800);
+
+    const select = page.locator('select').filter({ has: page.locator('option[value="immediate"]') }).first();
+    await expect(select).toBeVisible({ timeout: 5000 });
+
+    await select.selectOption('daily');
+    await page.waitForTimeout(300);
+
+    const value = await select.inputValue();
+    expect(value).toBe('daily');
+  });
+
+  /* ── 16. Channel preferences matrix visible ── */
+  test('16) channel preferences matrix is visible', async ({ page }) => {
+    await page.goto('/messaging/notifications');
+    await page.waitForLoadState('networkidle');
+
+    await page.getByText('New Announcement Published').first().waitFor({ state: 'visible', timeout: 10000 });
+
+    const settingsTab = page.locator('[role="tab"]').filter({ hasText: /settings/i }).first();
+    await settingsTab.click();
+    await page.waitForTimeout(800);
+
+    const bodyText = await page.textContent('body');
+    expect(bodyText).toContain('Email');
+    expect(bodyText).toContain('SMS');
+    expect(bodyText).toContain('WhatsApp');
+    expect(bodyText).toContain('In-App');
+  });
+
+  /* ── 17. Toggle channel switch ── */
+  test('17) toggling a channel switch enables save button', async ({ page }) => {
+    await page.goto('/messaging/notifications');
+    await page.waitForLoadState('networkidle');
+
+    await page.getByText('New Announcement Published').first().waitFor({ state: 'visible', timeout: 10000 });
+
+    const settingsTab = page.locator('[role="tab"]').filter({ hasText: /settings/i }).first();
+    await settingsTab.click();
+    await page.waitForTimeout(800);
+
+    // Save button should be disabled initially
+    const saveBtn = page.getByRole('button', { name: /save changes/i }).first();
+    const isDisabled = await saveBtn.isDisabled().catch(() => false);
+    expect(isDisabled).toBe(true);
+
+    // Toggle the first switch
+    const firstSwitch = page.locator('[role="switch"]').first();
+    await firstSwitch.click({ force: true });
+    await page.waitForTimeout(500);
+
+    // Save button should now be enabled
+    await expect(saveBtn).toBeEnabled();
+  });
+
+  /* ── 18. Save preferences ── */
+  test('18) saving preferences shows success toast', async ({ page }) => {
+    await page.goto('/messaging/notifications');
+    await page.waitForLoadState('networkidle');
+
+    await page.getByText('New Announcement Published').first().waitFor({ state: 'visible', timeout: 10000 });
+
+    const settingsTab = page.locator('[role="tab"]').filter({ hasText: /settings/i }).first();
+    await settingsTab.click();
+    await page.waitForTimeout(800);
+
+    // Toggle a switch to enable changes
+    const firstSwitch = page.locator('[role="switch"]').first();
+    await firstSwitch.click({ force: true });
+    await page.waitForTimeout(500);
+
+    const saveBtn = page.getByRole('button', { name: /save changes/i }).first();
+    await saveBtn.click();
+    await page.waitForTimeout(800);
+
+    // Should show success message
+    const bodyText = await page.textContent('body');
+    expect(bodyText).toMatch(/saved|success/i);
+  });
+
+  /* ── 19. Reset preferences ── */
+  test('19) reset preferences shows confirmation and restores defaults', async ({ page }) => {
+    await page.goto('/messaging/notifications');
+    await page.waitForLoadState('networkidle');
+
+    await page.getByText('New Announcement Published').first().waitFor({ state: 'visible', timeout: 10000 });
+
+    const settingsTab = page.locator('[role="tab"]').filter({ hasText: /settings/i }).first();
+    await settingsTab.click();
+    await page.waitForTimeout(800);
+
+    // Toggle a switch to enable changes
+    const firstSwitch = page.locator('[role="switch"]').first();
+    await firstSwitch.click({ force: true });
+    await page.waitForTimeout(500);
+
+    const resetBtn = page.getByRole('button', { name: /reset/i }).first();
+    await resetBtn.click();
+    await page.waitForTimeout(500);
+
+    // Confirm dialog
+    const confirmBtn = page.getByRole('button', { name: /^Reset$/i }).first();
+    await expect(confirmBtn).toBeVisible({ timeout: 5000 });
+    await confirmBtn.click({ force: true });
+    await page.waitForTimeout(1000);
+
+    // Should show success
+    const bodyText = await page.textContent('body');
+    expect(bodyText).toMatch(/reset|success|default/i);
   });
 });

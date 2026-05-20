@@ -2102,6 +2102,31 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
     if (path.match(/^\/notifications\/preferences/))  return json({ email: true, push: true, sms: false });
     if (path === '/notification-preferences')  return json({ email: true, push: true, sms: false });
     if (path === '/notifications/unread-count')  return json({ count: (state.notifications ?? []).filter((n: any) => !n.read).length });
+    if (path.match(/^\/notifications\/([^/]+)\/read$/) && method === 'PUT') {
+      const id = path.split('/')[2];
+      const notif = state.notifications.find((n: any) => n.id === id || n._id === id);
+      if (notif) { notif.read = true; notif.isRead = true; return json(notif); }
+      return json({ error: 'Not found' }, 404);
+    }
+    if (path === '/notifications/read-all' && method === 'PUT') {
+      state.notifications.forEach((n: any) => { n.read = true; n.isRead = true; });
+      return json({ message: 'All marked as read' });
+    }
+    if (path.match(/^\/notifications\/([^/]+)$/) && method === 'DELETE') {
+      const id = path.split('/')[2];
+      state.notifications = state.notifications.filter((n: any) => n.id !== id && n._id !== id);
+      return json({ message: 'Deleted' });
+    }
+    if (path === '/notifications/clear-all' && method === 'DELETE') {
+      state.notifications = [];
+      return json({ message: 'All cleared' });
+    }
+    if (path === '/notifications/preferences/me' && method === 'PUT') {
+      return json({ success: true, data: body });
+    }
+    if (path === '/notifications/preferences/reset' && method === 'POST') {
+      return json({ success: true });
+    }
 
     /* ── Intake Forms (CRUD) ── */
     if (path === '/intake-forms' || path === '/intake-forms/') {
