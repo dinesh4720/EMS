@@ -30,6 +30,9 @@ import { SidebarAnnouncements } from './components/SidebarAnnouncements';
 import StudentOverlay from '../../components/students/StudentOverlay';
 import useStudentOverlay from '../../hooks/useStudentOverlay';
 
+// Mobile breakpoint — below this the right sidebar collapses to a Drawer
+const MOBILE_MAX = 1099;
+
 // Tab content — lazy-loaded to avoid synchronous render jank on tab switch
 const Attendance = lazyWithRetry(() => import("./Attendance"));
 const Timetable = lazyWithRetry(() => import("./Timetable"));
@@ -89,7 +92,7 @@ export default function ClassDashboard() {
   const [isAssignTeacherModalOpen, setIsAssignTeacherModalOpen] = useState(false);
   const [isSettingsDrawerOpen, setIsSettingsDrawerOpen] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(() =>
-    typeof window !== 'undefined' ? window.innerWidth <= 1099 : false
+    typeof window !== 'undefined' ? window.innerWidth <= MOBILE_MAX : false
   );
   const [isSidebarDrawerOpen, setIsSidebarDrawerOpen] = useState(false);
 
@@ -185,7 +188,7 @@ export default function ClassDashboard() {
   }, [id, classesEnhancedApi]);
 
   useEffect(() => {
-    const onResize = () => setIsMobileViewport(window.innerWidth <= 1099);
+    const onResize = () => setIsMobileViewport(window.innerWidth <= MOBILE_MAX);
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
@@ -440,10 +443,12 @@ export default function ClassDashboard() {
                   <button
                     type="button"
                     className="btn btn--ghost btn--sm"
+                    aria-expanded={isSidebarDrawerOpen}
+                    aria-controls="class-sidebar-drawer"
                     onClick={() => setIsSidebarDrawerOpen(true)}
                   >
                     <PanelRightOpen size={14} />
-                    {t('classes.classInfo', 'Class Info')}
+                    {t('classes.classInformation', 'Class Information')}
                   </button>
                 </div>
               )}
@@ -502,11 +507,11 @@ export default function ClassDashboard() {
       <Drawer
         isOpen={isSidebarDrawerOpen}
         onClose={() => setIsSidebarDrawerOpen(false)}
-        title={t('classes.classInfo', 'Class Info')}
+        title={t('classes.classInformation', 'Class Information')}
         size="md"
         ariaLabel="Class information sidebar"
       >
-        <div className="class-dashboard__sidebar">
+        <div id="class-sidebar-drawer" className="class-dashboard__sidebar">
           {sidebarContent}
         </div>
       </Drawer>
