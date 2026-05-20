@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
+    "@react-three/drei": "^10.7.5",
     "@heroui/accordion": "^2.2.26",
     "@heroui/react": "^2.8.7",
     "@heroui/theme": "^2.4.25",
