@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { CURRENT_ACADEMIC_YEAR } from '../../../utils/constants';
 import {
   parseCSV,
   validateRequired,
@@ -443,7 +444,7 @@ describe('groupStudentsByClassSection', () => {
 
 describe('transformStudentForImport', () => {
   const classes = [{ _id: 'cls1', name: 'Class 5', section: 'A' }];
-  const academicYear = '2024-25';
+  const academicYear = CURRENT_ACADEMIC_YEAR;
 
   const baseData = {
     name: 'Alice',

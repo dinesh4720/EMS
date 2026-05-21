@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { CURRENT_ACADEMIC_YEAR } from '../../../utils/constants';
 import {
   computeStatusCounts,
   getAttendancePercentage,
@@ -269,7 +270,7 @@ describe('computeActiveFiltersCount', () => {
     expect(computeActiveFiltersCount({
       classFilter: '5-A',
       feeStatusFilter: ['paid'],
-      academicYearFilter: ['2024-25'],
+      academicYearFilter: [CURRENT_ACADEMIC_YEAR],
       academicPerformanceFilter: ['excellent'],
       attendanceFilter: ['excellent'],
     })).toBe(5);
@@ -280,7 +281,7 @@ describe('computeActiveFiltersCount', () => {
 
 describe('computeFilterCounts', () => {
   it('returns empty counts for empty array', () => {
-    const result = computeFilterCounts([], '2024-25');
+    const result = computeFilterCounts([], CURRENT_ACADEMIC_YEAR);
     expect(result.class).toEqual({});
     expect(result.feeStatus).toEqual({});
     expect(result.academicYear).toEqual({});
@@ -294,7 +295,7 @@ describe('computeFilterCounts', () => {
       { class: '5-A' },
       { class: '6-B' },
     ];
-    const result = computeFilterCounts(students, '2024-25');
+    const result = computeFilterCounts(students, CURRENT_ACADEMIC_YEAR);
     expect(result.class['5-A']).toBe(2);
     expect(result.class['6-B']).toBe(1);
   });
@@ -305,15 +306,15 @@ describe('computeFilterCounts', () => {
       { feeStatus: 'pending' },
       { feeStatus: 'paid' },
     ];
-    const result = computeFilterCounts(students, '2024-25');
+    const result = computeFilterCounts(students, CURRENT_ACADEMIC_YEAR);
     expect(result.feeStatus.paid).toBe(2);
     expect(result.feeStatus.pending).toBe(1);
   });
 
   it('defaults academicYear to currentAcademicYear', () => {
     const students = [{ name: 'A' }, { academicYear: '2023-24' }];
-    const result = computeFilterCounts(students, '2024-25');
-    expect(result.academicYear['2024-25']).toBe(1);
+    const result = computeFilterCounts(students, CURRENT_ACADEMIC_YEAR);
+    expect(result.academicYear[CURRENT_ACADEMIC_YEAR]).toBe(1);
     expect(result.academicYear['2023-24']).toBe(1);
   });
 
@@ -324,7 +325,7 @@ describe('computeFilterCounts', () => {
       { attendancePercentage: 60 },
       { attendancePercentage: 30 },
     ];
-    const result = computeFilterCounts(students, '2024-25');
+    const result = computeFilterCounts(students, CURRENT_ACADEMIC_YEAR);
     expect(result.attendance.excellent).toBe(1);
     expect(result.attendance.good).toBe(1);
     expect(result.attendance.average).toBe(1);
@@ -333,7 +334,7 @@ describe('computeFilterCounts', () => {
 
   it('skips students without attendance data', () => {
     const students = [{ name: 'A' }];
-    const result = computeFilterCounts(students, '2024-25');
+    const result = computeFilterCounts(students, CURRENT_ACADEMIC_YEAR);
     expect(result.attendance).toEqual({});
   });
 
@@ -343,7 +344,7 @@ describe('computeFilterCounts', () => {
       { academicPerformance: 'excellent' },
       { academicPerformance: 'good' },
     ];
-    const result = computeFilterCounts(students, '2024-25');
+    const result = computeFilterCounts(students, CURRENT_ACADEMIC_YEAR);
     expect(result.academicPerformance.excellent).toBe(2);
     expect(result.academicPerformance.good).toBe(1);
   });

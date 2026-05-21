@@ -3,6 +3,7 @@ import {
   getDefaultAcademicYear,
   shiftAcademicYear,
   getAcademicYearOptions,
+  CURRENT_ACADEMIC_YEAR,
   DEFAULT_PERIODS,
   TIMETABLE_DAYS,
   API_STATUS,
@@ -52,15 +53,23 @@ describe('getDefaultAcademicYear', () => {
 
 describe('shiftAcademicYear', () => {
   it('returns the next academic year with offset +1', () => {
-    expect(shiftAcademicYear('2024-25', 1)).toBe('2025-26');
+    const result = shiftAcademicYear(CURRENT_ACADEMIC_YEAR, 1);
+    const [startStr] = CURRENT_ACADEMIC_YEAR.split('-');
+    const expectedStart = parseInt(startStr, 10) + 1;
+    const expected = `${expectedStart}-${String((expectedStart + 1) % 100).padStart(2, '0')}`;
+    expect(result).toBe(expected);
   });
 
   it('returns the previous academic year with offset -1', () => {
-    expect(shiftAcademicYear('2024-25', -1)).toBe('2023-24');
+    const result = shiftAcademicYear(CURRENT_ACADEMIC_YEAR, -1);
+    const [startStr] = CURRENT_ACADEMIC_YEAR.split('-');
+    const expectedStart = parseInt(startStr, 10) - 1;
+    const expected = `${expectedStart}-${String((expectedStart + 1) % 100).padStart(2, '0')}`;
+    expect(result).toBe(expected);
   });
 
   it('returns the same year with offset 0', () => {
-    expect(shiftAcademicYear('2024-25', 0)).toBe('2024-25');
+    expect(shiftAcademicYear(CURRENT_ACADEMIC_YEAR, 0)).toBe(CURRENT_ACADEMIC_YEAR);
   });
 
   it('correctly pads suffix e.g. 2099 + 1 = 2100-01', () => {
@@ -81,37 +90,37 @@ describe('shiftAcademicYear', () => {
 
 describe('getAcademicYearOptions', () => {
   it('returns an array including the current year', () => {
-    const options = getAcademicYearOptions('2024-25');
-    expect(options).toContain('2024-25');
+    const options = getAcademicYearOptions(CURRENT_ACADEMIC_YEAR);
+    expect(options).toContain(CURRENT_ACADEMIC_YEAR);
   });
 
   it('returns future years according to the future option', () => {
-    const options = getAcademicYearOptions('2024-25', { past: 0, future: 2 });
-    expect(options).toContain('2025-26');
-    expect(options).toContain('2026-27');
+    const options = getAcademicYearOptions(CURRENT_ACADEMIC_YEAR, { past: 0, future: 2 });
+    expect(options).toContain(shiftAcademicYear(CURRENT_ACADEMIC_YEAR, 1));
+    expect(options).toContain(shiftAcademicYear(CURRENT_ACADEMIC_YEAR, 2));
   });
 
   it('returns past years according to the past option', () => {
-    const options = getAcademicYearOptions('2024-25', { past: 2, future: 0 });
-    expect(options).toContain('2023-24');
-    expect(options).toContain('2022-23');
+    const options = getAcademicYearOptions(CURRENT_ACADEMIC_YEAR, { past: 2, future: 0 });
+    expect(options).toContain(shiftAcademicYear(CURRENT_ACADEMIC_YEAR, -1));
+    expect(options).toContain(shiftAcademicYear(CURRENT_ACADEMIC_YEAR, -2));
   });
 
   it('returns no duplicates', () => {
-    const options = getAcademicYearOptions('2024-25', { past: 2, future: 1 });
+    const options = getAcademicYearOptions(CURRENT_ACADEMIC_YEAR, { past: 2, future: 1 });
     const unique = new Set(options);
     expect(unique.size).toBe(options.length);
   });
 
   it('defaults to 2 past and 1 future when no options supplied', () => {
-    const options = getAcademicYearOptions('2024-25');
+    const options = getAcademicYearOptions(CURRENT_ACADEMIC_YEAR);
     // 1 future + current + 2 past = 4 entries
     expect(options).toHaveLength(4);
   });
 
   it('returns only current year when past=0 and future=0', () => {
-    const options = getAcademicYearOptions('2024-25', { past: 0, future: 0 });
-    expect(options).toEqual(['2024-25']);
+    const options = getAcademicYearOptions(CURRENT_ACADEMIC_YEAR, { past: 0, future: 0 });
+    expect(options).toEqual([CURRENT_ACADEMIC_YEAR]);
   });
 });
 
