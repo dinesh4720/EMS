@@ -4,6 +4,7 @@ import {
   IndianRupee, Users, Clock,
   CheckCircle2,
   ArrowLeft, MessageSquare,
+  PanelRightOpen,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useValidatedParams } from "../../hooks/useValidatedParams";
@@ -28,6 +29,9 @@ import { SidebarSchedule } from './components/SidebarSchedule';
 import { SidebarAnnouncements } from './components/SidebarAnnouncements';
 import StudentOverlay from '../../components/students/StudentOverlay';
 import useStudentOverlay from '../../hooks/useStudentOverlay';
+
+// Mobile breakpoint — below this the right sidebar collapses to a Drawer
+const MOBILE_MAX = 1099;
 
 // Tab content — lazy-loaded to avoid synchronous render jank on tab switch
 const Attendance = lazyWithRetry(() => import("./Attendance"));
@@ -87,6 +91,10 @@ export default function ClassDashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isAssignTeacherModalOpen, setIsAssignTeacherModalOpen] = useState(false);
   const [isSettingsDrawerOpen, setIsSettingsDrawerOpen] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth <= MOBILE_MAX : false
+  );
+  const [isSidebarDrawerOpen, setIsSidebarDrawerOpen] = useState(false);
 
   // Lifted state: todayStatus + classRating fetched at parent level for header + sidebar + overview
   const [todayStatus, setTodayStatus] = useState(null);
@@ -179,6 +187,12 @@ export default function ClassDashboard() {
     };
   }, [id, classesEnhancedApi]);
 
+  useEffect(() => {
+    const onResize = () => setIsMobileViewport(window.innerWidth <= MOBILE_MAX);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
   const handleExportReport = () => {
     const classStudents = students.filter(s => String(s.classId?._id || s.classId) === String(id));
     if (classStudents.length === 0) { toast.error(t('toast.error.noStudentsToExport', 'No students to export')); return; }
@@ -199,6 +213,11 @@ export default function ClassDashboard() {
 
   const handleSendNotice = () => {
     navigate('/messaging', { state: { prefillClass: id, className: cls ? `${cls.name}-${cls.section}` : '' } });
+  };
+
+  const goToTab = (tab) => {
+    setActiveTab(tab);
+    setIsSidebarDrawerOpen(false);
   };
 
   const tabs = [
@@ -267,6 +286,75 @@ export default function ClassDashboard() {
   ];
 
   const fullWidthTabs = ["timetable", "overview"];
+
+  const sidebarContent = (
+    <>
+      <SidebarSchedule todayStatus={todayStatus} onViewTimetable={() => goToTab("timetable")} loading={sidebarLoading} />
+
+      {/* Quick Actions */}
+      <div className="card">
+        <div className="card__head">
+          <span className="card__title">{t('pages.quickActions1')}</span>
+        </div>
+        <div className="card__body">
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { key: 'students', icon: Users, label: t('pages.students1') },
+              { key: 'attendance', icon: CheckCircle2, label: t('pages.attendance2') },
+              { key: 'fees', icon: IndianRupee, label: t('pages.fees1') },
+              { key: 'timetable', icon: Clock, label: t('pages.timetable2') },
+            ].map(action => (
+              <button key={action.key} onClick={() => goToTab(action.key)} className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-surface-2 hover:bg-surface-hover transition-colors">
+                <action.icon size={16} className="text-fg-muted" />
+                <span className="text-[11px] text-fg-muted">{action.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Class Teacher Card */}
+      {cls?.classTeacherId && (
+        <div className="card">
+          <div className="card__head">
+            <span className="card__title">{t('pages.classTeacher2')}</span>
+          </div>
+          <div className="card__body">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-surface-2 flex items-center justify-center">
+                <span className="text-sm font-medium text-fg-muted">{cls?.teacher?.charAt(0) || 'T'}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-fg truncate">{cls?.teacher || t('classes.teacher', 'Teacher')}</p>
+                <p className="text-xs text-fg-muted">{t('pages.classTeacher2')}</p>
+              </div>
+              <button onClick={() => navigate(`/messaging`, { state: { recipientId: cls.classTeacherId } })} className="iconbtn" aria-label="Message teacher">
+                <MessageSquare size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <SidebarAnnouncements announcements={announcements} onSend={handleSendNotice} loading={sidebarLoading} />
+
+      {/* Assigned Subjects */}
+      {!settingsLoading && classSettings?.assignedSubjects?.length > 0 && (
+        <div className="card">
+          <div className="card__head">
+            <span className="card__title">{t('pages.assignedSubjects')} ({classSettings.assignedSubjects.length})</span>
+          </div>
+          <div className="card__body">
+            <div className="flex flex-wrap gap-1.5">
+              {classSettings.assignedSubjects.map((subject) => (
+                <Chip key={subject} size="sm" color="neutral">{subject}</Chip>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
 
   return (
     <div className="page class-dashboard">
@@ -350,6 +438,20 @@ export default function ClassDashboard() {
         {!fullWidthTabs.includes(activeTab) && (
           <div className="class-dashboard__grid">
             <div className="col gap-4" style={{ minWidth: 0 }}>
+              {isMobileViewport && (
+                <div className="class-dashboard__sidebar-trigger">
+                  <button
+                    type="button"
+                    className="btn btn--ghost btn--sm"
+                    aria-expanded={isSidebarDrawerOpen}
+                    aria-controls="class-sidebar-drawer"
+                    onClick={() => setIsSidebarDrawerOpen(true)}
+                  >
+                    <PanelRightOpen size={14} />
+                    {t('classes.classInformation', 'Class Information')}
+                  </button>
+                </div>
+              )}
               {activeTab === "students" && (
                 <ErrorBoundary key="students"><Suspense fallback={<SkeletonTable rows={8} />}><StudentsTab id={id} cls={cls} navigate={navigate} classesEnhancedApi={classesEnhancedApi} openStudent={studentOverlay.open} activeStudentId={studentOverlay.studentId} /></Suspense></ErrorBoundary>
               )}
@@ -365,73 +467,12 @@ export default function ClassDashboard() {
               )}
             </div>
 
-            {/* RIGHT SIDEBAR — frosted glass */}
-            <aside className="class-dashboard__sidebar glass" style={{ padding: 16, borderRadius: 12 }}>
-              <SidebarSchedule todayStatus={todayStatus} onViewTimetable={() => setActiveTab("timetable")} loading={sidebarLoading} />
-
-              {/* Quick Actions */}
-              <div className="card">
-                <div className="card__head">
-                  <span className="card__title">{t('pages.quickActions1')}</span>
-                </div>
-                <div className="card__body">
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { key: 'students', icon: Users, label: t('pages.students1') },
-                      { key: 'attendance', icon: CheckCircle2, label: t('pages.attendance2') },
-                      { key: 'fees', icon: IndianRupee, label: t('pages.fees1') },
-                      { key: 'timetable', icon: Clock, label: t('pages.timetable2') },
-                    ].map(action => (
-                      <button key={action.key} onClick={() => setActiveTab(action.key)} className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-surface-2 hover:bg-surface-hover transition-colors">
-                        <action.icon size={16} className="text-fg-muted" />
-                        <span className="text-[11px] text-fg-muted">{action.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Class Teacher Card */}
-              {cls?.classTeacherId && (
-                <div className="card">
-                  <div className="card__head">
-                    <span className="card__title">{t('pages.classTeacher2')}</span>
-                  </div>
-                  <div className="card__body">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-surface-2 flex items-center justify-center">
-                        <span className="text-sm font-medium text-fg-muted">{cls?.teacher?.charAt(0) || 'T'}</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-fg truncate">{cls?.teacher || t('classes.teacher', 'Teacher')}</p>
-                        <p className="text-xs text-fg-muted">{t('pages.classTeacher2')}</p>
-                      </div>
-                      <button onClick={() => navigate(`/messaging`, { state: { recipientId: cls.classTeacherId } })} className="iconbtn" aria-label="Message teacher">
-                        <MessageSquare size={14} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <SidebarAnnouncements announcements={announcements} onSend={handleSendNotice} loading={sidebarLoading} />
-
-              {/* Assigned Subjects */}
-              {!settingsLoading && classSettings?.assignedSubjects?.length > 0 && (
-                <div className="card">
-                  <div className="card__head">
-                    <span className="card__title">{t('pages.assignedSubjects')} ({classSettings.assignedSubjects.length})</span>
-                  </div>
-                  <div className="card__body">
-                    <div className="flex flex-wrap gap-1.5">
-                      {classSettings.assignedSubjects.map((subject) => (
-                        <Chip key={subject} size="sm" color="neutral">{subject}</Chip>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </aside>
+            {/* RIGHT SIDEBAR — desktop only */}
+            {!isMobileViewport && (
+              <aside className="class-dashboard__sidebar glass" style={{ padding: 16, borderRadius: 12 }}>
+                {sidebarContent}
+              </aside>
+            )}
           </div>
         )}
       </div>
@@ -460,6 +501,19 @@ export default function ClassDashboard() {
             <ClassSettingsPanel classId={id} />
           </Suspense>
         </ErrorBoundary>
+      </Drawer>
+
+      {/* Mobile sidebar drawer */}
+      <Drawer
+        isOpen={isSidebarDrawerOpen}
+        onClose={() => setIsSidebarDrawerOpen(false)}
+        title={t('classes.classInformation', 'Class Information')}
+        size="md"
+        ariaLabel="Class information sidebar"
+      >
+        <div id="class-sidebar-drawer" className="class-dashboard__sidebar">
+          {sidebarContent}
+        </div>
       </Drawer>
 
       <StudentOverlay

@@ -115,7 +115,12 @@
   border-radius: 10px;
 }
 
-@media (max-width: 1023px) {
+.class-dashboard__sidebar-trigger {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 1099px) {
   .class-dashboard__metrics { grid-template-columns: repeat(2, 1fr); }
   .class-dashboard__grid { grid-template-columns: 1fr; }
 }
