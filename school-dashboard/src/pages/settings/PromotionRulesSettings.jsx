@@ -80,8 +80,8 @@ export default function PromotionRulesSettings() {
       {/* Header */}
       <div>
         <div className="flex items-center gap-3 mb-1">
-          <div className="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
-            <ArrowUpCircle size={18} className="text-blue-600 dark:text-blue-400" />
+          <div className="w-9 h-9 rounded-lg bg-[var(--info-bg)] flex items-center justify-center">
+            <ArrowUpCircle size={18} className="text-[var(--info)]" />
           </div>
           <div>
             <h2 className="text-lg font-semibold text-fg">Promotion Rules</h2>
@@ -116,7 +116,7 @@ export default function PromotionRulesSettings() {
             step={5}
             value={minAttendance}
             onChange={e => setMinAttendance(Number(e.target.value))}
-            className="flex-1 accent-blue-600"
+            className="flex-1 accent-[var(--info)]"
           />
           <div className="w-16 text-center px-3 py-1.5 rounded-lg border border-border-token bg-surface-2 text-sm font-semibold text-fg tabular-nums">
             {minAttendance}%

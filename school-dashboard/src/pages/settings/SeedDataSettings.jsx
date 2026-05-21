@@ -284,8 +284,8 @@ export default function SeedDataSettings() {
               <p className="text-sm text-fg-muted">
                 This will generate realistic dummy data for the selected categories.
               </p>
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                <p className="text-sm text-blue-700 dark:text-blue-400">
+              <div className="bg-[var(--info-bg)] border border-[var(--info-border)] rounded-lg p-3">
+                <p className="text-sm text-[var(--info)]">
                   Data will be generated with realistic Indian names, phone numbers,
                   and addresses. This is ideal for demos and testing.
                 </p>

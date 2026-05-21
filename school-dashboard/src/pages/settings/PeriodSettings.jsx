@@ -266,7 +266,7 @@ export default function PeriodSettings() {
       {/* Header */}
       <div className="border-b border-border-token pb-6">
         <div className="flex items-center gap-3 mb-2">
-          <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
+          <div className="p-2 rounded-lg bg-[var(--info-bg)] text-[var(--info)]">
             <Clock size={22} />
           </div>
           <div>
@@ -401,27 +401,27 @@ export default function PeriodSettings() {
 
           {/* Summary Card */}
           {summary && (
-            <div className="rounded-xl border border-blue-100 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-950/30 p-4">
+            <div className="rounded-xl border border-[var(--info-border)] bg-[var(--info-bg)]/50 p-4">
               <div className="flex items-center gap-2 mb-3">
-                <Info size={16} className="text-blue-500" />
-                <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Schedule Summary</span>
+                <Info size={16} className="text-[var(--info)]" />
+                <span className="text-sm font-medium text-[var(--info)]">Schedule Summary</span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div>
-                  <p className="text-xs text-blue-500 dark:text-blue-400 uppercase tracking-wider">Periods</p>
-                  <p className="text-lg font-semibold text-blue-800 dark:text-blue-200">{summary.totalPeriods}</p>
+                  <p className="text-xs text-[var(--info)] uppercase tracking-wider">Periods</p>
+                  <p className="text-lg font-semibold text-[var(--info)]">{summary.totalPeriods}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-blue-500 dark:text-blue-400 uppercase tracking-wider">Breaks</p>
-                  <p className="text-lg font-semibold text-blue-800 dark:text-blue-200">{summary.totalBreaks}</p>
+                  <p className="text-xs text-[var(--info)] uppercase tracking-wider">Breaks</p>
+                  <p className="text-lg font-semibold text-[var(--info)]">{summary.totalBreaks}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-blue-500 dark:text-blue-400 uppercase tracking-wider">School Hours</p>
-                  <p className="text-lg font-semibold text-blue-800 dark:text-blue-200">{summary.startTime} – {summary.endTime}</p>
+                  <p className="text-xs text-[var(--info)] uppercase tracking-wider">School Hours</p>
+                  <p className="text-lg font-semibold text-[var(--info)]">{summary.startTime} – {summary.endTime}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-blue-500 dark:text-blue-400 uppercase tracking-wider">Instructional Time</p>
-                  <p className="text-lg font-semibold text-blue-800 dark:text-blue-200">
+                  <p className="text-xs text-[var(--info)] uppercase tracking-wider">Instructional Time</p>
+                  <p className="text-lg font-semibold text-[var(--info)]">
                     {Math.floor(summary.instrMins / 60)}h {summary.instrMins % 60}m
                   </p>
                 </div>
@@ -459,7 +459,7 @@ export default function PeriodSettings() {
                     key={period._key ?? i}
                     className={`grid grid-cols-1 sm:grid-cols-[1fr_120px_120px_80px_40px] gap-2 items-center p-2 rounded-lg transition-colors ${
                       period.isBreak
-                        ? "bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900"
+                        ? "bg-[var(--warn-bg)] border border-[var(--warn-border)]"
                         : "hover:bg-surface-2"
                     }`}
                   >
@@ -472,9 +472,9 @@ export default function PeriodSettings() {
                       startContent={
                         period.isBreak ? (
                           period.name.toLowerCase().includes("lunch") ? (
-                            <UtensilsCrossed size={14} className="text-amber-500" />
+                            <UtensilsCrossed size={14} className="text-[var(--warn)]" />
                           ) : (
-                            <Coffee size={14} className="text-amber-500" />
+                            <Coffee size={14} className="text-[var(--warn)]" />
                           )
                         ) : (
                           <span className="text-xs font-semibold text-fg-faint w-4 text-center">
@@ -503,7 +503,7 @@ export default function PeriodSettings() {
                       onClick={() => updatePeriod(i, "isBreak", !period.isBreak)}
                       className={`text-xs px-2 py-1 rounded-md border transition-colors ${
                         period.isBreak
-                          ? "bg-amber-100 dark:bg-amber-900 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300"
+                          ? "bg-[var(--warn-bg)] border-[var(--warn-border)] text-[var(--warn)]"
                           : "bg-surface-2 border-border-token text-fg-muted hover:bg-surface-2"
                       }`}
                     >

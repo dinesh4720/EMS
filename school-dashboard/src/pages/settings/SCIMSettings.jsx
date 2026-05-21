@@ -110,8 +110,8 @@ export default function SCIMSettings() {
       {/* Header */}
       <div>
         <div className="flex items-center gap-3 mb-1">
-          <div className="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center">
-            <Shield size={18} className="text-indigo-600 dark:text-indigo-400" />
+          <div className="w-9 h-9 rounded-lg bg-[var(--info-bg)] flex items-center justify-center">
+            <Shield size={18} className="text-[var(--info)]" />
           </div>
           <div>
             <h2 className="text-lg font-semibold text-fg">SCIM Provisioning</h2>
@@ -141,17 +141,17 @@ export default function SCIMSettings() {
       </div>
 
       {/* SCIM Endpoint Info */}
-      <div className="p-4 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20">
+      <div className="p-4 rounded-xl border border-[var(--info-border)] bg-[var(--info-bg)]">
         <div className="flex items-start gap-2">
-          <Info size={15} className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+          <Info size={15} className="text-[var(--info)] mt-0.5 flex-shrink-0" />
           <div className="space-y-2">
-            <p className="text-xs font-medium text-blue-800 dark:text-blue-300">
+            <p className="text-xs font-medium text-[var(--info)]">
               SCIM v2 Base URL — configure this in your IdP
             </p>
-            <code className="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-900 dark:text-blue-200 px-2 py-1 rounded font-mono block">
+            <code className="text-xs bg-[var(--info-bg)] text-[var(--info)] px-2 py-1 rounded font-mono block">
               {window.location.origin}/api/auth/sso/scim/v2
             </code>
-            <p className="text-xs text-blue-700 dark:text-blue-400">
+            <p className="text-xs text-[var(--info)]">
               Append <code className="font-mono">?schoolCode=YOUR_CODE</code> or send the{" "}
               <code className="font-mono">x-school-code</code> header with your requests.
             </p>
@@ -244,9 +244,9 @@ export default function SCIMSettings() {
 
         {/* Warning when token was just generated/regenerated */}
         {revealedToken && isTokenVisible && (
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-            <AlertTriangle size={14} className="text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
-            <p className="text-xs text-amber-800 dark:text-amber-300">
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-[var(--warn-bg)] border border-[var(--warn-border)]">
+            <AlertTriangle size={14} className="text-[var(--warn)] mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-[var(--warn)]">
               Copy this token now and paste it into your IdP. For security, the full token is not stored
               in this view — if you lose it, regenerate a new one.
             </p>

@@ -198,7 +198,7 @@ export default function PermissionRequests() {
         </div>
         <Card>
           <CardBody className="flex flex-col items-center py-12 gap-4">
-            <XCircle size={40} className="text-red-400" />
+            <XCircle size={40} className="text-[var(--danger)]" />
             <p className="text-sm font-medium text-fg">Failed to load permission requests</p>
             <p className="text-xs text-fg-muted">{fetchError}</p>
             <Button size="sm" variant="flat" onPress={fetchRequests}>Retry</Button>

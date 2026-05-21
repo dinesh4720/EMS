@@ -181,8 +181,8 @@ export default function SSOSettings() {
     <div className="max-w-2xl space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center">
-          <Shield size={18} className="text-indigo-600 dark:text-indigo-400" />
+        <div className="w-9 h-9 rounded-lg bg-[var(--info-bg)] flex items-center justify-center">
+          <Shield size={18} className="text-[var(--info)]" />
         </div>
         <div>
           <h2 className="text-lg font-semibold text-fg">SSO Configuration</h2>
@@ -197,7 +197,7 @@ export default function SSOSettings() {
       {/* Google OAuth */}
       <Section
         title="Google Workspace"
-        icon={<Globe size={15} className="text-blue-500" />}
+        icon={<Globe size={15} className="text-[var(--info)]" />}
         enabled={google.enabled}
         onToggle={(v) => setGoogle((g) => ({ ...g, enabled: v }))}
       >
@@ -224,7 +224,7 @@ export default function SSOSettings() {
       {/* Microsoft 365 */}
       <Section
         title="Microsoft 365 / Azure AD"
-        icon={<Globe size={15} className="text-blue-600" />}
+        icon={<Globe size={15} className="text-[var(--info)]" />}
         enabled={microsoft.enabled}
         onToggle={(v) => setMicrosoft((m) => ({ ...m, enabled: v }))}
       >
@@ -258,7 +258,7 @@ export default function SSOSettings() {
       {/* SAML 2.0 */}
       <Section
         title="SAML 2.0"
-        icon={<Shield size={15} className="text-purple-500" />}
+        icon={<Shield size={15} className="text-[var(--accent)]" />}
         enabled={saml.enabled}
         onToggle={(v) => setSaml((s) => ({ ...s, enabled: v }))}
       >
@@ -359,19 +359,19 @@ export default function SSOSettings() {
         </Select>
 
         {/* SSO-Only Mode */}
-        <div className="flex items-start justify-between p-4 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
+        <div className="flex items-start justify-between p-4 rounded-xl border border-[var(--danger-border)] bg-[var(--danger-bg)]">
           <div className="flex items-start gap-2 flex-1 min-w-0">
-            <Lock size={15} className="text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+            <Lock size={15} className="text-[var(--danger)] mt-0.5 flex-shrink-0" />
             <div>
               <p className="text-sm font-medium text-fg">SSO-Only Mode</p>
-              <p className="text-xs text-red-700 dark:text-red-400 mt-0.5">
+              <p className="text-xs text-[var(--danger)] mt-0.5">
                 <strong>High risk:</strong> Disables password login for all staff. Anyone without an active SSO account
                 will be permanently locked out. Disable SSO-Only before removing an SSO provider.
               </p>
               {ssoOnly && !initialSsoOnly.current && (
                 <div className="flex items-center gap-1 mt-2">
-                  <AlertTriangle size={12} className="text-amber-600" />
-                  <p className="text-xs text-amber-700 dark:text-amber-400">
+                  <AlertTriangle size={12} className="text-[var(--warn)]" />
+                  <p className="text-xs text-[var(--warn)]">
                     You will be asked to confirm before saving.
                   </p>
                 </div>

@@ -276,7 +276,7 @@ export default function SettingsPage() {
             <button
               onClick={handleOwlinToggle}
               className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                owlinEnabled ? "bg-green-500" : "bg-gray-300 dark:bg-zinc-600"
+                owlinEnabled ? "bg-[var(--ok)]" : "bg-gray-300 dark:bg-zinc-600"
               }`}
             >
               <span

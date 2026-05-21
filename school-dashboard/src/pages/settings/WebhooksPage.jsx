@@ -277,7 +277,7 @@ export default function WebhooksPage() {
                       size="sm"
                       icon={
                         wh.isActive
-                          ? <CheckCircle size={15} className="text-green-500" />
+                          ? <CheckCircle size={15} className="text-[var(--ok)]" />
                           : <XCircle size={15} className="text-fg-faint" />
                       }
                     />
@@ -322,7 +322,7 @@ export default function WebhooksPage() {
                               <div className="flex items-center gap-2">
                                 <span
                                   className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                    log.success ? 'bg-green-500' : 'bg-red-500'
+                                    log.success ? 'bg-[var(--ok)]' : 'bg-[var(--danger)]'
                                   }`}
                                   aria-hidden="true"
                                 />
@@ -334,7 +334,7 @@ export default function WebhooksPage() {
                                 </span>
                               </div>
                               {log.error && (
-                                <p className="text-red-500 dark:text-red-400 mt-0.5 truncate ml-3.5">
+                                <p className="text-[var(--danger)] mt-0.5 truncate ml-3.5">
                                   {log.error}
                                 </p>
                               )}
