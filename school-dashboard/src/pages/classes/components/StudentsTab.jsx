@@ -7,6 +7,13 @@ import {
 import { useApp } from "../../../context/AppContext";
 import { useTranslation } from 'react-i18next';
 
+function handleRowKeyDown(e, action) {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    action();
+  }
+}
+
 export function StudentsTab({ id, cls, navigate, classesEnhancedApi, openStudent, activeStudentId }) {
   const { t } = useTranslation();
   const { students } = useApp();
@@ -106,17 +113,17 @@ export function StudentsTab({ id, cls, navigate, classesEnhancedApi, openStudent
       <div className="bg-surface rounded-lg border border-border-token overflow-hidden">
         {/* Table header */}
         <div className="hidden sm:grid grid-cols-12 gap-2 px-5 py-3 bg-surface-2 border-b border-divider text-xs font-medium text-fg-muted">
-          <div className="col-span-1 cursor-pointer flex items-center gap-1" onClick={() => handleSort('rollNo')}>
+          <div role="button" tabIndex={0} aria-label={t('classes.sortByRoll', 'Sort by roll number')} aria-sort={sortBy === 'rollNo' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'} className="col-span-1 cursor-pointer flex items-center gap-1" onClick={() => handleSort('rollNo')} onKeyDown={(e) => handleRowKeyDown(e, () => handleSort('rollNo'))}>
             {t('classes.roll', 'Roll')} {sortBy === 'rollNo' && <ArrowUpDown size={10} />}
           </div>
-          <div className="col-span-4 cursor-pointer flex items-center gap-1" onClick={() => handleSort('name')}>
+          <div role="button" tabIndex={0} aria-label={t('classes.sortByName', 'Sort by student name')} aria-sort={sortBy === 'name' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'} className="col-span-4 cursor-pointer flex items-center gap-1" onClick={() => handleSort('name')} onKeyDown={(e) => handleRowKeyDown(e, () => handleSort('name'))}>
             {t('classes.student', 'Student')} {sortBy === 'name' && <ArrowUpDown size={10} />}
           </div>
-          <div className="col-span-2 cursor-pointer flex items-center gap-1" onClick={() => handleSort('academic')}>
+          <div role="button" tabIndex={0} aria-label={t('classes.sortByAcademic', 'Sort by academic performance')} aria-sort={sortBy === 'academic' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'} className="col-span-2 cursor-pointer flex items-center gap-1" onClick={() => handleSort('academic')} onKeyDown={(e) => handleRowKeyDown(e, () => handleSort('academic'))}>
             {t('classes.academic', 'Academic')} {sortBy === 'academic' && <ArrowUpDown size={10} />}
           </div>
           <div className="col-span-2">{t('classes.attendance', 'Attendance')}</div>
-          <div className="col-span-2 cursor-pointer flex items-center gap-1" onClick={() => handleSort('feeStatus')}>
+          <div role="button" tabIndex={0} aria-label={t('classes.sortByFee', 'Sort by fee status')} aria-sort={sortBy === 'feeStatus' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'} className="col-span-2 cursor-pointer flex items-center gap-1" onClick={() => handleSort('feeStatus')} onKeyDown={(e) => handleRowKeyDown(e, () => handleSort('feeStatus'))}>
             {t('classes.fee', 'Fee')} {sortBy === 'feeStatus' && <ArrowUpDown size={10} />}
           </div>
           <div className="col-span-1"></div>
@@ -129,11 +136,21 @@ export function StudentsTab({ id, cls, navigate, classesEnhancedApi, openStudent
               return (
                 <div
                   key={student.id}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={t('classes.openStudent', 'Open student {{name}}', { name: student.name })}
                   className={`sm:grid grid-cols-12 gap-2 px-5 py-3 flex items-center justify-between hover:bg-surface-2 transition-colors cursor-pointer ${String(activeStudentId) === String(student.id) ? "bg-surface-2 ring-1 ring-inset ring-indigo-200 dark:ring-indigo-700" : ""}`}
                   onClick={() =>
                     openStudent
                       ? openStudent(student.id)
                       : navigate(`/students/${student.id}`)
+                  }
+                  onKeyDown={(e) =>
+                    handleRowKeyDown(e, () =>
+                      openStudent
+                        ? openStudent(student.id)
+                        : navigate(`/students/${student.id}`)
+                    )
                   }
                 >
                   {/* Roll */}
