@@ -1132,6 +1132,194 @@ function OverlaysSection() {
           variant="danger"
         />
       </Story>
+
+      <Story
+        title="Overlay CSS primitives"
+        sub="Bare classes from feedback-primitives.css that back the React components above. Use these when you need markup-level control without the full React wrapper."
+        layout="col"
+      >
+        <div className="sg-prop-table">
+          <div className="sg-prop-table__head">
+            <span>Class</span>
+            <span>Purpose</span>
+            <span>Variants / notes</span>
+          </div>
+          {[
+            { cls: ".ds-backdrop", desc: "Fixed full-viewport dimmer (Modal / Dialog / Confirm)", notes: ".ds-backdrop--drawer for right-edge sheets" },
+            { cls: ".ds-modal", desc: "Centered frosted card", notes: "--xs · --sm · --md · --lg · --xl" },
+            { cls: ".ds-confirm", desc: "Compact alertdialog card", notes: "380px max, solid --surface (not glass)" },
+            { cls: ".ds-drawer", desc: "Right-edge frosted sheet", notes: "--xs · --sm · --md · --lg · --xl · --full · --left" },
+            { cls: ".ds-tooltip", desc: "Dense frosted floating label", notes: "--warning · --danger · --primary" },
+            { cls: ".ds-popover", desc: "Frosted floating surface (rich content)", notes: "Padding 12px, radius 10px" },
+            { cls: ".ds-menu", desc: "Frosted dropdown list container", notes: "Padding 4px, min-width 180px" },
+            { cls: ".ds-alert", desc: "Frosted alert banner layer", notes: "Add to existing Alert markup for glass variant" },
+            { cls: ".ds-toast", desc: "Frosted toast card", notes: "--success · --error · --info · --warning" },
+          ].map((r) => (
+            <div key={r.cls} className="sg-prop-table__row">
+              <span className="mono sg-prop-table__type">{r.cls}</span>
+              <span style={{ color: "var(--fg)", fontSize: 11.5 }}>{r.desc}</span>
+              <span style={{ color: "var(--fg-muted)", fontSize: 11.5 }}>{r.notes}</span>
+            </div>
+          ))}
+        </div>
+      </Story>
+    </StoryGroup>
+  );
+}
+
+function CommandPaletteSection() {
+  return (
+    <StoryGroup
+      id="prim-cmdk"
+      title="Command palette"
+      sub="Cmd+K overlay — centered frosted-glass card matching the composer overlay. Use the CSS class family when building custom command palettes; the React wrapper lives in src/components/ui/CommandPalette.jsx."
+    >
+      <Story
+        title="CSS class family"
+        sub=".cmdk-overlay / .cmdk / .cmdk__head / .cmdk__input / .cmdk__list / .cmdk__item / .cmdk__foot"
+        code={`<div className="cmdk-overlay">
+  <div className="cmdk">
+    <div className="cmdk__head">
+      <Search size={14} />
+      <input className="cmdk__input" placeholder="Search…" />
+    </div>
+    <div className="cmdk__list">
+      <div className="cmdk__item" data-selected="true">
+        <span className="cmdk__item-icon"><User size={14} /></span>
+        <span className="cmdk__item-label">Students</span>
+        <span className="cmdk__hint">Jump to</span>
+      </div>
+    </div>
+    <div className="cmdk__foot">
+      <span className="cmdk__foot-item"><CornerDownLeft size={11} /> Select</span>
+      <span className="cmdk__foot-spacer" />
+      <span className="cmdk__foot-item">↑↓ Navigate</span>
+    </div>
+  </div>
+</div>`}
+        layout="col"
+      >
+        <div
+          style={{
+            width: "100%",
+            maxWidth: 520,
+            borderRadius: 14,
+            border: "1px solid var(--glass-border)",
+            background: "var(--glass-bg)",
+            backdropFilter: "var(--glass-blur)",
+            boxShadow: "var(--shadow-glass)",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              height: 48,
+              padding: "0 14px",
+              borderBottom: "1px solid var(--divider)",
+            }}
+          >
+            <Search size={14} style={{ color: "var(--fg-subtle)", flexShrink: 0 }} />
+            <input
+              readOnly
+              style={{
+                flex: 1,
+                background: "transparent",
+                border: "none",
+                outline: "none",
+                fontSize: 14,
+                fontFamily: "var(--font-sans)",
+                color: "var(--fg)",
+                letterSpacing: "-0.005em",
+              }}
+              placeholder="Type a command or search…"
+            />
+          </div>
+          <div style={{ padding: 6, maxHeight: 200, overflowY: "auto" }}>
+            <div style={{ padding: "10px 10px 4px", fontSize: 10.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--fg-faint)" }}>
+              Actions <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontVariantNumeric: "tabular-nums" }}>3</span>
+            </div>
+            {[
+              { label: "Add student", sub: "Students", icon: GraduationCap },
+              { label: "Collect fee", sub: "Fees", icon: IndianRupee },
+              { label: "Send bulletin", sub: "Communications", icon: Mail },
+            ].map(({ label, sub, icon: Icon }, i) => (
+              <div
+                key={label}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  height: 32,
+                  padding: "0 10px",
+                  borderRadius: 6,
+                  fontSize: 13,
+                  color: i === 0 ? "var(--fg)" : "var(--fg-muted)",
+                  background: i === 0 ? "var(--surface-hover)" : "transparent",
+                  cursor: "default",
+                }}
+              >
+                <span style={{ width: 16, height: 16, display: "grid", placeItems: "center", color: i === 0 ? "var(--fg-muted)" : "var(--fg-faint)", flexShrink: 0 }}>
+                  <Icon size={14} />
+                </span>
+                <span style={{ flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label}</span>
+                <span style={{ fontSize: 11, color: "var(--fg-faint)", fontVariantNumeric: "tabular-nums" }}>{sub}</span>
+                {i === 0 && (
+                  <span style={{ fontSize: 11, color: "var(--fg-subtle)", marginLeft: 4, opacity: 1 }}>↵ Jump</span>
+                )}
+              </div>
+            ))}
+          </div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              height: 36,
+              padding: "0 12px",
+              borderTop: "1px solid var(--divider)",
+              background: "var(--surface-2)",
+              fontSize: 11,
+              color: "var(--fg-subtle)",
+            }}
+          >
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>↵ Select</span>
+            <span style={{ flex: 1 }} />
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>↑↓ Navigate</span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>esc Close</span>
+          </div>
+        </div>
+      </Story>
+
+      <Story title="Class reference" layout="col">
+        <div className="sg-prop-table">
+          <div className="sg-prop-table__head">
+            <span>Class</span>
+            <span>Purpose</span>
+          </div>
+          {[
+            { cls: ".cmdk-overlay", desc: "Fixed full-viewport backdrop + centering container" },
+            { cls: ".cmdk", desc: "The frosted card (560px max). Holds [cmdk-root]." },
+            { cls: ".cmdk__head", desc: "Search icon + input row (48px, bottom divider)" },
+            { cls: ".cmdk__input", desc: "Transparent input, 14px, inherits --fg" },
+            { cls: ".cmdk__list", desc: "Scrollable result list (padding 6px)" },
+            { cls: ".cmdk__empty", desc: "Centered 'no results' state" },
+            { cls: ".cmdk__item", desc: "Single result row (32px, hoverable)" },
+            { cls: ".cmdk__item-icon", desc: "16×16 leading icon slot" },
+            { cls: ".cmdk__item-label", desc: "Truncated primary text" },
+            { cls: ".cmdk__item-sub", desc: "11px secondary text (tabular-nums)" },
+            { cls: ".cmdk__hint", desc: "Keyboard-shortcut hint (shown on [data-selected])" },
+            { cls: ".cmdk__foot", desc: "Sticky footer with shortcut legend" },
+          ].map((r) => (
+            <div key={r.cls} className="sg-prop-table__row">
+              <span className="mono sg-prop-table__type">{r.cls}</span>
+              <span style={{ color: "var(--fg-muted)", fontSize: 11.5 }}>{r.desc}</span>
+            </div>
+          ))}
+        </div>
+      </Story>
     </StoryGroup>
   );
 }
@@ -1209,6 +1397,7 @@ export default function PrimitivesSection() {
       <FeedbackSection />
       <NavigationSection />
       <OverlaysSection />
+      <CommandPaletteSection />
       <PropTablesSection />
     </>
   );
