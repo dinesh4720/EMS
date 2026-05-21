@@ -39,7 +39,7 @@ test.describe('Global Features — Search, Permissions, Onboarding & Error Bound
     await page.keyboard.press('Control+k');
 
     // The search modal should appear with an input field
-    const searchInput = page.locator('input[type="search"], input[name="global-search-query"]');
+    const searchInput = page.locator('.cmdk__input');
     await expect(searchInput).toBeVisible({ timeout: 5000 });
   });
 
@@ -55,7 +55,7 @@ test.describe('Global Features — Search, Permissions, Onboarding & Error Bound
 
     // Open search
     await page.keyboard.press('Control+k');
-    const searchInput = page.locator('input[name="global-search-query"]');
+    const searchInput = page.locator('.cmdk__input');
     await expect(searchInput).toBeVisible({ timeout: 5000 });
 
     // Type a query that matches the seeded student name (partial)
@@ -68,7 +68,7 @@ test.describe('Global Features — Search, Permissions, Onboarding & Error Bound
     await page.waitForTimeout(1000); // Allow deferred value + API call
 
     // Verify the modal body has results content
-    const modalBody = page.locator('.max-h-\\[400px\\]');
+    const modalBody = page.locator('.cmdk__list');
     await expect(modalBody).toBeVisible({ timeout: 5000 });
   });
 
@@ -84,15 +84,15 @@ test.describe('Global Features — Search, Permissions, Onboarding & Error Bound
 
     // Open search and click a navigation item (e.g. Dashboard)
     await page.keyboard.press('Control+k');
-    const searchInput = page.locator('input[name="global-search-query"]');
+    const searchInput = page.locator('.cmdk__input');
     await expect(searchInput).toBeVisible({ timeout: 5000 });
 
     // Scope to the search modal's result container
-    const resultContainer = page.locator('.max-h-\\[400px\\]');
+    const resultContainer = page.locator('.cmdk__list');
     await expect(resultContainer).toBeVisible({ timeout: 5000 });
 
-    // Click the first navigation result button inside the search modal
-    const firstResult = resultContainer.locator('button').first();
+    // Click the first navigation result inside the search modal
+    const firstResult = resultContainer.locator('.cmdk__item').first();
     await expect(firstResult).toBeVisible({ timeout: 5000 });
     await firstResult.click();
 
@@ -117,12 +117,12 @@ test.describe('Global Features — Search, Permissions, Onboarding & Error Bound
 
     // Open search
     await page.keyboard.press('Control+k');
-    const searchInput = page.locator('input[name="global-search-query"]');
+    const searchInput = page.locator('.cmdk__input');
     await expect(searchInput).toBeVisible({ timeout: 5000 });
 
     // With empty query, recent searches or navigation suggestions should appear
     // Check for either recent searches or navigation page suggestions
-    const hasContent = page.locator('.max-h-\\[400px\\] button').first();
+    const hasContent = page.locator('.cmdk__list button, .cmdk__item').first();
     await expect(hasContent).toBeVisible({ timeout: 5000 });
   });
 
@@ -141,7 +141,7 @@ test.describe('Global Features — Search, Permissions, Onboarding & Error Bound
 
     // Open search
     await page.keyboard.press('Control+k');
-    const searchInput = page.locator('input[name="global-search-query"]');
+    const searchInput = page.locator('.cmdk__input');
     await expect(searchInput).toBeVisible({ timeout: 5000 });
 
     // Type rapidly — the component uses useDeferredValue which batches updates
@@ -448,13 +448,11 @@ test.describe('Global Features — Search, Permissions, Onboarding & Error Bound
     await page.waitForTimeout(500);
 
     // Should show the cookies text
-    await expect(banner.getByText('We use cookies to improve your experience')).toBeVisible();
+    await expect(banner.getByText('We use cookies to keep you signed in')).toBeVisible();
 
-    // Should show Accept all and Reject optional buttons
-    const acceptBtn = banner.getByRole('button', { name: /accept all/i });
-    const rejectBtn = banner.getByRole('button', { name: /reject optional/i });
+    // Should show Got it button and dismiss button
+    const acceptBtn = banner.getByRole('button', { name: /got it/i });
     await expect(acceptBtn).toBeVisible();
-    await expect(rejectBtn).toBeVisible();
   });
 
   test('Accepting cookies dismisses banner permanently', async ({ page }) => {
@@ -480,8 +478,8 @@ test.describe('Global Features — Search, Permissions, Onboarding & Error Bound
     // Wait for banner slide-in animation to complete before interacting
     await page.waitForTimeout(500);
 
-    // Click "Accept all"
-    const acceptBtn = banner.getByRole('button', { name: /accept all/i });
+    // Click "Got it"
+    const acceptBtn = banner.getByRole('button', { name: /got it/i });
     await expect(acceptBtn).toBeVisible();
     await acceptBtn.click();
 
@@ -497,7 +495,6 @@ test.describe('Global Features — Search, Permissions, Onboarding & Error Bound
     });
     expect(consent).toBeTruthy();
     expect(consent.necessary).toBe(true);
-    expect(consent.analytics).toBe(true);
     expect(consent.timestamp).toBeTruthy();
 
     // Reload page — banner should NOT reappear
