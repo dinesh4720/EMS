@@ -32,7 +32,7 @@
     "@heroui/theme": "^2.4.26",
     "@react-three/fiber": "^9.0.0",
     "bufferutil": "^4.1.0",
-    "expo": "^54.0.33",
+    "expo": "^55.0.25",
     "react-dom": "^19.2.6",
     "three": "^0.176.0",
     "utf-8-validate": "^6.0.6"
@@ -46,6 +46,9 @@
     "socket.io-parser": ">=4.2.6",
     "flatted": ">=3.4.2",
     "fast-xml-parser": ">=5.5.7",
-    "vite": "^6.4.2"
+    "vite": "^6.4.2",
+    "@xmldom/xmldom": "^0.9.10",
+    "postcss": "^8.5.10",
+    "tar": "^7.5.15"
   }
 }
