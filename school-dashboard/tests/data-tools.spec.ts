@@ -276,13 +276,15 @@ test.describe('Data Tools — Background Jobs & Govt Export', () => {
     // Wait for ConfirmDialog to appear and click "Cancel Job"
     const confirmDialog = page.locator('[role="alertdialog"]').filter({ hasText: 'Cancel Job' });
     await expect(confirmDialog).toBeVisible({ timeout: 5000 });
-    await confirmDialog.getByRole('button', { name: 'Cancel Job' }).click();
 
-    // Wait for the DELETE request
-    const deleteReq = await page.waitForRequest(
-      (req) => req.method() === 'DELETE' && req.url().includes('/api/jobs/import/'),
-      { timeout: 10000 },
-    );
+    // Use Promise.all so the waiter is active before the click triggers the request
+    const [deleteReq] = await Promise.all([
+      page.waitForRequest(
+        (req) => req.method() === 'DELETE' && req.url().includes('/api/jobs/import/'),
+        { timeout: 10000 },
+      ),
+      confirmDialog.getByRole('button', { name: 'Cancel Job' }).click(),
+    ]);
 
     // Verify the DELETE request was sent
     expect(deleteReq.url()).toContain('/api/jobs/import/');
