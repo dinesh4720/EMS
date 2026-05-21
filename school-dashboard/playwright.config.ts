@@ -7,7 +7,8 @@ import { defineConfig, devices } from '@playwright/test';
  * with support for multiple viewports, browsers, and user roles.
  */
 export default defineConfig({
-  testDir: './tests',
+  testDir: './',
+  testMatch: ['tests/**/*.spec.ts', 'master-test/**/*.spec.ts'],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
