@@ -1157,6 +1157,9 @@ export function recordFeePayment(
  * ═══════════════════════════════════════════════════════════════════ */
 
 export async function installMockApi(page: Page, state: MockState): Promise<void> {
+  // Block Socket.IO so it doesn't keep network alive and break waitForLoadState('networkidle')
+  await page.route('**/socket.io/**', (route) => route.abort('connectionrefused'));
+
   // Set up authenticated session in browser storage
   await page.addInitScript((u: string) => {
     localStorage.setItem('hasCompletedOnboarding', 'true');
