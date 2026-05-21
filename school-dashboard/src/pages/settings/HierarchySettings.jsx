@@ -159,7 +159,7 @@ export default function HierarchySettings() {
 
       {/* Bulk Assignment */}
       {selectedStaff.length > 0 && (
-        <Card className="rounded-lg border-2 border-primary-200 dark:border-primary-800">
+        <Card className="rounded-lg border-2 border-[var(--accent-border)]">
           <CardBody className="p-4">
             <div className="flex items-center gap-4">
               <Chip color="primary" variant="flat">
@@ -223,8 +223,8 @@ export default function HierarchySettings() {
             classNames={{
               th: "bg-surface-2 text-fg font-semibold",
               td: "py-4 transition-colors",
-              tbody: "[&>tr[data-selected=true]>td]:bg-primary-50",
-              tr: "transition-colors hover:bg-surface-2 data-[selected=true]:bg-primary-50",
+              tbody: "[&>tr[data-selected=true]>td]:bg-[var(--accent-bg)]",
+              tr: "transition-colors hover:bg-surface-2 data-[selected=true]:bg-[var(--accent-bg)]",
             }}
           >
             <TableHeader>
@@ -325,8 +325,8 @@ export default function HierarchySettings() {
         <Card className="rounded-lg">
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
-                <Network size={20} className="text-primary-600 dark:text-primary-400" />
+              <div className="p-2 bg-[var(--accent-bg)] rounded-lg">
+                <Network size={20} className="text-[var(--accent)]" />
               </div>
               <div>
                 <div className="text-2xl font-bold text-fg">
@@ -343,8 +343,8 @@ export default function HierarchySettings() {
         <Card className="rounded-lg">
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-success-100 dark:bg-success-900/30 rounded-lg">
-                <Users size={20} className="text-success-600 dark:text-success-400" />
+              <div className="p-2 bg-[var(--ok-bg)] rounded-lg">
+                <Users size={20} className="text-[var(--ok)]" />
               </div>
               <div>
                 <div className="text-2xl font-bold text-fg">
@@ -361,8 +361,8 @@ export default function HierarchySettings() {
         <Card className="rounded-lg">
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-warning-100 dark:bg-warning-900/30 rounded-lg">
-                <Users size={20} className="text-warning-600 dark:text-warning-400" />
+              <div className="p-2 bg-[var(--warn-bg)] rounded-lg">
+                <Users size={20} className="text-[var(--warn)]" />
               </div>
               <div>
                 <div className="text-2xl font-bold text-fg">

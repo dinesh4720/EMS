@@ -123,13 +123,13 @@ const FormBuilderModal = ({
                   {FIELD_TYPES.map((fieldType) => (
                     <button
                       key={fieldType.key}
-                      className="flex flex-col items-center justify-center p-3 rounded-xl border border-border-token bg-surface hover:border-primary-500 hover:bg-primary-50/50 dark:hover:bg-primary-900/20 transition-all duration-200 group"
+                      className="flex flex-col items-center justify-center p-3 rounded-xl border border-border-token bg-surface hover:border-[var(--accent-border)] hover:bg-[var(--accent-bg)] dark:hover:bg-[var(--accent-bg)] transition-all duration-200 group"
                       onClick={() => handleAddField(fieldType.key)}
                     >
-                      <span className="text-2xl mb-2 text-fg-muted group-hover:text-primary-600 dark:group-hover:text-primary-400">
+                      <span className="text-2xl mb-2 text-fg-muted group-hover:text-[var(--accent)] dark:group-hover:text-[var(--accent)]">
                         {fieldType.icon}
                       </span>
-                      <span className="text-xs font-medium text-fg-muted group-hover:text-primary-700 dark:group-hover:text-primary-300 text-center">
+                      <span className="text-xs font-medium text-fg-muted group-hover:text-[var(--accent)] dark:group-hover:text-[var(--accent)] text-center">
                         {fieldType.label}
                       </span>
                     </button>

@@ -310,7 +310,7 @@ export default function AdmissionFormSettings() {
 
               <Divider />
 
-              <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+              <div className="bg-[var(--accent-bg)] border border-[var(--accent-border)] rounded-lg p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-fg">{t('pages.preview1')}</p>

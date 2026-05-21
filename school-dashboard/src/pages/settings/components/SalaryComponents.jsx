@@ -51,47 +51,47 @@ export default function SalaryComponents() {
     <div className="space-y-6">
       {/* Summary Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="p-4 bg-success-50 rounded-lg border border-success-200">
+        <div className="p-4 bg-[var(--ok-bg)] rounded-lg border border-[var(--ok-border)]">
           <div className="flex items-center gap-2 mb-2">
-            <ArrowUpRight size={18} className="text-success-600" />
-            <span className="text-xs text-success-700 uppercase tracking-wider font-medium">
+            <ArrowUpRight size={18} className="text-[var(--ok)]" />
+            <span className="text-xs text-[var(--ok)] uppercase tracking-wider font-medium">
               {t("pages.earningsComponents")}
             </span>
           </div>
-          <p className="text-2xl font-semibold text-success-700">
+          <p className="text-2xl font-semibold text-[var(--ok)]">
             {earnings.length}
           </p>
         </div>
-        <div className="p-4 bg-danger-50 rounded-lg border border-danger-200">
+        <div className="p-4 bg-[var(--danger-bg)] rounded-lg border border-[var(--danger-border)]">
           <div className="flex items-center gap-2 mb-2">
-            <ArrowDownRight size={18} className="text-danger-600" />
-            <span className="text-xs text-danger-700 uppercase tracking-wider font-medium">
+            <ArrowDownRight size={18} className="text-[var(--danger)]" />
+            <span className="text-xs text-[var(--danger)] uppercase tracking-wider font-medium">
               {t("pages.deductionsComponents")}
             </span>
           </div>
-          <p className="text-2xl font-semibold text-danger-700">
+          <p className="text-2xl font-semibold text-[var(--danger)]">
             {deductions.length}
           </p>
         </div>
-        <div className="p-4 bg-primary-50 rounded-lg border border-primary-200">
+        <div className="p-4 bg-[var(--accent-bg)] rounded-lg border border-[var(--accent-border)]">
           <div className="flex items-center gap-2 mb-2">
-            <IndianRupee size={18} className="text-primary-600" />
-            <span className="text-xs text-primary-700 uppercase tracking-wider font-medium">
+            <IndianRupee size={18} className="text-[var(--accent)]" />
+            <span className="text-xs text-[var(--accent)] uppercase tracking-wider font-medium">
               Total Components
             </span>
           </div>
-          <p className="text-2xl font-semibold text-primary-700">
+          <p className="text-2xl font-semibold text-[var(--accent)]">
             {earnings.length + deductions.length}
           </p>
         </div>
-        <div className="p-4 bg-warning-50 rounded-lg border border-warning-200">
+        <div className="p-4 bg-[var(--warn-bg)] rounded-lg border border-[var(--warn-border)]">
           <div className="flex items-center gap-2 mb-2">
-            <CheckCircle size={18} className="text-warning-600" />
-            <span className="text-xs text-warning-700 uppercase tracking-wider font-medium">
+            <CheckCircle size={18} className="text-[var(--warn)]" />
+            <span className="text-xs text-[var(--warn)] uppercase tracking-wider font-medium">
               Status
             </span>
           </div>
-          <p className="text-lg font-semibold text-warning-700">Configured</p>
+          <p className="text-lg font-semibold text-[var(--warn)]">Configured</p>
         </div>
       </div>
 
@@ -100,8 +100,8 @@ export default function SalaryComponents() {
         <Card className="shadow-sm border border-border-token">
           <CardHeader className="flex justify-between items-center px-6 pt-5 pb-0">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-success-50 rounded-lg">
-                <ArrowUpRight size={20} className="text-success-600" />
+              <div className="p-2 bg-[var(--ok-bg)] rounded-lg">
+                <ArrowUpRight size={20} className="text-[var(--ok)]" />
               </div>
               <div>
                 <h3 className="text-base font-semibold text-fg">
@@ -136,7 +136,7 @@ export default function SalaryComponents() {
                     className="flex justify-between items-center py-3 px-3 rounded-lg hover:bg-surface-2 transition-colors group"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-success-400" />
+                      <div className="w-2 h-2 rounded-full bg-[var(--ok-bg)]" />
                       <span className="text-sm font-medium text-fg">
                         {item.name}
                       </span>
@@ -163,8 +163,8 @@ export default function SalaryComponents() {
         <Card className="shadow-sm border border-border-token">
           <CardHeader className="flex justify-between items-center px-6 pt-5 pb-0">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-danger-50 rounded-lg">
-                <ArrowDownRight size={20} className="text-danger-600" />
+              <div className="p-2 bg-[var(--danger-bg)] rounded-lg">
+                <ArrowDownRight size={20} className="text-[var(--danger)]" />
               </div>
               <div>
                 <h3 className="text-base font-semibold text-fg">
@@ -199,7 +199,7 @@ export default function SalaryComponents() {
                     className="flex justify-between items-center py-3 px-3 rounded-lg hover:bg-surface-2 transition-colors group"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-danger-400" />
+                      <div className="w-2 h-2 rounded-full bg-[var(--danger-bg)]" />
                       <span className="text-sm font-medium text-fg">
                         {item.name}
                       </span>
@@ -228,9 +228,9 @@ export default function SalaryComponents() {
         <ModalContent>
           <ModalHeader className="flex items-center gap-2">
             {modalType === "earnings" ? (
-              <ArrowUpRight size={18} className="text-success-600" />
+              <ArrowUpRight size={18} className="text-[var(--ok)]" />
             ) : (
-              <ArrowDownRight size={18} className="text-danger-600" />
+              <ArrowDownRight size={18} className="text-[var(--danger)]" />
             )}
             Add {modalType === "earnings" ? "Earning" : "Deduction"} Component
           </ModalHeader>

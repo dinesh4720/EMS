@@ -236,11 +236,11 @@ export default function DataToolsSettings() {
                 </div>
 
                 {importResult && (
-                  <Card className="border border-success-200 bg-success-50/50 dark:bg-success-900/20">
+                  <Card className="border border-[var(--ok-border)] bg-[var(--ok-bg)]">
                     <CardBody className="p-4">
                       <div className="flex items-center gap-2 mb-2">
-                        <CheckCircle size={18} className="text-success-600" />
-                        <span className="font-medium text-success-700 dark:text-success-400">
+                        <CheckCircle size={18} className="text-[var(--ok)]" />
+                        <span className="font-medium text-[var(--ok)]">
                           Import Summary
                         </span>
                       </div>
@@ -250,14 +250,14 @@ export default function DataToolsSettings() {
                           <p className="text-lg font-bold text-fg">{importResult.total}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-success-600 dark:text-success-400">Success</p>
-                          <p className="text-lg font-bold text-success-600 dark:text-success-400">
+                          <p className="text-xs text-[var(--ok)]">Success</p>
+                          <p className="text-lg font-bold text-[var(--ok)]">
                             {importResult.success}
                           </p>
                         </div>
                         <div>
-                          <p className="text-xs text-danger-600 dark:text-danger-400">Errors</p>
-                          <p className="text-lg font-bold text-danger-600 dark:text-danger-400">
+                          <p className="text-xs text-[var(--danger)]">Errors</p>
+                          <p className="text-lg font-bold text-[var(--danger)]">
                             {importResult.errors}
                           </p>
                         </div>
@@ -265,7 +265,7 @@ export default function DataToolsSettings() {
                       {importResult.details.length > 0 && (
                         <div className="mt-3 space-y-1">
                           {importResult.details.slice(0, 3).map((err, idx) => (
-                            <p key={idx} className="text-xs text-danger-600 dark:text-danger-400">
+                            <p key={`${err.row}-${err.field}-${idx}`} className="text-xs text-[var(--danger)]">
                               Row {err.row}: {err.field} — {err.message}
                             </p>
                           ))}
@@ -332,7 +332,7 @@ export default function DataToolsSettings() {
                         key={entity.key}
                         className={`border transition-all cursor-pointer ${
                           exportEntity === entity.key
-                            ? "border-primary-400 bg-primary-50/50 dark:bg-primary-900/20"
+                            ? "border-[var(--accent-border)] bg-[var(--accent-bg)]"
                             : "border-border-token hover:border-gray-300 dark:hover:border-zinc-600"
                         }`}
                         isPressable
@@ -479,7 +479,7 @@ export default function DataToolsSettings() {
                           </TableHeader>
                           <TableBody>
                             {gdprData.consentLogs.map((log, idx) => (
-                              <TableRow key={idx}>
+                              <TableRow key={log.id ?? `${log.type}-${log.date}-${idx}`}>
                                 <TableCell className="capitalize">{log.type}</TableCell>
                                 <TableCell>
                                   <Chip

@@ -160,15 +160,15 @@ export default function AttendanceRules() {
     <div className="w-full flex flex-col space-y-4">
 
       {error && (
-        <div className="flex items-center gap-2 p-3 bg-warning-50 border border-warning-200 rounded-lg">
-          <AlertCircle size={16} className="text-warning-600" />
-          <span className="text-sm text-warning-700">{error}</span>
+        <div className="flex items-center gap-2 p-3 bg-[var(--warn-bg)] border border-[var(--warn-border)] rounded-lg">
+          <AlertCircle size={16} className="text-[var(--warn)]" />
+          <span className="text-sm text-[var(--warn)]">{error}</span>
         </div>
       )}
 
       {saveMessage && (
-        <div className={`flex items-center gap-2 p-3 rounded-lg border ${saveMessage.type === 'success' ? 'bg-success-50 border-success-200' : 'bg-danger-50 border-danger-200'}`}>
-          <span className={`text-sm font-medium ${saveMessage.type === 'success' ? 'text-success-700' : 'text-danger-700'}`}>{saveMessage.text}</span>
+        <div className={`flex items-center gap-2 p-3 rounded-lg border ${saveMessage.type === 'success' ? 'bg-[var(--ok-bg)] border-[var(--ok-border)]' : 'bg-[var(--danger-bg)] border-[var(--danger-border)]'}`}>
+          <span className={`text-sm font-medium ${saveMessage.type === 'success' ? 'text-[var(--ok)]' : 'text-[var(--danger)]'}`}>{saveMessage.text}</span>
         </div>
       )}
 
@@ -214,8 +214,8 @@ export default function AttendanceRules() {
                 </div>
               </>
             )}
-            <div className="p-4 bg-warning-50 rounded-lg border border-warning-200">
-              <p className="text-xs text-warning-700 font-medium">
+            <div className="p-4 bg-[var(--warn-bg)] rounded-lg border border-[var(--warn-border)]">
+              <p className="text-xs text-[var(--warn)] font-medium">
                 Students with attendance below {editingSection === 'defaulter' ? tempRules.defaulterThreshold : rules.defaulterThreshold}% will be flagged as attendance defaulters.
                 {' '}Late arrivals count as {editingSection === 'defaulter' ? tempRules.lateWeight : rules.lateWeight}% present.
               </p>
@@ -335,13 +335,13 @@ export default function AttendanceRules() {
                   </div>
                 ) : (
                   <div className="flex gap-2 text-xs font-medium">
-                    <span className={item.canMark ? "text-success-700 bg-success-50 px-2 py-1 rounded-md border border-success-200" : "text-fg-faint opacity-50"}>
+                    <span className={item.canMark ? "text-[var(--ok)] bg-[var(--ok-bg)] px-2 py-1 rounded-md border border-[var(--ok-border)]" : "text-fg-faint opacity-50"}>
                       Mark
                     </span>
-                    <span className={item.canEdit ? "text-success-700 bg-success-50 px-2 py-1 rounded-md border border-success-200" : "text-fg-faint opacity-50"}>
+                    <span className={item.canEdit ? "text-[var(--ok)] bg-[var(--ok-bg)] px-2 py-1 rounded-md border border-[var(--ok-border)]" : "text-fg-faint opacity-50"}>
                       Edit
                     </span>
-                    <span className={item.canLock ? "text-success-700 bg-success-50 px-2 py-1 rounded-md border border-success-200" : "text-fg-faint opacity-50"}>
+                    <span className={item.canLock ? "text-[var(--ok)] bg-[var(--ok-bg)] px-2 py-1 rounded-md border border-[var(--ok-border)]" : "text-fg-faint opacity-50"}>
                       Lock
                     </span>
                   </div>

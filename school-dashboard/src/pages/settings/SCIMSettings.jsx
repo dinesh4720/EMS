@@ -272,7 +272,7 @@ export default function SCIMSettings() {
               key={op.label}
               className="flex items-start gap-2 p-3 rounded-lg border border-border-token bg-surface-2"
             >
-              <CheckCircle size={14} className="text-success-600 mt-0.5 flex-shrink-0" />
+              <CheckCircle size={14} className="text-[var(--ok)] mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-xs font-medium text-fg">{op.label}</p>
                 <p className="text-xs text-fg-muted">{op.desc}</p>

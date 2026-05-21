@@ -146,13 +146,13 @@ export default function DataCleanupSettings() {
           </p>
         </div>
 
-        <Card className="border border-success-200 bg-success-50/50 dark:bg-success-900/20">
+        <Card className="border border-[var(--ok-border)] bg-[var(--ok-bg)]">
           <CardBody className="p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-success-100 rounded-full">
-                <CheckCircle size={24} className="text-success-600" />
+              <div className="p-2 bg-[var(--ok-bg)] rounded-full">
+                <CheckCircle size={24} className="text-[var(--ok)]" />
               </div>
-              <h3 className="text-lg font-semibold text-success-700 dark:text-success-400">
+              <h3 className="text-lg font-semibold text-[var(--ok)]">
                 Moved to Trash!
               </h3>
             </div>
@@ -209,9 +209,9 @@ export default function DataCleanupSettings() {
 
       {/* Error Banner */}
       {countsError && (
-        <Card className="border-2 border-warning-300 bg-warning-50/50 dark:bg-warning-900/20">
+        <Card className="border-2 border-[var(--warn-border)] bg-[var(--warn-bg)]">
           <CardBody className="p-4">
-            <p className="text-sm text-warning-700 dark:text-warning-300 font-medium">
+            <p className="text-sm text-[var(--warn)] font-medium">
               Failed to load data counts from the server. Counts shown as 0 to prevent accidental deletions. Please refresh the page to try again.
             </p>
           </CardBody>
@@ -219,17 +219,17 @@ export default function DataCleanupSettings() {
       )}
 
       {/* Danger Zone Banner */}
-      <Card className="border-2 border-danger-300 bg-danger-50/50 dark:bg-danger-900/20">
+      <Card className="border-2 border-[var(--danger-border)] bg-[var(--danger-bg)]">
         <CardBody className="p-4">
           <div className="flex items-start gap-3">
-            <div className="p-2 bg-danger-100 rounded-lg mt-0.5">
-              <ShieldAlert size={20} className="text-danger-600" />
+            <div className="p-2 bg-[var(--danger-bg)] rounded-lg mt-0.5">
+              <ShieldAlert size={20} className="text-[var(--danger)]" />
             </div>
             <div>
-              <h3 className="font-semibold text-danger-700 dark:text-danger-400">
+              <h3 className="font-semibold text-[var(--danger)]">
                 Danger Zone
               </h3>
-              <p className="text-sm text-danger-600 dark:text-danger-400 mt-1">
+              <p className="text-sm text-[var(--danger)] mt-1">
                 This action will move it to Trash where it will be kept for 30 days
                 before being permanently deleted. Please make sure you have a backup
                 before proceeding.
@@ -265,7 +265,7 @@ export default function DataCleanupSettings() {
                 onPress={() => toggleCategory(cat.key)}
                 className={`border transition-all ${
                   isSelected
-                    ? "border-danger-400 bg-danger-50/30 dark:bg-danger-900/20"
+                    ? "border-[var(--danger-border)] bg-[var(--danger-bg)]"
                     : "border-border-token"
                 }`}
               >
@@ -314,8 +314,8 @@ export default function DataCleanupSettings() {
           <ModalBody>
             <div className="space-y-4">
               <div className="flex items-start gap-3">
-                <div className="p-2 bg-danger-100 rounded-lg mt-0.5">
-                  <AlertTriangle size={20} className="text-danger-600" />
+                <div className="p-2 bg-[var(--danger-bg)] rounded-lg mt-0.5">
+                  <AlertTriangle size={20} className="text-[var(--danger)]" />
                 </div>
                 <div>
                   <p className="text-sm text-fg-muted">

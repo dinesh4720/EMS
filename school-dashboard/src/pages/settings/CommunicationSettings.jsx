@@ -179,7 +179,7 @@ export default function CommunicationSettings() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              className="text-sm text-danger hover:text-danger-600 font-medium px-3 py-1.5 rounded-lg hover:bg-danger-50 transition-colors"
+              className="text-sm text-danger hover:text-[var(--danger)] font-medium px-3 py-1.5 rounded-lg hover:bg-[var(--danger-bg)] transition-colors"
               onClick={() => handleCancel(section)}
               disabled={saving}
             >
@@ -187,7 +187,7 @@ export default function CommunicationSettings() {
             </button>
             <button
               type="button"
-              className="flex items-center gap-1.5 text-sm bg-primary text-white font-medium px-3 py-1.5 rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 text-sm bg-primary text-white font-medium px-3 py-1.5 rounded-lg hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
               onClick={() => handleSave(section)}
               disabled={saving}
             >
@@ -198,7 +198,7 @@ export default function CommunicationSettings() {
         ) : (
           <button
             type="button"
-            className="flex items-center gap-1.5 text-sm text-primary font-medium px-3 py-1.5 rounded-lg hover:bg-primary-50 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 text-sm text-primary font-medium px-3 py-1.5 rounded-lg hover:bg-[var(--accent-bg)] transition-colors disabled:opacity-50"
             onClick={() => setEditingSection(section)}
             disabled={editingSection !== null}
           >
@@ -293,16 +293,16 @@ export default function CommunicationSettings() {
                   </>
                 )}
 
-                <div className="md:col-span-2 p-4 bg-success-50 dark:bg-success-950/30 rounded-xl border border-success-200 dark:border-success-800 flex justify-between items-center mt-2">
+                <div className="md:col-span-2 p-4 bg-[var(--ok-bg)] rounded-xl border border-[var(--ok-border)] flex justify-between items-center mt-2">
                   <div>
-                    <p className="text-sm font-semibold text-success-800 dark:text-success-200">
+                    <p className="text-sm font-semibold text-[var(--ok)]">
                       {smsConfig.hasApiKey ? 'Configured' : 'Not configured'}
                     </p>
-                    <p className="text-xs text-success-600 dark:text-success-400">
+                    <p className="text-xs text-[var(--ok)]">
                       {smsConfig.senderId ? `Sender: ${smsConfig.senderId}` : 'Add API key to enable SMS'}
                     </p>
                   </div>
-                  <button type="button" onClick={() => toast.error('SMS test not yet implemented')} className="px-4 py-2 bg-surface text-success-700 dark:text-success-300 rounded-lg border border-success-200 dark:border-success-800 text-xs font-medium hover:bg-success-50 dark:hover:bg-success-950/50">
+                  <button type="button" onClick={() => toast.error('SMS test not yet implemented')} className="px-4 py-2 bg-surface text-[var(--ok)] rounded-lg border border-[var(--ok-border)] text-xs font-medium hover:bg-[var(--ok-bg)] dark:hover:bg-[var(--ok-bg)]">
                     Test SMS
                   </button>
                 </div>
@@ -409,7 +409,7 @@ export default function CommunicationSettings() {
                 )}
 
                 <div className="md:col-span-2 flex justify-end mt-2">
-                  <button type="button" onClick={() => toast.error('Email test not yet implemented')} className="px-4 py-2 bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-300 rounded-lg border border-primary-100 dark:border-primary-800 text-sm font-medium hover:bg-primary-100 dark:hover:bg-primary-950/50">
+                  <button type="button" onClick={() => toast.error('Email test not yet implemented')} className="px-4 py-2 bg-[var(--accent-bg)] text-[var(--accent)] rounded-lg border border-[var(--accent-border)] text-sm font-medium hover:bg-[var(--accent-bg)] dark:hover:bg-[var(--accent-bg)]">
                     Send Test Email
                   </button>
                 </div>
@@ -437,7 +437,7 @@ export default function CommunicationSettings() {
                 <p className="text-xs text-fg-muted">{t('pages.manageSmsAndEmailTemplates')}</p>
               </div>
             </div>
-            <button onClick={() => toast('Template creation coming soon')} className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-xs font-medium hover:bg-primary-600 transition-colors shadow-sm">
+            <button onClick={() => toast('Template creation coming soon')} className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-xs font-medium hover:bg-[var(--accent-hover)] transition-colors shadow-sm">
               <Plus size={16} />
               <span>{t('pages.addTemplate')}</span>
             </button>
@@ -534,7 +534,7 @@ export default function CommunicationSettings() {
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">
-                        <button type="button" aria-label="Edit template" onClick={() => toast('Template editing coming soon')} className="p-2 bg-transparent rounded-lg border border-transparent hover:border-primary hover:bg-primary-50 dark:hover:bg-primary-950/30 transition-all duration-200 cursor-pointer text-fg-faint hover:text-primary">
+                        <button type="button" aria-label="Edit template" onClick={() => toast('Template editing coming soon')} className="p-2 bg-transparent rounded-lg border border-transparent hover:border-primary hover:bg-[var(--accent-bg)] dark:hover:bg-[var(--accent-bg)] transition-all duration-200 cursor-pointer text-fg-faint hover:text-primary">
                           <Edit size={16} />
                         </button>
                       </div>
