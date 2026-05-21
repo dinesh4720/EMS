@@ -93,7 +93,7 @@ export function getAuthHeaders(headers = {}) {
   // Guard: if there is no stored user the session has definitely been cleared
   // on the client side. Warn in development so callers can detect this early
   // rather than silently proceeding to a 401 from the server.
-  if (process.env.NODE_ENV !== 'production' && !getStoredUser()) {
+  if (import.meta.env.MODE !== 'production' && !getStoredUser()) {
     logger.warn(
       '[authSession] getAuthHeaders() called with no active session. ' +
       'The request will likely return 401. Ensure the caller handles 401 responses ' +

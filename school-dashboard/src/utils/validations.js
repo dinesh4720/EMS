@@ -206,13 +206,13 @@ export const validateClassData = (data, t) => {
 
   if (!data.name || data.name.trim() === '') {
     errors.name = msg('validation.classNameRequired', 'Class name is required');
-  } else if (!/^[A-Za-z0-9\s.()\-]+$/.test(data.name)) {
+  } else if (!/^[A-Za-z0-9\s.()-]+$/.test(data.name)) {
     errors.name = msg('validation.classNameInvalid', 'Class name can only contain letters, numbers, spaces, hyphens, dots, and parentheses');
   }
 
   if (!data.section || data.section.trim() === '') {
     errors.section = msg('validation.sectionRequired', 'Section is required');
-  } else if (!/^[A-Za-z0-9()\-]+$/.test(data.section)) {
+  } else if (!/^[A-Za-z0-9()-]+$/.test(data.section)) {
     errors.section = msg('validation.sectionInvalid', 'Section can only contain letters, numbers, hyphens, and parentheses');
   }
 

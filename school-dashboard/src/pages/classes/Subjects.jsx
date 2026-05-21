@@ -70,6 +70,9 @@ export default function Subjects() {
     selectedStudents: []
   });
 
+  const [isAddingSubject, setIsAddingSubject] = useState(false);
+  const [isUpdatingChapter, setIsUpdatingChapter] = useState(false);
+
   // Fetch subjects data
   useEffect(() => {
     if (isValid && id) {
@@ -143,8 +146,6 @@ export default function Subjects() {
   });
 
   // Handle add subject
-  const [isAddingSubject, setIsAddingSubject] = useState(false);
-  const [isUpdatingChapter, setIsUpdatingChapter] = useState(false);
   const handleAddSubject = async () => {
     if (!newSubject.subjectName?.trim()) {
       toast.error(t('toast.error.pleaseEnterSubjectName', 'Please enter a subject name'));
