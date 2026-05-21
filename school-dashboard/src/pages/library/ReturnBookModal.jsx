@@ -75,7 +75,7 @@ export default function ReturnBookModal({ isOpen, onClose, issue, onSaved }) {
               <div className="flex items-center gap-2 pt-1">
                 <Chip size="sm" color="danger" variant="flat">{daysLate} days overdue</Chip>
                 {accruedFine > 0 && (
-                  <span className="text-sm font-medium text-red-600 dark:text-red-400">Fine: ₹{accruedFine}</span>
+                  <span className="text-sm font-medium text-danger-token">Fine: ₹{accruedFine}</span>
                 )}
               </div>
             )}

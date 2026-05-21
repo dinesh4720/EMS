@@ -49,7 +49,7 @@ export default function LibraryReports() {
     <div className="space-y-6">
       <Card padding="md" radius="lg">
         <div className="flex items-center gap-2 mb-4">
-          <BookOpen size={16} className="text-blue-500" aria-hidden="true" />
+          <BookOpen size={16} className="text-info-token" aria-hidden="true" />
           <h3 className="text-sm font-semibold text-fg">{t('pages.mostBorrowedBooks')}</h3>
         </div>
         {report.mostBorrowed?.length ? (
@@ -61,7 +61,7 @@ export default function LibraryReports() {
                   <p className="text-sm font-medium text-fg truncate">{item.bookTitle || "Unknown"}</p>
                   <div className="mt-1 h-2 rounded-full bg-surface-2 overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-blue-500 dark:bg-blue-400"
+                      className="h-full rounded-full bg-info-token"
                       style={{ width: `${(item.count / maxBorrowed) * 100}%` }}
                     />
                   </div>
@@ -90,7 +90,7 @@ export default function LibraryReports() {
               </thead>
               <tbody>
                 {report.categoryStats.map((cat) => (
-                  <tr key={cat._id} className="border-b border-gray-50 dark:border-zinc-800 last:border-0">
+                  <tr key={cat._id} className="border-b border-divider last:border-0">
                     <td className="py-2 text-fg capitalize">{categoryLabels[cat._id] || cat._id || "Other"}</td>
                     <td className="py-2 text-right text-fg">{cat.totalBooks}</td>
                     <td className="py-2 text-right text-fg">{cat.totalCopies}</td>
@@ -108,18 +108,18 @@ export default function LibraryReports() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card padding="md" radius="lg">
           <div className="flex items-center gap-2 mb-4">
-            <AlertTriangle size={16} className="text-red-500" aria-hidden="true" />
+            <AlertTriangle size={16} className="text-danger-token" aria-hidden="true" />
             <h3 className="text-sm font-semibold text-fg">{t('pages.topOverdueStudents')}</h3>
           </div>
           {report.overdueByStudent?.length ? (
             <div className="space-y-2">
               {report.overdueByStudent.map((student, i) => (
-                <div key={student._id || i} className="flex items-center justify-between py-2 border-b border-gray-50 dark:border-zinc-800 last:border-0">
+                <div key={student._id || i} className="flex items-center justify-between py-2 border-b border-divider last:border-0">
                   <div>
                     <p className="text-sm text-fg">{student.studentName || "Unknown"}</p>
                     <p className="text-xs text-fg-muted">{student.admissionNo || ""}</p>
                   </div>
-                  <span className="text-xs font-medium bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 px-2 py-0.5 rounded-full">
+                  <span className="text-xs font-medium bg-danger-bg text-danger-token px-2 py-0.5 rounded-full">
                     {student.count} books
                   </span>
                 </div>
@@ -132,7 +132,7 @@ export default function LibraryReports() {
 
         <Card padding="md" radius="lg">
           <div className="flex items-center gap-2 mb-4">
-            <IndianRupee size={16} className="text-amber-600 dark:text-amber-400" aria-hidden="true" />
+            <IndianRupee size={16} className="text-warn" aria-hidden="true" />
             <h3 className="text-sm font-semibold text-fg">{t('pages.unpaidFines')}</h3>
           </div>
           <p className="text-3xl font-semibold text-fg">₹{report.unpaidFines?.total?.toLocaleString() || 0}</p>

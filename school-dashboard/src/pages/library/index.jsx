@@ -1,10 +1,9 @@
 import { Routes, Route } from "react-router-dom";
-import { Breadcrumbs, BreadcrumbItem } from "@heroui/react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   BarChart3, BookOpen, BookUp, FileBarChart, Home,
 } from "lucide-react";
-import { PageLayout } from "../../components/ui";
+import { PageLayout, Breadcrumbs } from "../../components/ui";
 import LibraryDashboard from "./LibraryDashboard";
 import BooksList from "./BooksList";
 import IssuedBooksList from "./IssuedBooksList";
@@ -51,11 +50,15 @@ export default function LibraryPage() {
   return (
     <div className="animate-fade-in">
       <div className="mb-4">
-        <Breadcrumbs size="sm">
-          <BreadcrumbItem startContent={<Home size={14} />} onPress={() => navigate("/")}>{t('pages.home')}</BreadcrumbItem>
-          <BreadcrumbItem onPress={() => navigate("/library")}>{t('pages.library1')}</BreadcrumbItem>
-          {tabLabel[activeTab] && <BreadcrumbItem>{tabLabel[activeTab]}</BreadcrumbItem>}
-        </Breadcrumbs>
+        <Breadcrumbs
+          size="sm"
+          showHomeIcon
+          items={[
+            { label: t('pages.home'), href: '/', icon: <Home size={14} /> },
+            { label: t('pages.library1'), href: '/library' },
+            ...(tabLabel[activeTab] ? [{ label: tabLabel[activeTab] }] : []),
+          ]}
+        />
       </div>
 
       <PageLayout

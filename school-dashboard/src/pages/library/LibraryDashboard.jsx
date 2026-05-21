@@ -65,7 +65,7 @@ export default function LibraryDashboard() {
 
         <Card padding="md" radius="lg">
           <div className="flex items-center gap-2 mb-4">
-            <IndianRupee size={16} className="text-red-600 dark:text-red-400" aria-hidden="true" />
+            <IndianRupee size={16} className="text-danger-token" aria-hidden="true" />
             <h3 className="text-sm font-semibold text-fg">{t('pages.totalAccruedFines')}</h3>
           </div>
           <p className="text-3xl font-semibold text-fg">₹{stats.totalAccruedFines?.toLocaleString() || 0}</p>
@@ -83,15 +83,15 @@ export default function LibraryDashboard() {
               <li key={book._id} className="flex items-center gap-3">
                 <span className="text-xs font-medium text-fg-faint w-5 text-right shrink-0">{index + 1}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-800 dark:text-zinc-200 truncate">{book.bookTitle}</p>
+                  <p className="text-sm text-fg truncate">{book.bookTitle}</p>
                   <div className="mt-1 h-2 rounded-full bg-surface-2 overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-blue-500 dark:bg-blue-400"
+                      className="h-full rounded-full bg-info-token"
                       style={{ width: `${(book.count / maxBorrowed) * 100}%` }}
                     />
                   </div>
                 </div>
-                <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 shrink-0">{book.count}x</span>
+                <span className="text-xs font-semibold text-info-token shrink-0">{book.count}x</span>
               </li>
             ))}
           </ol>

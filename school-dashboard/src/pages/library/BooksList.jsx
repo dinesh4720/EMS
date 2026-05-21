@@ -153,7 +153,7 @@ export default function BooksList() {
       ) : (
         <div className="bg-surface border border-divider rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm" role="listbox" aria-label={t('pages.books')}>
               <thead>
                 <tr className="bg-surface-2 border-b border-divider">
                   <th scope="col" className="text-left px-4 py-3 font-medium text-fg-muted">{t('pages.title1')}</th>
@@ -167,7 +167,7 @@ export default function BooksList() {
               </thead>
               <tbody>
                 {books.map((book) => (
-                  <tr key={book._id} className="border-b border-gray-50 dark:border-zinc-800 last:border-0 hover:bg-surface-2/50 transition-colors">
+                  <tr key={book._id} className="border-b border-divider last:border-0 hover:bg-surface-2/50 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-10 bg-surface-2 rounded flex items-center justify-center flex-shrink-0">
@@ -182,7 +182,7 @@ export default function BooksList() {
                     </td>
                     <td className="px-4 py-3 text-center text-fg">{book.totalCopies}</td>
                     <td className="px-4 py-3 text-center">
-                      <span className={book.availableCopies === 0 ? "text-red-600 dark:text-red-400 font-medium" : "text-green-600 dark:text-green-400 font-medium"}>
+                      <span className={book.availableCopies === 0 ? "text-danger-token font-medium" : "text-ok font-medium"}>
                         {book.availableCopies}
                       </span>
                     </td>
@@ -192,8 +192,8 @@ export default function BooksList() {
                         {book.availableCopies > 0 && (
                           <Button size="sm" variant="flat" color="primary" startContent={<BookUp size={13} />} onPress={() => handleIssueBook(book)}>{t('pages.issue1')}</Button>
                         )}
-                        <Button size="sm" variant="light" onPress={() => handleEdit(book)}>{t('pages.edit1')}</Button>
-                        <Button size="sm" variant="light" color="danger" onPress={() => handleDelete(book._id)}>{t('pages.delete1')}</Button>
+                        <Button size="sm" variant="light" onPress={() => handleEdit(book)} aria-label={t('pages.edit1')}>{t('pages.edit1')}</Button>
+                        <Button size="sm" variant="light" color="danger" onPress={() => handleDelete(book._id)} aria-label={t('pages.delete1')}>{t('pages.delete1')}</Button>
                       </div>
                     </td>
                   </tr>

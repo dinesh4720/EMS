@@ -130,7 +130,7 @@ export default function IssuedBooksList() {
       ) : (
         <div className="bg-surface border border-divider rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm" role="listbox" aria-label={t('pages.issuedBooks')}>
               <thead>
                 <tr className="bg-surface-2 border-b border-divider">
                   <th scope="col" className="text-left px-4 py-3 font-medium text-fg-muted">{t('pages.book')}</th>
@@ -144,7 +144,7 @@ export default function IssuedBooksList() {
               </thead>
               <tbody>
                 {issues.map((issue) => (
-                  <tr key={issue._id} className="border-b border-gray-50 dark:border-zinc-800 last:border-0 hover:bg-surface-2/50 transition-colors">
+                  <tr key={issue._id} className="border-b border-divider last:border-0 hover:bg-surface-2/50 transition-colors">
                     <td className="px-4 py-3">
                       <p className="font-medium text-fg truncate max-w-[180px]">{issue.bookId?.title || issue.bookTitle}</p>
                       <p className="text-xs text-fg-muted">{issue.bookId?.isbn || issue.bookIsbn || ""}</p>
@@ -155,7 +155,7 @@ export default function IssuedBooksList() {
                     </td>
                     <td className="px-4 py-3 text-fg-muted">{formatDate(issue.issueDate)}</td>
                     <td className="px-4 py-3">
-                      <span className={isOverdue(issue) ? "text-red-600 dark:text-red-400 font-medium" : "text-fg-muted"}>
+                      <span className={isOverdue(issue) ? "text-danger-token font-medium" : "text-fg-muted"}>
                         {formatDate(issue.dueDate)}
                       </span>
                     </td>
@@ -170,7 +170,7 @@ export default function IssuedBooksList() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       {(issue.status === "issued" || issue.status === "overdue") && (
-                        <Button size="sm" variant="flat" color="success" startContent={<RotateCcw size={14} />} onPress={() => handleReturn(issue)}>
+                        <Button size="sm" variant="flat" color="success" startContent={<RotateCcw size={14} />} onPress={() => handleReturn(issue)} aria-label={t('pages.returnBook')}>
                           Return
                         </Button>
                       )}
