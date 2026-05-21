@@ -67,7 +67,7 @@ export async function processErrorEvent(
 
   if (existingGroup.rows.length > 0) {
     groupId = existingGroup.rows[0].id as string;
-    let affectedIds: string[] = JSON.parse((existingGroup.rows[0].affected_user_ids_json as string) ?? '[]');
+    const affectedIds: string[] = JSON.parse((existingGroup.rows[0].affected_user_ids_json as string) ?? '[]');
     let userCount = existingGroup.rows[0].user_count as number;
     if (userId && !affectedIds.includes(userId)) {
       affectedIds.push(userId);

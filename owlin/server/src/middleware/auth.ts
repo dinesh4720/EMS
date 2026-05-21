@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { getDb } from '../config/database.js';
 import { getEnv } from '../config/env.js';
-import { hashApiKey } from '../utils/apiKey.js';
+
 import { checkRateLimit } from '../utils/rateLimiter.js';
 
 export interface ProjectInfo {
@@ -14,6 +14,7 @@ export interface ProjectInfo {
 }
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       project?: ProjectInfo;

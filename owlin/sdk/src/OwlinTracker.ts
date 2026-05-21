@@ -1,6 +1,6 @@
 // Owlin Tracking SDK - Core Tracker Class
 
-import { OwlinConfig, OwlinEvent, QueuedEvent, OwlinSession } from './types'
+import { OwlinConfig, OwlinEvent, QueuedEvent } from './types'
 
 export class OwlinTracker {
   private config: Required<OwlinConfig>
