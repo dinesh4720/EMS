@@ -56,6 +56,8 @@ const COLOR_GROUPS = [
     tokens: [
       { varName: "--ok", label: "OK" },
       { varName: "--ok-bg", label: "OK background" },
+      { varName: "--ok-border", label: "OK border" },
+      { varName: "--ok-hover", label: "OK hover" },
     ],
   },
   {
@@ -63,6 +65,8 @@ const COLOR_GROUPS = [
     tokens: [
       { varName: "--warn", label: "Warn" },
       { varName: "--warn-bg", label: "Warn background" },
+      { varName: "--warn-border", label: "Warn border" },
+      { varName: "--warn-hover", label: "Warn hover" },
     ],
   },
   {
@@ -70,6 +74,8 @@ const COLOR_GROUPS = [
     tokens: [
       { varName: "--danger", label: "Danger" },
       { varName: "--danger-bg", label: "Danger background" },
+      { varName: "--danger-border", label: "Danger border" },
+      { varName: "--danger-hover", label: "Danger hover" },
     ],
   },
   {
@@ -77,6 +83,21 @@ const COLOR_GROUPS = [
     tokens: [
       { varName: "--info", label: "Info" },
       { varName: "--info-bg", label: "Info background" },
+      { varName: "--info-border", label: "Info border" },
+      { varName: "--info-hover", label: "Info hover" },
+    ],
+  },
+  {
+    title: "Chart palette",
+    sub: "Data visualization — indigo accent + semantic spectrum + grid/axis neutrals",
+    tokens: [
+      { varName: "--chart-c1", label: "Chart C1 (indigo)" },
+      { varName: "--chart-c2", label: "Chart C2 (blue)" },
+      { varName: "--chart-c3", label: "Chart C3 (green)" },
+      { varName: "--chart-c4", label: "Chart C4 (amber)" },
+      { varName: "--chart-c5", label: "Chart C5 (magenta)" },
+      { varName: "--chart-grid", label: "Chart grid" },
+      { varName: "--chart-axis", label: "Chart axis" },
     ],
   },
   {
