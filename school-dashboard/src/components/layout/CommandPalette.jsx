@@ -221,7 +221,7 @@ export default function CommandPalette({ isOpen, onClose }) {
             <kbd className="kbd">esc</kbd>
           </div>
 
-          <Command.List className="cmdk__list">
+          <Command.List className="cmdk__list max-h-[400px]">
             <Command.Empty className="cmdk__empty">
               No matches. Try a different search.
             </Command.Empty>
@@ -236,13 +236,15 @@ export default function CommandPalette({ isOpen, onClose }) {
                     key={`recent-${r.id}-${r.to}`}
                     value={`${r.label} recent ${r.to}`}
                     onSelect={() => run(r)}
-                    className="cmdk__item"
+                    asChild
                   >
-                    <span className="cmdk__item-icon"><History size={14} aria-hidden /></span>
-                    <span className="cmdk__item-label">{r.label}</span>
-                    <span className="cmdk__hint">
-                      <kbd className="kbd">↵</kbd>
-                    </span>
+                    <button type="button" className="cmdk__item">
+                      <span className="cmdk__item-icon"><History size={14} aria-hidden /></span>
+                      <span className="cmdk__item-label">{r.label}</span>
+                      <span className="cmdk__hint">
+                        <kbd className="kbd">↵</kbd>
+                      </span>
+                    </button>
                   </Command.Item>
                 ))}
               </Command.Group>
@@ -256,13 +258,15 @@ export default function CommandPalette({ isOpen, onClose }) {
                     key={p.id}
                     value={`${p.label} page ${p.to}`}
                     onSelect={() => run(p)}
-                    className="cmdk__item"
+                    asChild
                   >
-                    <span className="cmdk__item-icon"><Icon size={14} aria-hidden /></span>
-                    <span className="cmdk__item-label">{p.label}</span>
-                    <span className="cmdk__hint">
-                      <kbd className="kbd">↵</kbd>
-                    </span>
+                    <button type="button" className="cmdk__item">
+                      <span className="cmdk__item-icon"><Icon size={14} aria-hidden /></span>
+                      <span className="cmdk__item-label">{p.label}</span>
+                      <span className="cmdk__hint">
+                        <kbd className="kbd">↵</kbd>
+                      </span>
+                    </button>
                   </Command.Item>
                 );
               })}
@@ -275,11 +279,13 @@ export default function CommandPalette({ isOpen, onClose }) {
                     key={`student-${s.id}`}
                     value={`${s.label} student ${s.sub}`}
                     onSelect={() => run(s)}
-                    className="cmdk__item"
+                    asChild
                   >
-                    <span className="cmdk__item-icon"><GraduationCap size={14} aria-hidden /></span>
-                    <span className="cmdk__item-label">{s.label}</span>
-                    {s.sub ? <span className="cmdk__item-sub mono tnum">{s.sub}</span> : null}
+                    <button type="button" className="cmdk__item">
+                      <span className="cmdk__item-icon"><GraduationCap size={14} aria-hidden /></span>
+                      <span className="cmdk__item-label">{s.label}</span>
+                      {s.sub ? <span className="cmdk__item-sub mono tnum">{s.sub}</span> : null}
+                    </button>
                   </Command.Item>
                 ))}
               </Command.Group>
@@ -292,11 +298,13 @@ export default function CommandPalette({ isOpen, onClose }) {
                     key={`staff-${s.id}`}
                     value={`${s.label} staff ${s.sub}`}
                     onSelect={() => run(s)}
-                    className="cmdk__item"
+                    asChild
                   >
-                    <span className="cmdk__item-icon"><Briefcase size={14} aria-hidden /></span>
-                    <span className="cmdk__item-label">{s.label}</span>
-                    {s.sub ? <span className="cmdk__item-sub">{s.sub}</span> : null}
+                    <button type="button" className="cmdk__item">
+                      <span className="cmdk__item-icon"><Briefcase size={14} aria-hidden /></span>
+                      <span className="cmdk__item-label">{s.label}</span>
+                      {s.sub ? <span className="cmdk__item-sub">{s.sub}</span> : null}
+                    </button>
                   </Command.Item>
                 ))}
               </Command.Group>
@@ -309,11 +317,13 @@ export default function CommandPalette({ isOpen, onClose }) {
                     key={`class-${c.id}`}
                     value={`${c.label} class ${c.sub}`}
                     onSelect={() => run(c)}
-                    className="cmdk__item"
+                    asChild
                   >
-                    <span className="cmdk__item-icon"><School size={14} aria-hidden /></span>
-                    <span className="cmdk__item-label">{c.label}</span>
-                    {c.sub ? <span className="cmdk__item-sub">{c.sub}</span> : null}
+                    <button type="button" className="cmdk__item">
+                      <span className="cmdk__item-icon"><School size={14} aria-hidden /></span>
+                      <span className="cmdk__item-label">{c.label}</span>
+                      {c.sub ? <span className="cmdk__item-sub">{c.sub}</span> : null}
+                    </button>
                   </Command.Item>
                 ))}
               </Command.Group>
@@ -325,10 +335,12 @@ export default function CommandPalette({ isOpen, onClose }) {
                   key={s.id}
                   value={`${s.label} settings ${s.to}`}
                   onSelect={() => run(s)}
-                  className="cmdk__item"
+                  asChild
                 >
-                  <span className="cmdk__item-icon"><SettingsIcon size={14} aria-hidden /></span>
-                  <span className="cmdk__item-label">{s.label}</span>
+                  <button type="button" className="cmdk__item">
+                    <span className="cmdk__item-icon"><SettingsIcon size={14} aria-hidden /></span>
+                    <span className="cmdk__item-label">{s.label}</span>
+                  </button>
                 </Command.Item>
               ))}
             </Command.Group>
@@ -341,13 +353,15 @@ export default function CommandPalette({ isOpen, onClose }) {
                     key={a.id}
                     value={`${a.label} action ${a.to}`}
                     onSelect={() => run(a)}
-                    className="cmdk__item"
+                    asChild
                   >
-                    <span className="cmdk__item-icon"><Icon size={14} aria-hidden /></span>
-                    <span className="cmdk__item-label">{a.label}</span>
-                    <span className="cmdk__hint">
-                      <kbd className="kbd">↵</kbd>
-                    </span>
+                    <button type="button" className="cmdk__item">
+                      <span className="cmdk__item-icon"><Icon size={14} aria-hidden /></span>
+                      <span className="cmdk__item-label">{a.label}</span>
+                      <span className="cmdk__hint">
+                        <kbd className="kbd">↵</kbd>
+                      </span>
+                    </button>
                   </Command.Item>
                 );
               })}

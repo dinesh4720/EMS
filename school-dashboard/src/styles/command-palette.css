@@ -116,6 +116,11 @@
   cursor: pointer;
   user-select: none;
   transition: background 80ms, color 80ms;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  width: 100%;
 }
 .cmdk__item:hover,
 .cmdk__item[data-selected="true"] {
