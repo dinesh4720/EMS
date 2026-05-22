@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { CURRENT_ACADEMIC_YEAR } from '../../utils/constants';
 
 // Mock core.js before importing the module under test.
 vi.mock('./core.js', () => ({
@@ -137,9 +138,9 @@ describe('classesEnhancedApi — academic performance', () => {
   });
 
   it('getAcademicPerformance with academicYear appends query param', () => {
-    classesEnhancedApi.getAcademicPerformance('cls011', '2024-25');
+    classesEnhancedApi.getAcademicPerformance('cls011', CURRENT_ACADEMIC_YEAR);
     expect(request).toHaveBeenCalledWith(
-      '/classes-enhanced/cls011/academic-performance?academicYear=2024-25'
+      `/classes-enhanced/cls011/academic-performance?academicYear=${CURRENT_ACADEMIC_YEAR}`
     );
   });
 

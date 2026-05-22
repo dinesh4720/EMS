@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { CURRENT_ACADEMIC_YEAR } from '../../../utils/constants';
 import {
   parentZodSchema,
   step1Schema,
@@ -385,7 +386,7 @@ describe('buildStudentPayload', () => {
   const baseOptions = {
     classId: 'cls1',
     admissionId: 'ADM001',
-    academicYear: '2024-25',
+    academicYear: CURRENT_ACADEMIC_YEAR,
     photoUrl: 'http://photo.jpg',
     documents: [],
     initialData: null,
@@ -420,7 +421,7 @@ describe('buildStudentPayload', () => {
     const result = buildStudentPayload(baseFormData, baseOptions);
     expect(result.classId).toBe('cls1');
     expect(result.admissionId).toBe('ADM001');
-    expect(result.academicYear).toBe('2024-25');
+    expect(result.academicYear).toBe(CURRENT_ACADEMIC_YEAR);
   });
 
   it('maps first parent fields to top-level', () => {

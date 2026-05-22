@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { CURRENT_ACADEMIC_YEAR } from './constants';
 import {
   validatePhone,
   validateEmail,
@@ -103,7 +104,7 @@ describe('validateFutureDate - yesterday boundary', () => {
 // ─── validateClassData — section special chars ────────────────────────────────
 
 describe('validateClassData - section special characters', () => {
-  const base = { name: 'Class 6', section: 'A', academicYear: '2024-25' };
+  const base = { name: 'Class 6', section: 'A', academicYear: CURRENT_ACADEMIC_YEAR };
 
   it('rejects section with special characters like @', () => {
     const result = validateClassData({ ...base, section: '@B' });

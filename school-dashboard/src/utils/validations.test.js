@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { CURRENT_ACADEMIC_YEAR } from './constants';
 import {
   validatePhone, validateEmail, validateRequired,
   validateFutureDate, validateDateRange, validateClassData, validateSubjectData,
@@ -120,7 +121,7 @@ describe('validateDateRange', () => {
 });
 
 describe('validateClassData', () => {
-  const valid = { name: 'Class 5', section: 'A', strength: 30, academicYear: '2024-25' };
+  const valid = { name: 'Class 5', section: 'A', strength: 30, academicYear: CURRENT_ACADEMIC_YEAR };
 
   it('returns isValid true for valid data', () => {
     expect(validateClassData(valid).isValid).toBe(true);
