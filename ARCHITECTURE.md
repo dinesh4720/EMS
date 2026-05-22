@@ -12,8 +12,8 @@
 | 3 | Staffs | StaffList, StaffDashboard, AddStaffComposer, StaffPayroll, LeaveManagement, StaffAttendanceRegularize, BulkSubjectAssignment | 🔲 |
 | 4 | Classes | ClassesPage, ClassDashboard, Attendance, Timetable, Substitution, Subjects, BulkClassTeacherAssignment | 🔲 |
 | 5 | Academics | ExamManagement, ExamScheduleConflict, ExamDetail, ResultsEntry, ClassPerformance, CBSEReportCardPage, CCEGradingPage | 🔲 |
-| 6 | Fees | FeesPage, Refunds, FeeStructureAssignment | 🔄 |
-| 7 | Front Desk | FrontDeskPage, FrontDeskDashboard, AdmissionsList, AdmissionTracker, AppointmentsList, CallLogsList, FeedbacksList, VisitorLog, GatePassLog | 🔲 |
+| 6 | Fees | FeesPage, Refunds, FeeStructureAssignment | 🔲 |
+| 7 | Front Desk | FrontDeskPage, FrontDeskDashboard, AdmissionsList, AdmissionTracker, AppointmentsList, CallLogsList, FeedbacksList, VisitorLog, GatePassLog | 🔄 |
 | 8 | Homework | Homework index, CreateHomeworkModal, HomeworkDetailModal | 🔲 |
 | 9 | Hostel | HostelDashboard, HostelList, RoomsList, AllocationsList | 🔲 |
 | 10 | Transport | VehiclesTab, RoutesTab, VehicleModal, RouteModal, StudentAssignModal | 🔲 |
@@ -59,16 +59,21 @@ The **Staff List** and **Student List** views are the canonical reference patter
 
 ## Current Audit Focus
 
-**Module: Fees (Module #6)**
-- FeesPage — Payment collection, KPI strip, payments table
-- Refunds — Refund list, approval/rejection workflow
-- FeeStructureAssignment — Template assignment to classes
+**Module: Front Desk (Module #7)**
+- FrontDeskPage / Dashboard — KPI strip, activity stream, quick actions
+- AdmissionsList — Admission inquiry list with stage filters
+- AppointmentsList — Visitor appointment list
+- CallLogsList — Phone call log list
+- FeedbacksList — Feedback entry list with category badges
+- VisitorLog — Visitor check-in/check-out log
+- GatePassLog — Gate pass approval log
 
-**Audit Issue:** [DK-254](mention://issue/ba5e451c-21ef-4d11-ad48-7403a79869a4)
+**Audit Issue:** [DK-516](mention://issue/382408d0-e0dc-44af-be82-62b8943a80a8)
 **Status:** 🔄 In review
 
 ## Audit History
 
 | Date | Module | Issue | Status |
 |------|--------|-------|--------|
-| 2026-05-20 | Fees | DK-254 | 🔄 In review |
+| 2026-05-20 | Fees | DK-254 | 🔲 No approvals — reverted |
+| 2026-05-22 | Front Desk | DK-516 | 🔄 In review |
