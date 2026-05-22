@@ -146,10 +146,10 @@ export default function CommunicationLogs() {
           {[0, 1, 2].map((i) => (
             <div key={i} className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-lg bg-surface-2 animate-pulse" />
+                <div className="w-10 h-10 rounded-lg animate-shimmer" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-6 w-16 rounded bg-surface-2 animate-pulse" />
-                  <div className="h-4 w-24 rounded bg-surface-2 animate-pulse" />
+                  <div className="h-6 w-16 rounded animate-shimmer" />
+                  <div className="h-4 w-24 rounded animate-shimmer" />
                 </div>
               </div>
             </div>

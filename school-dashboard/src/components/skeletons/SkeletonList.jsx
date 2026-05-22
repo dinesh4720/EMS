@@ -17,17 +17,17 @@ const SkeletonList = ({
           className="flex items-center gap-3 p-3 bg-surface rounded-lg border border-border-token"
         >
           {avatar && (
-            <div className="w-10 h-10 rounded-full bg-surface-hover animate-pulse flex-shrink-0" />
+            <div className="w-10 h-10 rounded-full animate-shimmer flex-shrink-0" />
           )}
           <div className="flex-1 space-y-2">
             {title && (
-              <div className="h-4 w-1/3 bg-surface-hover rounded animate-pulse" />
+              <div className="h-4 w-1/3 animate-shimmer rounded" />
             )}
             {subtitle && (
-              <div className="h-3 w-1/2 bg-surface-hover rounded animate-pulse" />
+              <div className="h-3 w-1/2 animate-shimmer rounded" />
             )}
           </div>
-          <div className="w-8 h-8 bg-surface-hover rounded animate-pulse" />
+          <div className="w-8 h-8 animate-shimmer rounded" />
         </div>
       ))}
     </div>

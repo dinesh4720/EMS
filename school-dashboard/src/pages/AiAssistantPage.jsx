@@ -368,7 +368,7 @@ export default function AiAssistantPage() {
 
               {isLoading && (
                 <div className="flex gap-4" role="status" aria-live="polite">
-                  <div className="w-8 h-8 rounded-full border border-border-token flex items-center justify-center flex-shrink-0 bg-surface animate-pulse">
+                  <div className="w-8 h-8 rounded-full border border-border-token flex items-center justify-center flex-shrink-0 animate-shimmer">
                     <Sparkles size={16} className="text-fg-faint" />
                   </div>
                   <div className="flex items-center gap-2 text-fg-faint text-sm">

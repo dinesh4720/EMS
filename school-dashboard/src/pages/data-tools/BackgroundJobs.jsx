@@ -156,10 +156,10 @@ function JobDetailModal({ isOpen, onClose, loading, job }) {
     >
       {loading ? (
         <div className="space-y-3">
-          <div className="h-5 bg-surface-2 rounded w-3/4 animate-pulse" />
-          <div className="h-5 bg-surface-2 rounded w-2/3 animate-pulse" />
-          <div className="h-5 bg-surface-2 rounded w-1/2 animate-pulse" />
-          <div className="h-5 bg-surface-2 rounded w-3/5 animate-pulse" />
+          <div className="h-5 animate-shimmer rounded" />
+          <div className="h-5 animate-shimmer rounded" />
+          <div className="h-5 animate-shimmer rounded" />
+          <div className="h-5 animate-shimmer rounded" />
         </div>
       ) : job ? (
         <div className="space-y-3 text-sm">

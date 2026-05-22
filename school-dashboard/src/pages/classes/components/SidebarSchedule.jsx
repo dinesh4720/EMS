@@ -5,16 +5,16 @@ function ScheduleSkeleton() {
   return (
     <div className="bg-surface rounded-lg border border-divider p-5">
       <div className="flex items-center justify-between mb-3">
-        <div className="h-4 w-28 bg-surface-2 rounded animate-pulse" />
-        <div className="h-3 w-8 bg-surface-2 rounded animate-pulse" />
+        <div className="h-4 w-28 animate-shimmer rounded" />
+        <div className="h-3 w-8 animate-shimmer rounded" />
       </div>
       <div className="space-y-2">
         {[1, 2].map(i => (
           <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg bg-surface-2">
-            <div className="w-1 h-8 rounded-full bg-surface-2 animate-pulse" />
+            <div className="w-1 h-8 rounded-full animate-shimmer" />
             <div className="flex-1 space-y-1.5">
-              <div className="h-3.5 w-24 bg-surface-2 rounded animate-pulse" />
-              <div className="h-2.5 w-32 bg-surface-2 rounded animate-pulse" />
+              <div className="h-3.5 w-24 animate-shimmer rounded" />
+              <div className="h-2.5 w-32 animate-shimmer rounded" />
             </div>
           </div>
         ))}

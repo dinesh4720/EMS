@@ -100,7 +100,7 @@ export default function NPSAnalyticsPage() {
             <h3 className="text-sm font-semibold text-fg">Survey Configuration</h3>
           </div>
           {configLoading ? (
-            <div className="h-12 animate-pulse bg-surface-2 rounded" />
+            <div className="h-12 animate-shimmer rounded" />
           ) : (
             <div className="flex flex-wrap items-end gap-4">
               <div className="flex items-center gap-3">

@@ -88,14 +88,14 @@ function ChartSection({ attendanceRows = [], feeCollectionData = [], loading = f
                 <div key={i} className="space-y-2">
                   <div className="flex items-center justify-between gap-3">
                     <div className="space-y-1">
-                      <div className="h-3 w-24 bg-surface-2 rounded animate-pulse" />
-                      <div className="h-2.5 w-16 bg-surface-2 rounded animate-pulse" />
+                      <div className="h-3 w-24 animate-shimmer rounded" />
+                      <div className="h-2.5 w-16 animate-shimmer rounded" />
                     </div>
-                    <div className="h-3 w-8 bg-surface-2 rounded animate-pulse" />
+                    <div className="h-3 w-8 animate-shimmer rounded" />
                   </div>
                   <div className="h-2 rounded-full bg-surface-2 overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-surface-2 animate-pulse"
+                      className="h-full rounded-full animate-shimmer"
                       style={{ width: `${w}%` }}
                     />
                   </div>
@@ -151,7 +151,7 @@ function ChartSection({ attendanceRows = [], feeCollectionData = [], loading = f
                 {[45, 70, 55, 80, 60, 75].map((h, i) => (
                   <div key={i} className="flex-1 flex flex-col justify-end">
                     <div
-                      className="w-full bg-surface-2 rounded-t animate-pulse"
+                      className="w-full animate-shimmer rounded-t"
                       style={{ height: `${h}%` }}
                     />
                   </div>
@@ -160,7 +160,7 @@ function ChartSection({ attendanceRows = [], feeCollectionData = [], loading = f
               <div className="h-px w-full bg-surface-2 mt-1" />
               <div className="flex justify-around mt-2">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <div key={i} className="h-2.5 w-6 bg-surface-2 rounded animate-pulse" />
+                  <div key={i} className="h-2.5 w-6 animate-shimmer rounded" />
                 ))}
               </div>
             </div>

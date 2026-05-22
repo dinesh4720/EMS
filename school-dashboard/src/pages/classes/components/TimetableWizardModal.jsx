@@ -1179,7 +1179,7 @@ export default function TimetableWizardModal({
                       <div key={row} className="flex gap-px bg-surface-2">
                         {Array.from({ length: 7 }).map((_, col) => (
                           <div key={col} className="flex-1 bg-surface p-2">
-                            <div className="h-8 bg-surface-2 rounded animate-pulse" />
+                            <div className="h-8 animate-shimmer rounded" />
                           </div>
                         ))}
                       </div>

@@ -8,7 +8,7 @@ import SkeletonCard from './SkeletonCard';
 import SkeletonForm from './SkeletonForm';
 
 const Bone = ({ className = "" }) => (
-  <div className={`bg-surface-hover rounded animate-pulse ${className}`} />
+  <div className={`animate-shimmer rounded ${className}`} />
 );
 
 /** Full table page skeleton with optional title, search bar, KPI cards, and table */

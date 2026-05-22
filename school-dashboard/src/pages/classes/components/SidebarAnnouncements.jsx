@@ -6,14 +6,14 @@ function AnnouncementsSkeleton() {
   return (
     <div className="bg-surface rounded-lg border border-divider p-5">
       <div className="flex items-center justify-between mb-3">
-        <div className="h-4 w-24 bg-surface-2 rounded animate-pulse" />
-        <div className="h-3 w-10 bg-surface-2 rounded animate-pulse" />
+        <div className="h-4 w-24 animate-shimmer rounded" />
+        <div className="h-3 w-10 animate-shimmer rounded" />
       </div>
       <div className="space-y-2">
         {[1, 2, 3].map(i => (
           <div key={i} className="p-2.5 rounded-lg bg-surface-2">
-            <div className="h-3.5 w-3/4 bg-surface-2 rounded animate-pulse" />
-            <div className="h-2.5 w-16 bg-surface-2 rounded animate-pulse mt-1.5" />
+            <div className="h-3.5 w-3/4 animate-shimmer rounded" />
+            <div className="h-2.5 w-16 animate-shimmer rounded mt-1.5" />
           </div>
         ))}
       </div>

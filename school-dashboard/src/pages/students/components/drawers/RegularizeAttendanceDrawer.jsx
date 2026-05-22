@@ -139,13 +139,13 @@ export default function RegularizeAttendanceDrawer({ isOpen, onOpenChange, stude
                     {Array.from({ length: 3 }).map((_, i) => (
                       <div key={`skel-${i}`} className="flex items-center justify-between p-4 border border-default-200 rounded-xl">
                         <div className="flex items-center gap-4">
-                          <div className="w-5 h-5 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+                          <div className="w-5 h-5 animate-shimmer rounded" />
                           <div className="flex items-center gap-3">
-                            <div className="p-2 bg-gray-200 dark:bg-zinc-700 rounded-lg w-9 h-9 animate-pulse" />
-                            <div className="h-4 w-28 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+                            <div className="p-2 animate-shimmer rounded-lg w-9 h-9" />
+                            <div className="h-4 w-28 animate-shimmer rounded" />
                           </div>
                         </div>
-                        <div className="h-8 w-36 bg-gray-200 dark:bg-zinc-700 rounded animate-pulse" />
+                        <div className="h-8 w-36 animate-shimmer rounded" />
                       </div>
                     ))}
                   </div>

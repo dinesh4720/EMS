@@ -58,7 +58,7 @@ function StatCard({ label, value, subtext, icon: Icon, color = 'gray', trend, hr
       {/* Value */}
       <div>
         {isLoading ? (
-          <div className="h-6 w-20 bg-surface-2 rounded animate-pulse" />
+          <div className="h-6 w-20 animate-shimmer rounded" />
         ) : (
           <h3 className="text-xl font-semibold text-gray-800 dark:text-zinc-100">
             {value}
@@ -71,7 +71,7 @@ function StatCard({ label, value, subtext, icon: Icon, color = 'gray', trend, hr
 
       {/* Subtext */}
       {isLoading ? (
-        <div className="h-3 w-32 bg-surface-2 rounded animate-pulse mt-2" />
+        <div className="h-3 w-32 animate-shimmer rounded mt-2" />
       ) : subtext ? (
         <p className="text-xs text-fg-faint mt-2">
           {subtext}

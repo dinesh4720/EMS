@@ -4,7 +4,7 @@
  */
 
 export const Bone = ({ className = "", style }) => (
-  <div className={`bg-surface-hover rounded animate-pulse ${className}`} style={style} />
+  <div className={`animate-shimmer rounded ${className}`} style={style} />
 );
 
 const SkeletonCard = ({

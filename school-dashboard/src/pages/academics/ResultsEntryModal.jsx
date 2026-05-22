@@ -201,16 +201,16 @@ const ResultsEntryModal = ({ examId, onClose }) => {
     return (
       <div className="space-y-4 py-4 px-2">
         <div className="flex items-center gap-3">
-          <div className="h-6 w-48 bg-surface-hover rounded animate-pulse" />
-          <div className="h-5 w-20 bg-surface-hover rounded-full animate-pulse" />
+          <div className="h-6 w-48 animate-shimmer rounded" />
+          <div className="h-5 w-20 animate-shimmer rounded-full" />
         </div>
-        <div className="h-10 bg-surface-hover rounded animate-pulse" />
+        <div className="h-10 animate-shimmer rounded" />
         <div className="space-y-2">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="flex gap-4 items-center">
-              <div className="h-10 flex-1 bg-surface-hover rounded animate-pulse" />
-              <div className="h-10 w-24 bg-surface-hover rounded animate-pulse" />
-              <div className="h-10 w-24 bg-surface-hover rounded animate-pulse" />
+              <div className="h-10 flex-1 animate-shimmer rounded" />
+              <div className="h-10 w-24 animate-shimmer rounded" />
+              <div className="h-10 w-24 animate-shimmer rounded" />
             </div>
           ))}
         </div>

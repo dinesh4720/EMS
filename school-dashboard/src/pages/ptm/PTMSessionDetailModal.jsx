@@ -155,9 +155,9 @@ const PTMSessionDetailModal = ({ sessionId, onClose, onDataChanged }) => {
     >
       {loading || !session ? (
         <div className="space-y-4" role="status" aria-busy="true">
-          <div className="h-4 w-2/3 bg-surface-2 rounded animate-pulse" />
-          <div className="h-32 bg-surface-2 rounded animate-pulse" />
-          <div className="h-24 bg-surface-2 rounded animate-pulse" />
+          <div className="h-4 w-2/3 animate-shimmer rounded" />
+          <div className="h-32 animate-shimmer rounded" />
+          <div className="h-24 animate-shimmer rounded" />
         </div>
       ) : (
         <div className="space-y-6">

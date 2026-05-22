@@ -70,20 +70,20 @@ const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
     return (
       <div className="space-y-4 py-4 px-2">
         <div className="flex items-center gap-3">
-          <div className="h-6 w-48 bg-surface-2 rounded animate-pulse" />
-          <div className="h-5 w-20 bg-surface-2 rounded-full animate-pulse" />
+          <div className="h-6 w-48 animate-shimmer rounded" />
+          <div className="h-5 w-20 animate-shimmer rounded-full" />
         </div>
         <div className="grid grid-cols-2 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="space-y-2 p-3 bg-surface-2 rounded-lg">
-              <div className="h-3 w-16 bg-surface-2 rounded animate-pulse" />
-              <div className="h-5 w-24 bg-surface-2 rounded animate-pulse" />
+              <div className="h-3 w-16 animate-shimmer rounded" />
+              <div className="h-5 w-24 animate-shimmer rounded" />
             </div>
           ))}
         </div>
         <div className="space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-10 bg-surface-2 rounded animate-pulse" />
+            <div key={i} className="h-10 animate-shimmer rounded" />
           ))}
         </div>
       </div>

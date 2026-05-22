@@ -70,7 +70,7 @@ const DataToolsSettings = lazyWithRetry(() => import("./DataToolsSettings"));
 
 function SettingsPageSkeleton() {
   return (
-    <div className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-lg animate-pulse">
+    <div className="animate-shimmer rounded-lg border border-gray-100 dark:border-zinc-800">
       {/* Header skeleton */}
       <div className="px-6 py-5 border-b border-gray-100 dark:border-zinc-800">
         <div className="h-6 bg-gray-200 dark:bg-zinc-800 rounded w-1/3 mb-2" />

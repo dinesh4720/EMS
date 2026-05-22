@@ -19,7 +19,7 @@ const SkeletonTable = ({ columns = 4, rows = 5 }) => {
           const style = col?.width ? { width: col.width, minWidth: col.width, flexShrink: 0 } : undefined;
           return (
             <div key={`skeleton-col-${index}`} className={col?.width ? '' : 'flex-1'} style={style}>
-              <div className="h-4 bg-surface-hover rounded animate-pulse" style={{ width: col?.label ? `${Math.min(col.label.length * 8, 100)}px` : undefined }} />
+              <div className="h-4 animate-shimmer rounded" style={{ width: col?.label ? `${Math.min(col.label.length * 8, 100)}px` : undefined }} />
             </div>
           );
         })}
@@ -35,7 +35,7 @@ const SkeletonTable = ({ columns = 4, rows = 5 }) => {
             const style = col?.width ? { width: col.width, minWidth: col.width, flexShrink: 0 } : undefined;
             return (
               <div key={`skeleton-cell-${cellIndex}`} className={col?.width ? '' : 'flex-1'} style={style}>
-                <div className="h-4 bg-surface-hover rounded animate-pulse" />
+                <div className="h-4 animate-shimmer rounded" />
               </div>
             );
           })}

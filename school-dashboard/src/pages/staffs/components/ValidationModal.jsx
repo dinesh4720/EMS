@@ -33,9 +33,9 @@ export default function ValidationModal({
             <div className="space-y-4 py-4">
               {Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} className="rounded-lg p-4 border border-border-token space-y-2">
-                  <div className="h-4 w-32 bg-surface-2 rounded animate-pulse" />
-                  <div className="h-3 w-full bg-surface-2 rounded animate-pulse" />
-                  <div className="h-3 w-2/3 bg-surface-2 rounded animate-pulse" />
+                  <div className="h-4 w-32 animate-shimmer rounded" />
+                  <div className="h-3 w-full animate-shimmer rounded" />
+                  <div className="h-3 w-2/3 animate-shimmer rounded" />
                 </div>
               ))}
             </div>
