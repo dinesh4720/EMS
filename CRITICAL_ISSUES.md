@@ -13,6 +13,7 @@ Audit conducted: 2026-03-05
   1. Revoke and regenerate the key in Firebase Console immediately
   2. Add the file to `.gitignore`
   3. Remove it from git history: `git filter-repo --path emss-4fd81-firebase-adminsdk-fbsvc-6b0da3db14.json --invert-paths`
+- **Status (2026-05-21):** File verified absent from git history across all branches in both `EMS` and `EMS-backend` repos. Both repos already include `*.firebase-adminsdk*.json` in `.gitignore`. `.env.example` placeholder sanitized to prevent false positives from secret scanners.
 
 ---
 
