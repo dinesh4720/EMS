@@ -2011,7 +2011,13 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
     if (path === '/holidays')     return json(state.holidays);
     if (path === '/subjects')     return json(state.subjects);
     if (path === '/permissions')  return json(state.user.permissions);
-    if (path === '/permissions/me')  return json(state.user.permissions || {});
+    if (path === '/permissions/me') {
+      const perms = state.user.permissions || {};
+      const permArray = Object.entries(perms)
+        .filter(([, v]) => v)
+        .map(([module]) => ({ module, view: true, create: true, edit: true, delete: true }));
+      return json({ permissions: permArray });
+    }
     if (path === '/communication-settings') return json({ emailEnabled: true, smsEnabled: true, pushEnabled: true, whatsappEnabled: false });
 
     /* ── Trash ── */
