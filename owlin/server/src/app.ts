@@ -66,6 +66,7 @@ export function createApp(): express.Application {
 
   // ── Error handler ────────────────────────────────────────────────────────
   app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    void _next; // Express error-handler signature requires 4 arguments
     console.error('Unhandled error:', err);
     res.status(500).json({ error: 'Internal server error' });
   });

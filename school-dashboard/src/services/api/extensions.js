@@ -5,9 +5,13 @@ import { API_URL } from '../../config/api.js';
 export const parentApi = {
   getAll: (params = {}, options = {}) => {
     const query = new URLSearchParams(params).toString();
-    return request(`/parents${query ? `?${query}` : ''}`, options);
+    const url = `/parents${query ? `?${query}` : ''}`;
+    return options && Object.keys(options).length ? request(url, options) : request(url);
   },
-  getById: (id, options = {}) => request(`/parents/${id}`, options),
+  getById: (id, options = {}) => {
+    const url = `/parents/${id}`;
+    return options && Object.keys(options).length ? request(url, options) : request(url);
+  },
   resetPassword: (id, options = {}) => request(`/parents/${id}/reset-password`, { method: 'POST', ...options }),
   updateStatus: (id, status, options = {}) => request(`/parents/${id}/status`, {
     method: 'PUT',

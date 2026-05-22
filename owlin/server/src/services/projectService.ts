@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { getDb } from '../config/database.js';
-import { generateApiKey, hashApiKey } from '../utils/apiKey.js';
+import { generateApiKey } from '../utils/apiKey.js';
 
 export interface Project {
   id: string;

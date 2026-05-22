@@ -9,7 +9,7 @@ export default function Errors() {
   const [view, setView] = useState<View>('list')
   const [groups, setGroups] = useState<ErrorGroup[]>([])
   const [stats, setStats] = useState<ErrorStats | null>(null)
-  const [_total, setTotal] = useState(0)
+  const [, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('unresolved')
   const [moduleFilter, setModuleFilter] = useState('')
@@ -21,7 +21,7 @@ export default function Errors() {
   const fetchGroups = useCallback(async () => {
     setLoading(true)
     try {
-      const params: Record<string, any> = { limit: 50 }
+      const params: Record<string, unknown> = { limit: 50 }
       if (statusFilter) params.status = statusFilter
       if (moduleFilter) params.module = moduleFilter
       const result = await errorsApi.getErrorGroups(params)
@@ -56,7 +56,7 @@ export default function Errors() {
     await errorsApi.updateStatus(fingerprint, status)
     fetchGroups()
     if (selectedGroup) {
-      selectedGroup.status = status as any
+      selectedGroup.status = status as string
       setSelectedGroup({ ...selectedGroup })
     }
   }

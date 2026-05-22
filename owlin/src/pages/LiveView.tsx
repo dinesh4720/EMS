@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { socketService } from '../services/socket'
 import { formatDate, getEventTypeColor, getEventTypeLabel } from '../utils'
 import { EventType } from '../types'
@@ -21,6 +21,12 @@ export default function LiveView() {
   const [isConnected, setIsConnected] = useState(false)
   const endRef = useRef<HTMLDivElement>(null)
 
+  const handleNewEvent = useCallback((event: LiveEvent) => {
+    if (!isPaused) {
+      setEvents((prev) => [event, ...prev].slice(0, 100))
+    }
+  }, [isPaused])
+
   useEffect(() => {
     socketService.connect()
     socketService.onLiveEvent(handleNewEvent)
@@ -34,19 +40,13 @@ export default function LiveView() {
       clearInterval(interval)
       socketService.offLiveEvent(handleNewEvent)
     }
-  }, [])
+  }, [handleNewEvent])
 
   useEffect(() => {
     if (!isPaused && endRef.current) {
       endRef.current.scrollIntoView({ behavior: 'smooth' })
     }
   }, [events, isPaused])
-
-  function handleNewEvent(event: LiveEvent) {
-    if (!isPaused) {
-      setEvents((prev) => [event, ...prev].slice(0, 100))
-    }
-  }
 
   function clearEvents() {
     setEvents([])

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { analyticsApi } from '../services/api'
 
 type TimeRange = 'all' | 'today' | 'week' | 'month'
@@ -16,11 +16,7 @@ export default function PageUsage() {
   const [uniquePages, setUniquePages] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    fetchPageUsage()
-  }, [timeRange])
-
-  const fetchPageUsage = async () => {
+  const fetchPageUsage = useCallback(async () => {
     setIsLoading(true)
     try {
       const response = await analyticsApi.getPageUsage(timeRange)
@@ -34,7 +30,11 @@ export default function PageUsage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [timeRange])
+
+  useEffect(() => {
+    fetchPageUsage()
+  }, [fetchPageUsage])
 
   const getBarWidth = (visits: number) => {
     if (data.length === 0) return '0%'
