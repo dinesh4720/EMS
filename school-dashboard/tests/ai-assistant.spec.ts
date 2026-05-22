@@ -225,8 +225,8 @@ test.describe('AI Assistant — Chat Interface & Prompts', () => {
     await textarea.fill('Test loading state');
     await textarea.press('Enter');
 
-    // Loading indicator should appear (the "thinking" text and pulsing icon)
-    const loadingIndicator = page.locator('[class*="animate-pulse"]');
+    // Loading indicator should appear (the "thinking" text and shimmering icon)
+    const loadingIndicator = page.locator('[class*="animate-shimmer"]');
     await expect(loadingIndicator.first()).toBeVisible({ timeout: 3000 });
 
     // After response arrives, loading should disappear and response should show
