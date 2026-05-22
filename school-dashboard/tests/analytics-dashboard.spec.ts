@@ -192,7 +192,7 @@ test.describe('Analytics Dashboard', () => {
     const noRecords = page.getByText('No attendance records').first();
     const chartWrapper = page.locator('.recharts-wrapper').first();
     await expect(
-      noRecords.or(chartWrapper),
+      noRecords.or(chartWrapper).first(),
     ).toBeVisible({ timeout: 15000 });
   });
 
