@@ -55,6 +55,7 @@ const TransferCertificatePage = lazyWithRetry(() => import("./pages/students/Tra
 const ReportsPage = lazyWithRetry(() => import("./pages/reports"));
 const DataToolsPage = lazyWithRetry(() => import("./pages/data-tools"));
 const StyleGuidePage = lazyWithRetry(() => import("./pages/StyleGuide"));
+const IAPage = lazyWithRetry(() => import("./pages/IA"));
 
 // Lazy load components that aren't needed on initial render
 const PublicFormSubmission = lazyWithRetry(() => import("./pages/PublicFormSubmission"));
@@ -476,6 +477,11 @@ function AuthenticatedApp() {
                     <Route path="/style-guide" element={
                       <RouteEB>
                         <StyleGuidePage />
+                      </RouteEB>
+                    } />
+                    <Route path="/ia" element={
+                      <RouteEB>
+                        <IAPage />
                       </RouteEB>
                     } />
                     {/* 404 catch-all for authenticated users */}
