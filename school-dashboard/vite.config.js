@@ -107,5 +107,6 @@ export default defineConfig({
   test: {
     include: ['src/**/*.test.{js,jsx,ts,tsx}'],
     exclude: ['tests/**', 'node_modules/**'],
+    setupFiles: ['./src/test-setup.js'],
   },
 })
