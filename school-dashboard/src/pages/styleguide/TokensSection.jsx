@@ -106,6 +106,7 @@ const COLOR_GROUPS = [
     tokens: [
       { varName: "--glass-bg", label: "Glass background" },
       { varName: "--glass-border", label: "Glass border" },
+      { varName: "--glass-blur", label: "Glass blur filter" },
     ],
   },
 ];
