@@ -43,7 +43,7 @@ export function StudentsTab({ id, cls, navigate, classesEnhancedApi, openStudent
   ), [students, cls]);
 
   const filteredStudents = useMemo(() => {
-    let list = classStudents.filter(s => {
+    const list = classStudents.filter(s => {
       const matchesSearch = s.name?.toLowerCase().includes(searchQuery.toLowerCase()) || String(s.rollNo).includes(searchQuery);
       const matchesFilter = filter === "all" ? true : s.feeStatus === filter;
       return matchesSearch && matchesFilter;

@@ -18,6 +18,7 @@ export const useAiAssistant = () => {
 };
 
 export const AiAssistantProvider = ({ children }) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [isIdle, setIsIdle] = useState(false);
   const [panelWidth, setPanelWidth] = useState(600);
@@ -90,6 +91,7 @@ export function AiAssistantLayout({ children }) {
 // COMPONENT: AI Assistant Panel
 // ============================================
 export function AiAssistantPanel({ children }) {
+  const { t } = useTranslation();
   const { isOpen, closePanel } = useAiAssistant();
   const [isVisible, setIsVisible] = useState(isOpen);
   const panelRef = useRef(null);

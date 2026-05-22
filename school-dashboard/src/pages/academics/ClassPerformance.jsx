@@ -161,7 +161,7 @@ const ClassPerformance = () => {
       sections.push('Student Rankings');
       sections.push('Rank,Name,Roll No,Score %,Grade,Trend');
       ranked.forEach(s => {
-        sections.push(`${s.rank ?? ''},\"${s.name}\",${s.rollNo},${s.percentage != null ? s.percentage.toFixed(1) : ''},${s.grade || ''},${s.trend || ''}`);
+        sections.push(`${s.rank ?? ''},"${s.name}",${s.rollNo},${s.percentage != null ? s.percentage.toFixed(1) : ''},${s.grade || ''},${s.trend || ''}`);
       });
       sections.push('');
     }

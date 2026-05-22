@@ -1,0 +1,13 @@
+# Third-party / bundled SDK files
+owlin-sdk/**
+public/owlin-tracker.js
+
+# Generated artifacts
+playwright-report*/
+test-results*/
+dist/
+node_modules/
+
+# Test scripts at repo root
+test-student-dashboard.js
+test-section-validation.js

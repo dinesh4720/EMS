@@ -47,6 +47,7 @@ export default function StaffOverviewTab({
   classTeacherAssignments,
   staffAttendance
 }) {
+  const { t } = useTranslation();
   const chart = useChartTheme();
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];

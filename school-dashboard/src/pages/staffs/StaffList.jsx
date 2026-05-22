@@ -310,7 +310,7 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
   });
 
   const statusCounts = useMemo(() => {
-    let all = staff.length;
+    const all = staff.length;
     let active = 0;
     let today = 0;
     for (const s of staff) {

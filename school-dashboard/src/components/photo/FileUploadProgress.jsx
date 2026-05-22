@@ -107,6 +107,7 @@ export const FileUploadContainer = ({ uploads = [], onRemove, onChange, classNam
 };
 
 export const UnifiedUploadProgress = ({ uploads = [], onClose }) => {
+    const { t } = useTranslation();
     if (!uploads.length) return null;
 
     const total = uploads.length;

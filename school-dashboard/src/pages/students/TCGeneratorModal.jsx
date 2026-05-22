@@ -277,7 +277,7 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
                       window.print();
                       window.close();
                   }, 500);
-                <\/script>
+                </script>
               </body>
             </html>`;
 

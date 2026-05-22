@@ -109,6 +109,7 @@ function ParentCard({
   parentNameRef,
   parentPhoneRef,
 }) {
+  const { t } = useTranslation();
   return (
     <div className="p-4 bg-default-50 rounded-lg border border-default-200 space-y-4">
       <div className="flex justify-between items-center">
@@ -206,6 +207,7 @@ function ParentCard({
 }
 
 function GuardiansSection({ guardians, formData, updateParent, removeParent, addGuardian }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-4 pt-2 border-t border-solid border-default-200">
       <div className="flex justify-between items-center">
@@ -266,6 +268,7 @@ function GuardiansSection({ guardians, formData, updateParent, removeParent, add
 }
 
 function SiblingsSection({ siblings, updateSibling, addSibling, removeSibling, classesWithTeachers }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-4 pt-2 border-t border-solid border-default-200">
       <div className="flex justify-between items-center">
@@ -636,6 +639,7 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
 }
 
 function TransportSection({ formData, updateField }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-4 pt-2 border-t border-solid border-default-200">
       <label className="text-sm font-semibold text-default-900 block mt-2">{t('pages.additionalRequirements')}</label>

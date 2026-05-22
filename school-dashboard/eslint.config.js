@@ -6,9 +6,27 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 
 export default [
   {
-    ignores: ['dist/**', 'node_modules/**', 'public/owlin-tracker.js'],
+    ignores: ['dist/**', 'node_modules/**', 'public/owlin-tracker.js', 'owlin-sdk/**', 'playwright-report*/**', 'test-results*/**', 'test-student-dashboard.js', 'test-section-validation.js'],
   },
   js.configs.recommended,
+  // Config files run in Node environment
+  {
+    files: ['vite.config.js'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+  // Vitest test files
+  {
+    files: ['**/*.test.{js,jsx}'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
   {
     files: ['**/*.{js,jsx}'],
     languageOptions: {
