@@ -8,6 +8,8 @@ import FeesKpiStrip from "../../components/fees/FeesKpiStrip";
 import PaymentsTable from "../../components/fees/PaymentsTable";
 import PaymentSheet from "../../components/fees/PaymentSheet";
 import ToolbarSearch from "../../components/ui/ToolbarSearch";
+import SkeletonTable from "../../components/skeletons/SkeletonTable";
+import ErrorState from "../../components/ui/ErrorState";
 import logger from "../../utils/logger";
 
 const VALID_FILTERS = new Set(["all", "paid", "pending", "overdue"]);
@@ -33,7 +35,7 @@ export default function FeesPage() {
     setSheetOpen(true);
   }
 
-  const { filtered, kpis, isLoading, refetch } = useFeesData({ status, search });
+  const { filtered, kpis, isLoading, error, refetch } = useFeesData({ status, search });
 
   const setStatus = (next) => {
     setSearchParams(
@@ -159,9 +161,14 @@ export default function FeesPage() {
       </div>
 
       {isLoading ? (
-        <div className="fees-table">
-          <div className="fees-table__empty">Loading payments…</div>
-        </div>
+        <SkeletonTable columns={6} rows={8} />
+      ) : error ? (
+        <ErrorState
+          error={error}
+          onRetry={refetch}
+          retryLabel="Retry"
+          size="md"
+        />
       ) : (
         <PaymentsTable
           rows={filtered}
