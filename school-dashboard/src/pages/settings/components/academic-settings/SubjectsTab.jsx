@@ -24,6 +24,10 @@ export default function SubjectsTab({
   const { t } = useTranslation();
   const subjects = localSettings.subjects || [];
   const hasSubjects = subjects.length > 0;
+  const sortedSubjects = useMemo(
+    () => [...(localSettings.subjects || [])].sort((left, right) => left.name.localeCompare(right.name)),
+    [localSettings.subjects],
+  );
 
   const handleSync = async () => {
     try {
@@ -77,9 +81,7 @@ export default function SubjectsTab({
 
       {hasSubjects ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {useMemo(() => [...subjects]
-            .sort((left, right) => left.name.localeCompare(right.name)), [subjects])
-            .map((subject, index) => {
+          {sortedSubjects.map((subject, index) => {
               const subjectId = subject.id || subject._id || `subject-${index}`;
               return (
                 <Card key={subjectId} padding="sm" className="group">
