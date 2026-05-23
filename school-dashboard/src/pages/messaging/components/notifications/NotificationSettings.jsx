@@ -34,26 +34,26 @@ const CHANNEL_META = {
   email: {
     icon: Mail,
     label: 'Email',
-    activeClasses: 'border-blue-500 bg-blue-50 dark:bg-blue-950/40',
-    iconClasses: 'text-blue-600 dark:text-blue-400',
+    activeClasses: 'border-[var(--info)] bg-[var(--info-bg)]',
+    iconClasses: 'text-[var(--info)]',
   },
   sms: {
     icon: MessageSquare,
     label: 'SMS',
-    activeClasses: 'border-purple-500 bg-purple-50 dark:bg-purple-950/40',
-    iconClasses: 'text-purple-600 dark:text-purple-400',
+    activeClasses: 'border-[var(--accent)] bg-[var(--accent-bg)]',
+    iconClasses: 'text-[var(--accent)]',
   },
   whatsapp: {
     icon: Phone,
     label: 'WhatsApp',
-    activeClasses: 'border-green-500 bg-green-50 dark:bg-green-950/40',
-    iconClasses: 'text-green-600 dark:text-green-400',
+    activeClasses: 'border-[var(--ok)] bg-[var(--ok-bg)]',
+    iconClasses: 'text-[var(--ok)]',
   },
   inApp: {
     icon: Bell,
     label: 'In-App',
-    activeClasses: 'border-amber-500 bg-amber-50 dark:bg-amber-950/40',
-    iconClasses: 'text-amber-600 dark:text-amber-400',
+    activeClasses: 'border-[var(--warn)] bg-[var(--warn-bg)]',
+    iconClasses: 'text-[var(--warn)]',
   },
 };
 
@@ -337,8 +337,8 @@ export default function NotificationSettings({ userRole = 'staff' }) {
       <Card padding="md">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-lg bg-amber-50 dark:bg-amber-950 flex items-center justify-center shrink-0">
-              <Clock size={18} className="text-amber-600 dark:text-amber-400" />
+            <div className="w-10 h-10 rounded-lg bg-[var(--warn-bg)] flex items-center justify-center shrink-0">
+              <Clock size={18} className="text-[var(--warn)]" />
             </div>
             <div className="min-w-0">
               <h3 className="font-semibold text-sm text-fg">

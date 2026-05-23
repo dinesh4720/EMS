@@ -265,7 +265,7 @@ export default function UserManagement() {
                                                     size="sm"
                                                     variant="flat"
                                                     color={item.status === "active" ? "success" : "default"}
-                                                    startContent={<span className={`w-1.5 h-1.5 rounded-full ml-1 ${item.status === "active" ? 'bg-success-500' : 'bg-fg-faint'}`}></span>}
+                                                    startContent={<span className={`w-1.5 h-1.5 rounded-full ml-1 ${item.status === "active" ? 'bg-[var(--ok-bg)]' : 'bg-fg-faint'}`}></span>}
                                                 >
                                                     {item.status || "Active"}
                                                 </Chip>
@@ -342,10 +342,10 @@ export default function UserManagement() {
                                 </span>
                             </ModalHeader>
                             <ModalBody>
-                                <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg mb-2">
+                                <div className="p-4 bg-[var(--accent-bg)] rounded-lg mb-2">
                                     <div className="flex gap-3">
                                         <div className="mt-1"><Shield size={18} className="text-primary" /></div>
-                                        <div className="text-xs text-primary-700 dark:text-primary-300">
+                                        <div className="text-xs text-[var(--accent)]">
                                             Changes will take effect immediately. The staff member will need to log in with the new password on the Teacher App.
                                         </div>
                                     </div>
@@ -407,10 +407,10 @@ export default function UserManagement() {
                             <ModalBody>
                                 {!resetting && !resetSuccess && !generatedPassword ? (
                                     <div className="space-y-4">
-                                        <div className="p-4 bg-warning-50 dark:bg-warning-900/20 rounded-lg border border-warning-200 dark:border-warning-800">
+                                        <div className="p-4 bg-[var(--warn-bg)] rounded-lg border border-[var(--warn-border)]">
                                             <div className="flex gap-3">
                                                 <AlertTriangle size={20} className="text-warning flex-shrink-0 mt-0.5" />
-                                                <div className="text-sm text-warning-800 dark:text-warning-200">
+                                                <div className="text-sm text-[var(--warn)]">
                                                     <p className="font-semibold mb-1">Are you sure?</p>
                                                     <p className="text-xs">This will generate a new password for <strong>{selectedUser?.name}</strong>. Their current password will stop working immediately.</p>
                                                 </div>
@@ -428,10 +428,10 @@ export default function UserManagement() {
                                     </div>
                                 ) : resetSuccess ? (
                                     <div className="space-y-4">
-                                        <div className="p-4 bg-warning-50 dark:bg-warning-900/20 rounded-lg border border-warning-200 dark:border-warning-800">
+                                        <div className="p-4 bg-[var(--warn-bg)] rounded-lg border border-[var(--warn-border)]">
                                             <div className="flex gap-3">
                                                 <AlertTriangle size={20} className="text-warning flex-shrink-0 mt-0.5" />
-                                                <div className="text-sm text-warning-800 dark:text-warning-200">
+                                                <div className="text-sm text-[var(--warn)]">
                                                     <p className="font-semibold mb-1">{t('pages.passwordShownOnce')}</p>
                                                     <p className="text-xs">This password will only be displayed this one time. Please copy it now and share it securely with the user. You won't be able to see it again after closing this modal.</p>
                                                 </div>
@@ -471,8 +471,8 @@ export default function UserManagement() {
                                             )}
                                         </div>
 
-                                        <div className="p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
-                                            <p className="text-xs text-primary-700 dark:text-primary-300">
+                                        <div className="p-3 bg-[var(--accent-bg)] rounded-lg">
+                                            <p className="text-xs text-[var(--accent)]">
                                                 <strong>{t('pages.nextSteps')}</strong> Share this password with {selectedUser?.name}. They can log in and change their password from their profile settings.
                                             </p>
                                         </div>

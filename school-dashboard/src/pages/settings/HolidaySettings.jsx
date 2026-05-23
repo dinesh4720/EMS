@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useEntityFetch } from "../../hooks/useEntityFetch";
-import { Card, CardBody, CardHeader, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Select, SelectItem, Spinner } from "@heroui/react";
+import { Card, CardBody, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Select, SelectItem, Spinner } from "@heroui/react";
 import { Plus, Edit, Trash2, Calendar } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
@@ -165,20 +165,20 @@ export default function HolidaySettings() {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        <div className="p-4 bg-success-50 rounded-lg border border-success-200">
+        <div className="p-4 bg-[var(--ok-bg)] rounded-lg border border-[var(--ok-border)]">
           <div className="flex items-center gap-2 mb-2">
-            <Calendar size={18} className="text-success-600" />
-            <span className="text-xs text-success-700 uppercase tracking-wider">{t('pages.totalHolidays')}</span>
+            <Calendar size={18} className="text-[var(--ok)]" />
+            <span className="text-xs text-[var(--ok)] uppercase tracking-wider">{t('pages.totalHolidays')}</span>
           </div>
-          <p className="text-2xl font-semibold text-success-700">{holidays.length}</p>
+          <p className="text-2xl font-semibold text-[var(--ok)]">{holidays.length}</p>
         </div>
 
-        <div className="p-4 bg-warning-50 rounded-lg border border-warning-200">
+        <div className="p-4 bg-[var(--warn-bg)] rounded-lg border border-[var(--warn-border)]">
           <div className="flex items-center gap-2 mb-2">
-            <Calendar size={18} className="text-warning-600" />
-            <span className="text-xs text-warning-700 uppercase tracking-wider">{t('pages.national')}</span>
+            <Calendar size={18} className="text-[var(--warn)]" />
+            <span className="text-xs text-[var(--warn)] uppercase tracking-wider">{t('pages.national')}</span>
           </div>
-          <p className="text-2xl font-semibold text-warning-700">
+          <p className="text-2xl font-semibold text-[var(--warn)]">
             {holidays.filter(h => h.holidayType === "National").length}
           </p>
         </div>
@@ -193,12 +193,12 @@ export default function HolidaySettings() {
           </p>
         </div>
 
-        <div className="p-4 bg-primary-50 rounded-lg border border-primary-200">
+        <div className="p-4 bg-[var(--accent-bg)] rounded-lg border border-[var(--accent-border)]">
           <div className="flex items-center gap-2 mb-2">
-            <Calendar size={18} className="text-primary-600" />
-            <span className="text-xs text-primary-700 uppercase tracking-wider">{t('pages.school1')}</span>
+            <Calendar size={18} className="text-[var(--accent)]" />
+            <span className="text-xs text-[var(--accent)] uppercase tracking-wider">{t('pages.school1')}</span>
           </div>
-          <p className="text-2xl font-semibold text-primary-700">
+          <p className="text-2xl font-semibold text-[var(--accent)]">
             {holidays.filter(h => h.holidayType === "School").length}
           </p>
         </div>

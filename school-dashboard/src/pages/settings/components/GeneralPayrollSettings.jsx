@@ -257,14 +257,14 @@ export default function GeneralPayrollSettings() {
                 parseInt(tempDisburseDate) >= 1 &&
                 parseInt(tempDisburseDate) <= 31 && (
                   <div className="flex items-center">
-                    <div className="p-4 bg-primary-50/50 rounded-xl border border-primary-100 w-full">
-                      <p className="text-xs text-primary-600 font-medium uppercase tracking-wider mb-1">
+                    <div className="p-4 bg-[var(--accent-bg)] rounded-xl border border-[var(--accent-border)] w-full">
+                      <p className="text-xs text-[var(--accent)] font-medium uppercase tracking-wider mb-1">
                         Preview
                       </p>
-                      <p className="text-lg font-semibold text-primary-700">
+                      <p className="text-lg font-semibold text-[var(--accent)]">
                         {getOrdinalSuffix(tempDisburseDate)} of every month
                       </p>
-                      <p className="text-xs text-primary-500 mt-1">
+                      <p className="text-xs text-[var(--accent)] mt-1">
                         Salaries will be processed on this date
                       </p>
                     </div>
@@ -390,14 +390,14 @@ export default function GeneralPayrollSettings() {
                 <SelectItem key="upi">UPI</SelectItem>
               </Select>
               <div className="flex items-center">
-                <div className="p-4 bg-success-50/50 rounded-xl border border-success-100 w-full">
-                  <p className="text-xs text-success-600 font-medium uppercase tracking-wider mb-1">
+                <div className="p-4 bg-[var(--ok-bg)] rounded-xl border border-[var(--ok-border)] w-full">
+                  <p className="text-xs text-[var(--ok)] font-medium uppercase tracking-wider mb-1">
                     Selected Method
                   </p>
-                  <p className="text-lg font-semibold text-success-700">
+                  <p className="text-lg font-semibold text-[var(--ok)]">
                     {paymentMethodLabels[tempPaymentMethod]}
                   </p>
-                  <p className="text-xs text-success-500 mt-1">
+                  <p className="text-xs text-[var(--ok)] mt-1">
                     All new payroll runs will use this method
                   </p>
                 </div>
@@ -535,16 +535,16 @@ export default function GeneralPayrollSettings() {
                     description="How many days before payday to send reminders"
                   />
                   <div className="flex items-center">
-                    <div className="p-4 bg-warning-50/50 rounded-xl border border-warning-100 w-full">
-                      <p className="text-xs text-warning-600 font-medium uppercase tracking-wider mb-1">
+                    <div className="p-4 bg-[var(--warn-bg)] rounded-xl border border-[var(--warn-border)] w-full">
+                      <p className="text-xs text-[var(--warn)] font-medium uppercase tracking-wider mb-1">
                         Reminder Preview
                       </p>
-                      <p className="text-sm font-semibold text-warning-700">
+                      <p className="text-sm font-semibold text-[var(--warn)]">
                         {tempReminderDays} day
                         {parseInt(tempReminderDays) !== 1 ? "s" : ""} before
                         payday
                       </p>
-                      <p className="text-xs text-warning-500 mt-1">
+                      <p className="text-xs text-[var(--warn)] mt-1">
                         Admins will be notified to prepare payroll
                       </p>
                     </div>

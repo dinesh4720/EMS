@@ -140,7 +140,7 @@ export default function ActiveSessions() {
               key={session.sessionId}
               className={`border transition-all ${
                 isCurrent
-                  ? "border-primary-300 bg-primary-50/30 dark:bg-primary-900/10"
+                  ? "border-[var(--accent-border)] bg-[var(--accent-bg)]"
                   : "border-border-token"
               }`}
             >
@@ -150,7 +150,7 @@ export default function ActiveSessions() {
                   <div
                     className={`p-2.5 rounded-lg ${
                       isCurrent
-                        ? "bg-primary-100 dark:bg-primary-900/30"
+                        ? "bg-[var(--accent-bg)]"
                         : "bg-surface-2"
                     }`}
                   >
@@ -158,7 +158,7 @@ export default function ActiveSessions() {
                       size={20}
                       className={
                         isCurrent
-                          ? "text-primary-600 dark:text-primary-400"
+                          ? "text-[var(--accent)]"
                           : "text-fg-muted"
                       }
                     />

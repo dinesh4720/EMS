@@ -20,7 +20,7 @@ import { useCurrency } from '../../context/hooks/useCurrency';
 // ============ CONCESSIONS TAB ============
 export function ConcessionsTab() {
   const { t } = useTranslation();
-  const { fmt, currencySymbol } = useCurrency();
+  const { fmt } = useCurrency();
   const { currentAcademicYear } = useApp();
   const [concessions, setConcessions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -53,7 +53,7 @@ export function ConcessionsTab() {
 
   useEffect(() => { fetchConcessions(); }, [fetchConcessions]);
 
-  const handleOpen = (concession = null) => {
+  const handleOpen = useCallback((concession = null) => {
     if (concession) {
       setEditingConcession(concession);
       setFormData({
@@ -68,7 +68,7 @@ export function ConcessionsTab() {
       setFormData({ name: "", discountType: "percentage", discountValue: 0, eligibilityType: "custom", isActive: true });
     }
     onOpen();
-  };
+  }, [onOpen]);
 
   // AUDIT-129: Added validation for discount value
   const handleSave = async () => {
@@ -354,6 +354,24 @@ export function LateFeeTab() {
   );
 }
 
+const ONLINE_METHODS = [
+  { key: 'upi', label: 'UPI', desc: 'Google Pay, PhonePe, etc.' },
+  { key: 'debitCard', label: 'Debit Card', desc: 'All major cards' },
+  { key: 'creditCard', label: 'Credit Card', desc: 'All major cards' },
+  { key: 'bankTransfer', label: 'Bank Transfer', desc: 'NEFT, RTGS, IMPS' }
+];
+
+const OFFLINE_METHODS = [
+  { key: 'cash', label: 'Cash', desc: 'At school office' },
+  { key: 'cheque', label: 'Cheque', desc: 'Cheque payments' },
+  { key: 'dd', label: 'Demand Draft', desc: 'DD payments' }
+];
+
+const PAYMENT_METHODS_DEFAULT = {
+  online: { enabled: true, upi: true, debitCard: true, creditCard: true, bankTransfer: true },
+  offline: { enabled: true, cash: true, cheque: true, dd: true }
+};
+
 // ============ PAYMENT METHODS TAB ============
 export function PaymentMethodsTab() {
   const { t } = useTranslation();
@@ -361,11 +379,7 @@ export function PaymentMethodsTab() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [fetchError, setFetchError] = useState(null);
-  const defaultFormData = {
-    online: { enabled: true, upi: true, debitCard: true, creditCard: true, bankTransfer: true },
-    offline: { enabled: true, cash: true, cheque: true, dd: true }
-  };
-  const [formData, setFormData] = useState(defaultFormData);
+  const [formData, setFormData] = useState(PAYMENT_METHODS_DEFAULT);
 
   const fetchConfig = useCallback(async () => {
     setFetchError(null);
@@ -376,8 +390,8 @@ export function PaymentMethodsTab() {
       if (items.length > 0) {
         const config = items[0];
         setFormData({
-          online: { ...defaultFormData.online, ...config.online },
-          offline: { ...defaultFormData.offline, ...config.offline }
+          online: { ...PAYMENT_METHODS_DEFAULT.online, ...config.online },
+          offline: { ...PAYMENT_METHODS_DEFAULT.offline, ...config.offline }
         });
       }
     } catch (error) {
@@ -410,18 +424,7 @@ export function PaymentMethodsTab() {
     </div>
   );
 
-  const onlineMethods = [
-    { key: 'upi', label: 'UPI', desc: 'Google Pay, PhonePe, etc.' },
-    { key: 'debitCard', label: 'Debit Card', desc: 'All major cards' },
-    { key: 'creditCard', label: 'Credit Card', desc: 'All major cards' },
-    { key: 'bankTransfer', label: 'Bank Transfer', desc: 'NEFT, RTGS, IMPS' }
-  ];
 
-  const offlineMethods = [
-    { key: 'cash', label: 'Cash', desc: 'At school office' },
-    { key: 'cheque', label: 'Cheque', desc: 'Cheque payments' },
-    { key: 'dd', label: 'Demand Draft', desc: 'DD payments' }
-  ];
 
   return (
     <div className="space-y-4">
@@ -440,7 +443,7 @@ export function PaymentMethodsTab() {
         </div>
         {formData.online.enabled && (
           <div className="divide-y divide-divider">
-            {onlineMethods.map(m => (
+            {ONLINE_METHODS.map(m => (
               <div key={m.key} className="flex items-center justify-between p-4">
                 <div>
                   <p className="text-sm text-fg">{m.label}</p>
@@ -461,7 +464,7 @@ export function PaymentMethodsTab() {
         </div>
         {formData.offline.enabled && (
           <div className="divide-y divide-divider">
-            {offlineMethods.map(m => (
+            {OFFLINE_METHODS.map(m => (
               <div key={m.key} className="flex items-center justify-between p-4">
                 <div>
                   <p className="text-sm text-fg">{m.label}</p>
@@ -562,6 +565,13 @@ export function CollectionPeriodTab() {
   );
 }
 
+const GENERAL_RULES_DEFAULT = {
+  newAdmission: { feeCalculation: "total" },
+  allowPartialPayment: true,
+  minimumPartialPaymentPercent: 0,
+  refundPolicy: { enabled: false, processingDays: 7 }
+};
+
 // ============ GENERAL RULES TAB ============
 export function GeneralRulesTab() {
   const { t } = useTranslation();
@@ -569,13 +579,7 @@ export function GeneralRulesTab() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [fetchError, setFetchError] = useState(null);
-  const defaultFormData = {
-    newAdmission: { feeCalculation: "total" },
-    allowPartialPayment: true,
-    minimumPartialPaymentPercent: 0,
-    refundPolicy: { enabled: false, processingDays: 7 }
-  };
-  const [formData, setFormData] = useState(defaultFormData);
+  const [formData, setFormData] = useState(GENERAL_RULES_DEFAULT);
 
   const fetchConfig = useCallback(async () => {
     setFetchError(null);
@@ -586,10 +590,10 @@ export function GeneralRulesTab() {
       if (items.length > 0) {
         const config = items[0];
         setFormData({
-          newAdmission: { ...defaultFormData.newAdmission, ...config.newAdmission },
-          allowPartialPayment: config.allowPartialPayment ?? defaultFormData.allowPartialPayment,
-          minimumPartialPaymentPercent: config.minimumPartialPaymentPercent ?? defaultFormData.minimumPartialPaymentPercent,
-          refundPolicy: { ...defaultFormData.refundPolicy, ...config.refundPolicy }
+          newAdmission: { ...GENERAL_RULES_DEFAULT.newAdmission, ...config.newAdmission },
+          allowPartialPayment: config.allowPartialPayment ?? GENERAL_RULES_DEFAULT.allowPartialPayment,
+          minimumPartialPaymentPercent: config.minimumPartialPaymentPercent ?? GENERAL_RULES_DEFAULT.minimumPartialPaymentPercent,
+          refundPolicy: { ...GENERAL_RULES_DEFAULT.refundPolicy, ...config.refundPolicy }
         });
       }
     } catch (error) {

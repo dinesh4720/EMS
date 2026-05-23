@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import logger from "../../utils/logger";
 import {
   Card,
@@ -94,7 +94,7 @@ export default function TrashSettings() {
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   // Load trash items and statistics
-  const loadTrashData = async (signal) => {
+  const loadTrashData = useCallback(async (signal) => {
     try {
       setLoading(true);
       const [itemsData, statsData] = await Promise.all([
@@ -127,14 +127,14 @@ export default function TrashSettings() {
     } finally {
       if (!signal?.aborted) setLoading(false);
     }
-  };
+  }, [page, limit, t]);
 
   // Load trash data on mount and when page changes
   useEffect(() => {
     const controller = new AbortController();
     loadTrashData(controller.signal);
     return () => controller.abort();
-  }, [page]);
+  }, [loadTrashData]);
 
   // Calculate days remaining until permanent deletion
   const getDaysRemaining = (expiresAt) => {
@@ -275,7 +275,7 @@ export default function TrashSettings() {
   }, [trashItems, searchTerm, typeFilter]);
 
   // Handle single item restore
-  const handleRestore = async (id) => {
+  const handleRestore = useCallback(async (id) => {
     try {
       setActionInProgress(true);
       await trashApi.restore(id);
@@ -288,10 +288,10 @@ export default function TrashSettings() {
     } finally {
       setActionInProgress(false);
     }
-  };
+  }, [loadTrashData, t]);
 
   // Handle permanent delete of single item
-  const handlePermanentDelete = (id) => {
+  const handlePermanentDelete = useCallback((id) => {
     showConfirm({
       title: 'Delete Permanently',
       message: t('confirm.deletePermanently'),
@@ -312,18 +312,18 @@ export default function TrashSettings() {
         }
       },
     });
-  };
+  }, [showConfirm, loadTrashData, t]);
 
   // Handle bulk action (restore or delete)
-  const handleBulkAction = (action) => {
+  const handleBulkAction = useCallback((action) => {
     if (selectedItems.size === 0) return;
 
     setPendingAction(action);
     onOpen();
-  };
+  }, [selectedItems.size, onOpen]);
 
   // Confirm and execute bulk action
-  const confirmBulkAction = async () => {
+  const confirmBulkAction = useCallback(async () => {
     try {
       setActionInProgress(true);
       const ids = Array.from(selectedItems);
@@ -346,7 +346,21 @@ export default function TrashSettings() {
     } finally {
       setActionInProgress(false);
     }
-  };
+  }, [pendingAction, selectedItems, loadTrashData, onClose, t]);
+
+  const topTypeStats = useMemo(() => {
+    return Object.entries(stats.byType)
+      .sort(([, a], [, b]) => (b.count || 0) - (a.count || 0))
+      .slice(0, 2);
+  }, [stats.byType]);
+
+  const tableClassNames = useMemo(() => ({
+    base: "overflow-visible",
+    th: "bg-surface-2 text-fg-muted font-medium text-xs uppercase tracking-wider h-12 border-b border-border-token",
+    td: "py-4 border-b border-divider transition-colors",
+    tbody: "[&>tr:last-child>td]:border-none [&>tr[data-selected=true]>td]:bg-[var(--accent-bg)]",
+    tr: "transition-colors hover:bg-surface-2 data-[selected=true]:bg-[var(--accent-bg)] dark:data-[selected=true]:bg-[var(--accent-bg)]",
+  }), []);
 
   // Format date for display
   const formatDate = (dateString) => {
@@ -412,17 +426,17 @@ export default function TrashSettings() {
         </Card>
 
         {/* Expiring Soon */}
-        <Card className="shadow-sm border border-danger-200 rounded-lg bg-danger-50/50 dark:bg-danger-900/20">
+        <Card className="shadow-sm border border-[var(--danger-border)] rounded-lg bg-[var(--danger-bg)]">
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-danger-100 rounded-lg">
-                <AlertTriangle size={20} className="text-danger-600" />
+              <div className="p-3 bg-[var(--danger-bg)] rounded-lg">
+                <AlertTriangle size={20} className="text-[var(--danger)]" />
               </div>
               <div>
-                <p className="text-xs text-danger-700 dark:text-danger-400 uppercase tracking-wider font-medium">
+                <p className="text-xs text-[var(--danger)] uppercase tracking-wider font-medium">
                   Expiring Soon
                 </p>
-                <p className="text-2xl font-semibold text-danger-700 dark:text-danger-400">
+                <p className="text-2xl font-semibold text-[var(--danger)]">
                   {stats.expiringSoon}
                 </p>
               </div>
@@ -431,10 +445,7 @@ export default function TrashSettings() {
         </Card>
 
         {/* Dynamic type breakdown — show top types with counts */}
-        {Object.entries(stats.byType)
-          .sort(([, a], [, b]) => (b.count || 0) - (a.count || 0))
-          .slice(0, 2)
-          .map(([typeName, typeStats]) => (
+        {topTypeStats.map(([typeName, typeStats]) => (
             <Card key={typeName} className="shadow-sm border border-border-token rounded-lg">
               <CardBody className="p-4">
                 <div className="flex items-center gap-3">
@@ -505,18 +516,18 @@ export default function TrashSettings() {
 
       {/* Bulk Actions Toolbar */}
       {selectedItems.size > 0 && (
-        <Card className="shadow-sm border border-primary-200 rounded-lg bg-primary-50/50 dark:bg-primary-900/20">
+        <Card className="shadow-sm border border-[var(--accent-border)] rounded-lg bg-[var(--accent-bg)]">
           <CardBody className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary-100 rounded-lg">
-                  <Trash2 size={18} className="text-primary-600" />
+                <div className="p-2 bg-[var(--accent-bg)] rounded-lg">
+                  <Trash2 size={18} className="text-[var(--accent)]" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-primary-900">
+                  <p className="text-sm font-semibold text-[var(--accent)]">
                     {selectedItems.size} item(s) selected
                   </p>
-                  <p className="text-xs text-primary-700 dark:text-primary-400">
+                  <p className="text-xs text-[var(--accent)]">
                     Choose an action below
                   </p>
                 </div>
@@ -559,13 +570,7 @@ export default function TrashSettings() {
             selectedKeys={selectedItems}
             onSelectionChange={setSelectedItems}
             removeWrapper
-            classNames={{
-              base: "overflow-visible",
-              th: "bg-surface-2 text-fg-muted font-medium text-xs uppercase tracking-wider h-12 border-b border-border-token",
-              td: "py-4 border-b border-divider transition-colors",
-              tbody: "[&>tr:last-child>td]:border-none [&>tr[data-selected=true]>td]:bg-primary-50",
-              tr: "transition-colors hover:bg-surface-2 data-[selected=true]:bg-primary-50 dark:data-[selected=true]:bg-primary-950",
-            }}
+            classNames={tableClassNames}
           >
             <TableHeader>
               <TableColumn scope="col">{t('pages.nAME')}</TableColumn>
@@ -713,8 +718,8 @@ export default function TrashSettings() {
             <div className="space-y-4">
               {pendingAction === "restore" ? (
                 <div className="flex items-start gap-3">
-                  <div className="p-2 bg-primary-100 rounded-lg mt-0.5">
-                    <RotateCcw size={20} className="text-primary-600" />
+                  <div className="p-2 bg-[var(--accent-bg)] rounded-lg mt-0.5">
+                    <RotateCcw size={20} className="text-[var(--accent)]" />
                   </div>
                   <div>
                     <p className="font-medium text-fg">
@@ -728,15 +733,15 @@ export default function TrashSettings() {
                 </div>
               ) : (
                 <div className="flex items-start gap-3">
-                  <div className="p-2 bg-danger-100 rounded-lg mt-0.5">
-                    <AlertTriangle size={20} className="text-danger-600" />
+                  <div className="p-2 bg-[var(--danger-bg)] rounded-lg mt-0.5">
+                    <AlertTriangle size={20} className="text-[var(--danger)]" />
                   </div>
                   <div>
                     <p className="font-medium text-fg">
                       Permanently delete {selectedItems.size} item(s)
                     </p>
                     <p className="text-sm text-fg-muted mt-1">
-                      <strong className="text-danger-600">
+                      <strong className="text-[var(--danger)]">
                         This action cannot be undone.
                       </strong>{" "}
                       These items will be permanently removed from the system.

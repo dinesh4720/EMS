@@ -94,7 +94,7 @@ export default function RoleFormModal({
       <div className="flex items-center gap-2">
         {changedCount > 0 && (
           <>
-            <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+            <span className="text-xs font-medium text-[var(--warn)]">
               {changedCount} unsaved change{changedCount !== 1 ? 's' : ''}
             </span>
             <Button size="sm" variant="ghost" onClick={onResetChanges}>
@@ -189,7 +189,7 @@ export default function RoleFormModal({
                           key={action}
                           className={cn(
                             "px-3 py-3 text-center",
-                            isChanged && "bg-amber-50 dark:bg-amber-900/10"
+                            isChanged && "bg-[var(--warn-bg)]"
                           )}
                         >
                           {hasAction ? (
@@ -209,7 +209,7 @@ export default function RoleFormModal({
                                 onClick={() => handleLockToggle(module.key, action)}
                               >
                                 {isLocked ? (
-                                  <Lock size={12} className="text-amber-600 dark:text-amber-400" />
+                                  <Lock size={12} className="text-[var(--warn)]" />
                                 ) : (
                                   <Unlock size={12} className="text-fg-faint" />
                                 )}

@@ -250,7 +250,7 @@ export default function SalaryTemplates() {
                         </div>
                       ))}
 
-                      <div className="p-4 bg-success-50 rounded-lg border border-success-200">
+                      <div className="p-4 bg-[var(--ok-bg)] rounded-lg border border-[var(--ok-border)]">
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium">{t('pages.totalMonthlySalary1')}</span>
                           <span className="text-xl font-bold text-success">

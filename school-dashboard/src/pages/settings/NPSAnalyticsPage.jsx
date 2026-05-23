@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { Card, CardBody, Switch, Input, Button } from '@heroui/react';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { TrendingUp, Users, ThumbsUp, ThumbsDown, Minus, MessageSquare, Settings, Save, Filter } from 'lucide-react';
@@ -6,11 +6,11 @@ import { npsApi } from '../../services/api';
 import toast from 'react-hot-toast';
 import { formatShortDate } from '../../utils/dateFormatter';
 
-function NpsGauge({ score }) {
+const NpsGauge = memo(function NpsGauge({ score }) {
   if (score == null) return <p className="text-3xl font-bold text-fg-faint">N/A</p>;
-  const color = score >= 50 ? 'text-green-600 dark:text-green-400' : score >= 0 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400';
+  const color = score >= 50 ? 'text-[var(--ok)]' : score >= 0 ? 'text-[var(--warn)]' : 'text-[var(--danger)]';
   return <p className={`text-4xl font-bold ${color}`}>{score > 0 ? `+${score}` : score}</p>;
-}
+});
 
 export default function NPSAnalyticsPage() {
   const [data, setData] = useState(null);
@@ -185,25 +185,25 @@ export default function NPSAnalyticsPage() {
                 <p className="text-3xl font-bold text-fg">{data?.total ?? 0}</p>
               </CardBody>
             </Card>
-            <Card shadow="sm" className="bg-green-50 dark:bg-green-950 border border-green-100 dark:border-green-800">
+            <Card shadow="sm" className="bg-[var(--ok-bg)] border border-[var(--ok-border)]">
               <CardBody className="p-4 text-center">
-                <ThumbsUp size={20} className="mx-auto mb-2 text-green-500" />
-                <p className="text-xs text-green-600 dark:text-green-400 mb-1">Promoters (9-10)</p>
-                <p className="text-3xl font-bold text-green-700 dark:text-green-300">{data?.promoters ?? 0}</p>
+                <ThumbsUp size={20} className="mx-auto mb-2 text-[var(--ok)]" />
+                <p className="text-xs text-[var(--ok)] mb-1">Promoters (9-10)</p>
+                <p className="text-3xl font-bold text-[var(--ok)]">{data?.promoters ?? 0}</p>
               </CardBody>
             </Card>
-            <Card shadow="sm" className="bg-yellow-50 dark:bg-yellow-950 border border-yellow-100 dark:border-yellow-800">
+            <Card shadow="sm" className="bg-[var(--warn-bg)] border border-[var(--warn-border)]">
               <CardBody className="p-4 text-center">
-                <Minus size={20} className="mx-auto mb-2 text-yellow-500" />
-                <p className="text-xs text-yellow-600 dark:text-yellow-400 mb-1">Passives (7-8)</p>
-                <p className="text-3xl font-bold text-yellow-700 dark:text-yellow-300">{data?.passives ?? 0}</p>
+                <Minus size={20} className="mx-auto mb-2 text-[var(--warn)]" />
+                <p className="text-xs text-[var(--warn)] mb-1">Passives (7-8)</p>
+                <p className="text-3xl font-bold text-[var(--warn)]">{data?.passives ?? 0}</p>
               </CardBody>
             </Card>
-            <Card shadow="sm" className="bg-red-50 dark:bg-red-950 border border-red-100 dark:border-red-800">
+            <Card shadow="sm" className="bg-[var(--danger-bg)] border border-[var(--danger-border)]">
               <CardBody className="p-4 text-center">
-                <ThumbsDown size={20} className="mx-auto mb-2 text-red-500" />
-                <p className="text-xs text-red-600 dark:text-red-400 mb-1">Detractors (0-6)</p>
-                <p className="text-3xl font-bold text-red-700 dark:text-red-300">{data?.detractors ?? 0}</p>
+                <ThumbsDown size={20} className="mx-auto mb-2 text-[var(--danger)]" />
+                <p className="text-xs text-[var(--danger)] mb-1">Detractors (0-6)</p>
+                <p className="text-3xl font-bold text-[var(--danger)]">{data?.detractors ?? 0}</p>
               </CardBody>
             </Card>
           </div>
@@ -214,11 +214,12 @@ export default function NPSAnalyticsPage() {
               <CardBody className="p-4">
                 <h3 className="text-sm font-semibold text-fg mb-4">Monthly Trend</h3>
                 <div className="flex items-end gap-2 h-40">
-                  {data.trend.map((t) => {
+                  {(() => {
                     const maxR = Math.max(...data.trend.map((x) => x.responses), 1);
-                    const barH = Math.max((t.responses / maxR) * 100, 8);
-                    const color = t.score >= 50 ? 'bg-green-400' : t.score >= 0 ? 'bg-yellow-400' : 'bg-red-400';
-                    return (
+                    return data.trend.map((t) => {
+                      const barH = Math.max((t.responses / maxR) * 100, 8);
+                      const color = t.score >= 50 ? 'bg-[var(--ok)]' : t.score >= 0 ? 'bg-[var(--warn)]' : 'bg-[var(--danger)]';
+                      return (
                       <div key={t.month} className="flex-1 flex flex-col items-center justify-end h-full">
                         <span className="text-xs font-semibold text-fg mb-1">
                           {t.score > 0 ? `+${t.score}` : t.score}
@@ -231,7 +232,8 @@ export default function NPSAnalyticsPage() {
                         <span className="text-[10px] text-fg-faint mt-1">{t.month}</span>
                       </div>
                     );
-                  })}
+                    });
+                  })()}
                 </div>
               </CardBody>
             </Card>
@@ -245,8 +247,9 @@ export default function NPSAnalyticsPage() {
                 <div className="space-y-2">
                   {Array.from({ length: 11 }, (_, i) => 10 - i).map(score => {
                     const count = data?.distribution?.[score] || 0;
-                    const pct = (data?.total ?? 0) > 0 ? (count / data.total) * 100 : 0;
-                    const color = score >= 9 ? 'bg-green-400' : score >= 7 ? 'bg-yellow-400' : 'bg-red-400';
+                    const total = data?.total ?? 0;
+                    const pct = total > 0 ? (count / total) * 100 : 0;
+                    const color = score >= 9 ? 'bg-[var(--ok)]' : score >= 7 ? 'bg-[var(--warn)]' : 'bg-[var(--danger)]';
                     return (
                       <div key={score} className="flex items-center gap-3">
                         <span className="text-xs text-fg-muted w-4 text-right">{score}</span>
@@ -275,12 +278,12 @@ export default function NPSAnalyticsPage() {
                 </div>
                 <div className="space-y-3 max-h-80 overflow-y-auto">
                   {data.comments.map((c, i) => (
-                    <div key={i} className="p-3 bg-surface-2 rounded-lg">
+                    <div key={c.id || c._id || `${c.score}-${c.createdAt}-${i}`} className="p-3 bg-surface-2 rounded-lg">
                       <div className="flex items-center gap-2 mb-1">
                         <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${
-                          c.category === 'promoter' ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300' :
-                          c.category === 'passive' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300' :
-                          'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
+                          c.category === 'promoter' ? 'bg-[var(--ok-bg)] text-[var(--ok)]' :
+                          c.category === 'passive' ? 'bg-[var(--warn-bg)] text-[var(--warn)]' :
+                          'bg-[var(--danger-bg)] text-[var(--danger)]'
                         }`}>
                           Score: {c.score}
                         </span>

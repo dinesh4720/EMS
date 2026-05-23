@@ -130,13 +130,13 @@ export default function SeedDataSettings() {
           </p>
         </div>
 
-        <Card className="border border-success-200 bg-success-50/50 dark:bg-success-900/20">
+        <Card className="border border-[var(--ok-border)] bg-[var(--ok-bg)]">
           <CardBody className="p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-success-100 rounded-full">
-                <CheckCircle size={24} className="text-success-600" />
+              <div className="p-2 bg-[var(--ok-bg)] rounded-full">
+                <CheckCircle size={24} className="text-[var(--ok)]" />
               </div>
-              <h3 className="text-lg font-semibold text-success-700 dark:text-success-400">
+              <h3 className="text-lg font-semibold text-[var(--ok)]">
                 Data Generated Successfully!
               </h3>
             </div>
@@ -155,7 +155,7 @@ export default function SeedDataSettings() {
                     <p className="text-2xl font-bold text-fg">
                       {count}
                     </p>
-                    <p className="text-xs text-success-600 dark:text-success-400 mt-1">
+                    <p className="text-xs text-[var(--ok)] mt-1">
                       Created
                     </p>
                   </div>
@@ -222,7 +222,7 @@ export default function SeedDataSettings() {
               onPress={() => toggleCategory(cat.key)}
               className={`border transition-all ${
                 isSelected
-                  ? "border-primary-400 bg-primary-50/50 dark:bg-primary-900/20"
+                  ? "border-[var(--accent-border)] bg-[var(--accent-bg)]"
                   : "border-border-token"
               }`}
             >
@@ -284,8 +284,8 @@ export default function SeedDataSettings() {
               <p className="text-sm text-fg-muted">
                 This will generate realistic dummy data for the selected categories.
               </p>
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                <p className="text-sm text-blue-700 dark:text-blue-400">
+              <div className="bg-[var(--info-bg)] border border-[var(--info-border)] rounded-lg p-3">
+                <p className="text-sm text-[var(--info)]">
                   Data will be generated with realistic Indian names, phone numbers,
                   and addresses. This is ideal for demos and testing.
                 </p>

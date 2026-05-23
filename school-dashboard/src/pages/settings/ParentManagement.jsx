@@ -332,9 +332,9 @@ export default function ParentManagement() {
                 <X size={18} />
               </button>
             </div>
-            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-4 flex items-start gap-2">
-              <AlertTriangle size={16} className="text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
-              <p className="text-sm text-amber-800 dark:text-amber-200">{t('pages.shareThisPasswordWithTheParentItWillNotBeShownAgain')}</p>
+            <div className="bg-[var(--warn-bg)] border border-[var(--warn-border)] rounded-lg p-3 mb-4 flex items-start gap-2">
+              <AlertTriangle size={16} className="text-[var(--warn)] mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-[var(--warn)]">{t('pages.shareThisPasswordWithTheParentItWillNotBeShownAgain')}</p>
             </div>
             <div className="flex items-center gap-2 bg-surface-2 rounded-lg px-4 py-3">
               <code className="flex-1 text-sm font-mono font-medium text-fg">{generatedPassword}</code>
@@ -342,7 +342,7 @@ export default function ParentManagement() {
                 onClick={() => copyToClipboard(generatedPassword)}
                 className="p-1.5 rounded hover:bg-surface-2"
               >
-                {copiedPassword ? <Check size={16} className="text-green-600" /> : <Copy size={16} className="text-fg-muted" />}
+                {copiedPassword ? <Check size={16} className="text-[var(--ok)]" /> : <Copy size={16} className="text-fg-muted" />}
               </button>
             </div>
           </div>
@@ -409,8 +409,8 @@ export default function ParentManagement() {
                   disabled={actionLoading === selectedParent._id}
                   className={`flex items-center gap-2 px-3 py-2 border rounded-lg text-sm ${
                     selectedParent.status === "active"
-                      ? "border-red-200 text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
-                      : "border-green-200 text-green-700 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-900/20"
+                      ? "border-[var(--danger-border)] text-[var(--danger)] hover:bg-[var(--danger-bg)]"
+                      : "border-[var(--ok-border)] text-[var(--ok)] hover:bg-[var(--ok-bg)]"
                   }`}
                 >
                   {selectedParent.status === "active" ? <PowerOff size={14} /> : <Power size={14} />}
@@ -420,15 +420,15 @@ export default function ParentManagement() {
 
               {/* Generated Password */}
               {generatedPassword && (
-                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 space-y-2">
+                <div className="bg-[var(--warn-bg)] border border-[var(--warn-border)] rounded-lg p-4 space-y-2">
                   <div className="flex items-center gap-2">
-                    <AlertTriangle size={16} className="text-amber-600 dark:text-amber-400" />
-                    <span className="text-sm font-medium text-amber-800 dark:text-amber-200">{t('pages.newPasswordGenerated')}</span>
+                    <AlertTriangle size={16} className="text-[var(--warn)]" />
+                    <span className="text-sm font-medium text-[var(--warn)]">{t('pages.newPasswordGenerated')}</span>
                   </div>
                   <div className="flex items-center gap-2 bg-surface rounded-lg px-3 py-2">
                     <code className="flex-1 text-sm font-mono font-medium">{generatedPassword}</code>
                     <button onClick={() => copyToClipboard(generatedPassword)} className="p-1 rounded hover:bg-surface-2">
-                      {copiedPassword ? <Check size={14} className="text-green-600" /> : <Copy size={14} className="text-fg-muted" />}
+                      {copiedPassword ? <Check size={14} className="text-[var(--ok)]" /> : <Copy size={14} className="text-fg-muted" />}
                     </button>
                   </div>
                 </div>

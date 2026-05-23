@@ -228,7 +228,7 @@ export default function RolesAccess() {
                       </td>
                       <td className="px-4 py-3">
                         {lockedCount > 0 ? (
-                          <span className="inline-flex items-center gap-1.5 text-sm text-amber-600 dark:text-amber-400">
+                          <span className="inline-flex items-center gap-1.5 text-sm text-[var(--warn)]">
                             <Lock size={14} />
                             {lockedCount} locked
                           </span>

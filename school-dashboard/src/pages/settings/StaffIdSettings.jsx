@@ -137,11 +137,11 @@ export default function StaffIdSettings() {
         <Divider />
         <CardBody className="px-6 py-6 space-y-6">
           {/* Preview */}
-          <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+          <div className="bg-[var(--accent-bg)] border border-[var(--accent-border)] rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-fg-muted">{t('pages.preview1')}</p>
-                <p className="text-2xl font-bold text-primary-600 mt-1">{preview}</p>
+                <p className="text-2xl font-bold text-[var(--accent)] mt-1">{preview}</p>
                 <p className="text-xs text-fg-muted mt-1">{t('pages.thisIsHowTheNextStaffIdWillLook')}</p>
               </div>
               <div className="text-right">
@@ -250,13 +250,13 @@ export default function StaffIdSettings() {
       </Card>
 
       {/* Warning Card */}
-      <Card shadow="none" className="border border-warning-200 bg-warning-50">
+      <Card shadow="none" className="border border-[var(--warn-border)] bg-[var(--warn-bg)]">
         <CardBody className="px-6 py-4">
           <div className="flex gap-3">
-            <div className="text-warning-600 mt-0.5">⚠️</div>
+            <div className="text-[var(--warn)] mt-0.5">⚠️</div>
             <div>
-              <p className="font-semibold text-warning-900">{t('pages.importantNotes')}</p>
-              <ul className="text-sm text-warning-700 mt-2 space-y-1 list-disc list-inside">
+              <p className="font-semibold text-[var(--warn)]">{t('pages.importantNotes')}</p>
+              <ul className="text-sm text-[var(--warn)] mt-2 space-y-1 list-disc list-inside">
                 <li>{t('pages.changesWillOnlyAffectNewStaffMembersAddedAfterSaving')}</li>
                 <li>{t('pages.existingStaffIdsWillNotBeModified')}</li>
                 <li>{t('pages.makeSureTheFormatIsUniqueAndEasyToIdentify')}</li>

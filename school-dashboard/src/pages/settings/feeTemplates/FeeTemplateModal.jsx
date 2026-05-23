@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import PropTypes from "prop-types";
 import { Plus, Save } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -37,10 +38,10 @@ export default function FeeTemplateModal({
   const { currentAcademicYear } = useApp();
   const { fmt } = useCurrency();
 
-  const sectionOptions = SECTIONS.map((sec) => ({
+  const sectionOptions = useMemo(() => SECTIONS.map((sec) => ({
     value: sec.value,
     label: t(`fees.section.${sec.value}`, sec.label),
-  }));
+  })), [t]);
 
   const isSubmitDisabled =
     !formData.name.trim() || formData.feeHeads.length === 0 || saving;

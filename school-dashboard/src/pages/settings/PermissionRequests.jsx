@@ -24,7 +24,7 @@ import {
   Tab,
   Avatar,
 } from "@heroui/react";
-import { CheckCircle, XCircle, Clock, User, Calendar, MessageSquare } from "lucide-react";
+import { CheckCircle, XCircle, Clock, User } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { usePermissions } from "../../context/PermissionContext";
 import toast from "react-hot-toast";
@@ -198,7 +198,7 @@ export default function PermissionRequests() {
         </div>
         <Card>
           <CardBody className="flex flex-col items-center py-12 gap-4">
-            <XCircle size={40} className="text-red-400" />
+            <XCircle size={40} className="text-[var(--danger)]" />
             <p className="text-sm font-medium text-fg">Failed to load permission requests</p>
             <p className="text-xs text-fg-muted">{fetchError}</p>
             <Button size="sm" variant="flat" onPress={fetchRequests}>Retry</Button>

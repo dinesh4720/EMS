@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useEntityFetch } from "../../hooks/useEntityFetch";
-import { Card, CardBody, CardHeader, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Select, SelectItem, Switch, Spinner } from "@heroui/react";
+import { Card, CardBody, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Select, SelectItem, Switch, Spinner } from "@heroui/react";
 import { Plus, Edit, Trash2, UserCheck, Users } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
@@ -136,40 +136,40 @@ export default function LeaveSettings() {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-200 dark:border-primary-800">
+        <div className="p-4 bg-[var(--accent-bg)] rounded-lg border border-[var(--accent-border)]">
           <div className="flex items-center gap-2 mb-2">
-            <UserCheck size={18} className="text-primary-600 dark:text-primary-400" />
-            <span className="text-xs text-primary-700 dark:text-primary-300 uppercase tracking-wider">{t('pages.staffLeaves')}</span>
+            <UserCheck size={18} className="text-[var(--accent)]" />
+            <span className="text-xs text-[var(--accent)] uppercase tracking-wider">{t('pages.staffLeaves')}</span>
           </div>
-          <p className="text-2xl font-semibold text-primary-700 dark:text-primary-300">
+          <p className="text-2xl font-semibold text-[var(--accent)]">
             {leaveTypes.filter(lt => lt.applicableTo === "staff" || lt.applicableTo === "both").length}
           </p>
         </div>
 
-        <div className="p-4 bg-secondary-50 dark:bg-secondary-900/20 rounded-lg border border-secondary-200 dark:border-secondary-800">
+        <div className="p-4 bg-[var(--accent-bg)] rounded-lg border border-[var(--accent-border)]">
           <div className="flex items-center gap-2 mb-2">
-            <Users size={18} className="text-secondary-600 dark:text-secondary-400" />
-            <span className="text-xs text-secondary-700 dark:text-secondary-300 uppercase tracking-wider">{t('pages.studentLeaves')}</span>
+            <Users size={18} className="text-[var(--accent)]" />
+            <span className="text-xs text-[var(--accent)] uppercase tracking-wider">{t('pages.studentLeaves')}</span>
           </div>
-          <p className="text-2xl font-semibold text-secondary-700 dark:text-secondary-300">
+          <p className="text-2xl font-semibold text-[var(--accent)]">
             {leaveTypes.filter(lt => lt.applicableTo === "students" || lt.applicableTo === "both").length}
           </p>
         </div>
 
-        <div className="p-4 bg-success-50 dark:bg-success-900/20 rounded-lg border border-success-200 dark:border-success-800">
+        <div className="p-4 bg-[var(--ok-bg)] rounded-lg border border-[var(--ok-border)]">
           <div className="flex items-center gap-2 mb-2">
-            <UserCheck size={18} className="text-success-600 dark:text-success-400" />
-            <span className="text-xs text-success-700 dark:text-success-300 uppercase tracking-wider">{t('pages.totalTypes')}</span>
+            <UserCheck size={18} className="text-[var(--ok)]" />
+            <span className="text-xs text-[var(--ok)] uppercase tracking-wider">{t('pages.totalTypes')}</span>
           </div>
-          <p className="text-2xl font-semibold text-success-700 dark:text-success-300">{leaveTypes.length}</p>
+          <p className="text-2xl font-semibold text-[var(--ok)]">{leaveTypes.length}</p>
         </div>
 
-        <div className="p-4 bg-warning-50 dark:bg-warning-900/20 rounded-lg border border-warning-200 dark:border-warning-800">
+        <div className="p-4 bg-[var(--warn-bg)] rounded-lg border border-[var(--warn-border)]">
           <div className="flex items-center gap-2 mb-2">
-            <UserCheck size={18} className="text-warning-600 dark:text-warning-400" />
-            <span className="text-xs text-warning-700 dark:text-warning-300 uppercase tracking-wider">{t('pages.autoApproved')}</span>
+            <UserCheck size={18} className="text-[var(--warn)]" />
+            <span className="text-xs text-[var(--warn)] uppercase tracking-wider">{t('pages.autoApproved')}</span>
           </div>
-          <p className="text-2xl font-semibold text-warning-700 dark:text-warning-300">
+          <p className="text-2xl font-semibold text-[var(--warn)]">
             {leaveTypes.filter(lt => !lt.requiresApproval).length}
           </p>
         </div>

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import PropTypes from "prop-types";
 import { BookOpen, Plus, Edit2, Trash2, RefreshCw, Layers } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -76,8 +77,8 @@ export default function SubjectsTab({
 
       {hasSubjects ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[...subjects]
-            .sort((left, right) => left.name.localeCompare(right.name))
+          {useMemo(() => [...subjects]
+            .sort((left, right) => left.name.localeCompare(right.name)), [subjects])
             .map((subject, index) => {
               const subjectId = subject.id || subject._id || `subject-${index}`;
               return (

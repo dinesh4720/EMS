@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Card, CardBody, CardHeader, Button, Input, Chip, Divider,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
@@ -50,7 +50,7 @@ function SalaryComponents() {
   };
 
   // [AUDIT-557] Added confirmation before removing salary components
-  const handleRemove = (type, id) => {
+  const handleRemove = useCallback((type, id) => {
     showConfirm({
       title: 'Remove Salary Component',
       message: 'Are you sure you want to remove this salary component? This cannot be undone.',
@@ -64,7 +64,7 @@ function SalaryComponents() {
         }
       },
     });
-  };
+  }, [showConfirm, updateSalarySettings]);
 
   const earnings = salarySettings?.earnings || [];
   const deductions = salarySettings?.deductions || [];
@@ -73,47 +73,47 @@ function SalaryComponents() {
     <div className="space-y-6">
       {/* Summary Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="p-4 bg-success-50 rounded-lg border border-success-200">
+        <div className="p-4 bg-[var(--ok-bg)] rounded-lg border border-[var(--ok-border)]">
           <div className="flex items-center gap-2 mb-2">
-            <ArrowUpRight size={18} className="text-success-600" />
-            <span className="text-xs text-success-700 uppercase tracking-wider font-medium">
+            <ArrowUpRight size={18} className="text-[var(--ok)]" />
+            <span className="text-xs text-[var(--ok)] uppercase tracking-wider font-medium">
               {t("pages.earningsComponents")}
             </span>
           </div>
-          <p className="text-2xl font-semibold text-success-700">
+          <p className="text-2xl font-semibold text-[var(--ok)]">
             {earnings.length}
           </p>
         </div>
-        <div className="p-4 bg-danger-50 rounded-lg border border-danger-200">
+        <div className="p-4 bg-[var(--danger-bg)] rounded-lg border border-[var(--danger-border)]">
           <div className="flex items-center gap-2 mb-2">
-            <ArrowDownRight size={18} className="text-danger-600" />
-            <span className="text-xs text-danger-700 uppercase tracking-wider font-medium">
+            <ArrowDownRight size={18} className="text-[var(--danger)]" />
+            <span className="text-xs text-[var(--danger)] uppercase tracking-wider font-medium">
               {t("pages.deductionsComponents")}
             </span>
           </div>
-          <p className="text-2xl font-semibold text-danger-700">
+          <p className="text-2xl font-semibold text-[var(--danger)]">
             {deductions.length}
           </p>
         </div>
-        <div className="p-4 bg-primary-50 rounded-lg border border-primary-200">
+        <div className="p-4 bg-[var(--accent-bg)] rounded-lg border border-[var(--accent-border)]">
           <div className="flex items-center gap-2 mb-2">
-            <IndianRupee size={18} className="text-primary-600" />
-            <span className="text-xs text-primary-700 uppercase tracking-wider font-medium">
+            <IndianRupee size={18} className="text-[var(--accent)]" />
+            <span className="text-xs text-[var(--accent)] uppercase tracking-wider font-medium">
               Total Components
             </span>
           </div>
-          <p className="text-2xl font-semibold text-primary-700">
+          <p className="text-2xl font-semibold text-[var(--accent)]">
             {earnings.length + deductions.length}
           </p>
         </div>
-        <div className="p-4 bg-warning-50 rounded-lg border border-warning-200">
+        <div className="p-4 bg-[var(--warn-bg)] rounded-lg border border-[var(--warn-border)]">
           <div className="flex items-center gap-2 mb-2">
-            <CheckCircle size={18} className="text-warning-600" />
-            <span className="text-xs text-warning-700 uppercase tracking-wider font-medium">
+            <CheckCircle size={18} className="text-[var(--warn)]" />
+            <span className="text-xs text-[var(--warn)] uppercase tracking-wider font-medium">
               Status
             </span>
           </div>
-          <p className="text-lg font-semibold text-warning-700">Configured</p>
+          <p className="text-lg font-semibold text-[var(--warn)]">Configured</p>
         </div>
       </div>
 
@@ -122,8 +122,8 @@ function SalaryComponents() {
         <Card className="shadow-sm border border-border-token">
           <CardHeader className="flex justify-between items-center px-6 pt-5 pb-0">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-success-50 rounded-lg">
-                <ArrowUpRight size={20} className="text-success-600" />
+              <div className="p-2 bg-[var(--ok-bg)] rounded-lg">
+                <ArrowUpRight size={20} className="text-[var(--ok)]" />
               </div>
               <div>
                 <h3 className="text-base font-semibold text-fg">
@@ -158,7 +158,7 @@ function SalaryComponents() {
                     className="flex justify-between items-center py-3 px-3 rounded-lg hover:bg-surface-2 transition-colors group"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-success-400" />
+                      <div className="w-2 h-2 rounded-full bg-[var(--ok-bg)]" />
                       <span className="text-sm font-medium text-fg">
                         {item.name}
                       </span>
@@ -185,8 +185,8 @@ function SalaryComponents() {
         <Card className="shadow-sm border border-border-token">
           <CardHeader className="flex justify-between items-center px-6 pt-5 pb-0">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-danger-50 rounded-lg">
-                <ArrowDownRight size={20} className="text-danger-600" />
+              <div className="p-2 bg-[var(--danger-bg)] rounded-lg">
+                <ArrowDownRight size={20} className="text-[var(--danger)]" />
               </div>
               <div>
                 <h3 className="text-base font-semibold text-fg">
@@ -221,7 +221,7 @@ function SalaryComponents() {
                     className="flex justify-between items-center py-3 px-3 rounded-lg hover:bg-surface-2 transition-colors group"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-danger-400" />
+                      <div className="w-2 h-2 rounded-full bg-[var(--danger-bg)]" />
                       <span className="text-sm font-medium text-fg">
                         {item.name}
                       </span>
@@ -250,9 +250,9 @@ function SalaryComponents() {
         <ModalContent>
           <ModalHeader className="flex items-center gap-2">
             {modalType === "earnings" ? (
-              <ArrowUpRight size={18} className="text-success-600" />
+              <ArrowUpRight size={18} className="text-[var(--ok)]" />
             ) : (
-              <ArrowDownRight size={18} className="text-danger-600" />
+              <ArrowDownRight size={18} className="text-[var(--danger)]" />
             )}
             Add {modalType === "earnings" ? "Earning" : "Deduction"} Component
           </ModalHeader>
@@ -287,6 +287,19 @@ function SalaryComponents() {
     </div>
   );
 }
+
+const PAYMENT_METHOD_LABELS = {
+  bank_transfer: "Bank Transfer",
+  cheque: "Cheque",
+  cash: "Cash",
+  upi: "UPI",
+};
+
+const CYCLE_LABELS = {
+  weekly: "Weekly",
+  biweekly: "Bi-weekly",
+  monthly: "Monthly",
+};
 
 function GeneralPayrollSettings() {
   const { t } = useTranslation();
@@ -355,7 +368,7 @@ function GeneralPayrollSettings() {
     return num + (suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]);
   };
 
-  const handleEdit = (section) => {
+  const handleEdit = useCallback((section) => {
     if (section === "schedule") {
       setTempDisburseDate(disburseDate);
       setTempPayrollCycle(payrollCycle);
@@ -366,11 +379,11 @@ function GeneralPayrollSettings() {
       setTempReminderDays(reminderDays);
     }
     setEditingSection(section);
-  };
+  }, [disburseDate, payrollCycle, paymentMethod, autoReminder, reminderDays]);
 
-  const handleCancel = () => setEditingSection(null);
+  const handleCancel = useCallback(() => setEditingSection(null), []);
 
-  const handleSaveSchedule = async () => {
+  const handleSaveSchedule = useCallback(async () => {
     if (!tempDisburseDate || tempDisburseDate < 1 || tempDisburseDate > 31) {
       toast.error(t("toast.error.pleaseEnterAValidDateBetween1And31"));
       return;
@@ -391,10 +404,10 @@ function GeneralPayrollSettings() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [tempDisburseDate, tempPayrollCycle, t]);
 
   // TODO: AUDIT-116 - Wire up to API: PUT /settings/payroll (paymentMethod field)
-  const handleSavePayment = async () => {
+  const handleSavePayment = useCallback(async () => {
     setLoading(true);
     try {
       await settingsApi.updatePayrollSettings({ paymentMethod: tempPaymentMethod });
@@ -407,10 +420,10 @@ function GeneralPayrollSettings() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [tempPaymentMethod]);
 
   // TODO: AUDIT-116 - Wire up to API: PUT /settings/payroll (reminder fields)
-  const handleSaveReminders = async () => {
+  const handleSaveReminders = useCallback(async () => {
     setLoading(true);
     try {
       await settingsApi.updatePayrollSettings({
@@ -427,14 +440,7 @@ function GeneralPayrollSettings() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const paymentMethodLabels = {
-    bank_transfer: "Bank Transfer",
-    cheque: "Cheque",
-    cash: "Cash",
-    upi: "UPI",
-  };
+  }, [tempAutoReminder, tempReminderDays]);
 
   return (
     <div className="space-y-5">
@@ -539,14 +545,14 @@ function GeneralPayrollSettings() {
                 parseInt(tempDisburseDate) >= 1 &&
                 parseInt(tempDisburseDate) <= 31 && (
                   <div className="flex items-center">
-                    <div className="p-4 bg-primary-50/50 rounded-xl border border-primary-100 w-full">
-                      <p className="text-xs text-primary-600 font-medium uppercase tracking-wider mb-1">
+                    <div className="p-4 bg-[var(--accent-bg)] rounded-xl border border-[var(--accent-border)] w-full">
+                      <p className="text-xs text-[var(--accent)] font-medium uppercase tracking-wider mb-1">
                         Preview
                       </p>
-                      <p className="text-lg font-semibold text-primary-700">
+                      <p className="text-lg font-semibold text-[var(--accent)]">
                         {getOrdinalSuffix(tempDisburseDate)} of every month
                       </p>
-                      <p className="text-xs text-primary-500 mt-1">
+                      <p className="text-xs text-[var(--accent)] mt-1">
                         Salaries will be processed on this date
                       </p>
                     </div>
@@ -570,7 +576,7 @@ function GeneralPayrollSettings() {
                   Payroll Cycle
                 </p>
                 <p className="text-sm font-medium text-fg">
-                  {{ weekly: "Weekly", biweekly: "Bi-weekly", monthly: "Monthly" }[payrollCycle] || "Monthly"}
+                  {CYCLE_LABELS[payrollCycle] || "Monthly"}
                 </p>
               </div>
               <div>
@@ -672,14 +678,14 @@ function GeneralPayrollSettings() {
                 <SelectItem key="upi">UPI</SelectItem>
               </Select>
               <div className="flex items-center">
-                <div className="p-4 bg-success-50/50 rounded-xl border border-success-100 w-full">
-                  <p className="text-xs text-success-600 font-medium uppercase tracking-wider mb-1">
+                <div className="p-4 bg-[var(--ok-bg)] rounded-xl border border-[var(--ok-border)] w-full">
+                  <p className="text-xs text-[var(--ok)] font-medium uppercase tracking-wider mb-1">
                     Selected Method
                   </p>
-                  <p className="text-lg font-semibold text-success-700">
-                    {paymentMethodLabels[tempPaymentMethod]}
+                  <p className="text-lg font-semibold text-[var(--ok)]">
+                    {PAYMENT_METHOD_LABELS[tempPaymentMethod]}
                   </p>
-                  <p className="text-xs text-success-500 mt-1">
+                  <p className="text-xs text-[var(--ok)] mt-1">
                     All new payroll runs will use this method
                   </p>
                 </div>
@@ -692,7 +698,7 @@ function GeneralPayrollSettings() {
                   Payment Method
                 </p>
                 <p className="text-sm font-medium text-fg">
-                  {paymentMethodLabels[paymentMethod]}
+                  {PAYMENT_METHOD_LABELS[paymentMethod]}
                 </p>
               </div>
               <div>
@@ -817,16 +823,16 @@ function GeneralPayrollSettings() {
                     description="How many days before payday to send reminders"
                   />
                   <div className="flex items-center">
-                    <div className="p-4 bg-warning-50/50 rounded-xl border border-warning-100 w-full">
-                      <p className="text-xs text-warning-600 font-medium uppercase tracking-wider mb-1">
+                    <div className="p-4 bg-[var(--warn-bg)] rounded-xl border border-[var(--warn-border)] w-full">
+                      <p className="text-xs text-[var(--warn)] font-medium uppercase tracking-wider mb-1">
                         Reminder Preview
                       </p>
-                      <p className="text-sm font-semibold text-warning-700">
+                      <p className="text-sm font-semibold text-[var(--warn)]">
                         {tempReminderDays} day
                         {parseInt(tempReminderDays) !== 1 ? "s" : ""} before
                         payday
                       </p>
-                      <p className="text-xs text-warning-500 mt-1">
+                      <p className="text-xs text-[var(--warn)] mt-1">
                         Admins will be notified to prepare payroll
                       </p>
                     </div>

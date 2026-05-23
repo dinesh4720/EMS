@@ -55,7 +55,6 @@ export function useAcademicSettingsHandlers({
   loading,
   subjectModal,
   classModal,
-  classConfig,
 }) {
   const { t } = useTranslation();
   const { schoolSettings, updateSchoolSettings, addSubject, updateSubject, deleteSubject, addClass, updateClass, deleteClass } = useApp();
