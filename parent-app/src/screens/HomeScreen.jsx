@@ -13,8 +13,8 @@ import { useStudent } from '../context/StudentContext';
 import { useTheme } from '../context/ThemeContext';
 import { Card, Avatar, Button } from '../components';
 import { formatCurrency, calculatePercentage } from '../utils/helpers';
-import {
 import { useTranslation } from 'react-i18next';
+import {
   BookOpen,
   Calendar,
   CreditCard,

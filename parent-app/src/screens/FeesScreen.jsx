@@ -16,8 +16,8 @@ import { useTheme } from '../context/ThemeContext';
 import { Card, Button, Loading, EmptyState } from '../components';
 import { formatCurrency, formatDate } from '../utils/helpers';
 import { useNavigation } from '@react-navigation/native';
-import {
 import { useTranslation } from 'react-i18next';
+import {
   CreditCard,
   CheckCircle,
   Clock,

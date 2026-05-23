@@ -19,8 +19,8 @@ import { useAuth } from '../context/AuthContext';
 import { Card, Button } from '../components';
 import { formatCurrency } from '../utils/helpers';
 import api from '../services/api';
-import {
 import { useTranslation } from 'react-i18next';
+import {
   CreditCard,
   CheckCircle,
   Shield,
