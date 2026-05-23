@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useEntityFetch } from "../../hooks/useEntityFetch";
 import { Input, Switch, Select, SelectItem, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Divider } from "@heroui/react";
 import { Save, Plus, Edit, Search, X, MessageSquare, Mail } from "lucide-react";
@@ -150,11 +150,11 @@ export default function CommunicationSettings() {
     }
   };
 
-  const handleCancel = (section) => {
+  const handleCancel = useCallback((section) => {
     if (section === 'sms') setSmsDraft({ ...smsConfig, apiKey: '' });
     else setEmailDraft({ ...emailConfig, password: '' });
     setEditingSection(null);
-  };
+  }, [smsConfig, emailConfig]);
 
   const SectionHeader = ({ title, description, icon: Icon, section, isEnabled, onToggle }) => (
     <div className="flex justify-between items-start mb-6">
@@ -209,6 +209,14 @@ export default function CommunicationSettings() {
       </div>
     </div>
   );
+
+  const tableClassNames = useMemo(() => ({
+    base: "overflow-visible [&_table]:border-spacing-0",
+    thead: "[&>tr]:first:shadow-none",
+    th: "bg-surface-2 text-fg-muted font-medium text-xs uppercase tracking-wider h-12 border-b border-border-token",
+    td: "py-4 border-b border-border-token",
+    tbody: "[&>tr:last-child>td]:border-none"
+  }), []);
 
   if (loadingSettings) {
     return (
@@ -489,13 +497,7 @@ export default function CommunicationSettings() {
               aria-label={t('aria.misc.templates')}
               removeWrapper
               radius="none"
-              classNames={{
-                base: "overflow-visible [&_table]:border-spacing-0",
-                thead: "[&>tr]:first:shadow-none",
-                th: "bg-surface-2 text-fg-muted font-medium text-xs uppercase tracking-wider h-12 border-b border-border-token",
-                td: "py-4 border-b border-border-token",
-                tbody: "[&>tr:last-child>td]:border-none"
-              }}
+              classNames={tableClassNames}
             >
               <TableHeader>
                 <TableColumn scope="col">{t('pages.tEMPLATEName')}</TableColumn>

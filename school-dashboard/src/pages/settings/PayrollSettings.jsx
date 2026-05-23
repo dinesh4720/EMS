@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Card, CardBody, CardHeader, Button, Input, Chip, Divider,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
@@ -50,7 +50,7 @@ function SalaryComponents() {
   };
 
   // [AUDIT-557] Added confirmation before removing salary components
-  const handleRemove = (type, id) => {
+  const handleRemove = useCallback((type, id) => {
     showConfirm({
       title: 'Remove Salary Component',
       message: 'Are you sure you want to remove this salary component? This cannot be undone.',
@@ -64,7 +64,7 @@ function SalaryComponents() {
         }
       },
     });
-  };
+  }, [showConfirm, updateSalarySettings]);
 
   const earnings = salarySettings?.earnings || [];
   const deductions = salarySettings?.deductions || [];
@@ -288,6 +288,19 @@ function SalaryComponents() {
   );
 }
 
+const PAYMENT_METHOD_LABELS = {
+  bank_transfer: "Bank Transfer",
+  cheque: "Cheque",
+  cash: "Cash",
+  upi: "UPI",
+};
+
+const CYCLE_LABELS = {
+  weekly: "Weekly",
+  biweekly: "Bi-weekly",
+  monthly: "Monthly",
+};
+
 function GeneralPayrollSettings() {
   const { t } = useTranslation();
   const [editingSection, setEditingSection] = useState(null);
@@ -355,7 +368,7 @@ function GeneralPayrollSettings() {
     return num + (suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]);
   };
 
-  const handleEdit = (section) => {
+  const handleEdit = useCallback((section) => {
     if (section === "schedule") {
       setTempDisburseDate(disburseDate);
       setTempPayrollCycle(payrollCycle);
@@ -366,11 +379,11 @@ function GeneralPayrollSettings() {
       setTempReminderDays(reminderDays);
     }
     setEditingSection(section);
-  };
+  }, [disburseDate, payrollCycle, paymentMethod, autoReminder, reminderDays]);
 
-  const handleCancel = () => setEditingSection(null);
+  const handleCancel = useCallback(() => setEditingSection(null), []);
 
-  const handleSaveSchedule = async () => {
+  const handleSaveSchedule = useCallback(async () => {
     if (!tempDisburseDate || tempDisburseDate < 1 || tempDisburseDate > 31) {
       toast.error(t("toast.error.pleaseEnterAValidDateBetween1And31"));
       return;
@@ -391,10 +404,10 @@ function GeneralPayrollSettings() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [tempDisburseDate, tempPayrollCycle, t]);
 
   // TODO: AUDIT-116 - Wire up to API: PUT /settings/payroll (paymentMethod field)
-  const handleSavePayment = async () => {
+  const handleSavePayment = useCallback(async () => {
     setLoading(true);
     try {
       await settingsApi.updatePayrollSettings({ paymentMethod: tempPaymentMethod });
@@ -407,10 +420,10 @@ function GeneralPayrollSettings() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [tempPaymentMethod]);
 
   // TODO: AUDIT-116 - Wire up to API: PUT /settings/payroll (reminder fields)
-  const handleSaveReminders = async () => {
+  const handleSaveReminders = useCallback(async () => {
     setLoading(true);
     try {
       await settingsApi.updatePayrollSettings({
@@ -427,14 +440,7 @@ function GeneralPayrollSettings() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const paymentMethodLabels = {
-    bank_transfer: "Bank Transfer",
-    cheque: "Cheque",
-    cash: "Cash",
-    upi: "UPI",
-  };
+  }, [tempAutoReminder, tempReminderDays]);
 
   return (
     <div className="space-y-5">
@@ -570,7 +576,7 @@ function GeneralPayrollSettings() {
                   Payroll Cycle
                 </p>
                 <p className="text-sm font-medium text-fg">
-                  {{ weekly: "Weekly", biweekly: "Bi-weekly", monthly: "Monthly" }[payrollCycle] || "Monthly"}
+                  {CYCLE_LABELS[payrollCycle] || "Monthly"}
                 </p>
               </div>
               <div>
@@ -677,7 +683,7 @@ function GeneralPayrollSettings() {
                     Selected Method
                   </p>
                   <p className="text-lg font-semibold text-[var(--ok)]">
-                    {paymentMethodLabels[tempPaymentMethod]}
+                    {PAYMENT_METHOD_LABELS[tempPaymentMethod]}
                   </p>
                   <p className="text-xs text-[var(--ok)] mt-1">
                     All new payroll runs will use this method
@@ -692,7 +698,7 @@ function GeneralPayrollSettings() {
                   Payment Method
                 </p>
                 <p className="text-sm font-medium text-fg">
-                  {paymentMethodLabels[paymentMethod]}
+                  {PAYMENT_METHOD_LABELS[paymentMethod]}
                 </p>
               </div>
               <div>

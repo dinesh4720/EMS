@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import logger from "../../utils/logger";
 import { Card, Button, Input, Select, SelectItem, Switch, Tabs, Tab, Chip, Divider, RadioGroup, Radio } from "@heroui/react";
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
@@ -48,8 +48,6 @@ export default function AdmissionFormSettings() {
     currentNumber: 0,
     resetFrequency: 'yearly'
   });
-  const [previewId, setPreviewId] = useState('');
-
   // Roll Number Config
   const [rollNumberConfig, setRollNumberConfig] = useState({
     format: 'sequential',
@@ -64,25 +62,24 @@ export default function AdmissionFormSettings() {
     const controller = new AbortController();
     loadConfigurations(controller.signal);
     return () => controller.abort();
-  }, []);
+  }, [loadConfigurations]);
 
-  // Generate preview locally (client-side only, no API call)
-  useEffect(() => {
+  const previewId = useMemo(() => {
     const now = new Date();
     let preview = admissionIdConfig.prefix;
-    
+
     if (admissionIdConfig.yearFormat !== 'none') {
       if (admissionIdConfig.separator) preview += admissionIdConfig.separator;
       preview += admissionIdConfig.yearFormat === 'YYYY' ? now.getFullYear() : String(now.getFullYear()).slice(-2);
     }
-    
+
     if (admissionIdConfig.separator) preview += admissionIdConfig.separator;
     preview += String(admissionIdConfig.currentNumber + 1).padStart(admissionIdConfig.numberPadding, '0');
-    
-    setPreviewId(preview);
+
+    return preview;
   }, [admissionIdConfig]);
 
-  const loadConfigurations = async (signal) => {
+  const loadConfigurations = useCallback(async (signal) => {
     setLoading(true);
     try {
       const [idConfig, rollConfig, docConfigs] = await Promise.all([
@@ -121,7 +118,7 @@ export default function AdmissionFormSettings() {
         setLoading(false);
       }
     }
-  };
+  }, [t]);
 
   const handleSaveAdmissionIdConfig = async () => {
     setSaving(true);
@@ -164,30 +161,32 @@ export default function AdmissionFormSettings() {
     }
   };
 
-  const addDocumentConfig = () => {
-    setDocumentConfigs([
-      ...documentConfigs,
+  const addDocumentConfig = useCallback(() => {
+    setDocumentConfigs(prev => [
+      ...prev,
       {
         documentName: '',
         isRequired: false,
         uploadType: 'single',
         allowedFormats: ['pdf', 'jpg', 'png'],
         maxFileSize: 5242880,
-        displayOrder: documentConfigs.length + 1,
+        displayOrder: prev.length + 1,
         description: ''
       }
     ]);
-  };
+  }, []);
 
-  const removeDocumentConfig = (index) => {
-    setDocumentConfigs(documentConfigs.filter((_, i) => i !== index));
-  };
+  const removeDocumentConfig = useCallback((index) => {
+    setDocumentConfigs(prev => prev.filter((_, i) => i !== index));
+  }, []);
 
-  const updateDocumentConfig = (index, field, value) => {
-    const updated = [...documentConfigs];
-    updated[index] = { ...updated[index], [field]: value };
-    setDocumentConfigs(updated);
-  };
+  const updateDocumentConfig = useCallback((index, field, value) => {
+    setDocumentConfigs(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  }, []);
 
   if (loading) {
     return (

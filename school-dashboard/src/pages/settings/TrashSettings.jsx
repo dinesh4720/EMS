@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import logger from "../../utils/logger";
 import {
   Card,
@@ -94,7 +94,7 @@ export default function TrashSettings() {
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   // Load trash items and statistics
-  const loadTrashData = async (signal) => {
+  const loadTrashData = useCallback(async (signal) => {
     try {
       setLoading(true);
       const [itemsData, statsData] = await Promise.all([
@@ -127,14 +127,14 @@ export default function TrashSettings() {
     } finally {
       if (!signal?.aborted) setLoading(false);
     }
-  };
+  }, [page, limit, t]);
 
   // Load trash data on mount and when page changes
   useEffect(() => {
     const controller = new AbortController();
     loadTrashData(controller.signal);
     return () => controller.abort();
-  }, [page]);
+  }, [loadTrashData]);
 
   // Calculate days remaining until permanent deletion
   const getDaysRemaining = (expiresAt) => {
@@ -275,7 +275,7 @@ export default function TrashSettings() {
   }, [trashItems, searchTerm, typeFilter]);
 
   // Handle single item restore
-  const handleRestore = async (id) => {
+  const handleRestore = useCallback(async (id) => {
     try {
       setActionInProgress(true);
       await trashApi.restore(id);
@@ -288,10 +288,10 @@ export default function TrashSettings() {
     } finally {
       setActionInProgress(false);
     }
-  };
+  }, [loadTrashData, t]);
 
   // Handle permanent delete of single item
-  const handlePermanentDelete = (id) => {
+  const handlePermanentDelete = useCallback((id) => {
     showConfirm({
       title: 'Delete Permanently',
       message: t('confirm.deletePermanently'),
@@ -312,18 +312,18 @@ export default function TrashSettings() {
         }
       },
     });
-  };
+  }, [showConfirm, loadTrashData, t]);
 
   // Handle bulk action (restore or delete)
-  const handleBulkAction = (action) => {
+  const handleBulkAction = useCallback((action) => {
     if (selectedItems.size === 0) return;
 
     setPendingAction(action);
     onOpen();
-  };
+  }, [selectedItems.size, onOpen]);
 
   // Confirm and execute bulk action
-  const confirmBulkAction = async () => {
+  const confirmBulkAction = useCallback(async () => {
     try {
       setActionInProgress(true);
       const ids = Array.from(selectedItems);
@@ -346,7 +346,21 @@ export default function TrashSettings() {
     } finally {
       setActionInProgress(false);
     }
-  };
+  }, [pendingAction, selectedItems, loadTrashData, onClose, t]);
+
+  const topTypeStats = useMemo(() => {
+    return Object.entries(stats.byType)
+      .sort(([, a], [, b]) => (b.count || 0) - (a.count || 0))
+      .slice(0, 2);
+  }, [stats.byType]);
+
+  const tableClassNames = useMemo(() => ({
+    base: "overflow-visible",
+    th: "bg-surface-2 text-fg-muted font-medium text-xs uppercase tracking-wider h-12 border-b border-border-token",
+    td: "py-4 border-b border-divider transition-colors",
+    tbody: "[&>tr:last-child>td]:border-none [&>tr[data-selected=true]>td]:bg-[var(--accent-bg)]",
+    tr: "transition-colors hover:bg-surface-2 data-[selected=true]:bg-[var(--accent-bg)] dark:data-[selected=true]:bg-[var(--accent-bg)]",
+  }), []);
 
   // Format date for display
   const formatDate = (dateString) => {
@@ -431,10 +445,7 @@ export default function TrashSettings() {
         </Card>
 
         {/* Dynamic type breakdown — show top types with counts */}
-        {Object.entries(stats.byType)
-          .sort(([, a], [, b]) => (b.count || 0) - (a.count || 0))
-          .slice(0, 2)
-          .map(([typeName, typeStats]) => (
+        {topTypeStats.map(([typeName, typeStats]) => (
             <Card key={typeName} className="shadow-sm border border-border-token rounded-lg">
               <CardBody className="p-4">
                 <div className="flex items-center gap-3">
@@ -559,13 +570,7 @@ export default function TrashSettings() {
             selectedKeys={selectedItems}
             onSelectionChange={setSelectedItems}
             removeWrapper
-            classNames={{
-              base: "overflow-visible",
-              th: "bg-surface-2 text-fg-muted font-medium text-xs uppercase tracking-wider h-12 border-b border-border-token",
-              td: "py-4 border-b border-divider transition-colors",
-              tbody: "[&>tr:last-child>td]:border-none [&>tr[data-selected=true]>td]:bg-[var(--accent-bg)]",
-              tr: "transition-colors hover:bg-surface-2 data-[selected=true]:bg-[var(--accent-bg)] dark:data-[selected=true]:bg-[var(--accent-bg)]",
-            }}
+            classNames={tableClassNames}
           >
             <TableHeader>
               <TableColumn scope="col">{t('pages.nAME')}</TableColumn>
