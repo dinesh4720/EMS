@@ -154,9 +154,9 @@ export default function RoomsList() {
   };
 
   const occupancyColor = (room) => {
-    if (room.occupiedBeds >= room.capacity) return "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400";
-    if (room.occupiedBeds > 0) return "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400";
-    return "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400";
+    if (room.occupiedBeds >= room.capacity) return "bg-[var(--danger-bg)] text-[var(--danger)]";
+    if (room.occupiedBeds > 0) return "bg-[var(--warn-bg)] text-[var(--warn)]";
+    return "bg-[var(--ok-bg)] text-[var(--ok)]";
   };
 
   if (isLoading) return <TablePageSkeleton title={false} kpiCards={0} columns={5} rows={6} />;
@@ -228,7 +228,7 @@ export default function RoomsList() {
                   <th className="text-right px-4 py-3 font-medium text-fg">{t('pages.actions1')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-zinc-800">
+              <tbody className="divide-y divide-divider">
                 {rooms.map((room) => (
                   <tr key={room._id} className="bg-surface hover:bg-surface-hover transition-colors">
                     <td className="px-4 py-3 font-medium text-fg">{room.roomNumber}</td>
@@ -252,7 +252,7 @@ export default function RoomsList() {
                           <Edit2 size={14} className="text-fg-muted" />
                         </Button>
                         <Button isIconOnly size="sm" variant="light" aria-label="Delete room" onPress={() => setDeleteTarget(room._id)}>
-                          <Trash2 size={14} className="text-red-500" />
+                          <Trash2 size={14} className="text-danger" />
                         </Button>
                       </div>
                     </td>
