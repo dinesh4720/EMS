@@ -11,7 +11,7 @@
 import { createContext, useContext } from "react";
 import { useSettings } from "./SettingsContext";
 
-const SchoolContext = createContext(null);
+const SchoolContext = createContext(undefined);
 
 /**
  * SchoolProvider — must be rendered inside SettingsProvider.
@@ -38,6 +38,6 @@ export function SchoolProvider({ children }) {
  */
 export function useSchool() {
   const ctx = useContext(SchoolContext);
-  if (!ctx) throw new Error("useSchool must be used within SchoolProvider (AppProvider)");
+  if (ctx === undefined) throw new Error("useSchool must be used within SchoolProvider (AppProvider)");
   return ctx;
 }
