@@ -20,7 +20,7 @@ import { useCurrency } from '../../context/hooks/useCurrency';
 // ============ CONCESSIONS TAB ============
 export function ConcessionsTab() {
   const { t } = useTranslation();
-  const { fmt, currencySymbol } = useCurrency();
+  const { fmt } = useCurrency();
   const { currentAcademicYear } = useApp();
   const [concessions, setConcessions] = useState([]);
   const [loading, setLoading] = useState(false);

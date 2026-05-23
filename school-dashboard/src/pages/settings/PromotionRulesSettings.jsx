@@ -5,7 +5,7 @@ import { request } from '../../services/api';
 import toast from 'react-hot-toast';
 import HelpIcon from '../../components/ui/HelpIcon';
 import SkeletonForm from '../../components/skeletons/SkeletonForm';
-import { useTranslation } from 'react-i18next';
+
 
 const FEE_OPTIONS = [
   { key: 'none', label: 'No fee requirement' },

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Card, CardBody, CardHeader, Button, Input, Switch, Divider, Select, SelectItem, Spinner } from "@heroui/react";
+import { Card, CardBody, Button, Input, Switch, Divider, Select, SelectItem, Spinner } from "@heroui/react";
 import { Save, AlertCircle } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import { settingsApi } from "../../services/api";

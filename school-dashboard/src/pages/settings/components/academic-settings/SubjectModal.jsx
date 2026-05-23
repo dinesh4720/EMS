@@ -1,5 +1,5 @@
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Button, Chip } from "@heroui/react";
-import { Layers } from "lucide-react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Button } from "@heroui/react";
+
 import { useTranslation } from "react-i18next";
 
 export default function SubjectModal({

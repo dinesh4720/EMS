@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { ssoApi } from "../../services/settingsService";
 import toast from "react-hot-toast";
-import { useTranslation } from 'react-i18next';
+
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
 

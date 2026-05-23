@@ -29,7 +29,6 @@ import {
   AlertTriangle,
   CheckCircle,
   Shield,
-  FileText,
   Users,
   GraduationCap,
   IndianRupee,
