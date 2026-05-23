@@ -53,15 +53,12 @@ export default function RefundDetailPane({
   const isProcessed = status === "processed";
   const isRejected = status === "rejected";
 
-  const Tag = isMobile ? "div" : "aside";
-
   return (
-    <Tag
+    <aside
       ref={paneRef}
       className="detail-pane"
-      role={isMobile ? "document" : "complementary"}
-      aria-label={`Refund: ${studentName}`}
-      tabIndex={isMobile ? -1 : undefined}
+      role="complementary"
+      aria-label="Refund details"
     >
       {/* Head bar */}
       <div className="detail-pane__head">
@@ -262,6 +259,6 @@ export default function RefundDetailPane({
           </Button>
         )}
       </div>
-    </Tag>
+    </aside>
   );
 }
