@@ -39,7 +39,7 @@ export default function CookieConsentBanner() {
   if (!visible) return null;
 
   const handleAccept = () => {
-    const consent = { necessary: true };
+    const consent = { necessary: true, analytics: true };
     saveConsent(consent);
     setVisible(false);
     window.dispatchEvent(new CustomEvent('cookie-consent-updated', { detail: consent }));

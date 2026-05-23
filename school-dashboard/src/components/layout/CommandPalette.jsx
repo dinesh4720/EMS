@@ -99,6 +99,14 @@ function GroupHeading({ label, count }) {
   );
 }
 
+function PaletteItem({ children, onSelect }) {
+  return (
+    <Command.Item onSelect={onSelect} className="cmdk__item">
+      <button type="button">{children}</button>
+    </Command.Item>
+  );
+}
+
 export default function CommandPalette({ isOpen, onClose }) {
   const navigate = useNavigate();
   const previouslyFocused = useRef(null);
@@ -221,7 +229,7 @@ export default function CommandPalette({ isOpen, onClose }) {
             <kbd className="kbd">esc</kbd>
           </div>
 
-          <Command.List className="cmdk__list">
+          <Command.List className="cmdk__list max-h-[400px]">
             <Command.Empty className="cmdk__empty">
               No matches. Try a different search.
             </Command.Empty>
@@ -232,18 +240,16 @@ export default function CommandPalette({ isOpen, onClose }) {
                 forceMount={false}
               >
                 {recents.map((r) => (
-                  <Command.Item
+                  <PaletteItem
                     key={`recent-${r.id}-${r.to}`}
-                    value={`${r.label} recent ${r.to}`}
                     onSelect={() => run(r)}
-                    className="cmdk__item"
                   >
                     <span className="cmdk__item-icon"><History size={14} aria-hidden /></span>
                     <span className="cmdk__item-label">{r.label}</span>
                     <span className="cmdk__hint">
                       <kbd className="kbd">↵</kbd>
                     </span>
-                  </Command.Item>
+                  </PaletteItem>
                 ))}
               </Command.Group>
             ) : null}
@@ -252,18 +258,16 @@ export default function CommandPalette({ isOpen, onClose }) {
               {PAGES.map((p) => {
                 const Icon = p.icon;
                 return (
-                  <Command.Item
+                  <PaletteItem
                     key={p.id}
-                    value={`${p.label} page ${p.to}`}
                     onSelect={() => run(p)}
-                    className="cmdk__item"
                   >
                     <span className="cmdk__item-icon"><Icon size={14} aria-hidden /></span>
                     <span className="cmdk__item-label">{p.label}</span>
                     <span className="cmdk__hint">
                       <kbd className="kbd">↵</kbd>
                     </span>
-                  </Command.Item>
+                  </PaletteItem>
                 );
               })}
             </Command.Group>
@@ -271,16 +275,14 @@ export default function CommandPalette({ isOpen, onClose }) {
             {studentItems.length > 0 ? (
               <Command.Group heading={<GroupHeading label="Students" count={studentItems.length} />}>
                 {studentItems.map((s) => (
-                  <Command.Item
+                  <PaletteItem
                     key={`student-${s.id}`}
-                    value={`${s.label} student ${s.sub}`}
                     onSelect={() => run(s)}
-                    className="cmdk__item"
                   >
                     <span className="cmdk__item-icon"><GraduationCap size={14} aria-hidden /></span>
                     <span className="cmdk__item-label">{s.label}</span>
                     {s.sub ? <span className="cmdk__item-sub mono tnum">{s.sub}</span> : null}
-                  </Command.Item>
+                  </PaletteItem>
                 ))}
               </Command.Group>
             ) : null}
@@ -288,16 +290,14 @@ export default function CommandPalette({ isOpen, onClose }) {
             {staffItems.length > 0 ? (
               <Command.Group heading={<GroupHeading label="Staff" count={staffItems.length} />}>
                 {staffItems.map((s) => (
-                  <Command.Item
+                  <PaletteItem
                     key={`staff-${s.id}`}
-                    value={`${s.label} staff ${s.sub}`}
                     onSelect={() => run(s)}
-                    className="cmdk__item"
                   >
                     <span className="cmdk__item-icon"><Briefcase size={14} aria-hidden /></span>
                     <span className="cmdk__item-label">{s.label}</span>
                     {s.sub ? <span className="cmdk__item-sub">{s.sub}</span> : null}
-                  </Command.Item>
+                  </PaletteItem>
                 ))}
               </Command.Group>
             ) : null}
@@ -305,31 +305,27 @@ export default function CommandPalette({ isOpen, onClose }) {
             {classItems.length > 0 ? (
               <Command.Group heading={<GroupHeading label="Classes" count={classItems.length} />}>
                 {classItems.map((c) => (
-                  <Command.Item
+                  <PaletteItem
                     key={`class-${c.id}`}
-                    value={`${c.label} class ${c.sub}`}
                     onSelect={() => run(c)}
-                    className="cmdk__item"
                   >
                     <span className="cmdk__item-icon"><School size={14} aria-hidden /></span>
                     <span className="cmdk__item-label">{c.label}</span>
                     {c.sub ? <span className="cmdk__item-sub">{c.sub}</span> : null}
-                  </Command.Item>
+                  </PaletteItem>
                 ))}
               </Command.Group>
             ) : null}
 
             <Command.Group heading={<GroupHeading label="Settings" count={SETTINGS.length} />}>
               {SETTINGS.map((s) => (
-                <Command.Item
+                <PaletteItem
                   key={s.id}
-                  value={`${s.label} settings ${s.to}`}
                   onSelect={() => run(s)}
-                  className="cmdk__item"
                 >
                   <span className="cmdk__item-icon"><SettingsIcon size={14} aria-hidden /></span>
                   <span className="cmdk__item-label">{s.label}</span>
-                </Command.Item>
+                </PaletteItem>
               ))}
             </Command.Group>
 
@@ -337,18 +333,16 @@ export default function CommandPalette({ isOpen, onClose }) {
               {ACTIONS.map((a) => {
                 const Icon = a.icon;
                 return (
-                  <Command.Item
+                  <PaletteItem
                     key={a.id}
-                    value={`${a.label} action ${a.to}`}
                     onSelect={() => run(a)}
-                    className="cmdk__item"
                   >
                     <span className="cmdk__item-icon"><Icon size={14} aria-hidden /></span>
                     <span className="cmdk__item-label">{a.label}</span>
                     <span className="cmdk__hint">
                       <kbd className="kbd">↵</kbd>
                     </span>
-                  </Command.Item>
+                  </PaletteItem>
                 );
               })}
             </Command.Group>

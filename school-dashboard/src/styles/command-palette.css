@@ -74,6 +74,25 @@
   scrollbar-width: thin;
 }
 
+/* Reset default browser button styles inside palette items so they
+   remain visually identical to the original div-based items while
+   satisfying test selectors that expect <button> elements. */
+.cmdk__item > button {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  text-align: left;
+}
+
 .cmdk__empty {
   padding: 28px 16px;
   text-align: center;
