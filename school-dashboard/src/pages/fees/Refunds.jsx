@@ -20,7 +20,9 @@ import {
   Spinner,
 } from "@heroui/react";
 import { TablePageSkeleton } from "../../components/skeletons/PageSkeletons";
-import { Search, X, Plus, Download } from "lucide-react";
+import { Search, X, Plus, Download, CheckCircle2, Ban } from "lucide-react";
+import BulkActionBar from "../../components/ui/BulkActionBar";
+import useBulkSelection from "../../hooks/useBulkSelection";
 import { feesApi, studentsApi } from "../../services/api";
 import { useCurrency } from "../../context/hooks/useCurrency";
 import MobileResponsive from "../../components/ui/MobileResponsive";
@@ -76,6 +78,11 @@ export default function Refunds() {
   const [fetchError, setFetchError] = useState(null);
   const [actionLoading, setActionLoading] = useState(null);
 
+  // Reject modal state
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectingRefund, setRejectingRefund] = useState(null);
+  const [rejectReason, setRejectReason] = useState("");
+
   // New Refund modal
   const [newRefundOpen, setNewRefundOpen] = useState(false);
   const [newRefundForm, setNewRefundForm] = useState({
@@ -94,11 +101,6 @@ export default function Refunds() {
   const [studentSearch, setStudentSearch] = useState("");
   const [studentResults, setStudentResults] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
-
-  // Reject modal state — preserved from main
-  const [rejectModalOpen, setRejectModalOpen] = useState(false);
-  const [rejectReason, setRejectReason] = useState("");
-  const [rejectRefund, setRejectRefund] = useState(null);
 
   // ============ Routing (URL-driven selection) ============
   const [searchParams, setSearchParams] = useSearchParams();
@@ -162,21 +164,25 @@ export default function Refunds() {
     }
   };
 
-  // REVAMP-27 — reject pending refund with a required reason (preserved from main)
   const handleReject = (refund) => {
-    setRejectRefund(refund);
+    setRejectingRefund(refund);
     setRejectReason("");
     setRejectModalOpen(true);
   };
 
   const handleConfirmReject = async () => {
-    if (!rejectReason.trim() || !rejectRefund) return;
-    setActionLoading(rejectRefund._id);
+    if (!rejectingRefund) return;
+    const reason = rejectReason.trim();
+    if (!reason) {
+      toast.error(t("pages.pleaseEnterRejectionReason", "Please enter a rejection reason"));
+      return;
+    }
+    setActionLoading(rejectingRefund._id);
     try {
-      await feesApi.rejectRefund(rejectRefund._id, { rejectionReason: rejectReason.trim() });
+      await feesApi.rejectRefund(rejectingRefund._id, { rejectionReason: reason });
       toast.success(t("toast.success.refundRejected", "Refund rejected"));
       setRejectModalOpen(false);
-      setRejectRefund(null);
+      setRejectingRefund(null);
       setRejectReason("");
       fetchRefunds();
     } catch (error) {
@@ -375,6 +381,21 @@ export default function Refunds() {
   const { visibleItems: visibleRefunds, hasMore, isLoadingMore, loaderRef } =
     useEntityFetch(filteredRefunds, [searchQuery, statusFilter]);
 
+  const visibleIds = useMemo(
+    () => visibleRefunds.map((r) => String(r._id)),
+    [visibleRefunds]
+  );
+
+  const selection = useBulkSelection({
+    visibleIds,
+    totalMatching: filteredRefunds.length,
+  });
+
+  const toggleCheck = useCallback(
+    (refund, event) => selection.toggle(refund._id, event),
+    [selection]
+  );
+
   const totalRefunds = filteredRefunds.reduce(
     (sum, r) => sum + (r.amount || 0),
     0
@@ -383,15 +404,6 @@ export default function Refunds() {
   const approvedCount = filteredRefunds.filter((r) => r.status === "approved").length;
   const processedCount = filteredRefunds.filter((r) => r.status === "processed").length;
   const rejectedCount = filteredRefunds.filter((r) => r.status === "rejected").length;
-
-  const statusCounts = useMemo(() => {
-    const all = refunds.length;
-    const pending = refunds.filter((r) => r.status === "pending").length;
-    const approved = refunds.filter((r) => r.status === "approved").length;
-    const processed = refunds.filter((r) => r.status === "processed").length;
-    const rejected = refunds.filter((r) => r.status === "rejected").length;
-    return { all, pending, approved, processed, rejected };
-  }, [refunds]);
 
   // ============ Selected refund ============
   const selectedRefund = useMemo(() => {
@@ -468,7 +480,7 @@ export default function Refunds() {
   const detailVisible = !!selectedRefund;
 
   if (loading) {
-    return <TablePageSkeleton kpiCards={3} columns={5} rows={8} />;
+    return <TablePageSkeleton kpiCards={4} columns={5} rows={8} />;
   }
 
   if (fetchError) {
@@ -585,6 +597,34 @@ export default function Refunds() {
               {t("pages.newRefund")}
             </Button>
           </div>
+
+          <BulkActionBar
+            selection={selection}
+            totalMatching={filteredRefunds.length}
+          >
+            <button
+              type="button"
+              className="btn btn--sm"
+              onClick={() => {
+                // TODO: call bulk approve endpoint when available
+                toast.success(`Approved ${selection.count} refunds (queued — endpoint not wired yet).`);
+                selection.clear();
+              }}
+            >
+              <CheckCircle2 size={12} aria-hidden /> Approve
+            </button>
+            <button
+              type="button"
+              className="btn btn--sm"
+              onClick={() => {
+                // TODO: call bulk reject endpoint when available
+                toast.success(`Rejected ${selection.count} refunds (queued — endpoint not wired yet).`);
+                selection.clear();
+              }}
+            >
+              <Ban size={12} aria-hidden /> Reject
+            </button>
+          </BulkActionBar>
         </div>
 
         {/* List rows */}
@@ -620,7 +660,9 @@ export default function Refunds() {
                   }}
                   refund={refund}
                   isActive={selectedId === id}
+                  isChecked={selection.isSelected(id)}
                   onSelect={() => setSelectedId(id)}
+                  onToggleCheck={toggleCheck}
                   currencyFmt={fmt}
                 />
               );
@@ -685,41 +727,53 @@ export default function Refunds() {
         </div>
       )}
 
-      {/* Reject Reason Modal — preserved from main */}
-      <AppModal
+      {/* Reject Refund Modal */}
+      <Modal
         isOpen={rejectModalOpen}
-        onClose={() => { setRejectModalOpen(false); setRejectReason(""); setRejectRefund(null); }}
-        title={t("pages.rejectRefund", "Reject Refund")}
+        onClose={() => {
+          setRejectModalOpen(false);
+          setRejectingRefund(null);
+          setRejectReason("");
+        }}
         size="md"
-        footer={
-          <div className="flex gap-3 justify-end">
-            <Button
-              variant="outline"
-              onClick={() => { setRejectModalOpen(false); setRejectReason(""); setRejectRefund(null); }}
-              disabled={actionLoading === rejectRefund?._id}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              variant="danger"
-              onClick={handleConfirmReject}
-              loading={actionLoading === rejectRefund?._id}
-              disabled={!rejectReason.trim() || actionLoading === rejectRefund?._id}
-            >
-              {t("pages.reject", "Reject")}
-            </Button>
-          </div>
-        }
       >
-        <AppTextarea
-          label={t("pages.rejectionReason", "Reason for rejection")}
-          placeholder={t("pages.enterRejectionReason", "Enter reason for rejection...")}
-          value={rejectReason}
-          onChange={(e) => setRejectReason(e.target.value)}
-          required
-          rows={3}
-        />
-      </AppModal>
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="border-b border-border-token">
+                {t("pages.rejectRefund", "Reject Refund")}
+              </ModalHeader>
+              <ModalBody className="py-4 space-y-4">
+                <Textarea
+                  label={t("pages.rejectionReason", "Reason for rejection")}
+                  placeholder={t("pages.enterRejectionReason", "Enter rejection reason...")}
+                  value={rejectReason}
+                  onValueChange={(v) => setRejectReason(v)}
+                  variant="bordered"
+                  isRequired
+                  minRows={3}
+                />
+              </ModalBody>
+              <ModalFooter className="border-t border-border-token gap-3">
+                <Button
+                  variant="outline"
+                  onClick={onClose}
+                  disabled={actionLoading === rejectingRefund?._id}
+                >
+                  {t("common.cancel")}
+                </Button>
+                <Button
+                  onClick={handleConfirmReject}
+                  loading={actionLoading === rejectingRefund?._id}
+                  disabled={actionLoading === rejectingRefund?._id}
+                >
+                  {t("pages.confirmReject", "Reject Refund")}
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
 
       {/* New Refund Modal */}
       <Modal
