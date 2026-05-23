@@ -364,4 +364,97 @@ test.describe('TC118 — Analytics Dashboard', () => {
 
     expect(hasStudentCount || hasStaffCount || hasAttendanceRate).toBeTruthy();
   });
+
+  /* ───────── 11. Date preset selector buttons are visible and functional ───────── */
+
+  test('11) date preset buttons Academic Year Last 30 Days Last 90 Days are visible and clickable', async ({ page }) => {
+    await page.goto('/analytics');
+    await page.waitForLoadState('networkidle');
+
+    const bodyText = await page.textContent('body') ?? '';
+
+    // Preset buttons should be visible
+    expect(bodyText).toContain('Academic Year');
+    expect(bodyText).toContain('Last 30 Days');
+    expect(bodyText).toContain('Last 90 Days');
+
+    // Click "Last 30 Days" preset
+    const last30Btn = page.getByRole('button', { name: /last 30 days/i }).first();
+    if (await last30Btn.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await last30Btn.click();
+      await page.waitForTimeout(500);
+
+      // The button should now have the active/selected styling (aria-pressed="true")
+      expect(await last30Btn.getAttribute('aria-pressed')).toBe('true');
+
+      // Other presets should not be pressed
+      const academicYearBtn = page.getByRole('button', { name: /academic year/i }).first();
+      expect(await academicYearBtn.getAttribute('aria-pressed')).toBe('false');
+    }
+  });
+
+  /* ───────── 12. Pie chart drill-down opens drawer with student details ───────── */
+
+  test('12) clicking pie chart segment opens drill-down drawer', async ({ page }) => {
+    await page.goto('/analytics');
+    await page.waitForLoadState('networkidle');
+
+    // Wait for pie chart to render
+    await page.waitForFunction(
+      () => document.body.textContent?.includes('Active'),
+      { timeout: 10_000 },
+    );
+
+    // Find and click on a pie chart label (e.g., "Active")
+    const pieLabel = page.locator('text=Active').first();
+    if (await pieLabel.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await pieLabel.click();
+      await page.waitForTimeout(500);
+
+      // Drawer should open with title containing "Active Students"
+      const drawerTitle = page.locator('[id="ds-drawer-title"]').first();
+      if (await drawerTitle.isVisible({ timeout: 5000 }).catch(() => false)) {
+        const titleText = await drawerTitle.textContent() ?? '';
+        expect(titleText).toContain('Active Students');
+      }
+
+      // Drawer document role should be visible
+      const drawer = page.locator('[role="document"]').first();
+      expect(await drawer.isVisible({ timeout: 3000 }).catch(() => false)).toBeTruthy();
+    }
+  });
+
+  /* ───────── 13. Drill-down drawer closes via X button ───────── */
+
+  test('13) drill-down drawer closes when clicking X button', async ({ page }) => {
+    await page.goto('/analytics');
+    await page.waitForLoadState('networkidle');
+
+    await page.waitForFunction(
+      () => document.body.textContent?.includes('Active'),
+      { timeout: 10_000 },
+    );
+
+    // Click on pie chart to open drawer
+    const pieLabel = page.locator('text=Active').first();
+    if (await pieLabel.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await pieLabel.click();
+      await page.waitForTimeout(500);
+
+      // Drawer should be open
+      const drawer = page.locator('[role="document"]').first();
+      const isDrawerOpen = await drawer.isVisible({ timeout: 3000 }).catch(() => false);
+      expect(isDrawerOpen).toBeTruthy();
+
+      if (isDrawerOpen) {
+        // Click close button
+        const closeBtn = page.locator('button[aria-label="Close"]').first();
+        await closeBtn.click();
+        await page.waitForTimeout(500);
+
+        // Drawer should be closed
+        expect(await drawer.isVisible({ timeout: 2000 }).catch(() => false)).toBeFalsy();
+      }
+    }
+  });
 });
