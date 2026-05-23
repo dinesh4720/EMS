@@ -44,7 +44,7 @@ export default function ParentManagement() {
     };
   }, []);
 
-  const fetchParents = useCallback(async (page = 1) => {
+  const fetchParents = useCallback(async (page = 1, signal) => {
     setLoading(true);
     try {
       const params = { page, limit: 20 };
