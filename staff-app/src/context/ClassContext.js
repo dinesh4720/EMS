@@ -261,6 +261,7 @@ export const ClassProvider = ({ children }) => {
   }, []);
 
   // Sync offline attendance
+  const syncOfflineAttendance = useCallback(async () => {
     if (offlineQueue.length === 0) return { synced: 0 };
 
     let syncedCount = 0;
