@@ -733,3 +733,89 @@
 
 /* ── Dark mode tweaks (rely mostly on tokens, but a few touch-ups) ─ */
 .dark .sg-toolbar { background: var(--bg); }
+
+/* ── IA & Checklist page ─ */
+.ia-legend {
+  display: flex;
+  gap: 16px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--fg-muted);
+}
+.ia-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ia-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ia-module__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  font-size: 13px;
+  color: var(--fg);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.ia-module__head:hover {
+  background: var(--surface-hover);
+}
+.ia-module__name {
+  font-weight: 520;
+  min-width: 140px;
+}
+.ia-module__dir {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-subtle);
+}
+.ia-module__note {
+  font-size: 11px;
+  color: var(--fg-faint);
+  margin-left: 8px;
+}
+.ia-module__checks {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.ia-check {
+  display: inline-flex;
+  align-items: center;
+}
+.status-icon {
+  display: inline-block;
+}
+.status-icon--ok { color: var(--ok); }
+.status-icon--warn { color: var(--warn); }
+.status-icon--subtle { color: var(--fg-faint); }
+.ia-module__body {
+  padding: 8px 16px 12px 40px;
+}
+.ia-page-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.ia-page-list li {
+  font-size: 12px;
+  color: var(--fg-muted);
+  background: var(--surface-2);
+  padding: 3px 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+}
