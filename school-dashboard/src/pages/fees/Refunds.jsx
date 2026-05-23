@@ -5,32 +5,19 @@ import {
   useRef,
   useCallback,
 } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useEntityFetch } from "../../hooks/useEntityFetch";
-import {
-  Select,
-  SelectItem,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Input,
-  Textarea,
-  Spinner,
-} from "@heroui/react";
 import { TablePageSkeleton } from "../../components/skeletons/PageSkeletons";
-import { Search, X, Plus, Download, CheckCircle2, Ban } from "lucide-react";
+import { Search, X, Plus, CheckCircle2, Ban } from "lucide-react";
 import BulkActionBar from "../../components/ui/BulkActionBar";
 import useBulkSelection from "../../hooks/useBulkSelection";
 import { feesApi, studentsApi } from "../../services/api";
 import { useCurrency } from "../../context/hooks/useCurrency";
-import MobileResponsive from "../../components/ui/MobileResponsive";
 import Button from "../../components/ui/Button";
-import AppModal from "../../components/ui/Modal";
-import AppInput from "../../components/ui/Input";
-import AppTextarea from "../../components/ui/Textarea";
-import AppSelect from "../../components/ui/Select";
+import Modal from "../../components/ui/Modal";
+import Input from "../../components/ui/Input";
+import Textarea from "../../components/ui/Textarea";
+import Select from "../../components/ui/Select";
 import ToolbarSearch from "../../components/ui/ToolbarSearch";
 import ErrorState from "../../components/ui/ErrorState";
 import { createRefundSchema, parseFormSchema } from "../../validators/formSchemas";
@@ -51,24 +38,9 @@ const STATUS_FILTERS = [
   { key: "rejected", label: "Rejected" },
 ];
 
-function RefundStatusBadge({ status }) {
-  const tone =
-    status === "processed" ? "ok" :
-    status === "approved" ? "info" :
-    status === "rejected" ? "danger" :
-    "warn";
-  return (
-    <span className={`status status--${tone}`}>
-      <span className="dot" aria-hidden="true" />
-      {status}
-    </span>
-  );
-}
-
 export default function Refunds() {
   const { t } = useTranslation();
   const { fmt } = useCurrency();
-  const navigate = useNavigate();
 
   // ============ Data state ============
   const [searchQuery, setSearchQuery] = useState("");
@@ -157,7 +129,7 @@ export default function Refunds() {
       await feesApi.approveRefund(refund._id, {});
       toast.success(t("toast.success.refundApproved"));
       fetchRefunds();
-    } catch (error) {
+    } catch {
       toast.error(t("toast.error.failedToApproveRefund"));
     } finally {
       setActionLoading(null);
@@ -236,7 +208,7 @@ export default function Refunds() {
       await feesApi.processRefund(refund._id, {});
       toast.success(t("toast.success.refundProcessed"));
       fetchRefunds();
-    } catch (error) {
+    } catch {
       toast.error(t("toast.error.failedToProcessRefund"));
     } finally {
       setActionLoading(null);
@@ -469,18 +441,43 @@ export default function Refunds() {
         e.preventDefault();
         // Enter on a row keeps selection
       } else if (e.key === "Escape") {
+        if (selection.count > 0) return;
         e.preventDefault();
         setSelectedId(null);
       }
     },
-    [moveSelection, setSelectedId]
+    [moveSelection, setSelectedId, selection.count]
   );
 
   const closeDetail = () => setSelectedId(null);
   const detailVisible = !!selectedRefund;
 
+  // Mobile drawer focus trap
+  const drawerRef = useRef(null);
+  const handleDrawerKeyDown = useCallback(
+    (e) => {
+      if (e.key !== "Tab" || !drawerRef.current) return;
+      const focusable = Array.from(
+        drawerRef.current.querySelectorAll(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    },
+    []
+  );
+
   if (loading) {
-    return <TablePageSkeleton kpiCards={4} columns={5} rows={8} />;
+    return <TablePageSkeleton kpiCards={5} columns={5} rows={8} />;
   }
 
   if (fetchError) {
@@ -519,7 +516,7 @@ export default function Refunds() {
         }}
       >
         {/* Stats Row */}
-        <div className="grid grid-cols-4 gap-4 mb-4 px-6 pt-6">
+        <div className="grid grid-cols-5 gap-4 mb-4 px-6 pt-6">
           <div className="p-4 border border-border-token rounded-lg bg-surface">
             <p className="text-xs text-fg-muted uppercase tracking-wider mb-1">
               {t("pages.totalRefunds")}
@@ -544,50 +541,40 @@ export default function Refunds() {
             </p>
             <p className="text-2xl font-bold text-fg">{processedCount}</p>
           </div>
+          <div className="p-4 border border-border-token rounded-lg bg-surface">
+            <p className="text-xs text-fg-muted uppercase tracking-wider mb-1">
+              {t("pages.rejected")}
+            </p>
+            <p className="text-2xl font-bold text-fg">{rejectedCount}</p>
+          </div>
         </div>
 
         {/* Toolbar */}
         <div className="flex flex-col sm:flex-row justify-between gap-4 items-center border-b border-border-token py-4 px-6 mb-4">
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <div className="flex items-center gap-2 w-full sm:max-w-[250px] px-3 py-2 bg-surface rounded-lg border border-border-token hover:border-border-strong focus-within:border-gray-400 dark:focus-within:border-zinc-600 transition-all">
-              <Search size={16} className="text-fg-faint" />
-              <input
-                type="text"
-                placeholder={t("pages.searchStudent")}
-                className="flex-1 bg-transparent outline-none text-sm text-fg placeholder:text-gray-500 dark:placeholder:text-zinc-500"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="p-0.5 hover:bg-surface-2 rounded"
-                >
-                  <X size={14} className="text-fg-faint" />
-                </button>
-              )}
-            </div>
+            <ToolbarSearch
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder={t("pages.searchStudent")}
+              ariaLabel={t("aria.misc.searchRefunds", "Search refunds")}
+              style={{ flex: 1, maxWidth: 360 }}
+            />
           </div>
 
           <div className="flex gap-2 w-full sm:w-auto">
-            <Select
-              size="sm"
-              placeholder={t("pages.allStatus1")}
-              selectedKeys={new Set([statusFilter])}
-              onSelectionChange={(keys) =>
-                setStatusFilter(Array.from(keys)[0])
-              }
-              className="w-full sm:w-[140px]"
-              classNames={{
-                trigger:
-                  "h-9 min-h-9 bg-surface border-border-token hover:border-border-strong",
-                value: "text-sm",
-              }}
-            >
-              {STATUS_FILTERS.map((f) => (
-                <SelectItem key={f.key}>{f.label}</SelectItem>
-              ))}
-            </Select>
+            <div className="w-full sm:w-[140px]">
+              <Select
+                size="sm"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                {STATUS_FILTERS.map((f) => (
+                  <option key={f.key} value={f.key}>
+                    {f.label}
+                  </option>
+                ))}
+              </Select>
+            </div>
 
             <Button
               size="sm"
@@ -606,7 +593,6 @@ export default function Refunds() {
               type="button"
               className="btn btn--sm"
               onClick={() => {
-                // TODO: call bulk approve endpoint when available
                 toast.success(`Approved ${selection.count} refunds (queued — endpoint not wired yet).`);
                 selection.clear();
               }}
@@ -617,7 +603,6 @@ export default function Refunds() {
               type="button"
               className="btn btn--sm"
               onClick={() => {
-                // TODO: call bulk reject endpoint when available
                 toast.success(`Rejected ${selection.count} refunds (queued — endpoint not wired yet).`);
                 selection.clear();
               }}
@@ -675,7 +660,9 @@ export default function Refunds() {
           ref={loaderRef}
           className="flex justify-center py-4 bg-surface-2 border-t border-border-token"
         >
-          {isLoadingMore && <Spinner size="sm" />}
+          {isLoadingMore && (
+            <span className="h-4 w-4 rounded-full border-2 border-border-strong border-t-accent animate-spin" />
+          )}
           {!hasMore && filteredRefunds.length > ITEMS_PER_LOAD && (
             <span className="text-fg-faint text-xs">
               {t("pages.allRefundsLoaded")}
@@ -706,11 +693,14 @@ export default function Refunds() {
           onClick={closeDetail}
         >
           <div
+            ref={drawerRef}
             className="stafflist__drawer"
             role="dialog"
             aria-modal="true"
             aria-label={`Refund: ${selectedRefund?.studentId?.name || ""}`}
+            tabIndex={-1}
             onClick={(e) => e.stopPropagation()}
+            onKeyDown={handleDrawerKeyDown}
           >
             <RefundDetailPane
               refund={selectedRefund}
@@ -735,44 +725,39 @@ export default function Refunds() {
           setRejectingRefund(null);
           setRejectReason("");
         }}
+        title={t("pages.rejectRefund", "Reject Refund")}
         size="md"
+        footer={
+          <div className="flex gap-3 justify-end">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setRejectModalOpen(false);
+                setRejectingRefund(null);
+                setRejectReason("");
+              }}
+              disabled={actionLoading === rejectingRefund?._id}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              onClick={handleConfirmReject}
+              loading={actionLoading === rejectingRefund?._id}
+              disabled={actionLoading === rejectingRefund?._id}
+            >
+              {t("pages.confirmReject", "Reject Refund")}
+            </Button>
+          </div>
+        }
       >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader className="border-b border-border-token">
-                {t("pages.rejectRefund", "Reject Refund")}
-              </ModalHeader>
-              <ModalBody className="py-4 space-y-4">
-                <Textarea
-                  label={t("pages.rejectionReason", "Reason for rejection")}
-                  placeholder={t("pages.enterRejectionReason", "Enter rejection reason...")}
-                  value={rejectReason}
-                  onValueChange={(v) => setRejectReason(v)}
-                  variant="bordered"
-                  isRequired
-                  minRows={3}
-                />
-              </ModalBody>
-              <ModalFooter className="border-t border-border-token gap-3">
-                <Button
-                  variant="outline"
-                  onClick={onClose}
-                  disabled={actionLoading === rejectingRefund?._id}
-                >
-                  {t("common.cancel")}
-                </Button>
-                <Button
-                  onClick={handleConfirmReject}
-                  loading={actionLoading === rejectingRefund?._id}
-                  disabled={actionLoading === rejectingRefund?._id}
-                >
-                  {t("pages.confirmReject", "Reject Refund")}
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
+        <Textarea
+          label={t("pages.rejectionReason", "Reason for rejection")}
+          placeholder={t("pages.enterRejectionReason", "Enter rejection reason...")}
+          value={rejectReason}
+          onChange={(e) => setRejectReason(e.target.value)}
+          required
+          rows={3}
+        />
       </Modal>
 
       {/* New Refund Modal */}
@@ -783,195 +768,181 @@ export default function Refunds() {
           setFormErrors({});
           handleClearStudent();
         }}
+        title={t("pages.newRefundRequest")}
         size="lg"
+        footer={
+          <div className="flex gap-3 justify-end">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setNewRefundOpen(false);
+                setFormErrors({});
+                handleClearStudent();
+              }}
+              disabled={savingRefund}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              onClick={handleCreateRefund}
+              loading={savingRefund}
+              disabled={savingRefund}
+            >
+              {savingRefund
+                ? t("common.creating", "Creating...")
+                : t("fees.createRefund", "Create Refund")}
+            </Button>
+          </div>
+        }
       >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader className="border-b border-border-token">
-                {t("pages.newRefundRequest")}
-              </ModalHeader>
-              <ModalBody className="py-4 space-y-4">
-                {/* Student search picker */}
-                <div>
-                  <label className="text-sm font-medium text-fg mb-1 block">
-                    {t("pages.student", "Student")}{" "}
-                    <span className="text-danger">*</span>
-                  </label>
-                  {selectedStudent ? (
-                    <div className="flex items-center gap-2 px-3 py-2 border border-border-token rounded-lg bg-surface-2 dark:bg-zinc-900">
-                      <div className="w-7 h-7 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-medium text-primary-700 dark:text-primary-300">
-                          {selectedStudent.name?.charAt(0)}
-                        </span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-fg truncate">
-                          {selectedStudent.name}
-                        </p>
-                        <p className="text-xs text-fg-muted">
-                          {selectedStudent.admissionNo ||
-                            selectedStudent.admissionId ||
-                            ""}{" "}
-                          — {t("common.class")}{" "}
-                          {selectedStudent.classId?.name || ""}
-                          {selectedStudent.classId?.section
-                            ? ` ${selectedStudent.classId.section}`
-                            : ""}
-                        </p>
-                      </div>
+        <div className="space-y-4">
+          {/* Student search picker */}
+          <div>
+            <label className="text-sm font-medium text-fg mb-1 block">
+              {t("pages.student", "Student")}{" "}
+              <span className="text-danger-token" aria-hidden="true">*</span>
+            </label>
+            {selectedStudent ? (
+              <div className="flex items-center gap-2 px-3 py-2 border border-border-token rounded-lg bg-surface-2">
+                <div className="w-7 h-7 rounded-full bg-surface flex items-center justify-center flex-shrink-0">
+                  <span className="text-xs font-medium text-fg">
+                    {selectedStudent.name?.charAt(0)}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-fg truncate">
+                    {selectedStudent.name}
+                  </p>
+                  <p className="text-xs text-fg-muted">
+                    {selectedStudent.admissionNo ||
+                      selectedStudent.admissionId ||
+                      ""}{" "}
+                    — {t("common.class")}{" "}
+                    {selectedStudent.classId?.name || ""}
+                    {selectedStudent.classId?.section
+                      ? ` ${selectedStudent.classId.section}`
+                      : ""}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleClearStudent}
+                  className="p-1 hover:bg-surface rounded transition-colors"
+                >
+                  <X size={14} className="text-fg-muted" />
+                </button>
+              </div>
+            ) : (
+              <div className="relative">
+                <Input
+                  placeholder={t(
+                    "pages.searchStudentsByNameOrAdmissionNo",
+                    "Search by name or admission number..."
+                  )}
+                  value={studentSearch}
+                  onChange={(e) => setStudentSearch(e.target.value)}
+                  size="sm"
+                  startContent={
+                    <Search size={14} className="text-fg-muted" />
+                  }
+                />
+                {studentResults.length > 0 && studentSearch && (
+                  <div className="absolute z-50 w-full border border-border-token rounded-lg mt-1 max-h-48 overflow-y-auto bg-surface shadow-lg">
+                    {studentResults.map((s) => (
                       <button
+                        key={s._id}
                         type="button"
-                        onClick={handleClearStudent}
-                        className="p-1 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded transition-colors"
+                        onClick={() => handleSelectStudent(s)}
+                        className="w-full text-left px-3 py-2.5 text-sm hover:bg-surface-2 transition-colors border-b border-divider last:border-b-0"
                       >
-                        <X size={14} className="text-gray-400" />
+                        <span className="font-medium text-fg">
+                          {s.name}
+                        </span>
+                        <span className="text-fg-muted ml-2 text-xs">
+                          {s.admissionNo || s.admissionId || ""} —{" "}
+                          {t("common.class")}{" "}
+                          {s.classId?.name || ""}
+                          {s.classId?.section
+                            ? ` ${s.classId.section}`
+                            : ""}
+                        </span>
                       </button>
-                    </div>
-                  ) : (
-                    <div className="relative">
-                      <Input
-                        placeholder={t(
-                          "pages.searchStudentsByNameOrAdmissionNo",
-                          "Search by name or admission number..."
-                        )}
-                        value={studentSearch}
-                        onValueChange={(v) => setStudentSearch(v)}
-                        variant="bordered"
-                        startContent={
-                          <Search size={14} className="text-gray-400" />
-                        }
-                        size="sm"
-                      />
-                      {studentResults.length > 0 && studentSearch && (
-                        <div className="absolute z-50 w-full border border-border-token rounded-lg mt-1 max-h-48 overflow-y-auto bg-surface shadow-lg">
-                          {studentResults.map((s) => (
-                            <button
-                              key={s._id}
-                              type="button"
-                              onClick={() => handleSelectStudent(s)}
-                              className="w-full text-left px-3 py-2.5 text-sm hover:bg-surface-2 transition-colors border-b border-divider last:border-b-0"
-                            >
-                              <span className="font-medium text-fg">
-                                {s.name}
-                              </span>
-                              <span className="text-fg-muted ml-2 text-xs">
-                                {s.admissionNo || s.admissionId || ""} —{" "}
-                                {t("common.class")}{" "}
-                                {s.classId?.name || ""}
-                                {s.classId?.section
-                                  ? ` ${s.classId.section}`
-                                  : ""}
-                              </span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                      {studentSearch.length >= 2 &&
-                        studentResults.length === 0 && (
-                          <div className="absolute z-50 w-full border border-border-token rounded-lg mt-1 bg-surface shadow-lg px-3 py-3 text-sm text-fg-muted">
-                            {t("common.noResultsFound", "No students found")}
-                          </div>
-                        )}
+                    ))}
+                  </div>
+                )}
+                {studentSearch.length >= 2 &&
+                  studentResults.length === 0 && (
+                    <div className="absolute z-50 w-full border border-border-token rounded-lg mt-1 bg-surface shadow-lg px-3 py-3 text-sm text-fg-muted">
+                      {t("common.noResultsFound", "No students found")}
                     </div>
                   )}
-                </div>
-                <Input
-                  type="number"
-                  label={t("fees.amountLabel")}
-                  placeholder={t("fees.amountPlaceholder")}
-                  value={newRefundForm.amount}
-                  onValueChange={(v) =>
-                    setNewRefundForm({ ...newRefundForm, amount: v })
-                  }
-                  variant="bordered"
-                  isRequired
-                  description={
-                    studentTotalPaid !== null
-                      ? t("fees.maxRefundable", {
-                          amount: studentTotalPaid.toLocaleString(),
-                        })
-                      : undefined
-                  }
-                  isInvalid={
-                    Boolean(formErrors.amount) ||
-                    (studentTotalPaid !== null &&
-                      parseFloat(newRefundForm.amount) > studentTotalPaid)
-                  }
-                  errorMessage={
-                    formErrors.amount ||
-                    (studentTotalPaid !== null &&
-                    parseFloat(newRefundForm.amount) > studentTotalPaid
-                      ? t("fees.cannotExceedTotalPaid", {
-                          amount: studentTotalPaid.toLocaleString(),
-                        })
-                      : undefined)
-                  }
-                />
-                <Textarea
-                  label={t("pages.reason")}
-                  placeholder={t("pages.reasonForRefund")}
-                  value={newRefundForm.reason}
-                  onValueChange={(v) =>
-                    setNewRefundForm({ ...newRefundForm, reason: v })
-                  }
-                  variant="bordered"
-                  isRequired
-                  minRows={2}
-                  isInvalid={Boolean(formErrors.reason)}
-                  errorMessage={formErrors.reason}
-                />
-                <Select
-                  label={t("pages.refundMode")}
-                  variant="bordered"
-                  selectedKeys={[newRefundForm.refundMode]}
-                  onChange={(e) =>
-                    setNewRefundForm({
-                      ...newRefundForm,
-                      refundMode: e.target.value,
-                    })
-                  }
-                  isInvalid={Boolean(formErrors.refundMode)}
-                  errorMessage={formErrors.refundMode}
-                >
-                  <SelectItem key="cash">{t("pages.cash1")}</SelectItem>
-                  <SelectItem key="cheque">{t("pages.cheque1")}</SelectItem>
-                  <SelectItem key="bank_transfer">
-                    {t("pages.bankTransfer1")}
-                  </SelectItem>
-                </Select>
-                <Textarea
-                  label={t("pages.remarksOptional")}
-                  placeholder={t("pages.additionalNotes1")}
-                  value={newRefundForm.remarks}
-                  onValueChange={(v) =>
-                    setNewRefundForm({ ...newRefundForm, remarks: v })
-                  }
-                  variant="bordered"
-                  minRows={2}
-                />
-              </ModalBody>
-              <ModalFooter className="border-t border-border-token gap-3">
-                <Button
-                  variant="outline"
-                  onClick={onClose}
-                  disabled={savingRefund}
-                >
-                  {t("common.cancel")}
-                </Button>
-                <Button
-                  onClick={handleCreateRefund}
-                  loading={savingRefund}
-                  disabled={savingRefund}
-                >
-                  {savingRefund
-                    ? t("common.creating", "Creating...")
-                    : t("fees.createRefund", "Create Refund")}
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
+              </div>
+            )}
+          </div>
+          <Input
+            type="number"
+            label={t("fees.amountLabel")}
+            placeholder={t("fees.amountPlaceholder")}
+            value={newRefundForm.amount}
+            onChange={(e) =>
+              setNewRefundForm({ ...newRefundForm, amount: e.target.value })
+            }
+            required
+            description={
+              studentTotalPaid !== null
+                ? t("fees.maxRefundable", {
+                    amount: studentTotalPaid.toLocaleString(),
+                  })
+                : undefined
+            }
+            error={
+              formErrors.amount ||
+              (studentTotalPaid !== null &&
+              parseFloat(newRefundForm.amount) > studentTotalPaid
+                ? t("fees.cannotExceedTotalPaid", {
+                    amount: studentTotalPaid.toLocaleString(),
+                  })
+                : undefined)
+            }
+          />
+          <Textarea
+            label={t("pages.reason")}
+            placeholder={t("pages.reasonForRefund")}
+            value={newRefundForm.reason}
+            onChange={(e) =>
+              setNewRefundForm({ ...newRefundForm, reason: e.target.value })
+            }
+            required
+            rows={2}
+            error={formErrors.reason}
+          />
+          <Select
+            label={t("pages.refundMode")}
+            value={newRefundForm.refundMode}
+            onChange={(e) =>
+              setNewRefundForm({
+                ...newRefundForm,
+                refundMode: e.target.value,
+              })
+            }
+            error={formErrors.refundMode}
+          >
+            <option value="cash">{t("pages.cash1")}</option>
+            <option value="cheque">{t("pages.cheque1")}</option>
+            <option value="bank_transfer">
+              {t("pages.bankTransfer1")}
+            </option>
+          </Select>
+          <Textarea
+            label={t("pages.remarksOptional")}
+            placeholder={t("pages.additionalNotes1")}
+            value={newRefundForm.remarks}
+            onChange={(e) =>
+              setNewRefundForm({ ...newRefundForm, remarks: e.target.value })
+            }
+            rows={2}
+          />
+        </div>
       </Modal>
     </div>
   );

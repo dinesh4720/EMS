@@ -1,5 +1,6 @@
 import { forwardRef } from "react";
 import PhotoAvatar from "../../components/PhotoAvatar";
+import Checkbox from "../../components/ui/Checkbox";
 
 // Status tone map — uses --ok-bg / --warn-bg / --danger-bg / --info-bg tokens
 const STATUS_TONE = {
@@ -44,44 +45,18 @@ const RefundListRow = forwardRef(function RefundListRow(
     >
       {onToggleCheck && (
         <span
-          role="checkbox"
-          aria-checked={isChecked}
-          tabIndex={-1}
+          className="refundlist__checkbox"
           onClick={(e) => {
             e.stopPropagation();
             onToggleCheck(refund, e);
           }}
-          onKeyDown={(e) => {
-            if (e.key === " " || e.key === "Enter") {
-              e.preventDefault();
-              e.stopPropagation();
-              onToggleCheck(refund, e);
-            }
-          }}
-          className="refundlist__checkbox"
-          style={{
-            width: 16,
-            height: 16,
-            borderRadius: 4,
-            border: "1px solid var(--border-strong)",
-            background: isChecked ? "var(--accent)" : "var(--surface)",
-            display: "grid",
-            placeItems: "center",
-            flexShrink: 0,
-            cursor: "pointer",
-          }}
         >
-          {isChecked && (
-            <svg width="10" height="10" viewBox="0 0 16 16" fill="none" aria-hidden>
-              <path
-                d="M3 8.5l3.5 3.5 7-8"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          )}
+          <Checkbox
+            checked={isChecked}
+            onChange={(e) => onToggleCheck(refund, e)}
+            size="sm"
+            aria-label={`Select refund for ${studentName}`}
+          />
         </span>
       )}
       <PhotoAvatar

@@ -1,3 +1,4 @@
+import { useRef, useEffect } from "react";
 import { ChevronLeft, X, Download, CheckCircle, XCircle, RotateCcw } from "lucide-react";
 import PhotoAvatar from "../../components/PhotoAvatar";
 import Button from "../../components/ui/Button";
@@ -21,6 +22,21 @@ export default function RefundDetailPane({
   currencyFmt,
   isMobile = false,
 }) {
+  const paneRef = useRef(null);
+
+  useEffect(() => {
+    if (isMobile && paneRef.current) {
+      const focusable = paneRef.current.querySelectorAll(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length > 0) {
+        focusable[0].focus();
+      } else {
+        paneRef.current.focus();
+      }
+    }
+  }, [isMobile, refund]);
+
   if (!refund) return null;
 
   const status = refund.status || "pending";
@@ -37,11 +53,15 @@ export default function RefundDetailPane({
   const isProcessed = status === "processed";
   const isRejected = status === "rejected";
 
+  const Tag = isMobile ? "div" : "aside";
+
   return (
-    <aside
+    <Tag
+      ref={paneRef}
       className="detail-pane"
-      role="complementary"
+      role={isMobile ? "document" : "complementary"}
       aria-label={`Refund: ${studentName}`}
+      tabIndex={isMobile ? -1 : undefined}
     >
       {/* Head bar */}
       <div className="detail-pane__head">
@@ -242,6 +262,6 @@ export default function RefundDetailPane({
           </Button>
         )}
       </div>
-    </aside>
+    </Tag>
   );
 }
