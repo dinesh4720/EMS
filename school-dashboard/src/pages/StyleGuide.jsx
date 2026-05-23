@@ -47,7 +47,6 @@ const TOC = [
       { id: "prim-feedback", label: "Feedback & state" },
       { id: "prim-navigation", label: "Navigation" },
       { id: "prim-overlays", label: "Overlays" },
-      { id: "prim-cmdk", label: "Command palette" },
       { id: "prim-prop-tables", label: "Reference" },
     ],
   },

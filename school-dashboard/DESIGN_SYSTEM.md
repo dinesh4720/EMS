@@ -104,25 +104,9 @@ Status — **only** for status, never decoration:
 
 ```
 --ok / --ok-bg            success / paid / present
---ok-border / --ok-hover  success border / hover state
 --warn / --warn-bg        warning / pending / leave
---warn-border / --warn-hover  warning border / hover state
 --danger / --danger-bg    error / overdue / absent
---danger-border / --danger-hover  error border / hover state
 --info / --info-bg        scheduled / neutral system event
---info-border / --info-hover  info border / hover state
-```
-
-Chart palette — data visualization:
-
-```
---chart-c1   indigo (accent)
---chart-c2   blue
---chart-c3   green
---chart-c4   amber
---chart-c5   magenta
---chart-grid grid line
---chart-axis axis line
 ```
 
 Glass — frosted overlay base:
