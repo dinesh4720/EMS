@@ -47,6 +47,7 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
   const [editingId, setEditingId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedLog, setSelectedLog] = useState(null);
+  const [filteredCallLogs, setFilteredCallLogs] = useState(null);
   const [formData, setFormData] = useState({
     callerName: '',
     phoneNumber: '',
@@ -236,7 +237,8 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
   };
 
   const handleExportCsv = () => {
-    if (!callLogs.length) {
+    const dataToExport = filteredCallLogs ?? callLogs;
+    if (!dataToExport.length) {
       toast.error('No call logs to export');
       return;
     }
@@ -245,7 +247,7 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
       'Title', 'Intent', 'Key Notes', 'Summary',
       'Callback Required', 'Callback Date', 'Callback Time',
     ];
-    const rows = callLogs.map((log) => [
+    const rows = dataToExport.map((log) => [
       log.callerName,
       log.phoneNumber,
       getPurposeLabel(log),
@@ -270,7 +272,7 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.success(`Exported ${callLogs.length} call log${callLogs.length === 1 ? '' : 's'}`);
+    toast.success(`Exported ${dataToExport.length} call log${dataToExport.length === 1 ? '' : 's'}`);
   };
 
   const columns = useMemo(() => [
@@ -348,6 +350,7 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
         searchable
         searchKeys={['callerName', 'phoneNumber', 'purpose', 'title']}
         searchPlaceholder="Search call logs…"
+        onFilteredDataChange={setFilteredCallLogs}
         emptyState={{
           title: 'No call logs',
           description: 'Log a call to keep track of incoming inquiries.',

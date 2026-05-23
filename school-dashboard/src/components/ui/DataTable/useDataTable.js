@@ -30,6 +30,7 @@ export default function useDataTable({
   onPageSizeChange,
   serverMode = false,
   totalItems: serverTotalItems,
+  onFilteredDataChange,
 }) {
   const [internalSort, setInternalSort] = useState(defaultSort || null);
   const [search, setSearch] = useState("");
@@ -134,6 +135,10 @@ export default function useDataTable({
 
     return rows;
   }, [data, search, searchKeys, columnFilters, columns, sort, serverMode]);
+
+  useEffect(() => {
+    onFilteredDataChange?.(processedRows);
+  }, [processedRows, onFilteredDataChange]);
 
   const totalItems = serverMode ? serverTotalItems ?? 0 : processedRows.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));

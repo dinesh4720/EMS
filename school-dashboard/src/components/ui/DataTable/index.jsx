@@ -59,6 +59,7 @@ export default function DataTable({
   onDensityChange,
   stickyHeader = false,
   className,
+  onFilteredDataChange,
 }) {
   const [internalDensity, setInternalDensity] = useState(density);
   useEffect(() => {
@@ -90,6 +91,7 @@ export default function DataTable({
     onPageSizeChange,
     serverMode,
     totalItems: serverTotalItems,
+    onFilteredDataChange,
   });
 
   const selection = useSelectionModel({ selectedKeys, onSelectionChange });
@@ -551,4 +553,5 @@ DataTable.propTypes = {
   onDensityChange: PropTypes.func,
   stickyHeader: PropTypes.bool,
   className: PropTypes.string,
+  onFilteredDataChange: PropTypes.func,
 };
