@@ -146,12 +146,12 @@ export default function LeaveSettings() {
           </p>
         </div>
 
-        <div className="p-4 bg-secondary-50 dark:bg-secondary-900/20 rounded-lg border border-secondary-200 dark:border-secondary-800">
+        <div className="p-4 bg-[var(--accent-bg)] rounded-lg border border-[var(--accent-border)]">
           <div className="flex items-center gap-2 mb-2">
-            <Users size={18} className="text-secondary-600 dark:text-secondary-400" />
-            <span className="text-xs text-secondary-700 dark:text-secondary-300 uppercase tracking-wider">{t('pages.studentLeaves')}</span>
+            <Users size={18} className="text-[var(--accent)]" />
+            <span className="text-xs text-[var(--accent)] uppercase tracking-wider">{t('pages.studentLeaves')}</span>
           </div>
-          <p className="text-2xl font-semibold text-secondary-700 dark:text-secondary-300">
+          <p className="text-2xl font-semibold text-[var(--accent)]">
             {leaveTypes.filter(lt => lt.applicableTo === "students" || lt.applicableTo === "both").length}
           </p>
         </div>

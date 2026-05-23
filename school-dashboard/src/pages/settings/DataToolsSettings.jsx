@@ -210,7 +210,7 @@ export default function DataToolsSettings() {
                 </div>
 
                 <div
-                  className="border-2 border-dashed border-gray-300 dark:border-zinc-700 rounded-lg p-8 text-center cursor-pointer hover:border-gray-400 dark:hover:border-zinc-500 transition-colors"
+                  className="border-2 border-dashed border-border-token rounded-lg p-8 text-center cursor-pointer hover:border-fg-muted transition-colors"
                   onClick={() => fileInputRef.current?.click()}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => {
@@ -222,7 +222,7 @@ export default function DataToolsSettings() {
                     }
                   }}
                 >
-                  <Upload size={32} className="mx-auto text-gray-400 dark:text-zinc-500 mb-2" />
+                  <Upload size={32} className="mx-auto text-fg-faint mb-2" />
                   <p className="text-sm text-fg-muted">
                     {importFile ? importFile.name : "Click or drag & drop a CSV/Excel file here"}
                   </p>
@@ -333,7 +333,7 @@ export default function DataToolsSettings() {
                         className={`border transition-all cursor-pointer ${
                           exportEntity === entity.key
                             ? "border-[var(--accent-border)] bg-[var(--accent-bg)]"
-                            : "border-border-token hover:border-gray-300 dark:hover:border-zinc-600"
+                            : "border-border-token hover:border-fg-muted"
                         }`}
                         isPressable
                         onPress={() => setExportEntity(entity.key)}
