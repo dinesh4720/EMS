@@ -53,6 +53,7 @@ export default function DataTable({
   toolbarActions,
   rowActions,
   onRowClick,
+  onFilteredDataChange,
   ariaLabel = "Data table",
   density = "normal",
   densityToggle = false,
@@ -91,6 +92,10 @@ export default function DataTable({
     serverMode,
     totalItems: serverTotalItems,
   });
+
+  useEffect(() => {
+    onFilteredDataChange?.(table.processedRows);
+  }, [table.processedRows, onFilteredDataChange]);
 
   const selection = useSelectionModel({ selectedKeys, onSelectionChange });
 

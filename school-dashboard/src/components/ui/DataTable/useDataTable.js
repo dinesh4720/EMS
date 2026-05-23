@@ -185,6 +185,7 @@ export default function useDataTable({
     setFilter,
     clearFilters,
     rows: paginatedRows,
+    processedRows,
     totalItems,
     totalPages,
     page,

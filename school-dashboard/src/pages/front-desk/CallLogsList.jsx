@@ -47,6 +47,7 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
   const [editingId, setEditingId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedLog, setSelectedLog] = useState(null);
+  const [filteredCallLogs, setFilteredCallLogs] = useState([]);
   const [formData, setFormData] = useState({
     callerName: '',
     phoneNumber: '',
@@ -236,7 +237,7 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
   };
 
   const handleExportCsv = () => {
-    if (!callLogs.length) {
+    if (!filteredCallLogs.length) {
       toast.error('No call logs to export');
       return;
     }
@@ -245,7 +246,7 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
       'Title', 'Intent', 'Key Notes', 'Summary',
       'Callback Required', 'Callback Date', 'Callback Time',
     ];
-    const rows = callLogs.map((log) => [
+    const rows = filteredCallLogs.map((log) => [
       log.callerName,
       log.phoneNumber,
       getPurposeLabel(log),
@@ -270,7 +271,7 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.success(`Exported ${callLogs.length} call log${callLogs.length === 1 ? '' : 's'}`);
+    toast.success(`Exported ${filteredCallLogs.length} call log${filteredCallLogs.length === 1 ? '' : 's'}`);
   };
 
   const columns = useMemo(() => [
@@ -360,7 +361,7 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
         rowActions={rowActions}
         toolbarActions={
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" icon={<Download size={14} />} onClick={handleExportCsv} disabled={!callLogs.length}>
+            <Button variant="outline" size="sm" icon={<Download size={14} />} onClick={handleExportCsv} disabled={!filteredCallLogs.length}>
               Export CSV
             </Button>
             <Button variant="primary" size="sm" icon={<Plus size={14} />} onClick={onOpen}>
@@ -370,6 +371,7 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
         }
         pagination
         defaultPageSize={10}
+        onFilteredDataChange={setFilteredCallLogs}
       />
 
       {/* Add/Edit Modal */}
