@@ -90,6 +90,7 @@ export function AiAssistantLayout({ children }) {
 // COMPONENT: AI Assistant Panel
 // ============================================
 export function AiAssistantPanel({ children }) {
+  const { t } = useTranslation();
   const { isOpen, closePanel } = useAiAssistant();
   const [isVisible, setIsVisible] = useState(isOpen);
   const panelRef = useRef(null);
