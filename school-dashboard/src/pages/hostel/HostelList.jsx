@@ -205,7 +205,7 @@ export default function HostelList() {
                     <Edit2 size={14} className="text-fg-muted" />
                   </Button>
                   <Button isIconOnly size="sm" variant="light" aria-label="Delete hostel" onPress={() => setDeleteTarget(hostel._id)}>
-                    <Trash2 size={14} className="text-red-500" />
+                    <Trash2 size={14} className="text-danger" />
                   </Button>
                 </div>
               </div>
