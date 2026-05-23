@@ -1,16 +1,21 @@
-import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { useState, useEffect, forwardRef, useImperativeHandle, useMemo, useCallback } from 'react';
 import {
-  Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
-  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Textarea, useDisclosure, Button,
-  Select, SelectItem, Checkbox
-} from '@heroui/react';
-import { Edit, Trash2, Eye, Plus, Phone, Search, Download } from 'lucide-react';
+  Button,
+  ConfirmDialog,
+  DataTable,
+  IconButton,
+  Input,
+  Modal,
+  Select,
+  Textarea,
+  Checkbox,
+} from '../../components/ui';
+import { Edit, Trash2, Eye, Plus, Phone, Download } from 'lucide-react';
 import { frontDeskApi } from '../../services/api';
 import { validatePhone, validateFutureDate } from '../../utils/validations';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { formatShortDate, formatDateTime} from '../../utils/dateFormatter';
-import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
 import logger from '../../utils/logger';
 
@@ -31,12 +36,16 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
   const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
   const [callLogs, setCallLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [errors, setErrors] = useState({});
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const { isOpen: isDetailOpen, onOpen: onDetailOpen, onClose: onDetailClose } = useDisclosure();
+  const [isOpen, setIsOpen] = useState(false);
+  const onOpen = () => setIsOpen(true);
+  const onClose = () => setIsOpen(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const onDetailOpen = () => setIsDetailOpen(true);
+  const onDetailClose = () => setIsDetailOpen(false);
   const [editingId, setEditingId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
   const [selectedLog, setSelectedLog] = useState(null);
   const [formData, setFormData] = useState({
     callerName: '',
@@ -65,17 +74,20 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
     }
   }));
 
-  const loadCallLogs = async () => {
+  const loadCallLogs = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
       const response = await frontDeskApi.getCallLogs();
       setCallLogs(Array.isArray(response) ? response : []);
-    } catch (error) {
-      logger.error('Failed to load call logs:', error);
+    } catch (err) {
+      logger.error('Failed to load call logs:', err);
+      setError(err);
       toast.error(t('toast.error.failedToLoadCallLogs'));
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -224,7 +236,7 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
   };
 
   const handleExportCsv = () => {
-    if (!filteredCallLogs.length) {
+    if (!callLogs.length) {
       toast.error('No call logs to export');
       return;
     }
@@ -233,7 +245,7 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
       'Title', 'Intent', 'Key Notes', 'Summary',
       'Callback Required', 'Callback Date', 'Callback Time',
     ];
-    const rows = filteredCallLogs.map((log) => [
+    const rows = callLogs.map((log) => [
       log.callerName,
       log.phoneNumber,
       getPurposeLabel(log),
@@ -258,332 +270,318 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.success(`Exported ${filteredCallLogs.length} call log${filteredCallLogs.length === 1 ? '' : 's'}`);
+    toast.success(`Exported ${callLogs.length} call log${callLogs.length === 1 ? '' : 's'}`);
   };
 
-  const filteredCallLogs = callLogs.filter(log => {
-    if (!searchTerm) return true;
-    const term = searchTerm.toLowerCase();
-    return (
-      log.callerName?.toLowerCase().includes(term) ||
-      log.phoneNumber?.includes(searchTerm) ||
-      log.purpose?.toLowerCase().includes(term) ||
-      log.title?.toLowerCase().includes(term)
-    );
-  });
+  const columns = useMemo(() => [
+    {
+      key: 'callerName',
+      label: t('pages.cALLERName'),
+      accessor: (row) => row.callerName || '-',
+    },
+    {
+      key: 'phoneNumber',
+      label: t('pages.pHONE'),
+      accessor: (row) => row.phoneNumber || '-',
+    },
+    {
+      key: 'purpose',
+      label: t('pages.pURPOSE'),
+      accessor: (row) => getPurposeLabel(row),
+    },
+    {
+      key: 'dateTime',
+      label: t('pages.dATETime'),
+      render: (row) => formatDateTime(row.dateTime),
+    },
+    {
+      key: 'callbackRequired',
+      label: t('pages.cALLBACK'),
+      render: (row) => (
+        row.callbackRequired ? (
+          <span className="text-sm text-[var(--warn)]">
+            {row.callbackDate ? formatShortDate(row.callbackDate) : 'Required'}
+            {row.callbackTime && ` ${row.callbackTime}`}
+          </span>
+        ) : (
+          <span className="text-sm text-fg-subtle">No</span>
+        )
+      ),
+    },
+  ], [t]);
+
+  const rowActions = (row) => (
+    <div className="flex items-center justify-end gap-1">
+      <IconButton
+        aria-label="View call log"
+        icon={<Eye size={14} />}
+        onClick={() => handleView(row)}
+        size="sm"
+        variant="outline"
+      />
+      <IconButton
+        aria-label="Edit call log"
+        icon={<Edit size={14} />}
+        onClick={() => handleEdit(row)}
+        size="sm"
+      />
+      <IconButton
+        aria-label="Delete call log"
+        icon={<Trash2 size={14} />}
+        onClick={() => handleDelete(row._id)}
+        size="sm"
+        variant="danger"
+      />
+    </div>
+  );
 
   return (
     <>
-      <div className="flex flex-col sm:flex-row justify-between gap-4 mb-4">
-        <Input
-          placeholder="Search call logs..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          startContent={<Search size={16} />}
-          className="max-w-xs"
-          isClearable
-          onClear={() => setSearchTerm('')}
-        />
-        <div className="flex gap-2">
-          <Button
-            variant="bordered"
-            startContent={<Download size={16} />}
-            onPress={handleExportCsv}
-            isDisabled={!filteredCallLogs.length}
-          >
-            Export CSV
-          </Button>
-          <Button color="primary" startContent={<Plus size={16} />} onPress={onOpen}>
-            Log New Call
-          </Button>
-        </div>
-      </div>
-      <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-      <Table aria-label={t('aria.tables.callLogs')} removeWrapper>
-        <TableHeader>
-          <TableColumn scope="col">{t('pages.cALLERName')}</TableColumn>
-          <TableColumn scope="col">{t('pages.pHONE')}</TableColumn>
-          <TableColumn scope="col">{t('pages.pURPOSE')}</TableColumn>
-          <TableColumn scope="col">{t('pages.dATETime')}</TableColumn>
-          <TableColumn scope="col">{t('pages.cALLBACK')}</TableColumn>
-          <TableColumn scope="col">{t('pages.aCTIONS')}</TableColumn>
-        </TableHeader>
-        <TableBody
-          items={filteredCallLogs}
-          isLoading={loading}
-          emptyContent="No call logs"
-        >
-          {(log) => (
-            <TableRow key={log._id}>
-              <TableCell className="font-medium">{log.callerName || '-'}</TableCell>
-              <TableCell>{log.phoneNumber || '-'}</TableCell>
-              <TableCell>
-                <span className="text-sm">{getPurposeLabel(log)}</span>
-              </TableCell>
-              <TableCell>{formatDateTime(log.dateTime)}</TableCell>
-              <TableCell>
-                {log.callbackRequired ? (
-                  <span className="text-sm text-warning">
-                    {log.callbackDate ? formatShortDate(log.callbackDate) : 'Required'}
-                    {log.callbackTime && ` ${log.callbackTime}`}
-                  </span>
-                ) : (
-                  <span className="text-sm text-default-400">No</span>
-                )}
-              </TableCell>
-              <TableCell>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    color="primary"
-                    variant="light"
-                    isIconOnly
-                    aria-label="View call log"
-                    onPress={() => handleView(log)}
-                  >
-                    <Eye size={14} />
-                  </Button>
-                  <Button
-                    size="sm"
-                    color="warning"
-                    variant="light"
-                    isIconOnly
-                    aria-label="Edit call log"
-                    onPress={() => handleEdit(log)}
-                  >
-                    <Edit size={14} />
-                  </Button>
-                  <Button
-                    size="sm"
-                    color="danger"
-                    variant="light"
-                    isIconOnly
-                    aria-label="Delete call log"
-                    onPress={() => handleDelete(log._id)}
-                  >
-                    <Trash2 size={14} />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-      </div>
+      <DataTable
+        ariaLabel={t('aria.tables.callLogs')}
+        columns={columns}
+        data={callLogs}
+        keyField="_id"
+        loading={loading}
+        error={error}
+        onRetry={loadCallLogs}
+        searchable
+        searchKeys={['callerName', 'phoneNumber', 'purpose', 'title']}
+        searchPlaceholder="Search call logs…"
+        emptyState={{
+          title: 'No call logs',
+          description: 'Log a call to keep track of incoming inquiries.',
+          action: (
+            <Button icon={<Plus size={16} />} size="sm" onClick={onOpen}>
+              Log New Call
+            </Button>
+          ),
+        }}
+        rowActions={rowActions}
+        toolbarActions={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" icon={<Download size={14} />} onClick={handleExportCsv} disabled={!callLogs.length}>
+              Export CSV
+            </Button>
+            <Button variant="primary" size="sm" icon={<Plus size={14} />} onClick={onOpen}>
+              Log New Call
+            </Button>
+          </div>
+        }
+        pagination
+        defaultPageSize={10}
+      />
 
       {/* Add/Edit Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">
-        <ModalContent>
-          <ModalHeader>{editingId ? 'Edit Call Log' : 'Log New Call'}</ModalHeader>
-          <ModalBody>
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                label={t('pages.callerName')}
-                placeholder={t('pages.enterCallerName')}
-                value={formData.callerName}
-                onChange={(e) => {
-                  setFormData({ ...formData, callerName: e.target.value });
-                  if (errors.callerName) setErrors({ ...errors, callerName: '' });
-                }}
-                isRequired
-                isInvalid={!!errors.callerName}
-                errorMessage={errors.callerName}
-                startContent={<Phone size={14} />}
-              />
-              <Input
-                label={t('pages.phoneNumber')}
-                placeholder={t('pages.enter10DigitPhoneNumber')}
-                value={formData.phoneNumber}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '');
-                  setFormData({ ...formData, phoneNumber: val });
-                  if (errors.phoneNumber) setErrors({ ...errors, phoneNumber: '' });
-                }}
-                maxLength={10}
-                isRequired
-                isInvalid={!!errors.phoneNumber}
-                errorMessage={errors.phoneNumber}
-              />
-              <Select
-                label={t('pages.purpose1')}
-                placeholder={t('pages.selectPurpose')}
-                selectedKeys={formData.purpose ? [formData.purpose] : []}
-                onChange={(e) => {
-                  setFormData({ ...formData, purpose: e.target.value });
-                  if (errors.purpose) setErrors({ ...errors, purpose: '' });
-                }}
-                isRequired
-                isInvalid={!!errors.purpose}
-                errorMessage={errors.purpose}
-              >
-                {CALL_PURPOSES.map((purpose) => (
-                  <SelectItem key={purpose.key} value={purpose.key}>
-                    {purpose.label}
-                  </SelectItem>
-                ))}
-              </Select>
-              {formData.purpose === 'OTHER' && (
-                <Input
-                  label={t('pages.pleaseSpecifyPurpose')}
-                  placeholder={t('pages.enterPurpose')}
-                  value={formData.otherPurpose}
-                  onChange={(e) => setFormData({ ...formData, otherPurpose: e.target.value })}
-                  isRequired
-                />
-              )}
-              <Input
-                label={t('pages.dateTime')}
-                type="datetime-local"
-                value={formData.dateTime}
-                onChange={(e) => {
-                  setFormData({ ...formData, dateTime: e.target.value });
-                  if (errors.dateTime) setErrors({ ...errors, dateTime: '' });
-                }}
-                isRequired
-                isInvalid={!!errors.dateTime}
-                errorMessage={errors.dateTime}
-                className="col-span-2"
-              />
-              <Input
-                label={t('pages.titleOptional')}
-                placeholder={t('pages.briefTitleForTheCall')}
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="col-span-2"
-              />
-              <Input
-                label={t('pages.intent')}
-                placeholder={t('pages.whatWasTheCallerSIntent')}
-                value={formData.intent}
-                onChange={(e) => setFormData({ ...formData, intent: e.target.value })}
-                className="col-span-2"
-              />
-              <Textarea
-                label={t('pages.keyNotes')}
-                placeholder={t('pages.enterKeyPointsFromTheConversation')}
-                value={formData.keyNotes}
-                onChange={(e) => setFormData({ ...formData, keyNotes: e.target.value })}
-                className="col-span-2"
-                rows={3}
-              />
-              <Textarea
-                label={t('pages.summary1')}
-                placeholder={t('pages.enterCallSummary')}
-                value={formData.summary}
-                onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-                className="col-span-2"
-                rows={3}
-              />
-              <div className="col-span-2 border-t border-default-200 pt-4 mt-2">
-                <Checkbox size="sm"
-                  isSelected={formData.callbackRequired}
-                  onValueChange={(value) => setFormData({ ...formData, callbackRequired: value })}
-                >
-                  Callback / Follow-up Required
-                </Checkbox>
-              </div>
-              {formData.callbackRequired && (
-                <>
-                  <Input
-                    label={t('pages.callbackDate')}
-                    type="date"
-                    value={formData.callbackDate}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setFormData({ ...formData, callbackDate: val });
-                      // Real-time validation
-                      if (formData.callbackRequired && val && !validateFutureDate(val)) {
-                        setErrors({ ...errors, callbackDate: 'Callback date must be in the future' });
-                      } else if (errors.callbackDate) {
-                        setErrors({ ...errors, callbackDate: '' });
-                      }
-                    }}
-                    isRequired={formData.callbackRequired}
-                    isInvalid={!!errors.callbackDate}
-                    errorMessage={errors.callbackDate}
-                  />
-                  <Input
-                    label={t('pages.callbackTime')}
-                    type="time"
-                    value={formData.callbackTime}
-                    onChange={(e) => setFormData({ ...formData, callbackTime: e.target.value })}
-                  />
-                </>
-              )}
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={onClose}>
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        title={editingId ? 'Edit Call Log' : 'Log New Call'}
+        size="lg"
+        footer={
+          <>
+            <Button variant="ghost" onClick={onClose}>
               Cancel
             </Button>
-            <Button color="primary" onPress={handleSubmit} isLoading={isSubmitting}>
+            <Button variant="primary" onClick={handleSubmit} loading={isSubmitting}>
               {editingId ? 'Update' : 'Create'}
             </Button>
-          </ModalFooter>
-        </ModalContent>
+          </>
+        }
+      >
+        <div className="grid grid-cols-2 gap-4">
+          <Input
+            label={t('pages.callerName')}
+            placeholder={t('pages.enterCallerName')}
+            value={formData.callerName}
+            onChange={(e) => {
+              setFormData({ ...formData, callerName: e.target.value });
+              if (errors.callerName) setErrors({ ...errors, callerName: '' });
+            }}
+            required
+            error={errors.callerName}
+            startContent={<Phone size={14} />}
+          />
+          <Input
+            label={t('pages.phoneNumber')}
+            placeholder={t('pages.enter10DigitPhoneNumber')}
+            value={formData.phoneNumber}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, '');
+              setFormData({ ...formData, phoneNumber: val });
+              if (errors.phoneNumber) setErrors({ ...errors, phoneNumber: '' });
+            }}
+            maxLength={10}
+            required
+            error={errors.phoneNumber}
+          />
+          <Select
+            label={t('pages.purpose1')}
+            placeholder={t('pages.selectPurpose')}
+            value={formData.purpose}
+            onChange={(e) => {
+              setFormData({ ...formData, purpose: e.target.value });
+              if (errors.purpose) setErrors({ ...errors, purpose: '' });
+            }}
+            required
+            error={errors.purpose}
+          >
+            {CALL_PURPOSES.map((purpose) => (
+              <option key={purpose.key} value={purpose.key}>
+                {purpose.label}
+              </option>
+            ))}
+          </Select>
+          {formData.purpose === 'OTHER' && (
+            <Input
+              label={t('pages.pleaseSpecifyPurpose')}
+              placeholder={t('pages.enterPurpose')}
+              value={formData.otherPurpose}
+              onChange={(e) => setFormData({ ...formData, otherPurpose: e.target.value })}
+              required
+            />
+          )}
+          <Input
+            label={t('pages.dateTime')}
+            type="datetime-local"
+            value={formData.dateTime}
+            onChange={(e) => {
+              setFormData({ ...formData, dateTime: e.target.value });
+              if (errors.dateTime) setErrors({ ...errors, dateTime: '' });
+            }}
+            required
+            error={errors.dateTime}
+            wrapperClassName="col-span-2"
+          />
+          <Input
+            label={t('pages.titleOptional')}
+            placeholder={t('pages.briefTitleForTheCall')}
+            value={formData.title}
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            wrapperClassName="col-span-2"
+          />
+          <Input
+            label={t('pages.intent')}
+            placeholder={t('pages.whatWasTheCallerSIntent')}
+            value={formData.intent}
+            onChange={(e) => setFormData({ ...formData, intent: e.target.value })}
+            wrapperClassName="col-span-2"
+          />
+          <Textarea
+            label={t('pages.keyNotes')}
+            placeholder={t('pages.enterKeyPointsFromTheConversation')}
+            value={formData.keyNotes}
+            onChange={(e) => setFormData({ ...formData, keyNotes: e.target.value })}
+            wrapperClassName="col-span-2"
+            rows={3}
+          />
+          <Textarea
+            label={t('pages.summary1')}
+            placeholder={t('pages.enterCallSummary')}
+            value={formData.summary}
+            onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
+            wrapperClassName="col-span-2"
+            rows={3}
+          />
+          <div className="col-span-2 border-t border-divider pt-4 mt-2">
+            <Checkbox
+              size="sm"
+              label="Callback / Follow-up Required"
+              checked={formData.callbackRequired}
+              onChange={(e) => setFormData({ ...formData, callbackRequired: e.target.checked })}
+            />
+          </div>
+          {formData.callbackRequired && (
+            <>
+              <Input
+                label={t('pages.callbackDate')}
+                type="date"
+                value={formData.callbackDate}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFormData({ ...formData, callbackDate: val });
+                  // Real-time validation
+                  if (formData.callbackRequired && val && !validateFutureDate(val)) {
+                    setErrors({ ...errors, callbackDate: 'Callback date must be in the future' });
+                  } else if (errors.callbackDate) {
+                    setErrors({ ...errors, callbackDate: '' });
+                  }
+                }}
+                required={formData.callbackRequired}
+                error={errors.callbackDate}
+              />
+              <Input
+                label={t('pages.callbackTime')}
+                type="time"
+                value={formData.callbackTime}
+                onChange={(e) => setFormData({ ...formData, callbackTime: e.target.value })}
+              />
+            </>
+          )}
+        </div>
       </Modal>
 
       {/* Detail View Modal */}
-      <Modal isOpen={isDetailOpen} onClose={onDetailClose} size="2xl">
-        <ModalContent>
-          <ModalHeader>{t('pages.callLogDetails')}</ModalHeader>
-          <ModalBody>
-            {selectedLog && (
-              <div className="space-y-4">
-                {selectedLog.title && (
-                  <div>
-                    <p className="text-sm text-default-500">{t('pages.title1')}</p>
-                    <p className="font-medium">{selectedLog.title}</p>
-                  </div>
-                )}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-default-500">{t('pages.callerName')}</p>
-                    <p className="font-medium">{selectedLog.callerName || '-'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-default-500">{t('pages.phoneNumber')}</p>
-                    <p className="font-medium">{selectedLog.phoneNumber || '-'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-default-500">{t('pages.dateTime')}</p>
-                    <p className="font-medium">{formatDateTime(selectedLog.dateTime)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-default-500">{t('pages.purpose1')}</p>
-                    <p className="font-medium">{getPurposeLabel(selectedLog)}</p>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm text-default-500">{t('pages.intent')}</p>
-                  <p className="font-medium">{selectedLog.intent || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-default-500">{t('pages.keyNotes')}</p>
-                  <p className="font-medium whitespace-pre-wrap">{selectedLog.keyNotes || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-default-500">{t('pages.summary1')}</p>
-                  <p className="font-medium whitespace-pre-wrap">{selectedLog.summary || '-'}</p>
-                </div>
-                {selectedLog.callbackRequired && (
-                  <div className="bg-warning-50 border border-warning-200 p-3 rounded-lg">
-                    <p className="text-sm text-warning-700">📞 Callback Required</p>
-                    <p className="text-sm font-medium">
-                      {selectedLog.callbackDate ? formatShortDate(selectedLog.callbackDate) : 'Date not set'}
-                      {selectedLog.callbackTime && ` at ${selectedLog.callbackTime}`}
-                    </p>
-                  </div>
-                )}
+      <Modal
+        isOpen={isDetailOpen}
+        onClose={onDetailClose}
+        title={t('pages.callLogDetails')}
+        size="lg"
+        footer={
+          <Button variant="ghost" onClick={onDetailClose}>
+            Close
+          </Button>
+        }
+      >
+        {selectedLog && (
+          <div className="space-y-4">
+            {selectedLog.title && (
+              <div>
+                <p className="text-sm text-fg-muted">{t('pages.title1')}</p>
+                <p className="font-medium">{selectedLog.title}</p>
               </div>
             )}
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={onDetailClose}>
-              Close
-            </Button>
-          </ModalFooter>
-        </ModalContent>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-fg-muted">{t('pages.callerName')}</p>
+                <p className="font-medium">{selectedLog.callerName || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-fg-muted">{t('pages.phoneNumber')}</p>
+                <p className="font-medium">{selectedLog.phoneNumber || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-fg-muted">{t('pages.dateTime')}</p>
+                <p className="font-medium">{formatDateTime(selectedLog.dateTime)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-fg-muted">{t('pages.purpose1')}</p>
+                <p className="font-medium">{getPurposeLabel(selectedLog)}</p>
+              </div>
+            </div>
+            <div>
+              <p className="text-sm text-fg-muted">{t('pages.intent')}</p>
+              <p className="font-medium">{selectedLog.intent || '-'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-fg-muted">{t('pages.keyNotes')}</p>
+              <p className="font-medium whitespace-pre-wrap">{selectedLog.keyNotes || '-'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-fg-muted">{t('pages.summary1')}</p>
+              <p className="font-medium whitespace-pre-wrap">{selectedLog.summary || '-'}</p>
+            </div>
+            {selectedLog.callbackRequired && (
+              <div className="bg-[var(--warn-bg)] border border-[var(--warn)]/20 p-3 rounded-lg">
+                <p className="text-sm text-[var(--warn)]">📞 Callback Required</p>
+                <p className="text-sm font-medium">
+                  {selectedLog.callbackDate ? formatShortDate(selectedLog.callbackDate) : 'Date not set'}
+                  {selectedLog.callbackTime && ` at ${selectedLog.callbackTime}`}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </Modal>
 
       <ConfirmDialog {...confirmState} onClose={closeConfirm} />

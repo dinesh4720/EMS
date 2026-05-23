@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem
-} from '@heroui/react';
+  Button,
+  DropdownMenu,
+} from '../../components/ui';
 import {
   Users, DoorOpen, Calendar, MessageSquare, Phone, Plus, ChevronDown, Download
 } from 'lucide-react';
@@ -250,22 +251,21 @@ export default function FrontDeskDashboard() {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          <Dropdown>
-            <DropdownTrigger>
-              <Button color="primary" startContent={<Plus size={16} />}>
+          <DropdownMenu
+            trigger={
+              <Button variant="primary" icon={<Plus size={16} />}>
                 {STRINGS.new}
                 <ChevronDown size={14} className="ml-1" />
               </Button>
-            </DropdownTrigger>
-            <DropdownMenu className="min-w-[180px]" onAction={handleNewAction}>
-              {newActions.map((action) => (
-                <DropdownItem key={action.key} startContent={<action.icon size={14} className="text-fg-faint" />}>
-                  {action.label}
-                </DropdownItem>
-              ))}
-            </DropdownMenu>
-          </Dropdown>
-          <Button variant="flat" className="bg-surface-2 text-fg" startContent={<Download size={16} />} onClick={handleExport} isLoading={isExporting}>
+            }
+            items={newActions.map((action) => ({
+              key: action.key,
+              label: action.label,
+              icon: <action.icon size={14} className="text-fg-faint" />,
+              onClick: () => handleNewAction(action.key),
+            }))}
+          />
+          <Button variant="secondary" icon={<Download size={16} />} onClick={handleExport} loading={isExporting}>
             {STRINGS.export}
           </Button>
         </div>
