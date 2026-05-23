@@ -204,7 +204,7 @@ export default function AllocationsList() {
                   <th className="text-right px-4 py-3 font-medium text-fg">{t('pages.actions1')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-zinc-800">
+              <tbody className="divide-y divide-divider">
                 {allocations.map((alloc) => (
                   <tr key={alloc._id} className="bg-surface hover:bg-surface-hover transition-colors">
                     <td className="px-4 py-3 font-medium text-fg">
@@ -269,7 +269,7 @@ export default function AllocationsList() {
               placeholder={t('hostel.searchStudentPlaceholder')}
               value={studentSearch}
               onValueChange={setStudentSearch}
-              startContent={<Search size={14} className="text-gray-400" />}
+              startContent={<Search size={14} className="text-fg-faint" />}
               isClearable
               onClear={() => setStudentSearch("")}
             />
