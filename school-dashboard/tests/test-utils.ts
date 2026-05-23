@@ -1321,7 +1321,17 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
     }
     if (path.match(/^\/attendance\/student\/([^/]+)/)) {
       const studentId = path.split('/')[3];
-      return json(state.attendance.filter((a) => a.studentId === studentId));
+      const start = url.searchParams.get('start');
+      const end = url.searchParams.get('end');
+      let filtered = state.attendance.filter((a) => a.studentId === studentId);
+      if (start && end) {
+        filtered = filtered.filter((a) => a.date >= start && a.date <= end);
+      } else if (start) {
+        filtered = filtered.filter((a) => a.date >= start);
+      } else if (end) {
+        filtered = filtered.filter((a) => a.date <= end);
+      }
+      return json(filtered);
     }
     if (path.match(/^\/attendance\/class\//))        return json(state.attendance.filter((a) => a.classId === path.split('/')[3]));
     if (path === '/staff-attendance')                return json(state.staffAttendance);

@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import {
   Users, GraduationCap, BookOpen, IndianRupee,
-  CheckCircle2, Award, Activity, Target, ArrowUpRight
+  CheckCircle2, Award, Activity, Target, ArrowUpRight, X
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { Link } from "react-router-dom";
@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import StatCard from "../components/StatCard";
 import { ChartCard, QuickActionTile, Card } from "../components/ui";
+import Drawer from "../components/ui/Drawer";
 import { useChartTheme, CHART_COLORS } from "../utils/chartTheme";
 import { getDateLocale } from '../i18n/index';
 import { useTranslation } from 'react-i18next';
@@ -26,6 +27,28 @@ const PIE_PALETTE = [
   '#d1d5db',
   CHART_COLORS.neutralLight,
 ];
+
+function formatDateISO(date) {
+  return date.toISOString().split('T')[0];
+}
+
+function getPresetDateRange(preset, currentAcademicYear, schoolSettings) {
+  const today = new Date();
+  if (preset === 'academic-year') {
+    return parseAcademicYearRange(currentAcademicYear, schoolSettings);
+  }
+  if (preset === 'last-30-days') {
+    const start = new Date(today);
+    start.setDate(start.getDate() - 30);
+    return { startDate: formatDateISO(start), endDate: formatDateISO(today) };
+  }
+  if (preset === 'last-90-days') {
+    const start = new Date(today);
+    start.setDate(start.getDate() - 90);
+    return { startDate: formatDateISO(start), endDate: formatDateISO(today) };
+  }
+  return parseAcademicYearRange(currentAcademicYear, schoolSettings);
+}
 
 function parseAcademicYearRange(currentAcademicYear, schoolSettings) {
   if (schoolSettings?.academicYearStart && schoolSettings?.academicYearEnd) {
@@ -119,10 +142,18 @@ const SummaryRow = ({ icon: Icon, label, value }) => (
   </div>
 );
 
+const DATE_PRESETS = [
+  { key: 'academic-year', label: 'Academic Year' },
+  { key: 'last-30-days', label: 'Last 30 Days' },
+  { key: 'last-90-days', label: 'Last 90 Days' },
+];
+
 export default function Analytics() {
   const { t } = useTranslation();
   const { students, staff, classesWithTeachers, feeDefaulters, schoolSettings, currentAcademicYear } = useApp();
   const chart = useChartTheme();
+  const [datePreset, setDatePreset] = useState('academic-year');
+  const [drillDown, setDrillDown] = useState(null);
   const [attendanceSummary, setAttendanceSummary] = useState({
     avgAttendance: null,
     weeklyTrend: [],
@@ -151,7 +182,7 @@ export default function Analytics() {
       setAttendanceSummary((prev) => ({ ...prev, loading: true, error: null }));
 
       try {
-        const { startDate, endDate } = parseAcademicYearRange(currentAcademicYear, schoolSettings);
+        const { startDate, endDate } = getPresetDateRange(datePreset, currentAcademicYear, schoolSettings);
         const sampleSize = Math.min(activeStudents.length, 20);
         const sampledStudents = sampleSize < activeStudents.length
           ? [...activeStudents].sort((a, b) => (a.id || a._id || '').localeCompare(b.id || b._id || '')).slice(0, sampleSize)
@@ -233,7 +264,7 @@ export default function Analytics() {
     return () => {
       cancelled = true;
     };
-  }, [students, schoolSettings, currentAcademicYear]);
+  }, [students, schoolSettings, currentAcademicYear, datePreset]);
 
   const analytics = useMemo(() => {
     const safeStudents = students || [];
@@ -377,6 +408,38 @@ export default function Analytics() {
       : "—";
   })();
 
+  const handlePieClick = useCallback((chartType, data) => {
+    if (!data || !data.name) return;
+    const safeStudents = students || [];
+    let items = [];
+    let title = '';
+
+    if (chartType === 'studentDistribution') {
+      const statusMap = {
+        'Active': 'active',
+        'Inactive': 'inactive',
+        'Transferred': 'transferred',
+        'Alumni': 'alumni',
+      };
+      const status = statusMap[data.name];
+      items = safeStudents.filter(s => s.status === status);
+      title = `${data.name} Students`;
+    } else if (chartType === 'feeCollection') {
+      const feeMap = {
+        'Paid': 'paid',
+        'Pending': 'pending',
+        'Overdue': 'overdue',
+      };
+      const feeStatus = feeMap[data.name];
+      items = safeStudents.filter(s => s.feeStatus === feeStatus);
+      title = `${data.name} Fees`;
+    }
+
+    setDrillDown({ title, items, type: chartType });
+  }, [students]);
+
+  const closeDrillDown = useCallback(() => setDrillDown(null), []);
+
   return (
     <div className="min-h-screen pb-8">
       <div className="mb-6">
@@ -386,6 +449,25 @@ export default function Analytics() {
         <p className="text-sm text-fg-muted mt-1">
           Comprehensive insights and metrics across all modules
         </p>
+      </div>
+
+      {/* Date Preset Selector */}
+      <div className="flex flex-wrap gap-2 mb-6" role="group" aria-label="Date range presets">
+        {DATE_PRESETS.map((preset) => (
+          <button
+            key={preset.key}
+            type="button"
+            onClick={() => setDatePreset(preset.key)}
+            aria-pressed={datePreset === preset.key}
+            className={`px-3 py-1.5 text-sm rounded-md border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 ${
+              datePreset === preset.key
+                ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
+                : 'bg-white dark:bg-zinc-900 text-fg-muted border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600'
+            }`}
+          >
+            {preset.label}
+          </button>
+        ))}
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
@@ -415,6 +497,8 @@ export default function Analytics() {
                     label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                     outerRadius={70}
                     dataKey="value"
+                    onClick={(data) => handlePieClick('studentDistribution', data)}
+                    className="cursor-pointer"
                   >
                     {studentDistribution.map((entry, index) => (
                       <Cell key={`cell-${entry.name}`} fill={PIE_PALETTE[index % PIE_PALETTE.length]} />
@@ -681,6 +765,41 @@ export default function Analytics() {
           </Card>
         </div>
       </div>
+
+      {/* Drill-down Drawer */}
+      <Drawer
+        isOpen={!!drillDown}
+        onClose={closeDrillDown}
+        title={drillDown?.title}
+        size="md"
+      >
+        {drillDown && (
+          <div className="space-y-3">
+            {drillDown.items.length === 0 ? (
+              <p className="text-sm text-fg-muted">No records found.</p>
+            ) : (
+              drillDown.items.map((item) => (
+                <div
+                  key={item.id || item._id}
+                  className="flex items-center justify-between p-3 bg-surface-2 rounded-lg"
+                >
+                  <div>
+                    <div className="text-sm font-medium text-fg">{item.name}</div>
+                    <div className="text-xs text-fg-muted">
+                      {item.classId ? `Class: ${item.class}` : ''}
+                      {item.classId && item.rollNo ? ' · ' : ''}
+                      {item.rollNo ? `Roll: ${item.rollNo}` : ''}
+                    </div>
+                  </div>
+                  <div className="text-xs text-fg-muted capitalize">
+                    {item.status || item.feeStatus}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </Drawer>
     </div>
   );
 }

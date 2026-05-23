@@ -80,9 +80,22 @@ test.describe('Analytics Dashboard', () => {
   });
 
   // ── Test 2: Date preset selector ────────────────────────────────────
-  // Analytics page does not have date preset selector buttons (Academic Year, Last 30/90 Days)
-  test.skip('date preset selector changes active filter and triggers refetch', async ({ page }) => {
-    // Feature not implemented: no date preset buttons on Analytics page
+  test('date preset selector changes active filter and triggers refetch', async ({ page }) => {
+    await page.goto('/analytics');
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByRole('heading', { name: 'Analytics' })).toBeVisible({ timeout: 15000 });
+
+    const last90DaysBtn = page.getByRole('button', { name: 'Last 90 Days' });
+    await expect(last90DaysBtn).toBeVisible({ timeout: 5000 });
+    await last90DaysBtn.click();
+
+    // Active preset must be visually highlighted via aria-pressed
+    await expect(last90DaysBtn).toHaveAttribute('aria-pressed', 'true');
+
+    // Verify data refetches — chart or empty state should stabilise
+    const areaChart = page.locator('.recharts-wrapper').first();
+    const noRecords = page.getByText('No attendance records').first();
+    await expect(areaChart.or(noRecords).first()).toBeVisible({ timeout: 20000 });
   });
 
   // ── Test 3: Attendance summary & weekly trend chart ─────────────────
@@ -104,7 +117,7 @@ test.describe('Analytics Dashboard', () => {
     const areaChart = page.locator('.recharts-wrapper').first();
     const noRecords = page.getByText('No attendance records').first();
     await expect(
-      areaChart.or(noRecords),
+      areaChart.or(noRecords).first(),
     ).toBeVisible({ timeout: 20000 });
   });
 
@@ -163,9 +176,25 @@ test.describe('Analytics Dashboard', () => {
   });
 
   // ── Test 7: Drill-down on chart click ──────────────────────────────
-  // The Analytics page does not have drill-down panels on pie chart click
-  test.skip('clicking a pie chart slice opens drill-down panel', async ({ page }) => {
-    // Feature not implemented: pie chart click does not open a drill-down panel
+  test('clicking a pie chart slice opens drill-down panel', async ({ page }) => {
+    await page.goto('/analytics');
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByRole('heading', { name: 'Analytics' })).toBeVisible({ timeout: 15000 });
+
+    // Click the first pie slice in the Student Distribution chart
+    const pieSlice = page.locator('.recharts-pie-sector').first();
+    await expect(pieSlice).toBeVisible({ timeout: 10000 });
+    await pieSlice.click();
+
+    // Drill-down panel (Drawer) should open as a dialog
+    const drawer = page.getByRole('dialog');
+    await expect(drawer).toBeVisible({ timeout: 5000 });
+    await expect(drawer.getByText(/Students/i).first()).toBeVisible();
+
+    // Close the panel
+    const closeBtn = page.getByRole('button', { name: 'Close' });
+    await closeBtn.click();
+    await expect(drawer).not.toBeVisible();
   });
 
   // ── Test 8: Empty state ─────────────────────────────────────────────
@@ -208,14 +237,33 @@ test.describe('Analytics Dashboard', () => {
     const areaChart = page.locator('.recharts-wrapper').first();
     const noRecords = page.getByText('No attendance records').first();
     await expect(
-      areaChart.or(noRecords),
+      areaChart.or(noRecords).first(),
     ).toBeVisible({ timeout: 20000 });
   });
 
   // ── Test 10: Date filter changes update all charts ──────────────────
-  // Analytics page does not have date filter buttons (Last 30 Days, etc.)
-  test.skip('changing date filter updates charts simultaneously', async ({ page }) => {
-    // Feature not implemented: no date filter buttons on Analytics page
+  test('changing date filter updates charts simultaneously', async ({ page }) => {
+    await page.goto('/analytics');
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByRole('heading', { name: 'Analytics' })).toBeVisible({ timeout: 15000 });
+
+    // Default Academic Year preset should show attendance data
+    const areaChart = page.locator('.recharts-wrapper').first();
+    await expect(areaChart).toBeVisible({ timeout: 20000 });
+
+    // Switch to Last 30 Days — seeded attendance (March 2026) is outside this window
+    const last30DaysBtn = page.getByRole('button', { name: 'Last 30 Days' });
+    await last30DaysBtn.click();
+
+    // Attendance chart should show empty state — no stale data from Academic Year
+    const noRecords = page.getByText('No attendance records').first();
+    await expect(noRecords).toBeVisible({ timeout: 20000 });
+
+    // Switch back to Academic Year — data should return
+    const academicYearBtn = page.getByRole('button', { name: 'Academic Year' });
+    await academicYearBtn.click();
+    await expect(academicYearBtn).toHaveAttribute('aria-pressed', 'true');
+    await expect(areaChart.or(noRecords).first()).toBeVisible({ timeout: 20000 });
   });
 
   // ── Test 11: Error state when API fails ─────────────────────────────
@@ -235,7 +283,7 @@ test.describe('Analytics Dashboard', () => {
     const noRecords = page.getByText('No attendance records').first();
     const chartFallback = page.locator('.recharts-wrapper').first();
     await expect(
-      noRecords.or(chartFallback),
+      noRecords.or(chartFallback).first(),
     ).toBeVisible({ timeout: 30000 });
 
     // When all attendance calls fail, the component shows "No attendance records..."
