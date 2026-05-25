@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import { Input, Button, Select, SelectItem, useDisclosure, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Chip } from "@heroui/react";
 import { Plus, Search, Users, LogOut, Calendar } from "lucide-react";
+import Input from "../../components/ui/Input";
+import Select from "../../components/ui/Select";
+import Button from "../../components/ui/Button";
+import { IconButton } from "../../components/ui";
+import Modal from "../../components/ui/Modal";
+import Chip from "../../components/ui/Chip";
 import { hostelApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useHostelLookups } from "../../hooks/useHostelLookups";
@@ -32,8 +37,12 @@ export default function AllocationsList() {
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [vacatingId, setVacatingId] = useState(null);
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const { isOpen: isVacateOpen, onOpen: onVacateOpen, onClose: onVacateClose } = useDisclosure();
+  const [isOpen, setIsOpen] = useState(false);
+  const onOpen = () => setIsOpen(true);
+  const onClose = () => setIsOpen(false);
+  const [isVacateOpen, setIsVacateOpen] = useState(false);
+  const onVacateOpen = () => setIsVacateOpen(true);
+  const onVacateClose = () => setIsVacateOpen(false);
   const [vacateData, setVacateData] = useState({ endDate: toTodayDateString(), notes: "" });
   // Student search term for the async dropdown (MF-24)
   const [studentSearch, setStudentSearch] = useState("");
@@ -128,7 +137,7 @@ export default function AllocationsList() {
     onOpen();
   };
 
-  const statusColors = { active: "success", vacated: "default", transferred: "warning" };
+  const statusColors = { active: "success", vacated: "neutral", transferred: "warning" };
 
   const formatDate = (d) => d ? new Date(d).toLocaleDateString(getDateLocale(), { day: "2-digit", month: "short", year: "numeric" }) : "—";
 
@@ -147,32 +156,32 @@ export default function AllocationsList() {
             placeholder={t('pages.searchStudent')}
             startContent={<Search size={16} className="text-fg-faint" />}
             value={searchInput}
-            onValueChange={setSearchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="max-w-xs"
             size="sm"
           />
           <Select
             placeholder={t('pages.allHostels')}
-            selectedKeys={hostelFilter ? [hostelFilter] : []}
-            onSelectionChange={(keys) => { setHostelFilter([...keys][0] || ""); setPage(1); }}
+            value={hostelFilter}
+            onChange={(e) => { setHostelFilter(e.target.value); setPage(1); }}
             className="max-w-[180px]"
             size="sm"
           >
-            {hostels.map(h => <SelectItem key={h._id}>{h.name}</SelectItem>)}
+            {hostels.map(h => <option key={h._id} value={h._id}>{h.name}</option>)}
           </Select>
           <Select
             placeholder={t('pages.status2')}
-            selectedKeys={statusFilter ? [statusFilter] : []}
-            onSelectionChange={(keys) => { setStatusFilter([...keys][0] || ""); setPage(1); }}
+            value={statusFilter}
+            onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
             className="max-w-[140px]"
             size="sm"
           >
-            <SelectItem key="active">{t('pages.active')}</SelectItem>
-            <SelectItem key="vacated">{t('pages.vacated')}</SelectItem>
-            <SelectItem key="transferred">{t('pages.transferred')}</SelectItem>
+            <option value="active">{t('pages.active')}</option>
+            <option value="vacated">{t('pages.vacated')}</option>
+            <option value="transferred">{t('pages.transferred')}</option>
           </Select>
         </div>
-        <Button color="primary" startContent={<Plus size={16} />} onPress={handleAdd} size="sm">
+        <Button variant="primary" icon={<Plus size={16} />} onClick={handleAdd} size="sm">
           Allocate Student
         </Button>
       </div>
@@ -183,7 +192,7 @@ export default function AllocationsList() {
           icon={Users}
           title={t('pages.noAllocationsFound')}
           action={
-            <Button color="primary" size="sm" startContent={<Plus size={14} />} onPress={handleAdd}>
+            <Button variant="primary" size="sm" icon={<Plus size={14} />} onClick={handleAdd}>
               Allocate Student
             </Button>
           }
@@ -227,16 +236,16 @@ export default function AllocationsList() {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <Chip size="sm" color={statusColors[alloc.status]} variant="flat" className="capitalize">
+                      <Chip size="sm" color={statusColors[alloc.status]} className="capitalize">
                         {alloc.status}
                       </Chip>
                     </td>
                     <td className="px-4 py-3 text-right">
                       {alloc.status === "active" && (
                         <Button
-                          size="sm" variant="flat" color="warning"
-                          startContent={<LogOut size={14} />}
-                          onPress={() => openVacateModal(alloc._id)}
+                          size="sm" variant="danger"
+                          icon={<LogOut size={14} />}
+                          onClick={() => openVacateModal(alloc._id)}
                         >
                           Vacate
                         </Button>
@@ -250,124 +259,117 @@ export default function AllocationsList() {
 
           {totalPages > 1 && (
             <div className="flex justify-center gap-2">
-              <Button size="sm" variant="flat" isDisabled={page <= 1} onPress={() => setPage(p => p - 1)}>{t('pages.previous')}</Button>
+              <Button size="sm" variant="ghost" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>{t('pages.previous')}</Button>
               <span className="flex items-center text-sm text-fg-muted">Page {page} of {totalPages}</span>
-              <Button size="sm" variant="flat" isDisabled={page >= totalPages} onPress={() => setPage(p => p + 1)}>{t('pages.next')}</Button>
+              <Button size="sm" variant="ghost" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>{t('pages.next')}</Button>
             </div>
           )}
         </>
       )}
 
       {/* Add Allocation Modal */}
-      <Modal isOpen={isOpen} onClose={handleClose} size="2xl" scrollBehavior="inside">
-        <ModalContent>
-          <ModalHeader className="text-fg">{t('pages.allocateStudentToRoom')}</ModalHeader>
-          <ModalBody className="gap-4">
-            {/* Server-side student search — replaces bulk limit:500 fetch (MF-24) */}
+      <Modal isOpen={isOpen} onClose={handleClose} size="xl" scrollBehavior="inside">
+        <Modal.Header>{t('pages.allocateStudentToRoom')}</Modal.Header>
+        <Modal.Body className="gap-4">
+          {/* Server-side student search — replaces bulk limit:500 fetch (MF-24) */}
+          <Input
+            label={t('pages.searchStudent')}
+            placeholder={t('hostel.searchStudentPlaceholder')}
+            value={studentSearch}
+            onChange={(e) => setStudentSearch(e.target.value)}
+            startContent={<Search size={14} className="text-fg-faint" />}
+          />
+          <Select
+            label={t('pages.student')} isRequired
+            value={formData.studentId}
+            onChange={(e) => setFormData(p => ({ ...p, studentId: e.target.value || "" }))}
+            isInvalid={!!errors.studentId} errorMessage={errors.studentId}
+            placeholder={studentSearch.length < 2 ? "Search a student above first" : studentsLoading ? "Searching..." : "Select student"}
+          >
+            {students.map(s => (
+              <option key={s._id} value={s._id}>
+                {s.name} {s.admissionNo ? `(${s.admissionNo})` : ""}
+              </option>
+            ))}
+          </Select>
+          <Select
+            label={t('pages.hostel1')} isRequired
+            value={formData.hostelId}
+            onChange={(e) => setFormData(p => ({ ...p, hostelId: e.target.value || "", roomId: "" }))}
+            isInvalid={!!errors.hostelId} errorMessage={errors.hostelId}
+          >
+            {hostels.map(h => <option key={h._id} value={h._id}>{h.name}</option>)}
+          </Select>
+          <Select
+            label={t('pages.room')} isRequired
+            value={formData.roomId}
+            onChange={(e) => setFormData(p => ({ ...p, roomId: e.target.value || "" }))}
+            isInvalid={!!errors.roomId} errorMessage={errors.roomId}
+            disabled={!formData.hostelId}
+            description={!formData.hostelId ? "Select a hostel first" : ""}
+          >
+            {rooms.map(r => (
+              <option key={r._id} value={r._id}>
+                {r.roomNumber} — {r.occupiedBeds}/{r.capacity} beds ({r.type})
+              </option>
+            ))}
+          </Select>
+          <div className="grid grid-cols-2 gap-4">
             <Input
-              label={t('pages.searchStudent')}
-              placeholder={t('hostel.searchStudentPlaceholder')}
-              value={studentSearch}
-              onValueChange={setStudentSearch}
-              startContent={<Search size={14} className="text-fg-faint" />}
-              isClearable
-              onClear={() => setStudentSearch("")}
-            />
-            <Select
-              label={t('pages.student')} isRequired
-              selectedKeys={formData.studentId ? [formData.studentId] : []}
-              onSelectionChange={(keys) => setFormData(p => ({ ...p, studentId: [...keys][0] || "" }))}
-              isInvalid={!!errors.studentId} errorMessage={errors.studentId}
-              isLoading={studentsLoading}
-              placeholder={studentSearch.length < 2 ? "Search a student above first" : studentsLoading ? "Searching..." : "Select student"}
-            >
-              {students.map(s => (
-                <SelectItem key={s._id}>
-                  {s.name} {s.admissionNo ? `(${s.admissionNo})` : ""}
-                </SelectItem>
-              ))}
-            </Select>
-            <Select
-              label={t('pages.hostel1')} isRequired
-              selectedKeys={formData.hostelId ? [formData.hostelId] : []}
-              onSelectionChange={(keys) => setFormData(p => ({ ...p, hostelId: [...keys][0] || "", roomId: "" }))}
-              isInvalid={!!errors.hostelId} errorMessage={errors.hostelId}
-            >
-              {hostels.map(h => <SelectItem key={h._id}>{h.name}</SelectItem>)}
-            </Select>
-            <Select
-              label={t('pages.room')} isRequired
-              selectedKeys={formData.roomId ? [formData.roomId] : []}
-              onSelectionChange={(keys) => setFormData(p => ({ ...p, roomId: [...keys][0] || "" }))}
-              isInvalid={!!errors.roomId} errorMessage={errors.roomId}
-              isDisabled={!formData.hostelId}
-              description={!formData.hostelId ? "Select a hostel first" : ""}
-            >
-              {rooms.map(r => (
-                <SelectItem key={r._id}>
-                  {r.roomNumber} — {r.occupiedBeds}/{r.capacity} beds ({r.type})
-                </SelectItem>
-              ))}
-            </Select>
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                label={t('pages.bedNumber')}
-                value={formData.bedNumber}
-                onValueChange={(v) => setFormData(p => ({ ...p, bedNumber: v }))}
-                placeholder={t('hostel.bedNumberPlaceholder')}
-              />
-              <Input
-                label={t('pages.startDate1')} isRequired type="date"
-                value={formData.startDate}
-                onValueChange={(v) => setFormData(p => ({ ...p, startDate: v }))}
-                isInvalid={!!errors.startDate} errorMessage={errors.startDate}
-              />
-            </div>
-            <Input
-              label="Monthly Fee (₹)" type="number" min={0}
-              value={String(formData.monthlyFee)}
-              onValueChange={(v) => setFormData(p => ({ ...p, monthlyFee: v }))}
+              label={t('pages.bedNumber')}
+              value={formData.bedNumber}
+              onChange={(e) => setFormData(p => ({ ...p, bedNumber: e.target.value }))}
+              placeholder={t('hostel.bedNumberPlaceholder')}
             />
             <Input
-              label={t('pages.notes1')}
-              value={formData.notes}
-              onValueChange={(v) => setFormData(p => ({ ...p, notes: v }))}
+              label={t('pages.startDate1')} isRequired type="date"
+              value={formData.startDate}
+              onChange={(e) => setFormData(p => ({ ...p, startDate: e.target.value }))}
+              isInvalid={!!errors.startDate} errorMessage={errors.startDate}
             />
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="flat" onPress={handleClose}>{t('pages.cancel2')}</Button>
-            <Button color="primary" onPress={handleSubmit} isLoading={saving}>
-              Allocate
-            </Button>
-          </ModalFooter>
-        </ModalContent>
+          </div>
+          <Input
+            label="Monthly Fee (₹)" type="number" min={0}
+            value={String(formData.monthlyFee)}
+            onChange={(e) => setFormData(p => ({ ...p, monthlyFee: e.target.value }))}
+          />
+          <Input
+            label={t('pages.notes1')}
+            value={formData.notes}
+            onChange={(e) => setFormData(p => ({ ...p, notes: e.target.value }))}
+          />
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="ghost" onClick={handleClose}>{t('pages.cancel2')}</Button>
+          <Button variant="primary" onClick={handleSubmit} loading={saving}>
+            Allocate
+          </Button>
+        </Modal.Footer>
       </Modal>
 
       {/* Vacate Modal */}
       <Modal isOpen={isVacateOpen} onClose={onVacateClose} size="md">
-        <ModalContent>
-          <ModalHeader className="text-fg">{t('pages.vacateStudent')}</ModalHeader>
-          <ModalBody className="gap-4">
-            <p className="text-sm text-fg-muted">{t('pages.markThisAllocationAsVacatedTheRoomBedWillBeFreedUp')}</p>
-            <Input
-              label={t('pages.endDate1')} type="date"
-              value={vacateData.endDate}
-              onValueChange={(v) => setVacateData(p => ({ ...p, endDate: v }))}
-            />
-            <Input
-              label={t('pages.notes1')}
-              value={vacateData.notes}
-              onValueChange={(v) => setVacateData(p => ({ ...p, notes: v }))}
-              placeholder={t('pages.reasonForVacating')}
-            />
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="flat" onPress={onVacateClose}>{t('pages.cancel2')}</Button>
-            <Button color="warning" onPress={handleVacate} isLoading={saving}>
-              Confirm Vacate
-            </Button>
-          </ModalFooter>
-        </ModalContent>
+        <Modal.Header>{t('pages.vacateStudent')}</Modal.Header>
+        <Modal.Body className="gap-4">
+          <p className="text-sm text-fg-muted">{t('pages.markThisAllocationAsVacatedTheRoomBedWillBeFreedUp')}</p>
+          <Input
+            label={t('pages.endDate1')} type="date"
+            value={vacateData.endDate}
+            onChange={(e) => setVacateData(p => ({ ...p, endDate: e.target.value }))}
+          />
+          <Input
+            label={t('pages.notes1')}
+            value={vacateData.notes}
+            onChange={(e) => setVacateData(p => ({ ...p, notes: e.target.value }))}
+            placeholder={t('pages.reasonForVacating')}
+          />
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="ghost" onClick={onVacateClose}>{t('pages.cancel2')}</Button>
+          <Button variant="danger" onClick={handleVacate} loading={saving}>
+            Confirm Vacate
+          </Button>
+        </Modal.Footer>
       </Modal>
     </div>
   );

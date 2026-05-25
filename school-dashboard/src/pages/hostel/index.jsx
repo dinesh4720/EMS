@@ -1,5 +1,5 @@
 import { Routes, Route } from "react-router-dom";
-import { Breadcrumbs, BreadcrumbItem } from "@heroui/react";
+import { Breadcrumbs } from "../../components/ui";
 import { useNavigate, useLocation } from "react-router-dom";
 import { BarChart3, Building2, DoorOpen, Users, Home } from "lucide-react";
 import { PageLayout } from "../../components/ui";
@@ -49,11 +49,14 @@ export default function HostelPage() {
   return (
     <div className="animate-fade-in">
       <div className="mb-4">
-        <Breadcrumbs size="sm">
-          <BreadcrumbItem startContent={<Home size={14} />} onPress={() => navigate("/")}>{t('pages.home')}</BreadcrumbItem>
-          <BreadcrumbItem onPress={() => navigate("/hostel")}>{t('pages.hostel1')}</BreadcrumbItem>
-          {tabLabel[activeTab] && <BreadcrumbItem>{tabLabel[activeTab]}</BreadcrumbItem>}
-        </Breadcrumbs>
+        <Breadcrumbs
+          size="sm"
+          items={[
+            { label: <span className="flex items-center gap-1"><Home size={14} />{t('pages.home')}</span>, href: "/" },
+            { label: t('pages.hostel1'), href: "/hostel" },
+            ...(tabLabel[activeTab] ? [{ label: tabLabel[activeTab] }] : []),
+          ]}
+        />
       </div>
 
       <PageLayout

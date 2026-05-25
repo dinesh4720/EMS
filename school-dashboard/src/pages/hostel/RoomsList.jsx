@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import { Input, Button, Select, SelectItem, useDisclosure, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Chip } from "@heroui/react";
 import { Plus, Search, DoorOpen, Edit2, Trash2, BedDouble } from "lucide-react";
+import Input from "../../components/ui/Input";
+import Select from "../../components/ui/Select";
+import Button from "../../components/ui/Button";
+import { IconButton } from "../../components/ui";
+import Modal from "../../components/ui/Modal";
+import Chip from "../../components/ui/Chip";
 import { hostelApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
@@ -38,7 +43,9 @@ export default function RoomsList() {
   const [errors, setErrors] = useState({});
   const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [isOpen, setIsOpen] = useState(false);
+  const onOpen = () => setIsOpen(true);
+  const onClose = () => setIsOpen(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
@@ -174,30 +181,30 @@ export default function RoomsList() {
             placeholder={t('pages.searchRooms')}
             startContent={<Search size={16} className="text-fg-faint" />}
             value={searchInput}
-            onValueChange={setSearchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="max-w-xs"
             size="sm"
           />
           <Select
             placeholder={t('pages.allHostels')}
-            selectedKeys={hostelFilter ? [hostelFilter] : []}
-            onSelectionChange={(keys) => { setHostelFilter([...keys][0] || ""); setPage(1); }}
+            value={hostelFilter}
+            onChange={(e) => { setHostelFilter(e.target.value); setPage(1); }}
             className="max-w-[180px]"
             size="sm"
           >
-            {hostels.map(h => <SelectItem key={h._id}>{h.name}</SelectItem>)}
+            {hostels.map(h => <option key={h._id} value={h._id}>{h.name}</option>)}
           </Select>
           <Select
             placeholder={t('pages.allTypes1')}
-            selectedKeys={typeFilter ? [typeFilter] : []}
-            onSelectionChange={(keys) => { setTypeFilter([...keys][0] || ""); setPage(1); }}
+            value={typeFilter}
+            onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
             className="max-w-[150px]"
             size="sm"
           >
-            {ROOM_TYPES.map(rt => <SelectItem key={rt.key}>{rt.label}</SelectItem>)}
+            {ROOM_TYPES.map(rt => <option key={rt.key} value={rt.key}>{rt.label}</option>)}
           </Select>
         </div>
-        <Button color="primary" startContent={<Plus size={16} />} onPress={handleAdd} size="sm">
+        <Button variant="primary" icon={<Plus size={16} />} onClick={handleAdd} size="sm">
           Add Room
         </Button>
       </div>
@@ -208,7 +215,7 @@ export default function RoomsList() {
           icon={DoorOpen}
           title={t('pages.noRoomsFound')}
           action={
-            <Button color="primary" size="sm" startContent={<Plus size={14} />} onPress={handleAdd}>
+            <Button variant="primary" size="sm" icon={<Plus size={14} />} onClick={handleAdd}>
               Add Room
             </Button>
           }
@@ -235,7 +242,7 @@ export default function RoomsList() {
                     <td className="px-4 py-3 text-fg-muted">{room.hostelId?.name || "—"}</td>
                     <td className="px-4 py-3 text-fg-muted">{room.floor}</td>
                     <td className="px-4 py-3">
-                      <Chip size="sm" variant="flat" className="capitalize">{room.type}</Chip>
+                      <Chip size="sm" className="capitalize">{room.type}</Chip>
                     </td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${occupancyColor(room)}`}>
@@ -248,12 +255,12 @@ export default function RoomsList() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex gap-1 justify-end">
-                        <Button isIconOnly size="sm" variant="light" aria-label="Edit room" onPress={() => handleEdit(room)}>
+                        <IconButton size="sm" variant="ghost" aria-label="Edit room" onClick={() => handleEdit(room)}>
                           <Edit2 size={14} className="text-fg-muted" />
-                        </Button>
-                        <Button isIconOnly size="sm" variant="light" aria-label="Delete room" onPress={() => setDeleteTarget(room._id)}>
+                        </IconButton>
+                        <IconButton size="sm" variant="ghost" aria-label="Delete room" onClick={() => setDeleteTarget(room._id)}>
                           <Trash2 size={14} className="text-danger" />
-                        </Button>
+                        </IconButton>
                       </div>
                     </td>
                   </tr>
@@ -265,92 +272,87 @@ export default function RoomsList() {
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex justify-center gap-2">
-              <Button size="sm" variant="flat" isDisabled={page <= 1} onPress={() => setPage(p => p - 1)}>{t('pages.previous')}</Button>
+              <Button size="sm" variant="ghost" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>{t('pages.previous')}</Button>
               <span className="flex items-center text-sm text-fg-muted">Page {page} of {totalPages}</span>
-              <Button size="sm" variant="flat" isDisabled={page >= totalPages} onPress={() => setPage(p => p + 1)}>{t('pages.next')}</Button>
+              <Button size="sm" variant="ghost" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>{t('pages.next')}</Button>
             </div>
           )}
         </>
       )}
 
       {/* Add/Edit Room Modal */}
-      <Modal isOpen={isOpen} onClose={handleClose} size="2xl" scrollBehavior="inside">
-        <ModalContent>
-          <ModalHeader className="text-fg">
-            {editingId ? "Edit Room" : "Add Room"}
-          </ModalHeader>
-          <ModalBody className="gap-4">
+      <Modal isOpen={isOpen} onClose={handleClose} size="xl" scrollBehavior="inside">
+        <Modal.Header>{editingId ? "Edit Room" : "Add Room"}</Modal.Header>
+        <Modal.Body className="gap-4">
+          <Select
+            label={t('pages.hostel1')} isRequired
+            value={formData.hostelId}
+            onChange={(e) => setFormData(p => ({ ...p, hostelId: e.target.value || "" }))}
+            isInvalid={!!errors.hostelId} errorMessage={errors.hostelId}
+          >
+            {hostels.map(h => <option key={h._id} value={h._id}>{h.name}</option>)}
+          </Select>
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label={t('pages.roomNumber')} isRequired
+              value={formData.roomNumber}
+              onChange={(e) => setFormData(p => ({ ...p, roomNumber: e.target.value }))}
+              isInvalid={!!errors.roomNumber} errorMessage={errors.roomNumber}
+            />
+            <Input
+              label={t('pages.floor')}
+              type="number"
+              value={String(formData.floor)}
+              onChange={(e) => setFormData(p => ({ ...p, floor: e.target.value }))}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
             <Select
-              label={t('pages.hostel1')} isRequired
-              selectedKeys={formData.hostelId ? [formData.hostelId] : []}
-              onSelectionChange={(keys) => setFormData(p => ({ ...p, hostelId: [...keys][0] || "" }))}
-              isInvalid={!!errors.hostelId} errorMessage={errors.hostelId}
+              label={t('pages.roomType')}
+              value={formData.type}
+              onChange={(e) => setFormData(p => ({ ...p, type: e.target.value }))}
             >
-              {hostels.map(h => <SelectItem key={h._id}>{h.name}</SelectItem>)}
+              {ROOM_TYPES.map(rt => <option key={rt.key} value={rt.key}>{rt.label}</option>)}
             </Select>
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                label={t('pages.roomNumber')} isRequired
-                value={formData.roomNumber}
-                onValueChange={(v) => setFormData(p => ({ ...p, roomNumber: v }))}
-                isInvalid={!!errors.roomNumber} errorMessage={errors.roomNumber}
-              />
-              <Input
-                label={t('pages.floor')}
-                type="number"
-                value={String(formData.floor)}
-                onValueChange={(v) => setFormData(p => ({ ...p, floor: v }))}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <Select
-                label={t('pages.roomType')}
-                selectedKeys={[formData.type]}
-                onSelectionChange={(keys) => setFormData(p => ({ ...p, type: [...keys][0] }))}
-              >
-                {ROOM_TYPES.map(rt => <SelectItem key={rt.key}>{rt.label}</SelectItem>)}
-              </Select>
-              <Input
-                label={t('pages.capacity')} isRequired type="number" min={1}
-                value={String(formData.capacity)}
-                onValueChange={(v) => setFormData(p => ({ ...p, capacity: v }))}
-                isInvalid={!!errors.capacity} errorMessage={errors.capacity}
-              />
-            </div>
             <Input
-              label="Monthly Fee (₹)" type="number" min={0}
-              value={String(formData.monthlyFee)}
-              onValueChange={(v) => setFormData(p => ({ ...p, monthlyFee: v }))}
+              label={t('pages.capacity')} isRequired type="number" min={1}
+              value={String(formData.capacity)}
+              onChange={(e) => setFormData(p => ({ ...p, capacity: e.target.value }))}
+              isInvalid={!!errors.capacity} errorMessage={errors.capacity}
             />
-            <div>
-              <p className="text-sm font-medium text-fg mb-2">{t('pages.amenities')}</p>
-              <div className="flex flex-wrap gap-2">
-                {AMENITY_OPTIONS.map(a => (
-                  <Chip
-                    key={a}
-                    variant={formData.amenities.includes(a) ? "solid" : "bordered"}
-                    color={formData.amenities.includes(a) ? "primary" : "default"}
-                    className="cursor-pointer"
-                    onClick={() => toggleAmenity(a)}
-                  >
-                    {a}
-                  </Chip>
-                ))}
-              </div>
+          </div>
+          <Input
+            label="Monthly Fee (₹)" type="number" min={0}
+            value={String(formData.monthlyFee)}
+            onChange={(e) => setFormData(p => ({ ...p, monthlyFee: e.target.value }))}
+          />
+          <div>
+            <p className="text-sm font-medium text-fg mb-2">{t('pages.amenities')}</p>
+            <div className="flex flex-wrap gap-2">
+              {AMENITY_OPTIONS.map(a => (
+                <Chip
+                  key={a}
+                  color={formData.amenities.includes(a) ? "primary" : "neutral"}
+                  className="cursor-pointer"
+                  onClick={() => toggleAmenity(a)}
+                >
+                  {a}
+                </Chip>
+              ))}
             </div>
-            <Input
-              label={t('pages.description1')}
-              value={formData.description}
-              onValueChange={(v) => setFormData(p => ({ ...p, description: v }))}
-            />
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="flat" onPress={handleClose}>{t('pages.cancel2')}</Button>
-            <Button color="primary" onPress={handleSubmit} isLoading={saving}>
-              {editingId ? "Update" : "Create"}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
+          </div>
+          <Input
+            label={t('pages.description1')}
+            value={formData.description}
+            onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
+          />
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="ghost" onClick={handleClose}>{t('pages.cancel2')}</Button>
+          <Button variant="primary" onClick={handleSubmit} loading={saving}>
+            {editingId ? "Update" : "Create"}
+          </Button>
+        </Modal.Footer>
       </Modal>
 
       {/* Delete Confirmation */}
