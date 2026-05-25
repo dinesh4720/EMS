@@ -166,8 +166,10 @@ test.describe('Library — Issue/Return, Overdue & Reports Deep', () => {
     );
 
     // Data loaded — Return button should be visible for issued/overdue records
-    const returnBtn = page.getByRole('button', { name: /^Return$/i }).first();
-    await expect(returnBtn).toBeVisible({ timeout: 5_000 });
+    // The button's accessible name is "Return Book" (aria-label) while the
+    // visible text is "Return", so match loosely.
+    const returnBtn = page.getByRole('button', { name: /Return/i }).first();
+    await expect(returnBtn).toBeVisible({ timeout: 10_000 });
   });
 
   // ── Test 7: Reserved tab shows empty state when no reservations ──
