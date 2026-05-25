@@ -97,6 +97,7 @@ const ConfirmDialog = memo(function ConfirmDialog({
         className="ds-confirm"
         onClick={(e) => e.stopPropagation()}
         role="document"
+        data-testid="ds-confirm-dialog"
       >
         <h2 id="ds-confirm-title" className="ds-confirm__title">
           <span className={`ds-confirm__title-icon ${config.iconClass}`} aria-hidden="true">
