@@ -262,7 +262,7 @@ test.describe('Hostel Management — Hostels, Rooms & Allocations', () => {
   test('13 — stat cards show numeric values on dashboard', async ({ page }) => {
     await navigateAndWait(page, '/hostel', 'Total Hostels');
 
-    const statValues = page.locator('.text-2xl');
+    const statValues = page.locator('.text-xl');
     const count = await statValues.count();
     expect(count).toBeGreaterThanOrEqual(6);
   });
