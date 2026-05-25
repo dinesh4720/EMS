@@ -45,13 +45,74 @@ function flattenValues(obj) {
 }
 
 /**
- * Walk the src directory and extract every translation key used via t('key')
- * or t("key") calls. Returns a Set of key strings.
+ * Keys that are legitimately dynamic (mapping objects, i18nKey props,
+ * substring matches, etc.) and should not be flagged as orphans.
+ */
+const ALLOWED_ORPHAN_KEYS = [
+  // Trans component i18nKey usage
+  'signup.agreeToTerms',
+
+  // Used via validation mapping objects (e.g., visitorName: 'validation.visitorNameRequired')
+  'validation.visitorNameRequired',
+  'validation.studentNameRequired',
+  'validation.parentNameRequired',
+  'validation.callerNameRequired',
+  'validation.nameRequired',
+  'validation.phoneInvalid',
+  'validation.emailInvalid',
+  'validation.classRequired',
+  'validation.personRequired',
+  'validation.fromDateInvalid',
+  'validation.toDateInvalid',
+  'validation.classNameRequired',
+  'validation.classNameInvalid',
+  'validation.sectionRequired',
+  'validation.sectionInvalid',
+  'validation.strengthPositive',
+  'validation.strengthMax',
+  'validation.academicYearRequired',
+  'validation.subjectNameRequired',
+  'validation.chaptersPositive',
+  'validation.dayRequired',
+  'validation.periodRequired',
+  'validation.subjectRequired',
+
+  // Appear as substrings of used keys — kept in allow-list conservatively
+  'common.no',
+  'common.section',
+  'settings.academics.subjectCode',
+  'settings.academics.subjectName',
+  'toast.success.templateUpdated',
+  'components.noSubjects',
+  'components.clearAll',
+  'components.assignSubstitute',
+  'fees.pendingAmount',
+];
+
+/**
+ * Walk the src directory and extract every translation key used via literal
+ * t('key') / t("key") calls, i18nKey props, and dynamic prefixes from
+ * template literals and string concatenation.
+ *
+ * Returns { sourceKeys: Set<string>, dynamicPrefixes: Set<string> }
  */
 function extractSourceKeys() {
-  const keys = new Set();
-  // Match t('key.path', ...) or t("key.path", ...)
+  const sourceKeys = new Set();
+  const dynamicPrefixes = new Set();
+
+  // 1. Literal t('key.path') or t("key.path")
   const tCallRegex = /\bt\(\s*['"]([a-zA-Z0-9_.]+)['"]/g;
+
+  // 2. i18nKey="key.path" usages (e.g., react-i18next Trans component)
+  const i18nKeyRegex = /i18nKey=\s*["']([a-zA-Z0-9_.]+)["']/g;
+
+  // 3. Template literals with variable interpolation:
+  //    t(`prefix.${variable}`)  → extract "prefix."
+  const templateLiteralPrefixRegex = /\bt\(\s*`([a-zA-Z0-9_.]+)\$\{/g;
+
+  // 4. String concatenation:
+  //    t('prefix.' + variable) or t("prefix." + variable) → extract "prefix."
+  const concatPrefixRegex = /\bt\(\s*['"]([a-zA-Z0-9_.]+)['"]\s*\+/g;
 
   function walk(dir) {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -65,14 +126,23 @@ function extractSourceKeys() {
         const content = fs.readFileSync(full, 'utf-8');
         let match;
         while ((match = tCallRegex.exec(content)) !== null) {
-          keys.add(match[1]);
+          sourceKeys.add(match[1]);
+        }
+        while ((match = i18nKeyRegex.exec(content)) !== null) {
+          sourceKeys.add(match[1]);
+        }
+        while ((match = templateLiteralPrefixRegex.exec(content)) !== null) {
+          dynamicPrefixes.add(match[1]);
+        }
+        while ((match = concatPrefixRegex.exec(content)) !== null) {
+          dynamicPrefixes.add(match[1]);
         }
       }
     }
   }
 
   walk(SRC_DIR);
-  return keys;
+  return { sourceKeys, dynamicPrefixes };
 }
 
 // ---------------------------------------------------------------------------
@@ -191,7 +261,7 @@ describe('i18n translation files', () => {
 });
 
 describe('source code ↔ translation file sync', () => {
-  const sourceKeys = extractSourceKeys();
+  const { sourceKeys, dynamicPrefixes } = extractSourceKeys();
 
   it('should find translation keys used in source code', () => {
     expect(sourceKeys.size).toBeGreaterThan(0);
@@ -204,15 +274,25 @@ describe('source code ↔ translation file sync', () => {
   it.todo('every t() key used in source should exist in en.json');
 
   it('every key in en.json should be used in source code (no orphan keys)', () => {
-    const orphanKeys = referenceKeys.filter((k) => !sourceKeys.has(k));
-    if (orphanKeys.length > 0) {
-      console.warn(
-        `\n⚠ ${orphanKeys.length} key(s) in en.json but not found in source:\n  ${orphanKeys.join('\n  ')}`,
-      );
-    }
-    // Warn but don't fail — some keys may be dynamically constructed
-    // Uncomment the assertion below once dynamic keys are accounted for:
-    // expect(orphanKeys).toHaveLength(0);
+    const orphanKeys = referenceKeys.filter((k) => {
+      // 1. Literal t() usage
+      if (sourceKeys.has(k)) return false;
+
+      // 2. Dynamic prefix match (template literals or concatenation)
+      for (const prefix of dynamicPrefixes) {
+        if (k === prefix || k.startsWith(prefix)) return false;
+      }
+
+      // 3. Explicit allow-list for known dynamic keys
+      if (ALLOWED_ORPHAN_KEYS.includes(k)) return false;
+
+      return true;
+    });
+
+    expect(
+      orphanKeys,
+      `${orphanKeys.length} orphan key(s) in en.json not found in source code:\n  ${orphanKeys.join('\n  ')}`,
+    ).toHaveLength(0);
   });
 });
 

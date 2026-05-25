@@ -1,6 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
-import { Input, Button, Select, SelectItem, useDisclosure, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Chip, Avatar } from "@heroui/react";
 import { Plus, Search, Building2, Edit2, Trash2, Users, DoorOpen } from "lucide-react";
+import Input from "../../components/ui/Input";
+import Select from "../../components/ui/Select";
+import Button from "../../components/ui/Button";
+import { IconButton } from "../../components/ui";
+import Modal from "../../components/ui/Modal";
+import Chip from "../../components/ui/Chip";
+import Avatar from "../../components/ui/Avatar";
 import { hostelApi, staffApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
@@ -25,7 +31,9 @@ export default function HostelList() {
   const [errors, setErrors] = useState({});
   const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [isOpen, setIsOpen] = useState(false);
+  const onOpen = () => setIsOpen(true);
+  const onClose = () => setIsOpen(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [staffList, setStaffList] = useState([]);
 
@@ -157,23 +165,23 @@ export default function HostelList() {
             placeholder={t('pages.searchHostels')}
             startContent={<Search size={16} className="text-fg-faint" />}
             value={searchInput}
-            onValueChange={setSearchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="max-w-xs"
             size="sm"
           />
           <Select
             placeholder={t('pages.allTypes1')}
-            selectedKeys={typeFilter ? [typeFilter] : []}
-            onSelectionChange={(keys) => setTypeFilter([...keys][0] || "")}
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
             className="max-w-[150px]"
             size="sm"
           >
-            <SelectItem key="boys">{t('pages.boys')}</SelectItem>
-            <SelectItem key="girls">{t('pages.girls')}</SelectItem>
-            <SelectItem key="mixed">{t('pages.mixed')}</SelectItem>
+            <option value="boys">{t('pages.boys')}</option>
+            <option value="girls">{t('pages.girls')}</option>
+            <option value="mixed">{t('pages.mixed')}</option>
           </Select>
         </div>
-        <Button color="primary" startContent={<Plus size={16} />} onPress={handleAdd} size="sm">
+        <Button variant="primary" icon={<Plus size={16} />} onClick={handleAdd} size="sm">
           Add Hostel
         </Button>
       </div>
@@ -184,7 +192,7 @@ export default function HostelList() {
           icon={Building2}
           title={t('pages.noHostelsFound')}
           action={
-            <Button color="primary" size="sm" startContent={<Plus size={14} />} onPress={handleAdd}>
+            <Button variant="primary" size="sm" icon={<Plus size={14} />} onClick={handleAdd}>
               Add Hostel
             </Button>
           }
@@ -196,17 +204,17 @@ export default function HostelList() {
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <h3 className="font-semibold text-fg">{hostel.name}</h3>
-                  <Chip size="sm" color={typeColors[hostel.type]} variant="flat" className="mt-1 capitalize">
+                  <Chip size="sm" color={typeColors[hostel.type]} className="mt-1 capitalize">
                     {hostel.type}
                   </Chip>
                 </div>
                 <div className="flex gap-1">
-                  <Button isIconOnly size="sm" variant="light" aria-label="Edit hostel" onPress={() => handleEdit(hostel)}>
+                  <IconButton size="sm" variant="ghost" aria-label="Edit hostel" onClick={() => handleEdit(hostel)}>
                     <Edit2 size={14} className="text-fg-muted" />
-                  </Button>
-                  <Button isIconOnly size="sm" variant="light" aria-label="Delete hostel" onPress={() => setDeleteTarget(hostel._id)}>
+                  </IconButton>
+                  <IconButton size="sm" variant="ghost" aria-label="Delete hostel" onClick={() => setDeleteTarget(hostel._id)}>
                     <Trash2 size={14} className="text-danger" />
-                  </Button>
+                  </IconButton>
                 </div>
               </div>
 
@@ -240,67 +248,53 @@ export default function HostelList() {
       />
 
       {/* Add/Edit Hostel Modal */}
-      <Modal isOpen={isOpen} onClose={handleClose} size="2xl" scrollBehavior="inside">
-        <ModalContent>
-          <ModalHeader className="text-fg">
-            {editingId ? "Edit Hostel" : "Add Hostel"}
-          </ModalHeader>
-          <ModalBody className="gap-4">
-            <Input
-              label={t('pages.hostelName')} isRequired
-              value={formData.name}
-              onValueChange={(v) => setFormData(p => ({ ...p, name: v }))}
-              isInvalid={!!errors.name} errorMessage={errors.name}
-            />
-            <Select
-              label={t('pages.type1')} isRequired
-              selectedKeys={[formData.type]}
-              onSelectionChange={(keys) => setFormData(p => ({ ...p, type: [...keys][0] }))}
-              isInvalid={!!errors.type} errorMessage={errors.type}
-            >
-              <SelectItem key="boys">{t('pages.boys')}</SelectItem>
-              <SelectItem key="girls">{t('pages.girls')}</SelectItem>
-              <SelectItem key="mixed">{t('pages.mixed')}</SelectItem>
-            </Select>
-            <Select
-              label="Warden"
-              selectedKeys={formData.wardenId ? [formData.wardenId] : []}
-              onSelectionChange={(keys) => {
-                const value = [...keys][0] || "";
-                setFormData(p => ({ ...p, wardenId: value }));
-              }}
-            >
-              {staffList.map((staff) => (
-                <SelectItem key={staff.id || staff._id} textValue={staff.name}>
-                  <div className="flex items-center gap-2">
-                    <Avatar
-                      name={staff.name}
-                      src={staff.photo || staff.picture}
-                      className="w-6 h-6 text-tiny"
-                    />
-                    <span>{staff.name}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </Select>
-            <Input
-              label={t('pages.address2')}
-              value={formData.address}
-              onValueChange={(v) => setFormData(p => ({ ...p, address: v }))}
-            />
-            <Input
-              label={t('pages.description1')}
-              value={formData.description}
-              onValueChange={(v) => setFormData(p => ({ ...p, description: v }))}
-            />
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="flat" onPress={handleClose}>{t('pages.cancel2')}</Button>
-            <Button color="primary" onPress={handleSubmit} isLoading={saving}>
-              {editingId ? "Update" : "Create"}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
+      <Modal isOpen={isOpen} onClose={handleClose} size="xl" scrollBehavior="inside">
+        <Modal.Header>{editingId ? "Edit Hostel" : "Add Hostel"}</Modal.Header>
+        <Modal.Body className="gap-4">
+          <Input
+            label={t('pages.hostelName')} isRequired
+            value={formData.name}
+            onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))}
+            isInvalid={!!errors.name} errorMessage={errors.name}
+          />
+          <Select
+            label={t('pages.type1')} isRequired
+            value={formData.type}
+            onChange={(e) => setFormData(p => ({ ...p, type: e.target.value }))}
+            isInvalid={!!errors.type} errorMessage={errors.type}
+          >
+            <option value="boys">{t('pages.boys')}</option>
+            <option value="girls">{t('pages.girls')}</option>
+            <option value="mixed">{t('pages.mixed')}</option>
+          </Select>
+          <Select
+            label="Warden"
+            value={formData.wardenId}
+            onChange={(e) => setFormData(p => ({ ...p, wardenId: e.target.value }))}
+          >
+            {staffList.map((staff) => (
+              <option key={staff.id || staff._id} value={staff.id || staff._id}>
+                {staff.name}
+              </option>
+            ))}
+          </Select>
+          <Input
+            label={t('pages.address2')}
+            value={formData.address}
+            onChange={(e) => setFormData(p => ({ ...p, address: e.target.value }))}
+          />
+          <Input
+            label={t('pages.description1')}
+            value={formData.description}
+            onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
+          />
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="ghost" onClick={handleClose}>{t('pages.cancel2')}</Button>
+          <Button variant="primary" onClick={handleSubmit} loading={saving}>
+            {editingId ? "Update" : "Create"}
+          </Button>
+        </Modal.Footer>
       </Modal>
     </div>
   );
