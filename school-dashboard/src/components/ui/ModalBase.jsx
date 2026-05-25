@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
 
 /**
@@ -121,16 +121,18 @@ export default function ModalBase({
     return () => document.removeEventListener("keydown", handleKeyDown, true);
   }, [isOpen, handleKeyDown]);
 
-  const portalRef = useRef(null);
-  if (!portalRef.current) {
+  const [portalEl, setPortalEl] = useState(null);
+
+  useLayoutEffect(() => {
+    if (typeof document === "undefined") return;
     let el = document.getElementById(portalId);
     if (!el) {
       el = document.createElement("div");
       el.id = portalId;
       document.body.appendChild(el);
     }
-    portalRef.current = el;
-  }
+    setPortalEl(el);
+  }, [portalId]);
 
   const handleClick = useCallback(
     (e) => {
@@ -144,7 +146,7 @@ export default function ModalBase({
     [closeOnBackdrop, onClose]
   );
 
-  if (!isOpen) return null;
+  if (!isOpen || !portalEl) return null;
 
   return createPortal(
     <div
@@ -161,6 +163,6 @@ export default function ModalBase({
     >
       {children}
     </div>,
-    portalRef.current
+    portalEl
   );
 }
