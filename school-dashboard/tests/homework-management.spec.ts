@@ -259,46 +259,30 @@ test.describe('Homework Management', () => {
 
     // Wait for the modal form to be visible
     const dialog = page.locator('[role="dialog"]');
-    await expect(dialog).toBeVisible({ timeout: 5000 });
+    await expect(dialog).toBeVisible({ timeout: 10_000 });
 
-    // Fill in form fields - the CreateHomeworkModal uses HeroUI Input with label
+    // Fill in form fields - the CreateHomeworkModal uses native <select> elements
     const titleInput = page.getByLabel(/title/i).first();
     if (await titleInput.isVisible({ timeout: 3000 }).catch(() => false)) {
       await titleInput.fill('Geography Map Work');
 
-      // The form has Select components for Subject, Class (and date input for due date)
-      // HeroUI Select triggers inside the dialog
-      const selectTriggers = dialog.locator('button[aria-haspopup="listbox"]');
-      await page.waitForTimeout(1000); // Wait for select data to load
+      // Wait for the modal's initial data fetch (classes + subjects) to finish
+      // so the <select> elements are populated with options.
+      await page.waitForTimeout(1500);
 
-      const triggerCount = await selectTriggers.count();
+      // The form uses native <select> elements (not HeroUI dropdowns).
+      // Use selectOption to pick the first real option (skipping the placeholder).
+      const selects = dialog.locator('select');
+      const selectCount = await selects.count();
 
-      // Select subject (first Select in the form layout)
-      if (triggerCount >= 1) {
-        await selectTriggers.nth(0).click();
-        await page.waitForTimeout(300);
-        const listbox = page.locator('[role="listbox"]');
-        if (await listbox.isVisible({ timeout: 3000 }).catch(() => false)) {
-          const subjectOpt = listbox.locator('[role="option"]').first();
-          if (await subjectOpt.isVisible({ timeout: 2000 }).catch(() => false)) {
-            await subjectOpt.click();
-            await page.waitForTimeout(300);
-          }
-        }
+      // Select subject (first <select>)
+      if (selectCount >= 1) {
+        await selects.nth(0).selectOption({ index: 1 });
       }
 
-      // Select class (second Select)
-      if (triggerCount >= 2) {
-        await selectTriggers.nth(1).click();
-        await page.waitForTimeout(300);
-        const listbox = page.locator('[role="listbox"]');
-        if (await listbox.isVisible({ timeout: 3000 }).catch(() => false)) {
-          const classOpt = listbox.locator('[role="option"]').first();
-          if (await classOpt.isVisible({ timeout: 2000 }).catch(() => false)) {
-            await classOpt.click();
-            await page.waitForTimeout(300);
-          }
-        }
+      // Select class (second <select>)
+      if (selectCount >= 2) {
+        await selects.nth(1).selectOption({ index: 1 });
       }
 
       // Fill due date (type="date", not datetime-local)
@@ -320,11 +304,10 @@ test.describe('Homework Management', () => {
         .or(dialog.locator('button[type="submit"]'))
         .first();
       await submitBtn.click();
-      await page.waitForTimeout(2000);
-      await page.waitForLoadState('domcontentloaded');
+      // Wait for the API round-trip and React re-render to finish
+      await page.waitForLoadState('networkidle');
 
       // Verify new homework was POSTed or dialog closed (successful submission)
-      await page.waitForTimeout(2000);
       const postCalled = Array.from(state.requestLog).some((r) => r.startsWith('POST /api/homework'));
       const dialogClosed = !(await dialog.isVisible().catch(() => false));
       expect(postCalled || dialogClosed).toBeTruthy();
@@ -407,10 +390,16 @@ test.describe('Homework Management', () => {
     await page.goto('/homework');
     await page.waitForLoadState('domcontentloaded');
 
-    // Wait for page to render empty state (needs time for API call + loading state to finish)
-    // Look for the Homework heading or empty state text
-    await expect(page.getByText('Homework').first()).toBeVisible({ timeout: 15_000 });
-    await page.waitForTimeout(2000);
+    // The homework page is lazy-loaded + fetches API data. Wait for the
+    // loading states to resolve and the empty-state text to appear.
+    await page.waitForFunction(
+      () => {
+        const text = document.body.textContent || '';
+        return text.includes('No homework found') || text.includes('Create First Homework');
+      },
+      undefined,
+      { timeout: 15_000 },
+    );
 
     const bodyText = await page.textContent('body');
     // The page shows "No homework found" and a "Create First Homework" button

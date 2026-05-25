@@ -175,9 +175,10 @@ test.describe('Hostel Management — Hostels, Rooms & Allocations', () => {
       }
     }
 
-    // Confirm deletion
-    const confirmBtn = page.getByRole('button', { name: /confirm|yes|delete|ok/i }).first();
-    if (await confirmBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+    // Confirm deletion — wait for the design-system ConfirmDialog to mount
+    const confirmDialog = page.locator('[data-testid="ds-confirm-dialog"]');
+    if (await confirmDialog.isVisible({ timeout: 5000 }).catch(() => false)) {
+      const confirmBtn = confirmDialog.getByRole('button', { name: /delete/i });
       await confirmBtn.click();
       await page.waitForTimeout(500);
     }
