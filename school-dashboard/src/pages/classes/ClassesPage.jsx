@@ -8,6 +8,7 @@ import { CreateDrawer } from "../../components/create/CreateDrawer";
 import useTodayPeriods from "./hooks/useTodayPeriods";
 import TodayView from "./views/TodayView";
 import ByClassView from "./views/ByClassView";
+import { PageShell } from "../../components/ui";
 
 // REVAMP-19 — Classes hub shell. Today view (period-led) + By-class tile grid
 // behind a segmented toggle, URL state via ?view=. Period strip / fallthrough
@@ -49,13 +50,10 @@ export default function ClassesPage() {
   })();
 
   return (
-    <div className="page" style={{ paddingBottom: 24 }}>
-      <div className="page__head">
-        <div>
-          <h1 className="page__title">Classes</h1>
-          <div className="page__sub mono tnum">{subLine}</div>
-        </div>
-
+    <PageShell
+      title="Classes"
+      description={subLine}
+      actions={
         <div className="row gap-2">
           <div className="seg" role="tablist" aria-label="Classes view">
             <button
@@ -85,19 +83,26 @@ export default function ClassesPage() {
             <Plus size={13} aria-hidden /> Add class
           </button>
         </div>
+      }
+      breadcrumbs={[
+        { label: "Home", href: "/" },
+        { label: "Classes" },
+      ]}
+      bodyPadding="none"
+    >
+      <div className="flex flex-col" style={{ paddingBottom: 24 }}>
+        {view === "today" ? (
+          <TodayView retrospectiveOverride={false} />
+        ) : (
+          <ByClassView />
+        )}
       </div>
-
-      {view === "today" ? (
-        <TodayView retrospectiveOverride={false} />
-      ) : (
-        <ByClassView />
-      )}
 
       <AddClassDrawer
         isOpen={isAddOpen}
         onClose={() => setIsAddOpen(false)}
       />
-    </div>
+    </PageShell>
   );
 }
 

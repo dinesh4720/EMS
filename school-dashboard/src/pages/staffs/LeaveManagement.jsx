@@ -3,11 +3,12 @@ import { useNavigate } from "react-router-dom";
 import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea,
 } from "@heroui/react";
-import { ArrowLeft, Check, X, AlertTriangle, CalendarRange } from "lucide-react";
+import { Check, X, AlertTriangle, CalendarRange } from "lucide-react";
 import { staffAttendanceApi } from "../../services/api/classes";
 import toast from "react-hot-toast";
 import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import { TablePageSkeleton } from "../../components/skeletons/PageSkeletons";
+import { PageHeader, Breadcrumbs } from "../../components/ui";
 
 function safeFormat(dateStr) {
   if (!dateStr) return "—";
@@ -146,33 +147,33 @@ export default function LeaveManagement() {
 
   return (
     <div className="page">
-      <div className="page__head">
-        <div className="row" style={{ alignItems: "center", gap: 8 }}>
-          <button
-            type="button"
-            className="iconbtn"
-            onClick={() => navigate("/staffs/attendance")}
-            aria-label="Back to attendance"
-          >
-            <ArrowLeft size={14} />
-          </button>
-          <div>
-            <h1 className="page__title">Leave Requests</h1>
-            <div className="page__sub">
-              <span className="mono tnum">{leaves.length}</span> pending
-              {overlapMap.size > 0 && (
-                <>
-                  {" · "}
-                  <span className="status status--warn" style={{ marginLeft: 4 }}>
-                    <span className="dot" />
-                    {overlapMap.size} overlap{overlapMap.size === 1 ? "" : "s"}
-                  </span>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Leave Requests"
+        description={
+          <span className="row gap-1">
+            <span className="mono tnum">{leaves.length}</span> pending
+            {overlapMap.size > 0 && (
+              <>
+                {" · "}
+                <span className="status status--warn" style={{ marginLeft: 4 }}>
+                  <span className="dot" />
+                  {overlapMap.size} overlap{overlapMap.size === 1 ? "" : "s"}
+                </span>
+              </>
+            )}
+          </span>
+        }
+        breadcrumb={
+          <Breadcrumbs
+            size="sm"
+            items={[
+              { label: "Staff", href: "/staffs" },
+              { label: "Attendance", href: "/staffs/attendance" },
+              { label: "Leave Requests" },
+            ]}
+          />
+        }
+      />
 
       {leaves.length === 0 ? (
         <div className="card" style={{ textAlign: "center", padding: 48 }}>

@@ -11,6 +11,7 @@ import ToolbarSearch from "../../components/ui/ToolbarSearch";
 import ErrorState from "../../components/ui/ErrorState";
 import { TablePageSkeleton } from "../../components/skeletons/PageSkeletons";
 import logger from "../../utils/logger";
+import { PageShell } from "../../components/ui";
 
 const VALID_FILTERS = new Set(["all", "paid", "pending", "overdue"]);
 
@@ -96,13 +97,44 @@ export default function FeesPage() {
     return `${today} · ${inrFmt.format(kpis.collectedToday)} collected`;
   }, [kpis.collectedToday]);
 
+  const toolbar = (
+    <div className="toolbar" style={{ borderBottom: "none", paddingTop: 0 }}>
+      <ToolbarSearch
+        value={search}
+        onChange={setSearch}
+        urlParam="q"
+        placeholder="Search students, receipt no…"
+        ariaLabel="Search payments"
+        style={{ flex: 1, maxWidth: 360 }}
+      />
+
+      <div className="seg" role="tablist" aria-label="Filter payments">
+        {[
+          { key: "all", label: "All" },
+          { key: "pending", label: "Pending" },
+          { key: "overdue", label: "Overdue" },
+          { key: "paid", label: "Paid" },
+        ].map((f) => (
+          <button
+            key={f.key}
+            type="button"
+            role="tab"
+            aria-selected={status === f.key}
+            className={`seg__btn${status === f.key ? " is-active" : ""}`}
+            onClick={() => setStatus(f.key)}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
-    <div className="page fees-page">
-      <div className="page__head">
-        <div>
-          <h1 className="page__title">Fees</h1>
-          <div className="page__sub mono tnum">{subLine}</div>
-        </div>
+    <PageShell
+      title="Fees"
+      description={subLine}
+      actions={
         <div className="row gap-2">
           <button
             type="button"
@@ -125,64 +157,41 @@ export default function FeesPage() {
             <Plus size={13} aria-hidden /> Collect payment
           </button>
         </div>
+      }
+      toolbar={toolbar}
+      breadcrumbs={[
+        { label: "Home", href: "/" },
+        { label: "Fees" },
+      ]}
+      bodyPadding="none"
+    >
+      <div className="fees-page" style={{ paddingBottom: 24 }}>
+        <FeesKpiStrip kpis={kpis} activeFilter={status} onFilterChange={setStatus} />
+
+        {isLoading ? (
+          <TablePageSkeleton kpiCards={3} columns={6} rows={8} />
+        ) : isError ? (
+          <ErrorState
+            title="Unable to load payments"
+            error={error}
+            onRetry={refetch}
+            size="lg"
+          />
+        ) : (
+          <PaymentsTable
+            rows={filtered}
+            onCollect={openSheet}
+            onSendReminder={onSendReminder}
+          />
+        )}
+
+        <PaymentSheet
+          isOpen={sheetOpen}
+          onClose={closeSheet}
+          prefilledStudentId={studentParam || null}
+          onCollected={() => refetch?.()}
+        />
       </div>
-
-      <FeesKpiStrip kpis={kpis} activeFilter={status} onFilterChange={setStatus} />
-
-      <div className="toolbar" style={{ borderBottom: "none", paddingTop: 0 }}>
-        <ToolbarSearch
-          value={search}
-          onChange={setSearch}
-          urlParam="q"
-          placeholder="Search students, receipt no…"
-          ariaLabel="Search payments"
-          style={{ flex: 1, maxWidth: 360 }}
-        />
-
-        <div className="seg" role="tablist" aria-label="Filter payments">
-          {[
-            { key: "all", label: "All" },
-            { key: "pending", label: "Pending" },
-            { key: "overdue", label: "Overdue" },
-            { key: "paid", label: "Paid" },
-          ].map((f) => (
-            <button
-              key={f.key}
-              type="button"
-              role="tab"
-              aria-selected={status === f.key}
-              className={`seg__btn${status === f.key ? " is-active" : ""}`}
-              onClick={() => setStatus(f.key)}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {isLoading ? (
-        <TablePageSkeleton kpiCards={3} columns={6} rows={8} />
-      ) : isError ? (
-        <ErrorState
-          title="Unable to load payments"
-          error={error}
-          onRetry={refetch}
-          size="lg"
-        />
-      ) : (
-        <PaymentsTable
-          rows={filtered}
-          onCollect={openSheet}
-          onSendReminder={onSendReminder}
-        />
-      )}
-
-      <PaymentSheet
-        isOpen={sheetOpen}
-        onClose={closeSheet}
-        prefilledStudentId={studentParam || null}
-        onCollected={() => refetch?.()}
-      />
-    </div>
+    </PageShell>
   );
 }

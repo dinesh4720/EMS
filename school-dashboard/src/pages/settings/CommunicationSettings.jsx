@@ -451,7 +451,7 @@ export default function CommunicationSettings() {
             </button>
           </div>
 
-          <div className="bg-surface border border-border-token rounded-xl overflow-hidden shadow-sm dark:shadow-zinc-900/50">
+          <div className="bg-surface border border-border-token rounded-xl overflow-hidden shadow-sm">
             {/* Toolbar */}
             <div className="flex flex-col sm:flex-row justify-between gap-4 items-center bg-surface-2/50 border-b border-border-token py-4 px-6">
               <div className="w-full sm:w-auto">
@@ -567,8 +567,8 @@ export default function CommunicationSettings() {
                   key={`variable-${v}`}
                   size="sm"
                   variant="flat"
-                  className="cursor-pointer hover:bg-surface -2 hover:shadow-sm transition-all border border-transparent hover:border-border-token"
-                  classNames={{ base: "h-7 bg-surface shadow-sm dark:shadow-zinc-900/50 border border-border-token ", content: "text-xs font-mono font-medium text-fg" }}
+                  className="cursor-pointer hover:bg-surface-2 hover:shadow-sm transition-all border border-transparent hover:border-border-token"
+                  classNames={{ base: "h-7 bg-surface shadow-sm border border-border-token ", content: "text-xs font-mono font-medium text-fg" }}
                 >
                   {v}
                 </Chip>

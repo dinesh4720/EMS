@@ -6,6 +6,7 @@ import useAcademicsData from "../../hooks/useAcademicsData";
 import AcademicsKpiStrip from "../../components/academics/AcademicsKpiStrip";
 import ExamsTable from "../../components/academics/ExamsTable";
 import ToolbarSearch from "../../components/ui/ToolbarSearch";
+import { PageShell } from "../../components/ui";
 
 const VALID_FILTERS = new Set(["all", "upcoming", "drafts", "published", "completed"]);
 
@@ -47,15 +48,45 @@ export default function AcademicsPage() {
     day: "numeric",
   });
 
+  const toolbar = (
+    <div className="toolbar" style={{ borderBottom: "none", paddingTop: 0 }}>
+      <ToolbarSearch
+        value={search}
+        onChange={setSearch}
+        urlParam="q"
+        placeholder="Search exams, subjects…"
+        ariaLabel="Search exams"
+        style={{ flex: 1, maxWidth: 360 }}
+      />
+
+      <div className="seg" role="tablist" aria-label="Filter exams">
+        {[
+          { key: "all", label: "All" },
+          { key: "upcoming", label: "Upcoming" },
+          { key: "drafts", label: "Drafts" },
+          { key: "published", label: "Published" },
+          { key: "completed", label: "Completed" },
+        ].map((f) => (
+          <button
+            key={f.key}
+            type="button"
+            role="tab"
+            aria-selected={status === f.key}
+            className={`seg__btn${status === f.key ? " is-active" : ""}`}
+            onClick={() => setStatus(f.key)}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
-    <div className="page academics-page">
-      <div className="page__head">
-        <div>
-          <h1 className="page__title">Academics</h1>
-          <div className="page__sub mono tnum">
-            {todayLabel} · {kpis.upcomingCount} upcoming · {kpis.publishedCount} published
-          </div>
-        </div>
+    <PageShell
+      title="Academics"
+      description={`${todayLabel} · ${kpis.upcomingCount} upcoming · ${kpis.publishedCount} published`}
+      actions={
         <div className="row gap-2">
           <button
             type="button"
@@ -72,49 +103,25 @@ export default function AcademicsPage() {
             <Plus size={13} aria-hidden /> New exam
           </button>
         </div>
+      }
+      toolbar={toolbar}
+      breadcrumbs={[
+        { label: "Home", href: "/" },
+        { label: "Academics" },
+      ]}
+      bodyPadding="none"
+    >
+      <div className="academics-page" style={{ paddingBottom: 24 }}>
+        <AcademicsKpiStrip kpis={kpis} />
+
+        {isLoading ? (
+          <div className="academics-table">
+            <div className="academics-table__empty">Loading exams…</div>
+          </div>
+        ) : (
+          <ExamsTable rows={filtered} onEnterResults={onEnterResults} />
+        )}
       </div>
-
-      <AcademicsKpiStrip kpis={kpis} />
-
-      <div className="toolbar" style={{ borderBottom: "none", paddingTop: 0 }}>
-        <ToolbarSearch
-          value={search}
-          onChange={setSearch}
-          urlParam="q"
-          placeholder="Search exams, subjects…"
-          ariaLabel="Search exams"
-          style={{ flex: 1, maxWidth: 360 }}
-        />
-
-        <div className="seg" role="tablist" aria-label="Filter exams">
-          {[
-            { key: "all", label: "All" },
-            { key: "upcoming", label: "Upcoming" },
-            { key: "drafts", label: "Drafts" },
-            { key: "published", label: "Published" },
-            { key: "completed", label: "Completed" },
-          ].map((f) => (
-            <button
-              key={f.key}
-              type="button"
-              role="tab"
-              aria-selected={status === f.key}
-              className={`seg__btn${status === f.key ? " is-active" : ""}`}
-              onClick={() => setStatus(f.key)}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {isLoading ? (
-        <div className="academics-table">
-          <div className="academics-table__empty">Loading exams…</div>
-        </div>
-      ) : (
-        <ExamsTable rows={filtered} onEnterResults={onEnterResults} />
-      )}
-    </div>
+    </PageShell>
   );
 }

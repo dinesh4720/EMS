@@ -1,7 +1,7 @@
 import React, { useMemo, useState, lazy, Suspense, useCallback } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
-  ChevronRight,
+
   Mail,
   Download,
   Plus,
@@ -40,6 +40,7 @@ import {
 } from "./hooks";
 
 import PhotoAvatar from "../../components/PhotoAvatar";
+import { Breadcrumbs } from "../../components/ui";
 import { DetailPageSkeleton } from "../../components/skeletons/PageSkeletons";
 import EmptyState from "../../components/ui/EmptyState";
 import ErrorState from "../../components/ui/ErrorState";
@@ -728,32 +729,14 @@ export default function StudentDashboard() {
       {/* Page head */}
       <div className="page__head">
         <div>
-          <div
-            className="row gap-2 subtle"
-            style={{ fontSize: 12, marginBottom: 4 }}
-          >
-            <Link
-              to="/students"
-              className="subtle"
-              style={{ textDecoration: "none" }}
-            >
-              Students
-            </Link>
-            <ChevronRight
-              size={11}
-              style={{ color: "var(--fg-faint)" }}
-              aria-hidden
-            />
-            <span>Class {className || "—"}</span>
-            <ChevronRight
-              size={11}
-              style={{ color: "var(--fg-faint)" }}
-              aria-hidden
-            />
-            <span style={{ color: "var(--fg)", fontWeight: 520 }}>
-              {student.name}
-            </span>
-          </div>
+          <Breadcrumbs
+            size="sm"
+            items={[
+              { label: "Students", href: "/students" },
+              { label: `Class ${className || "—"}` },
+              { label: student.name },
+            ]}
+          />
 
           {/* Hero */}
           <div className="row gap-3" style={{ alignItems: "flex-end" }}>
