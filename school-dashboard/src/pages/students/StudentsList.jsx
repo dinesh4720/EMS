@@ -7,7 +7,9 @@ import {
 } from "react";
 import { useSearchParams } from "react-router-dom";
 // Translations removed — all text is plain English to match StaffList style
-import { Plus } from "lucide-react";
+import { Plus, Users } from "lucide-react";
+import EmptyState from "../../components/ui/EmptyState";
+import Pagination from "../../components/common/Pagination";
 import { useNavigate } from "react-router-dom";
 import { useStudentsListData } from "./hooks/useStudentsListData";
 import EditStudentDrawer from "./EditStudentDrawer";
@@ -277,6 +279,24 @@ export default function StudentsList({ onAddStudent }) {
   const closeDetail = () => setSelectedId(null);
   const detailVisible = !!selectedStudentRecord;
 
+  // ============ Pagination ============
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(visibleItems.length / pageSize)),
+    [visibleItems.length, pageSize]
+  );
+
+  const paginatedItems = useMemo(
+    () => visibleItems.slice((page - 1) * pageSize, page * pageSize),
+    [visibleItems, page, pageSize]
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, statusFilter, activeFiltersCount]);
+
   const {
     csvFile, setCsvFile, csvDragActive, csvProcessing,
     validatedStudents, previewFilter, setPreviewFilter, importProgress,
@@ -376,14 +396,31 @@ export default function StudentsList({ onAddStudent }) {
           }}
         >
           {visibleItems.length === 0 ? (
-            <div
-              className="subtle"
-              style={{ padding: 32, textAlign: "center", fontSize: 13 }}
-            >
-              No students matched.
-            </div>
+            <EmptyState
+              icon={Users}
+              title={students.length === 0 ? "No students yet" : "No students matched"}
+              description={
+                students.length === 0
+                  ? "Get started by adding your first student."
+                  : activeFiltersCount > 0 || searchQuery
+                  ? "Try adjusting your filters or search query."
+                  : "No students found for the current view."
+              }
+              action={
+                students.length === 0 ? (
+                  <button type="button" className="btn btn--accent" onClick={onAddStudent}>
+                    <Plus size={13} aria-hidden /> New Student
+                  </button>
+                ) : (
+                  <button type="button" className="btn btn--ghost" onClick={clearAllFilters}>
+                    Clear filters
+                  </button>
+                )
+              }
+              size="md"
+            />
           ) : (
-            visibleItems.map((student) => {
+            paginatedItems.map((student) => {
               const id = String(student.id || student._id);
               return (
                 <StudentListRow
@@ -404,6 +441,37 @@ export default function StudentsList({ onAddStudent }) {
             })
           )}
         </div>
+
+        {/* Pagination footer */}
+        {visibleItems.length > 0 && (
+          <div
+            className="flex items-center justify-between px-4 py-2 border-t"
+            style={{ borderColor: "var(--divider)" }}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-sm" style={{ color: "var(--fg-muted)" }}>Show</span>
+              <select
+                className="select select--sm"
+                value={pageSize}
+                onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+                aria-label="Items per page"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+              <span className="text-sm" style={{ color: "var(--fg-muted)" }}>per page</span>
+            </div>
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              totalItems={visibleItems.length}
+              itemLabel="students"
+            />
+          </div>
+        )}
 
       </div>
 
