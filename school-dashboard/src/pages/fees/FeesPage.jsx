@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { Plus, BellRing, Printer } from "lucide-react";
 import toast from "react-hot-toast";
 
-import useFeesData from "../../hooks/useFeesData";
+import useFeesData, { derivePaymentStatus } from "../../hooks/useFeesData";
 import FeesKpiStrip from "../../components/fees/FeesKpiStrip";
 import PaymentsTable from "../../components/fees/PaymentsTable";
 import PaymentSheet from "../../components/fees/PaymentSheet";
@@ -39,7 +39,7 @@ export default function FeesPage() {
     setSheetOpen(true);
   }
 
-  const { filtered, kpis, isLoading, isError, error, refetch } = useFeesData({ status, search });
+  const { payments, filtered, kpis, isLoading, isError, error, refetch } = useFeesData({ status, search });
 
   const setStatus = (next) => {
     setSearchParams(
@@ -81,7 +81,7 @@ export default function FeesPage() {
 
   const onSendReminder = async (ids) => {
     if (!ids?.length) return;
-    const studentIds = filtered
+    const studentIds = payments
       .filter((p) => ids.includes(p._id || p.id))
       .map((p) => p.student?._id || p.studentId)
       .filter(Boolean);
@@ -123,8 +123,9 @@ export default function FeesPage() {
             type="button"
             className="btn"
             onClick={() => {
-              const overdueIds = filtered
-                .filter((p) => (p.studentId?._id || p.studentId))
+              const overdueIds = payments
+                .filter((p) => derivePaymentStatus(p) === "overdue")
+                .filter((p) => (p.studentId?._id || p.studentId || p.student?._id))
                 .map((p) => p._id || p.id);
               onSendReminder(overdueIds);
             }}

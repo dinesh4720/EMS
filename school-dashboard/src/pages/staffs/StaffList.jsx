@@ -5,7 +5,7 @@ import {
   useState,
   useCallback,
 } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Plus, MessageSquare, CheckCircle2, Printer, Download } from "lucide-react";
 import SkeletonTable from "../../components/skeletons/SkeletonTable";
 import { useApp } from "../../context/AppContext";
@@ -72,6 +72,7 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
   const { staff = [], staffAttendance, loading } = useApp();
 
   // ============ Routing first (Step 1) ============
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedId = searchParams.get("id") || null;
   const initialQ = searchParams.get("q") || "";
