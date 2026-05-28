@@ -1,16 +1,18 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { z } from 'zod';
 import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   Input, Select, SelectItem, Textarea,
 } from "@heroui/react";
-import { Search, Plus, Edit3, Trash2, ArrowDownToLine, ArrowUpFromLine, Package } from "lucide-react";
+import { Search, Plus, Edit3, Trash2, ArrowDownToLine, ArrowUpFromLine, Package, Printer } from "lucide-react";
 import { MinimalButton, Card, Badge, EmptyState, ErrorState, IconButton } from "../../components/ui";
 import { inventoryApi, staffApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import ExportMenu from '../../components/ui/ExportMenu';
+import PrintPreviewModal from '../../components/ui/PrintPreviewModal';
 
 const CATEGORIES = ["FURNITURE", "ELECTRONICS", "LAB_EQUIPMENT", "SPORTS", "STATIONERY", "VEHICLE", "OTHER"];
 const CONDITIONS = ["GOOD", "FAIR", "POOR", "DAMAGED"];
@@ -50,6 +52,9 @@ export default function Assets() {
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterCondition, setFilterCondition] = useState("all");
+  const [filterLocation, setFilterLocation] = useState("all");
+  const [printOpen, setPrintOpen] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -64,6 +69,19 @@ export default function Assets() {
 
   const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
   const filterRef = useRef({ search, filterCategory, filterStatus });
+
+  const locations = useMemo(() => {
+    const set = new Set(assets.map((a) => a.location).filter(Boolean));
+    return [...set].sort();
+  }, [assets]);
+
+  const filteredAssets = useMemo(() => {
+    return assets.filter((a) => {
+      if (filterCondition !== "all" && a.condition !== filterCondition) return false;
+      if (filterLocation !== "all" && a.location !== filterLocation) return false;
+      return true;
+    });
+  }, [assets, filterCondition, filterLocation]);
 
   const fetchAssets = useCallback(async (pageToLoad = page) => {
     try {
@@ -240,10 +258,56 @@ export default function Assets() {
             <SelectItem key="all">{t('pages.allStatus1')}</SelectItem>
             {STATUSES.map((o) => <SelectItem key={o}>{o.replace(/_/g, " ")}</SelectItem>)}
           </Select>
+          <Select
+            selectedKeys={[filterCondition]}
+            onSelectionChange={(keys) => setFilterCondition([...keys][0] || "all")}
+            size="sm"
+            className="w-44"
+            aria-label="Filter by condition"
+          >
+            <SelectItem key="all">All Conditions</SelectItem>
+            {CONDITIONS.map((o) => <SelectItem key={o}>{o}</SelectItem>)}
+          </Select>
+          <Select
+            selectedKeys={[filterLocation]}
+            onSelectionChange={(keys) => setFilterLocation([...keys][0] || "all")}
+            size="sm"
+            className="w-44"
+            aria-label="Filter by location"
+          >
+            <SelectItem key="all">All Locations</SelectItem>
+            {locations.map((o) => <SelectItem key={o}>{o}</SelectItem>)}
+          </Select>
         </div>
-        <MinimalButton variant="primary" size="sm" icon={<Plus size={16} />} onClick={openCreate}>
-          {t('pages.addAsset')}
-        </MinimalButton>
+        <div className="flex gap-2">
+          <ExportMenu
+            rows={filteredAssets}
+            columns={[
+              { key: "name", label: "Name" },
+              { key: "category", label: "Category", accessor: (a) => a.category?.replace(/_/g, " ") || "—" },
+              { key: "location", label: "Location" },
+              { key: "assignedTo", label: "Assigned To", accessor: (a) => a.assignedTo?.name || a.assignedToName || "—" },
+              { key: "quantity", label: "Qty" },
+              { key: "currentValue", label: "Current Value", accessor: (a) => a.currentValue != null ? `₹${Number(a.currentValue).toLocaleString()}` : "—" },
+              { key: "condition", label: "Condition" },
+              { key: "status", label: "Status", accessor: (a) => a.status?.replace(/_/g, " ") || "—" },
+              { key: "vendor", label: "Vendor", accessor: (a) => a.vendorId?.name || "—" },
+            ]}
+            filename="assets"
+            title="Assets"
+          />
+          <button
+            type="button"
+            className="btn btn--sm"
+            onClick={() => setPrintOpen(true)}
+            aria-label="Print preview"
+          >
+            <Printer size={14} aria-hidden />
+          </button>
+          <MinimalButton variant="primary" size="sm" icon={<Plus size={16} />} onClick={openCreate}>
+            {t('pages.addAsset')}
+          </MinimalButton>
+        </div>
       </div>
 
       {/* Table */}
@@ -261,7 +325,7 @@ export default function Assets() {
                 </tr>
               </thead>
               <tbody className={loading ? "opacity-50 pointer-events-none" : ""}>
-                {assets.length === 0 ? (
+                {filteredAssets.length === 0 ? (
                   <tr>
                     <td colSpan={10}>
                       <EmptyState
@@ -272,7 +336,7 @@ export default function Assets() {
                     </td>
                   </tr>
                 ) : (
-                  assets.map((a) => (
+                  filteredAssets.map((a) => (
                     <tr key={a._id} className="border-b border-divider hover:bg-surface-hover">
                       <td className="px-4 py-3">
                         <p className="font-medium text-fg">{a.name}</p>
@@ -315,7 +379,7 @@ export default function Assets() {
       )}
 
       {/* Pagination */}
-      {!loadError && assets.length > 0 && (
+      {!loadError && filteredAssets.length > 0 && (
         <div className="flex items-center justify-between px-1">
           <p className="text-sm text-fg-muted">
             {t('pages.assetsTotal', { count: total })}
@@ -398,6 +462,46 @@ export default function Assets() {
         confirmText="Delete"
         variant="danger"
       />
+
+      <PrintPreviewModal
+        isOpen={printOpen}
+        onClose={() => setPrintOpen(false)}
+        title="Assets"
+      >
+        <div className="p-6">
+          <h1 className="text-lg font-semibold mb-4">Assets</h1>
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-2 px-3">Name</th>
+                <th className="text-left py-2 px-3">Category</th>
+                <th className="text-left py-2 px-3">Location</th>
+                <th className="text-left py-2 px-3">Assigned To</th>
+                <th className="text-left py-2 px-3">Qty</th>
+                <th className="text-left py-2 px-3">Current Value</th>
+                <th className="text-left py-2 px-3">Condition</th>
+                <th className="text-left py-2 px-3">Status</th>
+                <th className="text-left py-2 px-3">Vendor</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredAssets.map((a) => (
+                <tr key={a._id} className="border-b">
+                  <td className="py-2 px-3">{a.name}</td>
+                  <td className="py-2 px-3">{a.category?.replace(/_/g, " ") || "—"}</td>
+                  <td className="py-2 px-3">{a.location || "—"}</td>
+                  <td className="py-2 px-3">{a.assignedTo?.name || a.assignedToName || "—"}</td>
+                  <td className="py-2 px-3">{a.quantity}</td>
+                  <td className="py-2 px-3">{a.currentValue != null ? `₹${Number(a.currentValue).toLocaleString()}` : "—"}</td>
+                  <td className="py-2 px-3">{a.condition}</td>
+                  <td className="py-2 px-3">{a.status?.replace(/_/g, " ") || "—"}</td>
+                  <td className="py-2 px-3">{a.vendorId?.name || "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </PrintPreviewModal>
 
       {/* Stock In / Stock Out Modal */}
       <Modal isOpen={!!stockTarget} onOpenChange={(open) => { if (!open) { setStockTarget(null); setStockQty(""); } }} size="sm">

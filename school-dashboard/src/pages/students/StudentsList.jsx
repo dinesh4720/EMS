@@ -7,7 +7,7 @@ import {
 } from "react";
 import { useSearchParams } from "react-router-dom";
 // Translations removed — all text is plain English to match StaffList style
-import { Plus } from "lucide-react";
+import { Plus, Printer } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useStudentsListData } from "./hooks/useStudentsListData";
 import EditStudentDrawer from "./EditStudentDrawer";
@@ -19,6 +19,8 @@ import StudentsBulkModals from "./components/list/StudentsBulkModals";
 // Removed StudentsTableProvider — no longer needed with row-list layout
 import StudentListRow from "./StudentListRow";
 import StudentDetailPane from "./StudentDetailPane";
+import ExportMenu from "../../components/ui/ExportMenu";
+import PrintPreviewModal from "../../components/ui/PrintPreviewModal";
 import toast from "react-hot-toast";
 
 // Mobile breakpoint — below this the right pane collapses to a Drawer
@@ -284,6 +286,8 @@ export default function StudentsList({ onAddStudent }) {
     processCsvUpload, importValidStudents, downloadStudentList, downloadSelectedStudents, downloadCsvTemplate,
   } = csvUpload;
 
+  const [printOpen, setPrintOpen] = useState(false);
+
   if (contextLoading || listLoading) {
     return <StudentsListSkeleton />;
   }
@@ -319,14 +323,39 @@ export default function StudentsList({ onAddStudent }) {
               <span className="mono tnum">{students.length}</span>
             </div>
           </div>
-          <button
-            type="button"
-            className="btn btn--accent"
-            onClick={onAddStudent}
-          >
-            <Plus size={13} aria-hidden />
-            New Student
-          </button>
+          <div className="row gap-2">
+            <ExportMenu
+              rows={visibleItems}
+              columns={[
+                { key: "name", label: "Name" },
+                { key: "admissionNo", label: "Admission No", accessor: (s) => s.admissionNo || s.admissionNumber || "—" },
+                { key: "className", label: "Class", accessor: (s) => s.className || s.class || s.classSection || "—" },
+                { key: "rollNo", label: "Roll No", accessor: (s) => s.rollNo || s.rollNumber || "—" },
+                { key: "gender", label: "Gender", accessor: (s) => s.gender || "—" },
+                { key: "parentPhone", label: "Parent Phone", accessor: (s) => s.parentPhone || s.fatherPhone || s.motherPhone || "—" },
+                { key: "parentEmail", label: "Parent Email", accessor: (s) => s.parentEmail || s.fatherEmail || s.motherEmail || "—" },
+                { key: "status", label: "Status", accessor: (s) => s.status || "active" },
+              ]}
+              filename="students-list"
+              title="Students List"
+            />
+            <button
+              type="button"
+              className="btn btn--sm"
+              onClick={() => setPrintOpen(true)}
+              aria-label="Print preview"
+            >
+              <Printer size={14} aria-hidden />
+            </button>
+            <button
+              type="button"
+              className="btn btn--accent"
+              onClick={onAddStudent}
+            >
+              <Plus size={13} aria-hidden />
+              New Student
+            </button>
+          </div>
         </div>
 
         {/* Toolbar */}
@@ -528,6 +557,42 @@ export default function StudentsList({ onAddStudent }) {
       />
 
       <ScrollToTopButton />
+
+      <PrintPreviewModal
+        isOpen={printOpen}
+        onClose={() => setPrintOpen(false)}
+        title="Students List"
+      >
+        <div className="p-6">
+          <h1 className="text-lg font-semibold mb-4">Students List</h1>
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-2 px-3">Name</th>
+                <th className="text-left py-2 px-3">Admission No</th>
+                <th className="text-left py-2 px-3">Class</th>
+                <th className="text-left py-2 px-3">Roll No</th>
+                <th className="text-left py-2 px-3">Gender</th>
+                <th className="text-left py-2 px-3">Parent Phone</th>
+                <th className="text-left py-2 px-3">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visibleItems.map((s) => (
+                <tr key={s.id || s._id} className="border-b">
+                  <td className="py-2 px-3">{s.name}</td>
+                  <td className="py-2 px-3">{s.admissionNo || s.admissionNumber || "—"}</td>
+                  <td className="py-2 px-3">{s.className || s.class || s.classSection || "—"}</td>
+                  <td className="py-2 px-3">{s.rollNo || s.rollNumber || "—"}</td>
+                  <td className="py-2 px-3">{s.gender || "—"}</td>
+                  <td className="py-2 px-3">{s.parentPhone || s.fatherPhone || s.motherPhone || "—"}</td>
+                  <td className="py-2 px-3">{s.status || "active"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </PrintPreviewModal>
     </div>
   );
 }

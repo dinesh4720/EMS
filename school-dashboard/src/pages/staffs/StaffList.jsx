@@ -6,7 +6,7 @@ import {
   useCallback,
 } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Plus, MessageSquare, CheckCircle2 } from "lucide-react";
+import { Plus, MessageSquare, CheckCircle2, Printer, Download } from "lucide-react";
 import SkeletonTable from "../../components/skeletons/SkeletonTable";
 import { useApp } from "../../context/AppContext";
 import ToolbarSearch from "../../components/ui/ToolbarSearch";
@@ -15,6 +15,9 @@ import FilterPillsBar from "../../components/ui/FilterPillsBar";
 import useBulkSelection from "../../hooks/useBulkSelection";
 import StaffListRow from "./StaffListRow";
 import StaffDetailPane from "./StaffDetailPane";
+import ExportMenu from "../../components/ui/ExportMenu";
+import PrintPreviewModal from "../../components/ui/PrintPreviewModal";
+import { staffAttendanceApi } from "../../services/api";
 import toast from "react-hot-toast";
 
 // Mobile breakpoint — below this the right pane collapses to a Drawer
@@ -112,6 +115,7 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
       ? window.innerWidth <= MOBILE_MAX
       : false
   );
+  const [printOpen, setPrintOpen] = useState(false);
 
   useEffect(() => {
     const onResize = () => setIsMobileViewport(window.innerWidth <= MOBILE_MAX);
@@ -413,18 +417,33 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
     [selection]
   );
 
-  const handleBulkMarkPresent = () => {
-    // Stub — the underlying mark-present endpoint isn't wired yet.
-    // TODO: call attendanceApi.bulkMark({ staffIds: selection.selectedIds, status: 'present' })
-    toast.success(
-      `Marked ${selection.count} staff present (queued — endpoint not wired yet).`
-    );
-    selection.clear();
+  const handleBulkMarkPresent = async () => {
+    if (!selection.selectedIds?.length) return;
+    try {
+      await staffAttendanceApi.markBulk({
+        staffIds: selection.selectedIds,
+        status: "present",
+        date: todayKey,
+      });
+      toast.success(`Marked ${selection.count} staff present.`);
+      selection.clear();
+    } catch (err) {
+      toast.error(err?.message || "Failed to mark attendance");
+    }
   };
 
   const handleBulkMessage = () => {
-    // TODO: open compose drawer pre-populated with selected recipients
-    toast(`Message ${selection.count} staff (compose UI pending).`);
+    const selectedStaffList = visible.filter((s) =>
+      selection.isSelected(s._id || s.id)
+    );
+    const phones = selectedStaffList
+      .map((s) => s.phone || s.mobile)
+      .filter(Boolean);
+    if (!phones.length) {
+      toast("No contact numbers available for selected staff.");
+      return;
+    }
+    navigate(`/messaging?to=${encodeURIComponent(phones.join(","))}`);
   };
 
   // ============ Single-row mark-attendance ============
@@ -546,6 +565,32 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
               Clear
             </button>
           )}
+
+          <ExportMenu
+            rows={visible}
+            columns={[
+              { key: "name", label: "Name" },
+              { key: "code", label: "ID", accessor: (s) => s.staffNumber || s.code || "" },
+              { key: "role", label: "Role", accessor: (s) => (Array.isArray(s.role) ? s.role.join(", ") : s.role || "") },
+              { key: "department", label: "Department", accessor: (s) => s.department || "—" },
+              { key: "employmentType", label: "Employment Type", accessor: (s) => s.employmentType || "—" },
+              { key: "gender", label: "Gender", accessor: (s) => s.gender || "—" },
+              { key: "status", label: "Status", accessor: (s) => s.status || "active" },
+              { key: "email", label: "Email", accessor: (s) => s.email || "—" },
+              { key: "phone", label: "Phone", accessor: (s) => s.phone || s.mobile || "—" },
+            ]}
+            filename="staff-list"
+            title="Staff List"
+          />
+
+          <button
+            type="button"
+            className="btn btn--sm"
+            onClick={() => setPrintOpen(true)}
+            aria-label="Print preview"
+          >
+            <Printer size={14} aria-hidden />
+          </button>
 
           <BulkActionBar
             selection={selection}
@@ -687,6 +732,45 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
           </div>
         </div>
       )}
+
+      {/* Print Preview */}
+      <PrintPreviewModal
+        isOpen={printOpen}
+        onClose={() => setPrintOpen(false)}
+        title="Staff List"
+      >
+        <div className="p-6">
+          <h1 className="text-lg font-semibold mb-4">Staff List</h1>
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-2 px-3">Name</th>
+                <th className="text-left py-2 px-3">ID</th>
+                <th className="text-left py-2 px-3">Role</th>
+                <th className="text-left py-2 px-3">Department</th>
+                <th className="text-left py-2 px-3">Employment</th>
+                <th className="text-left py-2 px-3">Status</th>
+                <th className="text-left py-2 px-3">Email</th>
+                <th className="text-left py-2 px-3">Phone</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map((s) => (
+                <tr key={s._id || s.id} className="border-b">
+                  <td className="py-2 px-3">{s.name}</td>
+                  <td className="py-2 px-3">{s.staffNumber || s.code || "—"}</td>
+                  <td className="py-2 px-3">{Array.isArray(s.role) ? s.role.join(", ") : s.role || "—"}</td>
+                  <td className="py-2 px-3">{s.department || "—"}</td>
+                  <td className="py-2 px-3">{s.employmentType || "—"}</td>
+                  <td className="py-2 px-3">{s.status || "active"}</td>
+                  <td className="py-2 px-3">{s.email || "—"}</td>
+                  <td className="py-2 px-3">{s.phone || s.mobile || "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </PrintPreviewModal>
     </div>
   );
 }

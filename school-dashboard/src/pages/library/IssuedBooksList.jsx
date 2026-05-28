@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button, Select, SelectItem, Chip, useDisclosure } from "@heroui/react";
-import { BookUp, RotateCcw } from "lucide-react";
+import { BookUp, RotateCcw, Printer, Search } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { libraryApi } from "../../services/api";
 import toast from "react-hot-toast";
@@ -9,6 +9,9 @@ import ReturnBookModal from "./ReturnBookModal";
 import { getDateLocale } from '../../i18n/index';
 import { useTranslation } from 'react-i18next';
 import { EmptyState, ErrorState, SkeletonTable } from '../../components/ui';
+import ExportMenu from '../../components/ui/ExportMenu';
+import PrintPreviewModal from '../../components/ui/PrintPreviewModal';
+import Input from '../../components/ui/Input';
 
 
 const STATUS_OPTIONS = [
@@ -42,6 +45,9 @@ export default function IssuedBooksList() {
   const [status, setStatus] = useState(initialStatus);
   const [page, setPage] = useState(1);
   const [returnIssue, setReturnIssue] = useState(null);
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [printOpen, setPrintOpen] = useState(false);
 
   const issueModal = useDisclosure();
   const returnModal = useDisclosure();
@@ -68,6 +74,11 @@ export default function IssuedBooksList() {
     fetchIssues();
   }, [fetchIssues]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => { setSearch(searchInput); setPage(1); }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
   const handleReturn = (issue) => {
     setReturnIssue(issue);
     returnModal.onOpen();
@@ -86,6 +97,16 @@ export default function IssuedBooksList() {
 
   const totalPages = Math.ceil(total / 25);
 
+  const filteredIssues = useMemo(() => {
+    if (!search.trim()) return issues;
+    const q = search.toLowerCase();
+    return issues.filter((i) =>
+      (i.bookId?.title || i.bookTitle || "").toLowerCase().includes(q) ||
+      (i.studentId?.name || i.studentName || "").toLowerCase().includes(q) ||
+      (i.studentId?.admissionNo || i.studentAdmissionNo || "").toLowerCase().includes(q)
+    );
+  }, [issues, search]);
+
   const formatDate = (date) => date ? new Date(date).toLocaleDateString(getDateLocale(), { day: "2-digit", month: "short", year: "numeric" }) : "—";
 
   const isOverdue = (issue) => {
@@ -96,20 +117,53 @@ export default function IssuedBooksList() {
     <div className="space-y-4">
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <Select
-          selectedKeys={[status]}
-          onSelectionChange={(keys) => { setStatus([...keys][0]); setPage(1); }}
-          size="sm"
-          className="max-w-[180px]"
-          aria-label={t('pages.status2')}
-        >
-          {STATUS_OPTIONS.map((opt) => (
-            <SelectItem key={opt.key}>{opt.label}</SelectItem>
-          ))}
-        </Select>
-        <Button size="sm" color="primary" startContent={<BookUp size={16} />} onPress={issueModal.onOpen}>
-          Issue Book
-        </Button>
+        <div className="flex gap-3 flex-1 w-full sm:w-auto flex-wrap">
+          <Input
+            placeholder="Search student or book…"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            startContent={<Search size={16} className="text-fg-faint" />}
+            className="max-w-xs"
+            size="sm"
+          />
+          <Select
+            selectedKeys={[status]}
+            onSelectionChange={(keys) => { setStatus([...keys][0]); setPage(1); }}
+            size="sm"
+            className="max-w-[180px]"
+            aria-label={t('pages.status2')}
+          >
+            {STATUS_OPTIONS.map((opt) => (
+              <SelectItem key={opt.key}>{opt.label}</SelectItem>
+            ))}
+          </Select>
+        </div>
+        <div className="flex gap-2">
+          <ExportMenu
+            rows={filteredIssues}
+            columns={[
+              { key: "book", label: "Book", accessor: (i) => i.bookId?.title || i.bookTitle || "—" },
+              { key: "student", label: "Student", accessor: (i) => i.studentId?.name || i.studentName || "—" },
+              { key: "issueDate", label: "Issue Date", accessor: (i) => i.issueDate ? new Date(i.issueDate).toLocaleDateString() : "—" },
+              { key: "dueDate", label: "Due Date", accessor: (i) => i.dueDate ? new Date(i.dueDate).toLocaleDateString() : "—" },
+              { key: "status", label: "Status" },
+              { key: "fine", label: "Fine", accessor: (i) => i.accruedFine || i.fineAmount || "—" },
+            ]}
+            filename="issued-books"
+            title="Issued Books"
+          />
+          <button
+            type="button"
+            className="btn btn--sm"
+            onClick={() => setPrintOpen(true)}
+            aria-label="Print preview"
+          >
+            <Printer size={14} aria-hidden />
+          </button>
+          <Button size="sm" color="primary" startContent={<BookUp size={16} />} onPress={issueModal.onOpen}>
+            Issue Book
+          </Button>
+        </div>
       </div>
 
       {/* Content */}
@@ -117,7 +171,7 @@ export default function IssuedBooksList() {
         <SkeletonTable rows={6} columns={7} />
       ) : loadError ? (
         <ErrorState error={loadError} onRetry={fetchIssues} />
-      ) : issues.length === 0 ? (
+      ) : filteredIssues.length === 0 ? (
         <EmptyState
           icon={BookUp}
           title={t('pages.noIssuedBooksFound')}
@@ -143,7 +197,7 @@ export default function IssuedBooksList() {
                 </tr>
               </thead>
               <tbody>
-                {issues.map((issue) => (
+                {filteredIssues.map((issue) => (
                   <tr key={issue._id} className="border-b border-divider last:border-0 hover:bg-surface-2/50 transition-colors">
                     <td className="px-4 py-3">
                       <p className="font-medium text-fg truncate max-w-[180px]">{issue.bookId?.title || issue.bookTitle}</p>
@@ -196,6 +250,40 @@ export default function IssuedBooksList() {
 
       <IssueBookModal isOpen={issueModal.isOpen} onClose={issueModal.onClose} onSaved={handleIssued} />
       <ReturnBookModal isOpen={returnModal.isOpen} onClose={() => { returnModal.onClose(); setReturnIssue(null); }} issue={returnIssue} onSaved={handleReturned} />
+
+      <PrintPreviewModal
+        isOpen={printOpen}
+        onClose={() => setPrintOpen(false)}
+        title="Issued Books"
+      >
+        <div className="p-6">
+          <h1 className="text-lg font-semibold mb-4">Issued Books</h1>
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-2 px-3">Book</th>
+                <th className="text-left py-2 px-3">Student</th>
+                <th className="text-left py-2 px-3">Issue Date</th>
+                <th className="text-left py-2 px-3">Due Date</th>
+                <th className="text-left py-2 px-3">Status</th>
+                <th className="text-left py-2 px-3">Fine</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredIssues.map((issue) => (
+                <tr key={issue._id} className="border-b">
+                  <td className="py-2 px-3">{issue.bookId?.title || issue.bookTitle || "—"}</td>
+                  <td className="py-2 px-3">{issue.studentId?.name || issue.studentName || "—"}</td>
+                  <td className="py-2 px-3">{formatDate(issue.issueDate)}</td>
+                  <td className="py-2 px-3">{formatDate(issue.dueDate)}</td>
+                  <td className="py-2 px-3">{issue.status}</td>
+                  <td className="py-2 px-3">{issue.accruedFine || issue.fineAmount ? `₹${issue.accruedFine || issue.fineAmount}` : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </PrintPreviewModal>
     </div>
   );
 }
