@@ -20,12 +20,6 @@ import logger from '../../utils/logger';
 
 const STATUS_OPTIONS = ['all', 'active', 'completed', 'cancelled'];
 
-const homeworkCache = {
-  data: null,
-  timestamp: 0,
-  duration: 30000,
-};
-
 const getDueStatus = (dueDate) => {
   if (!dueDate) return 'pending';
   const now = new Date();
@@ -100,20 +94,12 @@ const HomeworkPage = () => {
   }, [filters, searchQuery]);
 
   const fetchHomework = useCallback(async (forceRefresh = false) => {
-    const now = Date.now();
-    if (!forceRefresh && homeworkCache.data && (now - homeworkCache.timestamp) < homeworkCache.duration) {
-      setHomework(homeworkCache.data);
-      setLoading(false);
-      return;
-    }
     setLoading(true);
     setError(null);
     try {
       const response = await homeworkApi.getAll({ limit: 100 });
       const items = Array.isArray(response) ? response : (response?.data || []);
       setHomework(items);
-      homeworkCache.data = items;
-      homeworkCache.timestamp = now;
     } catch (err) {
       logger.error('Error fetching homework:', err);
       setError(err);
@@ -131,7 +117,6 @@ const HomeworkPage = () => {
   }, [fetchHomework]);
 
   const refreshHomework = useCallback(() => {
-    homeworkCache.data = null;
     fetchHomework(true);
   }, [fetchHomework]);
 
