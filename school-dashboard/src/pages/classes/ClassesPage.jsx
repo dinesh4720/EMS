@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { Plus } from "lucide-react";
 import toast from "react-hot-toast";
 
+import Skeleton from "../../components/ui/Skeleton";
 import { useApp } from "../../context/AppContext";
 import { CreateDrawer } from "../../components/create/CreateDrawer";
 import useTodayPeriods from "./hooks/useTodayPeriods";
@@ -12,13 +13,36 @@ import ByClassView from "./views/ByClassView";
 // REVAMP-19 — Classes hub shell. Today view (period-led) + By-class tile grid
 // behind a segmented toggle, URL state via ?view=. Period strip / fallthrough
 // rules live in TodayView; this file owns the page chrome only.
+function ClassesPageSkeleton() {
+  return (
+    <div className="page" style={{ paddingBottom: 24 }}>
+      <div className="page__head">
+        <div className="space-y-2">
+          <Skeleton variant="text" className="h-7 w-32" />
+          <Skeleton variant="text" className="h-4 w-48" />
+        </div>
+        <Skeleton variant="rect" className="h-9 w-36 rounded-md" />
+      </div>
+      <Skeleton variant="rect" className="h-12 w-full rounded-lg" />
+      <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}>
+        {Array.from({ length: 8 }).map((_, i) => (
+          <Skeleton key={i} variant="rect" className="h-40 w-full rounded-lg" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function ClassesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const view = searchParams.get("view") === "class" ? "class" : "today";
 
+  const { loading } = useApp();
   const { dayMeta } = useTodayPeriods();
 
   const [isAddOpen, setIsAddOpen] = useState(false);
+
+  if (loading) return <ClassesPageSkeleton />;
 
   const setView = (next) => {
     setSearchParams(

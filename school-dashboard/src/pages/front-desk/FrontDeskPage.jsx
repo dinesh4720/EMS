@@ -10,6 +10,7 @@ import ActivityTable from "../../components/front-desk/ActivityTable";
 import VisitorSheet from "../../components/front-desk/VisitorSheet";
 import GatePassSheet from "../../components/front-desk/GatePassSheet";
 import ToolbarSearch from "../../components/ui/ToolbarSearch";
+import Skeleton from "../../components/ui/Skeleton";
 
 const VALID_TYPES = new Set(["all", ...Object.values(ACTIVITY_TYPES)]);
 const ACTIVITY_PAGE_SIZE = 25;
@@ -219,8 +220,28 @@ export default function FrontDeskPage() {
       </div>
 
       {isLoading ? (
-        <div className="fd-table">
-          <div className="fd-table__empty">Loading activity…</div>
+        <div className="fd-table" role="status" aria-busy="true" aria-label="Loading activity">
+          <div className="fd-table__head" role="row">
+            <span><Skeleton variant="text" className="h-3 w-12" /></span>
+            <span><Skeleton variant="text" className="h-3 w-16" /></span>
+            <span><Skeleton variant="text" className="h-3 w-20" /></span>
+            <span><Skeleton variant="text" className="h-3 w-10" /></span>
+            <span><Skeleton variant="text" className="h-3 w-14" /></span>
+            <span className="fd-table__action"><Skeleton variant="text" className="h-3 w-4" /></span>
+          </div>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="fd-table__row" role="row">
+              <span className="row gap-2" style={{ alignItems: "center" }}>
+                <Skeleton variant="circle" className="h-4 w-4" />
+                <Skeleton variant="text" className="h-3 w-14" />
+              </span>
+              <span><Skeleton variant="text" className="h-3 w-24" /></span>
+              <span><Skeleton variant="text" className="h-3 w-32" /></span>
+              <span><Skeleton variant="text" className="h-3 w-14" /></span>
+              <span><Skeleton variant="rect" className="h-5 w-16" style={{ borderRadius: 999 }} /></span>
+              <span className="fd-table__action"><Skeleton variant="text" className="h-3 w-4" /></span>
+            </div>
+          ))}
         </div>
       ) : (
         <>
