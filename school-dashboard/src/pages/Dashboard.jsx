@@ -1,9 +1,7 @@
-import React, { useMemo, useState, useRef, useEffect } from "react";
+import React, { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   RefreshCw,
-  GraduationCap,
-  IndianRupee,
   AlertCircle,
   ArrowRight,
   CalendarDays,
@@ -13,6 +11,8 @@ import {
   Users,
   SlidersHorizontal,
   Check,
+  LayoutGrid,
+  IndianRupee,
 } from "lucide-react";
 
 import { useApp } from "../context/AppContext";
@@ -23,6 +23,18 @@ import NpsSurveyModal from "../components/NpsSurveyModal";
 import Skeleton from "../components/ui/Skeleton";
 import PhotoAvatar from "../components/PhotoAvatar";
 import { formatRelativeTime, toTodayDateString } from "../utils/dateFormatter";
+
+import {
+  WIDGET_CATALOG,
+  DEFAULT_WIDGET_ORDER,
+  getDefaultVisibility,
+} from "../components/dashboard/widgetRegistry";
+import WidgetCustomizer from "../components/dashboard/WidgetCustomizer";
+import KPIStripWidget from "../components/dashboard/widgets/KPIStripWidget";
+import FeeTrendWidget from "../components/dashboard/widgets/FeeTrendWidget";
+import AttendanceTrendWidget from "../components/dashboard/widgets/AttendanceTrendWidget";
+import EnrollmentStatsWidget from "../components/dashboard/widgets/EnrollmentStatsWidget";
+import RecentActivityWidget from "../components/dashboard/widgets/RecentActivityWidget";
 
 /* ─── Helpers ─── */
 function fmt(n, digits) {
@@ -81,47 +93,49 @@ function isBirthdayToday(dobStr) {
   return parseInt(month, 10) - 1 === todayMonth && parseInt(day, 10) === todayDate;
 }
 
-/* ─── Section Config ─── */
-const SECTION_CONFIG = [
-  { key: "yourDay", label: "Your day", icon: CalendarDays },
-  { key: "actions", label: "Actions", icon: AlertCircle },
-  { key: "people", label: "People", icon: Users },
-  { key: "announcements", label: "Notices", icon: Megaphone },
-  { key: "recentPayments", label: "Payments", icon: IndianRupee },
-];
+/* ─── Legacy section config (for migration) ─── */
+const LEGACY_SECTION_MAP = {
+  yourDay: "yourDay",
+  actions: "actions",
+  people: "people",
+  announcements: "announcements",
+  recentPayments: "recentPayments",
+};
 
-const DEFAULT_VISIBILITY = Object.fromEntries(
-  SECTION_CONFIG.map((s) => [s.key, true])
-);
+const STORAGE_KEY_ORDER = "dashboard_widget_order";
+const STORAGE_KEY_VISIBLE = "dashboard_widget_visible";
+
+function readPersistedOrder() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_ORDER);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function readPersistedVisible() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_VISIBLE);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    // Migrate legacy section visibility
+    const legacy = localStorage.getItem("dashboard_sections");
+    if (legacy) {
+      const legacyParsed = JSON.parse(legacy);
+      Object.entries(LEGACY_SECTION_MAP).forEach(([oldKey, widgetKey]) => {
+        if (legacyParsed[oldKey] !== undefined) {
+          parsed[widgetKey] = legacyParsed[oldKey];
+        }
+      });
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
 
 /* ─── Sub-components ─── */
-
-function StatCard({ icon: Icon, label, value, sub, tone, onClick, loading }) {
-  if (loading) {
-    return (
-      <div className="stat-card" aria-busy="true">
-        <div className="stat-card__row">
-          <Skeleton variant="circle" className="h-9 w-9" />
-          <Skeleton variant="text" className="h-3 w-24" />
-        </div>
-        <Skeleton variant="text" className="h-8 w-28 mt-1" />
-        <Skeleton variant="text" className="h-3 w-32 mt-1" />
-      </div>
-    );
-  }
-  return (
-    <button type="button" className="stat-card" onClick={onClick}>
-      <div className="stat-card__row">
-        <div className={`stat-card__icon stat-card__icon--${tone}`}>
-          <Icon size={18} strokeWidth={2} />
-        </div>
-        <span className="stat-card__label">{label}</span>
-      </div>
-      <div className="stat-card__value">{value}</div>
-      {sub && <div className="stat-card__sub">{sub}</div>}
-    </button>
-  );
-}
 
 function DashboardSection({ title, count, children }) {
   return (
@@ -148,7 +162,6 @@ function PeopleSection({ staff, students, staffAttendance, classes }) {
   const [tab, setTab] = useState("staff");
   const todayStr = toTodayDateString();
 
-  /* ── Staff data ── */
   const activeStaff = useMemo(
     () => (staff || []).filter((s) => (s.status || "active") === "active"),
     [staff]
@@ -173,7 +186,6 @@ function PeopleSection({ staff, students, staffAttendance, classes }) {
     });
   }, [activeStaff, staffAttendance, todayStr]);
 
-  /* ── Student data ── */
   const activeStudents = useMemo(
     () => (students || []).filter((s) => (s.status || "active") === "active"),
     [students]
@@ -214,13 +226,7 @@ function PeopleSection({ staff, students, staffAttendance, classes }) {
   function PersonRow({ name, sub, badge, photo, type }) {
     return (
       <div className="pulse">
-        <PhotoAvatar
-          name={name}
-          src={photo}
-          size="sm"
-          type={type}
-          className="pulse__avatar-img"
-        />
+        <PhotoAvatar name={name} src={photo} size="sm" type={type} className="pulse__avatar-img" />
         <div className="pulse__main">
           <div className="pulse__name">{name}</div>
           <div className="pulse__sub">{sub}</div>
@@ -233,9 +239,7 @@ function PeopleSection({ staff, students, staffAttendance, classes }) {
   return (
     <div className="dash-section">
       <div className="dash-people-header">
-        <h2 className="dash-section-title">
-          People
-        </h2>
+        <h2 className="dash-section-title">People</h2>
         <div className="dash-people-tabs">
           <button
             type="button"
@@ -258,9 +262,7 @@ function PeopleSection({ staff, students, staffAttendance, classes }) {
           <div className="pulse-list">
             {absentStaff.length > 0 && (
               <>
-                <div className="pulse__group">
-                  Absent today · {absentStaff.length}
-                </div>
+                <div className="pulse__group">Absent today · {absentStaff.length}</div>
                 {absentStaff.map((s) => (
                   <PersonRow
                     key={s.id}
@@ -273,12 +275,9 @@ function PeopleSection({ staff, students, staffAttendance, classes }) {
                 ))}
               </>
             )}
-
             {staffBirthdays.length > 0 && (
               <>
-                <div className="pulse__group">
-                  Birthdays · {staffBirthdays.length}
-                </div>
+                <div className="pulse__group">Birthdays · {staffBirthdays.length}</div>
                 {staffBirthdays.map((s) => (
                   <PersonRow
                     key={s.id}
@@ -295,12 +294,9 @@ function PeopleSection({ staff, students, staffAttendance, classes }) {
                 ))}
               </>
             )}
-
             {presentStaff.length > 0 && (
               <>
-                <div className="pulse__group">
-                  On campus · {presentStaff.length}
-                </div>
+                <div className="pulse__group">On campus · {presentStaff.length}</div>
                 {presentStaff.slice(0, 5).map((s) => (
                   <PersonRow
                     key={s.id}
@@ -313,7 +309,6 @@ function PeopleSection({ staff, students, staffAttendance, classes }) {
                 ))}
               </>
             )}
-
             {absentStaff.length === 0 && staffBirthdays.length === 0 && presentStaff.length === 0 && (
               <EmptyState icon={Users} message="No staff data available" />
             )}
@@ -322,9 +317,7 @@ function PeopleSection({ staff, students, staffAttendance, classes }) {
           <div className="pulse-list">
             {studentBirthdays.length > 0 && (
               <>
-                <div className="pulse__group">
-                  Birthdays · {studentBirthdays.length}
-                </div>
+                <div className="pulse__group">Birthdays · {studentBirthdays.length}</div>
                 {studentBirthdays.map((s) => (
                   <PersonRow
                     key={s.id}
@@ -341,12 +334,9 @@ function PeopleSection({ staff, students, staffAttendance, classes }) {
                 ))}
               </>
             )}
-
             {feeDueStudents.length > 0 && (
               <>
-                <div className="pulse__group">
-                  Fee due · {feeDueStudents.length}
-                </div>
+                <div className="pulse__group">Fee due · {feeDueStudents.length}</div>
                 {feeDueStudents.slice(0, 5).map((s) => (
                   <PersonRow
                     key={s.id}
@@ -359,12 +349,9 @@ function PeopleSection({ staff, students, staffAttendance, classes }) {
                 ))}
               </>
             )}
-
             {activeStudents.length > 0 && feeDueStudents.length === 0 && studentBirthdays.length === 0 && (
               <>
-                <div className="pulse__group">
-                  Active · {activeStudents.length}
-                </div>
+                <div className="pulse__group">Active · {activeStudents.length}</div>
                 {activeStudents.slice(0, 6).map((s) => (
                   <PersonRow
                     key={s.id}
@@ -377,63 +364,12 @@ function PeopleSection({ staff, students, staffAttendance, classes }) {
                 ))}
               </>
             )}
-
             {activeStudents.length === 0 && (
               <EmptyState icon={Users} message="No student data available" />
             )}
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-function SectionDropdown({ visible, onToggle }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function handle(e) {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
-    }
-    document.addEventListener("mousedown", handle);
-    return () => document.removeEventListener("mousedown", handle);
-  }, [open]);
-
-  return (
-    <div className="dash-section-dropdown" ref={ref}>
-      <button
-        type="button"
-        className="iconbtn iconbtn--sm"
-        onClick={() => setOpen((v) => !v)}
-        aria-label="Edit sections"
-        title="Edit sections"
-      >
-        <SlidersHorizontal size={13} />
-      </button>
-      {open && (
-        <div className="dash-section-dropdown__menu">
-          <div className="dash-section-dropdown__head">Show sections</div>
-          {SECTION_CONFIG.map(({ key, label, icon: Icon }) => {
-            const isActive = visible[key];
-            return (
-              <button
-                key={key}
-                type="button"
-                className="dash-section-dropdown__item"
-                onClick={() => onToggle(key)}
-              >
-                <span className={`dash-section-dropdown__check${isActive ? " is-checked" : ""}`}>
-                  {isActive && <Check size={11} strokeWidth={3} />}
-                </span>
-                <Icon size={13} />
-                <span className="dash-section-dropdown__label">{label}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }
@@ -455,21 +391,6 @@ function TimelineRow({ time, title, meta, status, mine, now, done }) {
         </div>
         {meta && <div className="trow__meta">{meta}</div>}
       </div>
-    </div>
-  );
-}
-
-function PulseRow({ name, sub, badge, idx }) {
-  return (
-    <div className="pulse">
-      <div className="pulse__avatar" style={{ background: avatarFor(name, idx) }}>
-        {initials(name)}
-      </div>
-      <div className="pulse__main">
-        <div className="pulse__name">{name}</div>
-        <div className="pulse__sub">{sub}</div>
-      </div>
-      {badge}
     </div>
   );
 }
@@ -605,13 +526,7 @@ function DashboardSkeleton() {
 
 function Dashboard() {
   const navigate = useNavigate();
-  const {
-    classes,
-    currentAcademicYear,
-    staff,
-    staffAttendance,
-    students,
-  } = useApp();
+  const { classes, currentAcademicYear, staff, staffAttendance, students } = useApp();
   const { user: authUser } = useAuth();
 
   const {
@@ -620,6 +535,7 @@ function Dashboard() {
     feeDefaultersCount,
     recentPayments,
     recentAnnouncements,
+    feeCollectionData,
     dashboardLoading,
     reload,
   } = useDashboardData({
@@ -632,24 +548,28 @@ function Dashboard() {
 
   const [dismissed, setDismissed] = useState(() => new Set());
   const [refreshing, setRefreshing] = useState(false);
+  const [customizerOpen, setCustomizerOpen] = useState(false);
 
-  /* Section visibility with localStorage persistence */
-  const [visible, setVisible] = useState(() => {
-    try {
-      const saved = localStorage.getItem("dashboard_sections");
-      return saved ? { ...DEFAULT_VISIBILITY, ...JSON.parse(saved) } : DEFAULT_VISIBILITY;
-    } catch {
-      return DEFAULT_VISIBILITY;
-    }
+  /* Widget order & visibility with localStorage persistence */
+  const [widgetOrder, setWidgetOrder] = useState(() => {
+    const persisted = readPersistedOrder();
+    return persisted && Array.isArray(persisted) ? persisted : DEFAULT_WIDGET_ORDER;
   });
 
-  const toggleSection = (key) => {
-    setVisible((prev) => {
-      const next = { ...prev, [key]: !prev[key] };
-      localStorage.setItem("dashboard_sections", JSON.stringify(next));
-      return next;
-    });
-  };
+  const [widgetVisible, setWidgetVisible] = useState(() => {
+    const persisted = readPersistedVisible();
+    return persisted ? { ...getDefaultVisibility(), ...persisted } : getDefaultVisibility();
+  });
+
+  const saveOrder = useCallback((order) => {
+    setWidgetOrder(order);
+    localStorage.setItem(STORAGE_KEY_ORDER, JSON.stringify(order));
+  }, []);
+
+  const saveVisible = useCallback((visible) => {
+    setWidgetVisible(visible);
+    localStorage.setItem(STORAGE_KEY_VISIBLE, JSON.stringify(visible));
+  }, []);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -667,8 +587,7 @@ function Dashboard() {
   const firstName = (authUser?.name || "").trim().split(" ")[0] || "there";
   const now = new Date();
   const hour = now.getHours();
-  const greeting =
-    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   const dateLabel = now.toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
@@ -677,9 +596,7 @@ function Dashboard() {
 
   const studentsOnCampus = attendanceSnapshot.studentPresent || 0;
   const totalActiveStudents = useMemo(
-    () =>
-      (students || []).filter((student) => (student.status || "active") === "active")
-        .length,
+    () => (students || []).filter((student) => (student.status || "active") === "active").length,
     [students]
   );
 
@@ -688,15 +605,11 @@ function Dashboard() {
     const items = [];
     if (feeDefaultersCount > 0) {
       const overdue =
-        paymentSnapshot.totalPending != null
-          ? compactINR(paymentSnapshot.totalPending)
-          : null;
+        paymentSnapshot.totalPending != null ? compactINR(paymentSnapshot.totalPending) : null;
       items.push({
         id: "fees",
         kind: "danger",
-        title: overdue
-          ? `${overdue} unpaid fees`
-          : `${feeDefaultersCount} fee defaulters`,
+        title: overdue ? `${overdue} unpaid fees` : `${feeDefaultersCount} fee defaulters`,
         body: `${feeDefaultersCount} student${feeDefaultersCount === 1 ? "" : "s"} past cutoff`,
         meta: "Reminder ready",
         primary: "Send reminders",
@@ -729,33 +642,11 @@ function Dashboard() {
   /* Schedule */
   const schedule = useMemo(
     () => [
-      {
-        time: "09:00",
-        title: "Morning assembly",
-        meta: "Auditorium · You're addressing Grade 9–12",
-        mine: true,
-      },
-      {
-        time: "10:30",
-        title: "Walk-through · Grade 6 wing",
-        meta: "With the coordinator",
-      },
-      {
-        time: "11:30",
-        title: "Parent meet · 10-A",
-        meta: "Concern: math grades · 30 min",
-        mine: true,
-      },
-      {
-        time: "13:30",
-        title: "Staff briefing · 7 leads",
-        meta: "Weekly sync · Conf room A",
-      },
-      {
-        time: "15:30",
-        title: "Annual day rehearsal",
-        meta: "Auditorium · Grade 9–12 · drop-in",
-      },
+      { time: "09:00", title: "Morning assembly", meta: "Auditorium · You're addressing Grade 9–12", mine: true },
+      { time: "10:30", title: "Walk-through · Grade 6 wing", meta: "With the coordinator" },
+      { time: "11:30", title: "Parent meet · 10-A", meta: "Concern: math grades · 30 min", mine: true },
+      { time: "13:30", title: "Staff briefing · 7 leads", meta: "Weekly sync · Conf room A" },
+      { time: "15:30", title: "Annual day rehearsal", meta: "Auditorium · Grade 9–12 · drop-in" },
     ],
     []
   );
@@ -774,7 +665,180 @@ function Dashboard() {
     return minutes - starts[idx] < 90 ? idx : -1;
   }, [now, schedule]);
 
-  /* Render */
+  /* Widget renderer */
+  const renderWidget = useCallback(
+    (key) => {
+      switch (key) {
+        case "kpiStrip":
+          return (
+            <KPIStripWidget
+              attendanceSnapshot={attendanceSnapshot}
+              paymentSnapshot={paymentSnapshot}
+              feeDefaultersCount={feeDefaultersCount}
+              students={students}
+              loading={initialLoading}
+            />
+          );
+        case "feeTrend":
+          return <FeeTrendWidget data={feeCollectionData} loading={initialLoading} />;
+        case "attendanceTrend":
+          return (
+            <AttendanceTrendWidget
+              attendanceSnapshot={attendanceSnapshot}
+              loading={initialLoading}
+            />
+          );
+        case "enrollmentStats":
+          return (
+            <EnrollmentStatsWidget
+              students={students}
+              classes={classes}
+              loading={initialLoading}
+            />
+          );
+        case "recentActivity":
+          return (
+            <RecentActivityWidget
+              recentPayments={recentPayments}
+              recentAnnouncements={recentAnnouncements}
+              attendanceSnapshot={attendanceSnapshot}
+              students={students}
+              staff={staff}
+              loading={initialLoading}
+              onNavigate={navigate}
+            />
+          );
+        case "yourDay":
+          return (
+            <DashboardSection title="Your day" count={schedule.length}>
+              {schedule.length === 0 ? (
+                <EmptyState icon={CalendarDays} message="No events scheduled" />
+              ) : (
+                <div className="timeline">
+                  {schedule.map((row, i) => (
+                    <TimelineRow
+                      key={row.time}
+                      time={row.time}
+                      title={row.title}
+                      meta={row.meta}
+                      mine={row.mine}
+                      now={i === nowIndex}
+                      done={nowIndex >= 0 && i < nowIndex}
+                      status={
+                        i === nowIndex ? (
+                          <span className="status status--warn">
+                            <span className="dot" />
+                            Now
+                          </span>
+                        ) : i === nowIndex + 1 ? (
+                          <span className="status status--info">Next</span>
+                        ) : null
+                      }
+                    />
+                  ))}
+                </div>
+              )}
+            </DashboardSection>
+          );
+        case "actions":
+          return (
+            priorities.length > 0 && (
+              <DashboardSection title="Actions" count={pendingCount}>
+                <div className="action-list">
+                  {priorities.map((priority) => (
+                    <ActionItem
+                      key={priority.id}
+                      {...priority}
+                      onDismiss={() =>
+                        setDismissed((prev) => {
+                          const next = new Set(prev);
+                          next.add(priority.id);
+                          return next;
+                        })
+                      }
+                    />
+                  ))}
+                </div>
+              </DashboardSection>
+            )
+          );
+        case "people":
+          return (
+            <PeopleSection
+              staff={staff}
+              students={students}
+              staffAttendance={staffAttendance}
+              classes={classes}
+            />
+          );
+        case "announcements":
+          return (
+            <DashboardSection title="Notices" count={recentAnnouncements?.length || 0}>
+              {!recentAnnouncements || recentAnnouncements.length === 0 ? (
+                <EmptyState icon={Megaphone} message="No recent notices" />
+              ) : (
+                <div className="notice-list">
+                  {recentAnnouncements.map((notice) => (
+                    <NoticeRow
+                      key={notice.id}
+                      title={notice.title}
+                      content={notice.content}
+                      date={notice.date}
+                    />
+                  ))}
+                </div>
+              )}
+            </DashboardSection>
+          );
+        case "recentPayments":
+          return (
+            <DashboardSection title="Payments" count={recentPayments?.length || 0}>
+              {!recentPayments || recentPayments.length === 0 ? (
+                <EmptyState icon={IndianRupee} message="No recent payments" />
+              ) : (
+                <div className="payment-list">
+                  {recentPayments.map((payment) => (
+                    <PaymentRow
+                      key={payment.id}
+                      student={payment.student}
+                      className={payment.className}
+                      amount={payment.amount}
+                      date={payment.date}
+                    />
+                  ))}
+                </div>
+              )}
+            </DashboardSection>
+          );
+        default:
+          return null;
+      }
+    },
+    [
+      attendanceSnapshot,
+      paymentSnapshot,
+      feeDefaultersCount,
+      students,
+      classes,
+      staff,
+      staffAttendance,
+      feeCollectionData,
+      recentPayments,
+      recentAnnouncements,
+      initialLoading,
+      schedule,
+      nowIndex,
+      priorities,
+      pendingCount,
+      navigate,
+    ]
+  );
+
+  /* Build visible widgets in order */
+  const visibleWidgets = useMemo(() => {
+    return widgetOrder.filter((key) => widgetVisible[key]);
+  }, [widgetOrder, widgetVisible]);
+
   return (
     <div className="page page--principal">
       {/* ─── Header ─── */}
@@ -792,7 +856,15 @@ function Dashboard() {
               {pendingCount} pending
             </span>
           )}
-          <SectionDropdown visible={visible} onToggle={toggleSection} />
+          <button
+            type="button"
+            className="iconbtn iconbtn--sm"
+            onClick={() => setCustomizerOpen(true)}
+            aria-label="Customize dashboard"
+            title="Customize dashboard"
+          >
+            <LayoutGrid size={12} />
+          </button>
           <button
             type="button"
             className="iconbtn iconbtn--sm"
@@ -801,162 +873,18 @@ function Dashboard() {
             aria-label="Refresh dashboard"
             title="Refresh dashboard"
           >
-            <RefreshCw
-              size={12}
-              className={refreshing || dashboardLoading ? "is-spinning" : ""}
-            />
+            <RefreshCw size={12} className={refreshing || dashboardLoading ? "is-spinning" : ""} />
           </button>
         </div>
       </header>
 
-      {/* ─── Stats Row ─── */}
-      <section className="stats-row" aria-label="Key metrics">
-        <StatCard
-          icon={GraduationCap}
-          label="Attendance today"
-          value={
-            attendanceSnapshot.studentRate != null
-              ? `${attendanceSnapshot.studentRate}%`
-              : "—"
-          }
-          sub={
-            attendanceSnapshot.studentTotal > 0
-              ? `${attendanceSnapshot.studentPresent} of ${attendanceSnapshot.studentTotal} present`
-              : "Awaiting attendance"
-          }
-          tone="accent"
-          onClick={() => navigate("/students")}
-          loading={initialLoading}
-        />
-        <StatCard
-          icon={IndianRupee}
-          label="Fees this month"
-          value={
-            paymentSnapshot.month != null ? compactINR(paymentSnapshot.month) : "—"
-          }
-          sub={
-            paymentSnapshot.totalPending != null
-              ? `${compactINR(paymentSnapshot.totalPending)} outstanding`
-              : "Awaiting payment data"
-          }
-          tone="ok"
-          onClick={() => navigate("/fees")}
-          loading={initialLoading}
-        />
-      </section>
-
-      {/* ─── Sections Grid ─── */}
-      <div className="dash-grid">
-        {/* Your day */}
-        {visible.yourDay && (
-          <DashboardSection title="Your day" count={schedule.length}>
-            {schedule.length === 0 ? (
-              <EmptyState icon={CalendarDays} message="No events scheduled" />
-            ) : (
-              <div className="timeline">
-                {schedule.map((row, i) => (
-                  <TimelineRow
-                    key={row.time}
-                    time={row.time}
-                    title={row.title}
-                    meta={row.meta}
-                    mine={row.mine}
-                    now={i === nowIndex}
-                    done={nowIndex >= 0 && i < nowIndex}
-                    status={
-                      i === nowIndex ? (
-                        <span className="status status--warn">
-                          <span className="dot" />
-                          Now
-                        </span>
-                      ) : i === nowIndex + 1 ? (
-                        <span className="status status--info">Next</span>
-                      ) : null
-                    }
-                  />
-                ))}
-              </div>
-            )}
-          </DashboardSection>
-        )}
-
-        {/* Actions */}
-        {visible.actions && priorities.length > 0 && (
-          <DashboardSection title="Actions" count={pendingCount}>
-            <div className="action-list">
-              {priorities.map((priority) => (
-                <ActionItem
-                  key={priority.id}
-                  {...priority}
-                  onDismiss={() =>
-                    setDismissed((prev) => {
-                      const next = new Set(prev);
-                      next.add(priority.id);
-                      return next;
-                    })
-                  }
-                />
-              ))}
-            </div>
-          </DashboardSection>
-        )}
-
-        {/* People */}
-        {visible.people && (
-          <PeopleSection
-            staff={staff}
-            students={students}
-            staffAttendance={staffAttendance}
-            classes={classes}
-          />
-        )}
-
-        {/* Notices */}
-        {visible.announcements && (
-          <DashboardSection
-            title="Notices"
-            count={recentAnnouncements?.length || 0}
-          >
-            {!recentAnnouncements || recentAnnouncements.length === 0 ? (
-              <EmptyState icon={Megaphone} message="No recent notices" />
-            ) : (
-              <div className="notice-list">
-                {recentAnnouncements.map((notice) => (
-                  <NoticeRow
-                    key={notice.id}
-                    title={notice.title}
-                    content={notice.content}
-                    date={notice.date}
-                  />
-                ))}
-              </div>
-            )}
-          </DashboardSection>
-        )}
-
-        {/* Payments */}
-        {visible.recentPayments && (
-          <DashboardSection
-            title="Payments"
-            count={recentPayments?.length || 0}
-          >
-            {!recentPayments || recentPayments.length === 0 ? (
-              <EmptyState icon={IndianRupee} message="No recent payments" />
-            ) : (
-              <div className="payment-list">
-                {recentPayments.map((payment) => (
-                  <PaymentRow
-                    key={payment.id}
-                    student={payment.student}
-                    className={payment.className}
-                    amount={payment.amount}
-                    date={payment.date}
-                  />
-                ))}
-              </div>
-            )}
-          </DashboardSection>
-        )}
+      {/* ─── Widget Grid ─── */}
+      <div className="widget-grid">
+        {visibleWidgets.map((key) => (
+          <div key={key} className={`widget-wrapper widget-wrapper--${key}`}>
+            {renderWidget(key)}
+          </div>
+        ))}
       </div>
 
       {/* ─── Moments Footer ─── */}
@@ -968,27 +896,19 @@ function Dashboard() {
         <span className="moments__dot">·</span>
         <span>
           <b>
-            {attendanceSnapshot.studentRate != null
-              ? `${attendanceSnapshot.studentRate}%`
-              : "—"}
+            {attendanceSnapshot.studentRate != null ? `${attendanceSnapshot.studentRate}%` : "—"}
           </b>{" "}
           attendance
         </span>
         <span className="moments__dot">·</span>
         <span>
-          <b>
-            {paymentSnapshot.month != null
-              ? compactINR(paymentSnapshot.month)
-              : "—"}
-          </b>{" "}
-          collected
+          <b>{paymentSnapshot.month != null ? compactINR(paymentSnapshot.month) : "—"}</b> collected
         </span>
         {totalActiveStudents > 0 && (
           <>
             <span className="moments__dot">·</span>
             <span>
-              <b>{studentsOnCampus.toLocaleString()}</b>/
-              <b>{totalActiveStudents.toLocaleString()}</b> on campus
+              <b>{studentsOnCampus.toLocaleString()}</b>/<b>{totalActiveStudents.toLocaleString()}</b> on campus
             </span>
           </>
         )}
@@ -997,6 +917,16 @@ function Dashboard() {
       {/* Background panels */}
       <SubstitutionAlertPanel />
       <NpsSurveyModal />
+
+      {/* Widget Customizer */}
+      <WidgetCustomizer
+        isOpen={customizerOpen}
+        onClose={() => setCustomizerOpen(false)}
+        order={widgetOrder}
+        visible={widgetVisible}
+        onChangeOrder={saveOrder}
+        onChangeVisible={saveVisible}
+      />
     </div>
   );
 }
