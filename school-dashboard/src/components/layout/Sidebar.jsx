@@ -1,11 +1,12 @@
-import React, { useEffect, useCallback, useState, useMemo } from "react";
+import React, { useEffect, useCallback, useState, useMemo, useRef } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Users, GraduationCap, BookOpen, Calendar,
   MessageSquare, IndianRupee, Settings, Award, ClipboardList,
   Wand2, Package, Library, Building2, Bus, FileBarChart, Database,
-  DoorOpen, BarChart3, Sparkles, ChevronDown, Palette, Wallet,
-  CalendarCheck, FileText,
+  DoorOpen, BarChart3, Sparkles, ChevronRight, Palette, Wallet,
+  CalendarCheck, FileText, BookMarked, UserCheck, SendHorizontal,
+  Search, X, MoreHorizontal,
 } from "lucide-react";
 import { useChatNotifications } from "../../context/ChatNotificationContext";
 import { useApp } from "../../context/AppContext";
@@ -13,75 +14,324 @@ import { useSchool } from "../../context/SchoolContext";
 import UserMenu from "./UserMenu";
 import { getPinnedPages, subscribePinnedPages } from "../../utils/pinnedPages";
 
-const WORKSPACE_NAV = [
-  { href: "/", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/staffs", icon: Users, label: "Staff" },
-  { href: "/students", icon: GraduationCap, label: "Students" },
-  { href: "/classes", icon: BookOpen, label: "Classes" },
-  { href: "/calendar", icon: Calendar, label: "Calendar" },
-  { href: "/messaging", icon: MessageSquare, label: "Messaging", chatBadge: true },
-  { href: "/fees", icon: IndianRupee, label: "Fees" },
+/* ============================================================
+   Navigation Configuration — Hierarchical IA (DK-598)
+   ============================================================ */
+
+const PRIMARY_MODULES = [
+  {
+    id: "dashboard",
+    href: "/",
+    icon: LayoutDashboard,
+    label: "Dashboard",
+    end: true,
+  },
+  {
+    id: "students",
+    href: "/students",
+    icon: GraduationCap,
+    label: "Students",
+    children: [
+      { href: "/students/attendance", icon: CalendarCheck, label: "Attendance" },
+      { href: "/students/submissions", icon: SendHorizontal, label: "Form Submissions" },
+      { href: "/students/promotion", icon: Award, label: "Promotion" },
+      { href: "/students/transfer-certificate", icon: FileText, label: "Transfer Certificate" },
+    ],
+  },
+  {
+    id: "staff",
+    href: "/staffs",
+    icon: Users,
+    label: "Staff",
+    children: [
+      { href: "/staffs/payroll", icon: Wallet, label: "Payroll" },
+      { href: "/staffs/bulk-subjects", icon: BookMarked, label: "Bulk Subjects" },
+    ],
+  },
+  {
+    id: "academics",
+    href: "/academics",
+    icon: Award,
+    label: "Academics",
+    children: [
+      { href: "/academics/exams", icon: FileBarChart, label: "Exams" },
+      { href: "/homework", icon: ClipboardList, label: "Homework" },
+      { href: "/ptm", icon: UserCheck, label: "PTM" },
+      { href: "/timetable-wizard", icon: Wand2, label: "Timetable Wizard" },
+    ],
+  },
+  {
+    id: "classes",
+    href: "/classes",
+    icon: BookOpen,
+    label: "Classes",
+  },
+  {
+    id: "calendar",
+    href: "/calendar",
+    icon: Calendar,
+    label: "Calendar",
+  },
+  {
+    id: "messaging",
+    href: "/messaging",
+    icon: MessageSquare,
+    label: "Messaging",
+    chatBadge: true,
+  },
+  {
+    id: "fees",
+    href: "/fees",
+    icon: IndianRupee,
+    label: "Fees",
+  },
 ];
 
-// Pinned items are stored in localStorage (utils/pinnedPages); the topbar
-// star button is the input. When the backend ships a workspace-pins
-// endpoint, swap the store implementation — the shape ({ href, label })
-// stays the same.
-
-// Alphabetised. First MORE_VISIBLE_LIMIT entries render by default; the
-// rest collapse under a "Show all" disclosure to keep the sidebar calm.
-const MORE_NAV = [
-  { href: "/students/attendance", icon: CalendarCheck, label: "Attendance" },
-  { href: "/students/submissions", icon: FileText, label: "Form Submissions" },
-  { href: "/ai-assistant", icon: Sparkles, label: "AI Assistant" },
-  { href: "/academics", icon: Award, label: "Academics" },
-  { href: "/analytics", icon: BarChart3, label: "Analytics" },
-  { href: "/data-tools", icon: Database, label: "Data Tools" },
-  { href: "/front-desk", icon: DoorOpen, label: "Front Desk" },
-  { href: "/homework", icon: ClipboardList, label: "Homework" },
-  { href: "/hostel", icon: Building2, label: "Hostel" },
-  { href: "/intake-forms/assignments", icon: ClipboardList, label: "Intake Forms" },
-  { href: "/inventory", icon: Package, label: "Inventory" },
-  { href: "/library", icon: Library, label: "Library" },
-  { href: "/ptm", icon: Users, label: "PTM" },
-  { href: "/reports", icon: FileBarChart, label: "Reports" },
-  { href: "/staffs/payroll", icon: Wallet, label: "Staff Payroll" },
-  { href: "/staffs/bulk-subjects", icon: BookOpen, label: "Subjects" },
-  { href: "/style-guide", icon: Palette, label: "Style Guide" },
-  { href: "/timetable-wizard", icon: Wand2, label: "Timetable Wizard" },
-  { href: "/transport", icon: Bus, label: "Transport" },
+const OPERATIONS = [
+  { id: "front-desk", href: "/front-desk", icon: DoorOpen, label: "Front Desk" },
+  { id: "library", href: "/library", icon: Library, label: "Library" },
+  { id: "inventory", href: "/inventory", icon: Package, label: "Inventory" },
+  { id: "hostel", href: "/hostel", icon: Building2, label: "Hostel" },
+  { id: "transport", href: "/transport", icon: Bus, label: "Transport" },
 ];
 
-const MORE_VISIBLE_LIMIT = 8;
+const INSIGHTS = [
+  { id: "reports", href: "/reports", icon: FileBarChart, label: "Reports" },
+  { id: "analytics", href: "/analytics", icon: BarChart3, label: "Analytics" },
+  { id: "ai-assistant", href: "/ai-assistant", icon: Sparkles, label: "AI Assistant" },
+];
 
-const TONE_VAR = { info: "var(--info)", warn: "var(--warn)", ok: "var(--ok)" };
+const ADMINISTRATION = [
+  { id: "intake-forms", href: "/intake-forms/assignments", icon: FileText, label: "Intake Forms" },
+  { id: "data-tools", href: "/data-tools", icon: Database, label: "Data Tools" },
+  { id: "style-guide", href: "/style-guide", icon: Palette, label: "Style Guide" },
+];
 
-function NavRow({ to, icon: Icon, label, badge, dotTone, collapsed, end, onNav }) {
-  const dotColor = dotTone ? TONE_VAR[dotTone] : null;
+const ALL_NAV_ITEMS = [
+  ...PRIMARY_MODULES,
+  ...PRIMARY_MODULES.flatMap((m) => m.children || []),
+  ...OPERATIONS,
+  ...INSIGHTS,
+  ...ADMINISTRATION,
+];
+
+function resolveIconForHref(href) {
+  const exact = ALL_NAV_ITEMS.find((i) => i.href === href);
+  if (exact?.icon) return exact.icon;
+  const partial = ALL_NAV_ITEMS.find(
+    (i) => i.href !== "/" && href.startsWith(i.href + "/")
+  );
+  if (partial?.icon) return partial.icon;
+  return null;
+}
+
+function isRouteActive(pathname, href) {
+  if (pathname === href) return true;
+  if (href !== "/" && pathname.startsWith(href + "/")) return true;
+  return false;
+}
+
+function getActiveModuleId(pathname) {
+  if (pathname === "/") return "dashboard";
+  if (isRouteActive(pathname, "/students")) return "students";
+  if (isRouteActive(pathname, "/staffs")) return "staff";
+  if (isRouteActive(pathname, "/academics") || pathname === "/homework" || pathname === "/ptm" || pathname === "/timetable-wizard") return "academics";
+  if (isRouteActive(pathname, "/classes")) return "classes";
+  if (isRouteActive(pathname, "/calendar")) return "calendar";
+  if (isRouteActive(pathname, "/messaging")) return "messaging";
+  if (isRouteActive(pathname, "/fees")) return "fees";
+  if (isRouteActive(pathname, "/front-desk")) return "front-desk";
+  if (isRouteActive(pathname, "/library")) return "library";
+  if (isRouteActive(pathname, "/inventory")) return "inventory";
+  if (isRouteActive(pathname, "/hostel")) return "hostel";
+  if (isRouteActive(pathname, "/transport")) return "transport";
+  if (isRouteActive(pathname, "/reports")) return "reports";
+  if (isRouteActive(pathname, "/analytics")) return "analytics";
+  if (pathname === "/ai-assistant") return "ai-assistant";
+  if (isRouteActive(pathname, "/intake-forms")) return "intake-forms";
+  if (isRouteActive(pathname, "/data-tools")) return "data-tools";
+  if (pathname === "/style-guide") return "style-guide";
+  return null;
+}
+
+/* ============================================================
+   Sub-components
+   ============================================================ */
+
+function ChildItem({ to, icon: Icon, label, onNav, collapsed }) {
   return (
     <NavLink
       to={to}
-      end={end}
       onClick={onNav}
       title={collapsed ? label : undefined}
       className={({ isActive }) =>
-        `sidebar__item${dotTone ? " sidebar__item--pin" : ""}${
-          isActive ? " is-active" : ""
-        }`
+        `sidebar__item sidebar__item--child${isActive ? " is-active" : ""}`
       }
     >
-      {dotColor != null ? (
-        <span className="dot" style={{ color: dotColor }} aria-hidden />
-      ) : Icon ? (
-        <Icon size={15} strokeWidth={1.6} aria-hidden />
-      ) : null}
+      {collapsed && Icon && <Icon size={14} strokeWidth={1.6} aria-hidden />}
       {!collapsed && <span className="sidebar__label">{label}</span>}
-      {!collapsed && badge != null && (
-        <span className="sidebar__badge">{badge}</span>
-      )}
     </NavLink>
   );
 }
+
+function ParentModule({ module, collapsed, onNav, expanded, onToggle, unreadCount }) {
+  const { icon: Icon, label, href, children, chatBadge, end } = module;
+  const hasChildren = children && children.length > 0;
+  const badge = chatBadge && unreadCount > 0
+    ? unreadCount > 99 ? "99+" : unreadCount
+    : undefined;
+
+  if (collapsed) {
+    return (
+      <NavLink
+        to={href}
+        end={end}
+        onClick={onNav}
+        title={label}
+        className={({ isActive }) => `sidebar__item${isActive ? " is-active" : ""}`}
+      >
+        <Icon size={15} strokeWidth={1.6} aria-hidden />
+        {badge != null && (
+          <span className="sidebar__badge sidebar__badge--corner">
+            {badge}
+          </span>
+        )}
+      </NavLink>
+    );
+  }
+
+  return (
+    <div className={`sidebar__item sidebar__item--parent${expanded ? " is-expanded" : ""}`}>
+      <NavLink
+        to={href}
+        end={end !== false}
+        onClick={onNav}
+        className={({ isActive }) => `${isActive ? "is-active" : ""}`}
+      >
+        <Icon size={15} strokeWidth={1.6} aria-hidden />
+        <span className="sidebar__label">{label}</span>
+        {badge != null && <span className="sidebar__badge">{badge}</span>}
+      </NavLink>
+      {hasChildren && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onToggle();
+          }}
+          className="sidebar__chevron"
+          aria-label={expanded ? `Collapse ${label}` : `Expand ${label}`}
+          aria-expanded={expanded}
+          aria-controls={`nav-children-${module.id}`}
+        >
+          <ChevronRight
+            size={14}
+            strokeWidth={1.6}
+            style={{
+              transform: expanded ? "rotate(90deg)" : "none",
+              transition: "transform 150ms",
+            }}
+            aria-hidden
+          />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function SimpleNavItem({ to, icon: Icon, label, onNav, collapsed }) {
+  return (
+    <NavLink
+      to={to}
+      onClick={onNav}
+      title={collapsed ? label : undefined}
+      className={({ isActive }) => `sidebar__item${isActive ? " is-active" : ""}`}
+    >
+      <Icon size={15} strokeWidth={1.6} aria-hidden />
+      {!collapsed && <span className="sidebar__label">{label}</span>}
+    </NavLink>
+  );
+}
+
+function NavGroup({ heading, items, collapsed, onNav, defaultExpanded, forceExpanded, searchQuery }) {
+  const [expanded, setExpanded] = useState(defaultExpanded ?? false);
+  const isExpanded = forceExpanded || expanded;
+
+  if (collapsed) return null;
+
+  const visibleItems = searchQuery
+    ? items.filter(
+        (i) =>
+          i.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          i.href.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : items;
+
+  if (visibleItems.length === 0) return null;
+
+  return (
+    <div className="sidebar__group">
+      <button
+        type="button"
+        className="sidebar__group-head"
+        onClick={() => setExpanded((v) => !v)}
+        aria-expanded={isExpanded}
+        aria-controls={`nav-group-${heading.toLowerCase().replace(/\s+/g, '-')}`}
+      >
+        {heading}
+        <ChevronRight
+          size={14}
+          strokeWidth={1.6}
+          className={`sidebar__group-chevron${isExpanded ? " is-expanded" : ""}`}
+          aria-hidden
+        />
+      </button>
+      {isExpanded && (
+        <div className="sidebar__group-body" id={`nav-group-${heading.toLowerCase().replace(/\s+/g, '-')}`}>
+          {visibleItems.map((item) => (
+            <SimpleNavItem
+              key={item.id}
+              to={item.href}
+              icon={item.icon}
+              label={item.label}
+              onNav={onNav}
+              collapsed={collapsed}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NavFlyout({ rect, title, items, onNav, onClose, onMouseEnter }) {
+  return (
+    <div
+      className="nav-flyout"
+      style={{ top: rect.top, left: rect.right + 4 }}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onClose}
+    >
+      {title && <div className="nav-flyout__title">{title}</div>}
+      {items.map((item) => (
+        <NavLink
+          key={item.href}
+          to={item.href}
+          onClick={onNav}
+          className={({ isActive }) => `nav-flyout__item${isActive ? " is-active" : ""}`}
+        >
+          {item.icon && <item.icon size={14} strokeWidth={1.6} aria-hidden />}
+          <span>{item.label}</span>
+        </NavLink>
+      ))}
+    </div>
+  );
+}
+
+/* ============================================================
+   Sidebar
+   ============================================================ */
 
 function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
   const location = useLocation();
@@ -98,29 +348,31 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
     return subscribePinnedPages(setPinned);
   }, []);
 
-  // "More" disclosure — auto-expanded when the current route lives in
-  // the hidden tail, so users never have to hunt for the active page.
-  const [moreExpanded, setMoreExpanded] = useState(false);
-  const moreVisible = useMemo(
-    () => MORE_NAV.slice(0, MORE_VISIBLE_LIMIT),
-    []
-  );
-  const moreHidden = useMemo(
-    () => MORE_NAV.slice(MORE_VISIBLE_LIMIT),
-    []
-  );
-  const hiddenContainsActive = useMemo(
-    () =>
-      moreHidden.some(
-        (item) =>
-          location.pathname === item.href ||
-          (item.href !== "/" && location.pathname.startsWith(item.href + "/"))
-      ),
-    [moreHidden, location.pathname]
-  );
+  const [expandedModules, setExpandedModules] = useState({});
+  const [expandedGroups, setExpandedGroups] = useState({});
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const [flyout, setFlyout] = useState(null);
+  const flyoutTimeoutRef = useRef(null);
+  const sidebarRef = useRef(null);
+
+  // Auto-expand active module & group on route change
   useEffect(() => {
-    if (hiddenContainsActive) setMoreExpanded(true);
-  }, [hiddenContainsActive]);
+    const activeId = getActiveModuleId(location.pathname);
+    const parentModule = PRIMARY_MODULES.find((m) => m.id === activeId);
+    if (parentModule?.children) {
+      setExpandedModules((prev) => ({ ...prev, [parentModule.id]: true }));
+    }
+    if (OPERATIONS.some((i) => i.id === activeId)) {
+      setExpandedGroups((prev) => ({ ...prev, operations: true }));
+    }
+    if (INSIGHTS.some((i) => i.id === activeId)) {
+      setExpandedGroups((prev) => ({ ...prev, insights: true }));
+    }
+    if (ADMINISTRATION.some((i) => i.id === activeId)) {
+      setExpandedGroups((prev) => ({ ...prev, administration: true }));
+    }
+  }, [location.pathname]);
 
   // Mobile drawer: close on route change at < md (768px)
   useEffect(() => {
@@ -152,9 +404,77 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
     }
   }, [setIsSidebarOpen]);
 
+  const showFlyout = useCallback((el, items, title) => {
+    clearTimeout(flyoutTimeoutRef.current);
+    flyoutTimeoutRef.current = setTimeout(() => {
+      const rect = el.getBoundingClientRect();
+      setFlyout({ rect, items, title });
+    }, 150);
+  }, []);
+
+  const hideFlyout = useCallback(() => {
+    clearTimeout(flyoutTimeoutRef.current);
+    flyoutTimeoutRef.current = setTimeout(() => {
+      setFlyout(null);
+    }, 200);
+  }, []);
+
+  const clearFlyout = useCallback(() => {
+    clearTimeout(flyoutTimeoutRef.current);
+    setFlyout(null);
+  }, []);
+
+  const keepFlyoutOpen = useCallback(() => {
+    clearTimeout(flyoutTimeoutRef.current);
+  }, []);
+
+  const activeModuleId = getActiveModuleId(location.pathname);
+  const isSearching = searchQuery.trim().length > 0;
+
+  // Filter helpers for mobile search
+  const filterModules = (mods) =>
+    mods
+      .map((m) => {
+        const q = searchQuery.toLowerCase();
+        const selfMatch =
+          m.label.toLowerCase().includes(q) || m.href.toLowerCase().includes(q);
+        const childMatch = m.children?.filter(
+          (c) =>
+            c.label.toLowerCase().includes(q) ||
+            c.href.toLowerCase().includes(q)
+        );
+        if (selfMatch) return m;
+        if (childMatch?.length) return { ...m, children: childMatch };
+        return null;
+      })
+      .filter(Boolean);
+
+  const filterSimple = (items) =>
+    items.filter(
+      (i) =>
+        i.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        i.href.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+  const visiblePrimary = isSearching
+    ? filterModules(PRIMARY_MODULES)
+    : PRIMARY_MODULES;
+  const visibleOperations = isSearching ? filterSimple(OPERATIONS) : OPERATIONS;
+  const visibleInsights = isSearching ? filterSimple(INSIGHTS) : INSIGHTS;
+  const visibleAdmin = isSearching ? filterSimple(ADMINISTRATION) : ADMINISTRATION;
+
+  const pinnedWithIcons = useMemo(
+    () =>
+      pinned.map((p) => ({
+        ...p,
+        icon: resolveIconForHref(p.href),
+      })),
+    [pinned]
+  );
+
   return (
     <>
-      {/* Mobile backdrop overlay — only visible below md (768px) via .sidebar__backdrop */}
+      {/* Mobile backdrop overlay */}
       {isSidebarOpen && (
         <button
           type="button"
@@ -166,6 +486,7 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
       )}
 
       <aside
+        ref={sidebarRef}
         data-tour="sidebar"
         role="navigation"
         aria-label="Main navigation"
@@ -178,124 +499,244 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
         {/* Brand */}
         <div className="sidebar__brand">
           <div className="brand-mark" aria-hidden>
-            <GraduationCap size={14} color="white" strokeWidth={2} />
+            <GraduationCap size={14} strokeWidth={2} />
           </div>
           {!collapsed && (
-            <div className="col" style={{ lineHeight: 1.2, gap: 1, minWidth: 0 }}>
+            <div className="brand-text">
               <span className="brand-name" title={schoolName}>{schoolName}</span>
               {currentAcademicYear && (
-                <span className="brand-sub">
-                  {currentAcademicYear}
-                </span>
+                <span className="brand-sub">{currentAcademicYear}</span>
               )}
             </div>
           )}
         </div>
 
+        {/* Mobile search */}
+        {!collapsed && (
+          <div className="sidebar__mobile-search">
+            <Search size={14} className="text-fg-faint flex-shrink-0" aria-hidden />
+            <input
+              type="text"
+              placeholder="Search pages…"
+              className="sidebar__search-input"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label="Search navigation"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                className="sidebar__search-clear"
+                onClick={() => setSearchQuery("")}
+                aria-label="Clear search"
+              >
+                <X size={14} aria-hidden />
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Nav */}
         <nav className="sidebar__nav">
           {!collapsed && <div className="sidebar__heading">Workspace</div>}
-          {WORKSPACE_NAV.map((item) => (
-            <NavRow
-              key={item.href}
-              to={item.href}
-              icon={item.icon}
-              label={item.label}
-              badge={
-                item.chatBadge && unreadCount > 0
-                  ? unreadCount > 99 ? "99+" : unreadCount
-                  : undefined
-              }
-              collapsed={collapsed}
-              end={item.href === "/"}
-              onNav={closeOnMobileNav}
-            />
-          ))}
 
-          {!collapsed && pinned.length > 0 && (
+          {visiblePrimary.map((module) => {
+            const isExpanded =
+              isSearching || expandedModules[module.id] || activeModuleId === module.id;
+            return (
+              <React.Fragment key={module.id}>
+                <div
+                  onMouseEnter={(e) => {
+                    if (collapsed && module.children) {
+                      showFlyout(e.currentTarget, module.children, module.label);
+                    }
+                  }}
+                  onMouseLeave={hideFlyout}
+                >
+                  <ParentModule
+                    module={module}
+                    collapsed={collapsed}
+                    onNav={() => {
+                      closeOnMobileNav();
+                      clearFlyout();
+                    }}
+                    expanded={isExpanded}
+                    onToggle={() =>
+                      setExpandedModules((prev) => ({
+                        ...prev,
+                        [module.id]: !prev[module.id],
+                      }))
+                    }
+                    unreadCount={unreadCount}
+                  />
+                </div>
+                {!collapsed && isExpanded && module.children && (
+                  <div className="sidebar__group-body" id={`nav-children-${module.id}`}>
+                    {module.children.map((child) => (
+                      <ChildItem
+                        key={child.href}
+                        to={child.href}
+                        icon={child.icon}
+                        label={child.label}
+                        onNav={closeOnMobileNav}
+                        collapsed={collapsed}
+                      />
+                    ))}
+                  </div>
+                )}
+              </React.Fragment>
+            );
+          })}
+
+          {/* Pinned */}
+          {!collapsed && pinnedWithIcons.length > 0 && (
             <>
               <div
                 data-coach="sidebar-pin"
                 className="sidebar__heading"
-                style={{ marginTop: 16 }}
+                className="sidebar__heading--spaced"
               >
                 Pinned
               </div>
-              {pinned.map((item, i) => (
-                <NavRow
+              {pinnedWithIcons.map((item, i) => (
+                <NavLink
                   key={`pin-${item.href}-${i}`}
                   to={item.href}
-                  dotTone="info"
-                  label={item.label}
-                  collapsed={collapsed}
-                  onNav={closeOnMobileNav}
-                />
+                  onClick={closeOnMobileNav}
+                  title={collapsed ? item.label : undefined}
+                  className={({ isActive }) =>
+                    `sidebar__item${isActive ? " is-active" : ""}`
+                  }
+                >
+                  {item.icon ? (
+                    <item.icon size={15} strokeWidth={1.6} aria-hidden />
+                  ) : (
+                    <span className="dot" style={{ color: "var(--info)" }} aria-hidden />
+                  )}
+                  {!collapsed && (
+                    <span className="sidebar__label">{item.label}</span>
+                  )}
+                </NavLink>
               ))}
             </>
           )}
 
-          {!collapsed && (
-            <div className="sidebar__heading" style={{ marginTop: 16 }}>
-              More
-            </div>
+          {/* Collapsed rail: pinned icons */}
+          {collapsed && pinnedWithIcons.length > 0 && (
+            <>
+              {pinnedWithIcons.map((item, i) => (
+                <NavLink
+                  key={`pin-${item.href}-${i}`}
+                  to={item.href}
+                  onClick={closeOnMobileNav}
+                  title={item.label}
+                  className={({ isActive }) =>
+                    `sidebar__item${isActive ? " is-active" : ""}`
+                  }
+                >
+                  {item.icon ? (
+                    <item.icon size={15} strokeWidth={1.6} aria-hidden />
+                  ) : (
+                    <span className="dot" style={{ color: "var(--info)" }} aria-hidden />
+                  )}
+                </NavLink>
+              ))}
+            </>
           )}
-          {(collapsed ? MORE_NAV : moreVisible).map((item) => (
-            <NavRow
-              key={item.href}
-              to={item.href}
-              icon={item.icon}
-              label={item.label}
+
+          {/* Operations */}
+          {!collapsed && (
+            <NavGroup
+              heading="Operations"
+              items={visibleOperations}
               collapsed={collapsed}
               onNav={closeOnMobileNav}
+              defaultExpanded={false}
+              forceExpanded={isSearching}
+              searchQuery={isSearching ? searchQuery : ""}
             />
-          ))}
-          {!collapsed && moreExpanded &&
-            moreHidden.map((item) => (
-              <NavRow
-                key={item.href}
-                to={item.href}
-                icon={item.icon}
-                label={item.label}
-                collapsed={collapsed}
-                onNav={closeOnMobileNav}
-              />
-            ))}
-          {!collapsed && moreHidden.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setMoreExpanded((v) => !v)}
-              aria-expanded={moreExpanded}
-              className="sidebar__item"
-              style={{ color: "var(--fg-subtle)", width: "100%" }}
+          )}
+
+          {/* Insights */}
+          {!collapsed && (
+            <NavGroup
+              heading="Insights"
+              items={visibleInsights}
+              collapsed={collapsed}
+              onNav={closeOnMobileNav}
+              defaultExpanded={false}
+              forceExpanded={isSearching}
+              searchQuery={isSearching ? searchQuery : ""}
+            />
+          )}
+
+          {/* Administration */}
+          {!collapsed && (
+            <NavGroup
+              heading="Administration"
+              items={visibleAdmin}
+              collapsed={collapsed}
+              onNav={closeOnMobileNav}
+              defaultExpanded={false}
+              forceExpanded={isSearching}
+              searchQuery={isSearching ? searchQuery : ""}
+            />
+          )}
+
+          {/* Collapsed rail: "More" trigger for tier 2-4 groups */}
+          {collapsed && (
+            <div
+              className="sidebar__more-trigger"
+              title="More"
+              onMouseEnter={(e) => {
+                const allTiered = [
+                  { title: "Operations", items: OPERATIONS },
+                  { title: "Insights", items: INSIGHTS },
+                  { title: "Administration", items: ADMINISTRATION },
+                ];
+                const flatItems = allTiered.flatMap((g) =>
+                  g.items.map((i) => ({ ...i, groupTitle: g.title }))
+                );
+                showFlyout(e.currentTarget, flatItems, null);
+              }}
+              onMouseLeave={hideFlyout}
+              onClick={() => setIsSidebarOpen(true)}
+              role="button"
+              tabIndex={0}
+              aria-label="Show more navigation"
             >
-              <ChevronDown
-                size={15}
-                strokeWidth={1.6}
-                style={{
-                  transform: moreExpanded ? "rotate(180deg)" : "none",
-                  transition: "transform 120ms",
-                }}
-                aria-hidden
-              />
-              <span className="sidebar__label">
-                {moreExpanded ? "Show less" : `Show all (${moreHidden.length} more)`}
-              </span>
-            </button>
+              <MoreHorizontal size={18} strokeWidth={1.6} aria-hidden />
+            </div>
           )}
         </nav>
 
         {/* Footer */}
         <div className="sidebar__foot">
-          <NavRow
+          <SimpleNavItem
             to="/settings"
             icon={Settings}
             label="Settings"
-            collapsed={collapsed}
             onNav={closeOnMobileNav}
+            collapsed={collapsed}
           />
           <UserMenu collapsed={collapsed} />
         </div>
       </aside>
+
+      {/* Flyout panel (portal-like, fixed position) */}
+      {flyout && (
+        <NavFlyout
+          rect={flyout.rect}
+          title={flyout.title}
+          items={flyout.items}
+          onNav={() => {
+            closeOnMobileNav();
+            clearFlyout();
+          }}
+          onClose={hideFlyout}
+          onMouseEnter={keepFlyoutOpen}
+        />
+      )}
     </>
   );
 }
