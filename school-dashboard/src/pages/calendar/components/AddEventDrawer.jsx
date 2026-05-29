@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { Button, Input, Textarea } from "@heroui/react";
+import Button from "../../../components/ui/Button";
+import IconButton from "../../../components/ui/IconButton";
+import { Input, Textarea } from "../../../components/ui";
 import {
   Plus, Clock, Calendar as CalendarIcon, X, Edit3, Repeat
 } from "lucide-react";
@@ -128,16 +130,15 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                   )}
                 </div>
               </div>
-              <Button
-                isIconOnly
+              <IconButton
                 size="sm"
-                variant="light"
-                onPress={onClose}
+                variant="ghost"
+                onClick={onClose}
                 className="text-fg-faint hover:text-fg"
                 aria-label="Close"
               >
                 <X size={18} />
-              </Button>
+              </IconButton>
             </div>
 
             {/* Drawer Body */}
@@ -148,14 +149,10 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                   <label className="text-xs font-medium text-fg-muted mb-1.5 block">{t('calendar.addEvent.eventTitleLabel', 'Event Title')}</label>
                   <Input
                     placeholder={t('calendar.addEvent.eventTitlePlaceholder', 'e.g., Staff Meeting, Annual Day...')}
-                    variant="bordered"
                     size="lg"
                     value={newEvent.title}
-                    onValueChange={(v) => setNewEvent({ ...newEvent, title: v })}
-                    classNames={{
-                      inputWrapper: "border-border-token hover:border-border-strong focus-within:border-border-strong",
-                      input: "text-sm"
-                    }}
+                    onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+                    className="border-border-token hover:border-border-strong focus-within:border-border-strong"
                   />
                 </div>
 
@@ -192,16 +189,10 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                   <label className="text-xs font-medium text-fg-muted mb-1.5 block">{t('calendar.addEvent.descriptionLabel', 'Description')}</label>
                   <Textarea
                     placeholder={t('calendar.addEvent.descriptionPlaceholder', 'Add event details or notes...')}
-                    variant="bordered"
-                    size="sm"
-                    minRows={2}
-                    maxRows={4}
+                    rows={2}
                     value={newEvent.description}
-                    onValueChange={(v) => setNewEvent({ ...newEvent, description: v })}
-                    classNames={{
-                      inputWrapper: "border-border-token hover:border-border-strong focus-within:border-border-strong",
-                      input: "text-sm"
-                    }}
+                    onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                    className="border-border-token hover:border-border-strong focus:border-border-strong"
                   />
                 </div>
 
@@ -286,28 +277,20 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                       <label className="text-xs font-medium text-fg-muted mb-1.5 block">{t('calendar.addEvent.startTime', 'Start Time')}</label>
                       <Input
                         type="time"
-                        variant="bordered"
                         size="lg"
                         value={newEvent.startTime}
-                        onValueChange={(v) => setNewEvent({ ...newEvent, startTime: v })}
-                        classNames={{
-                          inputWrapper: "border-border-token hover:border-border-strong",
-                          input: "text-sm"
-                        }}
+                        onChange={(e) => setNewEvent({ ...newEvent, startTime: e.target.value })}
+                        className="border-border-token hover:border-border-strong focus-within:border-border-strong"
                       />
                     </div>
                     <div>
                       <label className="text-xs font-medium text-fg-muted mb-1.5 block">{t('calendar.addEvent.endTime', 'End Time')}</label>
                       <Input
                         type="time"
-                        variant="bordered"
                         size="lg"
                         value={newEvent.endTime}
-                        onValueChange={(v) => setNewEvent({ ...newEvent, endTime: v })}
-                        classNames={{
-                          inputWrapper: "border-border-token hover:border-border-strong",
-                          input: "text-sm"
-                        }}
+                        onChange={(e) => setNewEvent({ ...newEvent, endTime: e.target.value })}
+                        className="border-border-token hover:border-border-strong focus-within:border-border-strong"
                       />
                     </div>
                   </div>
@@ -362,15 +345,15 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
 
             {/* Drawer Footer */}
             <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-divider bg-surface">
-              <Button variant="light" size="sm" onPress={onClose} className="text-fg-muted">
+              <Button variant="ghost" size="sm" onClick={onClose} className="text-fg-muted">
                 {t('common.cancel', 'Cancel')}
               </Button>
               <Button
                 size="sm"
-                color="primary"
-                onPress={handleAddEvent}
-                isDisabled={!newEvent.title.trim()}
-                startContent={editingEvent ? <Edit3 size={14} /> : <Plus size={14} />}
+                variant="primary"
+                onClick={handleAddEvent}
+                disabled={!newEvent.title.trim()}
+                icon={editingEvent ? <Edit3 size={14} /> : <Plus size={14} />}
               >
                 {editingEvent ? t('calendar.editEvent.updateEvent', 'Update Event') : t('calendar.addEvent.createEvent', 'Create Event')}
               </Button>
