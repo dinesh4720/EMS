@@ -572,13 +572,14 @@ test.describe('Inventory — Assets & Vendors', () => {
   test('6. Edit asset pre-fills and saves', async ({ page }) => {
     await gotoAndWait(page, '/inventory/assets', 'Wooden Desk');
 
-    // Click edit button on first asset row
+    // Click edit button on first asset row (buttons: stock-in, stock-out, edit, delete)
     const firstRow = page.locator('table tbody tr').first();
     const editBtn = firstRow.locator('button').nth(2);
     if (await editBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
       await editBtn.click();
+      // HeroUI Modal renders with role="dialog" — wait longer under load
       const dialog = page.locator('[role="dialog"]').last();
-      await expect(dialog).toBeVisible({ timeout: 5000 });
+      await expect(dialog).toBeVisible({ timeout: 10_000 });
 
       const text = await dialog.textContent();
       expect(text?.includes('Edit Asset')).toBeTruthy();
@@ -607,10 +608,12 @@ test.describe('Inventory — Assets & Vendors', () => {
     const deleteBtn = firstRow.locator('button').last();
     if (await deleteBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
       await deleteBtn.click();
-      // Assets page uses ConfirmDialog (ModalBase with role="alertdialog") — click the "Delete" confirm button
-      const confirmBtn = page.locator('[role="alertdialog"]').last().getByRole('button', { name: /Delete/i });
-      if (await confirmBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await confirmBtn.click();
+      // The assets page uses a custom alertdialog (not the design-system
+      // ConfirmDialog). Use the alertdialog role and heading for stable targeting.
+      const confirmDialog = page.getByRole('alertdialog', { name: /Delete this asset/i });
+      if (await confirmDialog.isVisible({ timeout: 5_000 }).catch(() => false)) {
+        await confirmDialog.getByRole('button', { name: /Delete/i }).click();
+      }
       }
       await expect.poll(() => state.inventoryAssets.length, { timeout: 10_000 }).toBe(before - 1);
     }
@@ -670,15 +673,17 @@ test.describe('Inventory — Assets & Vendors', () => {
       await expect(dialog).not.toBeVisible({ timeout: 3000 });
     }
 
-    // Delete first vendor — uses ConfirmDialog (ModalBase with role="alertdialog"), not native dialog
+    // Delete first vendor — uses the design-system ConfirmDialog (role="alertdialog")
     const before = state.inventoryVendors.length;
     const deleteBtn = firstCard.locator('button').last();
     if (await deleteBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
       await deleteBtn.click();
-      // Click "Delete" in the confirm dialog
-      const confirmBtn = page.locator('[role="alertdialog"]').last().getByRole('button', { name: /Delete/i });
-      if (await confirmBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await confirmBtn.click();
+      // The vendors page uses a custom alertdialog (not the design-system
+      // ConfirmDialog). Use the alertdialog role and heading for stable targeting.
+      const confirmDialog = page.getByRole('alertdialog', { name: /Delete this vendor/i });
+      if (await confirmDialog.isVisible({ timeout: 5_000 }).catch(() => false)) {
+        await confirmDialog.getByRole('button', { name: /Delete/i }).click();
+      }
       }
       await expect.poll(() => state.inventoryVendors.length, { timeout: 10_000 }).toBe(before - 1);
     }

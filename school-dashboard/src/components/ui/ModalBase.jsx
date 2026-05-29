@@ -60,7 +60,11 @@ export default function ModalBase({
 
   useEffect(() => {
     if (!isOpen || !dialogRef.current) return;
-    const raf = requestAnimationFrame(() => {
+    // Use setTimeout instead of requestAnimationFrame so the DOM commit is
+    // guaranteed to have finished before we query for focusable elements.
+    // requestAnimationFrame can fire before React has flushed portal content
+    // under heavy CPU load, causing the focus trap to miss elements.
+    const timer = setTimeout(() => {
       if (!dialogRef.current) return;
       const focusable = dialogRef.current.querySelectorAll(FOCUSABLE);
       if (focusable.length > 0) {
@@ -68,8 +72,8 @@ export default function ModalBase({
       } else {
         dialogRef.current.focus();
       }
-    });
-    return () => cancelAnimationFrame(raf);
+    }, 0);
+    return () => clearTimeout(timer);
   }, [isOpen]);
 
   useEffect(() => {
