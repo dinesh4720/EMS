@@ -8,8 +8,8 @@ export default function AcademicsKpiStrip({ kpis = {} }) {
   return (
     <div className="academics-kpi" role="group" aria-label="Academics overview">
       <div className="academics-kpi__cell">
-        <div className="row gap-2" style={{ alignItems: "center" }}>
-          <CalendarRange size={14} style={{ color: "var(--fg-subtle)" }} aria-hidden />
+        <div className="row gap-2 items-center">
+          <CalendarRange size={14} className="text-fg-subtle" aria-hidden />
           <span className="academics-kpi__label">Upcoming exams</span>
         </div>
         <span className="academics-kpi__value">{kpis.upcomingCount ?? 0}</span>
@@ -17,8 +17,8 @@ export default function AcademicsKpiStrip({ kpis = {} }) {
       </div>
 
       <div className="academics-kpi__cell">
-        <div className="row gap-2" style={{ alignItems: "center" }}>
-          <BarChart3 size={14} style={{ color: "var(--fg-subtle)" }} aria-hidden />
+        <div className="row gap-2 items-center">
+          <BarChart3 size={14} className="text-fg-subtle" aria-hidden />
           <span className="academics-kpi__label">Avg performance</span>
         </div>
         <span className="academics-kpi__value">{avgLabel}</span>
@@ -26,8 +26,8 @@ export default function AcademicsKpiStrip({ kpis = {} }) {
       </div>
 
       <div className="academics-kpi__cell">
-        <div className="row gap-2" style={{ alignItems: "center" }}>
-          <FileCheck2 size={14} style={{ color: "var(--fg-subtle)" }} aria-hidden />
+        <div className="row gap-2 items-center">
+          <FileCheck2 size={14} className="text-fg-subtle" aria-hidden />
           <span className="academics-kpi__label">Results published</span>
         </div>
         <span className="academics-kpi__value academics-kpi__value--ok">

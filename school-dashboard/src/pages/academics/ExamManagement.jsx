@@ -16,6 +16,7 @@ import {
   MinimalButton,
   MinimalTabs,
   StatCard,
+  PageShell,
 } from '../../components/ui';
 import logger from '../../utils/logger';
 import ExamScheduleView from './ExamScheduleView';
@@ -266,16 +267,9 @@ const ExamManagement = ({ onCreateExam }) => {
   );
 
   return (
-    <div className="space-y-4">
-      {/* Toolbar */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <MinimalTabs
-          tabs={viewTabs}
-          activeKey={activeView}
-          onChange={setActiveView}
-          size="sm"
-          variant="pills"
-        />
+    <PageShell
+      title={t('pages.examManagement', { defaultValue: 'Exam Management' })}
+      actions={
         <div className="flex items-center gap-3">
           <FiltersDropdown
             filters={filterConfig}
@@ -290,7 +284,18 @@ const ExamManagement = ({ onCreateExam }) => {
             {t('pages.createExam')}
           </MinimalButton>
         </div>
-      </div>
+      }
+      toolbar={
+        <MinimalTabs
+          tabs={viewTabs}
+          activeKey={activeView}
+          onChange={setActiveView}
+          size="sm"
+          variant="pills"
+        />
+      }
+    >
+      <div className="space-y-4">
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -426,7 +431,8 @@ const ExamManagement = ({ onCreateExam }) => {
         cancelText={t('common.cancel', { defaultValue: 'Cancel' })}
         variant="danger"
       />
-    </div>
+      </div>
+    </PageShell>
   );
 };
 

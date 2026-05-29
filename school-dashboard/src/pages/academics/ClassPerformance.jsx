@@ -8,6 +8,7 @@ import {
   TableBody, TableRow, TableCell, Input
 } from '@heroui/react';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+import { PageShell } from '../../components/ui';
 import {
   Download, Search, FileText,
   ArrowUpRight, ArrowDownRight, Minus
@@ -190,8 +191,8 @@ const ClassPerformance = () => {
 
   const getTrendIcon = (trend) => {
     switch (trend) {
-      case 'improving': return <ArrowUpRight style={{ color: 'var(--ok)' }} size={14} />;
-      case 'declining': return <ArrowDownRight style={{ color: 'var(--danger)' }} size={14} />;
+      case 'improving': return <ArrowUpRight className="text-[var(--ok)]" size={14} />;
+      case 'declining': return <ArrowDownRight className="text-[var(--danger)]" size={14} />;
       default: return <Minus className="text-fg-faint" size={14} />;
     }
   };
@@ -207,33 +208,32 @@ const ClassPerformance = () => {
 
   if (loading) {
     return (
-      <TablePageSkeleton />
+      <PageShell title="Class Performance">
+        <TablePageSkeleton />
+      </PageShell>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 gap-4">
-        <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-950 flex items-center justify-center">
-          <FileText size={24} className="text-red-500" />
+      <PageShell title="Class Performance">
+        <div className="flex flex-col items-center justify-center py-16 gap-4">
+          <div className="w-12 h-12 rounded-full bg-[var(--danger-bg)] flex items-center justify-center">
+            <FileText size={24} className="text-[var(--danger)]" />
+          </div>
+          <p className="text-sm font-medium text-fg">Failed to load performance data</p>
+          <p className="text-xs text-fg-muted max-w-xs text-center">{error}</p>
+          <Button size="sm" variant="flat" onPress={() => fetchData()}>Retry</Button>
         </div>
-        <p className="text-sm font-medium text-fg">Failed to load performance data</p>
-        <p className="text-xs text-fg-muted max-w-xs text-center">{error}</p>
-        <Button size="sm" variant="flat" onPress={() => fetchData()}>Retry</Button>
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-fg">
-            {classInfo?.name || classId?.replace('-', ' ')} - Performance
-          </h1>
-          <p className="text-fg-muted">Academic Year {selectedYear}</p>
-        </div>
+    <PageShell
+      title={classInfo?.name ? `${classInfo.name} - Performance` : 'Class Performance'}
+      description={`Academic Year ${selectedYear}`}
+      actions={
         <div className="flex items-center gap-3">
           <Select
             size="sm"
@@ -257,7 +257,9 @@ const ClassPerformance = () => {
             Export
           </Button>
         </div>
-      </div>
+      }
+    >
+      <div className="space-y-6">
 
       {/* KPI strip — dp-metric pattern */}
       <div className="perf-metrics" role="group" aria-label="Class performance overview">
@@ -388,12 +390,17 @@ const ClassPerformance = () => {
               {filteredStudents.slice(0, 20).map((student, idx) => (
                 <TableRow key={student.id || idx}>
                   <TableCell>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                      student.rank === 1 ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300' :
-                      student.rank === 2 ? 'bg-surface-2 text-fg' :
-                      student.rank === 3 ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300' :
-                      'bg-surface-2 text-fg-muted'
-                    }`}>
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
+                      style={{
+                        background: student.rank === 1 ? 'var(--warn-bg)' :
+                                    student.rank === 2 ? 'var(--surface-2)' :
+                                    student.rank === 3 ? 'var(--ok-bg)' : 'var(--surface-2)',
+                        color: student.rank === 1 ? 'var(--warn)' :
+                               student.rank === 2 ? 'var(--fg)' :
+                               student.rank === 3 ? 'var(--ok)' : 'var(--fg-muted)'
+                      }}
+                    >
                       {student.rank != null ? student.rank : '—'}
                     </div>
                   </TableCell>
@@ -503,7 +510,7 @@ const ClassPerformance = () => {
           </Table>
         </div>
       </div>
-    </div>
+    </PageShell>
   );
 };
 
