@@ -473,7 +473,7 @@ export function StudentCsvPreviewModal({
                                                 </div>
 
                                                 {!student.valid && !student.isDuplicate && Object.keys(student.errors).length > 0 && (
-                                                    <div style={{ background: "rgba(239, 68, 68, 0.12)", borderRadius: 6, padding: 8, marginBottom: 6 }}>
+                                                    <div style={{ background: "var(--danger-bg)", borderRadius: 6, padding: 8, marginBottom: 6 }}>
                                                         <div className="col" style={{ gap: 2 }}>
                                                             {Object.entries(student.errors).slice(0, 2).map(([field, error]) => (
                                                                 <div key={field} style={{ fontSize: 11 }}>
@@ -491,7 +491,7 @@ export function StudentCsvPreviewModal({
                                                 )}
 
                                                 {!student.isDuplicate && student.warnings.length > 0 && (
-                                                    <div style={{ background: "rgba(245, 158, 11, 0.12)", borderRadius: 6, padding: 8, marginBottom: 6 }}>
+                                                    <div style={{ background: "var(--warn-bg)", borderRadius: 6, padding: 8, marginBottom: 6 }}>
                                                         <ul className="col" style={{ gap: 2, paddingLeft: 14 }}>
                                                             {student.warnings.slice(0, 2).map((w, i) => (
                                                                 <li key={i} style={{ fontSize: 11, color: "var(--warn)" }}>{w}</li>

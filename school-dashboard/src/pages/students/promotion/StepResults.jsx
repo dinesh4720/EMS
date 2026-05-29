@@ -17,16 +17,16 @@ export default function StepResults({ wizardState, onReset, onGoToHistory }) {
         shadow="sm"
         className={`border ${
           hasErrors
-            ? 'bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-800'
-            : 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800'
+            ? 'bg-warn-bg border-warn'
+            : 'bg-ok-bg border-ok'
         }`}
       >
         <CardBody className="p-4">
           <div className="flex items-start gap-3">
             {hasErrors ? (
-              <XCircle size={22} className="text-yellow-600 dark:text-yellow-400 mt-0.5" />
+              <XCircle size={22} className="text-warn mt-0.5" />
             ) : (
-              <CheckCircle size={22} className="text-green-600 dark:text-green-400 mt-0.5" />
+              <CheckCircle size={22} className="text-ok mt-0.5" />
             )}
             <div>
               <p className="text-base font-semibold text-fg">
@@ -115,14 +115,14 @@ export default function StepResults({ wizardState, onReset, onGoToHistory }) {
 
       {/* Errors detail */}
       {errors.length > 0 && (
-        <Card shadow="sm" className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800">
+        <Card shadow="sm" className="bg-danger-bg border-danger-token">
           <CardBody className="p-4">
-            <p className="text-sm font-semibold text-red-700 dark:text-red-300 mb-2">
+            <p className="text-sm font-semibold text-danger-token mb-2">
               Errors (<span className="mono tnum">{errors.length}</span>)
             </p>
             <div className="space-y-1 max-h-40 overflow-y-auto">
               {errors.map((err, idx) => (
-                <p key={err.studentId || idx} className="text-xs text-red-600 dark:text-red-400">
+                <p key={err.studentId || idx} className="text-xs text-danger-token">
                   Student {err.studentId}: {err.error}
                 </p>
               ))}
@@ -142,7 +142,7 @@ export default function StepResults({ wizardState, onReset, onGoToHistory }) {
           View history & rollback
         </Button>
         <Button
-          className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900"
+          color="primary"
           onPress={onReset}
         >
           Start new promotion

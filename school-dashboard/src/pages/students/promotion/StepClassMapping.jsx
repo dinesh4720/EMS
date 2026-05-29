@@ -137,9 +137,9 @@ export default function StepClassMapping({ onNext, onBack, wizardState, setWizar
       </p>
 
       {mappings.length === 0 && (
-        <Card shadow="sm" className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800">
+        <Card shadow="sm" className="bg-warn-bg border-warn">
           <CardBody className="p-4 flex items-center gap-2">
-            <AlertTriangle size={16} className="text-yellow-600" />
+            <AlertTriangle size={16} className="text-warn" />
             <p className="text-sm text-yellow-700 dark:text-yellow-300">
               No classes found for {wizardState.fromYear}. Make sure classes exist for the current academic year.
             </p>
@@ -193,7 +193,7 @@ export default function StepClassMapping({ onNext, onBack, wizardState, setWizar
                   onSelectionChange={(keys) => updateMapping(idx, 'toClassId', [...keys][0] || '')}
                   variant="bordered"
                   className="max-w-xs"
-                  classNames={{ trigger: 'dark:border-zinc-700 h-9' }}
+                  classNames={{ trigger: 'h-9' }}
                   isDisabled={!m.included}
                   aria-label="Target class"
                 >
@@ -242,7 +242,7 @@ export default function StepClassMapping({ onNext, onBack, wizardState, setWizar
           Back
         </Button>
         <Button
-          className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900"
+          color="primary"
           onPress={handleNext}
           isDisabled={includedMappings.length === 0}
         >

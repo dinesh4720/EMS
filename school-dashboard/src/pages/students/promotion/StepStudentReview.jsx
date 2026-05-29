@@ -226,14 +226,14 @@ export default function StepStudentReview({ onNext, onBack, wizardState, setWiza
               <div className="flex gap-2 mb-3 px-1">
                 <button
                   onClick={() => selectAllEligible(mapping.fromClassId, mapping)}
-                  className="text-xs text-blue-600 hover:underline"
+                  className="text-xs text-info-token hover:underline"
                 >
                   {mapping.graduate ? 'Graduate all eligible' : 'Promote all eligible'}
                 </button>
-                <span className="text-xs text-gray-300">|</span>
+                <span className="text-xs text-fg-faint">|</span>
                 <button
                   onClick={() => detainAll(mapping.fromClassId)}
-                  className="text-xs text-yellow-600 hover:underline"
+                  className="text-xs text-warn hover:underline"
                 >
                   Detain all
                 </button>
@@ -241,7 +241,7 @@ export default function StepStudentReview({ onNext, onBack, wizardState, setWiza
 
               <div className="max-h-80 overflow-y-auto pr-1">
                 {students.length === 0 ? (
-                  <p className="text-sm text-gray-400 text-center py-4">No active students</p>
+                  <p className="text-sm text-fg-faint text-center py-4">No active students</p>
                 ) : (
                   students.map((s) => {
                     const sid = String(s.studentId || s._id);
@@ -250,10 +250,10 @@ export default function StepStudentReview({ onNext, onBack, wizardState, setWiza
 
                     return (
                       <div key={sid} className={`sdec-row sdec-row--${decision}`}>
-                        {decision === 'promoted' && <ArrowUpCircle size={14} className="text-green-500 shrink-0" />}
-                        {decision === 'detained' && <Minus size={14} className="text-yellow-500 shrink-0" />}
-                        {decision === 'graduated' && <GraduationCap size={14} className="text-purple-500 shrink-0" />}
-                        {decision === 'transferred' && <ArrowUpCircle size={14} className="text-blue-500 shrink-0" />}
+                        {decision === 'promoted' && <ArrowUpCircle size={14} className="text-ok shrink-0" />}
+                        {decision === 'detained' && <Minus size={14} className="text-warn shrink-0" />}
+                        {decision === 'graduated' && <GraduationCap size={14} className="text-accent shrink-0" />}
+                        {decision === 'transferred' && <ArrowUpCircle size={14} className="text-info-token shrink-0" />}
 
                         <div className="flex-1 min-w-0">
                           <p className="sdec-row__name truncate">{s.name}</p>
@@ -279,7 +279,7 @@ export default function StepStudentReview({ onNext, onBack, wizardState, setWiza
                           }}
                           variant="bordered"
                           className="w-32 shrink-0"
-                          classNames={{ trigger: 'h-8 min-h-8 dark:border-zinc-700' }}
+                          classNames={{ trigger: 'h-8 min-h-8' }}
                           aria-label="Decision"
                         >
                           {DECISION_OPTIONS.map((opt) => (
@@ -309,7 +309,7 @@ export default function StepStudentReview({ onNext, onBack, wizardState, setWiza
           Back
         </Button>
         <Button
-          className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900"
+          color="primary"
           onPress={handleNext}
         >
           Next: Review Summary

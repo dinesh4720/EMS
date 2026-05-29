@@ -15,7 +15,7 @@ const STEPS = [
  */
 function StepperHeader({ currentStep }) {
   return (
-    <div className="px-6 py-4 border-b border-gray-100 dark:border-zinc-700">
+    <div className="px-6 py-4 border-b border-border-token">
       <div className="flex items-center justify-between relative">
         {STEPS.map((stepItem, i) => {
           const isActive = currentStep >= stepItem.number;
@@ -27,16 +27,16 @@ function StepperHeader({ currentStep }) {
               {i < STEPS.length - 1 && (
                 <div className={cn(
                   "absolute top-4 h-0.5 -translate-y-1/2 transition-all duration-300 left-1/2 w-[calc(100%-36px)]",
-                  isActive ? "bg-gray-900 dark:bg-zinc-100" : "bg-surface-2"
+                  isActive ? "bg-fg" : "bg-surface-2"
                 )} />
               )}
               <div className={cn(
                 "w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all duration-200 relative z-20",
                 isCurrent
-                  ? "border-gray-900 text-gray-900 bg-white dark:border-zinc-100 dark:text-zinc-100 dark:bg-zinc-900"
+                  ? "border-fg text-fg bg-surface"
                   : isCompleted
-                    ? "border-gray-900 text-white bg-gray-900 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
-                    : "border-gray-300 text-gray-400 bg-white dark:border-zinc-600 dark:text-zinc-500 dark:bg-zinc-900"
+                    ? "border-fg text-surface bg-fg"
+                    : "border-fg-faint text-fg-faint bg-surface"
               )}>
                 {isCompleted
                   ? <Check size={16} strokeWidth={2.5} />

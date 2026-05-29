@@ -91,7 +91,7 @@ export default function AddRemarkDrawer({
             <DrawerHeader className="border-b border-default-100">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-50 rounded-xl">
-                  <MessageSquare size={20} className="text-blue-600" />
+                  <MessageSquare size={20} className="text-accent" />
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold">{t('students.profile.remarks.drawerTitle', 'Add Remark')}</h3>

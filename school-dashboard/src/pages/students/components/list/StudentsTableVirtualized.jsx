@@ -245,7 +245,7 @@ function StudentsTableVirtualized({
                                     selectedKeys.has(student.id?.toString());
 
                                 const selectedBg = "bg-primary-50";
-                                const defaultBg = "bg-surface group-hover:bg-gray-50 dark:group-hover:bg-zinc-800/50";
+                                const defaultBg = "bg-surface group-hover:bg-surface-2";
                                 const bgClass = isSelected ? selectedBg : defaultBg;
 
                                 return (
@@ -280,7 +280,7 @@ function StudentsTableVirtualized({
                                             className={`py-4 border-b border-border-token text-center transition-colors w-12 min-w-12 ${
                                                 isSelected
                                                     ? "bg-primary-50"
-                                                    : "group-hover:bg-gray-50 dark:group-hover:bg-zinc-800/50"
+                                                    : "group-hover:bg-surface-2"
                                             }`}
                                             onClick={(e) => e.stopPropagation()}
                                         >

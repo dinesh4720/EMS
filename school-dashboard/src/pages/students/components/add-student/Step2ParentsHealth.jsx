@@ -134,7 +134,7 @@ function Step2ParentsHealth({
       </div>
 
       {/* Guardian Details */}
-      <div className="space-y-4 pt-5 border-t border-gray-100 dark:border-zinc-700">
+      <div className="space-y-4 pt-5 border-t border-border-token">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-medium text-fg">{t('pages.guardianDetails')}</h3>
           <span className="text-xs text-fg-faint">(Optional)</span>
@@ -235,7 +235,7 @@ function Step2ParentsHealth({
       </div>
 
       {/* Sibling Details */}
-      <div className="space-y-4 pt-5 border-t border-gray-100 dark:border-zinc-700">
+      <div className="space-y-4 pt-5 border-t border-border-token">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-medium text-fg">{t('pages.siblingDetails')}</h3>
           <span className="text-xs text-fg-faint">(Siblings in same school only)</span>
@@ -304,7 +304,7 @@ function Step2ParentsHealth({
       </div>
 
       {/* Health & Safety */}
-      <div className="space-y-3 pt-5 border-t border-gray-100 dark:border-zinc-700">
+      <div className="space-y-3 pt-5 border-t border-border-token">
         <h3 className="text-sm font-medium text-fg">{t('pages.healthSafety')}</h3>
         <Textarea
           label={t('pages.medicalConditions1')}
@@ -320,7 +320,7 @@ function Step2ParentsHealth({
       </div>
 
       {/* Transport & Hostel */}
-      <div className="space-y-4 pt-5 border-t border-gray-100 dark:border-zinc-700">
+      <div className="space-y-4 pt-5 border-t border-border-token">
         <h3 className="text-sm font-medium text-fg">{t('pages.additionalRequirements')}</h3>
         <div className="grid grid-cols-2 gap-4">
           <div className={cn(
