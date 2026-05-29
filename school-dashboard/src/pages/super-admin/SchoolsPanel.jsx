@@ -104,11 +104,12 @@ export default function SchoolsPanel() {
       });
       setForm(INITIAL_FORM);
       if (response.temporaryPassword) {
-        window.alert(
-          `School created successfully.\n\nTemporary admin password (copy now — it will not be shown again):\n\n${response.temporaryPassword}`
+        setMessage(
+          `School created and provisioned successfully. Temporary admin password: ${response.temporaryPassword}`
         );
+      } else {
+        setMessage('School created and provisioned successfully.');
       }
-      setMessage('School created and provisioned successfully.');
       await loadData();
     } catch (err) {
       setError(err.message || 'Failed to create school');
