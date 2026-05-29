@@ -745,6 +745,7 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
             />
           </div>
         )}
+        </div>
 
       </div>
 

@@ -510,6 +510,7 @@ export default function StudentsList({ onAddStudent }) {
             />
           </div>
         )}
+        </div>
 
       </div>
 
