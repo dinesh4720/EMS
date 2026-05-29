@@ -30,31 +30,25 @@ test.describe('Email Campaigns & Reminders', () => {
 
   test('1. Campaign list loads with status chips (draft/scheduled/sending/sent/failed)', async ({ page }) => {
     await page.goto('/messaging/email-campaigns');
-    // Lazy-loaded chunks + API data need network idle before we assert
     await page.waitForLoadState('networkidle');
 
-    // Wait for the messaging page to render (lazy-loaded component)
+    // Wait for the email-campaigns page to render (lazy-loaded chunk + API data)
     await page.waitForFunction(
       () => {
         const text = (document.body.textContent || '').toLowerCase();
-        return text.includes('message') || text.includes('chat') || text.includes('announcement') || text.includes('campaign');
+        return text.includes('no email campaigns') || text.includes('draft') || text.includes('scheduled') || text.includes('sending') || text.includes('sent') || text.includes('failed');
       },
-      { timeout: 15_000 },
+      { timeout: 20_000 },
     ).catch(() => {});
-    // Give the component one more beat to settle after lazy chunk evaluation
-    await page.waitForTimeout(500);
 
     const bodyText = await page.textContent('body');
     expect(bodyText).toBeTruthy();
     await expect(page).not.toHaveURL(/\/login/);
 
-    // Verify campaigns are listed and status labels are shown.
-    // If the email-campaigns route is not active (commented out in App.jsx),
-    // the page may render the messaging shell without campaign content.
-    // In that case the test passes vacuously rather than failing.
+    // Verify campaigns are listed and status labels are shown
     const statusLabels = ['draft', 'scheduled', 'sending', 'sent', 'failed'];
     const foundStatuses = statusLabels.filter((s) => bodyText?.toLowerCase().includes(s));
-    expect(foundStatuses.length).toBeGreaterThanOrEqual(0);
+    expect(foundStatuses.length).toBeGreaterThan(0);
   });
 
   test('2. Create campaign modal has name, subject, HTML body, text body, target group', async ({ page }) => {
@@ -142,10 +136,18 @@ test.describe('Email Campaigns & Reminders', () => {
     }
   });
 
-  // SKIPPED: /messaging/email-campaigns route is commented out in App.jsx — email campaigns page not yet active
-  test.skip('6. Preview shows recipient count', async ({ page }) => {
+  test('6. Preview shows recipient count', async ({ page }) => {
     await page.goto('/messaging/email-campaigns');
     await page.waitForLoadState('networkidle');
+
+    // Wait for the email-campaigns page to render (lazy-loaded chunk + API data)
+    await page.waitForFunction(
+      () => {
+        const text = (document.body.textContent || '').toLowerCase();
+        return text.includes('no email campaigns') || text.includes('draft') || text.includes('scheduled') || text.includes('sending') || text.includes('sent') || text.includes('failed');
+      },
+      { timeout: 20_000 },
+    ).catch(() => {});
 
     const bodyText = await page.textContent('body');
     // Campaigns show recipient/sent counts
