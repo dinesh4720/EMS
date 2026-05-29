@@ -197,20 +197,26 @@ test.describe('Intake Forms — Assignments & Submissions', () => {
     await expect(page.getByText('parent1@example.com')).toBeVisible({ timeout: 10_000 });
 
     const initialCount = state.intakeFormAssignments.length;
-    page.on('dialog', (dialog) => dialog.accept());
 
-    // Open actions dropdown on first row
-    const actionButtons = page.locator('button[aria-haspopup="true"]');
-    const dropdownTrigger = actionButtons.last();
+    // Open actions dropdown on first row — the dropdown trigger is the last button
+    // in the first table row.
+    const firstRow = page.locator('table tbody tr').first();
+    const dropdownTrigger = firstRow.locator('button').last();
     await dropdownTrigger.click();
+
+    // Wait for the HeroUI dropdown menu to open
+    const deleteItem = page.getByRole('menuitem').filter({ hasText: /Cancel Assignment/i });
+    await expect(deleteItem).toBeVisible({ timeout: 5_000 });
+    await deleteItem.click();
+
+    // The page uses a custom alertdialog (not the design-system ConfirmDialog).
+    // Use the alertdialog role and heading name for stable targeting.
+    const confirmDialog = page.getByRole('alertdialog', { name: /Cancel Assignment/i });
+    await expect(confirmDialog).toBeVisible({ timeout: 5_000 });
+    await confirmDialog.getByRole('button', { name: /confirm/i }).click();
     await page.waitForTimeout(500);
 
-    const deleteItem = page.getByText(/cancel assignment/i).first();
-    if (await deleteItem.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await deleteItem.click();
-      await page.waitForTimeout(1000);
-      expect(state.intakeFormAssignments.length).toBe(initialCount - 1);
-    }
+    expect(state.intakeFormAssignments.length).toBe(initialCount - 1);
   });
 
   /* ───── Submissions Page ───── */
