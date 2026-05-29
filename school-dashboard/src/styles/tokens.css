@@ -76,8 +76,11 @@
   --accent: oklch(56% 0.19 270);
   --accent-hover: oklch(50% 0.2 270);
   --accent-bg: oklch(56% 0.19 270 / 0.1);
+  --accent-bg-subtle: oklch(56% 0.19 270 / 0.04);
   --accent-fg: oklch(98% 0.01 270);
   --accent-border: oklch(56% 0.19 270 / 0.25);
+  --warn-bg-hover: oklch(65% 0.15 75 / 0.18);
+  --overlay-bg: rgb(0 0 0 / 0.35);
 
   /* Status — used ONLY for status, never decoration */
   --ok: oklch(58% 0.14 150);
@@ -119,6 +122,7 @@
   --shadow-md: 0 2px 4px -1px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.04);
   --shadow-lg: 0 8px 16px -4px rgb(0 0 0 / 0.08), 0 4px 6px -2px rgb(0 0 0 / 0.04);
   --shadow-glass: 0 32px 64px -24px rgb(0 0 0 / 0.24), 0 0 0 1px rgb(0 0 0 / 0.05);
+  --overlay-bg: rgb(0 0 0 / 0.35);
 }
 
 /* Dark theme — also fires on .dark class so the new tokens stay in
@@ -144,6 +148,8 @@
   --glass-bg: rgba(20, 20, 24, 0.6);
   --glass-border: rgba(255, 255, 255, 0.08);
 
+  --accent-bg-subtle: oklch(56% 0.19 270 / 0.04);
+  --warn-bg-hover: oklch(65% 0.15 75 / 0.18);
   --shadow-glass: 0 32px 64px -24px rgb(0 0 0 / 0.6), 0 0 0 1px rgb(255 255 255 / 0.06);
 }
 
