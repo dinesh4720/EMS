@@ -49,11 +49,11 @@ test.describe('Library — Issue/Return, Overdue & Reports Deep', () => {
   // ── Test 1: Issued tab shows issued books ──
   test('issued tab shows issued books with title, student, and status', async ({ page }) => {
     await page.goto('/library');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const issuedTab = page.getByRole('button', { name: /issued/i }).first();
     await issuedTab.click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const bodyText = await page.textContent('body');
     // Should show the actively issued book
@@ -66,7 +66,7 @@ test.describe('Library — Issue/Return, Overdue & Reports Deep', () => {
   test('overdue tab shows overdue books with status', async ({ page }) => {
     // Navigate directly to issued books with overdue filter (same as clicking the Overdue stat card)
     await page.goto('/library/issued?status=overdue');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Wait for overdue data to render
     await page.waitForFunction(
@@ -88,7 +88,7 @@ test.describe('Library — Issue/Return, Overdue & Reports Deep', () => {
   test('overdue books display fine information', async ({ page }) => {
     // Navigate directly to issued books with overdue filter
     await page.goto('/library/issued?status=overdue');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Wait for the overdue table to render with actual data (not skeleton)
     await page.waitForFunction(
@@ -109,7 +109,7 @@ test.describe('Library — Issue/Return, Overdue & Reports Deep', () => {
   // ── Test 4: Overdue alert banner shows when overdue books exist ──
   test('overdue alert banner appears on dashboard', async ({ page }) => {
     await page.goto('/library');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Wait for dashboard stats to render
     await page.waitForFunction(
@@ -130,7 +130,7 @@ test.describe('Library — Issue/Return, Overdue & Reports Deep', () => {
   // ── Test 5: Stats cards display correct counts ──
   test('dashboard stats show correct book and issue counts', async ({ page }) => {
     await page.goto('/library');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Wait for dashboard stats to render
     await page.waitForFunction(
@@ -154,7 +154,7 @@ test.describe('Library — Issue/Return, Overdue & Reports Deep', () => {
   test('issued tab shows return button for active issues', async ({ page }) => {
     // Navigate directly to the issued books page
     await page.goto('/library/issued');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Wait for table data to render — check for book titles from mock data
     await page.waitForFunction(
@@ -166,7 +166,8 @@ test.describe('Library — Issue/Return, Overdue & Reports Deep', () => {
     );
 
     // Data loaded — Return button should be visible for issued/overdue records
-    const returnBtn = page.getByRole('button', { name: /^Return$/i }).first();
+    // HeroUI Button uses aria-label="Return Book" so match loosely
+    const returnBtn = page.getByRole('button', { name: /Return/i }).first();
     await expect(returnBtn).toBeVisible({ timeout: 5_000 });
   });
 
@@ -174,11 +175,11 @@ test.describe('Library — Issue/Return, Overdue & Reports Deep', () => {
   // The library page has no separate "Reserved" tab — tabs are: Dashboard, Books, Issued Books, Reports
   test.skip('reserved tab shows empty state when no reservations', async ({ page }) => {
     await page.goto('/library');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const reservedTab = page.getByRole('button', { name: /reserved/i }).first();
     await reservedTab.click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const bodyText = await page.textContent('body');
     expect(
@@ -189,27 +190,27 @@ test.describe('Library — Issue/Return, Overdue & Reports Deep', () => {
   // ── Test 8: Reports tab loads with most borrowed books ──
   test('reports tab shows most borrowed books', async ({ page }) => {
     await page.goto('/library/reports');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Wait for reports data to render (not skeleton)
     await page.waitForFunction(
       () => {
         const text = document.body.textContent || '';
-        return text.includes('Most Borrowed') || text.includes('Physics') || text.includes('Category');
+        return text.includes('Most Borrowed Books') || text.includes('Physics') || text.includes('Category');
       },
-      { timeout: 10_000 },
-    ).catch(() => {});
+      { timeout: 15_000 },
+    );
 
     const bodyText = await page.textContent('body');
     expect(
-      bodyText?.includes('Most Borrowed') || bodyText?.includes('Physics') || bodyText?.includes('Mathematics'),
+      bodyText?.includes('Most Borrowed Books') || bodyText?.includes('Physics') || bodyText?.includes('Mathematics'),
     ).toBeTruthy();
   });
 
   // ── Test 9: Reports tab shows category-wise stats ──
   test('reports tab shows books by category breakdown', async ({ page }) => {
     await page.goto('/library/reports');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Wait for reports data to render
     await page.waitForFunction(
@@ -229,7 +230,7 @@ test.describe('Library — Issue/Return, Overdue & Reports Deep', () => {
   // ── Test 10: Reports tab shows overdue by student ──
   test('reports tab shows students with overdue books', async ({ page }) => {
     await page.goto('/library/reports');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Wait for reports data to render
     await page.waitForFunction(
@@ -250,7 +251,7 @@ test.describe('Library — Issue/Return, Overdue & Reports Deep', () => {
   // ── Test 11: Reports tab shows unpaid fines summary ──
   test('reports tab shows unpaid fines summary', async ({ page }) => {
     await page.goto('/library/reports');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Wait for reports data to render
     await page.waitForFunction(
@@ -273,11 +274,11 @@ test.describe('Library — Issue/Return, Overdue & Reports Deep', () => {
   // Low stock info is shown on the Dashboard as a stat card.
   test.skip('low stock tab shows books with limited availability', async ({ page }) => {
     await page.goto('/library');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const lowStockTab = page.getByRole('button', { name: /low stock/i }).first();
     await lowStockTab.click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const bodyText = await page.textContent('body');
     // History of India has 1 copy, Computer Science has 0

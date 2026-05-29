@@ -30,16 +30,16 @@ test.describe('Email Campaigns & Reminders', () => {
 
   test('1. Campaign list loads with status chips (draft/scheduled/sending/sent/failed)', async ({ page }) => {
     await page.goto('/messaging/email-campaigns');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
-    // Wait for the messaging page to render (lazy-loaded component)
+    // Wait for the campaigns to actually load (not just networkidle)
     await page.waitForFunction(
       () => {
         const text = (document.body.textContent || '').toLowerCase();
-        return text.includes('message') || text.includes('chat') || text.includes('announcement') || text.includes('campaign');
+        return text.includes('welcome parents') || text.includes('fee reminder') || text.includes('sports day') || text.includes('no email campaigns');
       },
       { timeout: 15_000 },
-    ).catch(() => {});
+    );
 
     const bodyText = await page.textContent('body');
     expect(bodyText).toBeTruthy();

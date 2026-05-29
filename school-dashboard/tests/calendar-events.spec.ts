@@ -38,7 +38,7 @@ test.describe('Calendar — Events & Navigation', () => {
 
   test('1 — calendar page loads with month view showing current month', async ({ page }) => {
     await page.goto('/calendar');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Wait for the calendar to actually render (the Add Event button is always present)
     await expect(page.getByRole('button', { name: /add event/i })).toBeVisible({ timeout: 15000 });
@@ -61,7 +61,7 @@ test.describe('Calendar — Events & Navigation', () => {
 
   test('2 — navigation arrows switch to previous/next month', async ({ page }) => {
     await page.goto('/calendar');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Wait for the calendar to render
     await expect(page.getByRole('button', { name: /add event/i })).toBeVisible({ timeout: 15000 });
@@ -94,7 +94,7 @@ test.describe('Calendar — Events & Navigation', () => {
 
   test('3 — week view and day view toggle buttons work', async ({ page }) => {
     await page.goto('/calendar');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Switch to week view
     const weekBtn = page.locator('button').filter({ hasText: /^Week$/ }).first();
@@ -127,7 +127,7 @@ test.describe('Calendar — Events & Navigation', () => {
 
   test('4 — events appear on correct date cells with type-based color coding', async ({ page }) => {
     await page.goto('/calendar');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Wait for the calendar to fully render
     await expect(page.getByRole('button', { name: /add event/i })).toBeVisible({ timeout: 15000 });
@@ -153,7 +153,7 @@ test.describe('Calendar — Events & Navigation', () => {
 
   test('5 — clicking a date cell opens Create Event drawer', async ({ page }) => {
     await page.goto('/calendar');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Click on a date cell in the month grid (the 10th of current month should be empty)
     const dayCells = page.locator('.grid.grid-cols-7 > div').filter({ hasText: /^10$/ });
@@ -175,7 +175,7 @@ test.describe('Calendar — Events & Navigation', () => {
 
   test('6 — Create Event form has fields: type, title, date/time', async ({ page }) => {
     await page.goto('/calendar');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Open the add event drawer
     const addBtn = page.getByRole('button', { name: /add event/i }).first();
@@ -207,7 +207,7 @@ test.describe('Calendar — Events & Navigation', () => {
 
   test('7 — creating event adds it to the calendar grid', async ({ page }) => {
     await page.goto('/calendar');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Wait for calendar to render
     await expect(page.getByRole('button', { name: /add event/i })).toBeVisible({ timeout: 15000 });
@@ -239,7 +239,7 @@ test.describe('Calendar — Events & Navigation', () => {
 
   test('8 — clicking an existing event shows event detail modal', async ({ page }) => {
     await page.goto('/calendar');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Wait for calendar to render and events to load
     await expect(page.getByRole('button', { name: /add event/i })).toBeVisible({ timeout: 15000 });
@@ -263,7 +263,7 @@ test.describe('Calendar — Events & Navigation', () => {
 
   test('9 — edit event updates the event and re-renders', async ({ page }) => {
     await page.goto('/calendar');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Wait for calendar to render
     await expect(page.getByRole('button', { name: /add event/i })).toBeVisible({ timeout: 15000 });
@@ -280,7 +280,7 @@ test.describe('Calendar — Events & Navigation', () => {
 
     // Reload to pick up the change
     await page.goto('/calendar');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Wait for calendar to fully render and show updated event
     await expect(page.getByRole('button', { name: /add event/i })).toBeVisible({ timeout: 15000 });
@@ -289,7 +289,7 @@ test.describe('Calendar — Events & Navigation', () => {
 
   test('10 — delete event shows confirmation and removes from calendar', async ({ page }) => {
     await page.goto('/calendar');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Wait for calendar to render and events to load
     await expect(page.getByRole('button', { name: /add event/i })).toBeVisible({ timeout: 15000 });
@@ -328,7 +328,7 @@ test.describe('Calendar — Events & Navigation', () => {
 
   test('11 — filter by event type shows different visual styles', async ({ page }) => {
     await page.goto('/calendar');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Wait for the calendar to render and events to load
     await expect(page.getByRole('button', { name: /add event/i })).toBeVisible({ timeout: 15000 });

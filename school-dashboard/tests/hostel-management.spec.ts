@@ -175,8 +175,9 @@ test.describe('Hostel Management — Hostels, Rooms & Allocations', () => {
       }
     }
 
-    // Confirm deletion
-    const confirmBtn = page.getByRole('button', { name: /confirm|yes|delete|ok/i }).first();
+    // Confirm deletion — scope to the ConfirmDialog so we don't match the trash icon
+    const confirmDialog = page.locator('[role="alertdialog"]').first();
+    const confirmBtn = confirmDialog.locator('button').filter({ hasText: /Delete/i }).first();
     if (await confirmBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
       await confirmBtn.click();
       await page.waitForTimeout(500);

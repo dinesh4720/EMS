@@ -208,7 +208,16 @@ test.describe('Intake Forms — Assignments & Submissions', () => {
     const deleteItem = page.getByText(/cancel assignment/i).first();
     if (await deleteItem.isVisible({ timeout: 3_000 }).catch(() => false)) {
       await deleteItem.click();
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(500);
+
+      // Confirm the deletion in the dialog
+      const confirmDialog = page.locator('[role="alertdialog"]').first();
+      const confirmBtn = confirmDialog.locator('button').filter({ hasText: /Confirm/i }).first();
+      if (await confirmBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
+        await confirmBtn.click();
+        await page.waitForTimeout(1000);
+      }
+
       expect(state.intakeFormAssignments.length).toBe(initialCount - 1);
     }
   });

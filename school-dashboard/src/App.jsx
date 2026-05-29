@@ -318,6 +318,13 @@ function AuthenticatedApp() {
                         </PermissionGuard>
                       </RouteEB>
                     } />
+                    <Route path="/messaging/email-campaigns" element={
+                      <RouteEB>
+                        <PermissionGuard module="messaging">
+                          <EmailCampaignsPage />
+                        </PermissionGuard>
+                      </RouteEB>
+                    } />
                     <Route path="/messaging/*" element={
                       <RouteEB>
                         <PermissionGuard module="messaging">
@@ -413,13 +420,6 @@ function AuthenticatedApp() {
                     {/* CBSE/CCE routes removed — these pages are rendered as tabs
                         within AcademicLayout (/academics/cbse-report-card, /academics/cce-grading)
                         so standalone routes are unnecessary duplicates. */}
-                    <Route path="/messaging/email-campaigns" element={
-                      <RouteEB>
-                        <PermissionGuard module="messaging">
-                          <EmailCampaignsPage />
-                        </PermissionGuard>
-                      </RouteEB>
-                    } />
                     <Route path="/settings/*" element={
                       <RouteEB>
                         <PermissionGuard module="settings">
