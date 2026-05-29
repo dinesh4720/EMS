@@ -400,7 +400,7 @@ test.describe('Super Admin Dashboard', () => {
     await page.waitForLoadState('networkidle');
 
     // Tab label is "Flags" (not "Feature flags")
-    await page.getByRole('button', { name: 'Flags' }).click();
+    await page.getByRole('tab', { name: 'Flags' }).click();
 
     // FlagRow renders flag.key and flag.description (no separate name or status text label)
     await expect(page.getByText('advancedReports')).toBeVisible({ timeout: 10_000 });
@@ -415,7 +415,7 @@ test.describe('Super Admin Dashboard', () => {
     await page.goto('/super-admin');
     await page.waitForLoadState('networkidle');
 
-    await page.getByRole('button', { name: 'Feature flags' }).click();
+    await page.getByRole('tab', { name: 'Feature flags' }).click();
     await expect(page.getByText('advancedReports')).toBeVisible({ timeout: 10_000 });
 
     // Click the Edit button for the first flag
@@ -437,7 +437,7 @@ test.describe('Super Admin Dashboard', () => {
     await page.goto('/super-admin');
     await page.waitForLoadState('networkidle');
 
-    await page.getByRole('button', { name: 'Jobs' }).click();
+    await page.getByRole('tab', { name: 'Jobs' }).click();
 
     // Metric cards
     await expect(page.getByText('Total jobs')).toBeVisible({ timeout: 10_000 });
@@ -461,7 +461,7 @@ test.describe('Super Admin Dashboard', () => {
     await page.goto('/super-admin');
     await page.waitForLoadState('networkidle');
 
-    await page.getByRole('button', { name: 'Jobs' }).click();
+    await page.getByRole('tab', { name: 'Jobs' }).click();
     await expect(page.getByText('send scheduled announcement').first()).toBeVisible({ timeout: 10_000 });
 
     // Click the job name link to open the detail modal
@@ -478,7 +478,7 @@ test.describe('Super Admin Dashboard', () => {
     await page.goto('/super-admin');
     await page.waitForLoadState('networkidle');
 
-    await page.getByRole('button', { name: 'Jobs' }).click();
+    await page.getByRole('tab', { name: 'Jobs' }).click();
     await expect(page.getByText('Total jobs')).toBeVisible({ timeout: 10_000 });
 
     // Switch to Schedule job tab
@@ -499,7 +499,7 @@ test.describe('Super Admin Dashboard', () => {
     await page.goto('/super-admin');
     await page.waitForLoadState('networkidle');
 
-    await page.getByRole('button', { name: 'Changelog' }).click();
+    await page.getByRole('tab', { name: 'Changelog' }).click();
 
     // Panel heading is "Changelog" (not "Changelog entries")
     await expect(page.getByText('Changelog').first()).toBeVisible({ timeout: 10_000 });
@@ -517,7 +517,7 @@ test.describe('Super Admin Dashboard', () => {
     await page.goto('/super-admin');
     await page.waitForLoadState('networkidle');
 
-    await page.getByRole('button', { name: 'Growth' }).click();
+    await page.getByRole('tab', { name: 'Growth' }).click();
 
     // Summary tiles
     await expect(page.getByText('Avg health score')).toBeVisible({ timeout: 10_000 });
@@ -538,7 +538,7 @@ test.describe('Super Admin Dashboard', () => {
     await page.goto('/super-admin');
     await page.waitForLoadState('networkidle');
 
-    await page.getByRole('button', { name: 'Health' }).click();
+    await page.getByRole('tab', { name: 'Health' }).click();
 
     // Heading is "School Health Monitor" (not "Per-school health monitor")
     await expect(page.getByText('School Health Monitor')).toBeVisible({ timeout: 10_000 });
@@ -556,7 +556,7 @@ test.describe('Super Admin Dashboard', () => {
     await page.goto('/super-admin');
     await page.waitForLoadState('networkidle');
 
-    await page.getByRole('button', { name: 'Growth' }).click();
+    await page.getByRole('tab', { name: 'Growth' }).click();
     await expect(page.getByText('Delhi Public School')).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText('Greenfield Academy')).toBeVisible();
 
