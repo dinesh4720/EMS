@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Button, Input, Chip, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/react";
-import { Plus, Search, MoreVertical, MapPin, Users, Edit2, Trash2, UserPlus, Bus, Route as RouteIcon } from "lucide-react";
+import { Plus, Search, MoreVertical, MapPin, Users, Edit2, Trash2, UserPlus, Bus, Route as RouteIcon, Printer } from "lucide-react";
 import { transportApi } from "../../services/api";
 import { useApp } from "../../context/AppContext";
 import { CURRENT_ACADEMIC_YEAR } from "../../utils/constants";
@@ -13,6 +13,8 @@ import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import StatCard from '../../components/ui/StatCard';
 import EmptyState from '../../components/ui/EmptyState';
 import ErrorState from '../../components/ui/ErrorState';
+import ExportMenu from '../../components/ui/ExportMenu';
+import PrintPreviewModal from '../../components/ui/PrintPreviewModal';
 import logger from '../../utils/logger';
 
 
@@ -27,6 +29,8 @@ export default function RoutesTab() {
   const [loadError, setLoadError] = useState(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [vehicleFilter, setVehicleFilter] = useState("all");
+  const [printOpen, setPrintOpen] = useState(false);
 
   // Modal state
   const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
@@ -74,12 +78,18 @@ export default function RoutesTab() {
   const filtered = useMemo(() => {
     let list = routes;
     if (statusFilter !== "all") list = list.filter((r) => r.status === statusFilter);
+    if (vehicleFilter !== "all") {
+      list = list.filter((r) => {
+        const vid = r.vehicleId?._id?.toString() || r.vehicleId?.toString();
+        return vid === vehicleFilter;
+      });
+    }
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter((r) => r.routeName.toLowerCase().includes(q) || r.routeNumber.toLowerCase().includes(q));
     }
     return list;
-  }, [routes, statusFilter, search]);
+  }, [routes, statusFilter, vehicleFilter, search]);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -151,7 +161,7 @@ export default function RoutesTab() {
 
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="flex gap-2 items-center flex-1 w-full sm:w-auto">
+        <div className="flex gap-2 items-center flex-1 w-full sm:w-auto flex-wrap">
           <Input
             placeholder={t('pages.searchRoutes')}
             value={search}
@@ -176,15 +186,55 @@ export default function RoutesTab() {
               <DropdownItem key="inactive">{t('pages.inactive')}</DropdownItem>
             </DropdownMenu>
           </Dropdown>
+          <Dropdown>
+            <DropdownTrigger>
+              <Button size="sm" variant="flat">
+                {vehicleFilter === "all" ? "All Vehicles" : vehicles.find(v => (v._id || v.id) === vehicleFilter)?.registrationNumber || "Vehicle"}
+              </Button>
+            </DropdownTrigger>
+            <DropdownMenu
+              selectionMode="single"
+              selectedKeys={new Set([vehicleFilter])}
+              onSelectionChange={(keys) => setVehicleFilter([...keys][0])}
+            >
+              <DropdownItem key="all">All Vehicles</DropdownItem>
+              {vehicles.map((v) => (
+                <DropdownItem key={v._id || v.id}>{v.registrationNumber}</DropdownItem>
+              ))}
+            </DropdownMenu>
+          </Dropdown>
         </div>
-        <Button
-          color="primary"
-          size="sm"
-          startContent={<Plus size={16} />}
-          onPress={() => { setEditingRoute(null); setIsRouteModalOpen(true); }}
-        >
-          {t('pages.addRoute')}
-        </Button>
+        <div className="flex gap-2">
+          <ExportMenu
+            rows={filtered}
+            columns={[
+              { key: "routeName", label: "Route" },
+              { key: "routeNumber", label: "Route Number" },
+              { key: "status", label: "Status" },
+              { key: "vehicle", label: "Vehicle", accessor: (r) => r.vehicleId?.registrationNumber || "—" },
+              { key: "stops", label: "Stops", accessor: (r) => r.stops?.length || 0 },
+              { key: "students", label: "Students", accessor: (r) => r.students?.length || 0 },
+            ]}
+            filename="routes"
+            title="Transport Routes"
+          />
+          <button
+            type="button"
+            className="btn btn--sm"
+            onClick={() => setPrintOpen(true)}
+            aria-label="Print preview"
+          >
+            <Printer size={14} aria-hidden />
+          </button>
+          <Button
+            color="primary"
+            size="sm"
+            startContent={<Plus size={16} />}
+            onPress={() => { setEditingRoute(null); setIsRouteModalOpen(true); }}
+          >
+            {t('pages.addRoute')}
+          </Button>
+        </div>
       </div>
 
       {/* Route Cards */}
@@ -327,6 +377,40 @@ export default function RoutesTab() {
         confirmText="Delete"
         variant="danger"
       />
+
+      <PrintPreviewModal
+        isOpen={printOpen}
+        onClose={() => setPrintOpen(false)}
+        title="Transport Routes"
+      >
+        <div className="p-6">
+          <h1 className="text-lg font-semibold mb-4">Transport Routes</h1>
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-2 px-3">Route</th>
+                <th className="text-left py-2 px-3">Route Number</th>
+                <th className="text-left py-2 px-3">Status</th>
+                <th className="text-left py-2 px-3">Vehicle</th>
+                <th className="text-left py-2 px-3">Stops</th>
+                <th className="text-left py-2 px-3">Students</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((route) => (
+                <tr key={route._id} className="border-b">
+                  <td className="py-2 px-3">{route.routeName}</td>
+                  <td className="py-2 px-3">{route.routeNumber}</td>
+                  <td className="py-2 px-3">{route.status}</td>
+                  <td className="py-2 px-3">{route.vehicleId?.registrationNumber || "—"}</td>
+                  <td className="py-2 px-3">{route.stops?.length || 0}</td>
+                  <td className="py-2 px-3">{route.students?.length || 0}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </PrintPreviewModal>
     </div>
   );
 }

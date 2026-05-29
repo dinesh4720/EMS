@@ -1,15 +1,18 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Plus, BellRing } from "lucide-react";
+import { Plus, BellRing, Printer } from "lucide-react";
 import toast from "react-hot-toast";
 
-import useFeesData from "../../hooks/useFeesData";
+import useFeesData, { derivePaymentStatus } from "../../hooks/useFeesData";
 import FeesKpiStrip from "../../components/fees/FeesKpiStrip";
 import PaymentsTable from "../../components/fees/PaymentsTable";
 import PaymentSheet from "../../components/fees/PaymentSheet";
 import ToolbarSearch from "../../components/ui/ToolbarSearch";
 import ErrorState from "../../components/ui/ErrorState";
 import { TablePageSkeleton } from "../../components/skeletons/PageSkeletons";
+import ExportMenu from "../../components/ui/ExportMenu";
+import PrintPreviewModal from "../../components/ui/PrintPreviewModal";
+import { studentsApi } from "../../services/api";
 import logger from "../../utils/logger";
 
 const VALID_FILTERS = new Set(["all", "paid", "pending", "overdue"]);
@@ -28,6 +31,7 @@ export default function FeesPage() {
 
   const [search, setSearch] = useState(searchParams.get("q") || "");
   const [sheetOpen, setSheetOpen] = useState(!!studentParam);
+  const [printOpen, setPrintOpen] = useState(false);
 
   // If URL carries ?student=, open the sheet pre-filled. Closing the sheet
   // strips ?student= so deep-link semantics stay consistent.
@@ -35,7 +39,7 @@ export default function FeesPage() {
     setSheetOpen(true);
   }
 
-  const { filtered, kpis, isLoading, isError, error, refetch } = useFeesData({ status, search });
+  const { payments, filtered, kpis, isLoading, isError, error, refetch } = useFeesData({ status, search });
 
   const setStatus = (next) => {
     setSearchParams(
@@ -77,9 +81,20 @@ export default function FeesPage() {
 
   const onSendReminder = async (ids) => {
     if (!ids?.length) return;
-    // TODO: replace stub with real bulk-reminder endpoint once exposed.
-    logger.info("Send reminder for payments:", ids);
-    toast.success(`Reminder queued for ${ids.length} ${ids.length === 1 ? "student" : "students"}`);
+    const studentIds = payments
+      .filter((p) => ids.includes(p._id || p.id))
+      .map((p) => p.student?._id || p.studentId)
+      .filter(Boolean);
+    if (!studentIds.length) {
+      toast.error("No students found for the selected payments.");
+      return;
+    }
+    try {
+      await studentsApi.sendRemindersBulk({ studentIds, type: "fee" });
+      toast.success(`Reminder sent to ${studentIds.length} ${studentIds.length === 1 ? "student" : "students"}`);
+    } catch (err) {
+      toast.error(err?.message || "Failed to send reminders");
+    }
   };
 
   const subLine = useMemo(() => {
@@ -108,8 +123,9 @@ export default function FeesPage() {
             type="button"
             className="btn"
             onClick={() => {
-              const overdueIds = filtered
-                .filter((p) => (p.studentId?._id || p.studentId))
+              const overdueIds = payments
+                .filter((p) => derivePaymentStatus(p) === "overdue")
+                .filter((p) => (p.studentId?._id || p.studentId || p.student?._id))
                 .map((p) => p._id || p.id);
               onSendReminder(overdueIds);
             }}
@@ -158,6 +174,32 @@ export default function FeesPage() {
             </button>
           ))}
         </div>
+
+        <div className="row gap-2" style={{ marginLeft: "auto" }}>
+          <ExportMenu
+            rows={filtered}
+            columns={[
+              { key: "studentName", label: "Student", accessor: (p) => p.student?.name || p.studentName || "—" },
+              { key: "rollNo", label: "Roll", accessor: (p) => p.student?.rollNo || p.rollNo || "—" },
+              { key: "className", label: "Class", accessor: (p) => p.student?.className || p.className || p.classSection || "—" },
+              { key: "term", label: "Term", accessor: (p) => p.term || p.feeTerm || p.headName || "—" },
+              { key: "amount", label: "Amount", accessor: (p) => p.amount ?? 0 },
+              { key: "status", label: "Status", accessor: (p) => p.status || "pending" },
+              { key: "dueDate", label: "Due Date", accessor: (p) => p.dueDate || p.due_at || "—" },
+              { key: "paymentMode", label: "Mode", accessor: (p) => p.paymentMode || p.mode || "—" },
+            ]}
+            filename="fees-list"
+            title="Fees List"
+          />
+          <button
+            type="button"
+            className="btn btn--sm"
+            onClick={() => setPrintOpen(true)}
+            aria-label="Print preview"
+          >
+            <Printer size={14} aria-hidden />
+          </button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -183,6 +225,44 @@ export default function FeesPage() {
         prefilledStudentId={studentParam || null}
         onCollected={() => refetch?.()}
       />
+
+      <PrintPreviewModal
+        isOpen={printOpen}
+        onClose={() => setPrintOpen(false)}
+        title="Fees List"
+      >
+        <div className="p-6">
+          <h1 className="text-lg font-semibold mb-4">Fees List</h1>
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-2 px-3">Roll</th>
+                <th className="text-left py-2 px-3">Student</th>
+                <th className="text-left py-2 px-3">Class</th>
+                <th className="text-left py-2 px-3">Term</th>
+                <th className="text-left py-2 px-3">Amount</th>
+                <th className="text-left py-2 px-3">Status</th>
+                <th className="text-left py-2 px-3">Due Date</th>
+                <th className="text-left py-2 px-3">Mode</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((p) => (
+                <tr key={p._id || p.id} className="border-b">
+                  <td className="py-2 px-3">{p.student?.rollNo || p.rollNo || "—"}</td>
+                  <td className="py-2 px-3">{p.student?.name || p.studentName || "—"}</td>
+                  <td className="py-2 px-3">{p.student?.className || p.className || p.classSection || "—"}</td>
+                  <td className="py-2 px-3">{p.term || p.feeTerm || p.headName || "—"}</td>
+                  <td className="py-2 px-3">{p.amount != null ? `₹${Number(p.amount).toLocaleString()}` : "—"}</td>
+                  <td className="py-2 px-3">{p.status || "pending"}</td>
+                  <td className="py-2 px-3">{p.dueDate || p.due_at || "—"}</td>
+                  <td className="py-2 px-3">{p.paymentMode || p.mode || "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </PrintPreviewModal>
     </div>
   );
 }

@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { Plus, Search, DoorOpen, Edit2, Trash2, BedDouble } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { Plus, Search, DoorOpen, Edit2, Trash2, BedDouble, Printer } from "lucide-react";
 import Input from "../../components/ui/Input";
 import Select from "../../components/ui/Select";
 import Button from "../../components/ui/Button";
@@ -11,6 +11,8 @@ import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { ConfirmDialog, EmptyState, ErrorState } from '../../components/ui';
+import ExportMenu from '../../components/ui/ExportMenu';
+import PrintPreviewModal from '../../components/ui/PrintPreviewModal';
 import { hostelRoomSchema, parseFormSchema } from '../../validators/formSchemas';
 
 const INITIAL_FORM = {
@@ -37,7 +39,9 @@ export default function RoomsList() {
   const [search, setSearch] = useState("");
   const [hostelFilter, setHostelFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
+  const [occupancyFilter, setOccupancyFilter] = useState("all");
   const [page, setPage] = useState(1);
+  const [printOpen, setPrintOpen] = useState(false);
   const [totalPages, setTotalPages] = useState(1);
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [errors, setErrors] = useState({});
@@ -166,6 +170,14 @@ export default function RoomsList() {
     return "bg-[var(--ok-bg)] text-[var(--ok)]";
   };
 
+  const filteredRooms = rooms.filter((r) => {
+    if (occupancyFilter === "all") return true;
+    if (occupancyFilter === "full") return r.occupiedBeds >= r.capacity;
+    if (occupancyFilter === "partial") return r.occupiedBeds > 0 && r.occupiedBeds < r.capacity;
+    if (occupancyFilter === "empty") return r.occupiedBeds === 0;
+    return true;
+  });
+
   if (isLoading) return <TablePageSkeleton title={false} kpiCards={0} columns={5} rows={6} />;
 
   if (loadError) {
@@ -192,6 +204,7 @@ export default function RoomsList() {
             className="max-w-[180px]"
             size="sm"
           >
+            <option value="">{t('pages.allHostels')}</option>
             {hostels.map(h => <option key={h._id} value={h._id}>{h.name}</option>)}
           </Select>
           <Select
@@ -201,16 +214,52 @@ export default function RoomsList() {
             className="max-w-[150px]"
             size="sm"
           >
+            <option value="">{t('pages.allTypes1')}</option>
             {ROOM_TYPES.map(rt => <option key={rt.key} value={rt.key}>{rt.label}</option>)}
           </Select>
+          <Select
+            placeholder="Occupancy"
+            value={occupancyFilter}
+            onChange={(e) => setOccupancyFilter(e.target.value)}
+            className="max-w-[150px]"
+            size="sm"
+          >
+            <option value="all">All Occupancy</option>
+            <option value="full">Full</option>
+            <option value="partial">Partial</option>
+            <option value="empty">Empty</option>
+          </Select>
         </div>
-        <Button variant="primary" icon={<Plus size={16} />} onClick={handleAdd} size="sm">
-          Add Room
-        </Button>
+        <div className="flex gap-2">
+          <ExportMenu
+            rows={filteredRooms}
+            columns={[
+              { key: "roomNumber", label: "Room" },
+              { key: "hostel", label: "Hostel", accessor: (r) => r.hostelId?.name || "—" },
+              { key: "floor", label: "Floor" },
+              { key: "type", label: "Type" },
+              { key: "occupancy", label: "Occupancy", accessor: (r) => `${r.occupiedBeds}/${r.capacity}` },
+              { key: "monthlyFee", label: "Fee", accessor: (r) => r.monthlyFee ? `₹${r.monthlyFee.toLocaleString()}` : "—" },
+            ]}
+            filename="rooms"
+            title="Rooms"
+          />
+          <button
+            type="button"
+            className="btn btn--sm"
+            onClick={() => setPrintOpen(true)}
+            aria-label="Print preview"
+          >
+            <Printer size={14} aria-hidden />
+          </button>
+          <Button variant="primary" icon={<Plus size={16} />} onClick={handleAdd} size="sm">
+            Add Room
+          </Button>
+        </div>
       </div>
 
       {/* Rooms Table */}
-      {rooms.length === 0 ? (
+      {filteredRooms.length === 0 ? (
         <EmptyState
           icon={DoorOpen}
           title={t('pages.noRoomsFound')}
@@ -236,7 +285,7 @@ export default function RoomsList() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-divider">
-                {rooms.map((room) => (
+                {filteredRooms.map((room) => (
                   <tr key={room._id} className="bg-surface hover:bg-surface-hover transition-colors">
                     <td className="px-4 py-3 font-medium text-fg">{room.roomNumber}</td>
                     <td className="px-4 py-3 text-fg-muted">{room.hostelId?.name || "—"}</td>
@@ -279,6 +328,40 @@ export default function RoomsList() {
           )}
         </>
       )}
+
+      <PrintPreviewModal
+        isOpen={printOpen}
+        onClose={() => setPrintOpen(false)}
+        title="Rooms"
+      >
+        <div className="p-6">
+          <h1 className="text-lg font-semibold mb-4">Rooms</h1>
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-2 px-3">Room</th>
+                <th className="text-left py-2 px-3">Hostel</th>
+                <th className="text-left py-2 px-3">Floor</th>
+                <th className="text-left py-2 px-3">Type</th>
+                <th className="text-left py-2 px-3">Occupancy</th>
+                <th className="text-left py-2 px-3">Fee</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRooms.map((room) => (
+                <tr key={room._id} className="border-b">
+                  <td className="py-2 px-3">{room.roomNumber}</td>
+                  <td className="py-2 px-3">{room.hostelId?.name || "—"}</td>
+                  <td className="py-2 px-3">{room.floor}</td>
+                  <td className="py-2 px-3">{room.type}</td>
+                  <td className="py-2 px-3">{room.occupiedBeds}/{room.capacity}</td>
+                  <td className="py-2 px-3">{room.monthlyFee ? `₹${room.monthlyFee.toLocaleString()}` : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </PrintPreviewModal>
 
       {/* Add/Edit Room Modal */}
       <Modal isOpen={isOpen} onClose={handleClose} size="xl" scrollBehavior="inside">

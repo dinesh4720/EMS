@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { Plus, Search, Users, LogOut, Calendar } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { Plus, Search, Users, LogOut, Calendar, Printer } from "lucide-react";
 import Input from "../../components/ui/Input";
 import Select from "../../components/ui/Select";
 import Button from "../../components/ui/Button";
@@ -14,6 +14,8 @@ import { toTodayDateString } from '../../utils/dateFormatter';
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { EmptyState, ErrorState } from '../../components/ui';
+import ExportMenu from '../../components/ui/ExportMenu';
+import PrintPreviewModal from '../../components/ui/PrintPreviewModal';
 import { hostelAllocationSchema, parseFormSchema } from '../../validators/formSchemas';
 
 
@@ -31,7 +33,9 @@ export default function AllocationsList() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("active");
   const [hostelFilter, setHostelFilter] = useState("");
+  const [roomFilter, setRoomFilter] = useState("");
   const [page, setPage] = useState(1);
+  const [printOpen, setPrintOpen] = useState(false);
   const [totalPages, setTotalPages] = useState(1);
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [errors, setErrors] = useState({});
@@ -141,6 +145,11 @@ export default function AllocationsList() {
 
   const formatDate = (d) => d ? new Date(d).toLocaleDateString(getDateLocale(), { day: "2-digit", month: "short", year: "numeric" }) : "—";
 
+  const filteredAllocations = allocations.filter((a) => {
+    if (roomFilter && (a.roomId?._id || a.roomId) !== roomFilter) return false;
+    return true;
+  });
+
   if (isLoading) return <TablePageSkeleton title={false} kpiCards={0} columns={5} rows={6} />;
 
   if (loadError) {
@@ -167,7 +176,18 @@ export default function AllocationsList() {
             className="max-w-[180px]"
             size="sm"
           >
+            <option value="">{t('pages.allHostels')}</option>
             {hostels.map(h => <option key={h._id} value={h._id}>{h.name}</option>)}
+          </Select>
+          <Select
+            placeholder="Room"
+            value={roomFilter}
+            onChange={(e) => { setRoomFilter(e.target.value); setPage(1); }}
+            className="max-w-[180px]"
+            size="sm"
+          >
+            <option value="">All Rooms</option>
+            {rooms.map(r => <option key={r._id} value={r._id}>{r.roomNumber}</option>)}
           </Select>
           <Select
             placeholder={t('pages.status2')}
@@ -181,13 +201,37 @@ export default function AllocationsList() {
             <option value="transferred">{t('pages.transferred')}</option>
           </Select>
         </div>
-        <Button variant="primary" icon={<Plus size={16} />} onClick={handleAdd} size="sm">
-          Allocate Student
-        </Button>
+        <div className="flex gap-2">
+          <ExportMenu
+            rows={filteredAllocations}
+            columns={[
+              { key: "student", label: "Student", accessor: (a) => a.studentName || a.studentId?.name || "—" },
+              { key: "admissionNo", label: "Adm No", accessor: (a) => a.admissionNo || a.studentId?.admissionNo || "—" },
+              { key: "hostel", label: "Hostel", accessor: (a) => a.hostelName || a.hostelId?.name || "—" },
+              { key: "room", label: "Room", accessor: (a) => a.roomNumber || a.roomId?.roomNumber || "—" },
+              { key: "bed", label: "Bed", accessor: (a) => a.bedNumber || "—" },
+              { key: "startDate", label: "From", accessor: (a) => formatDate(a.startDate) },
+              { key: "status", label: "Status" },
+            ]}
+            filename="allocations"
+            title="Student Allocations"
+          />
+          <button
+            type="button"
+            className="btn btn--sm"
+            onClick={() => setPrintOpen(true)}
+            aria-label="Print preview"
+          >
+            <Printer size={14} aria-hidden />
+          </button>
+          <Button variant="primary" icon={<Plus size={16} />} onClick={handleAdd} size="sm">
+            Allocate Student
+          </Button>
+        </div>
       </div>
 
       {/* Allocations Table */}
-      {allocations.length === 0 ? (
+      {filteredAllocations.length === 0 ? (
         <EmptyState
           icon={Users}
           title={t('pages.noAllocationsFound')}
@@ -214,7 +258,7 @@ export default function AllocationsList() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-divider">
-                {allocations.map((alloc) => (
+                {filteredAllocations.map((alloc) => (
                   <tr key={alloc._id} className="bg-surface hover:bg-surface-hover transition-colors">
                     <td className="px-4 py-3 font-medium text-fg">
                       {alloc.studentName || alloc.studentId?.name || "—"}
@@ -266,6 +310,42 @@ export default function AllocationsList() {
           )}
         </>
       )}
+
+      <PrintPreviewModal
+        isOpen={printOpen}
+        onClose={() => setPrintOpen(false)}
+        title="Student Allocations"
+      >
+        <div className="p-6">
+          <h1 className="text-lg font-semibold mb-4">Student Allocations</h1>
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-2 px-3">Student</th>
+                <th className="text-left py-2 px-3">Adm No</th>
+                <th className="text-left py-2 px-3">Hostel</th>
+                <th className="text-left py-2 px-3">Room</th>
+                <th className="text-left py-2 px-3">Bed</th>
+                <th className="text-left py-2 px-3">From</th>
+                <th className="text-left py-2 px-3">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredAllocations.map((alloc) => (
+                <tr key={alloc._id} className="border-b">
+                  <td className="py-2 px-3">{alloc.studentName || alloc.studentId?.name || "—"}</td>
+                  <td className="py-2 px-3">{alloc.admissionNo || alloc.studentId?.admissionNo || "—"}</td>
+                  <td className="py-2 px-3">{alloc.hostelName || alloc.hostelId?.name || "—"}</td>
+                  <td className="py-2 px-3">{alloc.roomNumber || alloc.roomId?.roomNumber || "—"}</td>
+                  <td className="py-2 px-3">{alloc.bedNumber || "—"}</td>
+                  <td className="py-2 px-3">{formatDate(alloc.startDate)}</td>
+                  <td className="py-2 px-3">{alloc.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </PrintPreviewModal>
 
       {/* Add Allocation Modal */}
       <Modal isOpen={isOpen} onClose={handleClose} size="xl" scrollBehavior="inside">

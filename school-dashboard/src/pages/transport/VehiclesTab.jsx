@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Button, Input, Chip, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/react";
-import { Plus, Search, MoreVertical, Truck, Edit2, Trash2 } from "lucide-react";
+import { Plus, Search, MoreVertical, Truck, Edit2, Trash2, Printer } from "lucide-react";
 import { transportApi } from "../../services/api";
 import toast from "react-hot-toast";
 import VehicleModal from "./VehicleModal";
@@ -9,6 +9,8 @@ import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import EmptyState from '../../components/ui/EmptyState';
 import ErrorState from '../../components/ui/ErrorState';
+import ExportMenu from '../../components/ui/ExportMenu';
+import PrintPreviewModal from '../../components/ui/PrintPreviewModal';
 import logger from '../../utils/logger';
 
 export default function VehiclesTab() {
@@ -18,6 +20,8 @@ export default function VehiclesTab() {
   const [loadError, setLoadError] = useState(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [makeFilter, setMakeFilter] = useState("all");
+  const [printOpen, setPrintOpen] = useState(false);
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -41,9 +45,15 @@ export default function VehiclesTab() {
 
   useEffect(() => { fetchVehicles(); }, []);
 
+  const makes = useMemo(() => {
+    const set = new Set(vehicles.map((v) => v.make).filter(Boolean));
+    return [...set].sort();
+  }, [vehicles]);
+
   const filtered = useMemo(() => {
     let list = vehicles;
     if (statusFilter !== "all") list = list.filter((v) => v.status === statusFilter);
+    if (makeFilter !== "all") list = list.filter((v) => v.make === makeFilter);
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter((v) =>
@@ -55,7 +65,7 @@ export default function VehiclesTab() {
       );
     }
     return list;
-  }, [vehicles, statusFilter, search]);
+  }, [vehicles, statusFilter, makeFilter, search]);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -87,7 +97,7 @@ export default function VehiclesTab() {
     <div className="space-y-4">
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="flex gap-2 items-center flex-1 w-full sm:w-auto">
+        <div className="flex gap-2 items-center flex-1 w-full sm:w-auto flex-wrap">
           <Input
             placeholder={t('pages.searchVehicles')}
             value={search}
@@ -113,15 +123,56 @@ export default function VehiclesTab() {
               <DropdownItem key="maintenance">{t('pages.maintenance')}</DropdownItem>
             </DropdownMenu>
           </Dropdown>
+          <Dropdown>
+            <DropdownTrigger>
+              <Button size="sm" variant="flat">
+                {makeFilter === "all" ? "All Makes" : makeFilter}
+              </Button>
+            </DropdownTrigger>
+            <DropdownMenu
+              selectionMode="single"
+              selectedKeys={new Set([makeFilter])}
+              onSelectionChange={(keys) => setMakeFilter([...keys][0])}
+            >
+              <DropdownItem key="all">All Makes</DropdownItem>
+              {makes.map((m) => (
+                <DropdownItem key={m}>{m}</DropdownItem>
+              ))}
+            </DropdownMenu>
+          </Dropdown>
         </div>
-        <Button
-          color="primary"
-          size="sm"
-          startContent={<Plus size={16} />}
-          onPress={() => { setEditingVehicle(null); setIsModalOpen(true); }}
-        >
-          Add Vehicle
-        </Button>
+        <div className="flex gap-2">
+          <ExportMenu
+            rows={filtered}
+            columns={[
+              { key: "registrationNumber", label: "Registration" },
+              { key: "make", label: "Make" },
+              { key: "model", label: "Model" },
+              { key: "year", label: "Year" },
+              { key: "capacity", label: "Capacity" },
+              { key: "status", label: "Status" },
+              { key: "driver", label: "Driver", accessor: (v) => v.driverId?.name || "—" },
+            ]}
+            filename="vehicles"
+            title="Vehicle Fleet"
+          />
+          <button
+            type="button"
+            className="btn btn--sm"
+            onClick={() => setPrintOpen(true)}
+            aria-label="Print preview"
+          >
+            <Printer size={14} aria-hidden />
+          </button>
+          <Button
+            color="primary"
+            size="sm"
+            startContent={<Plus size={16} />}
+            onPress={() => { setEditingVehicle(null); setIsModalOpen(true); }}
+          >
+            Add Vehicle
+          </Button>
+        </div>
       </div>
 
       {/* Vehicle Cards */}
@@ -233,6 +284,42 @@ export default function VehiclesTab() {
         confirmText="Delete"
         variant="danger"
       />
+
+      <PrintPreviewModal
+        isOpen={printOpen}
+        onClose={() => setPrintOpen(false)}
+        title="Vehicle Fleet"
+      >
+        <div className="p-6">
+          <h1 className="text-lg font-semibold mb-4">Vehicle Fleet</h1>
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-2 px-3">Registration</th>
+                <th className="text-left py-2 px-3">Make</th>
+                <th className="text-left py-2 px-3">Model</th>
+                <th className="text-left py-2 px-3">Year</th>
+                <th className="text-left py-2 px-3">Capacity</th>
+                <th className="text-left py-2 px-3">Status</th>
+                <th className="text-left py-2 px-3">Driver</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((vehicle) => (
+                <tr key={vehicle._id} className="border-b">
+                  <td className="py-2 px-3">{vehicle.registrationNumber}</td>
+                  <td className="py-2 px-3">{vehicle.make || "—"}</td>
+                  <td className="py-2 px-3">{vehicle.model || "—"}</td>
+                  <td className="py-2 px-3">{vehicle.year || "—"}</td>
+                  <td className="py-2 px-3">{vehicle.capacity || "—"}</td>
+                  <td className="py-2 px-3">{vehicle.status}</td>
+                  <td className="py-2 px-3">{vehicle.driverId?.name || "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </PrintPreviewModal>
     </div>
   );
 }
