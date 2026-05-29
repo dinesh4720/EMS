@@ -1,8 +1,7 @@
 import { Routes, Route } from "react-router-dom";
-import { Breadcrumbs, BreadcrumbItem } from "@heroui/react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Bus, Route as RouteIcon, Truck, Home } from "lucide-react";
-import { PageLayout } from "../../components/ui";
+import { Route as RouteIcon, Truck, Home } from "lucide-react";
+import { PageLayout, Breadcrumbs } from "../../components/ui";
 import RoutesTab from "./RoutesTab";
 import VehiclesTab from "./VehiclesTab";
 import { useTranslation } from 'react-i18next';
@@ -39,11 +38,14 @@ export default function TransportPage() {
   return (
     <div className="animate-fade-in">
       <div className="mb-4">
-        <Breadcrumbs size="sm">
-          <BreadcrumbItem startContent={<Home size={14} />} onPress={() => navigate("/")}>{t('pages.home')}</BreadcrumbItem>
-          <BreadcrumbItem onPress={() => navigate("/transport")}>{t('pages.transport1')}</BreadcrumbItem>
-          {tabLabel[activeTab] && <BreadcrumbItem>{tabLabel[activeTab]}</BreadcrumbItem>}
-        </Breadcrumbs>
+        <Breadcrumbs
+          items={[
+            { label: t('pages.home'), href: "/", icon: <Home size={14} /> },
+            { label: t('pages.transport1'), href: "/transport" },
+            ...(tabLabel[activeTab] ? [{ label: tabLabel[activeTab] }] : []),
+          ]}
+          size="sm"
+        />
       </div>
 
       <PageLayout

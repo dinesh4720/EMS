@@ -171,7 +171,7 @@ export default function RouteModal({ isOpen, onClose, route, vehicles, academicY
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-fg">{t('pages.stops')}</h3>
               <Button size="sm" variant="flat" startContent={<Plus size={14} />} onPress={addStop}>
-                Add Stop
+                {t('pages.addStop')}
               </Button>
             </div>
 
@@ -181,7 +181,7 @@ export default function RouteModal({ isOpen, onClose, route, vehicles, academicY
               <div className="space-y-3">
                 {form.stops.map((stop, index) => (
                   <div key={stop._key} className="flex gap-2 items-start bg-surface-2 rounded-lg p-3">
-                    <div className="pt-2 text-gray-400">
+                    <div className="pt-2 text-fg-faint">
                       <GripVertical size={14} />
                     </div>
                     <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2">
