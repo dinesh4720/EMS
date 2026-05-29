@@ -352,7 +352,7 @@ function NavFlyout({ rect, title, items, groups, onNav, onClose, onMouseEnter })
    Mobile Bottom Bar
    ============================================================ */
 
-function BottomBar({ activeModuleId, unreadCount, onMoreClick }) {
+function BottomBar({ activeModuleId, unreadCount, onMoreClick, isSheetOpen }) {
   const tabs = [
     { id: "dashboard", href: "/", label: "Dash", icon: LayoutDashboard, end: true },
     { id: "students", href: "/students", label: "Students", icon: GraduationCap },
@@ -371,6 +371,7 @@ function BottomBar({ activeModuleId, unreadCount, onMoreClick }) {
             to={tab.href}
             end={tab.end}
             className={`bottom-bar__item${isActive ? " is-active" : ""}`}
+            aria-current={isActive ? "page" : undefined}
           >
             <div className="bottom-bar__icon-wrap">
               <tab.icon size={20} strokeWidth={1.8} aria-hidden />
@@ -385,6 +386,8 @@ function BottomBar({ activeModuleId, unreadCount, onMoreClick }) {
         className="bottom-bar__item"
         onClick={onMoreClick}
         aria-label="More navigation"
+        aria-expanded={isSheetOpen}
+        aria-controls="bottom-sheet"
       >
         <MoreHorizontal size={20} strokeWidth={1.8} aria-hidden />
         <span className="bottom-bar__label">More</span>
@@ -435,6 +438,33 @@ function BottomSheet({
     first?.focus();
   }, [isOpen]);
 
+  // Focus trap: cycle Tab/Shift+Tab within the sheet
+  useEffect(() => {
+    if (!isOpen || !sheetRef.current) return undefined;
+    const sheet = sheetRef.current;
+    const getFocusable = () =>
+      Array.from(
+        sheet.querySelectorAll('input, a[href], button, textarea, select, [tabindex]:not([tabindex="-1"])')
+      ).filter((el) => !el.disabled && !el.hasAttribute("aria-hidden"));
+
+    const handler = (e) => {
+      if (e.key !== "Tab") return;
+      const focusable = getFocusable();
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    sheet.addEventListener("keydown", handler);
+    return () => sheet.removeEventListener("keydown", handler);
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
@@ -442,6 +472,7 @@ function BottomSheet({
       <div className="bottom-sheet__scrim" onClick={onClose} aria-hidden="true" />
       <div
         ref={sheetRef}
+        id="bottom-sheet"
         className="bottom-sheet"
         role="dialog"
         aria-modal="true"
@@ -1009,6 +1040,7 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
           activeModuleId={activeModuleId}
           unreadCount={unreadCount}
           onMoreClick={() => setIsSidebarOpen((v) => !v)}
+          isSheetOpen={isSidebarOpen}
         />
       )}
 

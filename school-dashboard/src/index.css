@@ -192,8 +192,8 @@
   /* EMS Revamp Phase 1 — retuned to match the new shell spec (224 / 56).
    * Both legacy (--sidebar-width) and new (--sidebar-w from tokens.css)
    * names point to the same values until Phase 4 hygiene unifies them. */
-  --sidebar-width: 224px;
-  --sidebar-width-collapsed: 56px;
+  --sidebar-width: var(--sidebar-w);
+  --sidebar-width-collapsed: var(--sidebar-w-collapsed);
 
   /* ===== CONTENT AREA DIMENSIONS ===== */
   /* Common heights used in chart containers, modals, and panels */
