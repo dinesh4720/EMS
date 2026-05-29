@@ -63,7 +63,7 @@ async function installTemplateMockApi(
   await page.route('**/api/fee-templates**', async (route) => {
     const request = route.request();
     const url = new URL(request.url());
-    const path = url.pathname;
+    const path = url.pathname.replace(/^\/api/, '');
     const method = request.method();
 
     state.requestLog.add(`${method} ${path}`);
@@ -71,11 +71,11 @@ async function installTemplateMockApi(
     const json = (data: unknown, status = 200) =>
       route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(data) });
 
-    if (path === '/api/fee-templates' && method === 'GET') {
+    if (path === '/fee-templates' && method === 'GET') {
       return json(templates);
     }
 
-    if (path === '/api/fee-templates' && method === 'POST') {
+    if (path === '/fee-templates' && method === 'POST') {
       const body = JSON.parse(request.postData() || '{}');
       const newTmpl: FeeTemplateRecord = {
         _id: `tmpl-new-${Date.now()}`, id: `tmpl-new-${Date.now()}`,
@@ -96,7 +96,7 @@ async function installTemplateMockApi(
       return json(newTmpl, 201);
     }
 
-    const idMatch = path.match(/^\/api\/fee-templates\/([^/]+)$/);
+    const idMatch = path.match(/^\/fee-templates\/([^/]+)$/);
     if (idMatch) {
       const id = idMatch[1];
       if (method === 'GET') {
