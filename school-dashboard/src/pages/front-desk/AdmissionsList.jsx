@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { Edit, Eye, LayoutGrid, List as ListIcon, Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ToolbarSearch from '../../components/ui/ToolbarSearch';
-import { ConfirmDialog } from '../../components/ui';
+import { ConfirmDialog, PageShell } from '../../components/ui';
 import { classesApi, frontDeskApi, staffApi } from '../../services/api';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
 import logger from '../../utils/logger';
@@ -225,19 +225,54 @@ const AdmissionsList = forwardRef(function AdmissionsList({ onSave }, ref) {
     return counts;
   }, [admissions]);
 
+  const toolbar = (
+    <div className="toolbar">
+      <ToolbarSearch
+        value={search}
+        onChange={setSearch}
+        urlParam="q"
+        placeholder="Search by name, parent, phone, class…"
+        ariaLabel="Search admissions"
+        style={{ flex: 1, maxWidth: 360 }}
+      />
+
+      <div className="seg" role="tablist" aria-label="Filter by stage">
+        {FILTERS.map((f) => (
+          <button
+            key={f.key}
+            type="button"
+            role="tab"
+            aria-selected={stageFilter === f.key}
+            className={`seg__btn ${stageFilter === f.key ? 'is-active' : ''}`}
+            onClick={() => setStageFilter(f.key)}
+          >
+            {f.label}
+            <span className="mono tnum" style={{ marginLeft: 6, color: 'var(--fg-faint)' }}>
+              {stageCounts[f.key] ?? 0}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {(stageFilter !== 'all' || search) && (
+        <button
+          type="button"
+          className="btn btn--ghost btn--sm"
+          onClick={() => { setStageFilter('all'); setSearch(''); }}
+          style={{ color: 'var(--fg-muted)' }}
+          aria-label="Clear filters"
+        >
+          Clear
+        </button>
+      )}
+    </div>
+  );
+
   return (
-    <div className="page adm-page">
-      <div className="adm-page__head">
-        <div>
-          <h1 className="page__title">Admissions</h1>
-          <div className="page__sub">
-            <span className="mono tnum">{visible.length}</span> of{' '}
-            <span className="mono tnum">{admissions.length}</span>
-            {stageFilter !== 'all' && (
-              <>{' · '}<span>{STAGE_OPTIONS.find((s) => s.key === stageFilter)?.label}</span></>
-            )}
-          </div>
-        </div>
+    <PageShell
+      title="Admissions"
+      description={`${visible.length} of ${admissions.length}${stageFilter !== 'all' ? ` · ${STAGE_OPTIONS.find((s) => s.key === stageFilter)?.label}` : ''}`}
+      actions={
         <div className="row gap-2">
           <div className="seg" role="tablist" aria-label="View mode">
             <button
@@ -263,49 +298,16 @@ const AdmissionsList = forwardRef(function AdmissionsList({ onSave }, ref) {
             <Plus size={13} aria-hidden /> New enquiry
           </button>
         </div>
-      </div>
-
-      <div className="toolbar">
-        <ToolbarSearch
-          value={search}
-          onChange={setSearch}
-          urlParam="q"
-          placeholder="Search by name, parent, phone, class…"
-          ariaLabel="Search admissions"
-          style={{ flex: 1, maxWidth: 360 }}
-        />
-
-        <div className="seg" role="tablist" aria-label="Filter by stage">
-          {FILTERS.map((f) => (
-            <button
-              key={f.key}
-              type="button"
-              role="tab"
-              aria-selected={stageFilter === f.key}
-              className={`seg__btn ${stageFilter === f.key ? 'is-active' : ''}`}
-              onClick={() => setStageFilter(f.key)}
-            >
-              {f.label}
-              <span className="mono tnum" style={{ marginLeft: 6, color: 'var(--fg-faint)' }}>
-                {stageCounts[f.key] ?? 0}
-              </span>
-            </button>
-          ))}
-        </div>
-
-        {(stageFilter !== 'all' || search) && (
-          <button
-            type="button"
-            className="btn btn--ghost btn--sm"
-            onClick={() => { setStageFilter('all'); setSearch(''); }}
-            style={{ color: 'var(--fg-muted)' }}
-            aria-label="Clear filters"
-          >
-            Clear
-          </button>
-        )}
-      </div>
-
+      }
+      toolbar={toolbar}
+      breadcrumbs={[
+        { label: "Home", href: "/" },
+        { label: "Front desk", href: "/front-desk" },
+        { label: "Admissions" },
+      ]}
+      bodyPadding="none"
+    >
+      <div className="adm-page">
       {loading && (
         <div className="adm-empty">Loading admissions…</div>
       )}
@@ -426,7 +428,8 @@ const AdmissionsList = forwardRef(function AdmissionsList({ onSave }, ref) {
       />
 
       <ConfirmDialog {...confirmState} onClose={closeConfirm} />
-    </div>
+      </div>
+    </PageShell>
   );
 });
 

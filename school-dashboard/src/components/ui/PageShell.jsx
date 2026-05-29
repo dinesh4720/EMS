@@ -94,7 +94,7 @@ const PageShell = memo(function PageShell({
   return (
     <div
       className={cn(
-        "bg-surface border border-divider rounded-lg h-full flex flex-col min-w-0 overflow-hidden",
+        "bg-surface border border-border-token rounded-lg h-full flex flex-col min-w-0 overflow-hidden",
         className,
       )}
     >

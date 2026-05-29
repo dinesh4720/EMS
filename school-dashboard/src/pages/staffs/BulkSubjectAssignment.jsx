@@ -12,6 +12,7 @@ import { usePermissions } from "../../context/PermissionContext";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import { useTranslation } from "react-i18next";
 import logger from "../../utils/logger";
+import { PageHeader, Breadcrumbs } from "../../components/ui";
 
 /**
  * BulkSubjectAssignment — Page for assigning subjects and classes to teachers in bulk.
@@ -342,25 +343,19 @@ export default function BulkSubjectAssignment() {
 
   return (
     <div className="page">
-      <div className="page__head">
-        <div className="row" style={{ alignItems: "center", gap: 8 }}>
-          <button
-            type="button"
-            className="iconbtn"
-            onClick={() => navigate("/staffs")}
-            aria-label="Back to staff"
-          >
-            <ArrowLeft size={14} />
-          </button>
-          <div>
-            <h1 className="page__title">Bulk subject assignment</h1>
-            <div className="page__sub">
-              <span className="mono tnum">{teachers.length}</span> teachers ·{" "}
-              <span className="mono tnum">{availableSubjects.length}</span> subjects
-            </div>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Bulk subject assignment"
+        description={`${teachers.length} teachers · ${availableSubjects.length} subjects`}
+        breadcrumb={
+          <Breadcrumbs
+            size="sm"
+            items={[
+              { label: "Staff", href: "/staffs" },
+              { label: "Bulk subject assignment" },
+            ]}
+          />
+        }
+      />
 
       <div className="col" style={{ gap: 12 }}>
         {/* Info banner */}

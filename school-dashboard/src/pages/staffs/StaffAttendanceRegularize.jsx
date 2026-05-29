@@ -5,12 +5,13 @@ import {
   Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   Textarea, Input, Divider,
 } from "@heroui/react";
-import { ArrowLeft, Calendar as CalendarIcon, Check, X, AlertCircle, Clock, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar as CalendarIcon, Check, X, AlertCircle, Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import { CardGridPageSkeleton } from "../../components/skeletons/PageSkeletons";
 import logger from "../../utils/logger";
+import { PageHeader, Breadcrumbs } from "../../components/ui";
 
 const STATUS_META = {
   present: { label: "Present", tone: "ok" },
@@ -177,22 +178,20 @@ export default function StaffAttendanceRegularize() {
 
   return (
     <div className="page">
-      <div className="page__head">
-        <div className="row" style={{ alignItems: "center", gap: 8 }}>
-          <button
-            type="button"
-            className="iconbtn"
-            onClick={() => navigate("/staffs/attendance")}
-            aria-label="Back to attendance"
-          >
-            <ArrowLeft size={14} />
-          </button>
-          <div>
-            <h1 className="page__title">Regularize Attendance</h1>
-            <div className="page__sub">View and adjust per-day staff attendance records.</div>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Regularize Attendance"
+        description="View and adjust per-day staff attendance records."
+        breadcrumb={
+          <Breadcrumbs
+            size="sm"
+            items={[
+              { label: "Staff", href: "/staffs" },
+              { label: "Attendance", href: "/staffs/attendance" },
+              { label: "Regularize Attendance" },
+            ]}
+          />
+        }
+      />
 
       {/* Staff picker — uses HeroUI Select so existing staff data renders;
           wrapped in a card to match other pages' density. */}

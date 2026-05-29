@@ -19,6 +19,7 @@ import PayrollStatusBanner from './components/payroll/PayrollStatusBanner';
 import PayrollToolbar from './components/payroll/PayrollToolbar';
 import PayrollRecordsTable from './components/payroll/PayrollTable';
 import ExportMenu from '../../components/ui/ExportMenu';
+import { PageShell } from "../../components/ui";
 
 
 export default function StaffPayroll() {
@@ -346,19 +347,35 @@ export default function StaffPayroll() {
     return <TablePageSkeleton />;
   }
 
+  const toolbar = (
+    <PayrollToolbar
+      selectedMonth={selectedMonth}
+      setSelectedMonth={setSelectedMonth}
+      selectedYear={selectedYear}
+      setSelectedYear={setSelectedYear}
+      availableMonths={availableMonths}
+      months={months}
+      years={years}
+      searchQuery={searchQuery}
+      setSearchQuery={setSearchQuery}
+      statusFilter={statusFilter}
+      setStatusFilter={setStatusFilter}
+      employmentFilter={employmentFilter}
+      setEmploymentFilter={setEmploymentFilter}
+      isAnySelected={isAnySelected}
+      selectedCount={selectedCount}
+      handleBulkPay={handleBulkPay}
+      handlePrepareRecords={handlePrepareRecords}
+      setFixSalariesConfirmOpen={setFixSalariesConfirmOpen}
+      preparingRecords={preparingRecords}
+    />
+  );
+
   return (
-    <div className="payroll-page">
-      {/* Page head */}
-      <div className="payroll-page__head">
-        <div>
-          <h1 className="page__title">Payroll</h1>
-          <div className="page__sub">
-            <span className="mono tnum">{months[selectedMonth - 1]} {selectedYear}</span>
-            {' · '}
-            <span className="mono tnum">{filteredRecords.length}</span> of{' '}
-            <span className="mono tnum">{payrollRecords.length}</span> records
-          </div>
-        </div>
+    <PageShell
+      title="Payroll"
+      description={`${months[selectedMonth - 1]} ${selectedYear} · ${filteredRecords.length} of ${payrollRecords.length} records`}
+      actions={
         <ExportMenu
           filename={`payroll-${selectedYear}-${String(selectedMonth).padStart(2, '0')}`}
           title={`Payroll · ${months[selectedMonth - 1] || ''} ${selectedYear}`}
@@ -382,114 +399,100 @@ export default function StaffPayroll() {
             { key: 'status', label: 'Status', format: (v) => getStatusLabel(v) },
           ]}
         />
+      }
+      toolbar={toolbar}
+      breadcrumbs={[
+        { label: "Home", href: "/" },
+        { label: "Staff", href: "/staffs" },
+        { label: "Payroll" },
+      ]}
+      bodyPadding="none"
+    >
+      <div className="payroll-page">
+        {/* KPI strip */}
+        <PayrollKPICards dashboardData={dashboardData} formatCurrency={formatCurrency} />
+
+        {/* Status banner */}
+        <PayrollStatusBanner
+          dashboardData={dashboardData}
+          staff={staff}
+          months={months}
+          selectedMonth={selectedMonth}
+          selectedYear={selectedYear}
+          getActiveStaffCount={getActiveStaffCount}
+          formatCurrency={formatCurrency}
+        />
+
+        {/* Table */}
+        <PayrollRecordsTable
+          loading={loading}
+          visibleRecords={visibleRecords}
+          staff={staff}
+          selectedKeys={selectedKeys}
+          setSelectedKeys={setSelectedKeys}
+          setRunPayrollModalOpen={setRunPayrollModalOpen}
+          handleMarkAsPaid={handleMarkAsPaid}
+          handleReversePayment={handleReversePayment}
+          setEditingRecord={setEditingRecord}
+          setPaymentForm={setPaymentForm}
+          setPaymentModalOpen={setPaymentModalOpen}
+          formatCurrency={formatCurrency}
+          navigate={navigate}
+          loaderRef={loaderRef}
+          isLoadingMore={isLoadingMore}
+          hasMore={hasMore}
+          filteredRecords={filteredRecords}
+        />
+
+        {/* Modals */}
+        <PaymentModal
+          isOpen={paymentModalOpen}
+          onOpenChange={setPaymentModalOpen}
+          paymentForm={paymentForm}
+          setPaymentForm={setPaymentForm}
+          onConfirm={confirmPayment}
+        />
+        <RunPayrollModal
+          isOpen={runPayrollModalOpen}
+          onOpenChange={setRunPayrollModalOpen}
+          preparingRecords={preparingRecords}
+          selectedMonth={selectedMonth}
+          selectedYear={selectedYear}
+          months={months}
+          onConfirm={confirmPrepareRecords}
+        />
+        <BulkPayModal
+          isOpen={bulkPayModalOpen}
+          onOpenChange={setBulkPayModalOpen}
+          pendingBulkPay={pendingBulkPay}
+          paymentForm={paymentForm}
+          setPaymentForm={setPaymentForm}
+          onConfirm={confirmBulkPay}
+        />
+        <ValidationResultsModal
+          isOpen={validationModalOpen}
+          onOpenChange={setValidationModalOpen}
+          validating={validating}
+          validationResults={validationResults}
+          preparingRecords={preparingRecords}
+          onConfirm={confirmPrepareRecords}
+          formatCurrency={formatCurrency}
+        />
+        <ReversePaymentModal
+          isOpen={reverseModalOpen}
+          onOpenChange={setReverseModalOpen}
+          reversing={reversing}
+          reverseReason={reverseReason}
+          setReverseReason={setReverseReason}
+          onConfirm={confirmReversePayment}
+        />
+        <FixSalariesModal
+          isOpen={fixSalariesConfirmOpen}
+          onOpenChange={setFixSalariesConfirmOpen}
+          fixingSalaries={fixingSalaries}
+          onConfirm={handleFixSalaries}
+        />
       </div>
-
-      {/* KPI strip */}
-      <PayrollKPICards dashboardData={dashboardData} formatCurrency={formatCurrency} />
-
-      {/* Status banner */}
-      <PayrollStatusBanner
-        dashboardData={dashboardData}
-        staff={staff}
-        months={months}
-        selectedMonth={selectedMonth}
-        selectedYear={selectedYear}
-        getActiveStaffCount={getActiveStaffCount}
-        formatCurrency={formatCurrency}
-      />
-
-      {/* Toolbar */}
-      <PayrollToolbar
-        selectedMonth={selectedMonth}
-        setSelectedMonth={setSelectedMonth}
-        selectedYear={selectedYear}
-        setSelectedYear={setSelectedYear}
-        availableMonths={availableMonths}
-        months={months}
-        years={years}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        statusFilter={statusFilter}
-        setStatusFilter={setStatusFilter}
-        employmentFilter={employmentFilter}
-        setEmploymentFilter={setEmploymentFilter}
-        isAnySelected={isAnySelected}
-        selectedCount={selectedCount}
-        handleBulkPay={handleBulkPay}
-        handlePrepareRecords={handlePrepareRecords}
-        setFixSalariesConfirmOpen={setFixSalariesConfirmOpen}
-        preparingRecords={preparingRecords}
-      />
-
-      {/* Table */}
-      <PayrollRecordsTable
-        loading={loading}
-        visibleRecords={visibleRecords}
-        staff={staff}
-        selectedKeys={selectedKeys}
-        setSelectedKeys={setSelectedKeys}
-        setRunPayrollModalOpen={setRunPayrollModalOpen}
-        handleMarkAsPaid={handleMarkAsPaid}
-        handleReversePayment={handleReversePayment}
-        setEditingRecord={setEditingRecord}
-        setPaymentForm={setPaymentForm}
-        setPaymentModalOpen={setPaymentModalOpen}
-        formatCurrency={formatCurrency}
-        navigate={navigate}
-        loaderRef={loaderRef}
-        isLoadingMore={isLoadingMore}
-        hasMore={hasMore}
-        filteredRecords={filteredRecords}
-      />
-
-      {/* Modals */}
-      <PaymentModal
-        isOpen={paymentModalOpen}
-        onOpenChange={setPaymentModalOpen}
-        paymentForm={paymentForm}
-        setPaymentForm={setPaymentForm}
-        onConfirm={confirmPayment}
-      />
-      <RunPayrollModal
-        isOpen={runPayrollModalOpen}
-        onOpenChange={setRunPayrollModalOpen}
-        preparingRecords={preparingRecords}
-        selectedMonth={selectedMonth}
-        selectedYear={selectedYear}
-        months={months}
-        onConfirm={confirmPrepareRecords}
-      />
-      <BulkPayModal
-        isOpen={bulkPayModalOpen}
-        onOpenChange={setBulkPayModalOpen}
-        pendingBulkPay={pendingBulkPay}
-        paymentForm={paymentForm}
-        setPaymentForm={setPaymentForm}
-        onConfirm={confirmBulkPay}
-      />
-      <ValidationResultsModal
-        isOpen={validationModalOpen}
-        onOpenChange={setValidationModalOpen}
-        validating={validating}
-        validationResults={validationResults}
-        preparingRecords={preparingRecords}
-        onConfirm={confirmPrepareRecords}
-        formatCurrency={formatCurrency}
-      />
-      <ReversePaymentModal
-        isOpen={reverseModalOpen}
-        onOpenChange={setReverseModalOpen}
-        reversing={reversing}
-        reverseReason={reverseReason}
-        setReverseReason={setReverseReason}
-        onConfirm={confirmReversePayment}
-      />
-      <FixSalariesModal
-        isOpen={fixSalariesConfirmOpen}
-        onOpenChange={setFixSalariesConfirmOpen}
-        fixingSalaries={fixingSalaries}
-        onConfirm={handleFixSalaries}
-      />
-    </div>
+    </PageShell>
   );
 }
