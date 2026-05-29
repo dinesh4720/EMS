@@ -319,7 +319,7 @@ export default function StudentPromotionPage() {
         <ModalContent>
           <ModalHeader className="border-b border-divider py-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-100 dark:bg-red-950 rounded-lg">
+              <div className="p-2 bg-danger-bg rounded-lg">
                 <RotateCcw size={18} className="text-danger-token" />
               </div>
               <h3 className="text-base font-medium text-fg">Rollback Promotion</h3>

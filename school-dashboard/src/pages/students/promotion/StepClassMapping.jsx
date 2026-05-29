@@ -140,7 +140,7 @@ export default function StepClassMapping({ onNext, onBack, wizardState, setWizar
         <Card shadow="sm" className="bg-warn-bg border-warn">
           <CardBody className="p-4 flex items-center gap-2">
             <AlertTriangle size={16} className="text-warn" />
-            <p className="text-sm text-yellow-700 dark:text-yellow-300">
+            <p className="text-sm text-warn">
               No classes found for {wizardState.fromYear}. Make sure classes exist for the current academic year.
             </p>
           </CardBody>

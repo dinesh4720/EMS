@@ -87,10 +87,10 @@ export default function StepConfirm({ onNext, onBack, wizardState, setWizardStat
           <div className="flex items-start gap-3">
             <AlertTriangle size={18} className="text-warn mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+              <p className="text-sm font-medium text-warn">
                 Confirm Year-End Promotion
               </p>
-              <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
+              <p className="text-xs text-warn mt-1">
                 This will move students from <span className="mono tnum">{fromYear}</span> to{' '}
                 <span className="mono tnum">{toYear}</span>. Fee structures will be reset and new ones created.
                 You can rollback this operation from the History tab if needed.
@@ -182,7 +182,6 @@ export default function StepConfirm({ onNext, onBack, wizardState, setWizardStat
           Back
         </Button>
         <Button
-          color="primary"
           color="primary"
           onPress={openConfirmModal}
           isLoading={executing}
