@@ -83,6 +83,23 @@
   font-size: 13px;
 }
 
+/* Toolbar variant — removes border and top padding for pages where the
+ * toolbar sits immediately below the page header with no gap. */
+.toolbar--plain {
+  border-bottom: none;
+  padding-top: 0;
+}
+
+/* KPI strip with 6 columns for wide dashboard metrics */
+.perf-metrics--6 {
+  grid-template-columns: repeat(6, 1fr);
+}
+@media (max-width: 1099px) {
+  .perf-metrics--6 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 /* Grade-book grid migration — token-only restyle for ResultsEntry cells */
 .gradebook {
   background: var(--surface);

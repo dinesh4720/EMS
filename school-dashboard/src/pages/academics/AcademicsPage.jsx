@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Plus } from "lucide-react";
+import { Plus, FileText } from "lucide-react";
 
 import useAcademicsData from "../../hooks/useAcademicsData";
 import AcademicsKpiStrip from "../../components/academics/AcademicsKpiStrip";
 import ExamsTable from "../../components/academics/ExamsTable";
 import ToolbarSearch from "../../components/ui/ToolbarSearch";
-import { PageShell } from "../../components/ui";
+import { PageShell, EmptyState } from "../../components/ui";
 
 const VALID_FILTERS = new Set(["all", "upcoming", "drafts", "published", "completed"]);
 
@@ -49,7 +49,7 @@ export default function AcademicsPage() {
   });
 
   const toolbar = (
-    <div className="toolbar" style={{ borderBottom: "none", paddingTop: 0 }}>
+    <div className="toolbar toolbar--plain">
       <ToolbarSearch
         value={search}
         onChange={setSearch}
@@ -111,13 +111,22 @@ export default function AcademicsPage() {
       ]}
       bodyPadding="none"
     >
-      <div className="academics-page" style={{ paddingBottom: 24 }}>
+      <div className="academics-page pb-6">
         <AcademicsKpiStrip kpis={kpis} />
 
         {isLoading ? (
-          <div className="academics-table">
-            <div className="academics-table__empty">Loading exams…</div>
-          </div>
+          <EmptyState
+            icon={FileText}
+            title="Loading exams…"
+            size="md"
+          />
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            icon={FileText}
+            title="No exams found"
+            description={search ? "Try adjusting your search." : "Create an exam to get started."}
+            size="md"
+          />
         ) : (
           <ExamsTable rows={filtered} onEnterResults={onEnterResults} />
         )}

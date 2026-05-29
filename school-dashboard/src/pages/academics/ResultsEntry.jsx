@@ -22,7 +22,7 @@ import {
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { FileText, Users, ArrowLeft, Save, AlertCircle, Award, CheckCircle2, Search, UserX, GraduationCap } from 'lucide-react';
 import { examsApi, resultsApi, classesApi } from '../../services/api';
-import { MinimalButton, InlineEdit, StatCard, ErrorState, EmptyState } from '../../components/ui';
+import { MinimalButton, InlineEdit, StatCard, ErrorState, EmptyState, PageShell } from '../../components/ui';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { calculateGrade as calculateGradeUtil } from '../../utils/grading';
@@ -448,26 +448,31 @@ const ResultsEntry = ({ standalone = false }) => {
   // Loading state
   if (loading || loadingExams) {
     return (
-      <TablePageSkeleton />
+      <PageShell title="Enter Results">
+        <TablePageSkeleton />
+      </PageShell>
     );
   }
 
   // Error state (initial load failed and nothing to show)
   if (loadError && !exam && exams.length === 0) {
     return (
-      <ErrorState
-        title={t('toast.error.failedToLoadExamData')}
-        error={loadError}
-        onRetry={() => (standalone ? fetchExamsList() : examId && fetchExamAndStudents(examId))}
-        size="lg"
-      />
+      <PageShell title="Enter Results">
+        <ErrorState
+          title={t('toast.error.failedToLoadExamData')}
+          error={loadError}
+          onRetry={() => (standalone ? fetchExamsList() : examId && fetchExamAndStudents(examId))}
+          size="lg"
+        />
+      </PageShell>
     );
   }
 
   // Standalone mode - show exam selector
   if (standalone) {
     return (
-      <div className="space-y-4">
+      <PageShell title="Enter Results">
+        <div className="space-y-4">
         {/* Exam Selector */}
         <div className="flex items-center justify-between gap-4">
           <Select
@@ -578,58 +583,45 @@ const ResultsEntry = ({ standalone = false }) => {
             />
           </>
         )}
-      </div>
+        </div>
+      </PageShell>
     );
   }
 
   // Non-standalone mode (original behavior)
   if (!exam) {
     return (
-      <EmptyState
-        icon={FileText}
-        title={t('pages.examNotFound')}
-        size="lg"
-        action={
-          <MinimalButton onClick={() => navigate('/academics/exams')}>
-            Back to Exams
-          </MinimalButton>
-        }
-      />
+      <PageShell title="Enter Results">
+        <EmptyState
+          icon={FileText}
+          title={t('pages.examNotFound')}
+          size="lg"
+          action={
+            <MinimalButton onClick={() => navigate('/academics/exams')}>
+              Back to Exams
+            </MinimalButton>
+          }
+        />
+      </PageShell>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-surface border border-divider rounded-lg">
-        <div className="flex items-center justify-between p-6">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigateSafe(`/academics/exams/${examId}`)}
-              className="p-2 rounded-lg hover:bg-surface-2 transition-colors"
-            >
-              <ArrowLeft size={20} className="text-fg-muted" />
-            </button>
-            <div className="p-3 bg-surface-2 rounded-lg">
-              <Award size={24} className="text-fg-muted" />
-            </div>
-            <div>
-              <h1 className="text-xl font-medium text-fg">Enter Results: {exam.name}</h1>
-              <p className="text-sm text-fg-muted mt-0.5">
-                {exam.className || exam.classId} - {exam.subjectName} | Max: {exam.maxMarks} | Pass: {exam.passingMarks}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <MinimalButton variant="ghost" onClick={() => navigateSafe(`/academics/exams/${examId}`)}>
-              Cancel
-            </MinimalButton>
-            <MinimalButton icon={<Save size={16} />} onClick={handleSave} disabled={saving}>
-              {saving ? 'Saving...' : 'Save Results'}
-            </MinimalButton>
-          </div>
+    <PageShell
+      title={`Enter Results: ${exam.name}`}
+      description={`${exam.className || exam.classId} - ${exam.subjectName} | Max: ${exam.maxMarks} | Pass: ${exam.passingMarks}`}
+      actions={
+        <div className="flex items-center gap-2">
+          <MinimalButton variant="ghost" onClick={() => navigateSafe(`/academics/exams/${examId}`)}>
+            Cancel
+          </MinimalButton>
+          <MinimalButton icon={<Save size={16} />} onClick={handleSave} disabled={saving}>
+            {saving ? 'Saving...' : 'Save Results'}
+          </MinimalButton>
         </div>
-      </div>
+      }
+    >
+      <div className="space-y-6">
 
       {/* Stats Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -683,7 +675,8 @@ const ResultsEntry = ({ standalone = false }) => {
           setPendingNavPath(null);
         }}
       />
-    </div>
+      </div>
+    </PageShell>
   );
 };
 
