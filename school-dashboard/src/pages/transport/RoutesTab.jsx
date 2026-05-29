@@ -166,7 +166,7 @@ export default function RoutesTab() {
             placeholder={t('pages.searchRoutes')}
             value={search}
             onValueChange={setSearch}
-            startContent={<Search size={16} className="text-gray-400" />}
+            startContent={<Search size={16} className="text-fg-faint" />}
             size="sm"
             className="max-w-xs"
           />
@@ -310,18 +310,18 @@ export default function RoutesTab() {
                         <MapPin size={14} />
                         <span>{route.stops?.length || 0} stops</span>
                       </div>
-                      <div className={`flex items-center gap-1.5 ${isOverCapacity ? 'text-red-600 dark:text-red-400 font-medium' : isNearCapacity ? 'text-amber-600 dark:text-amber-400' : 'text-fg'}`}>
+                      <div className={`flex items-center gap-1.5 ${isOverCapacity ? 'text-danger-token font-medium' : isNearCapacity ? 'text-warn' : 'text-fg'}`}>
                         <Users size={14} />
                         <span>{studentCount}{capacity ? `/${capacity}` : ''} students</span>
                       </div>
                     </div>
                     {isOverCapacity && (
-                      <p className="text-xs text-red-600 dark:text-red-400 mt-1 font-medium">
+                      <p className="text-xs text-danger-token mt-1 font-medium">
                         ⚠ Over capacity by {studentCount - capacity} student{studentCount - capacity > 1 ? 's' : ''}
                       </p>
                     )}
                     {isNearCapacity && (
-                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                      <p className="text-xs text-warn mt-1">
                         Near capacity ({capacity - studentCount} seat{capacity - studentCount !== 1 ? 's' : ''} remaining)
                       </p>
                     )}
@@ -388,12 +388,12 @@ export default function RoutesTab() {
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="border-b">
-                <th className="text-left py-2 px-3">Route</th>
-                <th className="text-left py-2 px-3">Route Number</th>
-                <th className="text-left py-2 px-3">Status</th>
-                <th className="text-left py-2 px-3">Vehicle</th>
-                <th className="text-left py-2 px-3">Stops</th>
-                <th className="text-left py-2 px-3">Students</th>
+                <th scope="col" className="text-left py-2 px-3">Route</th>
+                <th scope="col" className="text-left py-2 px-3">Route Number</th>
+                <th scope="col" className="text-left py-2 px-3">Status</th>
+                <th scope="col" className="text-left py-2 px-3">Vehicle</th>
+                <th scope="col" className="text-left py-2 px-3">Stops</th>
+                <th scope="col" className="text-left py-2 px-3">Students</th>
               </tr>
             </thead>
             <tbody>

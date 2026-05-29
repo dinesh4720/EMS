@@ -242,6 +242,7 @@ export default function StudentAssignModal({
                             variant="light"
                             color="danger"
                             onPress={() => setRemoveTarget(studentObjId)}
+                            aria-label={t('pages.remove')}
                           >
                             <Trash2 size={14} />
                           </Button>
