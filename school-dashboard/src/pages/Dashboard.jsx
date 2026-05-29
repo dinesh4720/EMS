@@ -731,7 +731,7 @@ function Dashboard() {
           );
         case "recentPayments":
           return (
-            <DashboardSection title="Payments" count={recentPayments?.length || 0}>
+            <DashboardSection title="Recent payments" count={recentPayments?.length || 0}>
               {!recentPayments || recentPayments.length === 0 ? (
                 <EmptyState icon={IndianRupee} message="No recent payments" />
               ) : (
