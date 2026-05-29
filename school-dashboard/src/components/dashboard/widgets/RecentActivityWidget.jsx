@@ -11,8 +11,9 @@ import {
   AlertCircle,
   Activity,
 } from "lucide-react";
-import { formatRelativeTime } from "../../../utils/dateFormatter";
 import { getRelativeTime } from "../../../pages/dashboard/dashboardHelpers";
+import ChartCard from "../../ui/ChartCard";
+import Skeleton from "../../ui/Skeleton";
 
 const ACTIVITY_ICONS = {
   payment: IndianRupee,
@@ -57,6 +58,23 @@ function ActivityRow({ type, title, meta, time, onClick }) {
   );
 }
 
+function ActivitySkeleton() {
+  return (
+    <div className="space-y-2 p-2" aria-busy="true" aria-live="polite">
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className="flex items-center gap-3 py-2">
+          <Skeleton variant="circle" className="h-6 w-6" />
+          <div className="flex-1 space-y-1">
+            <Skeleton variant="text" className="h-3 w-32" />
+            <Skeleton variant="text" className="h-2.5 w-20" />
+          </div>
+          <Skeleton variant="text" className="h-2.5 w-10" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function RecentActivityWidget({
   recentPayments = [],
   recentAnnouncements = [],
@@ -69,7 +87,6 @@ export default function RecentActivityWidget({
   const activities = useMemo(() => {
     const items = [];
 
-    // Payment activities
     recentPayments.slice(0, 4).forEach((p) => {
       items.push({
         type: "payment",
@@ -81,7 +98,6 @@ export default function RecentActivityWidget({
       });
     });
 
-    // Announcement activities
     recentAnnouncements.slice(0, 4).forEach((a) => {
       items.push({
         type: "announcement",
@@ -93,7 +109,6 @@ export default function RecentActivityWidget({
       });
     });
 
-    // Attendance snapshot activity
     if (attendanceSnapshot.studentRate != null) {
       items.push({
         type: "attendance",
@@ -105,7 +120,6 @@ export default function RecentActivityWidget({
       });
     }
 
-    // New students
     const recentStudents = (students || []).filter((s) => {
       const created = s.createdAt ? new Date(s.createdAt) : null;
       return created && Date.now() - created.getTime() < 7 * 24 * 60 * 60 * 1000;
@@ -121,7 +135,6 @@ export default function RecentActivityWidget({
       });
     }
 
-    // New staff
     const recentStaff = (staff || []).filter((s) => {
       const created = s.createdAt ? new Date(s.createdAt) : null;
       return created && Date.now() - created.getTime() < 7 * 24 * 60 * 60 * 1000;
@@ -137,57 +150,40 @@ export default function RecentActivityWidget({
       });
     }
 
-    // Sort by most recent
     return items.sort((a, b) => b.sortKey - a.sortKey).slice(0, 8);
   }, [recentPayments, recentAnnouncements, attendanceSnapshot, students, staff, onNavigate]);
 
   return (
-    <div className="widget-card">
-      <div className="widget-card__header">
-        <div className="widget-card__icon">
-          <Activity size={16} className="text-fg-muted" />
+    <ChartCard
+      title="Recent activity"
+      description="Latest system events"
+      icon={<Activity size={16} />}
+      variant="widget"
+      bodyClassName="p-0"
+    >
+      {loading && activities.length === 0 ? (
+        <ActivitySkeleton />
+      ) : activities.length > 0 ? (
+        <div className="activity-list" style={{ borderRadius: 0, border: "none" }}>
+          {activities.map((a, i) => (
+            <ActivityRow
+              key={`${a.type}-${i}`}
+              type={a.type}
+              title={a.title}
+              meta={a.meta}
+              time={a.time}
+              onClick={a.onClick}
+            />
+          ))}
         </div>
-        <div>
-          <h3 className="widget-card__title">Recent activity</h3>
-          <p className="widget-card__subtitle">Latest system events</p>
+      ) : (
+        <div className="py-8 text-center">
+          <p className="text-sm font-medium text-fg">No recent activity</p>
+          <p className="mt-1 text-xs text-fg-muted">
+            Events appear as staff and students use the system
+          </p>
         </div>
-      </div>
-      <div className="widget-card__body widget-card__body--flush">
-        {loading && activities.length === 0 ? (
-          <div className="space-y-2 p-2" aria-busy="true">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="flex items-center gap-3 py-2">
-                <div className="h-6 w-6 animate-shimmer rounded" />
-                <div className="flex-1 space-y-1">
-                  <div className="h-3 w-32 animate-shimmer rounded" />
-                  <div className="h-2.5 w-20 animate-shimmer rounded" />
-                </div>
-                <div className="h-2.5 w-10 animate-shimmer rounded" />
-              </div>
-            ))}
-          </div>
-        ) : activities.length > 0 ? (
-          <div className="activity-list" style={{ borderRadius: 0, border: "none" }}>
-            {activities.map((a, i) => (
-              <ActivityRow
-                key={`${a.type}-${i}`}
-                type={a.type}
-                title={a.title}
-                meta={a.meta}
-                time={a.time}
-                onClick={a.onClick}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="py-8 text-center">
-            <p className="text-sm font-medium text-fg">No recent activity</p>
-            <p className="mt-1 text-xs text-fg-muted">
-              Events appear as staff and students use the system
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
+      )}
+    </ChartCard>
   );
 }
