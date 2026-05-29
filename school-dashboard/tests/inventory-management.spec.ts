@@ -6,8 +6,6 @@ import {
   type MockState,
 } from './test-utils';
 
-test.slow();
-
 /* ───────────────── Mock Data ───────────────── */
 
 const MOCK_ASSETS = [
@@ -203,8 +201,8 @@ test.describe('Inventory — Maintenance, Procurement, Audits & Reports', () => 
         JSON.stringify({ necessary: true, analytics: false, preferences: false, marketing: false, savedAt: new Date().toISOString() }),
       );
     });
-    await installInventoryRoutes(page);
     await installMockApi(page, state);
+    await installInventoryRoutes(page);
   });
 
   // ─── Maintenance Tab ─────────────────────────────────────────────────
@@ -459,6 +457,8 @@ test.describe('Inventory — Maintenance, Procurement, Audits & Reports', () => 
 /* ───────────────── Assets & Vendors (12 tests) ───────────────── */
 
 test.describe('Inventory — Assets & Vendors', () => {
+  test.slow();
+
   let state: MockState;
 
   test.beforeEach(async ({ page }) => {
