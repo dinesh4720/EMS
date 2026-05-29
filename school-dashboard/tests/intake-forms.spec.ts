@@ -209,9 +209,9 @@ test.describe('Intake Forms — Assignments & Submissions', () => {
     await expect(deleteItem).toBeVisible({ timeout: 5_000 });
     await deleteItem.click();
 
-    // The page uses the design-system ConfirmDialog (not a native dialog).
-    // Wait for it to appear and click the confirm button.
-    const confirmDialog = page.locator('[data-testid="ds-confirm-dialog"]');
+    // The page uses a custom alertdialog (not the design-system ConfirmDialog).
+    // Use the alertdialog role and heading name for stable targeting.
+    const confirmDialog = page.getByRole('alertdialog', { name: /Cancel Assignment/i });
     await expect(confirmDialog).toBeVisible({ timeout: 5_000 });
     await confirmDialog.getByRole('button', { name: /confirm/i }).click();
     await page.waitForTimeout(500);
