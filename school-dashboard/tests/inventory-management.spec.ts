@@ -606,10 +606,9 @@ test.describe('Inventory — Assets & Vendors', () => {
     const deleteBtn = firstRow.locator('button').last();
     if (await deleteBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
       await deleteBtn.click();
-      // The assets page uses the design-system ConfirmDialog (role="alertdialog").
-      // Use the stable data-testid selector so the test is not affected by
-      // leftover HeroUI modals in the DOM.
-      const confirmDialog = page.locator('[data-testid="ds-confirm-dialog"]');
+      // The assets page uses a custom alertdialog (not the design-system
+      // ConfirmDialog). Use the alertdialog role and heading for stable targeting.
+      const confirmDialog = page.getByRole('alertdialog', { name: /Delete this asset/i });
       if (await confirmDialog.isVisible({ timeout: 5_000 }).catch(() => false)) {
         await confirmDialog.getByRole('button', { name: /Delete/i }).click();
       }
@@ -676,9 +675,9 @@ test.describe('Inventory — Assets & Vendors', () => {
     const deleteBtn = firstCard.locator('button').last();
     if (await deleteBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
       await deleteBtn.click();
-      // Use the stable data-testid selector so the test is not affected by
-      // leftover HeroUI modals in the DOM.
-      const confirmDialog = page.locator('[data-testid="ds-confirm-dialog"]');
+      // The vendors page uses a custom alertdialog (not the design-system
+      // ConfirmDialog). Use the alertdialog role and heading for stable targeting.
+      const confirmDialog = page.getByRole('alertdialog', { name: /Delete this vendor/i });
       if (await confirmDialog.isVisible({ timeout: 5_000 }).catch(() => false)) {
         await confirmDialog.getByRole('button', { name: /Delete/i }).click();
       }
