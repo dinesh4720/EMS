@@ -579,10 +579,6 @@ function Dashboard() {
 
   const initialLoading = dashboardLoading;
 
-  if (initialLoading) {
-    return <DashboardSkeleton />;
-  }
-
   /* Greeting */
   const firstName = (authUser?.name || "").trim().split(" ")[0] || "there";
   const now = new Date();
@@ -838,6 +834,10 @@ function Dashboard() {
   const visibleWidgets = useMemo(() => {
     return widgetOrder.filter((key) => widgetVisible[key]);
   }, [widgetOrder, widgetVisible]);
+
+  if (initialLoading) {
+    return <DashboardSkeleton />;
+  }
 
   return (
     <div className="page page--principal">
