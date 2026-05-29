@@ -358,17 +358,17 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
 
   const moveSelection = useCallback(
     (delta) => {
-      if (visible.length === 0) return;
-      const currentIdx = visible.findIndex(
+      if (paginatedVisible.length === 0) return;
+      const currentIdx = paginatedVisible.findIndex(
         (s) => (s._id || s.id) === selectedId
       );
       const nextIdx =
         currentIdx === -1
           ? delta > 0
             ? 0
-            : visible.length - 1
-          : Math.min(visible.length - 1, Math.max(0, currentIdx + delta));
-      const nextStaff = visible[nextIdx];
+            : paginatedVisible.length - 1
+          : Math.min(paginatedVisible.length - 1, Math.max(0, currentIdx + delta));
+      const nextStaff = paginatedVisible[nextIdx];
       if (!nextStaff) return;
       const nextId = nextStaff._id || nextStaff.id;
       setSelectedId(nextId);
@@ -380,7 +380,7 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
         rowRefs.current.get(nextId)?.focus({ preventScroll: true });
       });
     },
-    [visible, selectedId, setSelectedId]
+    [paginatedVisible, selectedId, setSelectedId]
   );
 
   const handleListKeyDown = useCallback(
@@ -464,6 +464,12 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
   useEffect(() => {
     setPage(1);
   }, [q, filter, activeFiltersCount]);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   // The detail pane in mobile mode is a slide-over Drawer
   const detailVisible = !!selectedStaff;

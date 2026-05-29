@@ -180,16 +180,16 @@ export default function StudentsList({ onAddStudent }) {
 
   const moveSelection = useCallback(
     (delta) => {
-      if (visibleItems.length === 0) return;
-      const ids = visibleItems.map((st) => String(st.id || st._id));
+      if (paginatedItems.length === 0) return;
+      const ids = paginatedItems.map((st) => String(st.id || st._id));
       const currentIdx = ids.indexOf(selectedId);
       const nextIdx =
         currentIdx === -1
           ? delta > 0
             ? 0
-            : visibleItems.length - 1
-          : Math.min(visibleItems.length - 1, Math.max(0, currentIdx + delta));
-      const nextStudent = visibleItems[nextIdx];
+            : paginatedItems.length - 1
+          : Math.min(paginatedItems.length - 1, Math.max(0, currentIdx + delta));
+      const nextStudent = paginatedItems[nextIdx];
       if (!nextStudent) return;
       const nextId = String(nextStudent.id || nextStudent._id);
       setSelectedId(nextId);
@@ -198,7 +198,7 @@ export default function StudentsList({ onAddStudent }) {
         rowRefs.current.get(nextId)?.focus({ preventScroll: true });
       });
     },
-    [visibleItems, selectedId, setSelectedId]
+    [paginatedItems, selectedId, setSelectedId]
   );
 
   const handleListKeyDown = useCallback(
@@ -296,6 +296,12 @@ export default function StudentsList({ onAddStudent }) {
   useEffect(() => {
     setPage(1);
   }, [searchQuery, statusFilter, activeFiltersCount]);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   const {
     csvFile, setCsvFile, csvDragActive, csvProcessing,
