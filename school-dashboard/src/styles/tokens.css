@@ -48,6 +48,9 @@
   --topbar-h: 44px;
   --sidebar-w: 224px;
   --sidebar-w-collapsed: 56px;
+  --sidebar-mobile-w: 280px;
+  --bottom-bar-h: 56px;
+  --bottom-sheet-max-h: 70vh;
 
   /* Color — Light (warm neutral) */
   --bg: oklch(98.6% 0.003 80);
@@ -74,6 +77,7 @@
   /* Accent — indigo */
   --accent: oklch(56% 0.19 270);
   --accent-hover: oklch(50% 0.2 270);
+  --accent-secondary: oklch(50% 0.2 290);
   --accent-bg: oklch(56% 0.19 270 / 0.1);
   --accent-fg: oklch(98% 0.01 270);
   --accent-border: oklch(56% 0.19 270 / 0.25);
@@ -117,6 +121,7 @@
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.04);
   --shadow-md: 0 4px 16px -4px rgb(0 0 0 / 0.08), 0 1px 2px rgb(0 0 0 / 0.04);
   --shadow-lg: 0 24px 48px -16px rgb(0 0 0 / 0.18), 0 2px 4px rgb(0 0 0 / 0.06);
+  --shadow-flyout: 0 8px 24px -6px rgb(0 0 0 / 0.18), 0 2px 6px -2px rgb(0 0 0 / 0.08);
   --shadow-glass: 0 32px 64px -24px rgb(0 0 0 / 0.24), 0 0 0 1px rgb(0 0 0 / 0.05);
 }
 
@@ -143,6 +148,7 @@
   --glass-bg: rgba(20, 20, 24, 0.6);
   --glass-border: rgba(255, 255, 255, 0.08);
 
+  --shadow-flyout: 0 8px 24px -6px rgb(0 0 0 / 0.35), 0 2px 6px -2px rgb(0 0 0 / 0.12);
   --shadow-glass: 0 32px 64px -24px rgb(0 0 0 / 0.6), 0 0 0 1px rgb(255 255 255 / 0.06);
 }
 
