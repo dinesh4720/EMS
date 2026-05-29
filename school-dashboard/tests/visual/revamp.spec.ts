@@ -42,10 +42,17 @@ const PAGES: Array<{ label: string; path: string; waitFor?: string }> = [
 ];
 
 async function login(page: Page) {
+  // Clear any stale lockout or auth state from previous runs
+  await page.addInitScript(() => {
+    sessionStorage.clear();
+    localStorage.removeItem("app_user");
+  });
   await page.goto("/login");
   await page.locator("#login-email").fill(TEST_USER);
   await page.locator("#login-password").fill(TEST_PASS);
-  await page.locator("form").evaluate((f: HTMLFormElement) => f.requestSubmit());
+  // Click the submit button instead of requestSubmit() — the latter does not
+  // reliably trigger React’s synthetic onSubmit handler in Playwright.
+  await page.getByRole("button", { name: /sign in/i }).click();
   // Wait for either the dashboard or the setup wizard. If wizard appears, skip it.
   await page.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 15000 });
   const skip = page.getByRole("button", { name: /^Skip Setup$/i });
