@@ -614,7 +614,6 @@ test.describe('Inventory — Assets & Vendors', () => {
       if (await confirmDialog.isVisible({ timeout: 5_000 }).catch(() => false)) {
         await confirmDialog.getByRole('button', { name: /Delete/i }).click();
       }
-      }
       await expect.poll(() => state.inventoryAssets.length, { timeout: 10_000 }).toBe(before - 1);
     }
   });
@@ -683,7 +682,6 @@ test.describe('Inventory — Assets & Vendors', () => {
       const confirmDialog = page.getByRole('alertdialog', { name: /Delete this vendor/i });
       if (await confirmDialog.isVisible({ timeout: 5_000 }).catch(() => false)) {
         await confirmDialog.getByRole('button', { name: /Delete/i }).click();
-      }
       }
       await expect.poll(() => state.inventoryVendors.length, { timeout: 10_000 }).toBe(before - 1);
     }
