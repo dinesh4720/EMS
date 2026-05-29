@@ -58,6 +58,7 @@ function createTemplateState() {
       schoolId: SCHOOL_ID,
     },
   ];
+  state.feeTemplates = templates;
   return { state, templates };
 }
 
@@ -71,16 +72,16 @@ async function installTemplateMockApi(
   await page.route('**/api/fee-templates**', async (route) => {
     const request = route.request();
     const url = new URL(request.url());
-    const path = url.pathname;
+    const path = url.pathname.replace(/^\/api/, '');
     const method = request.method();
 
     const json = (data: unknown, status = 200) =>
       route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(data) });
 
-    if (path === '/api/fee-templates' && method === 'GET') {
+    if (path === '/fee-templates' && method === 'GET') {
       return json(templates);
     }
-    if (path === '/api/fee-templates' && method === 'POST') {
+    if (path === '/fee-templates' && method === 'POST') {
       const body = JSON.parse(request.postData() || '{}');
       const newTmpl: FeeTemplateRecord = {
         _id: `tmpl-new-${Date.now()}`, id: `tmpl-new-${Date.now()}`,
@@ -95,7 +96,7 @@ async function installTemplateMockApi(
       templates.push(newTmpl);
       return json(newTmpl, 201);
     }
-    const idMatch = path.match(/^\/api\/fee-templates\/([^/]+)$/);
+    const idMatch = path.match(/^\/fee-templates\/([^/]+)$/);
     if (idMatch) {
       const id = idMatch[1];
       if (method === 'PUT' || method === 'PATCH') {
@@ -124,7 +125,7 @@ test.describe('Fees — Templates (E2E-TEST-25)', () => {
     await installTemplateMockApi(page, state, templates);
 
     await page.goto('/fees/templates');
-    await page.waitForLoadState('domcontentloaded');
+    await page.waitForResponse('**/api/fee-templates**');
 
     // Wait for a template name to appear (confirms skeleton resolved and data loaded)
     await expect(page.getByText('Standard Annual Plan').first()).toBeVisible({ timeout: 15_000 });
@@ -140,7 +141,7 @@ test.describe('Fees — Templates (E2E-TEST-25)', () => {
     await installTemplateMockApi(page, state, templates);
 
     await page.goto('/fees/templates');
-    await page.waitForLoadState('domcontentloaded');
+    await page.waitForResponse('**/api/fee-templates**');
 
     const createBtn = page.getByRole('button', { name: /create template|add template|new template/i }).first();
     const hasCreate = await createBtn.isVisible({ timeout: 10_000 }).catch(() => false);
@@ -161,7 +162,7 @@ test.describe('Fees — Templates (E2E-TEST-25)', () => {
     await installTemplateMockApi(page, state, templates);
 
     await page.goto('/fees/templates');
-    await page.waitForLoadState('domcontentloaded');
+    await page.waitForResponse('**/api/fee-templates**');
 
     // Wait for a template name to appear (confirms data loaded)
     await expect(page.getByText('Standard Annual Plan').first()).toBeVisible({ timeout: 15_000 });
@@ -176,7 +177,7 @@ test.describe('Fees — Templates (E2E-TEST-25)', () => {
     await installTemplateMockApi(page, state, templates);
 
     await page.goto('/fees/templates');
-    await page.waitForLoadState('domcontentloaded');
+    await page.waitForResponse('**/api/fee-templates**');
 
     // Wait for a template name to appear (confirms data loaded)
     await expect(page.getByText('Standard Annual Plan').first()).toBeVisible({ timeout: 15_000 });
@@ -191,7 +192,7 @@ test.describe('Fees — Templates (E2E-TEST-25)', () => {
     await installTemplateMockApi(page, state, templates);
 
     await page.goto('/fees/templates');
-    await page.waitForLoadState('domcontentloaded');
+    await page.waitForResponse('**/api/fee-templates**');
 
     // Look for edit/pencil buttons — wait for data to load first
     await expect(page.getByText('Standard Annual Plan').first()).toBeVisible({ timeout: 15_000 });
@@ -218,12 +219,9 @@ test.describe('Fees — Templates (E2E-TEST-25)', () => {
     await installTemplateMockApi(page, state, templates);
 
     await page.goto('/fees/templates');
-    await page.waitForLoadState('domcontentloaded');
+    await page.waitForResponse('**/api/fee-templates**');
 
     const initialCount = templates.length;
-
-    // Accept confirm dialogs
-    page.on('dialog', (d) => d.accept());
 
     const deleteBtn = page.getByRole('button', { name: /delete/i }).or(
       page.locator('button[aria-label*="delete" i]'),
@@ -232,7 +230,15 @@ test.describe('Fees — Templates (E2E-TEST-25)', () => {
 
     if (hasDelete) {
       await deleteBtn.click();
-      await page.waitForLoadState('domcontentloaded');
+
+      // Handle the custom ConfirmDialog (not a native browser dialog)
+      const confirmDialog = page.locator('[role="alertdialog"]');
+      const confirmDeleteBtn = confirmDialog.getByRole('button', { name: /delete/i });
+      await expect(confirmDeleteBtn).toBeVisible({ timeout: 3000 });
+      await confirmDeleteBtn.click();
+
+      // Wait for the DELETE request and subsequent refetch
+      await page.waitForResponse('**/api/fee-templates**');
       // Template count should decrease by 1
       expect(templates.length).toBe(initialCount - 1);
     }
@@ -243,7 +249,7 @@ test.describe('Fees — Templates (E2E-TEST-25)', () => {
     await installTemplateMockApi(page, state, templates);
 
     await page.goto('/fees/templates');
-    await page.waitForLoadState('domcontentloaded');
+    await page.waitForResponse('**/api/fee-templates**');
 
     const dupBtn = page.getByRole('button', { name: /duplicate|copy/i }).first();
     const hasDup = await dupBtn.isVisible({ timeout: 5000 }).catch(() => false);
@@ -271,6 +277,7 @@ test.describe('Fees — Templates (E2E-TEST-25)', () => {
     });
 
     await page.goto('/fees/templates');
+    await page.waitForResponse('**/api/fee-templates**');
 
     const skeletons = page.locator('[class*="animate-pulse"], [class*="skeleton"]');
     const count = await skeletons.count();
@@ -286,7 +293,7 @@ test.describe('Fees — Templates (E2E-TEST-25)', () => {
     await installTemplateMockApi(page, state, templates);
 
     await page.goto('/fees/templates');
-    await page.waitForLoadState('domcontentloaded');
+    await page.waitForResponse('**/api/fee-templates**');
 
     // Wait for a template name to appear (confirms data loaded)
     await expect(page.getByText('Standard Annual Plan').first()).toBeVisible({ timeout: 10_000 });
@@ -305,7 +312,7 @@ test.describe('Fees — Templates (E2E-TEST-25)', () => {
     });
 
     await page.goto('/fees/templates');
-    await page.waitForLoadState('domcontentloaded');
+    await page.waitForResponse('**/api/fee-templates**');
 
     // Wait for the "Create Template" button to appear (confirms skeleton resolved)
     await expect(page.getByRole('button', { name: /create template/i })).toBeVisible({ timeout: 10_000 });
