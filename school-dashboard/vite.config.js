@@ -107,5 +107,17 @@ export default defineConfig({
   test: {
     include: ['src/**/*.test.{js,jsx,ts,tsx}'],
     exclude: ['tests/**', 'node_modules/**'],
+    coverage: {
+      provider: 'v8',
+      include: ['src/pages/**/*.jsx', 'src/components/**/*.jsx'],
+      exclude: ['node_modules/', 'tests/', '**/*.test.{js,jsx,ts,tsx}'],
+      reporter: ['text', 'json-summary', 'html'],
+      thresholds: {
+        lines: 40,
+        functions: 40,
+        branches: 40,
+        statements: 40,
+      },
+    },
   },
 })

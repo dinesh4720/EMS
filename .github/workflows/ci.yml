@@ -60,11 +60,13 @@ jobs:
         run: npm run lint
 
   unit-tests:
-    name: Unit Tests
+    name: Unit Tests with Coverage
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: school-dashboard
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -80,8 +82,21 @@ jobs:
         run: npm ci
         working-directory: .
 
-      - name: Run unit tests
-        run: npm run test:unit
+      - name: Run unit tests with coverage
+        run: npm run test:unit -- --coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: school-dashboard/coverage/
+          if-no-files-found: error
+
+      - name: Generate coverage badges
+        uses: jpb06/coverage-badges-action@latest
+        with:
+          coverage-summary-path: ./school-dashboard/coverage/coverage-summary.json
+          output-folder: ./school-dashboard/badges
 
   playwright-compile:
     name: Playwright Test Compilation
