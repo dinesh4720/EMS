@@ -428,6 +428,7 @@ const AdmissionsList = forwardRef(function AdmissionsList({ onSave }, ref) {
       />
 
       <ConfirmDialog {...confirmState} onClose={closeConfirm} />
+      </div>
     </PageShell>
   );
 });

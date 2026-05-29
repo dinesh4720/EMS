@@ -21,6 +21,7 @@ import ExportMenu from "../../components/ui/ExportMenu";
 import PrintPreviewModal from "../../components/ui/PrintPreviewModal";
 import { staffAttendanceApi } from "../../services/api";
 import toast from "react-hot-toast";
+import { PageShell } from "../../components/ui";
 
 // Mobile breakpoint — below this the right pane collapses to a Drawer
 const MOBILE_MAX = 1099;
@@ -497,156 +498,157 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
   const showClearButton = filter !== "all" || q || activeFiltersCount > 0;
 
   return (
-    <div
-      className="page"
-      style={
-        isMobileViewport
-          ? { display: "flex", flexDirection: "column", minHeight: 0 }
-          : {
-              display: "grid",
-              gridTemplateColumns: "minmax(420px, 1fr) 380px",
-              gap: 0,
-              minHeight: 0,
-            }
+    <PageShell
+      title="Staff"
+      description={loading ? "Loading…" : `${visible.length} of ${staff.length}`}
+      actions={
+        <button
+          type="button"
+          className="btn btn--accent"
+          onClick={onAddStaff}
+        >
+          <Plus size={13} aria-hidden />
+          Add staff
+        </button>
       }
-    >
-      {/* Left list */}
-      <div
-        style={{
-          borderRight: isMobileViewport ? "none" : "1px solid var(--border)",
-          display: "flex",
-          flexDirection: "column",
-          minHeight: 0,
-        }}
-      >
-        <div className="page__head" style={{ paddingBottom: 12 }}>
-          <div>
-            <h1 className="page__title">Staff</h1>
-            <div className="page__sub">
-              <span className="mono tnum">{visible.length}</span> of{" "}
-              <span className="mono tnum">{staff.length}</span>
-            </div>
-          </div>
-          <button
-            type="button"
-            className="btn btn--accent"
-            onClick={onAddStaff}
-          >
-            <Plus size={13} aria-hidden />
-            Add staff
-          </button>
-        </div>
-
-        {/* Toolbar: segmented + search + bulk-action chip */}
-        <div className="toolbar">
-          <div className="seg" role="tablist" aria-label="Filter staff">
-            {FILTERS.map((f) => {
-              const count = statusCounts?.[f.key] ?? 0;
-              return (
-                <button
-                  key={f.key}
-                  type="button"
-                  role="tab"
-                  aria-selected={filter === f.key}
-                  className={`seg__btn ${filter === f.key ? "is-active" : ""}`}
-                  onClick={() => setFilter(f.key)}
-                >
-                  {f.label}
-                  <span className="mono tnum" style={{ marginLeft: 6, color: "var(--fg-subtle)", fontSize: 11 }}>
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          <ToolbarSearch
-            value={q}
-            onChange={setQ}
-            urlParam="q"
-            placeholder="Search staff…"
-            ariaLabel="Search staff"
-            style={{ marginLeft: "auto", flex: "0 1 280px", minWidth: 0 }}
-          />
-
-          {showClearButton && (
-            <button
-              type="button"
-              className="btn btn--ghost btn--sm"
-              onClick={() => {
-                setQ("");
-                clearAllFilters();
-                setSearchParams(
-                  (prev) => {
-                    const next = new URLSearchParams(prev);
-                    next.delete("filter");
-                    next.delete("q");
-                    return next;
-                  },
-                  { replace: false }
+      toolbar={
+        <>
+          <div className="toolbar">
+            <div className="seg" role="tablist" aria-label="Filter staff">
+              {FILTERS.map((f) => {
+                const count = statusCounts?.[f.key] ?? 0;
+                return (
+                  <button
+                    key={f.key}
+                    type="button"
+                    role="tab"
+                    aria-selected={filter === f.key}
+                    className={`seg__btn ${filter === f.key ? "is-active" : ""}`}
+                    onClick={() => setFilter(f.key)}
+                  >
+                    {f.label}
+                    <span className="mono tnum" style={{ marginLeft: 6, color: "var(--fg-subtle)", fontSize: 11 }}>
+                      {count}
+                    </span>
+                  </button>
                 );
-              }}
-              style={{ color: "var(--fg-muted)" }}
-              aria-label="Clear all filters"
-            >
-              Clear
-            </button>
-          )}
+              })}
+            </div>
 
-          <ExportMenu
-            rows={visible}
-            columns={[
-              { key: "name", label: "Name" },
-              { key: "code", label: "ID", accessor: (s) => s.staffNumber || s.code || "" },
-              { key: "role", label: "Role", accessor: (s) => (Array.isArray(s.role) ? s.role.join(", ") : s.role || "") },
-              { key: "department", label: "Department", accessor: (s) => s.department || "—" },
-              { key: "employmentType", label: "Employment Type", accessor: (s) => s.employmentType || "—" },
-              { key: "gender", label: "Gender", accessor: (s) => s.gender || "—" },
-              { key: "status", label: "Status", accessor: (s) => s.status || "active" },
-              { key: "email", label: "Email", accessor: (s) => s.email || "—" },
-              { key: "phone", label: "Phone", accessor: (s) => s.phone || s.mobile || "—" },
-            ]}
-            filename="staff-list"
-            title="Staff List"
+            <ToolbarSearch
+              value={q}
+              onChange={setQ}
+              urlParam="q"
+              placeholder="Search staff…"
+              ariaLabel="Search staff"
+              style={{ marginLeft: "auto", flex: "0 1 280px", minWidth: 0 }}
+            />
+
+            {showClearButton && (
+              <button
+                type="button"
+                className="btn btn--ghost btn--sm"
+                onClick={() => {
+                  setQ("");
+                  clearAllFilters();
+                  setSearchParams(
+                    (prev) => {
+                      const next = new URLSearchParams(prev);
+                      next.delete("filter");
+                      next.delete("q");
+                      return next;
+                    },
+                    { replace: false }
+                  );
+                }}
+                style={{ color: "var(--fg-muted)" }}
+                aria-label="Clear all filters"
+              >
+                Clear
+              </button>
+            )}
+
+            <ExportMenu
+              rows={visible}
+              columns={[
+                { key: "name", label: "Name" },
+                { key: "code", label: "ID", accessor: (s) => s.staffNumber || s.code || "" },
+                { key: "role", label: "Role", accessor: (s) => (Array.isArray(s.role) ? s.role.join(", ") : s.role || "") },
+                { key: "department", label: "Department", accessor: (s) => s.department || "—" },
+                { key: "employmentType", label: "Employment Type", accessor: (s) => s.employmentType || "—" },
+                { key: "gender", label: "Gender", accessor: (s) => s.gender || "—" },
+                { key: "status", label: "Status", accessor: (s) => s.status || "active" },
+                { key: "email", label: "Email", accessor: (s) => s.email || "—" },
+                { key: "phone", label: "Phone", accessor: (s) => s.phone || s.mobile || "—" },
+              ]}
+              filename="staff-list"
+              title="Staff List"
+            />
+
+            <button
+              type="button"
+              className="btn btn--sm"
+              onClick={() => setPrintOpen(true)}
+              aria-label="Print preview"
+            >
+              <Printer size={14} aria-hidden />
+            </button>
+
+            <BulkActionBar
+              selection={selection}
+              totalMatching={visible.length}
+            >
+              <button
+                type="button"
+                className="btn btn--sm"
+                onClick={handleBulkMarkPresent}
+              >
+                <CheckCircle2 size={12} aria-hidden /> Mark present
+              </button>
+              <button
+                type="button"
+                className="btn btn--sm"
+                onClick={handleBulkMessage}
+              >
+                <MessageSquare size={12} aria-hidden /> Message
+              </button>
+            </BulkActionBar>
+          </div>
+
+          <FilterPillsBar
+            filters={filtersConfig}
+            onFilterChange={handleFilterChange}
+            onClearAll={clearAllFilters}
+            activeFiltersCount={activeFiltersCount}
           />
-
-          <button
-            type="button"
-            className="btn btn--sm"
-            onClick={() => setPrintOpen(true)}
-            aria-label="Print preview"
-          >
-            <Printer size={14} aria-hidden />
-          </button>
-
-          <BulkActionBar
-            selection={selection}
-            totalMatching={visible.length}
-          >
-            <button
-              type="button"
-              className="btn btn--sm"
-              onClick={handleBulkMarkPresent}
-            >
-              <CheckCircle2 size={12} aria-hidden /> Mark present
-            </button>
-            <button
-              type="button"
-              className="btn btn--sm"
-              onClick={handleBulkMessage}
-            >
-              <MessageSquare size={12} aria-hidden /> Message
-            </button>
-          </BulkActionBar>
-        </div>
-
-        {/* Filter pills bar */}
-        <FilterPillsBar
-          filters={filtersConfig}
-          onFilterChange={handleFilterChange}
-          onClearAll={clearAllFilters}
-          activeFiltersCount={activeFiltersCount}
-        />
+        </>
+      }
+      breadcrumbs={[{ label: "Home", href: "/" }, { label: "Staff" }]}
+      bodyPadding="none"
+      scrollable={false}
+    >
+      <div
+        style={
+          isMobileViewport
+            ? { display: "flex", flexDirection: "column", minHeight: 0, flex: 1 }
+            : {
+                display: "grid",
+                gridTemplateColumns: "minmax(420px, 1fr) 380px",
+                gap: 0,
+                minHeight: 0,
+                flex: 1,
+              }
+        }
+      >
+        {/* Left list */}
+        <div
+          style={{
+            borderRight: isMobileViewport ? "none" : "1px solid var(--border)",
+            display: "flex",
+            flexDirection: "column",
+            minHeight: 0,
+          }}
+        >
 
         {/* List rows */}
         <div
@@ -847,6 +849,6 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
           </table>
         </div>
       </PrintPreviewModal>
-    </div>
+    </PageShell>
   );
 }
