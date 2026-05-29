@@ -135,7 +135,7 @@ export const chartSeriesVars = [
 // to a status (paid/pending/overdue, present/absent, etc.).
 export const chartStatus = {
   ok: 'oklch(58% 0.14 150)',
-  warn: 'oklch(70% 0.15 75)',
+  warn: 'oklch(65% 0.15 75)',
   danger: 'oklch(58% 0.2 25)',
   info: 'oklch(60% 0.14 240)',
   accent: 'oklch(56% 0.19 270)',
