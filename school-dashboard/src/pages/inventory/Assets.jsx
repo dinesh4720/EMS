@@ -509,8 +509,8 @@ export default function Assets() {
           <ModalHeader>
             <div className="flex items-center gap-2">
               {stockTarget?.type === 'IN'
-                ? <ArrowDownToLine size={16} className="text-green-600" />
-                : <ArrowUpFromLine size={16} className="text-yellow-600" />}
+                ? <ArrowDownToLine size={16} className="text-ok" />
+                : <ArrowUpFromLine size={16} className="text-warn" />}
               {stockTarget?.type === 'IN' ? 'Stock In' : 'Stock Out'}: {stockTarget?.asset?.name}
             </div>
           </ModalHeader>
@@ -528,7 +528,7 @@ export default function Assets() {
               autoFocus
             />
             {stockTarget?.type === 'OUT' && stockQty && Number(stockQty) > 0 && (
-              <p className={`text-xs mt-1 ${(stockTarget.asset.quantity - Number(stockQty)) < 0 ? 'text-red-600' : 'text-fg-muted'}`}>
+              <p className={`text-xs mt-1 ${(stockTarget.asset.quantity - Number(stockQty)) < 0 ? 'text-danger-token' : 'text-fg-muted'}`}>
                 New stock: {stockTarget.asset.quantity - Number(stockQty)}
               </p>
             )}

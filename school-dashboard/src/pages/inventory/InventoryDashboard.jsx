@@ -119,7 +119,7 @@ export default function InventoryDashboard() {
               <EmptyState size="sm" icon={Calendar} title={t('pages.noScheduledMaintenance')} />
             ) : (
               recentMaintenance.map((log) => (
-                <div key={log._id} className="flex items-center justify-between py-3 border-b border-gray-50 dark:border-zinc-800 last:border-0">
+                <div key={log._id} className="flex items-center justify-between py-3 border-b border-divider last:border-0">
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-fg truncate">
                       {log.assetId?.name || "Unknown Asset"}

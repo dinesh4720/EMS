@@ -209,8 +209,8 @@ export default function Procurement() {
                         <div className="flex gap-1">
                           {r.status === "PENDING" && (
                             <>
-                              <IconButton aria-label={t('pages.approve1')} variant="ghost" size="sm" icon={<CheckCircle size={14} className="text-green-600 dark:text-green-400" />} onClick={() => handleStatusChange(r._id, "APPROVED")} />
-                              <IconButton aria-label={t('pages.reject1')} variant="ghost" size="sm" icon={<XCircle size={14} className="text-red-600 dark:text-red-400" />} onClick={() => handleStatusChange(r._id, "REJECTED")} />
+                              <IconButton aria-label={t('pages.approve1')} variant="ghost" size="sm" icon={<CheckCircle size={14} className="text-ok" />} onClick={() => handleStatusChange(r._id, "APPROVED")} />
+                              <IconButton aria-label={t('pages.reject1')} variant="ghost" size="sm" icon={<XCircle size={14} className="text-danger-token" />} onClick={() => handleStatusChange(r._id, "REJECTED")} />
                             </>
                           )}
                           <IconButton aria-label="Edit procurement" variant="ghost" size="sm" icon={<Edit3 size={14} />} onClick={() => openEdit(r)} />
