@@ -145,7 +145,7 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
               <div className="space-y-6">
                 {/* Title */}
                 <div>
-                  <label className="text-xs font-medium text-default-500 mb-1.5 block">{t('calendar.addEvent.eventTitleLabel', 'Event Title')}</label>
+                  <label className="text-xs font-medium text-fg-muted mb-1.5 block">{t('calendar.addEvent.eventTitleLabel', 'Event Title')}</label>
                   <Input
                     placeholder={t('calendar.addEvent.eventTitlePlaceholder', 'e.g., Staff Meeting, Annual Day...')}
                     variant="bordered"
@@ -153,7 +153,7 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                     value={newEvent.title}
                     onValueChange={(v) => setNewEvent({ ...newEvent, title: v })}
                     classNames={{
-                      inputWrapper: "border-default-200 hover:border-default-400 focus-within:border-default-400",
+                      inputWrapper: "border-border-token hover:border-border-strong focus-within:border-border-strong",
                       input: "text-sm"
                     }}
                   />
@@ -161,7 +161,7 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
 
                 {/* Event Type Selection */}
                 <div>
-                  <label className="text-xs font-medium text-default-500 mb-2 block">{t('calendar.addEvent.eventTypeLabel', 'Event Type')}</label>
+                  <label className="text-xs font-medium text-fg-muted mb-2 block">{t('calendar.addEvent.eventTypeLabel', 'Event Type')}</label>
                   <div className="grid grid-cols-2 gap-2">
                     {Object.entries(types)
                       .map(([key, { label, icon: Icon }]) => (
@@ -171,15 +171,15 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                           className={`flex items-center gap-2.5 p-3 rounded-lg border transition-all text-left ${
                             newEvent.type === key
                               ? 'border-foreground bg-foreground/[0.03]'
-                              : 'border-default-200 hover:border-default-300 bg-background'
+                              : 'border-border-token hover:border-border-strong bg-background'
                           }`}
                         >
                           <div className={`w-8 h-8 rounded-md flex items-center justify-center ${
-                            newEvent.type === key ? 'bg-foreground text-background' : 'bg-default-100 text-default-500'
+                            newEvent.type === key ? 'bg-foreground text-background' : 'bg-surface-2 text-fg-muted'
                           }`}>
                             {Icon && <Icon size={14} />}
                           </div>
-                          <span className={`text-sm font-medium ${newEvent.type === key ? 'text-foreground' : 'text-default-600'}`}>
+                          <span className={`text-sm font-medium ${newEvent.type === key ? 'text-foreground' : 'text-fg-muted'}`}>
                             {label}
                           </span>
                         </button>
@@ -189,7 +189,7 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
 
                 {/* Description */}
                 <div>
-                  <label className="text-xs font-medium text-default-500 mb-1.5 block">{t('calendar.addEvent.descriptionLabel', 'Description')}</label>
+                  <label className="text-xs font-medium text-fg-muted mb-1.5 block">{t('calendar.addEvent.descriptionLabel', 'Description')}</label>
                   <Textarea
                     placeholder={t('calendar.addEvent.descriptionPlaceholder', 'Add event details or notes...')}
                     variant="bordered"
@@ -199,7 +199,7 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                     value={newEvent.description}
                     onValueChange={(v) => setNewEvent({ ...newEvent, description: v })}
                     classNames={{
-                      inputWrapper: "border-default-200 hover:border-default-400 focus-within:border-default-400",
+                      inputWrapper: "border-border-token hover:border-border-strong focus-within:border-border-strong",
                       input: "text-sm"
                     }}
                   />
@@ -208,7 +208,7 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                 {/* Holiday Type - only shown for holiday events */}
                 {newEvent.type === 'holiday' && (
                   <div>
-                    <label className="text-xs font-medium text-default-500 mb-2 block">{t('calendar.addEvent.holidayTypeLabel', 'Holiday Type')}</label>
+                    <label className="text-xs font-medium text-fg-muted mb-2 block">{t('calendar.addEvent.holidayTypeLabel', 'Holiday Type')}</label>
                     <div className="grid grid-cols-3 gap-2">
                       {['National', 'Regional', 'School'].map((ht) => (
                         <button
@@ -217,7 +217,7 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                           className={`p-2.5 rounded-lg border transition-all text-center text-sm font-medium ${
                             newEvent.holidayType === ht
                               ? 'border-foreground bg-foreground/[0.03] text-foreground'
-                              : 'border-default-200 hover:border-default-300 bg-background text-default-600'
+                              : 'border-border-token hover:border-border-strong bg-background text-fg-muted'
                           }`}
                         >
                           {ht}
@@ -229,7 +229,7 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
 
                 {/* Recurrence */}
                 <div>
-                  <label className="text-xs font-medium text-default-500 mb-2 block">
+                  <label className="text-xs font-medium text-fg-muted mb-2 block">
                     <span className="flex items-center gap-1.5">
                       <Repeat size={12} />
                       {t('calendar.addEvent.recurrenceLabel', 'Recurrence')}
@@ -248,7 +248,7 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                         className={`p-2.5 rounded-lg border transition-all text-center text-sm font-medium ${
                           newEvent.recurrence === key
                             ? 'border-foreground bg-foreground/[0.03] text-foreground'
-                            : 'border-default-200 hover:border-default-300 bg-background text-default-600'
+                            : 'border-border-token hover:border-border-strong bg-background text-fg-muted'
                         }`}
                       >
                         {label}
@@ -258,15 +258,19 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                 </div>
 
                 {/* All Day Toggle */}
-                <div className="flex items-center justify-between p-3 rounded-lg border border-default-200">
+                <div className="flex items-center justify-between p-3 rounded-lg border border-border-token">
                   <div className="flex items-center gap-2">
-                    <Clock size={16} className="text-default-400" />
-                    <span className="text-sm text-default-600">{t('calendar.addEvent.allDayEvent', 'All Day Event')}</span>
+                    <Clock size={16} className="text-fg-faint" />
+                    <span className="text-sm text-fg-muted">{t('calendar.addEvent.allDayEvent', 'All Day Event')}</span>
                   </div>
                   <button
+                    type="button"
+                    role="switch"
+                    aria-checked={newEvent.allDay}
+                    aria-label={t('calendar.addEvent.allDayEvent', 'All Day Event')}
                     onClick={() => setNewEvent({ ...newEvent, allDay: !newEvent.allDay })}
                     className={`w-10 h-6 rounded-full transition-colors relative ${
-                      newEvent.allDay ? 'bg-foreground' : 'bg-default-200'
+                      newEvent.allDay ? 'bg-foreground' : 'bg-surface-2'
                     }`}
                   >
                     <div className={`w-4 h-4 rounded-full bg-background absolute top-1 transition-transform shadow-sm ${
@@ -279,7 +283,7 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                 {!newEvent.allDay && (
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-xs font-medium text-default-500 mb-1.5 block">{t('calendar.addEvent.startTime', 'Start Time')}</label>
+                      <label className="text-xs font-medium text-fg-muted mb-1.5 block">{t('calendar.addEvent.startTime', 'Start Time')}</label>
                       <Input
                         type="time"
                         variant="bordered"
@@ -287,13 +291,13 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                         value={newEvent.startTime}
                         onValueChange={(v) => setNewEvent({ ...newEvent, startTime: v })}
                         classNames={{
-                          inputWrapper: "border-default-200 hover:border-default-400",
+                          inputWrapper: "border-border-token hover:border-border-strong",
                           input: "text-sm"
                         }}
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-medium text-default-500 mb-1.5 block">{t('calendar.addEvent.endTime', 'End Time')}</label>
+                      <label className="text-xs font-medium text-fg-muted mb-1.5 block">{t('calendar.addEvent.endTime', 'End Time')}</label>
                       <Input
                         type="time"
                         variant="bordered"
@@ -301,7 +305,7 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                         value={newEvent.endTime}
                         onValueChange={(v) => setNewEvent({ ...newEvent, endTime: v })}
                         classNames={{
-                          inputWrapper: "border-default-200 hover:border-default-400",
+                          inputWrapper: "border-border-token hover:border-border-strong",
                           input: "text-sm"
                         }}
                       />
@@ -311,28 +315,28 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
 
                 {/* Preview Section */}
                 <div>
-                  <label className="text-xs font-medium text-default-500 mb-2 block">{t('calendar.addEvent.preview', 'Preview')}</label>
-                  <div className="border border-default-200 rounded-lg p-4 bg-default-50/50">
+                  <label className="text-xs font-medium text-fg-muted mb-2 block">{t('calendar.addEvent.preview', 'Preview')}</label>
+                  <div className="border border-border-token rounded-lg p-4 bg-surface">
                     {/* Event Preview Card */}
-                    <div className="bg-background rounded-lg border border-default-200 p-4">
+                    <div className="bg-background rounded-lg border border-border-token p-4">
                       <div className="flex items-start gap-3">
                         <div className={`w-3 h-3 rounded-full mt-0.5 ${
-                          newEvent.type === 'holiday' ? 'bg-danger-400' :
-                          newEvent.type === 'exam' ? 'bg-warning-400' :
-                          newEvent.type === 'meeting' ? 'bg-secondary-400' :
-                          'bg-primary-400'
+                          newEvent.type === 'holiday' ? 'bg-danger-token' :
+                          newEvent.type === 'exam' ? 'bg-warn' :
+                          newEvent.type === 'meeting' ? 'bg-accent' :
+                          'bg-accent'
                         }`} />
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium text-foreground">
                             {newEvent.title || t('calendar.addEvent.eventTitleFallback', 'Event Title')}
                           </div>
-                          <div className="flex items-center gap-2 mt-1.5 text-xs text-default-500">
+                          <div className="flex items-center gap-2 mt-1.5 text-xs text-fg-muted">
                             <CalendarIcon size={12} />
                             <span>
                               {selectedDate ? formatDateShortWeekday(selectedDate) : t('calendar.addEvent.selectDate', 'Select date')}
                             </span>
                           </div>
-                          <div className="flex items-center gap-2 mt-1 text-xs text-default-500">
+                          <div className="flex items-center gap-2 mt-1 text-xs text-fg-muted">
                             <Clock size={12} />
                             {newEvent.allDay ? (
                               <span>{t('calendar.addEvent.allDay', 'All Day')}</span>
@@ -344,7 +348,7 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                             )}
                           </div>
                           <div className="mt-2">
-                            <span className="text-2xs px-2 py-0.5 rounded bg-default-100 text-default-600">
+                            <span className="text-2xs px-2 py-0.5 rounded bg-surface-2 text-fg-muted">
                               {types[newEvent.type]?.label || 'Event'}
                             </span>
                           </div>

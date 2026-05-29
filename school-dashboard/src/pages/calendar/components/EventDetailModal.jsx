@@ -1,6 +1,5 @@
 import {
-  Button, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  Divider
+  Button, Chip, Divider
 } from "@heroui/react";
 import {
   Clock, Users, Calendar as CalendarIcon,
@@ -8,6 +7,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import { formatDateWithWeekday } from "../../../utils/dateFormatter";
+import Modal from "../../../components/ui/Modal";
 
 export default function EventDetailModal({ isOpen, onClose, event, eventTypes, onDelete, onEdit, getClassName, defaultPeriods, selectedStaff, getTranslatedPeriodName }) {
   const { t } = useTranslation();
@@ -196,32 +196,34 @@ export default function EventDetailModal({ isOpen, onClose, event, eventTypes, o
     );
   };
 
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md" backdrop="blur" classNames={{ base: "bg-surface border border-border-token rounded-xl" }}>
-      <ModalContent>
-        <ModalHeader className="border-b border-divider pb-3">
-          <span className="text-base font-semibold text-fg">{t('calendar.eventDetail.title', 'Event Details')}</span>
-        </ModalHeader>
-        <ModalBody className="py-4">
-          {renderEventDetail()}
-        </ModalBody>
-        <ModalFooter className="border-t border-divider pt-3">
-          {!event?.id?.toString().startsWith('apt-') && !event?.id?.toString().startsWith('tt-') && (
-            <>
-              <Button size="sm" variant="flat" color="danger" startContent={<Trash2 size={14} />} onPress={() => onDelete(event?.id)}>
-                {t('common.delete', 'Delete')}
-              </Button>
-              {onEdit && (
-                <Button size="sm" variant="flat" startContent={<Edit3 size={14} />} onPress={() => onEdit(event)}>
-                  {t('common.edit', 'Edit')}
-                </Button>
-              )}
-            </>
+  const footer = (
+    <div className="flex items-center gap-2 w-full">
+      {!event?.id?.toString().startsWith('apt-') && !event?.id?.toString().startsWith('tt-') && (
+        <>
+          <Button size="sm" variant="flat" color="danger" startContent={<Trash2 size={14} />} onPress={() => onDelete(event?.id)}>
+            {t('common.delete', 'Delete')}
+          </Button>
+          {onEdit && (
+            <Button size="sm" variant="flat" startContent={<Edit3 size={14} />} onPress={() => onEdit(event)}>
+              {t('common.edit', 'Edit')}
+            </Button>
           )}
-          <div className="flex-1" />
-          <Button size="sm" variant="light" onPress={onClose}>{t('common.close', 'Close')}</Button>
-        </ModalFooter>
-      </ModalContent>
+        </>
+      )}
+      <div className="flex-1" />
+      <Button size="sm" variant="light" onPress={onClose}>{t('common.close', 'Close')}</Button>
+    </div>
+  );
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="md"
+      title={t('calendar.eventDetail.title', 'Event Details')}
+      footer={footer}
+    >
+      {renderEventDetail()}
     </Modal>
   );
 }
