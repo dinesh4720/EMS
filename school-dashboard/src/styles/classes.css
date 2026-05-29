@@ -112,7 +112,7 @@
 }
 .class-dashboard__sidebar > .glass,
 .class-dashboard__sidebar > .card {
-  border-radius: 10px;
+  border-radius: var(--r-lg);
 }
 
 .class-dashboard__sidebar-trigger {

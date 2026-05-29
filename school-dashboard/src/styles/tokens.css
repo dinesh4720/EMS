@@ -9,10 +9,13 @@
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
   --fs-11: 11px;
+  --fs-12: 12px;
   --fs-13: 13px;
+  --fs-14: 14px;
   --fs-15: 15px;
   --fs-18: 18px;
   --fs-24: 24px;
+  --fs-26: 26px;
   --fs-32: 32px;
 
   --lh-tight: 1.15;
@@ -79,18 +82,21 @@
   --accent-hover: oklch(50% 0.2 270);
   --accent-secondary: oklch(50% 0.2 290);
   --accent-bg: oklch(56% 0.19 270 / 0.1);
+  --accent-bg-subtle: oklch(56% 0.19 270 / 0.04);
   --accent-fg: oklch(98% 0.01 270);
   --accent-border: oklch(56% 0.19 270 / 0.25);
+  --warn-bg-hover: oklch(60% 0.15 75 / 0.18);
+  --overlay-bg: rgb(0 0 0 / 0.35);
 
   /* Status — used ONLY for status, never decoration */
   --ok: oklch(58% 0.14 150);
   --ok-bg: oklch(58% 0.14 150 / 0.1);
   --ok-border: oklch(58% 0.14 150 / 0.25);
   --ok-hover: oklch(50% 0.14 150);
-  --warn: oklch(70% 0.15 75);
-  --warn-bg: oklch(70% 0.15 75 / 0.12);
-  --warn-border: oklch(70% 0.15 75 / 0.25);
-  --warn-hover: oklch(60% 0.15 75);
+  --warn: oklch(60% 0.15 75);
+  --warn-bg: oklch(60% 0.15 75 / 0.12);
+  --warn-border: oklch(60% 0.15 75 / 0.25);
+  --warn-hover: oklch(55% 0.15 75);
   --danger: oklch(58% 0.2 25);
   --danger-bg: oklch(58% 0.2 25 / 0.1);
   --danger-border: oklch(58% 0.2 25 / 0.25);
@@ -107,7 +113,7 @@
   --chart-c1: oklch(56% 0.19 270); /* indigo (accent) */
   --chart-c2: oklch(60% 0.14 240); /* blue */
   --chart-c3: oklch(58% 0.14 150); /* green */
-  --chart-c4: oklch(70% 0.15 75);  /* amber */
+  --chart-c4: oklch(60% 0.15 75);  /* amber — WCAG 3:1 on light surfaces */
   --chart-c5: oklch(60% 0.18 320); /* magenta */
   --chart-grid: oklch(94% 0.005 270);
   --chart-axis: oklch(60% 0.005 270);
@@ -118,11 +124,11 @@
   --glass-blur: saturate(160%) blur(24px);
 
   /* Elevation — barely-there */
-  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.04);
-  --shadow-md: 0 4px 16px -4px rgb(0 0 0 / 0.08), 0 1px 2px rgb(0 0 0 / 0.04);
-  --shadow-lg: 0 24px 48px -16px rgb(0 0 0 / 0.18), 0 2px 4px rgb(0 0 0 / 0.06);
-  --shadow-flyout: 0 8px 24px -6px rgb(0 0 0 / 0.18), 0 2px 6px -2px rgb(0 0 0 / 0.08);
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05), 0 1px 1px 0 rgb(0 0 0 / 0.03);
+  --shadow-md: 0 2px 4px -1px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.04);
+  --shadow-lg: 0 8px 16px -4px rgb(0 0 0 / 0.08), 0 4px 6px -2px rgb(0 0 0 / 0.04);
   --shadow-glass: 0 32px 64px -24px rgb(0 0 0 / 0.24), 0 0 0 1px rgb(0 0 0 / 0.05);
+  --overlay-bg: rgb(0 0 0 / 0.35);
 }
 
 /* Dark theme — also fires on .dark class so the new tokens stay in
@@ -148,7 +154,8 @@
   --glass-bg: rgba(20, 20, 24, 0.6);
   --glass-border: rgba(255, 255, 255, 0.08);
 
-  --shadow-flyout: 0 8px 24px -6px rgb(0 0 0 / 0.35), 0 2px 6px -2px rgb(0 0 0 / 0.12);
+  --accent-bg-subtle: oklch(56% 0.19 270 / 0.04);
+  --warn-bg-hover: oklch(60% 0.15 75 / 0.18);
   --shadow-glass: 0 32px 64px -24px rgb(0 0 0 / 0.6), 0 0 0 1px rgb(255 255 255 / 0.06);
 }
 

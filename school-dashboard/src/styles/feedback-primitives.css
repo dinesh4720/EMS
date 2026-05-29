@@ -309,7 +309,7 @@
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
-  border-radius: 10px;
+  border-radius: var(--r-lg);
   box-shadow: var(--shadow-lg);
   padding: 12px;
   color: var(--fg);
@@ -320,7 +320,7 @@
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
-  border-radius: 10px;
+  border-radius: var(--r-lg);
   box-shadow: var(--shadow-lg);
   padding: 4px;
   min-width: 180px;
@@ -350,7 +350,7 @@
   font-size: 13px;
   font-weight: 500;
   padding: 10px 14px;
-  border-radius: 10px;
+  border-radius: var(--r-lg);
 }
 .ds-toast--success { border-color: var(--ok); }
 .ds-toast--error   { border-color: var(--danger); }
