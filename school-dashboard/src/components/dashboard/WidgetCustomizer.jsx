@@ -140,7 +140,7 @@ export default function WidgetCustomizer({
         <div className="widget-customizer__head">
           <div className="widget-customizer__title">
             <LayoutGrid size={16} />
-            Customize Dashboard
+            Customize dashboard
           </div>
           <button type="button" className="iconbtn iconbtn--sm" onClick={onClose} aria-label="Close">
             <X size={12} />
@@ -149,7 +149,7 @@ export default function WidgetCustomizer({
 
         <div className="widget-customizer__body">
           <p className="widget-customizer__hint">
-            Show, hide, and reorder widgets. Changes save automatically.
+            Show, hide, and reorder widgets. Click Done when finished.
           </p>
 
           <div className="widget-customizer__list">

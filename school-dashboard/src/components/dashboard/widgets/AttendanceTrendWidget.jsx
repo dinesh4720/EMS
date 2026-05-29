@@ -84,7 +84,7 @@ export default function AttendanceTrendWidget({
           <Users size={16} className="text-fg-muted" />
         </div>
         <div>
-          <h3 className="widget-card__title">Attendance Trend</h3>
+          <h3 className="widget-card__title">Attendance trend</h3>
           <p className="widget-card__subtitle">Student and staff presence rates</p>
         </div>
       </div>

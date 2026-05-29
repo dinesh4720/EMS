@@ -117,7 +117,7 @@ export const chartSeries = [
   'oklch(56% 0.19 270)', // indigo (accent)
   'oklch(60% 0.14 240)', // blue
   'oklch(58% 0.14 150)', // green
-  'oklch(70% 0.15 75)',  // amber
+  'oklch(65% 0.15 75)',  // amber — WCAG 3:1 on light surfaces
   'oklch(60% 0.18 320)', // magenta
 ];
 

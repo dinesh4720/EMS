@@ -148,7 +148,7 @@ export default function RecentActivityWidget({
           <Activity size={16} className="text-fg-muted" />
         </div>
         <div>
-          <h3 className="widget-card__title">Recent Activity</h3>
+          <h3 className="widget-card__title">Recent activity</h3>
           <p className="widget-card__subtitle">Latest system events</p>
         </div>
       </div>
