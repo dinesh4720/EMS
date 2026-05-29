@@ -49,7 +49,7 @@ const PTMPage = lazyWithRetry(() => import("./pages/ptm"));
 const ExamDetail = lazyWithRetry(() => import("./pages/academics/ExamDetail"));
 const ClassPerformance = lazyWithRetry(() => import("./pages/academics/ClassPerformance"));
 const ResultsEntry = lazyWithRetry(() => import("./pages/academics/ResultsEntry"));
-// const EmailCampaignsPage = lazyWithRetry(() => import("./pages/messaging/EmailCampaignsPage")); // Commented out — using announcements instead
+const EmailCampaignsPage = lazyWithRetry(() => import("./pages/messaging/EmailCampaignsPage"));
 const StudentPromotionPage = lazyWithRetry(() => import("./pages/students/StudentPromotionPage"));
 const TransferCertificatePage = lazyWithRetry(() => import("./pages/students/TransferCertificatePage"));
 const ReportsPage = lazyWithRetry(() => import("./pages/reports"));
@@ -413,7 +413,6 @@ function AuthenticatedApp() {
                     {/* CBSE/CCE routes removed — these pages are rendered as tabs
                         within AcademicLayout (/academics/cbse-report-card, /academics/cce-grading)
                         so standalone routes are unnecessary duplicates. */}
-                    {/* Email Campaigns route commented out — using announcements instead
                     <Route path="/messaging/email-campaigns" element={
                       <RouteEB>
                         <PermissionGuard module="messaging">
@@ -421,7 +420,6 @@ function AuthenticatedApp() {
                         </PermissionGuard>
                       </RouteEB>
                     } />
-                    */}
                     <Route path="/settings/*" element={
                       <RouteEB>
                         <PermissionGuard module="settings">
