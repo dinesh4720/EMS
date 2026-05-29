@@ -1,7 +1,9 @@
 import { useState } from "react";
 import {
-  Button, Popover, PopoverTrigger, PopoverContent
+  Popover, PopoverTrigger, PopoverContent
 } from "@heroui/react";
+import Button from "../../../components/ui/Button";
+import IconButton from "../../../components/ui/IconButton";
 import {
   ChevronLeft, ChevronRight, Plus, LayoutGrid, List,
   ChevronDown, ChevronsLeft, ChevronsRight, PanelRight
@@ -82,13 +84,12 @@ export default function CalendarToolbar({ currentDate, view, onViewChange, onNav
     <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-3 bg-bg/95 backdrop-blur-sm border-b border-divider">
       <div className="flex items-center gap-2">
         {/* Quick year navigation */}
-        <Button
-          isIconOnly
+        <IconButton
           size="sm"
-          variant="light"
+          variant="ghost"
           aria-label="Previous year"
           className="text-fg-faint hover:bg-surface-2"
-          onPress={() => {
+          onClick={() => {
             const targetYear = year - 1;
             const maxDay = new Date(targetYear, month + 1, 0).getDate();
             const newDate = new Date(targetYear, month, Math.min(currentDate.getDate(), maxDay));
@@ -96,20 +97,19 @@ export default function CalendarToolbar({ currentDate, view, onViewChange, onNav
           }}
         >
           <ChevronsLeft size={16} />
-        </Button>
-        <Button isIconOnly size="sm" variant="light" aria-label="Previous month" className="text-fg-muted hover:bg-surface-2" onPress={() => onNavigate(-1)}>
+        </IconButton>
+        <IconButton size="sm" variant="ghost" aria-label="Previous month" className="text-fg-muted hover:bg-surface-2" onClick={() => onNavigate(-1)}>
           <ChevronLeft size={18} />
-        </Button>
-        <Button isIconOnly size="sm" variant="light" aria-label="Next month" className="text-fg-muted hover:bg-surface-2" onPress={() => onNavigate(1)}>
+        </IconButton>
+        <IconButton size="sm" variant="ghost" aria-label="Next month" className="text-fg-muted hover:bg-surface-2" onClick={() => onNavigate(1)}>
           <ChevronRight size={18} />
-        </Button>
-        <Button
-          isIconOnly
+        </IconButton>
+        <IconButton
           size="sm"
-          variant="light"
+          variant="ghost"
           aria-label="Next year"
           className="text-fg-faint hover:bg-surface-2"
-          onPress={() => {
+          onClick={() => {
             const targetYear = year + 1;
             const maxDay = new Date(targetYear, month + 1, 0).getDate();
             const newDate = new Date(targetYear, month, Math.min(currentDate.getDate(), maxDay));
@@ -117,7 +117,7 @@ export default function CalendarToolbar({ currentDate, view, onViewChange, onNav
           }}
         >
           <ChevronsRight size={16} />
-        </Button>
+        </IconButton>
 
         {/* Date Picker Popover */}
         <Popover
@@ -149,9 +149,9 @@ export default function CalendarToolbar({ currentDate, view, onViewChange, onNav
                 </button>
                 <Button
                   size="sm"
-                  variant="light"
+                  variant="ghost"
                   className="text-xs h-7"
-                  onPress={() => {
+                  onClick={() => {
                     onDateChange(new Date());
                     setShowDatePicker(false);
                   }}
@@ -247,24 +247,23 @@ export default function CalendarToolbar({ currentDate, view, onViewChange, onNav
           </button>
         </div>
 
-        <Button size="sm" variant="bordered" className="font-medium text-fg-muted border-border-token" onPress={onToday}>
+        <Button size="sm" variant="outline" className="font-medium text-fg-muted border-border-token" onClick={onToday}>
           {t('calendar.toolbar.today', 'Today')}
         </Button>
 
         {isMobileViewport && onOpenSidebar && (
-          <Button
-            isIconOnly
+          <IconButton
             size="sm"
-            variant="light"
+            variant="ghost"
             aria-label={t('calendar.toolbar.openSidebar', 'Open staff sidebar')}
             className="text-fg-muted hover:bg-surface-2"
-            onPress={onOpenSidebar}
+            onClick={onOpenSidebar}
           >
             <PanelRight size={16} />
-          </Button>
+          </IconButton>
         )}
 
-        <Button size="sm" color="primary" className="font-medium" startContent={<Plus size={14} />} onPress={() => onAddEvent(formatDateKey(year, month, currentDate.getDate()))}>
+        <Button size="sm" variant="primary" className="font-medium" icon={<Plus size={14} />} onClick={() => onAddEvent(formatDateKey(year, month, currentDate.getDate()))}>
           {t('calendar.toolbar.addEvent', 'Add Event')}
         </Button>
       </div>

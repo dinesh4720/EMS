@@ -1,4 +1,4 @@
-import { Button } from "@heroui/react";
+import Button from "../../../components/ui/Button";
 import Chip from "../../../components/ui/Chip";
 import Divider from "../../../components/ui/Divider";
 import {
@@ -200,18 +200,18 @@ export default function EventDetailModal({ isOpen, onClose, event, eventTypes, o
     <div className="flex items-center gap-2 w-full">
       {!event?.id?.toString().startsWith('apt-') && !event?.id?.toString().startsWith('tt-') && (
         <>
-          <Button size="sm" variant="flat" color="danger" startContent={<Trash2 size={14} />} onPress={() => onDelete(event?.id)}>
+          <Button size="sm" variant="danger" icon={<Trash2 size={14} />} onClick={() => onDelete(event?.id)}>
             {t('common.delete', 'Delete')}
           </Button>
           {onEdit && (
-            <Button size="sm" variant="flat" startContent={<Edit3 size={14} />} onPress={() => onEdit(event)}>
+            <Button size="sm" variant="ghost" icon={<Edit3 size={14} />} onClick={() => onEdit(event)}>
               {t('common.edit', 'Edit')}
             </Button>
           )}
         </>
       )}
       <div className="flex-1" />
-      <Button size="sm" variant="light" onPress={onClose}>{t('common.close', 'Close')}</Button>
+      <Button size="sm" variant="ghost" onClick={onClose}>{t('common.close', 'Close')}</Button>
     </div>
   );
 
