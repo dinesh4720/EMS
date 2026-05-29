@@ -42,6 +42,10 @@
     "puppeteer": "^24.35.0",
     "typescript": "~5.9.2"
   },
+  "engines": {
+    "node": "20",
+    "npm": ">=10"
+  },
   "overrides": {
     "socket.io-parser": ">=4.2.6",
     "flatted": ">=3.4.2",

@@ -1,0 +1,31 @@
+name: Build Parent App
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'parent-app/**'
+      - 'package-lock.json'
+      - '.nvmrc'
+      - '.github/workflows/build-parent-app.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'parent-app/**'
+      - 'package-lock.json'
+      - '.nvmrc'
+      - '.github/workflows/build-parent-app.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+      - name: Build parent app
+        run: npm run build:web -w parent-app
