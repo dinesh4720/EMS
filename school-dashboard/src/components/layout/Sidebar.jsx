@@ -6,7 +6,7 @@ import {
   Wand2, Package, Library, Building2, Bus, FileBarChart, Database,
   DoorOpen, BarChart3, Sparkles, ChevronRight, Palette, Wallet,
   CalendarCheck, FileText, BookMarked, UserCheck, SendHorizontal,
-  Search, X, MoreHorizontal,
+  Search, X, MoreHorizontal, Plus,
 } from "lucide-react";
 import { useChatNotifications } from "../../context/ChatNotificationContext";
 import { useApp } from "../../context/AppContext";
@@ -306,6 +306,18 @@ function NavGroup({ heading, items, collapsed, onNav, defaultExpanded, forceExpa
 }
 
 function NavFlyout({ rect, title, items, onNav, onClose, onMouseEnter }) {
+  // Group items by groupTitle if present
+  const hasGroups = items.some((i) => i.groupTitle);
+  const groups = hasGroups
+    ? items.reduce((acc, item) => {
+        const key = item.groupTitle || "";
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(item);
+        return acc;
+      }, {})
+    : { "": items };
+  const groupKeys = Object.keys(groups);
+
   return (
     <div
       className="nav-flyout"
@@ -314,16 +326,21 @@ function NavFlyout({ rect, title, items, onNav, onClose, onMouseEnter }) {
       onMouseLeave={onClose}
     >
       {title && <div className="nav-flyout__title">{title}</div>}
-      {items.map((item) => (
-        <NavLink
-          key={item.href}
-          to={item.href}
-          onClick={onNav}
-          className={({ isActive }) => `nav-flyout__item${isActive ? " is-active" : ""}`}
-        >
-          {item.icon && <item.icon size={14} strokeWidth={1.6} aria-hidden />}
-          <span>{item.label}</span>
-        </NavLink>
+      {groupKeys.map((key, gi) => (
+        <React.Fragment key={key || gi}>
+          {key && <div className="nav-flyout__group">{key}</div>}
+          {groups[key].map((item) => (
+            <NavLink
+              key={item.href}
+              to={item.href}
+              onClick={onNav}
+              className={({ isActive }) => `nav-flyout__item${isActive ? " is-active" : ""}`}
+            >
+              {item.icon && <item.icon size={14} strokeWidth={1.6} aria-hidden />}
+              <span>{item.label}</span>
+            </NavLink>
+          ))}
+        </React.Fragment>
       ))}
     </div>
   );
@@ -593,8 +610,7 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
             <>
               <div
                 data-coach="sidebar-pin"
-                className="sidebar__heading"
-                className="sidebar__heading--spaced"
+                className="sidebar__heading sidebar__heading--spaced"
               >
                 Pinned
               </div>
@@ -735,6 +751,151 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
           }}
           onClose={hideFlyout}
           onMouseEnter={keepFlyoutOpen}
+        />
+      )}
+
+      {/* Mobile Bottom Bar */}
+      <MobileBottomBar
+        activeModuleId={activeModuleId}
+        onNav={closeOnMobileNav}
+      />
+
+      {/* Mobile FAB */}
+      <MobileFAB activeModuleId={activeModuleId} />
+    </>
+  );
+}
+
+/* ============================================================
+   Mobile Bottom Bar + Bottom Sheet
+   ============================================================ */
+
+const BOTTOM_BAR_ITEMS = [
+  { id: "dashboard", href: "/", icon: LayoutDashboard, label: "Dashboard", end: true },
+  { id: "students", href: "/students", icon: GraduationCap, label: "Students" },
+  { id: "calendar", href: "/calendar", icon: Calendar, label: "Calendar" },
+  { id: "messaging", href: "/messaging", icon: MessageSquare, label: "Messaging" },
+];
+
+const BOTTOM_SHEET_GROUPS = [
+  { title: "Primary", items: PRIMARY_MODULES.filter((m) => !BOTTOM_BAR_ITEMS.some((b) => b.id === m.id)) },
+  { title: "Operations", items: OPERATIONS },
+  { title: "Insights", items: INSIGHTS },
+  { title: "Administration", items: ADMINISTRATION },
+];
+
+function MobileBottomBar({ activeModuleId, onNav }) {
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  return (
+    <>
+      <nav className="bottom-bar" aria-label="Mobile navigation">
+        {BOTTOM_BAR_ITEMS.map((item) => (
+          <NavLink
+            key={item.id}
+            to={item.href}
+            end={item.end}
+            onClick={onNav}
+            className={({ isActive }) =>
+              `bottom-bar__item${isActive || activeModuleId === item.id ? " is-active" : ""}`
+            }
+          >
+            <item.icon size={20} strokeWidth={1.6} aria-hidden />
+            <span>{item.label}</span>
+          </NavLink>
+        ))}
+        <button
+          type="button"
+          className={`bottom-bar__item${sheetOpen ? " is-active" : ""}`}
+          onClick={() => setSheetOpen(true)}
+          aria-label="More navigation"
+        >
+          <MoreHorizontal size={20} strokeWidth={1.6} aria-hidden />
+          <span>More</span>
+        </button>
+      </nav>
+
+      {/* Bottom Sheet */}
+      {sheetOpen && (
+        <div className="bottom-sheet is-open" role="dialog" aria-label="More navigation">
+          <div
+            className="bottom-sheet__backdrop"
+            onClick={() => setSheetOpen(false)}
+            aria-hidden
+          />
+          <div className="bottom-sheet__panel">
+            <div className="bottom-sheet__handle" aria-hidden />
+            <div className="bottom-sheet__content">
+              {BOTTOM_SHEET_GROUPS.map((group) => {
+                if (group.items.length === 0) return null;
+                return (
+                  <React.Fragment key={group.title}>
+                    <div className="bottom-sheet__group">{group.title}</div>
+                    {group.items.map((item) => (
+                      <NavLink
+                        key={item.id || item.href}
+                        to={item.href}
+                        onClick={() => {
+                          onNav();
+                          setSheetOpen(false);
+                        }}
+                        className={({ isActive }) =>
+                          `bottom-sheet__item${isActive || activeModuleId === item.id ? " is-active" : ""}`
+                        }
+                      >
+                        {item.icon && <item.icon size={16} strokeWidth={1.6} aria-hidden />}
+                        <span>{item.label}</span>
+                      </NavLink>
+                    ))}
+                  </React.Fragment>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+/* ============================================================
+   Mobile FAB — quick-create actions
+   ============================================================ */
+
+function MobileFAB({ activeModuleId }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const actions = [];
+  if (activeModuleId === "students" || activeModuleId === "dashboard") {
+    actions.push({ label: "Add student", href: "/students/add" });
+  }
+  if (activeModuleId === "staff" || activeModuleId === "dashboard") {
+    actions.push({ label: "Add staff", href: "/staffs/add" });
+  }
+  if (activeModuleId === "classes" || activeModuleId === "dashboard") {
+    actions.push({ label: "Add class", href: "/classes/add" });
+  }
+  if (actions.length === 0) {
+    actions.push({ label: "Add student", href: "/students/add" });
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        className="fab"
+        onClick={() => setMenuOpen((v) => !v)}
+        aria-label="Quick actions"
+        aria-expanded={menuOpen}
+      >
+        <Plus size={24} strokeWidth={2} aria-hidden />
+      </button>
+
+      {menuOpen && (
+        <div
+          className="fixed inset-0 z-[44]"
+          onClick={() => setMenuOpen(false)}
+          aria-hidden
         />
       )}
     </>
