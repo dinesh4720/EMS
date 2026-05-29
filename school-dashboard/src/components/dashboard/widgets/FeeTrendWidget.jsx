@@ -59,7 +59,7 @@ export default function FeeTrendWidget({ data = [], loading = false }) {
           <TrendingUp size={16} className="text-fg-muted" />
         </div>
         <div>
-          <h3 className="widget-card__title">Fee Collection Trend</h3>
+          <h3 className="widget-card__title">Fee collection trend</h3>
           <p className="widget-card__subtitle">Monthly receipts over last 6 months</p>
         </div>
       </div>

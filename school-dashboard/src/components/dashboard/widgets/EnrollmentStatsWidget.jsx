@@ -71,7 +71,7 @@ export default function EnrollmentStatsWidget({ students = [], classes = [], loa
           <GraduationCap size={16} className="text-fg-muted" />
         </div>
         <div>
-          <h3 className="widget-card__title">Enrollment Stats</h3>
+          <h3 className="widget-card__title">Enrollment stats</h3>
           <p className="widget-card__subtitle">
             {hasData ? `${total} total students` : "Students by class"}
           </p>

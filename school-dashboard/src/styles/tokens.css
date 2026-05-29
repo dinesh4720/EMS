@@ -13,6 +13,7 @@
   --fs-15: 15px;
   --fs-18: 18px;
   --fs-24: 24px;
+  --fs-26: 26px;
   --fs-32: 32px;
 
   --lh-tight: 1.15;
@@ -103,7 +104,7 @@
   --chart-c1: oklch(56% 0.19 270); /* indigo (accent) */
   --chart-c2: oklch(60% 0.14 240); /* blue */
   --chart-c3: oklch(58% 0.14 150); /* green */
-  --chart-c4: oklch(70% 0.15 75);  /* amber */
+  --chart-c4: oklch(65% 0.15 75);  /* amber — WCAG 3:1 on light surfaces */
   --chart-c5: oklch(60% 0.18 320); /* magenta */
   --chart-grid: oklch(94% 0.005 270);
   --chart-axis: oklch(60% 0.005 270);
@@ -114,9 +115,9 @@
   --glass-blur: saturate(160%) blur(24px);
 
   /* Elevation — barely-there */
-  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.04);
-  --shadow-md: 0 4px 16px -4px rgb(0 0 0 / 0.08), 0 1px 2px rgb(0 0 0 / 0.04);
-  --shadow-lg: 0 24px 48px -16px rgb(0 0 0 / 0.18), 0 2px 4px rgb(0 0 0 / 0.06);
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05), 0 1px 1px 0 rgb(0 0 0 / 0.03);
+  --shadow-md: 0 2px 4px -1px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.04);
+  --shadow-lg: 0 8px 16px -4px rgb(0 0 0 / 0.08), 0 4px 6px -2px rgb(0 0 0 / 0.04);
   --shadow-glass: 0 32px 64px -24px rgb(0 0 0 / 0.24), 0 0 0 1px rgb(0 0 0 / 0.05);
 }
 

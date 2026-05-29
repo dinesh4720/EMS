@@ -14,7 +14,7 @@ export const WIDGET_SIZES = {
 export const WIDGET_CATALOG = [
   {
     key: "kpiStrip",
-    label: "KPI Strip",
+    label: "KPI strip",
     description: "Attendance, fees, enrollment, defaulters",
     size: "full",
     defaultVisible: true,
@@ -22,7 +22,7 @@ export const WIDGET_CATALOG = [
   },
   {
     key: "feeTrend",
-    label: "Fee Collection Trend",
+    label: "Fee collection trend",
     description: "Monthly fee receipts over last 6 months",
     size: "large",
     defaultVisible: true,
@@ -30,7 +30,7 @@ export const WIDGET_CATALOG = [
   },
   {
     key: "attendanceTrend",
-    label: "Attendance Trend",
+    label: "Attendance trend",
     description: "Student and staff attendance rates",
     size: "large",
     defaultVisible: true,
@@ -38,7 +38,7 @@ export const WIDGET_CATALOG = [
   },
   {
     key: "enrollmentStats",
-    label: "Enrollment Stats",
+    label: "Enrollment stats",
     description: "Students by class/grade",
     size: "medium",
     defaultVisible: true,
@@ -46,7 +46,7 @@ export const WIDGET_CATALOG = [
   },
   {
     key: "recentActivity",
-    label: "Recent Activity",
+    label: "Recent activity",
     description: "System events and audit trail",
     size: "medium",
     defaultVisible: true,
@@ -54,7 +54,7 @@ export const WIDGET_CATALOG = [
   },
   {
     key: "yourDay",
-    label: "Your Day",
+    label: "Your day",
     description: "Schedule and timeline",
     size: "medium",
     defaultVisible: true,
@@ -86,7 +86,7 @@ export const WIDGET_CATALOG = [
   },
   {
     key: "recentPayments",
-    label: "Recent Payments",
+    label: "Recent payments",
     description: "Latest fee payments",
     size: "medium",
     defaultVisible: true,

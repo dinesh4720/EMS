@@ -484,7 +484,7 @@ export default function CommandPalette({ isOpen, onClose }) {
             ) : null}
 
             {books.length > 0 ? (
-              <Command.Group heading={<GroupHeading label="Library Books" count={books.length} />}>
+              <Command.Group heading={<GroupHeading label="Library books" count={books.length} />}>
                 {books.map((b) => (
                   <PaletteItem key={`book-${b.id}`} onSelect={() => run(b)}>
                     <span className="cmdk__item-icon">
@@ -498,7 +498,7 @@ export default function CommandPalette({ isOpen, onClose }) {
             ) : null}
 
             {assets.length > 0 ? (
-              <Command.Group heading={<GroupHeading label="Inventory Assets" count={assets.length} />}>
+              <Command.Group heading={<GroupHeading label="Inventory assets" count={assets.length} />}>
                 {assets.map((a) => (
                   <PaletteItem key={`asset-${a.id}`} onSelect={() => run(a)}>
                     <span className="cmdk__item-icon">
@@ -512,7 +512,7 @@ export default function CommandPalette({ isOpen, onClose }) {
             ) : null}
 
             {rooms.length > 0 ? (
-              <Command.Group heading={<GroupHeading label="Hostel Rooms" count={rooms.length} />}>
+              <Command.Group heading={<GroupHeading label="Hostel rooms" count={rooms.length} />}>
                 {rooms.map((r) => (
                   <PaletteItem key={`room-${r.id}`} onSelect={() => run(r)}>
                     <span className="cmdk__item-icon">
@@ -526,7 +526,7 @@ export default function CommandPalette({ isOpen, onClose }) {
             ) : null}
 
             {routes.length > 0 ? (
-              <Command.Group heading={<GroupHeading label="Transport Routes" count={routes.length} />}>
+              <Command.Group heading={<GroupHeading label="Transport routes" count={routes.length} />}>
                 {routes.map((r) => (
                   <PaletteItem key={`route-${r.id}`} onSelect={() => run(r)}>
                     <span className="cmdk__item-icon">
