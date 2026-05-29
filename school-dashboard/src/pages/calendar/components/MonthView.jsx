@@ -1,4 +1,4 @@
-import { Tooltip } from "@heroui/react";
+import Tooltip from "../../../components/ui/Tooltip";
 import { useTranslation } from "react-i18next";
 import { daysOfWeek, formatDateKey } from "../constants";
 

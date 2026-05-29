@@ -1,4 +1,5 @@
-import { Button, Chip } from "@heroui/react";
+import Button from "../../../components/ui/Button";
+import Chip from "../../../components/ui/Chip";
 import { Clock, Calendar as CalendarIcon } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import EmptyState from "../../../components/ui/EmptyState";
@@ -36,7 +37,7 @@ export default function ScheduleView({ scheduleViewData = [], eventTypes, onEven
             : undefined
           }
           action={selectedStaff && (
-            <Button size="sm" variant="flat" onPress={onAddEvent}>
+            <Button size="sm" variant="ghost" onClick={onAddEvent}>
               {t('calendar.toolbar.addEvent', 'Add Event')}
             </Button>
           )}
@@ -93,7 +94,7 @@ export default function ScheduleView({ scheduleViewData = [], eventTypes, onEven
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-fg truncate">{event.title}</span>
-                      <Chip size="sm" variant="flat" className="h-4 text-3xs">
+                      <Chip size="sm" color="neutral" className="h-4 text-3xs">
                         {eventTypes[event.type]?.label || event.type}
                       </Chip>
                     </div>

@@ -1,6 +1,9 @@
 import {
-  Button, Chip, Select, SelectItem, ScrollShadow, Avatar
+  Select, SelectItem, ScrollShadow
 } from "@heroui/react";
+import IconButton from "../../../components/ui/IconButton";
+import Chip from "../../../components/ui/Chip";
+import Avatar from "../../../components/ui/Avatar";
 import {
   ChevronLeft, ChevronRight, Clock, Users,
   User, BookOpen
@@ -77,9 +80,9 @@ export default function StaffSidebar({
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between p-3 border-b border-divider">
             <h3 className="text-sm font-semibold text-fg">{t('calendar.sidebar.title', 'Staff Schedule')}</h3>
-            <Button isIconOnly size="sm" variant="light" aria-label="Collapse sidebar" className="text-fg-faint" onPress={() => onToggleSidebar(false)}>
+            <IconButton size="sm" variant="ghost" aria-label="Collapse sidebar" className="text-fg-faint" onClick={() => onToggleSidebar(false)}>
               <ChevronRight size={16} />
-            </Button>
+            </IconButton>
           </div>
 
           <div className="p-3 border-b border-divider">
@@ -101,7 +104,7 @@ export default function StaffSidebar({
               {teachers.map((teacher) => (
                 <SelectItem key={String(teacher.id)} textValue={teacher.name}>
                   <div className="flex items-center gap-2">
-                    <Avatar size="sm" name={teacher.name} className="w-6 h-6 text-2xs" />
+                    <Avatar size="xs" name={teacher.name} />
                     <span>{teacher.name}</span>
                   </div>
                 </SelectItem>
@@ -113,7 +116,7 @@ export default function StaffSidebar({
             {selectedStaff ? (
               <div className="p-3 space-y-4">
                 <div className="flex items-center gap-3 p-2 rounded-lg bg-surface-2">
-                  <Avatar name={selectedStaff.name} className="w-10 h-10" />
+                  <Avatar size="md" name={selectedStaff.name} />
                   <div>
                     <div className="font-medium text-sm text-fg">{selectedStaff.name}</div>
                     <div className="text-xs text-fg-faint">{Array.isArray(selectedStaff.role) ? selectedStaff.role.join(', ') : selectedStaff.role}</div>
@@ -243,7 +246,7 @@ export default function StaffSidebar({
                         >
                           <div className="flex items-center justify-between">
                             <div className="text-xs font-medium text-ok">{apt.visitorName}</div>
-                            <Chip size="sm" variant="flat" className="h-4 text-3xs">{apt.status}</Chip>
+                            <Chip size="sm" color="neutral" className="h-4 text-3xs">{apt.status}</Chip>
                           </div>
                           <div className="text-2xs text-ok mt-1 flex items-center gap-1">
                             <Clock size={10} />
@@ -272,9 +275,9 @@ export default function StaffSidebar({
         </div>
       ) : (
         <div className="flex flex-col items-center py-3">
-          <Button isIconOnly size="sm" variant="light" aria-label="Expand sidebar" className="text-fg-faint" onPress={() => onToggleSidebar(true)}>
+          <IconButton size="sm" variant="ghost" aria-label="Expand sidebar" className="text-fg-faint" onClick={() => onToggleSidebar(true)}>
             <ChevronLeft size={16} />
-          </Button>
+          </IconButton>
           <div className="mt-2 writing-mode-vertical text-2xs text-fg-faint font-medium">{t('calendar.sidebar.staff', 'Staff')}</div>
         </div>
       )}
