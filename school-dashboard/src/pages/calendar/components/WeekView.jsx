@@ -1,4 +1,4 @@
-import { Button } from "@heroui/react";
+import IconButton from "../../../components/ui/IconButton";
 import { Clock, Plus } from "lucide-react";
 import { daysOfWeek, formatDateKey, formatTime } from "../constants";
 
@@ -88,9 +88,9 @@ export default function WeekView({
               ))}
               {(dayEvents.length + timetableClasses.length) === 0 && (
                 <div className="h-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                  <Button size="sm" variant="flat" className="h-6 w-6 min-w-0 p-0 rounded-full">
+                  <IconButton size="sm" variant="ghost" aria-label="Add event" className="h-6 w-6 rounded-full">
                     <Plus size={12} />
-                  </Button>
+                  </IconButton>
                 </div>
               )}
             </div>

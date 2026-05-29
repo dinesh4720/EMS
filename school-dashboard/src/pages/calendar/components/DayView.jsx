@@ -1,4 +1,4 @@
-import { Chip } from "@heroui/react";
+import Chip from "../../../components/ui/Chip";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { EmptyState, Button as DSButton } from "../../../components/ui";
@@ -101,7 +101,7 @@ export default function DayView({
                 <div className="flex-1">
                   <h4 className="text-sm font-medium text-fg">{event.title}</h4>
                   <div className="flex items-center gap-2 mt-1">
-                    <Chip size="sm" variant="flat" className="h-5 text-2xs">
+                    <Chip size="sm" color="neutral" className="h-5 text-2xs">
                       {eventTypes[event.type]?.label || event.type}
                     </Chip>
                   </div>
