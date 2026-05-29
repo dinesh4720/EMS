@@ -572,7 +572,7 @@ test.describe('Inventory — Assets & Vendors', () => {
 
     // Click edit button on first asset row
     const firstRow = page.locator('table tbody tr').first();
-    const editBtn = firstRow.locator('button').first();
+    const editBtn = firstRow.locator('button').nth(2);
     if (await editBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
       await editBtn.click();
       const dialog = page.locator('[role="dialog"]').last();
@@ -605,8 +605,8 @@ test.describe('Inventory — Assets & Vendors', () => {
     const deleteBtn = firstRow.locator('button').last();
     if (await deleteBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
       await deleteBtn.click();
-      // Assets page uses ConfirmDialog (HeroUI Modal) — click the "Delete" confirm button
-      const confirmBtn = page.locator('[role="dialog"]').last().getByRole('button', { name: /Delete/i });
+      // Assets page uses ConfirmDialog (ModalBase with role="alertdialog") — click the "Delete" confirm button
+      const confirmBtn = page.locator('[role="alertdialog"]').last().getByRole('button', { name: /Delete/i });
       if (await confirmBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
         await confirmBtn.click();
       }
@@ -668,13 +668,13 @@ test.describe('Inventory — Assets & Vendors', () => {
       await expect(dialog).not.toBeVisible({ timeout: 3000 });
     }
 
-    // Delete first vendor — uses ConfirmDialog (HeroUI Modal), not native dialog
+    // Delete first vendor — uses ConfirmDialog (ModalBase with role="alertdialog"), not native dialog
     const before = state.inventoryVendors.length;
     const deleteBtn = firstCard.locator('button').last();
     if (await deleteBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
       await deleteBtn.click();
       // Click "Delete" in the confirm dialog
-      const confirmBtn = page.locator('[role="dialog"]').last().getByRole('button', { name: /Delete/i });
+      const confirmBtn = page.locator('[role="alertdialog"]').last().getByRole('button', { name: /Delete/i });
       if (await confirmBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
         await confirmBtn.click();
       }
