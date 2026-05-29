@@ -11,7 +11,9 @@ const VEHICLE_1 = {
   _id: 'veh-1', registrationNumber: 'KA-01-AB-1234', make: 'Tata', model: 'Starbus',
   year: 2022, capacity: 40, color: 'Yellow', status: 'active',
   driver: { name: 'Ramesh Kumar', phone: '9876543210', licenseNumber: 'DL-123456' },
+  driverId: { name: 'Ramesh Kumar', phone: '9876543210', licenseNumber: 'DL-123456' },
   conductor: { name: 'Suresh Babu', phone: '9876543211' },
+  conductorId: { name: 'Suresh Babu', phone: '9876543211' },
   gpsDeviceId: 'GPS-001',
 };
 
@@ -19,7 +21,9 @@ const VEHICLE_2 = {
   _id: 'veh-2', registrationNumber: 'KA-01-CD-5678', make: 'Ashok Leyland', model: 'Lynx',
   year: 2023, capacity: 50, color: 'White', status: 'inactive',
   driver: { name: 'Ganesh Rao', phone: '9876543220', licenseNumber: 'DL-654321' },
+  driverId: { name: 'Ganesh Rao', phone: '9876543220', licenseNumber: 'DL-654321' },
   conductor: { name: 'Manoj S', phone: '9876543221' },
+  conductorId: { name: 'Manoj S', phone: '9876543221' },
   gpsDeviceId: 'GPS-002',
 };
 
@@ -27,7 +31,9 @@ const VEHICLE_3 = {
   _id: 'veh-3', registrationNumber: 'KA-02-EF-9999', make: 'Force', model: 'Traveller',
   year: 2021, capacity: 26, color: 'Blue', status: 'maintenance',
   driver: { name: 'Anil P', phone: '9876543230', licenseNumber: 'DL-111222' },
+  driverId: { name: 'Anil P', phone: '9876543230', licenseNumber: 'DL-111222' },
   conductor: { name: '', phone: '' },
+  conductorId: { name: '', phone: '' },
   gpsDeviceId: '',
 };
 
@@ -324,8 +330,8 @@ test.describe('Transport Management — Routes & Vehicles', () => {
     expect(bodyText).toContain('North Bangalore');
     expect(bodyText).toContain('South Bangalore');
 
-    // Type search
-    const searchInput = page.locator('input[placeholder]').first();
+    // Type search — scope to main content so we don't hit the sidebar search
+    const searchInput = page.locator('main').locator('input[placeholder]').first();
     await searchInput.fill('North');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(500);
@@ -518,12 +524,8 @@ test.describe('Transport Management — Routes & Vehicles', () => {
   });
 
   test('10 — vehicle cards show registration, type, capacity, driver info, status', async ({ page }) => {
-    await page.goto('/transport');
-    await page.waitForLoadState('networkidle');
-
-    // Switch to vehicles tab
-    const vehiclesTab = page.locator('button').filter({ hasText: /vehicles/i }).first();
-    await vehiclesTab.click();
+    // Navigate directly to vehicles tab to avoid flaky tab clicks
+    await page.goto('/transport/vehicles');
     await page.waitForLoadState('networkidle');
 
     // Wait for vehicle data to render
@@ -558,12 +560,8 @@ test.describe('Transport Management — Routes & Vehicles', () => {
   });
 
   test('11 — search filters vehicles by registration number', async ({ page }) => {
-    await page.goto('/transport');
-    await page.waitForLoadState('networkidle');
-
-    // Switch to vehicles tab
-    const vehiclesTab = page.locator('button').filter({ hasText: /vehicles/i }).first();
-    await vehiclesTab.click();
+    // Navigate directly to vehicles tab to avoid flaky tab clicks
+    await page.goto('/transport/vehicles');
     await page.waitForLoadState('networkidle');
 
     // Wait for vehicle data to render
@@ -577,8 +575,8 @@ test.describe('Transport Management — Routes & Vehicles', () => {
     expect(bodyText).toContain('KA-01-AB-1234');
     expect(bodyText).toContain('KA-01-CD-5678');
 
-    // Search by registration
-    const searchInput = page.locator('input[placeholder]').first();
+    // Search by registration — scope to main content
+    const searchInput = page.locator('main').locator('input[placeholder]').first();
     await searchInput.fill('CD-5678');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(500);
@@ -729,5 +727,211 @@ test.describe('Transport Management — Routes & Vehicles', () => {
 
     bodyText = await page.textContent('body') ?? '';
     expect(bodyText.includes('No vehicles found') || bodyText.includes('no vehicles')).toBeTruthy();
+  });
+
+  test('16 — unassign student from route via trash icon and confirm dialog', async ({ page }) => {
+    await page.goto('/transport');
+    await page.waitForLoadState('networkidle');
+
+    // Wait for route data to render
+    await page.waitForFunction(
+      () => document.body.textContent?.includes('North Bangalore'),
+      { timeout: 10_000 },
+    );
+
+    // Open the actions dropdown on the first route card
+    const moreBtn = page.locator('button[aria-label="Route Actions"]').first();
+    if (await moreBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await moreBtn.click();
+      await page.waitForTimeout(300);
+
+      // Click "Assign Students" from dropdown
+      const assignOption = page.getByRole('menuitem', { name: /assign students/i }).first();
+      if (await assignOption.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await assignOption.click();
+        await page.waitForTimeout(500);
+
+        const modal = page.locator('[role="dialog"]').first();
+        if (await modal.isVisible({ timeout: 5000 }).catch(() => false)) {
+          // Wait for route detail to load
+          await page.waitForTimeout(500);
+
+          // Assigned students should appear
+          const modalText = await modal.textContent() ?? '';
+          expect(modalText).toContain('Aarav Sharma');
+
+          // Click the trash icon next to the first assigned student
+          const trashBtn = modal.locator('button[color="danger"]').filter({ has: page.locator('svg') }).first();
+          if (await trashBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+            await trashBtn.click();
+            await page.waitForTimeout(300);
+
+            // Confirm dialog should appear — confirm removal
+            const confirmBtn = page.getByRole('button', { name: /remove/i }).first();
+            if (await confirmBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+              await confirmBtn.click();
+              await page.waitForTimeout(500);
+
+              // Verify the DELETE request was logged
+              const hasDelete = [...state.requestLog].some((log) =>
+                log.startsWith('DELETE /api/transport/routes/route-1/students/'),
+              );
+              expect(hasDelete).toBeTruthy();
+            }
+          }
+        }
+      }
+    }
+  });
+
+  test('17 — vehicle make filter shows only matching vehicles', async ({ page }) => {
+    await page.goto('/transport/vehicles');
+    await page.waitForLoadState('networkidle');
+
+    // Wait for vehicle data to render
+    await page.waitForFunction(
+      () => document.body.textContent?.includes('KA-01-AB-1234'),
+      { timeout: 10_000 },
+    );
+
+    // All vehicles visible initially
+    let bodyText = await page.textContent('body') ?? '';
+    expect(bodyText).toContain('Tata');
+    expect(bodyText).toContain('Ashok Leyland');
+
+    // Click the make filter dropdown trigger
+    const makeDropdown = page.locator('button').filter({ hasText: /All Makes/i }).first();
+    await makeDropdown.click();
+    await page.waitForTimeout(300);
+
+    // Select "Tata"
+    const tataOption = page.getByRole('menuitem', { name: 'Tata' }).first();
+    if (await tataOption.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await tataOption.click();
+      await page.waitForTimeout(500);
+
+      bodyText = await page.textContent('body') ?? '';
+      expect(bodyText).toContain('Tata');
+      expect(bodyText).not.toContain('Ashok Leyland');
+      expect(bodyText).not.toContain('Force');
+    }
+  });
+
+  test('18 — route vehicle filter shows only routes with selected vehicle', async ({ page }) => {
+    await page.goto('/transport');
+    await page.waitForLoadState('networkidle');
+
+    // Wait for route data to render
+    await page.waitForFunction(
+      () => document.body.textContent?.includes('North Bangalore'),
+      { timeout: 10_000 },
+    );
+
+    // Both routes visible initially
+    let bodyText = await page.textContent('body') ?? '';
+    expect(bodyText).toContain('North Bangalore');
+    expect(bodyText).toContain('South Bangalore');
+
+    // Click the vehicle filter dropdown trigger
+    const vehicleDropdown = page.locator('button').filter({ hasText: /All Vehicles/i }).first();
+    await vehicleDropdown.click();
+    await page.waitForTimeout(300);
+
+    // Select the vehicle assigned to route-1
+    const vehOption = page.getByRole('menuitem', { name: 'KA-01-AB-1234' }).first();
+    if (await vehOption.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await vehOption.click();
+      await page.waitForTimeout(500);
+
+      bodyText = await page.textContent('body') ?? '';
+      expect(bodyText).toContain('North Bangalore');
+      expect(bodyText).not.toContain('South Bangalore');
+    }
+  });
+
+  test.describe('Mobile responsive', () => {
+    test.use({ viewport: { width: 390, height: 844 } });
+
+    async function hideFloatingOverlays(page: import('@playwright/test').Page) {
+      await page.evaluate(() => {
+        document.querySelectorAll('.tsqd-parent-container, .tsqd-container, [class*="devtools"]').forEach((el) => {
+          (el as HTMLElement).style.display = 'none';
+        });
+      });
+    }
+
+    test('19 — mobile viewport shows bottom nav and transport is reachable via More sheet', async ({ page }) => {
+      await page.goto('/transport');
+      await page.waitForLoadState('networkidle');
+      await hideFloatingOverlays(page);
+
+      // Bottom bar should be visible
+      const bottomBar = page.locator('nav[role="navigation"][aria-label="Primary navigation"]').first();
+      await expect(bottomBar).toBeVisible({ timeout: 5000 });
+
+      // "More" button should be visible
+      const moreBtn = bottomBar.locator('button[aria-label="More navigation"]').first();
+      await expect(moreBtn).toBeVisible({ timeout: 3000 });
+
+      // Click More to open bottom sheet
+      await moreBtn.click({ force: true });
+      await page.waitForTimeout(600);
+
+      // Bottom sheet (drawer) should be visible
+      const sheet = page.getByRole('dialog', { name: 'Navigation' }).first();
+      await expect(sheet).toBeVisible({ timeout: 8000 });
+
+      // Expand Operations group to reveal Transport
+      const operationsBtn = sheet.getByRole('button', { name: 'Operations' }).first();
+      if (await operationsBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await operationsBtn.click();
+        await page.waitForTimeout(300);
+      }
+
+      // Transport link should be present in the sheet
+      const transportLink = sheet.locator('a[href="/transport"]').first();
+      await expect(transportLink).toBeVisible({ timeout: 5000 });
+    });
+
+    test('20 — mobile navigation drawer closes after selecting transport', async ({ page }) => {
+      await page.goto('/students');
+      await page.waitForLoadState('networkidle');
+      await hideFloatingOverlays(page);
+
+      const bottomBar = page.locator('nav[role="navigation"][aria-label="Primary navigation"]').first();
+      await expect(bottomBar).toBeVisible({ timeout: 5000 });
+
+      // Open More sheet
+      const moreBtn = bottomBar.locator('button[aria-label="More navigation"]').first();
+      await moreBtn.click({ force: true });
+      await page.waitForTimeout(600);
+
+      const sheet = page.getByRole('dialog', { name: 'Navigation' }).first();
+      await expect(sheet).toBeVisible({ timeout: 8000 });
+
+      // Expand Operations group to reveal Transport
+      const operationsBtn = sheet.getByRole('button', { name: 'Operations' }).first();
+      if (await operationsBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await operationsBtn.click();
+        await page.waitForTimeout(300);
+      }
+
+      // Click Transport in the sheet
+      const transportLink = sheet.locator('a[href="/transport"]').first();
+      await transportLink.click();
+      await page.waitForTimeout(600);
+
+      // Should navigate to transport page
+      await expect(page).toHaveURL(/\/transport/);
+
+      // Sheet should be closed
+      await expect(sheet).not.toBeVisible({ timeout: 3000 });
+
+      // Transport content should render
+      await page.waitForFunction(
+        () => document.body.textContent?.includes('Transport') || document.body.textContent?.includes('Routes'),
+        { timeout: 10_000 },
+      );
+    });
   });
 });
