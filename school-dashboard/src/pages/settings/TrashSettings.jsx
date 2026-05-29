@@ -30,6 +30,10 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+import { request } from "../../services/api";
+import { getDateLocale } from '../../i18n/index';
+import { useTranslation } from 'react-i18next';
+import SkeletonTable from '../../components/skeletons/SkeletonTable';
 
 // Trash API - Add this to api.js when integrating
 export const trashApi = {
@@ -59,14 +63,6 @@ export const trashApi = {
   }),
 };
 
-// Import request function
-import { request } from "../../services/api";
-import { getDateLocale } from '../../i18n/index';
-import { useTranslation } from 'react-i18next';
-import SkeletonTable from '../../components/skeletons/SkeletonTable';
-import ConfirmDialog from '../../components/ui/ConfirmDialog';
-import useConfirmDialog from '../../hooks/useConfirmDialog';
-
 
 export default function TrashSettings() {
   const { t } = useTranslation();
@@ -83,7 +79,7 @@ export default function TrashSettings() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [actionInProgress, setActionInProgress] = useState(false);
   const [pendingAction, setPendingAction] = useState(null); // 'restore' or 'delete'
-  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
+  // confirm dialog removed — single-item permanent delete now uses native confirm()
   
   // Pagination state
   const [page, setPage] = useState(1);
@@ -292,27 +288,24 @@ export default function TrashSettings() {
 
   // Handle permanent delete of single item
   const handlePermanentDelete = useCallback((id) => {
-    showConfirm({
-      title: 'Delete Permanently',
-      message: t('confirm.deletePermanently'),
-      variant: 'danger',
-      confirmText: 'Delete Permanently',
-      onConfirm: async () => {
-        try {
-          setActionInProgress(true);
-          await trashApi.permanentDelete(id);
-          toast.success(t('toast.success.itemPermanentlyDeleted'));
-          await loadTrashData();
-          setSelectedItems(new Set());
-        } catch (error) {
-          logger.error("Failed to permanently delete item:", error);
-          toast.error(error.message || "Failed to delete item");
-        } finally {
-          setActionInProgress(false);
-        }
-      },
-    });
-  }, [showConfirm, loadTrashData, t]);
+    if (!window.confirm(t('confirm.deletePermanently') || 'Are you sure you want to delete this item permanently?')) {
+      return;
+    }
+    (async () => {
+      try {
+        setActionInProgress(true);
+        await trashApi.permanentDelete(id);
+        toast.success(t('toast.success.itemPermanentlyDeleted'));
+        await loadTrashData();
+        setSelectedItems(new Set());
+      } catch (error) {
+        logger.error("Failed to permanently delete item:", error);
+        toast.error(error.message || "Failed to delete item");
+      } finally {
+        setActionInProgress(false);
+      }
+    })();
+  }, [loadTrashData, t]);
 
   // Handle bulk action (restore or delete)
   const handleBulkAction = useCallback((action) => {
@@ -798,7 +791,6 @@ export default function TrashSettings() {
         </ModalContent>
       </Modal>
 
-      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </div>
   );
 }

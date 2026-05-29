@@ -9,8 +9,7 @@ import { Monitor, Smartphone, Globe, Shield, Clock } from "lucide-react";
 import toast from "react-hot-toast";
 import { request } from "../../services/api";
 import { getDateLocale } from "../../i18n";
-import ConfirmDialog from '../../components/ui/ConfirmDialog';
-import useConfirmDialog from '../../hooks/useConfirmDialog';
+
 
 function getDeviceIcon(device) {
   if (device === "Mobile") return Smartphone;
@@ -42,7 +41,6 @@ export default function ActiveSessions() {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [revokingId, setRevokingId] = useState(null);
-  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
 
   useEffect(() => {
     let cancelled = false;
@@ -50,7 +48,14 @@ export default function ActiveSessions() {
       try {
         setLoading(true);
         const data = await request("/auth/sessions");
-        if (!cancelled) setSessions(Array.isArray(data?.sessions) ? data.sessions : []);
+        if (!cancelled) {
+          const sessionsArray = Array.isArray(data)
+            ? data
+            : Array.isArray(data?.sessions)
+              ? data.sessions
+              : [];
+          setSessions(sessionsArray);
+        }
       } catch {
         if (!cancelled) toast.error("Failed to load sessions");
       } finally {
@@ -62,24 +67,21 @@ export default function ActiveSessions() {
   }, []);
 
   const handleRevoke = (sessionId) => {
-    showConfirm({
-      title: 'Revoke Session',
-      message: 'Are you sure you want to revoke this session? The user will be logged out.',
-      variant: 'danger',
-      confirmText: 'Revoke',
-      onConfirm: async () => {
-        try {
-          setRevokingId(sessionId);
-          await request(`/auth/sessions/${sessionId}`, { method: "DELETE" });
-          setSessions((prev) => prev.filter((s) => s.sessionId !== sessionId));
-          toast.success("Session revoked successfully");
-        } catch {
-          toast.error("Failed to revoke session");
-        } finally {
-          setRevokingId(null);
-        }
-      },
-    });
+    if (!window.confirm('Are you sure you want to revoke this session? The user will be logged out.')) {
+      return;
+    }
+    (async () => {
+      try {
+        setRevokingId(sessionId);
+        await request(`/auth/sessions/${sessionId}`, { method: "DELETE" });
+        setSessions((prev) => prev.filter((s) => s.sessionId !== sessionId));
+        toast.success("Session revoked successfully");
+      } catch {
+        toast.error("Failed to revoke session");
+      } finally {
+        setRevokingId(null);
+      }
+    })();
   };
 
   if (loading) {
@@ -223,7 +225,6 @@ export default function ActiveSessions() {
         )}
       </div>
 
-      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </div>
   );
 }

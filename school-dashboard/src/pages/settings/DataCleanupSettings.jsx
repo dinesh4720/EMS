@@ -203,7 +203,7 @@ export default function DataCleanupSettings() {
           Remove All Data
         </h2>
         <p className="text-sm text-fg-muted mt-1">
-          Move selected data to trash for 30 days before permanent deletion
+          Permanently delete all data
         </p>
       </div>
 
