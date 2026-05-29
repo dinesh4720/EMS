@@ -522,7 +522,7 @@
   padding: 10px 12px;
   border: 1px solid var(--border);
   background: var(--surface);
-  border-radius: 10px;
+  border-radius: var(--r-lg);
   margin-bottom: 12px;
 }
 .fd-summary__item {

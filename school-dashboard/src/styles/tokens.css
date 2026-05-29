@@ -88,9 +88,9 @@
   --ok-bg: oklch(58% 0.14 150 / 0.1);
   --ok-border: oklch(58% 0.14 150 / 0.25);
   --ok-hover: oklch(50% 0.14 150);
-  --warn: oklch(70% 0.15 75);
-  --warn-bg: oklch(70% 0.15 75 / 0.12);
-  --warn-border: oklch(70% 0.15 75 / 0.25);
+  --warn: oklch(65% 0.15 75);
+  --warn-bg: oklch(65% 0.15 75 / 0.12);
+  --warn-border: oklch(65% 0.15 75 / 0.25);
   --warn-hover: oklch(60% 0.15 75);
   --danger: oklch(58% 0.2 25);
   --danger-bg: oklch(58% 0.2 25 / 0.1);

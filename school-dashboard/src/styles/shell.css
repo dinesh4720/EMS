@@ -813,7 +813,7 @@
   max-height: 70vh;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--r-lg);
   box-shadow: 0 12px 32px -8px rgb(0 0 0 / 0.20),
               0 4px 8px -2px rgb(0 0 0 / 0.10);
   padding: 14px 0;
@@ -1144,7 +1144,7 @@
   height: 280px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--r-lg);
   box-shadow: 0 12px 32px -8px rgb(0 0 0 / 0.20),
               0 4px 8px -2px rgb(0 0 0 / 0.10);
   font-size: 13px;
