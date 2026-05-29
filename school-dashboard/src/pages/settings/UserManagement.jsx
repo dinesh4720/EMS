@@ -423,7 +423,7 @@ export default function UserManagement() {
                                     </div>
                                 ) : resetting ? (
                                     <div className="flex flex-col items-center justify-center py-8">
-                                        <div className="animate-spin h-8 w-8 rounded-full border-2 border-border-token border-t-gray-900" />
+                                        <div className="animate-spin h-8 w-8 rounded-full border-2 border-border-token border-t-fg" />
                                         <p className="text-sm text-fg-muted mt-4">{t('pages.generatingSecurePassword')}</p>
                                     </div>
                                 ) : resetSuccess ? (

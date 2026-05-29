@@ -16,6 +16,7 @@ import EditStudentDrawer from "./EditStudentDrawer";
 import ScrollToTopButton from "../../components/ui/ScrollToTopButton";
 import Skeleton from "../../components/ui/Skeleton";
 import { StudentCsvUploadModal, StudentCsvPreviewModal } from "./components/modals/StudentImportModals";
+import { PageShell } from "../../components/ui";
 import StudentsFiltersBar from "./components/list/StudentsFiltersBar";
 import StudentsBulkModals from "./components/list/StudentsBulkModals";
 // Removed StudentsTableProvider — no longer needed with row-list layout
@@ -31,14 +32,6 @@ const MOBILE_MAX = 1099;
 function StudentsListSkeleton() {
   return (
     <div className="w-full flex flex-col flex-1 min-h-0" aria-busy="true" aria-live="polite">
-      {/* Toolbar skeleton */}
-      <div className="toolbar" role="presentation">
-        <Skeleton variant="rect" className="h-7" style={{ flex: "0 1 280px" }} />
-        <Skeleton variant="rect" className="h-7 w-56" />
-        <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
-          <Skeleton variant="rect" className="h-7 w-7" />
-        </div>
-      </div>
       {/* Row skeletons */}
       <div className="flex-1 min-h-0 overflow-hidden">
         {Array.from({ length: 12 }).map((_, i) => (
@@ -315,76 +308,59 @@ export default function StudentsList({ onAddStudent }) {
   const [printOpen, setPrintOpen] = useState(false);
 
   if (contextLoading || listLoading) {
-    return <StudentsListSkeleton />;
+    return (
+      <PageShell
+        title="Students"
+        description="Loading…"
+        breadcrumbs={[{ label: "Home", href: "/" }, { label: "Students" }]}
+        bodyPadding="none"
+        scrollable={false}
+      >
+        <StudentsListSkeleton />
+      </PageShell>
+    );
   }
 
   return (
-    <div
-      className="page"
-      style={
-        isMobileViewport
-          ? { display: "flex", flexDirection: "column", minHeight: 0 }
-          : {
-              display: "grid",
-              gridTemplateColumns: "minmax(420px, 1fr) 380px",
-              gap: 0,
-              minHeight: 0,
-            }
-      }
-    >
-      {/* Left list */}
-      <div
-        style={{
-          borderRight: isMobileViewport ? "none" : "1px solid var(--border)",
-          display: "flex",
-          flexDirection: "column",
-          minHeight: 0,
-        }}
-      >
-        <div className="page__head" style={{ paddingBottom: 12 }}>
-          <div>
-            <h1 className="page__title">Students</h1>
-            <div className="page__sub">
-              <span className="mono tnum">{filteredItems.length}</span> of{" "}
-              <span className="mono tnum">{students.length}</span>
-            </div>
-          </div>
-          <div className="row gap-2">
-            <ExportMenu
-              rows={visibleItems}
-              columns={[
-                { key: "name", label: "Name" },
-                { key: "admissionNo", label: "Admission No", accessor: (s) => s.admissionNo || s.admissionNumber || "—" },
-                { key: "className", label: "Class", accessor: (s) => s.className || s.class || s.classSection || "—" },
-                { key: "rollNo", label: "Roll No", accessor: (s) => s.rollNo || s.rollNumber || "—" },
-                { key: "gender", label: "Gender", accessor: (s) => s.gender || "—" },
-                { key: "parentPhone", label: "Parent Phone", accessor: (s) => s.parentPhone || s.fatherPhone || s.motherPhone || "—" },
-                { key: "parentEmail", label: "Parent Email", accessor: (s) => s.parentEmail || s.fatherEmail || s.motherEmail || "—" },
-                { key: "status", label: "Status", accessor: (s) => s.status || "active" },
-              ]}
-              filename="students-list"
-              title="Students List"
-            />
-            <button
-              type="button"
-              className="btn btn--sm"
-              onClick={() => setPrintOpen(true)}
-              aria-label="Print preview"
-            >
-              <Printer size={14} aria-hidden />
-            </button>
-            <button
-              type="button"
-              className="btn btn--accent"
-              onClick={onAddStudent}
-            >
-              <Plus size={13} aria-hidden />
-              New Student
-            </button>
-          </div>
+    <PageShell
+      title="Students"
+      description={`${filteredItems.length} of ${students.length}`}
+      actions={
+        <div className="row gap-2">
+          <ExportMenu
+            rows={visibleItems}
+            columns={[
+              { key: "name", label: "Name" },
+              { key: "admissionNo", label: "Admission No", accessor: (s) => s.admissionNo || s.admissionNumber || "—" },
+              { key: "className", label: "Class", accessor: (s) => s.className || s.class || s.classSection || "—" },
+              { key: "rollNo", label: "Roll No", accessor: (s) => s.rollNo || s.rollNumber || "—" },
+              { key: "gender", label: "Gender", accessor: (s) => s.gender || "—" },
+              { key: "parentPhone", label: "Parent Phone", accessor: (s) => s.parentPhone || s.fatherPhone || s.motherPhone || "—" },
+              { key: "parentEmail", label: "Parent Email", accessor: (s) => s.parentEmail || s.fatherEmail || s.motherEmail || "—" },
+              { key: "status", label: "Status", accessor: (s) => s.status || "active" },
+            ]}
+            filename="students-list"
+            title="Students List"
+          />
+          <button
+            type="button"
+            className="btn btn--sm"
+            onClick={() => setPrintOpen(true)}
+            aria-label="Print preview"
+          >
+            <Printer size={14} aria-hidden />
+          </button>
+          <button
+            type="button"
+            className="btn btn--accent"
+            onClick={onAddStudent}
+          >
+            <Plus size={13} aria-hidden />
+            New Student
+          </button>
         </div>
-
-        {/* Toolbar */}
+      }
+      toolbar={
         <StudentsFiltersBar
           statusFilter={statusFilter}
           setStatusFilter={setStatusFilter}
@@ -415,6 +391,33 @@ export default function StudentsList({ onAddStudent }) {
           downloadStudentList={downloadStudentList}
           onNavigateToTC={() => navigate('/students/transfer-certificate')}
         />
+      }
+      breadcrumbs={[{ label: "Home", href: "/" }, { label: "Students" }]}
+      bodyPadding="none"
+      scrollable={false}
+    >
+      <div
+        style={
+          isMobileViewport
+            ? { display: "flex", flexDirection: "column", minHeight: 0, flex: 1 }
+            : {
+                display: "grid",
+                gridTemplateColumns: "minmax(420px, 1fr) 380px",
+                gap: 0,
+                minHeight: 0,
+                flex: 1,
+              }
+        }
+      >
+        {/* Left list */}
+        <div
+          style={{
+            borderRight: isMobileViewport ? "none" : "1px solid var(--border)",
+            display: "flex",
+            flexDirection: "column",
+            minHeight: 0,
+          }}
+        >
 
         {/* List rows */}
         <div
@@ -507,6 +510,7 @@ export default function StudentsList({ onAddStudent }) {
             />
           </div>
         )}
+        </div>
 
       </div>
 
@@ -667,6 +671,6 @@ export default function StudentsList({ onAddStudent }) {
           </table>
         </div>
       </PrintPreviewModal>
-    </div>
+    </PageShell>
   );
 }

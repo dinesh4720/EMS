@@ -11,6 +11,7 @@ import VisitorSheet from "../../components/front-desk/VisitorSheet";
 import GatePassSheet from "../../components/front-desk/GatePassSheet";
 import ToolbarSearch from "../../components/ui/ToolbarSearch";
 import Skeleton from "../../components/ui/Skeleton";
+import { PageShell } from "../../components/ui";
 
 const VALID_TYPES = new Set(["all", ...Object.values(ACTIVITY_TYPES)]);
 const ACTIVITY_PAGE_SIZE = 25;
@@ -135,15 +136,47 @@ export default function FrontDeskPage() {
   const visible = filtered.slice(0, visibleCount);
   const hasMore = filtered.length > visibleCount;
 
+  const toolbar = (
+    <div ref={activityRef} className="toolbar" style={{ borderBottom: "none", paddingTop: 0 }}>
+      <ToolbarSearch
+        value={search}
+        onChange={setSearch}
+        urlParam="q"
+        placeholder="Search names, purposes…"
+        ariaLabel="Search activity"
+        style={{ flex: 1, maxWidth: 360 }}
+      />
+
+      <div className="seg" role="tablist" aria-label="Filter activity">
+        {[
+          { key: "all", label: "All" },
+          { key: ACTIVITY_TYPES.VISITOR, label: "Visitors" },
+          { key: ACTIVITY_TYPES.GATE_PASS, label: "Gate passes" },
+          { key: ACTIVITY_TYPES.APPOINTMENT, label: "Appointments" },
+          { key: ACTIVITY_TYPES.ADMISSION, label: "Admissions" },
+          { key: ACTIVITY_TYPES.FEEDBACK, label: "Feedback" },
+          { key: ACTIVITY_TYPES.CALL, label: "Calls" },
+        ].map((f) => (
+          <button
+            key={f.key}
+            type="button"
+            role="tab"
+            aria-selected={type === f.key}
+            className={`seg__btn${type === f.key ? " is-active" : ""}`}
+            onClick={() => setType(f.key)}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
-    <div className="page fd-page">
-      <div className="page__head">
-        <div>
-          <h1 className="page__title">Front desk</h1>
-          <div className="page__sub mono tnum">
-            {todayLabel} · {kpis.visitorsToday} visitors · {kpis.gatePassesPending} passes pending
-          </div>
-        </div>
+    <PageShell
+      title="Front desk"
+      description={`${todayLabel} · ${kpis.visitorsToday} visitors · ${kpis.gatePassesPending} passes pending`}
+      actions={
         <div className="row gap-2">
           <button
             type="button"
@@ -160,119 +193,93 @@ export default function FrontDeskPage() {
             <Users size={13} aria-hidden /> Check in visitor
           </button>
         </div>
-      </div>
-
-      <FrontDeskKpiStrip
-        kpis={kpis}
-        activeType={type}
-        onTypeChange={setType}
-      />
-
-      <section className="fd-quick" aria-label="Quick actions">
-        <div className="fd-quick__label">Quick actions</div>
-        <div className="optgrid">
-          {quickActions.map((q) => (
-            <button
-              key={q.key}
-              type="button"
-              className={`opt${q.isActive ? " is-active" : ""}`}
-              onClick={q.action}
-            >
-              <q.icon size={14} className="opt__icon" aria-hidden />
-              <span>{q.label}</span>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <div ref={activityRef} className="toolbar" style={{ borderBottom: "none", paddingTop: 0 }}>
-        <ToolbarSearch
-          value={search}
-          onChange={setSearch}
-          urlParam="q"
-          placeholder="Search names, purposes…"
-          ariaLabel="Search activity"
-          style={{ flex: 1, maxWidth: 360 }}
+      }
+      toolbar={toolbar}
+      breadcrumbs={[
+        { label: "Home", href: "/" },
+        { label: "Front desk" },
+      ]}
+      bodyPadding="none"
+    >
+      <div className="fd-page" style={{ paddingBottom: 24 }}>
+        <FrontDeskKpiStrip
+          kpis={kpis}
+          activeType={type}
+          onTypeChange={setType}
         />
 
-        <div className="seg" role="tablist" aria-label="Filter activity">
-          {[
-            { key: "all", label: "All" },
-            { key: ACTIVITY_TYPES.VISITOR, label: "Visitors" },
-            { key: ACTIVITY_TYPES.GATE_PASS, label: "Gate passes" },
-            { key: ACTIVITY_TYPES.APPOINTMENT, label: "Appointments" },
-            { key: ACTIVITY_TYPES.ADMISSION, label: "Admissions" },
-            { key: ACTIVITY_TYPES.FEEDBACK, label: "Feedback" },
-            { key: ACTIVITY_TYPES.CALL, label: "Calls" },
-          ].map((f) => (
-            <button
-              key={f.key}
-              type="button"
-              role="tab"
-              aria-selected={type === f.key}
-              className={`seg__btn${type === f.key ? " is-active" : ""}`}
-              onClick={() => setType(f.key)}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {isLoading ? (
-        <div className="fd-table" role="status" aria-busy="true" aria-label="Loading activity">
-          <div className="fd-table__head" role="row">
-            <span><Skeleton variant="text" className="h-3 w-12" /></span>
-            <span><Skeleton variant="text" className="h-3 w-16" /></span>
-            <span><Skeleton variant="text" className="h-3 w-20" /></span>
-            <span><Skeleton variant="text" className="h-3 w-10" /></span>
-            <span><Skeleton variant="text" className="h-3 w-14" /></span>
-            <span className="fd-table__action"><Skeleton variant="text" className="h-3 w-4" /></span>
+        <section className="fd-quick" aria-label="Quick actions">
+          <div className="fd-quick__label">Quick actions</div>
+          <div className="optgrid">
+            {quickActions.map((q) => (
+              <button
+                key={q.key}
+                type="button"
+                className={`opt${q.isActive ? " is-active" : ""}`}
+                onClick={q.action}
+              >
+                <q.icon size={14} className="opt__icon" aria-hidden />
+                <span>{q.label}</span>
+              </button>
+            ))}
           </div>
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="fd-table__row" role="row">
-              <span className="row gap-2" style={{ alignItems: "center" }}>
-                <Skeleton variant="circle" className="h-4 w-4" />
-                <Skeleton variant="text" className="h-3 w-14" />
-              </span>
-              <span><Skeleton variant="text" className="h-3 w-24" /></span>
-              <span><Skeleton variant="text" className="h-3 w-32" /></span>
+        </section>
+
+        {isLoading ? (
+          <div className="fd-table" role="status" aria-busy="true" aria-label="Loading activity">
+            <div className="fd-table__head" role="row">
+              <span><Skeleton variant="text" className="h-3 w-12" /></span>
+              <span><Skeleton variant="text" className="h-3 w-16" /></span>
+              <span><Skeleton variant="text" className="h-3 w-20" /></span>
+              <span><Skeleton variant="text" className="h-3 w-10" /></span>
               <span><Skeleton variant="text" className="h-3 w-14" /></span>
-              <span><Skeleton variant="rect" className="h-5 w-16" style={{ borderRadius: 999 }} /></span>
               <span className="fd-table__action"><Skeleton variant="text" className="h-3 w-4" /></span>
             </div>
-          ))}
-        </div>
-      ) : (
-        <>
-          <ActivityTable rows={visible} />
-          {hasMore && (
-            <div className="fd-more">
-              <button
-                type="button"
-                className="btn"
-                onClick={() => setVisibleCount((n) => n + ACTIVITY_PAGE_SIZE)}
-              >
-                Show more
-                <span className="mono tnum" style={{ marginLeft: 6, color: "var(--fg-subtle)" }}>
-                  ({filtered.length - visibleCount} more)
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="fd-table__row" role="row">
+                <span className="row gap-2" style={{ alignItems: "center" }}>
+                  <Skeleton variant="circle" className="h-4 w-4" />
+                  <Skeleton variant="text" className="h-3 w-14" />
                 </span>
-              </button>
-            </div>
-          )}
-        </>
-      )}
+                <span><Skeleton variant="text" className="h-3 w-24" /></span>
+                <span><Skeleton variant="text" className="h-3 w-32" /></span>
+                <span><Skeleton variant="text" className="h-3 w-14" /></span>
+                <span><Skeleton variant="rect" className="h-5 w-16" style={{ borderRadius: 999 }} /></span>
+                <span className="fd-table__action"><Skeleton variant="text" className="h-3 w-4" /></span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <>
+            <ActivityTable rows={visible} />
+            {hasMore && (
+              <div className="fd-more">
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => setVisibleCount((n) => n + ACTIVITY_PAGE_SIZE)}
+                >
+                  Show more
+                  <span className="mono tnum" style={{ marginLeft: 6, color: "var(--fg-subtle)" }}>
+                    ({filtered.length - visibleCount} more)
+                  </span>
+                </button>
+              </div>
+            )}
+          </>
+        )}
 
-      <VisitorSheet
-        isOpen={sheet === "visitor"}
-        onClose={closeSheet}
-        onCheckedIn={refetch}
-      />
-      <GatePassSheet
-        isOpen={sheet === "gatepass"}
-        onClose={closeSheet}
-        onIssued={refetch}
-      />
-    </div>
+        <VisitorSheet
+          isOpen={sheet === "visitor"}
+          onClose={closeSheet}
+          onCheckedIn={refetch}
+        />
+        <GatePassSheet
+          isOpen={sheet === "gatepass"}
+          onClose={closeSheet}
+          onIssued={refetch}
+        />
+      </div>
+    </PageShell>
   );
 }

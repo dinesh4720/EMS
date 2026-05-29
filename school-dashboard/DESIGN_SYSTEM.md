@@ -505,6 +505,127 @@ All chrome lives in `src/styles/styleguide.css`.
 
 ---
 
+## Layout primitives
+
+Three React components standardise page chrome across every module. Compose from these — never re-implement headers by hand.
+
+### `PageLayout`
+
+Card-shaped container with optional tabs and header. Used for tabbed container pages (hostel, library, inventory, transport, messaging, homework, ptm, students, staffs).
+
+```jsx
+<PageLayout
+  tabs={[{ key: "dashboard", title: "Dashboard" }, ...]}
+  activeTab={activeTab}
+  onTabChange={setActiveTab}
+  header={{ title: "Hostel", description: "Overview of hostel occupancy" }}
+  actions={<button className="btn btn--accent">Add</button>}
+  noPadding
+>
+  {content}
+</PageLayout>
+```
+
+- Outer border: `border-border-token`
+- Tab/header separators: `border-divider`
+- Body padding: `p-6` by default; disable with `noPadding`
+
+### `PageShell`
+
+Full-featured page wrapper with document title, meta description, breadcrumbs, tabs, toolbar, and aside. Used for KPI+table pages (academics, fees, front-desk, payroll) and any page that needs sticky chrome.
+
+```jsx
+<PageShell
+  title="Academics"
+  description="3 upcoming · 12 published"
+  breadcrumbs={[{ label: "Home", href: "/" }, { label: "Academics" }]}
+  actions={<button className="btn btn--accent">New exam</button>}
+  toolbar={<div className="toolbar">...</div>}
+  bodyPadding="none"
+>
+  {content}
+</PageShell>
+```
+
+- Outer border: `border-border-token`
+- Internal separators: `border-divider`
+- Header padding: `py-5 px-6` (md size)
+- Toolbar padding: `px-4 sm:px-6 py-3`
+- Body padding: `p-6` (md) by default; override with `none` / `sm` / `lg`
+
+### `PageHeader`
+
+Standalone header for pages that manage their own outer wrapper (settings sub-pages, data-tools, reports, simple content pages).
+
+```jsx
+<PageHeader
+  title="Bulk Import"
+  description="Import staff and students from CSV"
+  breadcrumb={<Breadcrumbs items={...} size="sm" />}
+  actions={<button className="btn">Download template</button>}
+  size="md"
+  bordered={true}
+/>
+```
+
+- Padding matches PageShell header (`py-5 px-6` for md)
+- Bottom border: `border-divider` when `bordered={true}`
+
+**Token rules for all three:**
+- Background: `bg-surface`
+- Text: `text-fg` (title), `text-fg-muted` (description)
+- Never use raw Tailwind `gray-*` / `zinc-*` utilities inside layout primitives.
+
+---
+
+## Content density conventions
+
+Eight documented patterns govern how data is laid out. Every new screen must map to one of these; if none fit, document the exception in this file.
+
+| Pattern | Use when | Canonical example |
+|---------|----------|-------------------|
+| **A. Two-pane list** | List on the left, frosted detail pane on the right. Selection lives in URL. | `StaffList`, `StudentsList`, `FeesPage` (with payment sheet) |
+| **B. KPI + table** | KPI strip above a filterable table. Toolbar holds search + segmented filters. | `AcademicsPage`, `ExamManagement`, `StaffPayroll` |
+| **C. Card grid** | Grid of tiles/cards. No detail pane. | `ClassesPage` (by-class view), `Dashboard` (stats cards), `InventoryDashboard` |
+| **D. Full-bleed dashboard** | Principal/landing view with hero header, multiple sections, localStorage visibility toggles. | `Dashboard`, `Analytics`, `PerformanceDashboard` |
+| **E. Settings two-pane** | Fixed sidebar menu + scrollable content area. Content changes via sub-routes. | `SettingsPage` and all sub-pages |
+| **F. Tabbed container** | Single entity with multiple tabs. Breadcrumbs above the card. | `Hostel`, `Library`, `Inventory`, `Transport`, `Messaging` |
+| **G. Detail page** | Single record view with avatar hero, metadata chips, and tabbed sections. | `StudentDashboard`, `ExamDetail`, `ClassDashboard` |
+| **H. Modal / overlay** | Create/edit flows that portal to `document.body`. | `AddStaffComposer`, `PaymentSheet`, `VisitorSheet` |
+
+**Rules:**
+- Pattern A pages use the canonical two-pane CSS (`staff.css` / `student.css`) and must **not** be wrapped in `PageShell`.
+- Pattern B pages **must** use `PageShell` with the `toolbar` prop.
+- Pattern C pages may use `PageShell` without `toolbar`.
+- Pattern D pages are documented exceptions — they use `.page--principal` and custom section CSS.
+- Pattern E pages use a fixed sidebar (`w-[260px]`) and `flex` row layout.
+- Pattern F pages use `PageLayout` with `tabs` and render breadcrumbs **outside** the component (above it).
+- Pattern G pages keep their custom hero header (avatar + chips) but should use `Breadcrumbs` for the nav trail.
+- Pattern H components use `createPortal` and the `.composer` / `.drawer` / `.frosted-overlay` base classes.
+
+---
+
+## Breadcrumbs policy
+
+Breadcrumbs are required on every non-dashboard list, detail, and settings page. Dashboard (Pattern D) and modal overlays (Pattern H) are the only exceptions.
+
+| Page type | Breadcrumb depth | Example |
+|-----------|------------------|---------|
+| Top-level module | 2 | Home → Fees |
+| Sub-page (staff, student) | 3 | Home → Staff → Payroll |
+| Detail page | 3–4 | Home → Students → Class 10-A → Rahul Sharma |
+| Settings | 2 | Home → Settings |
+| Settings sub-page | 3 | Home → Settings → Roles & Permissions |
+
+**Implementation:**
+- Use the design-system `Breadcrumbs` component (not HeroUI's).
+- On `PageShell` pages, pass the `breadcrumbs` array prop — PageShell renders them automatically.
+- On `PageLayout` pages, render breadcrumbs **above** PageLayout in a `mb-4` wrapper.
+- On standalone pages, pass `<Breadcrumbs>` to `PageHeader`'s `breadcrumb` prop.
+- The last item is always plain text (no href); all preceding items are links.
+
+---
+
 ## Adding to the system
 
 1. Add the CSS to the right file (`shell.css` for app-wide atoms; `create.css` for composer/drawer; `staff.css` for two-pane; new pattern → new `*.css` file imported from `index.css`).

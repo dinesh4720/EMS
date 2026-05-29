@@ -14,6 +14,7 @@ import ExportMenu from "../../components/ui/ExportMenu";
 import PrintPreviewModal from "../../components/ui/PrintPreviewModal";
 import { studentsApi } from "../../services/api";
 import logger from "../../utils/logger";
+import { PageShell } from "../../components/ui";
 
 const VALID_FILTERS = new Set(["all", "paid", "pending", "overdue"]);
 
@@ -111,13 +112,70 @@ export default function FeesPage() {
     return `${today} · ${inrFmt.format(kpis.collectedToday)} collected`;
   }, [kpis.collectedToday]);
 
+  const toolbar = (
+    <div className="toolbar" style={{ borderBottom: "none", paddingTop: 0 }}>
+      <ToolbarSearch
+        value={search}
+        onChange={setSearch}
+        urlParam="q"
+        placeholder="Search students, receipt no…"
+        ariaLabel="Search payments"
+        style={{ flex: 1, maxWidth: 360 }}
+      />
+
+      <div className="seg" role="tablist" aria-label="Filter payments">
+        {[
+          { key: "all", label: "All" },
+          { key: "pending", label: "Pending" },
+          { key: "overdue", label: "Overdue" },
+          { key: "paid", label: "Paid" },
+        ].map((f) => (
+          <button
+            key={f.key}
+            type="button"
+            role="tab"
+            aria-selected={status === f.key}
+            className={`seg__btn${status === f.key ? " is-active" : ""}`}
+            onClick={() => setStatus(f.key)}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="row gap-2" style={{ marginLeft: "auto" }}>
+        <ExportMenu
+          rows={filtered}
+          columns={[
+            { key: "studentName", label: "Student", accessor: (p) => p.student?.name || p.studentName || "—" },
+            { key: "rollNo", label: "Roll", accessor: (p) => p.student?.rollNo || p.rollNo || "—" },
+            { key: "className", label: "Class", accessor: (p) => p.student?.className || p.className || p.classSection || "—" },
+            { key: "term", label: "Term", accessor: (p) => p.term || p.feeTerm || p.headName || "—" },
+            { key: "amount", label: "Amount", accessor: (p) => p.amount ?? 0 },
+            { key: "status", label: "Status", accessor: (p) => p.status || "pending" },
+            { key: "dueDate", label: "Due Date", accessor: (p) => p.dueDate || p.due_at || "—" },
+            { key: "paymentMode", label: "Mode", accessor: (p) => p.paymentMode || p.mode || "—" },
+          ]}
+          filename="fees-list"
+          title="Fees List"
+        />
+        <button
+          type="button"
+          className="btn btn--sm"
+          onClick={() => setPrintOpen(true)}
+          aria-label="Print preview"
+        >
+          <Printer size={14} aria-hidden />
+        </button>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="page fees-page">
-      <div className="page__head">
-        <div>
-          <h1 className="page__title">Fees</h1>
-          <div className="page__sub mono tnum">{subLine}</div>
-        </div>
+    <PageShell
+      title="Fees"
+      description={subLine}
+      actions={
         <div className="row gap-2">
           <button
             type="button"
@@ -141,128 +199,79 @@ export default function FeesPage() {
             <Plus size={13} aria-hidden /> Collect payment
           </button>
         </div>
-      </div>
+      }
+      toolbar={toolbar}
+      breadcrumbs={[
+        { label: "Home", href: "/" },
+        { label: "Fees" },
+      ]}
+      bodyPadding="none"
+    >
+      <div className="fees-page" style={{ paddingBottom: 24 }}>
+        <FeesKpiStrip kpis={kpis} activeFilter={status} onFilterChange={setStatus} />
 
-      <FeesKpiStrip kpis={kpis} activeFilter={status} onFilterChange={setStatus} />
-
-      <div className="toolbar" style={{ borderBottom: "none", paddingTop: 0 }}>
-        <ToolbarSearch
-          value={search}
-          onChange={setSearch}
-          urlParam="q"
-          placeholder="Search students, receipt no…"
-          ariaLabel="Search payments"
-          style={{ flex: 1, maxWidth: 360 }}
-        />
-
-        <div className="seg" role="tablist" aria-label="Filter payments">
-          {[
-            { key: "all", label: "All" },
-            { key: "pending", label: "Pending" },
-            { key: "overdue", label: "Overdue" },
-            { key: "paid", label: "Paid" },
-          ].map((f) => (
-            <button
-              key={f.key}
-              type="button"
-              role="tab"
-              aria-selected={status === f.key}
-              className={`seg__btn${status === f.key ? " is-active" : ""}`}
-              onClick={() => setStatus(f.key)}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="row gap-2" style={{ marginLeft: "auto" }}>
-          <ExportMenu
-            rows={filtered}
-            columns={[
-              { key: "studentName", label: "Student", accessor: (p) => p.student?.name || p.studentName || "—" },
-              { key: "rollNo", label: "Roll", accessor: (p) => p.student?.rollNo || p.rollNo || "—" },
-              { key: "className", label: "Class", accessor: (p) => p.student?.className || p.className || p.classSection || "—" },
-              { key: "term", label: "Term", accessor: (p) => p.term || p.feeTerm || p.headName || "—" },
-              { key: "amount", label: "Amount", accessor: (p) => p.amount ?? 0 },
-              { key: "status", label: "Status", accessor: (p) => p.status || "pending" },
-              { key: "dueDate", label: "Due Date", accessor: (p) => p.dueDate || p.due_at || "—" },
-              { key: "paymentMode", label: "Mode", accessor: (p) => p.paymentMode || p.mode || "—" },
-            ]}
-            filename="fees-list"
-            title="Fees List"
+        {isLoading ? (
+          <TablePageSkeleton kpiCards={3} columns={6} rows={8} />
+        ) : isError ? (
+          <ErrorState
+            title="Unable to load payments"
+            error={error}
+            onRetry={refetch}
+            size="lg"
           />
-          <button
-            type="button"
-            className="btn btn--sm"
-            onClick={() => setPrintOpen(true)}
-            aria-label="Print preview"
-          >
-            <Printer size={14} aria-hidden />
-          </button>
-        </div>
-      </div>
+        ) : (
+          <PaymentsTable
+            rows={filtered}
+            onCollect={openSheet}
+            onSendReminder={onSendReminder}
+          />
+        )}
 
-      {isLoading ? (
-        <TablePageSkeleton kpiCards={3} columns={6} rows={8} />
-      ) : isError ? (
-        <ErrorState
-          title="Unable to load payments"
-          error={error}
-          onRetry={refetch}
-          size="lg"
+        <PaymentSheet
+          isOpen={sheetOpen}
+          onClose={closeSheet}
+          prefilledStudentId={studentParam || null}
+          onCollected={() => refetch?.()}
         />
-      ) : (
-        <PaymentsTable
-          rows={filtered}
-          onCollect={openSheet}
-          onSendReminder={onSendReminder}
-        />
-      )}
 
-      <PaymentSheet
-        isOpen={sheetOpen}
-        onClose={closeSheet}
-        prefilledStudentId={studentParam || null}
-        onCollected={() => refetch?.()}
-      />
-
-      <PrintPreviewModal
-        isOpen={printOpen}
-        onClose={() => setPrintOpen(false)}
-        title="Fees List"
-      >
-        <div className="p-6">
-          <h1 className="text-lg font-semibold mb-4">Fees List</h1>
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left py-2 px-3">Roll</th>
-                <th className="text-left py-2 px-3">Student</th>
-                <th className="text-left py-2 px-3">Class</th>
-                <th className="text-left py-2 px-3">Term</th>
-                <th className="text-left py-2 px-3">Amount</th>
-                <th className="text-left py-2 px-3">Status</th>
-                <th className="text-left py-2 px-3">Due Date</th>
-                <th className="text-left py-2 px-3">Mode</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((p) => (
-                <tr key={p._id || p.id} className="border-b">
-                  <td className="py-2 px-3">{p.student?.rollNo || p.rollNo || "—"}</td>
-                  <td className="py-2 px-3">{p.student?.name || p.studentName || "—"}</td>
-                  <td className="py-2 px-3">{p.student?.className || p.className || p.classSection || "—"}</td>
-                  <td className="py-2 px-3">{p.term || p.feeTerm || p.headName || "—"}</td>
-                  <td className="py-2 px-3">{p.amount != null ? `₹${Number(p.amount).toLocaleString()}` : "—"}</td>
-                  <td className="py-2 px-3">{p.status || "pending"}</td>
-                  <td className="py-2 px-3">{p.dueDate || p.due_at || "—"}</td>
-                  <td className="py-2 px-3">{p.paymentMode || p.mode || "—"}</td>
+        <PrintPreviewModal
+          isOpen={printOpen}
+          onClose={() => setPrintOpen(false)}
+          title="Fees List"
+        >
+          <div className="p-6">
+            <h1 className="text-lg font-semibold mb-4">Fees List</h1>
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-2 px-3">Roll</th>
+                  <th className="text-left py-2 px-3">Student</th>
+                  <th className="text-left py-2 px-3">Class</th>
+                  <th className="text-left py-2 px-3">Term</th>
+                  <th className="text-left py-2 px-3">Amount</th>
+                  <th className="text-left py-2 px-3">Status</th>
+                  <th className="text-left py-2 px-3">Due Date</th>
+                  <th className="text-left py-2 px-3">Mode</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </PrintPreviewModal>
-    </div>
+              </thead>
+              <tbody>
+                {filtered.map((p) => (
+                  <tr key={p._id || p.id} className="border-b">
+                    <td className="py-2 px-3">{p.student?.rollNo || p.rollNo || "—"}</td>
+                    <td className="py-2 px-3">{p.student?.name || p.studentName || "—"}</td>
+                    <td className="py-2 px-3">{p.student?.className || p.className || p.classSection || "—"}</td>
+                    <td className="py-2 px-3">{p.term || p.feeTerm || p.headName || "—"}</td>
+                    <td className="py-2 px-3">{p.amount != null ? `₹${Number(p.amount).toLocaleString()}` : "—"}</td>
+                    <td className="py-2 px-3">{p.status || "pending"}</td>
+                    <td className="py-2 px-3">{p.dueDate || p.due_at || "—"}</td>
+                    <td className="py-2 px-3">{p.paymentMode || p.mode || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </PrintPreviewModal>
+      </div>
+    </PageShell>
   );
 }
