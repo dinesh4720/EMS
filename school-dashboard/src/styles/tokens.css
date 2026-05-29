@@ -48,6 +48,9 @@
   --topbar-h: 44px;
   --sidebar-w: 224px;
   --sidebar-w-collapsed: 56px;
+  --sidebar-mobile-w: 280px;
+  --bottom-bar-h: 56px;
+  --bottom-sheet-max-h: 70vh;
 
   /* Color — Light (warm neutral) */
   --bg: oklch(98.6% 0.003 80);

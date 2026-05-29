@@ -305,7 +305,7 @@ function NavGroup({ heading, items, collapsed, onNav, defaultExpanded, forceExpa
   );
 }
 
-function NavFlyout({ rect, title, items, onNav, onClose, onMouseEnter }) {
+function NavFlyout({ rect, title, items, groups, onNav, onClose, onMouseEnter }) {
   return (
     <div
       className="nav-flyout"
@@ -314,18 +314,271 @@ function NavFlyout({ rect, title, items, onNav, onClose, onMouseEnter }) {
       onMouseLeave={onClose}
     >
       {title && <div className="nav-flyout__title">{title}</div>}
-      {items.map((item) => (
-        <NavLink
-          key={item.href}
-          to={item.href}
-          onClick={onNav}
-          className={({ isActive }) => `nav-flyout__item${isActive ? " is-active" : ""}`}
-        >
-          {item.icon && <item.icon size={14} strokeWidth={1.6} aria-hidden />}
-          <span>{item.label}</span>
-        </NavLink>
-      ))}
+      {groups ? (
+        groups.map((group) => (
+          <div key={group.title} className="nav-flyout__group">
+            <div className="nav-flyout__group-header">{group.title}</div>
+            {group.items.map((item) => (
+              <NavLink
+                key={item.href}
+                to={item.href}
+                onClick={onNav}
+                className={({ isActive }) => `nav-flyout__item${isActive ? " is-active" : ""}`}
+              >
+                {item.icon && <item.icon size={14} strokeWidth={1.6} aria-hidden />}
+                <span>{item.label}</span>
+              </NavLink>
+            ))}
+          </div>
+        ))
+      ) : (
+        items.map((item) => (
+          <NavLink
+            key={item.href}
+            to={item.href}
+            onClick={onNav}
+            className={({ isActive }) => `nav-flyout__item${isActive ? " is-active" : ""}`}
+          >
+            {item.icon && <item.icon size={14} strokeWidth={1.6} aria-hidden />}
+            <span>{item.label}</span>
+          </NavLink>
+        ))
+      )}
     </div>
+  );
+}
+
+/* ============================================================
+   Mobile Bottom Bar
+   ============================================================ */
+
+function BottomBar({ activeModuleId, unreadCount, onMoreClick }) {
+  const tabs = [
+    { id: "dashboard", href: "/", label: "Dash", icon: LayoutDashboard, end: true },
+    { id: "students", href: "/students", label: "Students", icon: GraduationCap },
+    { id: "calendar", href: "/calendar", label: "Calendar", icon: Calendar },
+    { id: "messaging", href: "/messaging", label: "Msg", icon: MessageSquare },
+  ];
+
+  return (
+    <nav className="bottom-bar" role="navigation" aria-label="Primary navigation">
+      {tabs.map((tab) => {
+        const isActive = tab.id === activeModuleId;
+        const badge = tab.id === "messaging" && unreadCount > 0;
+        return (
+          <NavLink
+            key={tab.id}
+            to={tab.href}
+            end={tab.end}
+            className={`bottom-bar__item${isActive ? " is-active" : ""}`}
+          >
+            <div className="bottom-bar__icon-wrap">
+              <tab.icon size={20} strokeWidth={1.8} aria-hidden />
+              {badge && <span className="bottom-bar__badge" aria-label={`${unreadCount} unread messages`} />}
+            </div>
+            <span className="bottom-bar__label">{tab.label}</span>
+          </NavLink>
+        );
+      })}
+      <button
+        type="button"
+        className="bottom-bar__item"
+        onClick={onMoreClick}
+        aria-label="More navigation"
+      >
+        <MoreHorizontal size={20} strokeWidth={1.8} aria-hidden />
+        <span className="bottom-bar__label">More</span>
+      </button>
+    </nav>
+  );
+}
+
+/* ============================================================
+   Mobile Bottom Sheet
+   ============================================================ */
+
+function BottomSheet({
+  isOpen,
+  onClose,
+  visiblePrimary,
+  visibleOperations,
+  visibleInsights,
+  visibleAdmin,
+  pinnedWithIcons,
+  expandedModules,
+  expandedGroups: _expandedGroups,
+  onToggleModule,
+  onToggleGroup: _onToggleGroup,
+  activeModuleId,
+  isSearching,
+  searchQuery,
+  setSearchQuery,
+  closeOnMobileNav,
+  unreadCount,
+  schoolName,
+  currentAcademicYear,
+}) {
+  const sheetRef = useRef(null);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const handler = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (!isOpen || !sheetRef.current) return;
+    const first = sheetRef.current.querySelector("input, a, button");
+    first?.focus();
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  return (
+    <>
+      <div className="bottom-sheet__scrim" onClick={onClose} aria-hidden="true" />
+      <div
+        ref={sheetRef}
+        className="bottom-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Navigation"
+      >
+        <div className="bottom-sheet__handle" aria-hidden="true" />
+
+        {/* Brand */}
+        <div className="bottom-sheet__brand">
+          <div className="brand-mark" aria-hidden>
+            <GraduationCap size={14} strokeWidth={2} />
+          </div>
+          <div className="brand-text">
+            <span className="brand-name">{schoolName}</span>
+            {currentAcademicYear && <span className="brand-sub">{currentAcademicYear}</span>}
+          </div>
+        </div>
+
+        {/* Search */}
+        <div className="bottom-sheet__search">
+          <Search size={14} className="text-fg-faint flex-shrink-0" aria-hidden />
+          <input
+            type="text"
+            placeholder="Search pages…"
+            className="sidebar__search-input"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            aria-label="Search navigation"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              className="sidebar__search-clear"
+              onClick={() => setSearchQuery("")}
+              aria-label="Clear search"
+            >
+              <X size={14} aria-hidden />
+            </button>
+          )}
+        </div>
+
+        {/* Nav */}
+        <div className="bottom-sheet__body">
+          {!isSearching && <div className="sidebar__heading">Workspace</div>}
+
+          {visiblePrimary.map((module) => {
+            const isExpanded = isSearching || expandedModules[module.id] || activeModuleId === module.id;
+            return (
+              <React.Fragment key={module.id}>
+                <ParentModule
+                  module={module}
+                  collapsed={false}
+                  onNav={closeOnMobileNav}
+                  expanded={isExpanded}
+                  onToggle={() => onToggleModule(module.id)}
+                  unreadCount={unreadCount}
+                />
+                {isExpanded && module.children && (
+                  <div className="sidebar__group-body" id={`nav-children-${module.id}`}>
+                    {module.children.map((child) => (
+                      <ChildItem
+                        key={child.href}
+                        to={child.href}
+                        icon={child.icon}
+                        label={child.label}
+                        onNav={closeOnMobileNav}
+                        collapsed={false}
+                      />
+                    ))}
+                  </div>
+                )}
+              </React.Fragment>
+            );
+          })}
+
+          {pinnedWithIcons.length > 0 && (
+            <>
+              <div className="sidebar__heading sidebar__heading--spaced">Pinned</div>
+              {pinnedWithIcons.map((item, i) => (
+                <NavLink
+                  key={`pin-${item.href}-${i}`}
+                  to={item.href}
+                  onClick={closeOnMobileNav}
+                  className={({ isActive }) =>
+                    `sidebar__item${isActive ? " is-active" : ""}`
+                  }
+                >
+                  {item.icon ? (
+                    <item.icon size={15} strokeWidth={1.6} aria-hidden />
+                  ) : (
+                    <span className="dot" style={{ color: "var(--info)" }} aria-hidden />
+                  )}
+                  <span className="sidebar__label">{item.label}</span>
+                </NavLink>
+              ))}
+            </>
+          )}
+
+          <NavGroup
+            heading="Operations"
+            items={visibleOperations}
+            collapsed={false}
+            onNav={closeOnMobileNav}
+            defaultExpanded={false}
+            forceExpanded={isSearching}
+            searchQuery={isSearching ? searchQuery : ""}
+          />
+          <NavGroup
+            heading="Insights"
+            items={visibleInsights}
+            collapsed={false}
+            onNav={closeOnMobileNav}
+            defaultExpanded={false}
+            forceExpanded={isSearching}
+            searchQuery={isSearching ? searchQuery : ""}
+          />
+          <NavGroup
+            heading="Administration"
+            items={visibleAdmin}
+            collapsed={false}
+            onNav={closeOnMobileNav}
+            defaultExpanded={false}
+            forceExpanded={isSearching}
+            searchQuery={isSearching ? searchQuery : ""}
+          />
+
+          {isSearching &&
+            visiblePrimary.length === 0 &&
+            visibleOperations.length === 0 &&
+            visibleInsights.length === 0 &&
+            visibleAdmin.length === 0 &&
+            pinnedWithIcons.length === 0 && (
+              <div className="sidebar__empty">No pages match &ldquo;{searchQuery}&rdquo;</div>
+            )}
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -355,6 +608,17 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
   const [flyout, setFlyout] = useState(null);
   const flyoutTimeoutRef = useRef(null);
   const sidebarRef = useRef(null);
+
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches
+  );
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mql = window.matchMedia("(max-width: 767px)");
+    const handler = (e) => setIsMobile(e.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
 
   // Auto-expand active module & group on route change
   useEffect(() => {
@@ -404,11 +668,11 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
     }
   }, [setIsSidebarOpen]);
 
-  const showFlyout = useCallback((el, items, title) => {
+  const showFlyout = useCallback((el, items, title, groups) => {
     clearTimeout(flyoutTimeoutRef.current);
     flyoutTimeoutRef.current = setTimeout(() => {
       const rect = el.getBoundingClientRect();
-      setFlyout({ rect, items, title });
+      setFlyout({ rect, items, title, groups });
     }, 150);
   }, []);
 
@@ -474,28 +738,30 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
 
   return (
     <>
-      {/* Mobile backdrop overlay */}
-      {isSidebarOpen && (
-        <button
-          type="button"
-          tabIndex={-1}
-          aria-label="Close navigation"
-          className="sidebar__backdrop"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
+      {/* Desktop sidebar */}
+      {!isMobile && (
+        <>
+          {isSidebarOpen && (
+            <button
+              type="button"
+              tabIndex={-1}
+              aria-label="Close navigation"
+              className="sidebar__backdrop"
+              onClick={() => setIsSidebarOpen(false)}
+            />
+          )}
 
-      <aside
-        ref={sidebarRef}
-        data-tour="sidebar"
-        role="navigation"
-        aria-label="Main navigation"
-        className={`sidebar ${collapsed ? "sidebar--rail" : ""} fixed left-0 top-0 h-screen z-50 transition-transform duration-200 ${
-          isSidebarOpen
-            ? "w-[var(--sidebar-w)]"
-            : "w-[var(--sidebar-w-collapsed)] max-md:-translate-x-full"
-        }`}
-      >
+          <aside
+            ref={sidebarRef}
+            data-tour="sidebar"
+            role="navigation"
+            aria-label="Main navigation"
+            className={`sidebar ${collapsed ? "sidebar--rail" : ""} fixed left-0 top-0 h-screen z-50 transition-transform duration-200 ${
+              isSidebarOpen
+                ? "w-[var(--sidebar-w)]"
+                : "w-[var(--sidebar-w-collapsed)]"
+            }`}
+          >
         {/* Brand */}
         <div className="sidebar__brand">
           <div className="brand-mark" aria-hidden>
@@ -593,8 +859,7 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
             <>
               <div
                 data-coach="sidebar-pin"
-                className="sidebar__heading"
-                className="sidebar__heading--spaced"
+                className="sidebar__heading sidebar__heading--spaced"
               >
                 Pinned
               </div>
@@ -694,10 +959,7 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
                   { title: "Insights", items: INSIGHTS },
                   { title: "Administration", items: ADMINISTRATION },
                 ];
-                const flatItems = allTiered.flatMap((g) =>
-                  g.items.map((i) => ({ ...i, groupTitle: g.title }))
-                );
-                showFlyout(e.currentTarget, flatItems, null);
+                showFlyout(e.currentTarget, null, null, allTiered);
               }}
               onMouseLeave={hideFlyout}
               onClick={() => setIsSidebarOpen(true)}
@@ -729,12 +991,56 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
           rect={flyout.rect}
           title={flyout.title}
           items={flyout.items}
+          groups={flyout.groups}
           onNav={() => {
             closeOnMobileNav();
             clearFlyout();
           }}
           onClose={hideFlyout}
           onMouseEnter={keepFlyoutOpen}
+        />
+      )}
+        </>
+      )}
+
+      {/* Mobile bottom tab bar */}
+      {isMobile && (
+        <BottomBar
+          activeModuleId={activeModuleId}
+          unreadCount={unreadCount}
+          onMoreClick={() => setIsSidebarOpen((v) => !v)}
+        />
+      )}
+
+      {/* Mobile bottom sheet ("More" nav) */}
+      {isMobile && (
+        <BottomSheet
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+          visiblePrimary={visiblePrimary}
+          visibleOperations={visibleOperations}
+          visibleInsights={visibleInsights}
+          visibleAdmin={visibleAdmin}
+          pinnedWithIcons={pinnedWithIcons}
+          expandedModules={expandedModules}
+          expandedGroups={expandedGroups}
+          onToggleModule={(id) =>
+            setExpandedModules((prev) => ({ ...prev, [id]: !prev[id] }))
+          }
+          onToggleGroup={(key) =>
+            setExpandedGroups((prev) => ({ ...prev, [key]: !prev[key] }))
+          }
+          activeModuleId={activeModuleId}
+          isSearching={isSearching}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          closeOnMobileNav={() => {
+            setIsSidebarOpen(false);
+            setSearchQuery("");
+          }}
+          unreadCount={unreadCount}
+          schoolName={schoolName}
+          currentAcademicYear={currentAcademicYear}
         />
       )}
     </>

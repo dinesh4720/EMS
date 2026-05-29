@@ -241,11 +241,8 @@ function AuthenticatedApp() {
           </Suspense>
         )}
         <AiAssistantLayout>
-          <div className={`flex-1 flex flex-col ${(isStaffListPage || isStudentListPage) ? 'h-screen overflow-hidden' : 'min-h-screen'} transition-all duration-300 ${isSidebarOpen ? 'ml-[var(--sidebar-width)]' : 'ml-0 lg:ml-[var(--sidebar-width-collapsed)]'} relative z-10 bg-bg`}>
-            <Topbar
-              isSidebarOpen={isSidebarOpen}
-              onOpenMobileNav={() => setIsSidebarOpen(true)}
-            />
+          <div className={`flex-1 flex flex-col ${(isStaffListPage || isStudentListPage) ? 'h-screen overflow-hidden' : 'min-h-screen'} transition-all duration-300 ${isSidebarOpen ? 'ml-[var(--sidebar-width)]' : 'ml-0 lg:ml-[var(--sidebar-width-collapsed)]'} relative z-10 bg-bg max-md:pb-[var(--bottom-bar-h)]`}>
+            <Topbar isSidebarOpen={isSidebarOpen} />
             <div className="mt-11 flex-1 flex flex-col min-h-0">
               <Suspense fallback={null}>
                 <TrialBanner />
