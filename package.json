@@ -35,7 +35,8 @@
     "expo": "^55.0.25",
     "react-dom": "^19.2.6",
     "three": "^0.176.0",
-    "utf-8-validate": "^6.0.6"
+    "utf-8-validate": "^6.0.6",
+    "@react-native/js-polyfills": "0.76.9"
   },
   "devDependencies": {
     "@types/react": "~19.1.10",
