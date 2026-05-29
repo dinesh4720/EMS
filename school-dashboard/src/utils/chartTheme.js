@@ -64,7 +64,7 @@ export function useChartTheme() {
       borderRadius: 'var(--r-lg)',
       boxShadow: 'var(--shadow-md)',
       color: 'var(--fg)',
-      fontSize: '12px',
+      fontSize: 'var(--fs-12)',
     },
     tooltipItemStyle: {
       color: 'var(--fg-muted)',

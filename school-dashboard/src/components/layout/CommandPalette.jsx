@@ -54,7 +54,7 @@ const PAGES = [
   { id: "fees", label: "Fees", to: "/fees", icon: Wallet },
   { id: "messaging", label: "Messaging", to: "/messaging", icon: MessageSquare },
   { id: "calendar", label: "Calendar", to: "/calendar", icon: Calendar },
-  { id: "front-desk", label: "Front Desk", to: "/front-desk", icon: DoorOpen },
+  { id: "front-desk", label: "Front desk", to: "/front-desk", icon: DoorOpen },
   { id: "reports", label: "Reports", to: "/reports", icon: BarChart3 },
   { id: "library", label: "Library", to: "/library", icon: Library },
   { id: "inventory", label: "Inventory", to: "/inventory", icon: Package },

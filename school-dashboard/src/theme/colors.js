@@ -117,7 +117,7 @@ export const chartSeries = [
   'oklch(56% 0.19 270)', // indigo (accent)
   'oklch(60% 0.14 240)', // blue
   'oklch(58% 0.14 150)', // green
-  'oklch(65% 0.15 75)',  // amber — WCAG 3:1 on light surfaces
+  'oklch(60% 0.15 75)',  // amber — WCAG 3:1 on light surfaces
   'oklch(60% 0.18 320)', // magenta
 ];
 
@@ -135,7 +135,7 @@ export const chartSeriesVars = [
 // to a status (paid/pending/overdue, present/absent, etc.).
 export const chartStatus = {
   ok: 'oklch(58% 0.14 150)',
-  warn: 'oklch(65% 0.15 75)',
+  warn: 'oklch(60% 0.15 75)',
   danger: 'oklch(58% 0.2 25)',
   info: 'oklch(60% 0.14 240)',
   accent: 'oklch(56% 0.19 270)',
