@@ -71,11 +71,11 @@ export default function ExamsTable({ rows = [], onEnterResults }) {
             </span>
             <span className="subtle">{e.subject || "—"}</span>
             <span className="subtle">{className}</span>
-            <span className="mono tnum" style={{ fontSize: 12, color: "var(--fg-muted)" }}>
+            <span className="mono tnum text-xs text-fg-muted">
               {fmtDate(e.date)}
             </span>
             <span><StatusPill status={status} /></span>
-            <span className="academics-table__action row gap-1" style={{ justifyContent: "flex-end" }}>
+            <span className="academics-table__action row gap-1 justify-end">
               {status === "results_published" ? (
                 <Link to={`/academics/exam-detail/${id}`} className="btn btn--sm">
                   View results

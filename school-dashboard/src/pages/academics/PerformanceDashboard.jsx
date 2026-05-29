@@ -12,7 +12,7 @@ import {
 import { examsApi, academicPerformanceApi } from '../../services/api';
 import { useApp } from '../../context/AppContext';
 import FiltersDropdown from '../../components/FiltersDropdown';
-import { MinimalButton } from '../../components/ui';
+import { MinimalButton, PageShell } from '../../components/ui';
 import { getAcademicYearOptions } from '../../utils/constants';
 import { useChartTheme, CHART_COLORS } from '../../utils/chartTheme';
 import { useTranslation } from 'react-i18next';
@@ -310,27 +310,32 @@ const PerformanceDashboard = ({ onCreateExam }) => {
 
   if (loading) {
     return (
-      <TablePageSkeleton />
+      <PageShell title="Performance Dashboard">
+        <TablePageSkeleton />
+      </PageShell>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Filters */}
-      <div className="flex items-center justify-end gap-4">
-        <FiltersDropdown
-          filters={filterConfig}
-          onFilterChange={handleFilterChange}
-          onClearAll={handleClearFilters}
-          activeFiltersCount={activeFiltersCount}
-        />
-        <MinimalButton variant="ghost" icon={<Download size={16} />} onClick={handleExportReport}>
-          Export Report
-        </MinimalButton>
-      </div>
-
+    <PageShell
+      title="Performance Dashboard"
+      actions={
+        <div className="flex items-center gap-3">
+          <FiltersDropdown
+            filters={filterConfig}
+            onFilterChange={handleFilterChange}
+            onClearAll={handleClearFilters}
+            activeFiltersCount={activeFiltersCount}
+          />
+          <MinimalButton variant="ghost" icon={<Download size={16} />} onClick={handleExportReport}>
+            Export Report
+          </MinimalButton>
+        </div>
+      }
+    >
+      <div className="space-y-6">
       {/* KPI strip — dp-metric */}
-      <div className="perf-metrics" style={{ gridTemplateColumns: 'repeat(6, 1fr)' }} role="group" aria-label="Performance overview">
+      <div className="perf-metrics perf-metrics--6" role="group" aria-label="Performance overview">
         <div className="dp-metric">
           <span className="dp-metric__label">{t('pages.totalExams')}</span>
           <span className="dp-metric__value tnum">{stats.totalExams}</span>
@@ -421,7 +426,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
             {filteredTopPerformers.length > 0 ? (
               <div className="space-y-3">
                 {filteredTopPerformers.slice(0, 5).map((student, idx) => (
-                  <div key={student.studentId || idx} className="flex items-center justify-between p-3 rounded-lg" style={{ background: 'var(--surface-2)' }}>
+                  <div key={student.studentId || idx} className="flex items-center justify-between p-3 rounded-lg bg-surface-2">
                     <div className="flex items-center gap-3">
                       <span
                         className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs tnum"
@@ -593,7 +598,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
           )}
         </div>
       </div>
-    </div>
+    </PageShell>
   );
 };
 
