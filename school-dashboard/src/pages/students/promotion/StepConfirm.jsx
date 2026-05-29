@@ -82,15 +82,15 @@ export default function StepConfirm({ onNext, onBack, wizardState, setWizardStat
   return (
     <div className="space-y-4">
       {/* Warning banner */}
-      <Card shadow="sm" className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800">
+      <Card shadow="sm" className="bg-warn-bg border-warn">
         <CardBody className="p-4">
           <div className="flex items-start gap-3">
-            <AlertTriangle size={18} className="text-yellow-600 dark:text-yellow-400 mt-0.5 shrink-0" />
+            <AlertTriangle size={18} className="text-warn mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+              <p className="text-sm font-medium text-warn">
                 Confirm Year-End Promotion
               </p>
-              <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
+              <p className="text-xs text-warn mt-1">
                 This will move students from <span className="mono tnum">{fromYear}</span> to{' '}
                 <span className="mono tnum">{toYear}</span>. Fee structures will be reset and new ones created.
                 You can rollback this operation from the History tab if needed.
@@ -183,7 +183,6 @@ export default function StepConfirm({ onNext, onBack, wizardState, setWizardStat
         </Button>
         <Button
           color="primary"
-          className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900"
           onPress={openConfirmModal}
           isLoading={executing}
           startContent={!executing && <ArrowUpCircle size={16} />}
@@ -202,8 +201,8 @@ export default function StepConfirm({ onNext, onBack, wizardState, setWizardStat
         <ModalContent>
           <ModalHeader className="border-b border-divider py-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-100 dark:bg-red-950 rounded-lg">
-                <AlertTriangle size={18} className="text-red-600 dark:text-red-400" />
+              <div className="p-2 bg-danger-bg rounded-lg">
+                <AlertTriangle size={18} className="text-danger-token" />
               </div>
               <h3 className="text-base font-medium text-fg">
                 Confirm Year-End Promotion
@@ -218,7 +217,7 @@ export default function StepConfirm({ onNext, onBack, wizardState, setWizardStat
               current-year fee structures. This action cannot be undone without a rollback.
             </p>
             <p className="text-sm text-fg-muted">
-              Type <strong className="text-red-600 dark:text-red-400">{CONFIRM_PHRASE}</strong> to proceed:
+              Type <strong className="text-danger-token">{CONFIRM_PHRASE}</strong> to proceed:
             </p>
             <Input
               autoFocus

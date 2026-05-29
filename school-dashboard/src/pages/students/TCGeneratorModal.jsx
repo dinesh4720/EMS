@@ -223,7 +223,7 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
                     .decoration-2 { text-decoration-thickness: 2px; }
                     .underline-offset-2 { text-underline-offset: 2px; }
                     .bg-white { background-color: #fff; }
-                    .bg-gray-200 { background-color: #e5e7eb; }
+                    .bg-surface-2 { background-color: #e5e7eb; }
                     .text-black { color: #000; }
                     .rounded-full { border-radius: 9999px; }
                     .border-2 { border-width: 2px; }

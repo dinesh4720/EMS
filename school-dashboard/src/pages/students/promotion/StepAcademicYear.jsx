@@ -135,7 +135,7 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
               value={fromYear}
               onChange={(e) => handleFromYearChange(e.target.value)}
               variant="bordered"
-              classNames={{ inputWrapper: 'dark:border-zinc-700', input: 'font-mono' }}
+              classNames={{ input: 'font-mono' }}
               description={isValidFormat(fromYear) ? '' : 'Format: YYYY-YY'}
             />
             <div className="flex gap-2 items-start">
@@ -146,7 +146,7 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
                 onChange={(e) => handleToYearChange(e.target.value)}
                 variant="bordered"
                 className="flex-1"
-                classNames={{ inputWrapper: 'dark:border-zinc-700', input: 'font-mono' }}
+                classNames={{ input: 'font-mono' }}
                 description={isValidFormat(toYear) ? '' : 'Format: YYYY-YY'}
               />
               <Button
@@ -168,7 +168,7 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
       {checking && (
         <Card shadow="sm" className="bg-surface-2 border border-border-token">
           <CardBody className="p-4 flex items-center gap-3">
-            <Loader2 size={16} className="animate-spin text-gray-400" />
+            <Loader2 size={16} className="animate-spin text-fg-faint" />
             <p className="text-sm text-fg-muted">Checking target year classes…</p>
           </CardBody>
         </Card>
@@ -179,17 +179,17 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
           shadow="sm"
           className={`border ${
             targetYearStatus.exists
-              ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800'
-              : 'bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-800'
+              ? 'bg-ok-bg border-ok'
+              : 'bg-warn-bg border-warn'
           }`}
         >
           <CardBody className="p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3">
                 {targetYearStatus.exists ? (
-                  <CheckCircle size={18} className="text-green-600 dark:text-green-400 mt-0.5" />
+                  <CheckCircle size={18} className="text-ok mt-0.5" />
                 ) : (
-                  <AlertTriangle size={18} className="text-yellow-600 dark:text-yellow-400 mt-0.5" />
+                  <AlertTriangle size={18} className="text-warn mt-0.5" />
                 )}
                 <div>
                   <p className="text-sm font-medium text-fg">
@@ -207,7 +207,8 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
               {!targetYearStatus.exists && (
                 <Button
                   size="sm"
-                  className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shrink-0"
+                  color="primary"
+                  className="shrink-0"
                   onPress={handlePrepareYear}
                   isLoading={preparing}
                 >
@@ -231,7 +232,7 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
               <Button
                 size="sm"
                 variant="light"
-                className="text-xs text-blue-600 dark:text-blue-400"
+                className="text-xs text-info-token"
                 onPress={() => navigate('/settings/promotion-rules')}
               >
                 Edit rules
@@ -253,7 +254,7 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
       <div className="promo-foot">
         <div style={{ flex: 1 }} />
         <Button
-          className="bg-gray-900 dark:bg-zinc-100 text-white dark:text-zinc-900"
+          color="primary"
           onPress={handleNext}
           isDisabled={!targetYearStatus?.exists || !isValidFormat(fromYear) || !isValidFormat(toYear)}
         >

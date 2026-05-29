@@ -340,7 +340,7 @@ export default function CertificateModal({
                 {schoolInfo?.name || "School Name"}
               </div>
               {schoolInfo?.address ? (
-                <div style={{ fontSize: 13, color: "#4b5563", marginTop: 4 }}>
+                <div style={{ fontSize: 13, color: "var(--fg-muted)", marginTop: 4 }}>
                   {schoolInfo.address}
                 </div>
               ) : null}
@@ -419,10 +419,10 @@ export default function CertificateModal({
               }}
             >
               <div>
-                <p style={{ fontSize: 13, color: "#4b5563", margin: 0 }}>
+                <p style={{ fontSize: 13, color: "var(--fg-muted)", margin: 0 }}>
                   Date: {today}
                 </p>
-                <p style={{ fontSize: 13, color: "#4b5563", marginTop: 4 }}>
+                <p style={{ fontSize: 13, color: "var(--fg-muted)", marginTop: 4 }}>
                   Place: ___________
                 </p>
               </div>

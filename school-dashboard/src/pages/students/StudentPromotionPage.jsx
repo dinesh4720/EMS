@@ -281,7 +281,7 @@ export default function StudentPromotionPage() {
                               <span className="mono tnum">{rec.summary?.errors ?? 0}</span> failed
                             </p>
                             {isRolledback && rec.rollbackReason && (
-                              <p className="text-xs text-red-500 dark:text-red-400 mt-0.5">
+                              <p className="text-xs text-danger-token mt-0.5">
                                 Reason: {rec.rollbackReason}
                               </p>
                             )}
@@ -319,8 +319,8 @@ export default function StudentPromotionPage() {
         <ModalContent>
           <ModalHeader className="border-b border-divider py-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-100 dark:bg-red-950 rounded-lg">
-                <RotateCcw size={18} className="text-red-600" />
+              <div className="p-2 bg-danger-bg rounded-lg">
+                <RotateCcw size={18} className="text-danger-token" />
               </div>
               <h3 className="text-base font-medium text-fg">Rollback Promotion</h3>
             </div>
@@ -340,7 +340,7 @@ export default function StudentPromotionPage() {
               variant="bordered"
               size="sm"
             />
-            <p className="text-xs text-red-500 dark:text-red-400">
+            <p className="text-xs text-danger-token">
               Students will be moved back to their original classes and fee structures will be reset.
             </p>
           </ModalBody>
