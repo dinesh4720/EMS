@@ -1,12 +1,14 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Input, Button, Select, SelectItem, Chip, useDisclosure } from "@heroui/react";
-import { Plus, Search, BookOpen, BookUp } from "lucide-react";
+import { Plus, Search, BookOpen, BookUp, Printer } from "lucide-react";
 import { libraryApi } from "../../services/api";
 import toast from "react-hot-toast";
 import AddBookModal, { BOOK_CATEGORIES } from "./AddBookModal";
 import IssueBookModal from "./IssueBookModal";
 import { useTranslation } from 'react-i18next';
 import { ConfirmDialog, EmptyState, ErrorState, SkeletonTable } from '../../components/ui';
+import ExportMenu from '../../components/ui/ExportMenu';
+import PrintPreviewModal from '../../components/ui/PrintPreviewModal';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
 
 const CATEGORIES = [
@@ -23,7 +25,10 @@ export default function BooksList() {
   const [loadError, setLoadError] = useState(null);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
+  const [authorFilter, setAuthorFilter] = useState("all");
+  const [availabilityFilter, setAvailabilityFilter] = useState("all");
   const [page, setPage] = useState(1);
+  const [printOpen, setPrintOpen] = useState(false);
   const [editBook, setEditBook] = useState(null);
   const [issueBook, setIssueBook] = useState(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -48,6 +53,20 @@ export default function BooksList() {
       setLoading(false);
     }
   }, [search, category, page, t]);
+
+  const authors = useMemo(() => {
+    const set = new Set(books.map((b) => b.author).filter(Boolean));
+    return [...set].sort();
+  }, [books]);
+
+  const filteredBooks = useMemo(() => {
+    return books.filter((b) => {
+      if (authorFilter !== "all" && b.author !== authorFilter) return false;
+      if (availabilityFilter === "available" && b.availableCopies <= 0) return false;
+      if (availabilityFilter === "out-of-stock" && b.availableCopies > 0) return false;
+      return true;
+    });
+  }, [books, authorFilter, availabilityFilter]);
 
   useEffect(() => { fetchBooks(); }, [fetchBooks]);
 
@@ -108,7 +127,7 @@ export default function BooksList() {
     <div className="space-y-4">
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="flex gap-3 flex-1 w-full sm:w-auto">
+        <div className="flex gap-3 flex-1 w-full sm:w-auto flex-wrap">
           <Input
             placeholder={t('pages.searchBooks')}
             value={searchInput}
@@ -129,10 +148,56 @@ export default function BooksList() {
               <SelectItem key={cat.key}>{cat.label}</SelectItem>
             ))}
           </Select>
+          <Select
+            selectedKeys={[authorFilter]}
+            onSelectionChange={(keys) => { setAuthorFilter([...keys][0]); setPage(1); }}
+            size="sm"
+            className="max-w-[180px]"
+            aria-label="Filter by author"
+          >
+            <SelectItem key="all">All Authors</SelectItem>
+            {authors.map((a) => (
+              <SelectItem key={a}>{a}</SelectItem>
+            ))}
+          </Select>
+          <Select
+            selectedKeys={[availabilityFilter]}
+            onSelectionChange={(keys) => { setAvailabilityFilter([...keys][0]); setPage(1); }}
+            size="sm"
+            className="max-w-[180px]"
+            aria-label="Filter by availability"
+          >
+            <SelectItem key="all">All Availability</SelectItem>
+            <SelectItem key="available">Available</SelectItem>
+            <SelectItem key="out-of-stock">Out of Stock</SelectItem>
+          </Select>
         </div>
-        <Button size="sm" color="primary" startContent={<Plus size={16} />} onPress={handleAdd}>
-          {t('pages.addBook')}
-        </Button>
+        <div className="flex gap-2">
+          <ExportMenu
+            rows={filteredBooks}
+            columns={[
+              { key: "title", label: "Title" },
+              { key: "author", label: "Author" },
+              { key: "category", label: "Category" },
+              { key: "totalCopies", label: "Total Copies" },
+              { key: "availableCopies", label: "Available" },
+              { key: "isbn", label: "ISBN" },
+            ]}
+            filename="books-catalog"
+            title="Books Catalog"
+          />
+          <button
+            type="button"
+            className="btn btn--sm"
+            onClick={() => setPrintOpen(true)}
+            aria-label="Print preview"
+          >
+            <Printer size={14} aria-hidden />
+          </button>
+          <Button size="sm" color="primary" startContent={<Plus size={16} />} onPress={handleAdd}>
+            {t('pages.addBook')}
+          </Button>
+        </div>
       </div>
 
       {/* Content */}
@@ -140,7 +205,7 @@ export default function BooksList() {
         <SkeletonTable rows={6} columns={7} />
       ) : loadError ? (
         <ErrorState error={loadError} onRetry={fetchBooks} />
-      ) : books.length === 0 ? (
+      ) : filteredBooks.length === 0 ? (
         <EmptyState
           icon={BookOpen}
           title={t('pages.noBooksFound')}
@@ -166,7 +231,7 @@ export default function BooksList() {
                 </tr>
               </thead>
               <tbody>
-                {books.map((book) => (
+                {filteredBooks.map((book) => (
                   <tr key={book._id} className="border-b border-divider last:border-0 hover:bg-surface-2/50 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
@@ -202,9 +267,9 @@ export default function BooksList() {
             </table>
           </div>
 
-          {totalPages > 1 && (
+          {(totalPages > 1 || authorFilter !== "all" || availabilityFilter !== "all") && (
             <div className="flex items-center justify-between px-4 py-3 border-t border-divider">
-              <p className="text-sm text-fg-muted">{t('pages.booksTotal', { count: total })}</p>
+              <p className="text-sm text-fg-muted">{filteredBooks.length} of {total} books</p>
               <div className="flex gap-1 items-center">
                 <Button size="sm" variant="flat" isDisabled={page <= 1} onPress={() => setPage(page - 1)}>{t('pages.prev')}</Button>
                 <span className="text-sm text-fg-muted px-2">{page} / {totalPages}</span>
@@ -219,6 +284,40 @@ export default function BooksList() {
       <IssueBookModal isOpen={isIssueOpen} onClose={() => { onIssueClose(); setIssueBook(null); }} book={issueBook} onSaved={handleIssued} />
 
       <ConfirmDialog {...confirmState} onClose={closeConfirm} />
+
+      <PrintPreviewModal
+        isOpen={printOpen}
+        onClose={() => setPrintOpen(false)}
+        title="Books Catalog"
+      >
+        <div className="p-6">
+          <h1 className="text-lg font-semibold mb-4">Books Catalog</h1>
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-2 px-3">Title</th>
+                <th className="text-left py-2 px-3">Author</th>
+                <th className="text-left py-2 px-3">Category</th>
+                <th className="text-left py-2 px-3">Total Copies</th>
+                <th className="text-left py-2 px-3">Available</th>
+                <th className="text-left py-2 px-3">ISBN</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredBooks.map((book) => (
+                <tr key={book._id} className="border-b">
+                  <td className="py-2 px-3">{book.title}</td>
+                  <td className="py-2 px-3">{book.author}</td>
+                  <td className="py-2 px-3">{book.category || "other"}</td>
+                  <td className="py-2 px-3">{book.totalCopies}</td>
+                  <td className="py-2 px-3">{book.availableCopies}</td>
+                  <td className="py-2 px-3">{book.isbn || "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </PrintPreviewModal>
     </div>
   );
 }

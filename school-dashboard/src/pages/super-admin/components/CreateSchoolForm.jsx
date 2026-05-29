@@ -31,24 +31,28 @@ export default function CreateSchoolForm({ form, updateForm, onSubmit, submittin
 
         <Input
           label={t('pages.schoolName2')}
+          placeholder={t('pages.schoolName2')}
           required
           value={form.schoolName}
           onChange={(e) => updateForm('schoolName', e.target.value)}
         />
         <Input
           label={t('pages.schoolCodeOptional')}
+          placeholder={t('pages.schoolCodeOptional')}
           value={form.schoolCode}
           onChange={(e) => updateForm('schoolCode', e.target.value)}
         />
         <div className="grid gap-4 md:grid-cols-2">
           <Input
             label={t('pages.contactEmail')}
+            placeholder={t('pages.contactEmail')}
             type="email"
             value={form.contactEmail}
             onChange={(e) => updateForm('contactEmail', e.target.value)}
           />
           <Input
             label={t('pages.contactPhone')}
+            placeholder={t('pages.contactPhone')}
             value={form.contactPhone}
             onChange={(e) => updateForm('contactPhone', e.target.value)}
           />
@@ -69,12 +73,14 @@ export default function CreateSchoolForm({ form, updateForm, onSubmit, submittin
         </div>
         <Input
           label={t('pages.adminFullName')}
+          placeholder={t('pages.adminFullName')}
           required
           value={form.adminName}
           onChange={(e) => updateForm('adminName', e.target.value)}
         />
         <Input
           label={t('pages.adminEmail')}
+          placeholder={t('pages.adminEmail')}
           type="email"
           required
           value={form.adminEmail}
@@ -82,6 +88,7 @@ export default function CreateSchoolForm({ form, updateForm, onSubmit, submittin
         />
         <Input
           label={t('pages.adminPasswordOptional')}
+          placeholder={t('pages.adminPasswordOptional')}
           type="password"
           minLength={8}
           maxLength={50}
@@ -91,11 +98,13 @@ export default function CreateSchoolForm({ form, updateForm, onSubmit, submittin
         <div className="grid gap-4 md:grid-cols-2">
           <Input
             label={t('pages.frontendUrl')}
+            placeholder={t('pages.frontendUrl')}
             value={form.frontendUrl}
             onChange={(e) => updateForm('frontendUrl', e.target.value)}
           />
           <Input
             label={t('pages.backendUrl')}
+            placeholder={t('pages.backendUrl')}
             value={form.backendUrl}
             onChange={(e) => updateForm('backendUrl', e.target.value)}
           />

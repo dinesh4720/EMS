@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Search, Building2, Edit2, Trash2, Users, DoorOpen } from "lucide-react";
+import { Plus, Search, Building2, Edit2, Trash2, Users, DoorOpen, Printer } from "lucide-react";
 import Input from "../../components/ui/Input";
 import Select from "../../components/ui/Select";
 import Button from "../../components/ui/Button";
@@ -12,6 +12,8 @@ import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { ConfirmDialog, EmptyState, ErrorState } from '../../components/ui';
+import ExportMenu from '../../components/ui/ExportMenu';
+import PrintPreviewModal from '../../components/ui/PrintPreviewModal';
 import { hostelSchema, parseFormSchema } from '../../validators/formSchemas';
 
 const INITIAL_FORM = {
@@ -27,6 +29,8 @@ export default function HostelList() {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
+  const [occupancyFilter, setOccupancyFilter] = useState("all");
+  const [printOpen, setPrintOpen] = useState(false);
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [errors, setErrors] = useState({});
   const [editingId, setEditingId] = useState(null);
@@ -150,6 +154,16 @@ export default function HostelList() {
     return hostel.wardenName || '';
   };
 
+  const filteredHostels = hostels.filter((h) => {
+    if (occupancyFilter === "all") return true;
+    const occupied = h.occupiedBeds || 0;
+    const capacity = h.totalCapacity || 0;
+    if (occupancyFilter === "full") return capacity > 0 && occupied >= capacity;
+    if (occupancyFilter === "partial") return occupied > 0 && occupied < capacity;
+    if (occupancyFilter === "empty") return occupied === 0;
+    return true;
+  });
+
   if (isLoading) return <CardGridPageSkeleton title={false} cards={6} columns="grid-cols-1 md:grid-cols-2 lg:grid-cols-3" />;
 
   if (loadError) {
@@ -160,7 +174,7 @@ export default function HostelList() {
     <div className="space-y-4">
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="flex gap-3 flex-1">
+        <div className="flex gap-3 flex-1 flex-wrap">
           <Input
             placeholder={t('pages.searchHostels')}
             startContent={<Search size={16} className="text-fg-faint" />}
@@ -176,18 +190,54 @@ export default function HostelList() {
             className="max-w-[150px]"
             size="sm"
           >
+            <option value="">{t('pages.allTypes1')}</option>
             <option value="boys">{t('pages.boys')}</option>
             <option value="girls">{t('pages.girls')}</option>
             <option value="mixed">{t('pages.mixed')}</option>
           </Select>
+          <Select
+            placeholder="Occupancy"
+            value={occupancyFilter}
+            onChange={(e) => setOccupancyFilter(e.target.value)}
+            className="max-w-[150px]"
+            size="sm"
+          >
+            <option value="all">All Occupancy</option>
+            <option value="full">Full</option>
+            <option value="partial">Partial</option>
+            <option value="empty">Empty</option>
+          </Select>
         </div>
-        <Button variant="primary" icon={<Plus size={16} />} onClick={handleAdd} size="sm">
-          Add Hostel
-        </Button>
+        <div className="flex gap-2">
+          <ExportMenu
+            rows={filteredHostels}
+            columns={[
+              { key: "name", label: "Name" },
+              { key: "type", label: "Type" },
+              { key: "totalRooms", label: "Rooms" },
+              { key: "occupiedBeds", label: "Occupied" },
+              { key: "totalCapacity", label: "Capacity" },
+              { key: "warden", label: "Warden", accessor: (h) => getWardenName(h) || "—" },
+            ]}
+            filename="hostels"
+            title="Hostels"
+          />
+          <button
+            type="button"
+            className="btn btn--sm"
+            onClick={() => setPrintOpen(true)}
+            aria-label="Print preview"
+          >
+            <Printer size={14} aria-hidden />
+          </button>
+          <Button variant="primary" icon={<Plus size={16} />} onClick={handleAdd} size="sm">
+            Add Hostel
+          </Button>
+        </div>
       </div>
 
       {/* Hostel Cards */}
-      {hostels.length === 0 ? (
+      {filteredHostels.length === 0 ? (
         <EmptyState
           icon={Building2}
           title={t('pages.noHostelsFound')}
@@ -199,7 +249,7 @@ export default function HostelList() {
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {hostels.map((hostel) => (
+          {filteredHostels.map((hostel) => (
             <div key={hostel._id} className="bg-surface rounded-lg border border-border-token p-5 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between mb-3">
                 <div>
@@ -246,6 +296,40 @@ export default function HostelList() {
         confirmText="Delete"
         variant="danger"
       />
+
+      <PrintPreviewModal
+        isOpen={printOpen}
+        onClose={() => setPrintOpen(false)}
+        title="Hostels"
+      >
+        <div className="p-6">
+          <h1 className="text-lg font-semibold mb-4">Hostels</h1>
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-2 px-3">Name</th>
+                <th className="text-left py-2 px-3">Type</th>
+                <th className="text-left py-2 px-3">Rooms</th>
+                <th className="text-left py-2 px-3">Occupied</th>
+                <th className="text-left py-2 px-3">Capacity</th>
+                <th className="text-left py-2 px-3">Warden</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredHostels.map((hostel) => (
+                <tr key={hostel._id} className="border-b">
+                  <td className="py-2 px-3">{hostel.name}</td>
+                  <td className="py-2 px-3">{hostel.type}</td>
+                  <td className="py-2 px-3">{hostel.totalRooms || 0}</td>
+                  <td className="py-2 px-3">{hostel.occupiedBeds || 0}</td>
+                  <td className="py-2 px-3">{hostel.totalCapacity || 0}</td>
+                  <td className="py-2 px-3">{getWardenName(hostel) || "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </PrintPreviewModal>
 
       {/* Add/Edit Hostel Modal */}
       <Modal isOpen={isOpen} onClose={handleClose} size="xl" scrollBehavior="inside">

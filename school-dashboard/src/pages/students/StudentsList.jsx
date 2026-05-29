@@ -7,7 +7,9 @@ import {
 } from "react";
 import { useSearchParams } from "react-router-dom";
 // Translations removed — all text is plain English to match StaffList style
-import { Plus } from "lucide-react";
+import { Plus, Users, Printer } from "lucide-react";
+import EmptyState from "../../components/ui/EmptyState";
+import Pagination from "../../components/common/Pagination";
 import { useNavigate } from "react-router-dom";
 import { useStudentsListData } from "./hooks/useStudentsListData";
 import EditStudentDrawer from "./EditStudentDrawer";
@@ -19,6 +21,8 @@ import StudentsBulkModals from "./components/list/StudentsBulkModals";
 // Removed StudentsTableProvider — no longer needed with row-list layout
 import StudentListRow from "./StudentListRow";
 import StudentDetailPane from "./StudentDetailPane";
+import ExportMenu from "../../components/ui/ExportMenu";
+import PrintPreviewModal from "../../components/ui/PrintPreviewModal";
 import toast from "react-hot-toast";
 
 // Mobile breakpoint — below this the right pane collapses to a Drawer
@@ -178,16 +182,16 @@ export default function StudentsList({ onAddStudent }) {
 
   const moveSelection = useCallback(
     (delta) => {
-      if (visibleItems.length === 0) return;
-      const ids = visibleItems.map((st) => String(st.id || st._id));
+      if (paginatedItems.length === 0) return;
+      const ids = paginatedItems.map((st) => String(st.id || st._id));
       const currentIdx = ids.indexOf(selectedId);
       const nextIdx =
         currentIdx === -1
           ? delta > 0
             ? 0
-            : visibleItems.length - 1
-          : Math.min(visibleItems.length - 1, Math.max(0, currentIdx + delta));
-      const nextStudent = visibleItems[nextIdx];
+            : paginatedItems.length - 1
+          : Math.min(paginatedItems.length - 1, Math.max(0, currentIdx + delta));
+      const nextStudent = paginatedItems[nextIdx];
       if (!nextStudent) return;
       const nextId = String(nextStudent.id || nextStudent._id);
       setSelectedId(nextId);
@@ -196,7 +200,7 @@ export default function StudentsList({ onAddStudent }) {
         rowRefs.current.get(nextId)?.focus({ preventScroll: true });
       });
     },
-    [visibleItems, selectedId, setSelectedId]
+    [paginatedItems, selectedId, setSelectedId]
   );
 
   const handleListKeyDown = useCallback(
@@ -277,12 +281,38 @@ export default function StudentsList({ onAddStudent }) {
   const closeDetail = () => setSelectedId(null);
   const detailVisible = !!selectedStudentRecord;
 
+  // ============ Pagination ============
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(visibleItems.length / pageSize)),
+    [visibleItems.length, pageSize]
+  );
+
+  const paginatedItems = useMemo(
+    () => visibleItems.slice((page - 1) * pageSize, page * pageSize),
+    [visibleItems, page, pageSize]
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, statusFilter, activeFiltersCount]);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+
   const {
     csvFile, setCsvFile, csvDragActive, csvProcessing,
     validatedStudents, previewFilter, setPreviewFilter, importProgress,
     csvInputRef, handleCSVUpload, handleCsvFileSelect, handleCsvDrag, handleCsvDrop,
     processCsvUpload, importValidStudents, downloadStudentList, downloadSelectedStudents, downloadCsvTemplate,
   } = csvUpload;
+
+  const [printOpen, setPrintOpen] = useState(false);
 
   if (contextLoading || listLoading) {
     return <StudentsListSkeleton />;
@@ -319,14 +349,39 @@ export default function StudentsList({ onAddStudent }) {
               <span className="mono tnum">{students.length}</span>
             </div>
           </div>
-          <button
-            type="button"
-            className="btn btn--accent"
-            onClick={onAddStudent}
-          >
-            <Plus size={13} aria-hidden />
-            New Student
-          </button>
+          <div className="row gap-2">
+            <ExportMenu
+              rows={visibleItems}
+              columns={[
+                { key: "name", label: "Name" },
+                { key: "admissionNo", label: "Admission No", accessor: (s) => s.admissionNo || s.admissionNumber || "—" },
+                { key: "className", label: "Class", accessor: (s) => s.className || s.class || s.classSection || "—" },
+                { key: "rollNo", label: "Roll No", accessor: (s) => s.rollNo || s.rollNumber || "—" },
+                { key: "gender", label: "Gender", accessor: (s) => s.gender || "—" },
+                { key: "parentPhone", label: "Parent Phone", accessor: (s) => s.parentPhone || s.fatherPhone || s.motherPhone || "—" },
+                { key: "parentEmail", label: "Parent Email", accessor: (s) => s.parentEmail || s.fatherEmail || s.motherEmail || "—" },
+                { key: "status", label: "Status", accessor: (s) => s.status || "active" },
+              ]}
+              filename="students-list"
+              title="Students List"
+            />
+            <button
+              type="button"
+              className="btn btn--sm"
+              onClick={() => setPrintOpen(true)}
+              aria-label="Print preview"
+            >
+              <Printer size={14} aria-hidden />
+            </button>
+            <button
+              type="button"
+              className="btn btn--accent"
+              onClick={onAddStudent}
+            >
+              <Plus size={13} aria-hidden />
+              New Student
+            </button>
+          </div>
         </div>
 
         {/* Toolbar */}
@@ -376,14 +431,31 @@ export default function StudentsList({ onAddStudent }) {
           }}
         >
           {visibleItems.length === 0 ? (
-            <div
-              className="subtle"
-              style={{ padding: 32, textAlign: "center", fontSize: 13 }}
-            >
-              No students matched.
-            </div>
+            <EmptyState
+              icon={Users}
+              title={students.length === 0 ? "No students yet" : "No students matched"}
+              description={
+                students.length === 0
+                  ? "Get started by adding your first student."
+                  : activeFiltersCount > 0 || searchQuery
+                  ? "Try adjusting your filters or search query."
+                  : "No students found for the current view."
+              }
+              action={
+                students.length === 0 ? (
+                  <button type="button" className="btn btn--accent" onClick={onAddStudent}>
+                    <Plus size={13} aria-hidden /> New Student
+                  </button>
+                ) : (
+                  <button type="button" className="btn btn--ghost" onClick={clearAllFilters}>
+                    Clear filters
+                  </button>
+                )
+              }
+              size="md"
+            />
           ) : (
-            visibleItems.map((student) => {
+            paginatedItems.map((student) => {
               const id = String(student.id || student._id);
               return (
                 <StudentListRow
@@ -404,6 +476,37 @@ export default function StudentsList({ onAddStudent }) {
             })
           )}
         </div>
+
+        {/* Pagination footer */}
+        {visibleItems.length > 0 && (
+          <div
+            className="flex items-center justify-between px-4 py-2 border-t"
+            style={{ borderColor: "var(--divider)" }}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-sm" style={{ color: "var(--fg-muted)" }}>Show</span>
+              <select
+                className="select select--sm"
+                value={pageSize}
+                onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+                aria-label="Items per page"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+              <span className="text-sm" style={{ color: "var(--fg-muted)" }}>per page</span>
+            </div>
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              totalItems={visibleItems.length}
+              itemLabel="students"
+            />
+          </div>
+        )}
 
       </div>
 
@@ -528,6 +631,42 @@ export default function StudentsList({ onAddStudent }) {
       />
 
       <ScrollToTopButton />
+
+      <PrintPreviewModal
+        isOpen={printOpen}
+        onClose={() => setPrintOpen(false)}
+        title="Students List"
+      >
+        <div className="p-6">
+          <h1 className="text-lg font-semibold mb-4">Students List</h1>
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-2 px-3">Name</th>
+                <th className="text-left py-2 px-3">Admission No</th>
+                <th className="text-left py-2 px-3">Class</th>
+                <th className="text-left py-2 px-3">Roll No</th>
+                <th className="text-left py-2 px-3">Gender</th>
+                <th className="text-left py-2 px-3">Parent Phone</th>
+                <th className="text-left py-2 px-3">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visibleItems.map((s) => (
+                <tr key={s.id || s._id} className="border-b">
+                  <td className="py-2 px-3">{s.name}</td>
+                  <td className="py-2 px-3">{s.admissionNo || s.admissionNumber || "—"}</td>
+                  <td className="py-2 px-3">{s.className || s.class || s.classSection || "—"}</td>
+                  <td className="py-2 px-3">{s.rollNo || s.rollNumber || "—"}</td>
+                  <td className="py-2 px-3">{s.gender || "—"}</td>
+                  <td className="py-2 px-3">{s.parentPhone || s.fatherPhone || s.motherPhone || "—"}</td>
+                  <td className="py-2 px-3">{s.status || "active"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </PrintPreviewModal>
     </div>
   );
 }

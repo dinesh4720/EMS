@@ -1,15 +1,17 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   Input, Textarea, Select, SelectItem, Switch,
 } from "@heroui/react";
-import { Search, Plus, Edit3, Trash2, Phone, Mail, Truck } from "lucide-react";
+import { Search, Plus, Edit3, Trash2, Phone, Mail, Truck, Printer } from "lucide-react";
 import { MinimalButton, Card, Badge, EmptyState, ErrorState, IconButton } from "../../components/ui";
 import { inventoryApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import ExportMenu from '../../components/ui/ExportMenu';
+import PrintPreviewModal from '../../components/ui/PrintPreviewModal';
 
 const emptyForm = {
   name: "", contactPerson: "", phone: "", email: "", address: "", category: "", notes: "", isActive: true,
@@ -22,6 +24,9 @@ export default function Vendors() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [activeFilter, setActiveFilter] = useState("all");
+  const [printOpen, setPrintOpen] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -93,30 +98,88 @@ export default function Vendors() {
     setErrors((e) => ({ ...e, [key]: '' }));
   };
 
+  const categories = useMemo(() => {
+    const set = new Set(vendors.map((v) => v.category).filter(Boolean));
+    return [...set].sort();
+  }, [vendors]);
+
+  const filteredVendors = vendors.filter((v) => {
+    if (categoryFilter !== "all" && v.category !== categoryFilter) return false;
+    if (activeFilter === "active" && v.isActive === false) return false;
+    if (activeFilter === "inactive" && v.isActive !== false) return false;
+    return true;
+  });
+
   if (initialLoading) return <CardGridPageSkeleton title={false} cards={6} columns="grid-cols-1 md:grid-cols-2 lg:grid-cols-3" />;
 
   return (
     <div className="space-y-4">
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <Input
-          value={search}
-          onValueChange={setSearch}
-          placeholder={t('pages.searchVendors')}
-          startContent={<Search size={16} className="text-fg-faint" />}
-          size="sm"
-          className="w-56"
-          aria-label={t('pages.searchVendors')}
-        />
-        <MinimalButton variant="primary" size="sm" icon={<Plus size={16} />} onClick={openCreate}>
-          Add Vendor
-        </MinimalButton>
+        <div className="flex gap-2 flex-wrap items-center">
+          <Input
+            value={search}
+            onValueChange={setSearch}
+            placeholder={t('pages.searchVendors')}
+            startContent={<Search size={16} className="text-fg-faint" />}
+            size="sm"
+            className="w-56"
+            aria-label={t('pages.searchVendors')}
+          />
+          <Select
+            selectedKeys={[categoryFilter]}
+            onSelectionChange={(keys) => setCategoryFilter([...keys][0] || "all")}
+            size="sm"
+            className="w-44"
+            aria-label="Filter by category"
+          >
+            <SelectItem key="all">All Categories</SelectItem>
+            {categories.map((c) => <SelectItem key={c}>{c}</SelectItem>)}
+          </Select>
+          <Select
+            selectedKeys={[activeFilter]}
+            onSelectionChange={(keys) => setActiveFilter([...keys][0] || "all")}
+            size="sm"
+            className="w-44"
+            aria-label="Filter by status"
+          >
+            <SelectItem key="all">All Status</SelectItem>
+            <SelectItem key="active">Active</SelectItem>
+            <SelectItem key="inactive">Inactive</SelectItem>
+          </Select>
+        </div>
+        <div className="flex gap-2">
+          <ExportMenu
+            rows={filteredVendors}
+            columns={[
+              { key: "name", label: "Name" },
+              { key: "contactPerson", label: "Contact Person" },
+              { key: "phone", label: "Phone" },
+              { key: "email", label: "Email" },
+              { key: "category", label: "Category" },
+              { key: "status", label: "Status", accessor: (v) => v.isActive !== false ? "Active" : "Inactive" },
+            ]}
+            filename="vendors"
+            title="Vendors"
+          />
+          <button
+            type="button"
+            className="btn btn--sm"
+            onClick={() => setPrintOpen(true)}
+            aria-label="Print preview"
+          >
+            <Printer size={14} aria-hidden />
+          </button>
+          <MinimalButton variant="primary" size="sm" icon={<Plus size={16} />} onClick={openCreate}>
+            Add Vendor
+          </MinimalButton>
+        </div>
       </div>
 
       {/* Vendor Cards */}
       {loadError ? (
         <ErrorState onRetry={fetchVendors} error={loadError} title={t('toast.error.failedToLoadVendors')} />
-      ) : vendors.length === 0 ? (
+      ) : filteredVendors.length === 0 ? (
         <EmptyState
           icon={Truck}
           title={t('pages.noVendorsFound')}
@@ -124,7 +187,7 @@ export default function Vendors() {
         />
       ) : (
         <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ${loading ? 'opacity-50' : ''}`}>
-          {vendors.map((v) => (
+          {filteredVendors.map((v) => (
             <Card key={v._id} padding="md" elevation="raised">
               <div className="flex justify-between items-start mb-3">
                 <div className="min-w-0">
@@ -207,6 +270,40 @@ export default function Vendors() {
         confirmText="Delete"
         variant="danger"
       />
+
+      <PrintPreviewModal
+        isOpen={printOpen}
+        onClose={() => setPrintOpen(false)}
+        title="Vendors"
+      >
+        <div className="p-6">
+          <h1 className="text-lg font-semibold mb-4">Vendors</h1>
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-2 px-3">Name</th>
+                <th className="text-left py-2 px-3">Contact Person</th>
+                <th className="text-left py-2 px-3">Phone</th>
+                <th className="text-left py-2 px-3">Email</th>
+                <th className="text-left py-2 px-3">Category</th>
+                <th className="text-left py-2 px-3">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredVendors.map((v) => (
+                <tr key={v._id} className="border-b">
+                  <td className="py-2 px-3">{v.name}</td>
+                  <td className="py-2 px-3">{v.contactPerson || "—"}</td>
+                  <td className="py-2 px-3">{v.phone || "—"}</td>
+                  <td className="py-2 px-3">{v.email || "—"}</td>
+                  <td className="py-2 px-3">{v.category || "—"}</td>
+                  <td className="py-2 px-3">{v.isActive !== false ? "Active" : "Inactive"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </PrintPreviewModal>
     </div>
   );
 }
