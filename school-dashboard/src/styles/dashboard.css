@@ -242,7 +242,7 @@
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -354,7 +354,7 @@
 .widget-customizer__visibility.is-visible {
   background: var(--accent);
   border-color: var(--accent);
-  color: white;
+  color: var(--accent-fg);
 }
 
 .widget-customizer__foot {
@@ -559,7 +559,7 @@
 .dash-section-dropdown__check.is-checked {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--accent-fg);
 }
 
 /* ============================================================
@@ -760,7 +760,7 @@
 }
 
 .trow--now:hover {
-  background: oklch(70% 0.15 75 / 0.18);
+  background: var(--warn-bg-hover);
 }
 
 .trow--now .trow__time {
@@ -979,7 +979,7 @@
   font-size: 12px;
   font-weight: 500;
   background: var(--accent);
-  color: white;
+  color: var(--accent-fg);
   border: none;
   cursor: pointer;
   transition: background 100ms;
@@ -1232,7 +1232,7 @@
 .dash-people-tab.is-active {
   background: var(--surface);
   color: var(--fg);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  box-shadow: var(--shadow-sm);
 }
 
 /* ============================================================
@@ -1452,7 +1452,7 @@
 
 .btn--accent {
   background: var(--accent);
-  color: white;
+  color: var(--accent-fg);
   border-color: var(--accent);
   font-weight: 520;
 }
@@ -1727,7 +1727,7 @@
 }
 
 .srow--mine {
-  background: linear-gradient(90deg, oklch(56% 0.19 270 / 0.04), transparent 60%);
+  background: linear-gradient(90deg, var(--accent-bg-subtle), transparent 60%);
   border-left: 2px solid var(--accent);
   padding-left: 8px;
 }
@@ -1739,7 +1739,7 @@
 }
 
 .srow--now.srow--mine {
-  background: linear-gradient(90deg, var(--warn-bg), oklch(56% 0.19 270 / 0.04) 70%);
+  background: linear-gradient(90deg, var(--warn-bg), var(--accent-bg-subtle) 70%);
   border-left-color: var(--accent);
 }
 
@@ -1772,7 +1772,7 @@
   align-items: stretch;
   gap: 16px;
   padding: 16px 20px;
-  background: linear-gradient(135deg, oklch(98% 0.02 270) 0%, oklch(97% 0.025 290) 100%);
+  background: linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
   position: relative;
@@ -1790,7 +1790,7 @@
 
 [data-theme="dark"] .plan-card,
 .dark .plan-card {
-  background: linear-gradient(135deg, oklch(22% 0.04 270) 0%, oklch(20% 0.04 290) 100%);
+  background: linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%);
 }
 
 .plan-card__main {
