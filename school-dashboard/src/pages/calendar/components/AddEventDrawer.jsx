@@ -152,7 +152,7 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                     size="lg"
                     value={newEvent.title}
                     onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-                    className="border-border-token hover:border-border-strong focus:border-border-strong"
+                    className="border-border-token hover:border-border-strong focus-within:border-border-strong"
                   />
                 </div>
 
@@ -192,7 +192,7 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                     rows={2}
                     value={newEvent.description}
                     onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-                    className="border-border-token hover:border-border-strong focus-within:border-border-strong"
+                    className="border-border-token hover:border-border-strong focus:border-border-strong"
                   />
                 </div>
 
