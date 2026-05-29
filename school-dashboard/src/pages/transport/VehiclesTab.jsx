@@ -102,7 +102,7 @@ export default function VehiclesTab() {
             placeholder={t('pages.searchVehicles')}
             value={search}
             onValueChange={setSearch}
-            startContent={<Search size={16} className="text-gray-400" />}
+            startContent={<Search size={16} className="text-fg-faint" />}
             size="sm"
             className="max-w-xs"
           />
@@ -219,7 +219,7 @@ export default function VehiclesTab() {
                   </Chip>
                   <Dropdown>
                     <DropdownTrigger>
-                      <Button isIconOnly size="sm" variant="light" aria-label="Vehicle actions"><MoreVertical size={16} /></Button>
+                      <Button isIconOnly size="sm" variant="light" aria-label={t('pages.vehicleActions')}><MoreVertical size={16} /></Button>
                     </DropdownTrigger>
                     <DropdownMenu>
                       <DropdownItem key="edit" startContent={<Edit2 size={14} />} onPress={() => { setEditingVehicle(vehicle); setIsModalOpen(true); }}>{t('pages.edit1')}</DropdownItem>
@@ -242,7 +242,7 @@ export default function VehiclesTab() {
                     <span className="text-fg font-medium">
                       {vehicle.driverId.name}
                       {vehicle.driverId.status && vehicle.driverId.status !== 'active' && (
-                        <span className="ml-1 text-xs text-amber-600 dark:text-amber-400">({vehicle.driverId.status})</span>
+                        <span className="ml-1 text-xs text-warn">({vehicle.driverId.status})</span>
                       )}
                     </span>
                   </div>
@@ -253,7 +253,7 @@ export default function VehiclesTab() {
                     <span className="text-fg font-medium">
                       {vehicle.conductorId.name}
                       {vehicle.conductorId.status && vehicle.conductorId.status !== 'active' && (
-                        <span className="ml-1 text-xs text-amber-600 dark:text-amber-400">({vehicle.conductorId.status})</span>
+                        <span className="ml-1 text-xs text-warn">({vehicle.conductorId.status})</span>
                       )}
                     </span>
                   </div>
@@ -295,13 +295,13 @@ export default function VehiclesTab() {
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="border-b">
-                <th className="text-left py-2 px-3">Registration</th>
-                <th className="text-left py-2 px-3">Make</th>
-                <th className="text-left py-2 px-3">Model</th>
-                <th className="text-left py-2 px-3">Year</th>
-                <th className="text-left py-2 px-3">Capacity</th>
-                <th className="text-left py-2 px-3">Status</th>
-                <th className="text-left py-2 px-3">Driver</th>
+                <th scope="col" className="text-left py-2 px-3">Registration</th>
+                <th scope="col" className="text-left py-2 px-3">Make</th>
+                <th scope="col" className="text-left py-2 px-3">Model</th>
+                <th scope="col" className="text-left py-2 px-3">Year</th>
+                <th scope="col" className="text-left py-2 px-3">Capacity</th>
+                <th scope="col" className="text-left py-2 px-3">Status</th>
+                <th scope="col" className="text-left py-2 px-3">Driver</th>
               </tr>
             </thead>
             <tbody>
