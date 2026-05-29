@@ -1,6 +1,6 @@
-import {
-  Button, Chip, Divider
-} from "@heroui/react";
+import { Button } from "@heroui/react";
+import Chip from "../../../components/ui/Chip";
+import Divider from "../../../components/ui/Divider";
 import {
   Clock, Users, Calendar as CalendarIcon,
   User, BookOpen, MapPin, Phone, FileText, CheckCircle2, Trash2, Edit3
@@ -47,7 +47,7 @@ export default function EventDetailModal({ isOpen, onClose, event, eventTypes, o
             <Icon size={16} />
           </div>
           <div>
-            <Chip size="sm" variant="flat">
+            <Chip size="sm" color="neutral">
               {eventTypes[eventType]?.label || eventType}
             </Chip>
           </div>
@@ -122,7 +122,7 @@ export default function EventDetailModal({ isOpen, onClose, event, eventTypes, o
                 <CheckCircle2 size={14} className="text-fg-faint mt-0.5" />
                 <div>
                   <span className="text-xs text-fg-faint block">{t('calendar.eventDetail.status', 'Status')}</span>
-                  <Chip size="sm" variant="flat" color={
+                  <Chip size="sm" color={
                     event.status === 'completed' ? 'success' :
                     event.status === 'cancelled' ? 'danger' : 'primary'
                   }>

@@ -318,6 +318,24 @@ export default function CalendarPage() {
     />
   );
 
+  const mobileSidebarContent = (
+    <StaffSidebar
+      selectedStaff={selectedStaff}
+      teachers={teachers}
+      todaySchedule={todaySchedule}
+      upcomingAppointments={upcomingAppointments}
+      loadingTimetable={loadingTimetable}
+      loadingAppointments={loadingAppointments}
+      onStaffChange={setSelectedStaff}
+      onEventClick={openEventFromSidebar}
+      defaultPeriods={defaultPeriods}
+      getClassName={getClassName}
+      sidebarExpanded={true}
+      onToggleSidebar={() => {}}
+      formatDateKey={formatDateKey}
+    />
+  );
+
   return (
     <div className="page">
       <div className="page__head">
@@ -383,7 +401,7 @@ export default function CalendarPage() {
             title={t('calendar.sidebar.title', 'Staff Schedule')}
             size="md"
           >
-            {sidebarContent}
+            {mobileSidebarContent}
           </Drawer>
         )}
 
