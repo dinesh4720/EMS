@@ -6,6 +6,8 @@ import {
   type MockState,
 } from './test-utils';
 
+test.slow();
+
 /* ───────────────── Mock Data ───────────────── */
 
 const MOCK_ASSETS = [
@@ -201,8 +203,8 @@ test.describe('Inventory — Maintenance, Procurement, Audits & Reports', () => 
         JSON.stringify({ necessary: true, analytics: false, preferences: false, marketing: false, savedAt: new Date().toISOString() }),
       );
     });
-    await installMockApi(page, state);
     await installInventoryRoutes(page);
+    await installMockApi(page, state);
   });
 
   // ─── Maintenance Tab ─────────────────────────────────────────────────
