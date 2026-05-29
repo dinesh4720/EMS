@@ -20,12 +20,6 @@ import logger from '../../utils/logger';
 
 const STATUS_OPTIONS = ['all', 'active', 'completed', 'cancelled'];
 
-const homeworkCache = {
-  data: null,
-  timestamp: 0,
-  duration: 30000,
-};
-
 const getDueStatus = (dueDate) => {
   if (!dueDate) return 'pending';
   const now = new Date();
@@ -99,21 +93,13 @@ const HomeworkPage = () => {
     return count;
   }, [filters, searchQuery]);
 
-  const fetchHomework = useCallback(async (forceRefresh = false) => {
-    const now = Date.now();
-    if (!forceRefresh && homeworkCache.data && (now - homeworkCache.timestamp) < homeworkCache.duration) {
-      setHomework(homeworkCache.data);
-      setLoading(false);
-      return;
-    }
+  const fetchHomework = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const response = await homeworkApi.getAll({ limit: 100 });
       const items = Array.isArray(response) ? response : (response?.data || []);
       setHomework(items);
-      homeworkCache.data = items;
-      homeworkCache.timestamp = now;
     } catch (err) {
       logger.error('Error fetching homework:', err);
       setError(err);
@@ -131,8 +117,7 @@ const HomeworkPage = () => {
   }, [fetchHomework]);
 
   const refreshHomework = useCallback(() => {
-    homeworkCache.data = null;
-    fetchHomework(true);
+    fetchHomework();
   }, [fetchHomework]);
 
   const handleFilterChange = (key, value) => {
@@ -214,7 +199,7 @@ const HomeworkPage = () => {
         <ErrorState
           title="Couldn't load homework"
           error={error}
-          onRetry={() => fetchHomework(true)}
+          onRetry={() => fetchHomework()}
         />
       );
     }
@@ -378,7 +363,7 @@ const HomeworkPage = () => {
       <HomeworkDetailModal
         homeworkId={detailId}
         onClose={() => setDetailId(null)}
-        onDataChanged={() => fetchHomework(true)}
+        onDataChanged={() => fetchHomework()}
       />
 
       <ConfirmDialog
