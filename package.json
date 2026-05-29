@@ -28,6 +28,9 @@
     "infra:down": "docker compose down",
     "infra:logs": "docker compose logs -f mongo"
   },
+  "engines": {
+    "node": ">=18.0.0 <=20.x"
+  },
   "dependencies": {
     "@heroui/theme": "^2.4.26",
     "@react-three/fiber": "^9.0.0",
