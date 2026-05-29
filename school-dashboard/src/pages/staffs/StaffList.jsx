@@ -6,7 +6,9 @@ import {
   useCallback,
 } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Plus, MessageSquare, CheckCircle2 } from "lucide-react";
+import { Plus, MessageSquare, CheckCircle2, Users } from "lucide-react";
+import EmptyState from "../../components/ui/EmptyState";
+import Pagination from "../../components/common/Pagination";
 import SkeletonTable from "../../components/skeletons/SkeletonTable";
 import { useApp } from "../../context/AppContext";
 import ToolbarSearch from "../../components/ui/ToolbarSearch";
@@ -356,17 +358,17 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
 
   const moveSelection = useCallback(
     (delta) => {
-      if (visible.length === 0) return;
-      const currentIdx = visible.findIndex(
+      if (paginatedVisible.length === 0) return;
+      const currentIdx = paginatedVisible.findIndex(
         (s) => (s._id || s.id) === selectedId
       );
       const nextIdx =
         currentIdx === -1
           ? delta > 0
             ? 0
-            : visible.length - 1
-          : Math.min(visible.length - 1, Math.max(0, currentIdx + delta));
-      const nextStaff = visible[nextIdx];
+            : paginatedVisible.length - 1
+          : Math.min(paginatedVisible.length - 1, Math.max(0, currentIdx + delta));
+      const nextStaff = paginatedVisible[nextIdx];
       if (!nextStaff) return;
       const nextId = nextStaff._id || nextStaff.id;
       setSelectedId(nextId);
@@ -378,7 +380,7 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
         rowRefs.current.get(nextId)?.focus({ preventScroll: true });
       });
     },
-    [visible, selectedId, setSelectedId]
+    [paginatedVisible, selectedId, setSelectedId]
   );
 
   const handleListKeyDown = useCallback(
@@ -444,6 +446,30 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
   );
 
   const closeDetail = () => setSelectedId(null);
+
+  // ============ Pagination ============
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(visible.length / pageSize)),
+    [visible.length, pageSize]
+  );
+
+  const paginatedVisible = useMemo(
+    () => visible.slice((page - 1) * pageSize, page * pageSize),
+    [visible, page, pageSize]
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [q, filter, activeFiltersCount]);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   // The detail pane in mobile mode is a slide-over Drawer
   const detailVisible = !!selectedStaff;
@@ -595,14 +621,31 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
               <SkeletonTable columns={4} rows={6} />
             </div>
           ) : visible.length === 0 ? (
-            <div
-              className="subtle"
-              style={{ padding: 32, textAlign: "center", fontSize: 13 }}
-            >
-              No staff matched.
-            </div>
+            <EmptyState
+              icon={Users}
+              title={staff.length === 0 ? "No staff yet" : "No staff matched"}
+              description={
+                staff.length === 0
+                  ? "Get started by adding your first staff member."
+                  : activeFiltersCount > 0 || q
+                  ? "Try adjusting your filters or search query."
+                  : "No staff found for the current view."
+              }
+              action={
+                staff.length === 0 ? (
+                  <button type="button" className="btn btn--accent" onClick={onAddStaff}>
+                    <Plus size={13} aria-hidden /> Add staff
+                  </button>
+                ) : (
+                  <button type="button" className="btn btn--ghost" onClick={clearAllFilters}>
+                    Clear filters
+                  </button>
+                )
+              }
+              size="md"
+            />
           ) : (
-            visible.map((s) => {
+            paginatedVisible.map((s) => {
               const id = s._id || s.id;
               return (
                 <StaffListRow
@@ -623,6 +666,38 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
             })
           )}
         </div>
+
+        {/* Pagination footer */}
+        {!loading && visible.length > 0 && (
+          <div
+            className="flex items-center justify-between px-4 py-2 border-t"
+            style={{ borderColor: "var(--divider)" }}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-sm" style={{ color: "var(--fg-muted)" }}>Show</span>
+              <select
+                className="select select--sm"
+                value={pageSize}
+                onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+                aria-label="Items per page"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+              <span className="text-sm" style={{ color: "var(--fg-muted)" }}>per page</span>
+            </div>
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              totalItems={visible.length}
+              itemLabel="staff"
+            />
+          </div>
+        )}
+
       </div>
 
       {/* Right detail pane — desktop only inline; mobile renders below */}
