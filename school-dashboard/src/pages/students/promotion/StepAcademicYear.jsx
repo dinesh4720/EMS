@@ -41,7 +41,7 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
 
   const checkTargetYear = async (year, silent = false) => {
     const y = year || toYear;
-    if (!y || !y.match(/^\d{4}-\d{2}$/)) return;
+    if (!y || !y.match(/^\d{4}-\d{2,4}$/)) return;
     setChecking(true);
     try {
       const res = await promotionApi.checkYear(y);
@@ -117,7 +117,7 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
     onNext();
   };
 
-  const isValidFormat = (y) => /^\d{4}-\d{2}$/.test(y);
+  const isValidFormat = (y) => /^\d{4}-\d{2,4}$/.test(y);
 
   return (
     <div className="space-y-4">

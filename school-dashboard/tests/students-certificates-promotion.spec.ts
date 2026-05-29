@@ -482,6 +482,12 @@ test.describe('Students — Bulk Promotion', () => {
     await expect(page.getByText(/Confirm Year-End Promotion/i)).toBeVisible({ timeout: 10_000 });
     await page.getByRole('button', { name: /Execute Year-End Promotion/i }).click();
 
+    // Confirmation modal — type CONFIRM and submit
+    const confirmModal = page.locator('[role="dialog"]').last();
+    await expect(confirmModal).toBeVisible({ timeout: 5_000 });
+    await confirmModal.locator('input[placeholder="CONFIRM"]').fill('CONFIRM');
+    await confirmModal.getByRole('button', { name: /Execute Promotion/i }).click();
+
     // Step 5: Results — should show success
     await expect(page.getByText(/Promotion completed/i)).toBeVisible({ timeout: 15_000 });
     // Should show promoted count
@@ -565,6 +571,12 @@ test.describe('Students — Bulk Promotion', () => {
     await page.getByRole('button', { name: /Next.*Review Summary/i }).click();
     await expect(page.getByText(/Confirm Year-End Promotion/i)).toBeVisible({ timeout: 10_000 });
     await page.getByRole('button', { name: /Execute Year-End Promotion/i }).click();
+
+    // Confirmation modal — type CONFIRM and submit
+    const confirmModal = page.locator('[role="dialog"]').last();
+    await expect(confirmModal).toBeVisible({ timeout: 5_000 });
+    await confirmModal.locator('input[placeholder="CONFIRM"]').fill('CONFIRM');
+    await confirmModal.getByRole('button', { name: /Execute Promotion/i }).click();
 
     // Results page should appear
     await expect(page.getByText(/Promotion completed/i)).toBeVisible({ timeout: 15_000 });

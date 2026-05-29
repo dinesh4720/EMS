@@ -177,7 +177,7 @@ export default function CertificateModal({
               onClick={handleDownload}
               data-testid="download-certificate"
             >
-              <Printer size={13} aria-hidden /> Download / Print
+              <Printer size={13} aria-hidden /> Download as PDF
             </button>
           </>
         )
