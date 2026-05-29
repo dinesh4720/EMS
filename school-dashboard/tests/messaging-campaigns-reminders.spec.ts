@@ -32,13 +32,13 @@ test.describe('Email Campaigns & Reminders', () => {
     await page.goto('/messaging/email-campaigns');
     await page.waitForLoadState('networkidle');
 
-    // Wait for the messaging page to render (lazy-loaded component)
+    // Wait for the email-campaigns page to render (lazy-loaded chunk + API data)
     await page.waitForFunction(
       () => {
         const text = (document.body.textContent || '').toLowerCase();
-        return text.includes('message') || text.includes('chat') || text.includes('announcement') || text.includes('campaign');
+        return text.includes('no email campaigns') || text.includes('draft') || text.includes('scheduled') || text.includes('sending') || text.includes('sent') || text.includes('failed');
       },
-      { timeout: 15_000 },
+      { timeout: 20_000 },
     ).catch(() => {});
 
     const bodyText = await page.textContent('body');
@@ -136,8 +136,7 @@ test.describe('Email Campaigns & Reminders', () => {
     }
   });
 
-  // SKIPPED: /messaging/email-campaigns route is commented out in App.jsx — email campaigns page not yet active
-  test.skip('6. Preview shows recipient count', async ({ page }) => {
+  test('6. Preview shows recipient count', async ({ page }) => {
     await page.goto('/messaging/email-campaigns');
     await page.waitForLoadState('networkidle');
 
