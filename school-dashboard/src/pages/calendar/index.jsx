@@ -4,6 +4,8 @@ import { useApp } from "../../context/AppContext";
 import { frontDeskApi, teacherTimetableApi } from "../../services/api";
 import logger from "../../utils/logger";
 import ConfirmDialog from "../../components/ConfirmDialog";
+import { PageShell } from "../../components/ui";
+import Drawer from "../../components/ui/Drawer";
 
 import CalendarToolbar from "./components/CalendarToolbar";
 import AddEventDrawer from "./components/AddEventDrawer";
@@ -21,6 +23,9 @@ import {
   defaultPeriods,
   formatDateKey,
 } from "./constants";
+
+// Mobile breakpoint — below this the sidebar collapses to a Drawer
+const MOBILE_MAX = 1099;
 
 const isReadOnlyEventId = (id) =>
   typeof id === "string" && (id.startsWith("apt-") || id.startsWith("tt-"));
@@ -42,6 +47,7 @@ export default function CalendarPage() {
   const [loadingAppointments, setLoadingAppointments] = useState(false);
   const [loadingTimetable, setLoadingTimetable] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -51,6 +57,16 @@ export default function CalendarPage() {
 
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState(null);
+
+  const [isMobileViewport, setIsMobileViewport] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth <= MOBILE_MAX : false
+  );
+
+  useEffect(() => {
+    const onResize = () => setIsMobileViewport(window.innerWidth <= MOBILE_MAX);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -284,92 +300,144 @@ export default function CalendarPage() {
     eventTypes,
   };
 
-  return (
-    <div className="flex h-full bg-bg min-h-screen -m-3">
-      {/* Main Calendar Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <CalendarToolbar
-          currentDate={currentDate}
-          view={view}
-          onViewChange={setView}
-          onNavigate={navigate}
-          onToday={goToToday}
-          onAddEvent={openAddDrawer}
-          onDateChange={setCurrentDate}
-          year={year}
-          month={month}
-        />
+  const sidebarContent = (
+    <StaffSidebar
+      selectedStaff={selectedStaff}
+      teachers={teachers}
+      todaySchedule={todaySchedule}
+      upcomingAppointments={upcomingAppointments}
+      loadingTimetable={loadingTimetable}
+      loadingAppointments={loadingAppointments}
+      onStaffChange={setSelectedStaff}
+      onEventClick={openEventFromSidebar}
+      defaultPeriods={defaultPeriods}
+      getClassName={getClassName}
+      sidebarExpanded={sidebarExpanded}
+      onToggleSidebar={setSidebarExpanded}
+      formatDateKey={formatDateKey}
+    />
+  );
 
-        <div className="flex-1 overflow-auto">
-          {view === "month" && (
-            <MonthView year={year} month={month} {...viewProps} />
-          )}
-          {view === "week" && (
-            <WeekView currentDate={currentDate} {...viewProps} />
-          )}
-          {view === "day" && (
-            <DayView currentDate={currentDate} {...viewProps} />
-          )}
-          {view === "schedule" && (
-            <ScheduleView
-              scheduleViewData={scheduleViewData}
-              eventTypes={eventTypes}
-              onEventClick={openEventDetail}
-              getClassName={getClassName}
-              onAddEvent={() => openAddDrawer()}
-              selectedStaff={selectedStaff}
-            />
-          )}
+  const mobileSidebarContent = (
+    <StaffSidebar
+      selectedStaff={selectedStaff}
+      teachers={teachers}
+      todaySchedule={todaySchedule}
+      upcomingAppointments={upcomingAppointments}
+      loadingTimetable={loadingTimetable}
+      loadingAppointments={loadingAppointments}
+      onStaffChange={setSelectedStaff}
+      onEventClick={openEventFromSidebar}
+      defaultPeriods={defaultPeriods}
+      getClassName={getClassName}
+      sidebarExpanded={true}
+      onToggleSidebar={() => {}}
+      formatDateKey={formatDateKey}
+    />
+  );
+
+  return (
+    <div className="page">
+      <div className="page__head">
+        <div>
+          <h1 className="page__title">{t('calendar.title', 'Calendar')}</h1>
+          <p className="page__sub">{t('calendar.subtitle', 'Manage events, schedules, and appointments')}</p>
         </div>
       </div>
 
-      <StaffSidebar
-        selectedStaff={selectedStaff}
-        teachers={teachers}
-        todaySchedule={todaySchedule}
-        upcomingAppointments={upcomingAppointments}
-        loadingTimetable={loadingTimetable}
-        loadingAppointments={loadingAppointments}
-        onStaffChange={setSelectedStaff}
-        onEventClick={openEventFromSidebar}
-        defaultPeriods={defaultPeriods}
-        getClassName={getClassName}
-        sidebarExpanded={sidebarExpanded}
-        onToggleSidebar={setSidebarExpanded}
-        formatDateKey={formatDateKey}
-      />
+      <PageShell
+        scrollable={false}
+        bodyPadding="none"
+        className="flex-1 min-h-0"
+      >
+        <div className="flex flex-1 min-h-0">
+        {/* Main Calendar Area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <CalendarToolbar
+            currentDate={currentDate}
+            view={view}
+            onViewChange={setView}
+            onNavigate={navigate}
+            onToday={goToToday}
+            onAddEvent={openAddDrawer}
+            onDateChange={setCurrentDate}
+            year={year}
+            month={month}
+            isMobileViewport={isMobileViewport}
+            onOpenSidebar={() => setMobileSidebarOpen(true)}
+          />
 
-      <EventDetailModal
-        isOpen={isDetailOpen}
-        onClose={() => setIsDetailOpen(false)}
-        event={selectedEvent}
-        eventTypes={eventTypes}
-        onDelete={handleDeleteEvent}
-        onEdit={selectedEvent && !isReadOnlyEventId(selectedEvent.id) ? handleEditEvent : null}
-        getClassName={getClassName}
-        defaultPeriods={defaultPeriods}
-        selectedStaff={selectedStaff}
-        getTranslatedPeriodName={getTranslatedPeriodName}
-      />
+          <div className="flex-1 overflow-auto">
+            {view === "month" && (
+              <MonthView year={year} month={month} {...viewProps} />
+            )}
+            {view === "week" && (
+              <WeekView currentDate={currentDate} {...viewProps} />
+            )}
+            {view === "day" && (
+              <DayView currentDate={currentDate} {...viewProps} />
+            )}
+            {view === "schedule" && (
+              <ScheduleView
+                scheduleViewData={scheduleViewData}
+                eventTypes={eventTypes}
+                onEventClick={openEventDetail}
+                getClassName={getClassName}
+                onAddEvent={() => openAddDrawer()}
+                selectedStaff={selectedStaff}
+              />
+            )}
+          </div>
+        </div>
 
-      <AddEventDrawer
-        isOpen={isAddOpen}
-        onClose={() => { setIsAddOpen(false); setEditingEvent(null); }}
-        selectedDate={selectedDate}
-        onAddEvent={handleSaveEvent}
-        editingEvent={editingEvent}
-      />
+        {/* Desktop sidebar */}
+        {!isMobileViewport && sidebarContent}
 
-      <ConfirmDialog
-        isOpen={deleteConfirmOpen}
-        onClose={() => { setDeleteConfirmOpen(false); setEventToDelete(null); }}
-        onConfirm={confirmDeleteEvent}
-        title={t("calendar.deleteConfirm.title", "Delete Event")}
-        message={t("calendar.deleteConfirm.message", "Are you sure you want to delete this event? This action cannot be undone.")}
-        confirmText={t("common.delete", "Delete")}
-        cancelText={t("common.cancel", "Cancel")}
-        variant="danger"
-      />
+        {/* Mobile: sidebar rendered as a Drawer */}
+        {isMobileViewport && (
+          <Drawer
+            isOpen={mobileSidebarOpen}
+            onClose={() => setMobileSidebarOpen(false)}
+            title={t('calendar.sidebar.title', 'Staff Schedule')}
+            size="md"
+          >
+            {mobileSidebarContent}
+          </Drawer>
+        )}
+
+        <EventDetailModal
+          isOpen={isDetailOpen}
+          onClose={() => setIsDetailOpen(false)}
+          event={selectedEvent}
+          eventTypes={eventTypes}
+          onDelete={handleDeleteEvent}
+          onEdit={selectedEvent && !isReadOnlyEventId(selectedEvent.id) ? handleEditEvent : null}
+          getClassName={getClassName}
+          defaultPeriods={defaultPeriods}
+          selectedStaff={selectedStaff}
+          getTranslatedPeriodName={getTranslatedPeriodName}
+        />
+
+        <AddEventDrawer
+          isOpen={isAddOpen}
+          onClose={() => { setIsAddOpen(false); setEditingEvent(null); }}
+          selectedDate={selectedDate}
+          onAddEvent={handleSaveEvent}
+          editingEvent={editingEvent}
+        />
+
+        <ConfirmDialog
+          isOpen={deleteConfirmOpen}
+          onClose={() => { setDeleteConfirmOpen(false); setEventToDelete(null); }}
+          onConfirm={confirmDeleteEvent}
+          title={t("calendar.deleteConfirm.title", "Delete Event")}
+          message={t("calendar.deleteConfirm.message", "Are you sure you want to delete this event? This action cannot be undone.")}
+          confirmText={t("common.delete", "Delete")}
+          cancelText={t("common.cancel", "Cancel")}
+          variant="danger"
+        />
+        </div>
+      </PageShell>
     </div>
   );
 }

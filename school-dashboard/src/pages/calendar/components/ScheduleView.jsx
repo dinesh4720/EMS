@@ -1,6 +1,7 @@
 import { Button, Chip } from "@heroui/react";
 import { Clock, Calendar as CalendarIcon } from "lucide-react";
 import { useTranslation } from 'react-i18next';
+import EmptyState from "../../../components/ui/EmptyState";
 
 export default function ScheduleView({ scheduleViewData = [], eventTypes, onEventClick, getClassName, onAddEvent, selectedStaff }) {
   const { t } = useTranslation();
@@ -14,25 +15,32 @@ export default function ScheduleView({ scheduleViewData = [], eventTypes, onEven
     return `${hour12}:${m} ${ampm}`;
   };
 
+  const handleEventKeyDown = (e, event) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onEventClick(e, event);
+    }
+  };
+
   return (
     <div className="p-4 space-y-1">
       {scheduleViewData.length === 0 ? (
-        <div className="text-center py-12">
-          <CalendarIcon size={32} className="mx-auto text-fg-faint mb-3" />
-          {!selectedStaff ? (
-            <>
-              <p className="text-fg-muted font-medium">{t('calendar.scheduleView.selectStaffPrompt', 'Select a staff member')}</p>
-              <p className="text-fg-faint text-sm mt-1">{t('calendar.scheduleView.selectStaffDesc', 'Choose a staff from the sidebar to view their schedule and appointments')}</p>
-            </>
-          ) : (
-            <>
-              <p className="text-fg-faint">{t('calendar.scheduleView.noEventsThisMonth', 'No events scheduled this month')}</p>
-              <Button size="sm" variant="flat" className="mt-3" onPress={onAddEvent}>
-                {t('calendar.toolbar.addEvent', 'Add Event')}
-              </Button>
-            </>
+        <EmptyState
+          icon={CalendarIcon}
+          title={!selectedStaff
+            ? t('calendar.scheduleView.selectStaffPrompt', 'Select a staff member')
+            : t('calendar.scheduleView.noEventsThisMonth', 'No events scheduled this month')
+          }
+          description={!selectedStaff
+            ? t('calendar.scheduleView.selectStaffDesc', 'Choose a staff from the sidebar to view their schedule and appointments')
+            : undefined
+          }
+          action={selectedStaff && (
+            <Button size="sm" variant="flat" onPress={onAddEvent}>
+              {t('calendar.toolbar.addEvent', 'Add Event')}
+            </Button>
           )}
-        </div>
+        />
       ) : (
         scheduleViewData.map((dayData) => (
           <div key={dayData.dateKey} className={`flex border border-border-token rounded-lg overflow-hidden ${dayData.isToday ? 'bg-accent-bg border-accent-border' : 'bg-surface'}`}>
@@ -50,7 +58,11 @@ export default function ScheduleView({ scheduleViewData = [], eventTypes, onEven
               {dayData.events.map((event) => (
                 <div
                   key={event.id}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${event.title}, ${eventTypes[event.type]?.label || event.type}`}
                   onClick={(e) => onEventClick(e, event)}
+                  onKeyDown={(e) => handleEventKeyDown(e, event)}
                   className="flex items-center gap-3 p-2 rounded-lg border border-border-token bg-surface hover:bg-surface-2 cursor-pointer transition-colors"
                 >
                   {/* Time */}

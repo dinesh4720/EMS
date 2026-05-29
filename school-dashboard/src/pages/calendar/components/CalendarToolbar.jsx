@@ -4,13 +4,13 @@ import {
 } from "@heroui/react";
 import {
   ChevronLeft, ChevronRight, Plus, LayoutGrid, List,
-  ChevronDown, ChevronsLeft, ChevronsRight
+  ChevronDown, ChevronsLeft, ChevronsRight, PanelRight
 } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import { getDateLocale } from "../../../i18n/index";
 import { formatMonthYear, formatDateWithWeekday } from "../../../utils/dateFormatter";
 
-export default function CalendarToolbar({ currentDate, view, onViewChange, onNavigate, onToday, onAddEvent, onDateChange, year, month }) {
+export default function CalendarToolbar({ currentDate, view, onViewChange, onNavigate, onToday, onAddEvent, onDateChange, year, month, onOpenSidebar, isMobileViewport }) {
   const { t } = useTranslation();
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [pickerView, setPickerView] = useState("month"); // "month" or "year"
@@ -210,8 +210,10 @@ export default function CalendarToolbar({ currentDate, view, onViewChange, onNav
 
       <div className="flex items-center gap-2">
         {/* View Switcher */}
-        <div className="bg-surface-2 p-0.5 rounded-lg flex items-center border border-divider">
+        <div className="bg-surface-2 p-0.5 rounded-lg flex items-center border border-divider" role="tablist" aria-label={t('calendar.toolbar.viewSwitcher', 'Calendar view')}>
           <button
+            role="tab"
+            aria-selected={view === "month"}
             onClick={() => onViewChange("month")}
             className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1 ${view === "month" ? "bg-surface text-fg shadow-sm" : "text-fg-faint hover:text-fg-muted"}`}
           >
@@ -219,18 +221,24 @@ export default function CalendarToolbar({ currentDate, view, onViewChange, onNav
             <span className="hidden sm:inline">{t('calendar.views.month', 'Month')}</span>
           </button>
           <button
+            role="tab"
+            aria-selected={view === "week"}
             onClick={() => onViewChange("week")}
             className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-all ${view === "week" ? "bg-surface text-fg shadow-sm" : "text-fg-faint hover:text-fg-muted"}`}
           >
             {t('calendar.views.week', 'Week')}
           </button>
           <button
+            role="tab"
+            aria-selected={view === "day"}
             onClick={() => onViewChange("day")}
             className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-all ${view === "day" ? "bg-surface text-fg shadow-sm" : "text-fg-faint hover:text-fg-muted"}`}
           >
             {t('calendar.views.day', 'Day')}
           </button>
           <button
+            role="tab"
+            aria-selected={view === "schedule"}
             onClick={() => onViewChange("schedule")}
             className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1 ${view === "schedule" ? "bg-surface text-fg shadow-sm" : "text-fg-faint hover:text-fg-muted"}`}
           >
@@ -242,6 +250,19 @@ export default function CalendarToolbar({ currentDate, view, onViewChange, onNav
         <Button size="sm" variant="bordered" className="font-medium text-fg-muted border-border-token" onPress={onToday}>
           {t('calendar.toolbar.today', 'Today')}
         </Button>
+
+        {isMobileViewport && onOpenSidebar && (
+          <Button
+            isIconOnly
+            size="sm"
+            variant="light"
+            aria-label={t('calendar.toolbar.openSidebar', 'Open staff sidebar')}
+            className="text-fg-muted hover:bg-surface-2"
+            onPress={onOpenSidebar}
+          >
+            <PanelRight size={16} />
+          </Button>
+        )}
 
         <Button size="sm" color="primary" className="font-medium" startContent={<Plus size={14} />} onPress={() => onAddEvent(formatDateKey(year, month, currentDate.getDate()))}>
           {t('calendar.toolbar.addEvent', 'Add Event')}

@@ -1,12 +1,17 @@
 import {
-  Button, Chip, Select, SelectItem, ScrollShadow, Avatar, Spinner
+  Button, Chip, Select, SelectItem, ScrollShadow, Avatar
 } from "@heroui/react";
 import {
   ChevronLeft, ChevronRight, Clock, Users,
   User, BookOpen
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useTranslation } from 'react-i18next';
 import { formatDateTime } from "../../../utils/dateFormatter";
+import EmptyState from "../../../components/ui/EmptyState";
+
+// Mobile breakpoint — below this the right pane collapses
+const MOBILE_MAX = 1099;
 
 export default function StaffSidebar({
   selectedStaff,
@@ -25,6 +30,24 @@ export default function StaffSidebar({
 }) {
   const { t } = useTranslation();
 
+  const [isMobileViewport, setIsMobileViewport] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth <= MOBILE_MAX : false
+  );
+
+  useEffect(() => {
+    const onResize = () => {
+      const mobile = window.innerWidth <= MOBILE_MAX;
+      setIsMobileViewport(mobile);
+      if (mobile && sidebarExpanded) {
+        onToggleSidebar(false);
+      }
+    };
+    window.addEventListener("resize", onResize);
+    // Initial check
+    onResize();
+    return () => window.removeEventListener("resize", onResize);
+  }, [sidebarExpanded, onToggleSidebar]);
+
   // Parse ISO datetime string to local date key and time, respecting browser timezone
   const parseLocalDateTime = (isoString) => {
     if (!isoString) return { date: '', time: '' };
@@ -32,6 +55,20 @@ export default function StaffSidebar({
     const date = formatDateKey(d.getFullYear(), d.getMonth(), d.getDate());
     const time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
     return { date, time };
+  };
+
+  const handleSlotKeyDown = (e, event) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onEventClick(event);
+    }
+  };
+
+  const handleAppointmentKeyDown = (e, event) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onEventClick(event);
+    }
   };
 
   return (
@@ -99,6 +136,9 @@ export default function StaffSidebar({
                         return (
                           <div
                             key={`slot-${idx}`}
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`${slot.subject}, ${getClassName(slot.classId)}`}
                             onClick={() => {
                               const event = {
                                 id: `tt-today-${idx}`,
@@ -110,6 +150,18 @@ export default function StaffSidebar({
                                 title: slot.subject
                               };
                               onEventClick(event);
+                            }}
+                            onKeyDown={(e) => {
+                              const event = {
+                                id: `tt-today-${idx}`,
+                                type: 'class',
+                                subject: slot.subject,
+                                classId: slot.classId,
+                                periodIndex: idx,
+                                date: formatDateKey(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()),
+                                title: slot.subject
+                              };
+                              handleSlotKeyDown(e, event);
                             }}
                             className="flex items-center gap-2 p-2 rounded-lg border border-border-token bg-surface hover:bg-surface-2 cursor-pointer"
                           >
@@ -124,7 +176,10 @@ export default function StaffSidebar({
                       })}
                     </div>
                   ) : (
-                    <div className="text-xs text-fg-faint py-3 text-center border border-dashed border-border-token rounded-lg">{t('calendar.sidebar.noClassesToday', 'No classes today')}</div>
+                    <EmptyState
+                      size="sm"
+                      title={t('calendar.sidebar.noClassesToday', 'No classes today')}
+                    />
                   )}
                 </div>
 
@@ -141,6 +196,9 @@ export default function StaffSidebar({
                       {upcomingAppointments.map((apt) => (
                         <div
                           key={apt._id}
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`${apt.visitorName}, ${apt.status}`}
                           onClick={() => {
                             const from = parseLocalDateTime(apt.fromDateTime);
                             const to = parseLocalDateTime(apt.toDateTime);
@@ -161,6 +219,26 @@ export default function StaffSidebar({
                             };
                             onEventClick(event);
                           }}
+                          onKeyDown={(e) => {
+                            const from = parseLocalDateTime(apt.fromDateTime);
+                            const to = parseLocalDateTime(apt.toDateTime);
+                            const event = {
+                              id: `apt-${apt._id}`,
+                              type: 'appointment',
+                              title: apt.visitorName,
+                              date: from.date,
+                              startTime: from.time,
+                              endTime: to.time,
+                              rawAppointment: apt,
+                              visitorName: apt.visitorName,
+                              purpose: apt.purpose,
+                              status: apt.status,
+                              phone: apt.phoneNumber,
+                              notes: apt.notes,
+                              meetingWith: apt.meetingWith
+                            };
+                            handleAppointmentKeyDown(e, event);
+                          }}
                           className="p-2 rounded-lg border border-[color:var(--ok)]/30 bg-ok-bg hover:opacity-90 cursor-pointer"
                         >
                           <div className="flex items-center justify-between">
@@ -176,18 +254,19 @@ export default function StaffSidebar({
                       ))}
                     </div>
                   ) : (
-                    <div className="text-xs text-fg-faint py-3 text-center border border-dashed border-border-token rounded-lg">{t('calendar.sidebar.noUpcomingAppointments', 'No upcoming appointments')}</div>
+                    <EmptyState
+                      size="sm"
+                      title={t('calendar.sidebar.noUpcomingAppointments', 'No upcoming appointments')}
+                    />
                   )}
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full p-4 text-center">
-                <div className="w-12 h-12 rounded-full bg-surface-2 flex items-center justify-center mb-3">
-                  <User size={20} className="text-fg-faint" />
-                </div>
-                <p className="text-sm text-fg-muted font-medium">{t('calendar.sidebar.noStaffSelected', 'No Staff Selected')}</p>
-                <p className="text-xs text-fg-faint mt-1">{t('calendar.sidebar.selectStaffPrompt', 'Select a staff member to view their schedule')}</p>
-              </div>
+              <EmptyState
+                icon={User}
+                title={t('calendar.sidebar.noStaffSelected', 'No Staff Selected')}
+                description={t('calendar.sidebar.selectStaffPrompt', 'Select a staff member to view their schedule')}
+              />
             )}
           </ScrollShadow>
         </div>
