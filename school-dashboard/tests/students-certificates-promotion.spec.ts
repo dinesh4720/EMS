@@ -655,7 +655,7 @@ test.describe('Students — Ratings Deep', () => {
     const main = page.locator('main');
 
     // Switch to Ratings tab
-    await main.getByRole('button', { name: /Ratings/i }).click({ timeout: 15_000 });
+    await main.getByRole('tab', { name: /Ratings/i }).click({ timeout: 15_000 });
 
     // Verify rating system header
     await expect(main.getByText(/Student Rating/i).first()).toBeVisible();
@@ -690,7 +690,7 @@ test.describe('Students — Ratings Deep', () => {
     const main = page.locator('main');
 
     // Switch to Ratings tab
-    await main.getByRole('button', { name: /Ratings/i }).click({ timeout: 15_000 });
+    await main.getByRole('tab', { name: /Ratings/i }).click({ timeout: 15_000 });
     await expect(main.getByText(/Student Rating/i).first()).toBeVisible();
 
     // Click "Edit Ratings" button (scoped to avoid hitting the profile Edit button)
