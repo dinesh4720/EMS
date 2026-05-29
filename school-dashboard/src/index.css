@@ -18,6 +18,7 @@
 @import "./styles/academics.css";
 @import "./styles/auth.css";
 @import "./styles/styleguide.css";
+@import "./styles/ia.css";
 /* CSS-09: Component-level print utilities (page breaks, color-adjust, image/table handling) */
 @import "./styles/print.css";
 @variant dark (&:where(.dark, .dark *));

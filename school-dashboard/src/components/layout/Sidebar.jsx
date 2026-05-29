@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, GraduationCap, BookOpen, Calendar,
   MessageSquare, IndianRupee, Settings, Award, ClipboardList,
   Wand2, Package, Library, Building2, Bus, FileBarChart, Database,
-  DoorOpen, BarChart3, Sparkles, ChevronRight, Palette, Wallet,
+  DoorOpen, BarChart3, Sparkles, ChevronRight, Palette, Wallet, ListChecks,
   CalendarCheck, FileText, BookMarked, UserCheck, SendHorizontal,
   Search, X, MoreHorizontal,
 } from "lucide-react";
@@ -104,6 +104,7 @@ const INSIGHTS = [
 const ADMINISTRATION = [
   { id: "intake-forms", href: "/intake-forms/assignments", icon: FileText, label: "Intake Forms" },
   { id: "data-tools", href: "/data-tools", icon: Database, label: "Data Tools" },
+  { id: "ia", href: "/ia", icon: ListChecks, label: "IA & Checklist" },
   { id: "style-guide", href: "/style-guide", icon: Palette, label: "Style Guide" },
 ];
 
@@ -151,6 +152,7 @@ function getActiveModuleId(pathname) {
   if (isRouteActive(pathname, "/intake-forms")) return "intake-forms";
   if (isRouteActive(pathname, "/data-tools")) return "data-tools";
   if (pathname === "/style-guide") return "style-guide";
+  if (pathname === "/ia") return "ia";
   return null;
 }
 
