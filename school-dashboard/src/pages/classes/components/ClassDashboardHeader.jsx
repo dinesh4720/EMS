@@ -4,6 +4,7 @@ import {
 import {
   MessageSquare, AlertCircle,
   Download, MoreVertical, Send, Clock, GraduationCap, Settings as SettingsIcon,
+  Pencil, Trash2,
 } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 
@@ -17,6 +18,8 @@ export function ClassDashboardHeader({
   setActiveTab,
   setIsAssignTeacherModalOpen,
   openSettings,
+  onEditClass,
+  onDeleteClass,
 }) {
   const { t } = useTranslation();
 
@@ -102,6 +105,12 @@ export function ClassDashboardHeader({
               </DropdownItem>
               <DropdownItem key="settings" startContent={<GraduationCap size={14} aria-hidden />} onPress={openSettings}>
                 {t('common.settings', 'Settings')}
+              </DropdownItem>
+              <DropdownItem key="edit" startContent={<Pencil size={14} aria-hidden />} onPress={onEditClass}>
+                {t('classes.editClass', 'Edit class')}
+              </DropdownItem>
+              <DropdownItem key="delete" startContent={<Trash2 size={14} aria-hidden />} onPress={onDeleteClass} color="danger" className="text-danger">
+                {t('classes.deleteClass', 'Delete class')}
               </DropdownItem>
             </DropdownMenu>
           </Dropdown>
