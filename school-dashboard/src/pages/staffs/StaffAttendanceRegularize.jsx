@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { CardGridPageSkeleton } from "../../components/skeletons/PageSkeletons";
 import logger from "../../utils/logger";
 import { PageHeader, Breadcrumbs } from "../../components/ui";
+import { isActiveStaff } from "./utils/staffHelpers";
 
 const STATUS_META = {
   present: { label: "Present", tone: "ok" },
@@ -207,7 +208,7 @@ export default function StaffAttendanceRegularize() {
             aria-label="Select staff"
           >
             {staff
-              .filter((m) => m.status === "active")
+              .filter((m) => isActiveStaff(m))
               .map((m) => (
                 <SelectItem key={m.id} value={m.id}>
                   {m.name} {m.department ? `— ${m.department}` : ""}

@@ -3,6 +3,7 @@
  */
 import { User, Briefcase, Phone, Landmark, Mail } from "lucide-react";
 import { useTranslation } from 'react-i18next';
+import { getSafeDisplayName } from '../../../utils/objectIdHelper';
 
 export default function StaffAboutTab({ staff }) {
   const { t } = useTranslation();
@@ -19,7 +20,7 @@ export default function StaffAboutTab({ staff }) {
         <div className="p-5 grid grid-cols-2 lg:grid-cols-3 gap-6">
           <InfoItem
             label={t('pages.fullName1')}
-            value={staff.name && /^[a-f\d]{24}$/i.test(staff.name) ? (staff.code || '—') : (staff.name || '—')}
+            value={getSafeDisplayName(staff, 'code')}
           />
           <InfoItem label={t('pages.staffId')} value={staff.code || staff.id} />
           <InfoItem label={t('pages.dateOfBirth2')} value={staff.dateOfBirth} />

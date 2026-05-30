@@ -20,7 +20,7 @@ import PayrollToolbar from './components/payroll/PayrollToolbar';
 import PayrollRecordsTable from './components/payroll/PayrollTable';
 import ExportMenu from '../../components/ui/ExportMenu';
 import { PageShell } from "../../components/ui";
-
+import { isActiveStaff } from "./utils/staffHelpers";
 
 export default function StaffPayroll() {
   const { t } = useTranslation();
@@ -37,10 +37,6 @@ export default function StaffPayroll() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [employmentFilter, setEmploymentFilter] = useState("all");
 
-  const isActiveStaff = (s) => {
-    const status = (s.status || '').toLowerCase().trim();
-    return status === 'active' || !s.status;
-  };
   const getActiveStaffCount = () => staff.filter(isActiveStaff).length;
 
   // Payment modal

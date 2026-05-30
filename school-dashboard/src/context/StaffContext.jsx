@@ -5,6 +5,7 @@ import { useSalaryState } from "./hooks/useSalaryState";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import logger from "../utils/logger";
+import { isActiveStaff } from "../pages/staffs/utils/staffHelpers";
 
 export const StaffContext = createContext();
 
@@ -103,7 +104,7 @@ export function StaffProvider({ children }) {
   const toggleStaffStatus = async (id) => {
     const staffMember = staff.find((s) => s.id === id);
     if (staffMember) {
-      const newStatus = staffMember.status === "active" ? "inactive" : "active";
+      const newStatus = isActiveStaff(staffMember) ? "inactive" : "active";
       await updateStaff(id, { status: newStatus });
     }
   };
@@ -118,7 +119,7 @@ export function StaffProvider({ children }) {
       Array.isArray(staff)
         ? staff.filter((s) => {
             const roles = Array.isArray(s.role) ? s.role : [s.role];
-            return roles.includes("Teacher") && s.status === "active";
+            return roles.includes("Teacher") && isActiveStaff(s);
           })
         : [],
     [staff]

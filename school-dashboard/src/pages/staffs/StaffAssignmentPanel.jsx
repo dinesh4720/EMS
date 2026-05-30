@@ -36,10 +36,8 @@ export default function StaffAssignmentPanel({ staffId, onAssignClassTeacher }) 
     if (!staff || !classesWithTeachers) return [];
     return classesWithTeachers.filter((cls) => {
       if (!cls.classTeacherId) return false;
-      return (
-        String(cls.classTeacherId) === String(staff.id) ||
-        (staff._id && String(cls.classTeacherId) === String(staff._id))
-      );
+      const staffId = staff._id || staff.id;
+      return staffId && String(cls.classTeacherId) === String(staffId);
     });
   }, [staff, classesWithTeachers]);
 

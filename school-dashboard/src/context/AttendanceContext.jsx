@@ -4,6 +4,7 @@ import { getStoredUser } from "../utils/authSession";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import logger from "../utils/logger";
+import { isActiveStaff } from "../pages/staffs/utils/staffHelpers";
 
 // TODO [AUDIT-64]: This context provides staff and student attendance state management
 // (optimistic updates, bulk marking, regularization) but the main Attendance.jsx page
@@ -175,7 +176,7 @@ export function AttendanceProvider({ children, staff }) {
     const targetStaffIds =
       specificStaffIds ||
       (Array.isArray(staff)
-        ? staff.filter((s) => s.status === "active").map((s) => s.id)
+        ? staff.filter((s) => isActiveStaff(s)).map((s) => s.id)
         : []);
 
     // Use actual current time for present, not hardcoded 09:00
