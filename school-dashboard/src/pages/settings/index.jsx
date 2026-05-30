@@ -26,6 +26,7 @@ import {
   Network,
   Percent,
   Database,
+  ClipboardList,
 } from "lucide-react";
 
 import lazyWithRetry from "../../utils/lazyWithRetry";
@@ -67,6 +68,7 @@ const PeriodSettings = lazyWithRetry(() => import("./PeriodSettings"));
 const SalaryTemplates = lazyWithRetry(() => import("./SalaryTemplates"));
 const HierarchySettings = lazyWithRetry(() => import("./HierarchySettings"));
 const DataToolsSettings = lazyWithRetry(() => import("./DataToolsSettings"));
+const AuditLogsPage = lazyWithRetry(() => import("./AuditLogsPage"));
 
 function SettingsPageSkeleton() {
   return (
@@ -170,6 +172,7 @@ export default function SettingsPage() {
         { key: "data-tools", label: "Data Tools", icon: Database, path: "/settings/data-tools", isNew: true },
         { key: "data-cleanup", label: "Data Cleanup", icon: Trash2, path: "/settings/data-cleanup", isNew: true },
         { key: "sessions", label: "Active Sessions", icon: Activity, path: "/settings/sessions", isNew: true },
+        { key: "audit-logs", label: "Audit Logs", icon: ClipboardList, path: "/settings/audit-logs", isNew: true },
         { key: "onboarding", label: "Setup Wizard", icon: Zap, isAction: true, onClick: () => setShowOnboarding(true) },
       ]
     }
@@ -405,6 +408,9 @@ export default function SettingsPage() {
               } />
               <Route path="data-tools" element={
                 <SettingsErrorBoundary><DataToolsSettings /></SettingsErrorBoundary>
+              } />
+              <Route path="audit-logs" element={
+                <SettingsErrorBoundary><RequirePermission adminOnly><AuditLogsPage /></RequirePermission></SettingsErrorBoundary>
               } />
               <Route path="*" element={
                 <SettingsErrorBoundary>
