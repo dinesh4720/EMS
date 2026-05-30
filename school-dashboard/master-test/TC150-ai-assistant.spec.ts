@@ -28,12 +28,14 @@ test.describe('TC110 — AI Assistant', () => {
     await installMockApi(page, state);
 
     // Override AI endpoints with contextual responses
-    await page.route('**/api/ai**', async (route) => {
+    await page.route('**/api/ai/chat**', async (route) => {
       const method = route.request().method();
       let body: Record<string, unknown> = {};
       try { body = method !== 'GET' ? JSON.parse(route.request().postData() || '{}') : {}; } catch { /* */ }
 
-      const question = (body.message || body.query || body.prompt || '') as string;
+      const msgs = body.messages as Array<{ role: string; content: string }> | undefined;
+      const lastMsg = msgs?.[msgs.length - 1]?.content || '';
+      const question = lastMsg || (body.message || body.query || body.prompt || '') as string;
       aiResponses.push(question);
 
       const json = (data: unknown) =>
@@ -109,7 +111,7 @@ test.describe('TC110 — AI Assistant', () => {
 
   /* ───────── 3. Type and submit a question ───────── */
 
-  test.fixme('3) typing and submitting a question sends a message', async ({ page }) => {
+  test('3) typing and submitting a question sends a message', async ({ page }) => {
     await page.goto('/ai-assistant');
     await page.waitForLoadState('networkidle');
 
@@ -143,7 +145,7 @@ test.describe('TC110 — AI Assistant', () => {
 
   /* ───────── 4. AI response appears ───────── */
 
-  test.fixme('4) AI response is displayed in the chat', async ({ page }) => {
+  test('4) AI response is displayed in the chat', async ({ page }) => {
     await page.goto('/ai-assistant');
     await page.waitForLoadState('networkidle');
 
@@ -237,7 +239,7 @@ test.describe('TC110 — AI Assistant', () => {
 
   /* ───────── 7. Follow-up question works ───────── */
 
-  test.fixme('7) sending a follow-up question maintains context', async ({ page }) => {
+  test('7) sending a follow-up question maintains context', async ({ page }) => {
     await page.goto('/ai-assistant');
     await page.waitForLoadState('networkidle');
 

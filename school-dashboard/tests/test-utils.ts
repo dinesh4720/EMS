@@ -1294,6 +1294,55 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
     /* ── Teacher Timetable ── */
     if (path.match(/^\/teacher-timetable\/([^/]+)/)) return json({ timetable: [] });
 
+    /* ── Substitutions ── */
+    if (path === '/substitutions' && method === 'GET') {
+      const dateFilter = url.searchParams.get('date');
+      const statusFilter = url.searchParams.get('status');
+      let filtered = state.substitutions || [];
+      if (dateFilter) filtered = filtered.filter((s: any) => s.date === dateFilter);
+      if (statusFilter) filtered = filtered.filter((s: any) => s.status === statusFilter);
+      return json({ data: filtered, total: filtered.length });
+    }
+    if (path === '/substitutions' && method === 'POST') {
+      const sub = { _id: `sub-${Date.now()}`, id: `sub-${Date.now()}`, ...body, schoolId: SCHOOL_ID };
+      if (!state.substitutions) state.substitutions = [];
+      (state.substitutions as any[]).push(sub);
+      return json(sub, 201);
+    }
+    if (path.match(/^\/substitutions\/([^/]+)$/) && method === 'PUT') {
+      const id = path.split('/')[2];
+      if (!state.substitutions) state.substitutions = [];
+      const idx = (state.substitutions as any[]).findIndex((s: any) => s.id === id || s._id === id);
+      if (idx >= 0) { Object.assign((state.substitutions as any[])[idx], body); return json((state.substitutions as any[])[idx]); }
+      return json({ error: 'Not found' }, 404);
+    }
+    if (path.match(/^\/substitutions\/([^/]+)$/) && method === 'DELETE') {
+      const id = path.split('/')[2];
+      if (!state.substitutions) state.substitutions = [];
+      state.substitutions = (state.substitutions as any[]).filter((s: any) => s.id !== id && s._id !== id);
+      return json({ message: 'Deleted' });
+    }
+    if (path.match(/^\/substitutions\/([^/]+)\/approve$/)) {
+      const id = path.split('/')[2];
+      if (!state.substitutions) state.substitutions = [];
+      const idx = (state.substitutions as any[]).findIndex((s: any) => s.id === id || s._id === id);
+      if (idx >= 0) { (state.substitutions as any[])[idx].status = 'approved'; return json((state.substitutions as any[])[idx]); }
+      return json({ error: 'Not found' }, 404);
+    }
+    if (path.match(/^\/substitutions\/([^/]+)\/reject$/)) {
+      const id = path.split('/')[2];
+      if (!state.substitutions) state.substitutions = [];
+      const idx = (state.substitutions as any[]).findIndex((s: any) => s.id === id || s._id === id);
+      if (idx >= 0) { (state.substitutions as any[])[idx].status = 'rejected'; return json((state.substitutions as any[])[idx]); }
+      return json({ error: 'Not found' }, 404);
+    }
+    if (path === '/substitutions/today') {
+      const today = new Date().toISOString().split('T')[0];
+      if (!state.substitutions) state.substitutions = [];
+      const todaySubs = (state.substitutions as any[]).filter((s: any) => s.date === today && s.status === 'approved');
+      return json({ date: today, substitutions: todaySubs, total: todaySubs.length });
+    }
+
     /* ── Teacher Assignments ── */
     if (path.match(/^\/teacher-assignments\/available-teachers/)) return json([]);
     if (path.match(/^\/teacher-assignments\/([^/]+)$/) && method === 'GET') {
@@ -1480,7 +1529,11 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
       const a = seedAnnouncement(state, body as Partial<AnnouncementRecord>);
       return json(a, 201);
     }
-    if (path === '/email-campaigns')     return jsonList(state.emailCampaigns);
+    if (path === '/email-campaigns' && method === 'GET')     return jsonList(state.emailCampaigns);
+    if (path === '/email-campaigns' && method === 'POST') {
+      const campaign = seedEmailCampaign(state, body as Partial<EmailCampaignRecord>);
+      return json(campaign, 201);
+    }
     if (path === '/reminders')           return jsonList(state.reminders);
     if (path === '/reminder-templates')  return json([]);
     if (path === '/email-templates')     return json([]);
@@ -1918,6 +1971,52 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
       session.slots = session.slots.filter((slot) => slot._id !== slotId);
       return json({ success: true, message: 'Slot cancelled' });
     }
+    // PTM test-compatible routes (book/cancel/schedule)
+    if (path.match(/^\/ptm\/([^/]+)\/book$/) && method === 'POST') {
+      const id = path.split('/')[2];
+      const session = state.ptmSessions.find((s) => s.id === id || s._id === id);
+      if (!session) return json({ error: 'Not found' }, 404);
+      const b = body as Record<string, unknown>;
+      const slotId = objectId('slot-', session.slots.length + 1);
+      const slot = {
+        _id: slotId,
+        studentId: b.studentId || '',
+        parentName: b.parentName || '',
+        parentPhone: b.parentPhone || '',
+        scheduledTime: b.scheduledTime || '',
+        status: 'booked',
+        notes: b.notes || '',
+      };
+      session.slots.push(slot as any);
+      return json({ message: 'Slot booked', slot });
+    }
+    if (path.match(/^\/ptm\/([^/]+)\/cancel$/) && method === 'POST') {
+      const id = path.split('/')[2];
+      const session = state.ptmSessions.find((s) => s.id === id || s._id === id);
+      if (!session) return json({ error: 'Not found' }, 404);
+      const b = body as Record<string, unknown>;
+      const slot = session.slots.find((s) => s._id === b.slotId);
+      if (slot) {
+        slot.status = 'available';
+        (slot as any).parentName = null;
+        (slot as any).studentId = null;
+        (slot as any).studentName = null;
+        return json({ message: 'Booking cancelled', slot });
+      }
+      return json({ error: 'Not found' }, 404);
+    }
+    if (path === '/ptm/schedule') {
+      return json({
+        sessions: state.ptmSessions,
+        upcoming: state.ptmSessions.filter((s) => s.status === 'scheduled'),
+        past: state.ptmSessions.filter((s) => s.status === 'completed'),
+      });
+    }
+
+    /* ── Classes Enhanced ── */
+    if (path === '/classes-enhanced/missing-subjects') {
+      return json({ missingSubjects: [] });
+    }
 
     /* ── Timetable ── */
     if (path === '/timetable' || path.match(/^\/timetable\//)) {
@@ -2114,6 +2213,31 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
     if (path.match(/^\/payroll\//))  return json({ success: true, data: {} });
 
     /* ── AI Assistant ── */
+    if (path === '/ai/models' || path.match(/^\/ai\/models/)) {
+      return json({
+        models: [
+          { id: 'gpt-4o', name: 'GPT-4o', available: true, default: true },
+          { id: 'gpt-4o-mini', name: 'GPT-4o Mini', available: true },
+        ],
+        defaultModelId: 'gpt-4o',
+      });
+    }
+    if (path === '/ai/transcribe' || path.match(/^\/ai\/transcribe/)) {
+      return json({ text: 'Mock transcription' });
+    }
+    if (path === '/ai/chat' || path.match(/^\/ai\/chat/)) {
+      const b = body as Record<string, unknown>;
+      const msgs = b.messages as Array<{ role: string; content: string }> | undefined;
+      const lastMsg = msgs?.[msgs.length - 1]?.content?.toLowerCase() || '';
+      const message = lastMsg || ((b.message || b.query || b.prompt || '') as string).toLowerCase();
+      if (message.includes('attendance')) {
+        return json({ response: 'The overall attendance rate is 92%. Class 10-A has the highest attendance at 95%.', suggestions: ['Show attendance trends', 'View class-wise attendance', 'Absent students today'] });
+      }
+      if (message.includes('fee')) {
+        return json({ response: 'Total fee collection is at 78%. There are 5 students with overdue fees.', suggestions: ['View fee defaulters', 'Export fee report', 'Send fee reminders'] });
+      }
+      return json({ response: 'I am the SchoolSync AI assistant. I can help you with attendance, fees, academics, and more. How can I assist you today?', suggestions: ['Show attendance summary', 'Fee collection status', 'Upcoming events'] });
+    }
     if (path === '/ai' || path.match(/^\/ai\//)) return json({ response: 'I am the AI assistant. How can I help you?', suggestions: [] });
 
     /* ── Notifications ── */
@@ -2140,6 +2264,68 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
       if (method === 'PUT') return json({ success: true });
       if (method === 'DELETE') return json({ success: true });
       return json({ success: true });
+    }
+    // Intake forms test-compatible routes
+    if (path === '/intake-forms/assignments' || path === '/intake-forms/assignments/') {
+      if (method === 'POST') {
+        const assignCounter = (state.intakeFormAssignments ?? []).length + 1;
+        const newAssignment = {
+          _id: `assign-${assignCounter}`,
+          ...(body as Record<string, unknown>),
+          schoolId: SCHOOL_ID,
+        };
+        state.intakeFormAssignments = [...(state.intakeFormAssignments ?? []), newAssignment];
+        return json(newAssignment, 201);
+      }
+      return json({ data: state.intakeFormAssignments ?? [], total: (state.intakeFormAssignments ?? []).length });
+    }
+    if (path === '/intake-forms/submissions' || path === '/intake-forms/submissions/') {
+      const assignmentId = url.searchParams.get('assignmentId');
+      const statusFilter = url.searchParams.get('status');
+      let filtered = state.intakeFormSubmissions ?? [];
+      if (assignmentId) filtered = filtered.filter((s: any) => s.assignmentId === assignmentId);
+      if (statusFilter) filtered = filtered.filter((s: any) => s.status === statusFilter);
+      return json({ data: filtered, total: filtered.length });
+    }
+    if (path.match(/^\/intake-forms\/submissions\/([^/]+)$/)) {
+      const subId = path.split('/')[3];
+      const sub = (state.intakeFormSubmissions ?? []).find((s: any) => s._id === subId || s.id === subId);
+      if (method === 'GET') return sub ? json(sub) : json({ error: 'Not found' }, 404);
+      if (method === 'PUT') {
+        if (sub && body) {
+          (sub as any).status = (body as any).status || (sub as any).status;
+          if ((body as any).status === 'approved' || (body as any).status === 'rejected') {
+            (sub as any).reviewedAt = new Date().toISOString();
+          }
+        }
+        return json(sub || { success: true });
+      }
+      return json({ error: 'Not found' }, 404);
+    }
+    if (path === '/intake-forms/funnel' || path === '/intake-forms/funnel/') {
+      const submissions = state.intakeFormSubmissions ?? [];
+      const totalSubmitted = submissions.length;
+      const underReview = submissions.filter((s: any) => s.reviewStatus === 'pending' || s.status === 'under_review').length;
+      const approved = submissions.filter((s: any) => s.reviewStatus === 'approved' || s.status === 'approved').length;
+      const rejected = submissions.filter((s: any) => s.reviewStatus === 'rejected' || s.status === 'rejected').length;
+      return json({
+        funnel: [
+          { stage: 'Submitted', count: totalSubmitted, percentage: totalSubmitted > 0 ? 100 : 0 },
+          { stage: 'Under Review', count: underReview, percentage: totalSubmitted > 0 ? Math.round((underReview / totalSubmitted) * 100) : 0 },
+          { stage: 'Approved', count: approved, percentage: totalSubmitted > 0 ? Math.round((approved / totalSubmitted) * 100) : 0 },
+          { stage: 'Rejected', count: rejected, percentage: totalSubmitted > 0 ? Math.round((rejected / totalSubmitted) * 100) : 0 },
+          { stage: 'Enrolled', count: 0, percentage: 0 },
+        ],
+        classWise: state.classes.map((c) => ({
+          classId: c.id,
+          className: `${c.name}-${c.section}`,
+          submitted: totalSubmitted,
+          approved,
+          rejected,
+          pending: totalSubmitted - approved - rejected,
+        })),
+        conversionRate: totalSubmitted > 0 ? Math.round((approved / totalSubmitted) * 100) : 0,
+      });
     }
 
     /* ── Form Assignments ── */
@@ -2201,12 +2387,59 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
 
     /* ── Super Admin ── */
     if (path.match(/^\/super-admin/)) {
-      if (path.includes('/schools'))     return json({ data: [], total: 0 });
-      if (path.includes('/feature-flags')) return json([]);
-      if (path.includes('/jobs'))        return json({ data: [], total: 0 });
-      if (path.includes('/changelog'))   return json([]);
-      if (path.includes('/growth'))      return json({ signups: [], conversions: [], metrics: {} });
-      if (path.includes('/health'))      return json({ schools: [] });
+      if (path.includes('/schools')) {
+        return json([
+          { _id: SCHOOL_ID, name: 'SchoolSync Demo School', plan: 'premium', studentCount: 450, staffCount: 30, status: 'active', createdAt: '2025-01-15' },
+          { _id: 'school-002', name: 'Green Valley Academy', plan: 'basic', studentCount: 200, staffCount: 15, status: 'active', createdAt: '2025-06-01' },
+          { _id: 'school-003', name: 'Sunrise Public School', plan: 'free', studentCount: 50, staffCount: 5, status: 'trial', createdAt: '2026-03-01' },
+        ]);
+      }
+      if (path.includes('/feature-flags')) {
+        if (method === 'PUT' || method === 'PATCH') return json({ success: true });
+        return json([
+          { id: 'ff-1', name: 'ai_assistant', enabled: true, description: 'AI Assistant feature' },
+          { id: 'ff-2', name: 'bulk_import_v2', enabled: false, description: 'New bulk import engine' },
+          { id: 'ff-3', name: 'parent_portal', enabled: true, description: 'Parent self-service portal' },
+        ]);
+      }
+      if (path.includes('/jobs')) {
+        return json({
+          jobs: [
+            { id: 'job-1', type: 'backup', status: 'completed', startedAt: '2026-03-30T02:00:00Z', completedAt: '2026-03-30T02:15:00Z' },
+            { id: 'job-2', type: 'email_campaign', status: 'running', startedAt: '2026-03-30T10:00:00Z' },
+          ],
+          total: 2,
+        });
+      }
+      if (path.includes('/changelog')) {
+        return json([
+          { id: 'cl-1', version: '2.5.0', date: '2026-03-25', title: 'AI Assistant Launch', description: 'Added AI-powered assistant for school analytics' },
+          { id: 'cl-2', version: '2.4.0', date: '2026-03-10', title: 'GDPR Tools', description: 'Added data export and deletion tools for compliance' },
+        ]);
+      }
+      if (path.includes('/growth')) {
+        return json({
+          signups: [
+            { month: '2026-01', count: 5 },
+            { month: '2026-02', count: 8 },
+            { month: '2026-03', count: 12 },
+          ],
+          conversions: [
+            { month: '2026-01', trial: 3, paid: 2 },
+            { month: '2026-02', trial: 5, paid: 3 },
+            { month: '2026-03', trial: 8, paid: 4 },
+          ],
+          metrics: { totalSchools: 3, activeSchools: 2, totalStudents: 700, mrr: 15000 },
+        });
+      }
+      if (path.includes('/health')) {
+        return json({
+          schools: [
+            { schoolId: SCHOOL_ID, name: 'SchoolSync Demo School', health: 'healthy', lastActivity: '2026-03-30', apiCalls: 1500 },
+            { schoolId: 'school-002', name: 'Green Valley Academy', health: 'warning', lastActivity: '2026-03-28', apiCalls: 200 },
+          ],
+        });
+      }
       return json({});
     }
 
@@ -2243,6 +2476,60 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
     /* ── Student Fees Batch ── */
     if (path === '/student-fees/batch' && method === 'POST') {
       return json({ success: true, processed: [] }, 201);
+    }
+
+    /* ── Student Pin / Unpin ── */
+    if (path.match(/^\/students\/([^/]+)\/pin$/) && method === 'PUT') {
+      const id = path.split('/')[2];
+      const student = state.students.find((s) => s.id === id || s._id === id);
+      if (student) {
+        (student as any).isPinned = true;
+        return json({ message: 'Student pinned', pinned: true });
+      }
+      return json({ error: 'Not found' }, 404);
+    }
+    if (path.match(/^\/students\/([^/]+)\/unpin$/) && method === 'PUT') {
+      const id = path.split('/')[2];
+      const student = state.students.find((s) => s.id === id || s._id === id);
+      if (student) {
+        (student as any).isPinned = false;
+        return json({ message: 'Student unpinned', pinned: false });
+      }
+      return json({ error: 'Not found' }, 404);
+    }
+    if (path === '/students/pinned') {
+      const pinned = state.students.filter((s) => (s as any).isPinned);
+      return json({ data: pinned, total: pinned.length });
+    }
+    if (path.match(/^\/students\/([^/]+)\/favorite$/)) {
+      const id = path.split('/')[2];
+      const student = state.students.find((s) => s.id === id || s._id === id);
+      if (method === 'POST' || method === 'PUT') {
+        if (student) { (student as any).isPinned = true; return json({ message: 'Added to favorites', favorited: true }); }
+      }
+      if (method === 'DELETE') {
+        if (student) { (student as any).isPinned = false; return json({ message: 'Removed from favorites', favorited: false }); }
+      }
+      return json({ favorited: !!(student as any)?.isPinned });
+    }
+
+    /* ── Student Bulk Operations ── */
+    if (path === '/students/bulk/deactivate' && method === 'POST') {
+      const ids = ((body as any)?.studentIds || (body as any)?.ids || []) as string[];
+      for (const id of ids) {
+        const student = state.students.find((s) => s.id === id);
+        if (student) student.status = 'inactive';
+      }
+      return json({ message: `${ids.length} students deactivated`, count: ids.length });
+    }
+    if (path === '/students/bulk/delete' && method === 'POST') {
+      const ids = ((body as any)?.studentIds || (body as any)?.ids || []) as string[];
+      state.students = state.students.filter((s) => !ids.includes(s.id));
+      return json({ message: `${ids.length} students deleted`, count: ids.length });
+    }
+    if (path === '/students/bulk/remind' && method === 'POST') {
+      const ids = ((body as any)?.studentIds || (body as any)?.ids || []) as string[];
+      return json({ message: `Reminders sent to ${ids.length} students`, count: ids.length });
     }
 
     /* ── Feature Flags ── */

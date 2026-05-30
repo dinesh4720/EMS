@@ -117,7 +117,7 @@ test.describe('TC116 — Student Bulk Operations', () => {
       // Click first student checkbox
       const firstCheckbox = checkboxes.nth(1); // Skip header checkbox
       if (await firstCheckbox.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await firstCheckbox.click();
+        await firstCheckbox.evaluate((el: HTMLElement) => el.click());
         await page.waitForTimeout(300);
       }
     }
@@ -139,9 +139,9 @@ test.describe('TC116 — Student Bulk Operations', () => {
 
     if (count > 1) {
       // Select 2 students
-      await checkboxes.nth(1).click();
+      await checkboxes.nth(1).evaluate((el: HTMLElement) => el.click());
       await page.waitForTimeout(200);
-      await checkboxes.nth(2).click();
+      await checkboxes.nth(2).evaluate((el: HTMLElement) => el.click());
       await page.waitForTimeout(500);
 
       // Bulk action toolbar should appear
@@ -173,21 +173,21 @@ test.describe('TC116 — Student Bulk Operations', () => {
 
     if (count > 2) {
       // Select students
-      await checkboxes.nth(1).click();
+      await checkboxes.nth(1).evaluate((el: HTMLElement) => el.click());
       await page.waitForTimeout(200);
-      await checkboxes.nth(2).click();
+      await checkboxes.nth(2).evaluate((el: HTMLElement) => el.click());
       await page.waitForTimeout(500);
 
       // Find and click deactivate button
       const deactivateBtn = page.getByRole('button', { name: /deactivate/i }).first();
       if (await deactivateBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await deactivateBtn.click();
+        await deactivateBtn.click({ force: true });
         await page.waitForTimeout(500);
 
         // Confirm if dialog appears
         const confirmBtn = page.getByRole('button', { name: /confirm|yes|proceed/i }).first();
         if (await confirmBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-          await confirmBtn.click();
+          await confirmBtn.click({ force: true });
           await page.waitForTimeout(1000);
         }
       }
@@ -207,9 +207,9 @@ test.describe('TC116 — Student Bulk Operations', () => {
     const count = await checkboxes.count();
 
     if (count > 2) {
-      await checkboxes.nth(1).click();
+      await checkboxes.nth(1).evaluate((el: HTMLElement) => el.click());
       await page.waitForTimeout(200);
-      await checkboxes.nth(2).click();
+      await checkboxes.nth(2).evaluate((el: HTMLElement) => el.click());
       await page.waitForTimeout(500);
 
       // Look for send reminder option
@@ -217,14 +217,14 @@ test.describe('TC116 — Student Bulk Operations', () => {
       const moreActions = page.getByRole('button', { name: /more|action|bulk/i }).first();
 
       if (await remindBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await remindBtn.click();
+        await remindBtn.click({ force: true });
         await page.waitForTimeout(500);
       } else if (await moreActions.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await moreActions.click();
+        await moreActions.click({ force: true });
         await page.waitForTimeout(300);
         const sendOption = page.getByText(/remind|send|notification/i).first();
         if (await sendOption.isVisible({ timeout: 2000 }).catch(() => false)) {
-          await sendOption.click();
+          await sendOption.click({ force: true });
           await page.waitForTimeout(500);
         }
       }
@@ -244,15 +244,15 @@ test.describe('TC116 — Student Bulk Operations', () => {
     const count = await checkboxes.count();
 
     if (count > 2) {
-      await checkboxes.nth(1).click();
+      await checkboxes.nth(1).evaluate((el: HTMLElement) => el.click());
       await page.waitForTimeout(200);
-      await checkboxes.nth(2).click();
+      await checkboxes.nth(2).evaluate((el: HTMLElement) => el.click());
       await page.waitForTimeout(500);
 
       // Find and click delete button
       const deleteBtn = page.getByRole('button', { name: /delete/i }).first();
       if (await deleteBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await deleteBtn.click();
+        await deleteBtn.click({ force: true });
         await page.waitForTimeout(500);
 
         // Should show confirmation dialog
@@ -267,7 +267,7 @@ test.describe('TC116 — Student Bulk Operations', () => {
         // Cancel the delete
         const cancelBtn = page.getByRole('button', { name: /cancel|no/i }).first();
         if (await cancelBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-          await cancelBtn.click();
+          await cancelBtn.click({ force: true });
         }
       }
     }

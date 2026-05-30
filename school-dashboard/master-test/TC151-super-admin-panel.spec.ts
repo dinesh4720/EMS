@@ -144,7 +144,7 @@ test.describe('TC111 — Super Admin Panel', () => {
 
   /* ───────── 2. School health panel ───────── */
 
-  test.skip('2) school health panel displays school statuses', async ({ page }) => {
+  test('2) school health panel displays school statuses', async ({ page }) => {
     await page.goto('/super-admin');
     await page.waitForLoadState('networkidle');
 
@@ -154,7 +154,7 @@ test.describe('TC111 — Super Admin Panel', () => {
 
   /* ───────── 3. Growth analytics panel ───────── */
 
-  test.skip('3) growth analytics panel shows signup and conversion data', async ({ page }) => {
+  test('3) growth analytics panel shows signup and conversion data', async ({ page }) => {
     await page.goto('/super-admin');
     await page.waitForLoadState('networkidle');
 
@@ -164,7 +164,7 @@ test.describe('TC111 — Super Admin Panel', () => {
 
   /* ───────── 4. Changelog panel ───────── */
 
-  test.skip('4) changelog panel shows recent updates', async ({ page }) => {
+  test('4) changelog panel shows recent updates', async ({ page }) => {
     await page.goto('/super-admin');
     await page.waitForLoadState('networkidle');
 
@@ -174,7 +174,7 @@ test.describe('TC111 — Super Admin Panel', () => {
 
   /* ───────── 5. Feature flags panel ───────── */
 
-  test.skip('5) feature flags panel lists flags with toggle controls', async ({ page }) => {
+  test('5) feature flags panel lists flags with toggle controls', async ({ page }) => {
     await page.goto('/super-admin');
     await page.waitForLoadState('networkidle');
 
@@ -184,7 +184,7 @@ test.describe('TC111 — Super Admin Panel', () => {
 
   /* ───────── 6. Jobs dashboard panel ───────── */
 
-  test.skip('6) jobs dashboard shows background job statuses', async ({ page }) => {
+  test('6) jobs dashboard shows background job statuses', async ({ page }) => {
     await page.goto('/super-admin');
     await page.waitForLoadState('networkidle');
 
@@ -194,7 +194,7 @@ test.describe('TC111 — Super Admin Panel', () => {
 
   /* ───────── 7. Feature flag toggle ───────── */
 
-  test.skip('7) toggling a feature flag sends update request', async ({ page }) => {
+  test('7) toggling a feature flag sends update request', async ({ page }) => {
     await page.goto('/super-admin');
     await page.waitForLoadState('networkidle');
 

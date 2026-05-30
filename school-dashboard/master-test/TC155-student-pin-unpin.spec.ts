@@ -93,14 +93,14 @@ test.describe('TC115 — Student Pin/Unpin', () => {
 
   /* ───────── 1. Student list loads with 5 students ───────── */
 
-  test.skip('1) student list loads with all 5 seeded students', async ({ page }) => {
+  test('1) student list loads with all 5 seeded students', async ({ page }) => {
     await page.goto('/students');
     await page.waitForLoadState('networkidle');
 
     await expect(page).not.toHaveURL(/\/login/);
 
+    await expect(page.locator('body')).toContainText('Aarav Sharma', { timeout: 15000 });
     const bodyText = await page.textContent('body');
-    expect(bodyText).toContain('Aarav Sharma');
     expect(bodyText).toContain('Diya Patel');
     expect(bodyText).toContain('Rishi Kumar');
     expect(bodyText).toContain('Ananya Gupta');
@@ -109,7 +109,7 @@ test.describe('TC115 — Student Pin/Unpin', () => {
 
   /* ───────── 2. Pin action exists on student rows ───────── */
 
-  test.skip('2) pin or favorite action is available on student entries', async ({ page }) => {
+  test('2) pin or favorite action is available on student entries', async ({ page }) => {
     await page.goto('/students');
     await page.waitForLoadState('networkidle');
 
@@ -142,7 +142,7 @@ test.describe('TC115 — Student Pin/Unpin', () => {
 
   /* ───────── 3. Click pin on a student ───────── */
 
-  test.skip('3) clicking pin action pins a student', async ({ page }) => {
+  test('3) clicking pin action pins a student', async ({ page }) => {
     await page.goto('/students');
     await page.waitForLoadState('networkidle');
 
@@ -162,12 +162,15 @@ test.describe('TC115 — Student Pin/Unpin', () => {
 
   /* ───────── 4. Pin indicator appears ───────── */
 
-  test.skip('4) pinned student shows a visual indicator', async ({ page }) => {
+  test('4) pinned student shows a visual indicator', async ({ page }) => {
     // Pre-pin a student
     pinnedStudents.add(state.students[0].id);
 
     await page.goto('/students');
     await page.waitForLoadState('networkidle');
+
+    // Wait for students to render
+    await expect(page.locator('body')).toContainText('Aarav Sharma', { timeout: 15000 });
 
     // Look for visual pin indicators (filled star, highlighted pin, etc.)
     const pinnedIndicator = page.locator(
@@ -184,12 +187,15 @@ test.describe('TC115 — Student Pin/Unpin', () => {
 
   /* ───────── 5. Pinned students appear at top or in favorites ───────── */
 
-  test.skip('5) pinned student appears in favorites section or at top of list', async ({ page }) => {
+  test('5) pinned student appears in favorites section or at top of list', async ({ page }) => {
     // Pin first student
     pinnedStudents.add(state.students[0].id);
 
     await page.goto('/students');
     await page.waitForLoadState('networkidle');
+
+    // Wait for students to render
+    await expect(page.locator('body')).toContainText('Aarav Sharma', { timeout: 15000 });
 
     const bodyText = await page.textContent('body');
 
@@ -204,12 +210,15 @@ test.describe('TC115 — Student Pin/Unpin', () => {
 
   /* ───────── 6. Unpin the student ───────── */
 
-  test.skip('6) unpinning removes the pin indicator', async ({ page }) => {
+  test('6) unpinning removes the pin indicator', async ({ page }) => {
     // Pre-pin a student
     pinnedStudents.add(state.students[0].id);
 
     await page.goto('/students');
     await page.waitForLoadState('networkidle');
+
+    // Wait for students to render
+    await expect(page.locator('body')).toContainText('Aarav Sharma', { timeout: 15000 });
 
     // Find and click the unpin button
     const unpinBtn = page.locator(
@@ -236,7 +245,7 @@ test.describe('TC115 — Student Pin/Unpin', () => {
 
   /* ───────── 7. State tracks pinned students ───────── */
 
-  test.skip('7) mock state correctly tracks pinned students', async ({ page }) => {
+  test('7) mock state correctly tracks pinned students', async ({ page }) => {
     expect(pinnedStudents.size).toBe(0);
 
     pinnedStudents.add(state.students[0].id);
@@ -252,7 +261,7 @@ test.describe('TC115 — Student Pin/Unpin', () => {
 
   /* ───────── 8. All 5 students are in state ───────── */
 
-  test.skip('8) state contains all 5 seeded students', async ({ page }) => {
+  test('8) state contains all 5 seeded students', async ({ page }) => {
     expect(state.students).toHaveLength(5);
     expect(state.students.map(s => s.name)).toEqual([
       'Aarav Sharma', 'Diya Patel', 'Rishi Kumar', 'Ananya Gupta', 'Kabir Singh',
