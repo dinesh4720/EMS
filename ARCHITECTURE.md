@@ -68,6 +68,10 @@ Legend:
 - Status: Audit in progress, findings posted, awaiting approval
 - Key findings: Hardcoded colors in ClassPerformance, inline styles in AcademicsPage, missing layout primitives on all pages, inconsistent HeroUI adoption, bespoke components instead of shared DataTable/StatCard
 
+#### Calendar — 2026-05-30 (DK-708)
+- Status: Audit in progress, findings posted, awaiting approval
+- Key findings: HeroUI imports in CalendarToolbar/StaffSidebar, hardcoded Tailwind semantic colors in AddEventDrawer, hardcoded mobile breakpoints, missing ErrorState for API failures, accessibility gap in WeekView, import path inconsistency
+
 ### Canonical Reference
 - **Staff List:** `src/pages/staffs/StaffList.jsx`, `StaffListRow.jsx`, `StaffDetailPane.jsx`
 - **Student List:** `src/pages/students/StudentsList.jsx`, `StudentListRow.jsx`, `StudentDetailPane.jsx`
