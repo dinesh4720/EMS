@@ -495,7 +495,7 @@
 .fd-seg__btn.is-active {
   background: var(--surface);
   color: var(--fg);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-sm);
 }
 
 .fd-status {
@@ -595,6 +595,78 @@
   color: var(--fg-muted);
 }
 .fd-rating__row .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* GatePass print preview — token-based, dark-mode aware */
+.gp-print {
+  padding: var(--sp-6);
+  border: 2px dashed var(--border-strong);
+  background: var(--surface);
+}
+.gp-print__header {
+  text-align: center;
+  border-bottom: 2px solid var(--fg);
+  padding-bottom: var(--sp-4);
+  margin-bottom: var(--sp-4);
+}
+.gp-print__title {
+  font-size: var(--fs-24);
+  font-weight: var(--fw-semibold);
+  color: var(--fg);
+}
+.gp-print__subtitle {
+  font-size: var(--fs-13);
+  color: var(--fg-muted);
+}
+.gp-print__label {
+  color: var(--fg-muted);
+  font-weight: var(--fw-medium);
+}
+.gp-print__value {
+  color: var(--fg);
+  font-weight: var(--fw-semibold);
+}
+.gp-print__value-lg {
+  font-size: var(--fs-18);
+  color: var(--fg);
+  font-weight: var(--fw-semibold);
+}
+.gp-print__secondary {
+  color: var(--fg-subtle);
+}
+.gp-print__warn-box {
+  background: var(--warn-bg);
+  padding: var(--sp-2);
+  border-radius: var(--r-md);
+}
+.gp-print__danger-box {
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  padding: var(--sp-2);
+  border-radius: var(--r-md);
+}
+.gp-print__info-box {
+  background: var(--info-bg);
+  border: 1px solid var(--info-border);
+  padding: var(--sp-3);
+  border-radius: var(--r-lg);
+}
+.gp-print__notice {
+  font-size: var(--fs-11);
+  font-weight: var(--fw-semibold);
+  color: var(--danger);
+  text-align: center;
+}
+.gp-print__status-ok { color: var(--ok); }
+.gp-print__status-warn { color: var(--warn); }
+.gp-print__status-danger { color: var(--danger); }
+.gp-print__signature-line {
+  border-bottom: 1px solid var(--border-strong);
+  margin-bottom: var(--sp-1);
+}
+.gp-print__footer-label {
+  font-size: var(--fs-11);
+  color: var(--fg-subtle);
+}
 
 /* Conflict indicator for appointments */
 .fd-conflict {

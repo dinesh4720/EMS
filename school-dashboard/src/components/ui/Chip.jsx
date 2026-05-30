@@ -4,27 +4,21 @@ import { X } from "lucide-react";
 import { cn } from "../../utils/cn";
 
 const COLOR_STYLES = {
-  neutral:
-    "bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-zinc-200",
-  primary:
-    "bg-gray-900 text-white dark:bg-zinc-100 dark:text-zinc-900",
-  success:
-    "bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-300",
-  warning:
-    "bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
-  danger:
-    "bg-red-50 text-red-800 dark:bg-red-900/30 dark:text-red-300",
-  info:
-    "bg-blue-50 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+  neutral: "bg-[var(--surface-2)] text-[var(--fg-muted)]",
+  primary: "bg-[var(--fg)] text-[var(--surface)]",
+  success: "bg-[var(--ok-bg)] text-[var(--ok)]",
+  warning: "bg-[var(--warn-bg)] text-[var(--warn)]",
+  danger: "bg-[var(--danger-bg)] text-[var(--danger)]",
+  info: "bg-[var(--info-bg)] text-[var(--info)]",
 };
 
 const SELECTED_STYLES = {
-  neutral: "bg-gray-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-gray-900 dark:border-zinc-100",
-  primary: "bg-gray-900 text-white dark:bg-zinc-100 dark:text-zinc-900",
-  success: "bg-green-600 text-white",
-  warning: "bg-amber-600 text-white",
-  danger: "bg-red-600 text-white",
-  info: "bg-blue-600 text-white",
+  neutral: "bg-[var(--fg)] text-[var(--surface)] border-[var(--fg)]",
+  primary: "bg-[var(--fg)] text-[var(--surface)]",
+  success: "bg-[var(--ok)] text-[var(--surface)]",
+  warning: "bg-[var(--warn)] text-[var(--surface)]",
+  danger: "bg-[var(--danger)] text-[var(--surface)]",
+  info: "bg-[var(--info)] text-[var(--surface)]",
 };
 
 const SIZE_STYLES = {
@@ -63,7 +57,7 @@ const Chip = forwardRef(function Chip(
             e.stopPropagation();
             onRemove(e);
           }}
-          className="inline-flex items-center justify-center rounded-full hover:bg-black/10 dark:hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40 -mr-1"
+          className="inline-flex items-center justify-center rounded-full hover:bg-[var(--fg)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40 -mr-1"
           aria-label="Remove"
         >
           <X size={size === "sm" ? 12 : 14} aria-hidden="true" />

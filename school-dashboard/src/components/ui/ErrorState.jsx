@@ -64,12 +64,12 @@ const ErrorState = memo(function ErrorState({
     >
       <div
         className={cn(
-          "rounded-full bg-red-50 dark:bg-red-950 flex items-center justify-center",
+          "rounded-full bg-[var(--danger-bg)] flex items-center justify-center",
           styles.icon,
         )}
         aria-hidden="true"
       >
-        <Icon size={styles.iconInner} className="text-red-600 dark:text-red-400" />
+        <Icon size={styles.iconInner} className="text-[var(--danger)]" />
       </div>
       <div className="space-y-1">
         <p className={cn("font-medium text-fg", styles.title)}>
