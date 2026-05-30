@@ -215,6 +215,12 @@ test.describe('Reports Page', () => {
     await page.waitForLoadState('networkidle');
     await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
+    // Wait for the lazy-loaded reports page to render (tabs appear after chunk loads)
+    await page.waitForFunction(() => {
+      const body = document.getElementById('root')?.textContent || '';
+      return body.includes('Attendance') && body.includes('Marks') && body.includes('Fees');
+    }, { timeout: 15000 });
+
     const body = await page.locator('#root').textContent();
     expect(body).toContain('Reports');
 
@@ -282,12 +288,17 @@ test.describe('Reports Page', () => {
     await page.waitForLoadState('networkidle');
     await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
-    // Click on Marks tab
+    // Wait for tabs to render (lazy-loaded chunk)
     const marksTab = page.locator('button, [role="tab"]').filter({ hasText: /Marks/i }).first();
-    if (await marksTab.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await marksTab.click();
-      await page.waitForLoadState('networkidle');
-    }
+    await marksTab.waitFor({ state: 'visible', timeout: 15000 });
+    await marksTab.click();
+    await page.waitForLoadState('networkidle');
+
+    // Wait for marks tab content to load
+    await page.waitForFunction(() => {
+      const body = document.getElementById('root')?.textContent || '';
+      return body.includes('Select exam') || body.includes('Select an exam') || body.includes('Mid-Term');
+    }, { timeout: 15000 });
 
     const body = await page.locator('#root').textContent();
     // Should show exam selection prompt or exam dropdown
@@ -300,6 +311,13 @@ test.describe('Reports Page', () => {
     await page.goto('/reports');
     await page.waitForLoadState('networkidle');
     await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
+
+    // Wait for the attendance table to fully render (header text appears after
+    // the skeleton loader is replaced by actual table data)
+    await page.waitForFunction(() => {
+      const body = document.getElementById('root')?.textContent || '';
+      return body.includes('Attendance %');
+    }, { timeout: 15000 });
 
     // Attendance tab columns
     const body = await page.locator('#root').textContent();
@@ -377,10 +395,16 @@ test.describe('Export Center', () => {
     await page.waitForLoadState('networkidle');
     await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
+    // Wait for the lazy-loaded export center to render
+    await page.waitForFunction(() => {
+      const body = document.getElementById('root')?.textContent || '';
+      return body.includes('Export Center');
+    }, { timeout: 15000 });
+
     const body = await page.locator('#root').textContent();
     expect(body).toContain('Export Center');
 
-    // Check for module cards — the page has 13 modules
+    // Check for module cards — the page has 10 modules
     const moduleNames = [
       'Student List', 'Staff List', 'Fee Collection', 'Fee Defaulters',
       'Attendance Summary', 'Exam Results', 'Payroll Summary',
@@ -391,7 +415,7 @@ test.describe('Export Center', () => {
     for (const name of moduleNames) {
       if (body?.includes(name)) foundCount++;
     }
-    // At least 10 module cards should be visible
+    // At least 8 module cards should be visible
     expect(foundCount).toBeGreaterThanOrEqual(8);
   });
 
@@ -399,6 +423,12 @@ test.describe('Export Center', () => {
     await page.goto('/reports/export');
     await page.waitForLoadState('networkidle');
     await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
+
+    // Wait for the lazy-loaded export center to render
+    await page.waitForFunction(() => {
+      const body = document.getElementById('root')?.textContent || '';
+      return body.includes('Attendance Summary');
+    }, { timeout: 15000 });
 
     // The Attendance Summary card should show date filter inputs (startDate, endDate)
     const attendanceCard = page.locator('div').filter({ hasText: /Attendance Summary/ }).first();
@@ -440,6 +470,11 @@ test.describe('Export Center', () => {
     await page.goto('/reports/export');
     await page.waitForLoadState('networkidle');
     await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
+
+    // Wait for the lazy-loaded export center to render (format selects appear after cards load)
+    await page.waitForFunction(() => {
+      return document.querySelectorAll('select option[value="csv"]').length > 0;
+    }, { timeout: 15000 });
 
     // Each export card has a format <select> with CSV, Excel, PDF options
     // Find a select that contains the CSV option (format selector, not filter selects)
