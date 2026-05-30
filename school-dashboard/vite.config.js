@@ -76,11 +76,6 @@ export default defineConfig({
             return 'charts-vendor';
           }
 
-          // 3D (only loaded by pages that use it)
-          if (id.includes('three') || id.includes('@react-three')) {
-            return '3d-vendor';
-          }
-
           // Heavy utilities — split so they don't bloat the entry chunk
           if (id.includes('date-fns')) {
             return 'date-vendor';
