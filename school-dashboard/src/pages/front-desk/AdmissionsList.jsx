@@ -8,10 +8,10 @@ import {
 } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { Edit, Eye, LayoutGrid, List as ListIcon, Plus, Trash2 } from 'lucide-react';
+import { Edit, Eye, Inbox, LayoutGrid, List as ListIcon, Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ToolbarSearch from '../../components/ui/ToolbarSearch';
-import { ConfirmDialog, PageShell } from '../../components/ui';
+import { ConfirmDialog, EmptyState, ErrorState, PageShell, SkeletonTable } from '../../components/ui';
 import { classesApi, frontDeskApi, staffApi } from '../../services/api';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
 import logger from '../../utils/logger';
@@ -309,23 +309,32 @@ const AdmissionsList = forwardRef(function AdmissionsList({ onSave }, ref) {
     >
       <div className="adm-page">
       {loading && (
-        <div className="adm-empty">Loading admissions…</div>
+        <div className="adm-list" aria-busy="true">
+          <SkeletonTable columns={7} rows={6} />
+        </div>
       )}
 
       {!loading && error && (
-        <div className="adm-empty">
-          Failed to load admissions.{' '}
-          <button type="button" className="btn btn--sm" onClick={loadAdmissions}>Retry</button>
-        </div>
+        <ErrorState
+          title="Failed to load admissions"
+          description="We couldn't load the admission enquiries. Try again in a moment."
+          onRetry={loadAdmissions}
+          size="md"
+        />
       )}
 
       {!loading && !error && visible.length === 0 && (
-        <div className="adm-empty">
-          No admission enquiries{stageFilter !== 'all' ? ' in this stage' : ''}.{' '}
-          <button type="button" className="btn btn--sm btn--accent" onClick={openCreateModal}>
-            <Plus size={11} aria-hidden /> New enquiry
-          </button>
-        </div>
+        <EmptyState
+          icon={Inbox}
+          title={`No admission enquiries${stageFilter !== 'all' ? ' in this stage' : ''}`}
+          description="Get started by creating a new admission enquiry."
+          action={
+            <button type="button" className="btn btn--accent" onClick={openCreateModal}>
+              <Plus size={13} aria-hidden /> New enquiry
+            </button>
+          }
+          size="md"
+        />
       )}
 
       {!loading && !error && visible.length > 0 && view === 'list' && (
