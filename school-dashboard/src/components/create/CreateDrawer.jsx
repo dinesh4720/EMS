@@ -50,7 +50,7 @@ export function CreateDrawer({
   if (!open) return null;
 
   const sheet = (
-    <div className={cn("drawer-frame fixed inset-0 z-[1000]", className)} role="dialog" aria-modal="true" aria-label={typeof title === "string" ? title : undefined}>
+    <div className={cn("drawer-frame fixed inset-0 z-[1000]", className)} style={{ position: 'fixed' }} role="dialog" aria-modal="true" aria-label={typeof title === "string" ? title : undefined}>
       <button
         type="button"
         aria-label="Close"

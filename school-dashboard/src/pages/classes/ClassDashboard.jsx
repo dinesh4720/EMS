@@ -27,6 +27,8 @@ import MinimalTabs from '../../components/ui/MinimalTabs';
 import { ClassDashboardHeader } from './components/ClassDashboardHeader';
 import { SidebarSchedule } from './components/SidebarSchedule';
 import { SidebarAnnouncements } from './components/SidebarAnnouncements';
+import { EditClassModal } from './components/EditClassModal';
+import { DeleteClassModal } from './components/DeleteClassModal';
 import StudentOverlay from '../../components/students/StudentOverlay';
 import useStudentOverlay from '../../hooks/useStudentOverlay';
 
@@ -91,6 +93,8 @@ export default function ClassDashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isAssignTeacherModalOpen, setIsAssignTeacherModalOpen] = useState(false);
   const [isSettingsDrawerOpen, setIsSettingsDrawerOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth <= MOBILE_MAX : false
   );
@@ -382,6 +386,8 @@ export default function ClassDashboard() {
         setActiveTab={setActiveTab}
         setIsAssignTeacherModalOpen={setIsAssignTeacherModalOpen}
         openSettings={openSettings}
+        onEditClass={() => setIsEditModalOpen(true)}
+        onDeleteClass={() => setIsDeleteModalOpen(true)}
       />
 
       {/* Refresh error banner */}
@@ -485,6 +491,28 @@ export default function ClassDashboard() {
           className={cls.name}
           section={cls.section}
           currentTeacherId={cls.classTeacherId || null}
+        />
+      )}
+
+      {cls && (
+        <EditClassModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          classData={cls}
+        />
+      )}
+
+      {cls && (
+        <DeleteClassModal
+          isOpen={isDeleteModalOpen}
+          onClose={() => {
+            setIsDeleteModalOpen(false);
+            // If class was deleted, navigate back to classes list
+            if (!classesWithTeachers.find((c) => String(c.id || c._id) === String(id))) {
+              navigate('/classes');
+            }
+          }}
+          classData={cls}
         />
       )}
 
