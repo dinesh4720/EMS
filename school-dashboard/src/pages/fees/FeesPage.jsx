@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Plus, BellRing, Printer } from "lucide-react";
+import { Plus, BellRing, Printer, Inbox } from "lucide-react";
 import toast from "react-hot-toast";
 
 import useFeesData, { derivePaymentStatus } from "../../hooks/useFeesData";
@@ -9,6 +9,7 @@ import PaymentsTable from "../../components/fees/PaymentsTable";
 import PaymentSheet from "../../components/fees/PaymentSheet";
 import ToolbarSearch from "../../components/ui/ToolbarSearch";
 import ErrorState from "../../components/ui/ErrorState";
+import EmptyState from "../../components/ui/EmptyState";
 import { TablePageSkeleton } from "../../components/skeletons/PageSkeletons";
 import ExportMenu from "../../components/ui/ExportMenu";
 import PrintPreviewModal from "../../components/ui/PrintPreviewModal";
@@ -113,7 +114,7 @@ export default function FeesPage() {
   }, [kpis.collectedToday]);
 
   const toolbar = (
-    <div className="toolbar" style={{ borderBottom: "none", paddingTop: 0 }}>
+    <div className="toolbar">
       <ToolbarSearch
         value={search}
         onChange={setSearch}
@@ -218,6 +219,32 @@ export default function FeesPage() {
             error={error}
             onRetry={refetch}
             size="lg"
+          />
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            icon={Inbox}
+            title={
+              search
+                ? "No payments matched"
+                : status === "all"
+                ? "No payments yet"
+                : `No ${status} payments`
+            }
+            description={
+              search
+                ? "Try adjusting your search query."
+                : "Fee payments will appear here once recorded."
+            }
+            action={
+              <button
+                type="button"
+                className="btn btn--accent"
+                onClick={() => openSheet(null)}
+              >
+                <Plus size={13} aria-hidden /> Collect payment
+              </button>
+            }
+            size="md"
           />
         ) : (
           <PaymentsTable

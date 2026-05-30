@@ -124,29 +124,20 @@ export default function StudentsPreviewModal({
           </div>
           <div className="dp-metric">
             <span className="dp-metric__label">{t("pages.pending2", "Pending")}</span>
-            <span className="dp-metric__value mono tnum" style={{ color: "var(--danger)" }}>
+            <span className="dp-metric__value mono tnum dp-metric__value--danger">
               {pendingCount + partialCount}
             </span>
           </div>
           <div className="dp-metric">
             <span className="dp-metric__label">{t("pages.fullyPaid", "Paid")}</span>
-            <span className="dp-metric__value mono tnum" style={{ color: "var(--ok)" }}>
+            <span className="dp-metric__value mono tnum dp-metric__value--ok">
               {paidCount}
             </span>
           </div>
         </div>
 
         {totalCount > 0 && (
-          <div
-            className="help-banner"
-            style={{
-              margin: "12px 20px 0",
-              color: "var(--warn)",
-              background: "var(--warn-bg)",
-              borderColor: "var(--warn-bg)",
-              fontSize: 11.5,
-            }}
-          >
+          <div className="help-banner" style={{ margin: "12px 20px 0", fontSize: 11.5 }}>
             <AlertTriangle size={11} style={{ marginTop: 1, flexShrink: 0 }} aria-hidden />
             <span style={{ flex: 1, minWidth: 0 }}>
               {t(
@@ -167,14 +158,7 @@ export default function StudentsPreviewModal({
           </div>
 
           {totalCount === 0 ? (
-            <div
-              style={{
-                padding: "32px 8px",
-                textAlign: "center",
-                color: "var(--fg-subtle)",
-                fontSize: 13,
-              }}
-            >
+            <div className="fees-table__empty">
               <Users
                 size={20}
                 aria-hidden

@@ -134,14 +134,17 @@ export const feeStructureAssignmentSchema = z.object({
 });
 
 export const feeHeadSchema = z.object({
-  name: z.string().min(1, 'Fee head name is required').max(100).trim(),
+  name: z.string().min(1, 'Fee head name is required').max(200).trim(),
   category: z
-    .enum(['tuition', 'transport', 'hostel', 'library', 'activity', 'exam', 'uniform', 'other'])
+    .enum(['Academic', 'Transport', 'Extra-curricular', 'Hostel', 'Other'])
     .optional(),
   frequency: z.enum(['monthly', 'quarterly', 'term', 'yearly', 'one-time']).optional(),
   mandatory: z.boolean().optional(),
   amount: optNum(z.number().min(0, 'Amount must be 0 or greater')),
   description: z.string().max(500).optional(),
+  applicableTerms: z.array(z.number()).optional(),
+  dueDay: z.coerce.number().int().min(1).max(31).optional(),
+  refundable: z.boolean().optional(),
 });
 
 // Mirrors backend createFeePaymentSchema (EMS-backend/validators/feeSchema.js).

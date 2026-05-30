@@ -471,16 +471,8 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
                       type="button"
                       role="radio"
                       aria-checked={isActive}
-                      className="tagchip"
+                      className={`tagchip${isActive ? "" : " tagchip--muted"}`}
                       onClick={() => setSelectedClass(s._id)}
-                      style={
-                        isActive
-                          ? undefined
-                          : {
-                              background: "var(--surface-2)",
-                              color: "var(--fg-muted)",
-                            }
-                      }
                     >
                       {s.section || "—"}
                       {isActive && <Check size={10} strokeWidth={2.5} aria-hidden />}
@@ -538,7 +530,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
           )}
 
           {templateError && (
-            <div className="help-banner" style={{ color: "var(--danger)", background: "var(--danger-bg)", borderColor: "var(--danger-bg)" }}>
+            <div className="help-banner help-banner--danger">
               <AlertCircle size={12} style={{ marginTop: 1, flexShrink: 0 }} aria-hidden />
               <span style={{ flex: 1, minWidth: 0 }}>
                 <strong>{t("toast.error.failedToLoadFeeTemplates", "Failed to load fee templates")}</strong>
@@ -552,7 +544,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
           )}
 
           {existingStructure && (
-            <div className="help-banner" style={{ color: "var(--warn)", background: "var(--warn-bg)", borderColor: "var(--warn-bg)" }}>
+            <div className="help-banner">
               <AlertTriangle size={12} style={{ marginTop: 1, flexShrink: 0 }} aria-hidden />
               <span style={{ flex: 1, minWidth: 0 }}>
                 {t(

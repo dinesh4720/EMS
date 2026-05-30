@@ -1,7 +1,6 @@
 import { useRef, useEffect } from "react";
 import { ChevronLeft, X, Download, CheckCircle, XCircle, RotateCcw } from "lucide-react";
 import PhotoAvatar from "../../components/PhotoAvatar";
-import Button from "../../components/ui/Button";
 
 // Same status tone map as RefundListRow
 const STATUS_TONE = {
@@ -216,47 +215,46 @@ export default function RefundDetailPane({
       <div className="detail-pane__foot">
         {isPending && (
           <>
-            <Button
-              variant="outline"
-              size="sm"
-              loading={actionLoading === refund._id}
+            <button
+              type="button"
+              className="btn"
               disabled={actionLoading === refund._id}
               onClick={() => onReject?.(refund)}
               style={{ flex: 1 }}
             >
               <XCircle size={13} aria-hidden /> Reject
-            </Button>
-            <Button
-              size="sm"
-              loading={actionLoading === refund._id}
+            </button>
+            <button
+              type="button"
+              className="btn btn--accent"
               disabled={actionLoading === refund._id}
               onClick={() => onApprove?.(refund)}
               style={{ flex: 1 }}
             >
               <CheckCircle size={13} aria-hidden /> Approve
-            </Button>
+            </button>
           </>
         )}
         {isApproved && (
-          <Button
-            size="sm"
-            loading={actionLoading === refund._id}
+          <button
+            type="button"
+            className="btn btn--accent"
             disabled={actionLoading === refund._id}
             onClick={() => onProcess?.(refund)}
             style={{ flex: 1 }}
           >
             <RotateCcw size={13} aria-hidden /> Process refund
-          </Button>
+          </button>
         )}
         {(isProcessed || isRejected) && (
-          <Button
-            variant="outline"
-            size="sm"
+          <button
+            type="button"
+            className="btn"
             onClick={() => onDownload?.(refund)}
             style={{ flex: 1 }}
           >
             <Download size={13} aria-hidden /> Download CSV
-          </Button>
+          </button>
         )}
       </div>
     </aside>

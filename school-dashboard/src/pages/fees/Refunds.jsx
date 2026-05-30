@@ -8,18 +8,22 @@ import {
 import { useSearchParams } from "react-router-dom";
 import { useEntityFetch } from "../../hooks/useEntityFetch";
 import { TablePageSkeleton } from "../../components/skeletons/PageSkeletons";
-import { Search, X, Plus, CheckCircle2, Ban } from "lucide-react";
+import {
+  Search,
+  X,
+  Plus,
+  CheckCircle2,
+  Ban,
+  Inbox,
+} from "lucide-react";
 import BulkActionBar from "../../components/ui/BulkActionBar";
 import useBulkSelection from "../../hooks/useBulkSelection";
 import { feesApi, studentsApi } from "../../services/api";
 import { useCurrency } from "../../context/hooks/useCurrency";
-import Button from "../../components/ui/Button";
-import Modal from "../../components/ui/Modal";
-import Input from "../../components/ui/Input";
-import Textarea from "../../components/ui/Textarea";
-import Select from "../../components/ui/Select";
 import ToolbarSearch from "../../components/ui/ToolbarSearch";
 import ErrorState from "../../components/ui/ErrorState";
+import EmptyState from "../../components/ui/EmptyState";
+import { PageShell } from "../../components/ui";
 import { createRefundSchema, parseFormSchema } from "../../validators/formSchemas";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
@@ -476,23 +480,7 @@ export default function Refunds() {
     []
   );
 
-  if (loading) {
-    return <TablePageSkeleton kpiCards={5} columns={5} rows={8} />;
-  }
-
-  if (fetchError) {
-    return (
-      <ErrorState
-        title={t("common.somethingWentWrong", "Something went wrong")}
-        description={fetchError}
-        retryLabel={t("common.tryAgain", "Try again")}
-        onRetry={fetchRefunds}
-        size="lg"
-      />
-    );
-  }
-
-  return (
+  const pageContent = (
     <div
       className="page"
       style={
@@ -516,73 +504,62 @@ export default function Refunds() {
         }}
       >
         {/* Stats Row */}
-        <div className="grid grid-cols-5 gap-4 mb-4 px-6 pt-6">
-          <div className="p-4 border border-border-token rounded-lg bg-surface">
-            <p className="text-xs text-fg-muted uppercase tracking-wider mb-1">
-              {t("pages.totalRefunds")}
-            </p>
-            <p className="text-2xl font-bold text-fg">{fmt(totalRefunds)}</p>
+        <div className="refund-kpi">
+          <div className="refund-kpi__cell">
+            <span className="refund-kpi__label">{t("pages.totalRefunds")}</span>
+            <span className="refund-kpi__value mono tnum">{fmt(totalRefunds)}</span>
           </div>
-          <div className="p-4 border border-border-token rounded-lg bg-surface">
-            <p className="text-xs text-fg-muted uppercase tracking-wider mb-1">
-              {t("pages.pending2")}
-            </p>
-            <p className="text-2xl font-bold text-fg">{pendingCount}</p>
+          <div className="refund-kpi__cell">
+            <span className="refund-kpi__label">{t("pages.pending2")}</span>
+            <span className="refund-kpi__value mono tnum">{pendingCount}</span>
           </div>
-          <div className="p-4 border border-border-token rounded-lg bg-surface">
-            <p className="text-xs text-fg-muted uppercase tracking-wider mb-1">
-              {t("pages.approved1")}
-            </p>
-            <p className="text-2xl font-bold text-fg">{approvedCount}</p>
+          <div className="refund-kpi__cell">
+            <span className="refund-kpi__label">{t("pages.approved1")}</span>
+            <span className="refund-kpi__value mono tnum">{approvedCount}</span>
           </div>
-          <div className="p-4 border border-border-token rounded-lg bg-surface">
-            <p className="text-xs text-fg-muted uppercase tracking-wider mb-1">
-              {t("pages.processed")}
-            </p>
-            <p className="text-2xl font-bold text-fg">{processedCount}</p>
+          <div className="refund-kpi__cell">
+            <span className="refund-kpi__label">{t("pages.processed")}</span>
+            <span className="refund-kpi__value mono tnum">{processedCount}</span>
           </div>
-          <div className="p-4 border border-border-token rounded-lg bg-surface">
-            <p className="text-xs text-fg-muted uppercase tracking-wider mb-1">
-              {t("pages.rejected")}
-            </p>
-            <p className="text-2xl font-bold text-fg">{rejectedCount}</p>
+          <div className="refund-kpi__cell">
+            <span className="refund-kpi__label">{t("pages.rejected")}</span>
+            <span className="refund-kpi__value mono tnum">{rejectedCount}</span>
           </div>
         </div>
 
         {/* Toolbar */}
-        <div className="flex flex-col sm:flex-row justify-between gap-4 items-center border-b border-border-token py-4 px-6 mb-4">
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <ToolbarSearch
-              value={searchQuery}
-              onChange={setSearchQuery}
-              placeholder={t("pages.searchStudent")}
-              ariaLabel={t("aria.misc.searchRefunds", "Search refunds")}
-              style={{ flex: 1, maxWidth: 360 }}
-            />
+        <div className="toolbar" style={{ paddingTop: 0 }}>
+          <ToolbarSearch
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder={t("pages.searchStudent")}
+            ariaLabel={t("aria.misc.searchRefunds", "Search refunds")}
+            style={{ flex: 1, maxWidth: 360 }}
+          />
+
+          <div className="seg" role="tablist" aria-label={t("aria.misc.filterRefunds", "Filter refunds")}>
+            {STATUS_FILTERS.map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                role="tab"
+                aria-selected={statusFilter === f.key}
+                className={`seg__btn${statusFilter === f.key ? " is-active" : ""}`}
+                onClick={() => setStatusFilter(f.key)}
+              >
+                {f.label}
+              </button>
+            ))}
           </div>
 
-          <div className="flex gap-2 w-full sm:w-auto">
-            <div className="w-full sm:w-[140px]">
-              <Select
-                size="sm"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                {STATUS_FILTERS.map((f) => (
-                  <option key={f.key} value={f.key}>
-                    {f.label}
-                  </option>
-                ))}
-              </Select>
-            </div>
-
-            <Button
-              size="sm"
-              icon={<Plus size={14} />}
+          <div className="row gap-2" style={{ marginLeft: "auto" }}>
+            <button
+              type="button"
+              className="btn btn--accent"
               onClick={() => setNewRefundOpen(true)}
             >
-              {t("pages.newRefund")}
-            </Button>
+              <Plus size={13} aria-hidden /> {t("pages.newRefund")}
+            </button>
           </div>
 
           <BulkActionBar
@@ -627,12 +604,16 @@ export default function Refunds() {
           }}
         >
           {visibleRefunds.length === 0 ? (
-            <div
-              className="subtle"
-              style={{ padding: 32, textAlign: "center", fontSize: 13 }}
-            >
-              {t("pages.noRefundRecords", "No refund records found.")}
-            </div>
+            <EmptyState
+              icon={Inbox}
+              title={t("pages.noRefundRecords", "No refund records found.")}
+              description={
+                searchQuery || statusFilter !== "all"
+                  ? t("pages.tryAdjustingFilters", "Try adjusting your search or filters.")
+                  : t("pages.noRefundsYetDescription", "Refund requests will appear here once created.")
+              }
+              size="md"
+            />
           ) : (
             visibleRefunds.map((refund) => {
               const id = String(refund._id);
@@ -718,232 +699,390 @@ export default function Refunds() {
       )}
 
       {/* Reject Refund Modal */}
-      <Modal
-        isOpen={rejectModalOpen}
-        onClose={() => {
-          setRejectModalOpen(false);
-          setRejectingRefund(null);
-          setRejectReason("");
-        }}
-        title={t("pages.rejectRefund", "Reject Refund")}
-        size="md"
-        footer={
-          <div className="flex gap-3 justify-end">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setRejectModalOpen(false);
-                setRejectingRefund(null);
-                setRejectReason("");
-              }}
-              disabled={actionLoading === rejectingRefund?._id}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              onClick={handleConfirmReject}
-              loading={actionLoading === rejectingRefund?._id}
-              disabled={actionLoading === rejectingRefund?._id}
-            >
-              {t("pages.confirmReject", "Reject Refund")}
-            </Button>
+      {rejectModalOpen && (
+        <div className="composer-overlay" onClick={() => {
+          if (!actionLoading) {
+            setRejectModalOpen(false);
+            setRejectingRefund(null);
+            setRejectReason("");
+          }
+        }}>
+          <div className="composer" role="dialog" aria-modal="true" style={{ maxWidth: 480 }}>
+            <header className="composer__head">
+              <span className="composer__title">{t("pages.rejectRefund", "Reject Refund")}</span>
+              <button
+                type="button"
+                className="iconbtn"
+                onClick={() => {
+                  setRejectModalOpen(false);
+                  setRejectingRefund(null);
+                  setRejectReason("");
+                }}
+                aria-label="Close"
+              >
+                <X size={14} />
+              </button>
+            </header>
+            <div className="composer__body">
+              <label className="field">
+                <span className="field__label">
+                  {t("pages.rejectionReason", "Reason for rejection")} <span className="req">*</span>
+                </span>
+                <textarea
+                  className="textarea"
+                  rows={3}
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  placeholder={t("pages.enterRejectionReason", "Enter rejection reason...")}
+                  required
+                />
+              </label>
+            </div>
+            <footer className="composer__foot">
+              <div style={{ flex: 1 }} />
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  setRejectModalOpen(false);
+                  setRejectingRefund(null);
+                  setRejectReason("");
+                }}
+                disabled={actionLoading === rejectingRefund?._id}
+              >
+                {t("common.cancel")}
+              </button>
+              <button
+                type="button"
+                className="btn btn--accent"
+                onClick={handleConfirmReject}
+                disabled={actionLoading === rejectingRefund?._id || !rejectReason.trim()}
+              >
+                {actionLoading === rejectingRefund?._id
+                  ? t("common.processing", "Processing...")
+                  : t("pages.confirmReject", "Reject Refund")}
+              </button>
+            </footer>
           </div>
-        }
-      >
-        <Textarea
-          label={t("pages.rejectionReason", "Reason for rejection")}
-          placeholder={t("pages.enterRejectionReason", "Enter rejection reason...")}
-          value={rejectReason}
-          onChange={(e) => setRejectReason(e.target.value)}
-          required
-          rows={3}
-        />
-      </Modal>
+        </div>
+      )}
 
       {/* New Refund Modal */}
-      <Modal
-        isOpen={newRefundOpen}
-        onClose={() => {
-          setNewRefundOpen(false);
-          setFormErrors({});
-          handleClearStudent();
-        }}
-        title={t("pages.newRefundRequest")}
-        size="lg"
-        footer={
-          <div className="flex gap-3 justify-end">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setNewRefundOpen(false);
-                setFormErrors({});
-                handleClearStudent();
-              }}
-              disabled={savingRefund}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              onClick={handleCreateRefund}
-              loading={savingRefund}
-              disabled={savingRefund}
-            >
-              {savingRefund
-                ? t("common.creating", "Creating...")
-                : t("fees.createRefund", "Create Refund")}
-            </Button>
-          </div>
-        }
-      >
-        <div className="space-y-4">
-          {/* Student search picker */}
-          <div>
-            <label className="text-sm font-medium text-fg mb-1 block">
-              {t("pages.student", "Student")}{" "}
-              <span className="text-danger-token" aria-hidden="true">*</span>
-            </label>
-            {selectedStudent ? (
-              <div className="flex items-center gap-2 px-3 py-2 border border-border-token rounded-lg bg-surface-2">
-                <div className="w-7 h-7 rounded-full bg-surface flex items-center justify-center flex-shrink-0">
-                  <span className="text-xs font-medium text-fg">
-                    {selectedStudent.name?.charAt(0)}
+      {newRefundOpen && (
+        <div className="composer-overlay" onClick={() => {
+          if (!savingRefund) {
+            setNewRefundOpen(false);
+            setFormErrors({});
+            handleClearStudent();
+          }
+        }}>
+          <div className="composer" role="dialog" aria-modal="true" style={{ maxWidth: 560 }}>
+            <header className="composer__head">
+              <span className="composer__title">{t("pages.newRefundRequest")}</span>
+              <button
+                type="button"
+                className="iconbtn"
+                onClick={() => {
+                  setNewRefundOpen(false);
+                  setFormErrors({});
+                  handleClearStudent();
+                }}
+                aria-label="Close"
+              >
+                <X size={14} />
+              </button>
+            </header>
+            <div className="composer__body">
+              <div className="fgrid">
+                {/* Student search picker */}
+                <div className="field span-2">
+                  <span className="field__label">
+                    {t("pages.student", "Student")} <span className="req">*</span>
                   </span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-fg truncate">
-                    {selectedStudent.name}
-                  </p>
-                  <p className="text-xs text-fg-muted">
-                    {selectedStudent.admissionNo ||
-                      selectedStudent.admissionId ||
-                      ""}{" "}
-                    — {t("common.class")}{" "}
-                    {selectedStudent.classId?.name || ""}
-                    {selectedStudent.classId?.section
-                      ? ` ${selectedStudent.classId.section}`
-                      : ""}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleClearStudent}
-                  className="p-1 hover:bg-surface rounded transition-colors"
-                >
-                  <X size={14} className="text-fg-muted" />
-                </button>
-              </div>
-            ) : (
-              <div className="relative">
-                <Input
-                  placeholder={t(
-                    "pages.searchStudentsByNameOrAdmissionNo",
-                    "Search by name or admission number..."
-                  )}
-                  value={studentSearch}
-                  onChange={(e) => setStudentSearch(e.target.value)}
-                  size="sm"
-                  startContent={
-                    <Search size={14} className="text-fg-muted" />
-                  }
-                />
-                {studentResults.length > 0 && studentSearch && (
-                  <div className="absolute z-50 w-full border border-border-token rounded-lg mt-1 max-h-48 overflow-y-auto bg-surface shadow-lg">
-                    {studentResults.map((s) => (
-                      <button
-                        key={s._id}
-                        type="button"
-                        onClick={() => handleSelectStudent(s)}
-                        className="w-full text-left px-3 py-2.5 text-sm hover:bg-surface-2 transition-colors border-b border-divider last:border-b-0"
-                      >
-                        <span className="font-medium text-fg">
-                          {s.name}
-                        </span>
-                        <span className="text-fg-muted ml-2 text-xs">
-                          {s.admissionNo || s.admissionId || ""} —{" "}
-                          {t("common.class")}{" "}
-                          {s.classId?.name || ""}
-                          {s.classId?.section
-                            ? ` ${s.classId.section}`
-                            : ""}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {studentSearch.length >= 2 &&
-                  studentResults.length === 0 && (
-                    <div className="absolute z-50 w-full border border-border-token rounded-lg mt-1 bg-surface shadow-lg px-3 py-3 text-sm text-fg-muted">
-                      {t("common.noResultsFound", "No students found")}
+                  {selectedStudent ? (
+                    <div className="taginput">
+                      <span className="tagchip">
+                        {selectedStudent.name}
+                        <button
+                          type="button"
+                          className="iconbtn"
+                          aria-label={t("common.remove", "Remove")}
+                          onClick={handleClearStudent}
+                        >
+                          <X size={12} />
+                        </button>
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="field__icon-wrap">
+                      <Search size={14} className="field__icon" aria-hidden />
+                      <input
+                        className="input input--with-icon"
+                        placeholder={t(
+                          "pages.searchStudentsByNameOrAdmissionNo",
+                          "Search by name or admission number..."
+                        )}
+                        value={studentSearch}
+                        onChange={(e) => setStudentSearch(e.target.value)}
+                      />
+                      {studentResults.length > 0 && studentSearch && (
+                        <div
+                          className="autocomplete-dropdown"
+                          style={{
+                            position: "absolute",
+                            zIndex: 50,
+                            width: "100%",
+                            marginTop: 4,
+                            maxHeight: 192,
+                            overflowY: "auto",
+                            background: "var(--surface)",
+                            border: "1px solid var(--border-token)",
+                            borderRadius: 8,
+                            boxShadow: "var(--shadow-md)",
+                          }}
+                        >
+                          {studentResults.map((s) => (
+                            <button
+                              key={s._id}
+                              type="button"
+                              onClick={() => handleSelectStudent(s)}
+                              className="autocomplete-item"
+                              style={{
+                                display: "block",
+                                width: "100%",
+                                textAlign: "left",
+                                padding: "10px 12px",
+                                fontSize: 13,
+                                background: "transparent",
+                                border: "none",
+                                borderBottom: "1px solid var(--divider)",
+                                cursor: "pointer",
+                                color: "var(--fg)",
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = "var(--surface-2)";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = "transparent";
+                              }}
+                            >
+                              <span style={{ fontWeight: 520 }}>{s.name}</span>
+                              <span className="subtle" style={{ marginLeft: 8, fontSize: 12 }}>
+                                {s.admissionNo || s.admissionId || ""} —{" "}
+                                {t("common.class")}{" "}
+                                {s.classId?.name || ""}
+                                {s.classId?.section
+                                  ? ` ${s.classId.section}`
+                                  : ""}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {studentSearch.length >= 2 &&
+                        studentResults.length === 0 && (
+                          <div
+                            style={{
+                              position: "absolute",
+                              zIndex: 50,
+                              width: "100%",
+                              marginTop: 4,
+                              padding: "12px",
+                              fontSize: 13,
+                              color: "var(--fg-muted)",
+                              background: "var(--surface)",
+                              border: "1px solid var(--border-token)",
+                              borderRadius: 8,
+                              boxShadow: "var(--shadow-md)",
+                            }}
+                          >
+                            {t("common.noResultsFound", "No students found")}
+                          </div>
+                        )}
                     </div>
                   )}
+                  {formErrors.studentId && (
+                    <span className="field__hint" style={{ color: "var(--danger)" }}>
+                      {formErrors.studentId}
+                    </span>
+                  )}
+                </div>
+
+                <label className="field">
+                  <span className="field__label">
+                    {t("fees.amountLabel")} <span className="req">*</span>
+                  </span>
+                  <input
+                    type="number"
+                    className={`input mono tnum${formErrors.amount ? " input--err" : ""}`}
+                    placeholder={t("fees.amountPlaceholder")}
+                    value={newRefundForm.amount}
+                    onChange={(e) =>
+                      setNewRefundForm({ ...newRefundForm, amount: e.target.value })
+                    }
+                    min={1}
+                  />
+                  {studentTotalPaid !== null && (
+                    <span className="field__hint">
+                      {t("fees.maxRefundable", {
+                        amount: studentTotalPaid.toLocaleString(),
+                      })}
+                    </span>
+                  )}
+                  {formErrors.amount && (
+                    <span className="field__hint" style={{ color: "var(--danger)" }}>
+                      {formErrors.amount}
+                    </span>
+                  )}
+                </label>
+
+                <label className="field">
+                  <span className="field__label">
+                    {t("pages.refundMode")} <span className="req">*</span>
+                  </span>
+                  <select
+                    className="select"
+                    value={newRefundForm.refundMode}
+                    onChange={(e) =>
+                      setNewRefundForm({
+                        ...newRefundForm,
+                        refundMode: e.target.value,
+                      })
+                    }
+                  >
+                    <option value="cash">{t("pages.cash1")}</option>
+                    <option value="cheque">{t("pages.cheque1")}</option>
+                    <option value="bank_transfer">
+                      {t("pages.bankTransfer1")}
+                    </option>
+                  </select>
+                  {formErrors.refundMode && (
+                    <span className="field__hint" style={{ color: "var(--danger)" }}>
+                      {formErrors.refundMode}
+                    </span>
+                  )}
+                </label>
+
+                <label className="field span-2">
+                  <span className="field__label">
+                    {t("pages.reason")} <span className="req">*</span>
+                  </span>
+                  <textarea
+                    className={`textarea${formErrors.reason ? " textarea--err" : ""}`}
+                    placeholder={t("pages.reasonForRefund")}
+                    value={newRefundForm.reason}
+                    onChange={(e) =>
+                      setNewRefundForm({ ...newRefundForm, reason: e.target.value })
+                    }
+                    rows={2}
+                  />
+                  {formErrors.reason && (
+                    <span className="field__hint" style={{ color: "var(--danger)" }}>
+                      {formErrors.reason}
+                    </span>
+                  )}
+                </label>
+
+                <label className="field span-2">
+                  <span className="field__label">{t("pages.remarksOptional")}</span>
+                  <textarea
+                    className="textarea"
+                    placeholder={t("pages.additionalNotes1")}
+                    value={newRefundForm.remarks}
+                    onChange={(e) =>
+                      setNewRefundForm({ ...newRefundForm, remarks: e.target.value })
+                    }
+                    rows={2}
+                  />
+                </label>
               </div>
-            )}
+            </div>
+            <footer className="composer__foot">
+              <div style={{ flex: 1 }} />
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  setNewRefundOpen(false);
+                  setFormErrors({});
+                  handleClearStudent();
+                }}
+                disabled={savingRefund}
+              >
+                {t("common.cancel")}
+              </button>
+              <button
+                type="button"
+                className="btn btn--accent"
+                onClick={handleCreateRefund}
+                disabled={savingRefund}
+              >
+                {savingRefund
+                  ? t("common.creating", "Creating...")
+                  : t("fees.createRefund", "Create Refund")}
+              </button>
+            </footer>
           </div>
-          <Input
-            type="number"
-            label={t("fees.amountLabel")}
-            placeholder={t("fees.amountPlaceholder")}
-            value={newRefundForm.amount}
-            onChange={(e) =>
-              setNewRefundForm({ ...newRefundForm, amount: e.target.value })
-            }
-            required
-            description={
-              studentTotalPaid !== null
-                ? t("fees.maxRefundable", {
-                    amount: studentTotalPaid.toLocaleString(),
-                  })
-                : undefined
-            }
-            error={
-              formErrors.amount ||
-              (studentTotalPaid !== null &&
-              parseFloat(newRefundForm.amount) > studentTotalPaid
-                ? t("fees.cannotExceedTotalPaid", {
-                    amount: studentTotalPaid.toLocaleString(),
-                  })
-                : undefined)
-            }
-          />
-          <Textarea
-            label={t("pages.reason")}
-            placeholder={t("pages.reasonForRefund")}
-            value={newRefundForm.reason}
-            onChange={(e) =>
-              setNewRefundForm({ ...newRefundForm, reason: e.target.value })
-            }
-            required
-            rows={2}
-            error={formErrors.reason}
-          />
-          <Select
-            label={t("pages.refundMode")}
-            value={newRefundForm.refundMode}
-            onChange={(e) =>
-              setNewRefundForm({
-                ...newRefundForm,
-                refundMode: e.target.value,
-              })
-            }
-            error={formErrors.refundMode}
-          >
-            <option value="cash">{t("pages.cash1")}</option>
-            <option value="cheque">{t("pages.cheque1")}</option>
-            <option value="bank_transfer">
-              {t("pages.bankTransfer1")}
-            </option>
-          </Select>
-          <Textarea
-            label={t("pages.remarksOptional")}
-            placeholder={t("pages.additionalNotes1")}
-            value={newRefundForm.remarks}
-            onChange={(e) =>
-              setNewRefundForm({ ...newRefundForm, remarks: e.target.value })
-            }
-            rows={2}
-          />
         </div>
-      </Modal>
+      )}
     </div>
+  );
+
+  if (loading) {
+    return (
+      <PageShell
+        title={t("pages.refunds", "Refunds")}
+        description={t("pages.loading", "Loading...")}
+        breadcrumbs={[
+          { label: "Home", href: "/" },
+          { label: "Fees", href: "/fees" },
+          { label: t("pages.refunds", "Refunds") },
+        ]}
+        bodyPadding="none"
+        scrollable={false}
+      >
+        <TablePageSkeleton kpiCards={5} columns={5} rows={8} />
+      </PageShell>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <PageShell
+        title={t("pages.refunds", "Refunds")}
+        description={t("pages.somethingWentWrong", "Something went wrong")}
+        breadcrumbs={[
+          { label: "Home", href: "/" },
+          { label: "Fees", href: "/fees" },
+          { label: t("pages.refunds", "Refunds") },
+        ]}
+        bodyPadding="none"
+        scrollable={false}
+      >
+        <ErrorState
+          title={t("common.somethingWentWrong", "Something went wrong")}
+          description={fetchError}
+          retryLabel={t("common.tryAgain", "Try again")}
+          onRetry={fetchRefunds}
+          size="lg"
+        />
+      </PageShell>
+    );
+  }
+
+  return (
+    <PageShell
+      title={t("pages.refunds", "Refunds")}
+      description={`${filteredRefunds.length} ${filteredRefunds.length === 1 ? "record" : "records"}`}
+      breadcrumbs={[
+        { label: "Home", href: "/" },
+        { label: "Fees", href: "/fees" },
+        { label: t("pages.refunds", "Refunds") },
+      ]}
+      bodyPadding="none"
+      scrollable={false}
+    >
+      {pageContent}
+    </PageShell>
   );
 }
