@@ -37,10 +37,15 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.10",
+    "metro": "^0.81.5",
+    "metro-config": "^0.81.5",
+    "metro-core": "^0.81.5",
+    "metro-resolver": "^0.81.5",
     "puppeteer": "^24.35.0",
     "typescript": "~5.9.2"
   },
   "overrides": {
+    "metro": "^0.81.5",
     "socket.io-parser": ">=4.2.6",
     "flatted": ">=3.4.2",
     "fast-xml-parser": ">=5.5.7",
