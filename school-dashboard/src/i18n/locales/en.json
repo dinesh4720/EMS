@@ -704,6 +704,15 @@
       }
     }
   },
+  "criticalAlerts": {
+    "title": "Critical Alerts",
+    "noAlerts": "No critical alerts at this time."
+  },
+  "globalSearch": {
+    "placeholder": "Search across the dashboard...",
+    "noResults": "No results found.",
+    "loading": "Searching..."
+  },
   "aria": {
     "tables": {
       "gatePassLog": "Gate pass log table",
@@ -816,6 +825,12 @@
     "deleteVehicle": "Delete vehicle \"{{regNum}}\"?",
     "removeStudentFromRoute": "Remove this student from the route?",
     "setDefaultSalary": "This will set a default salary of 50,000 for all staff who have 0 salary. Continue?",
+    "deleteItem": "Are you sure you want to delete this item?",
+    "deleteItemNamed": "Are you sure you want to delete {{name}}?",
+    "deleteBulkStaff": "Are you sure you want to delete {{count}} staff members?",
+    "permanentDeleteStudent": "Are you sure you want to permanently delete {{name}}? This action cannot be undone.",
+    "markPassedOut": "Are you sure you want to mark this student as passed out?",
+    "deleteSubject": "Are you sure you want to delete the subject {{name}}?",
     "deleteAudit": "Delete this audit?"
   },
   "toast": {
@@ -4149,6 +4164,20 @@
       "extraCurricular": "Extra-curricular",
       "hostel": "Hostel",
       "other": "Other"
+    }
+  },
+  "exportCenter": {
+    "types": {
+      "students": "Students",
+      "staff": "Staff"
+    },
+    "columns": {
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "class": "Class",
+      "section": "Section",
+      "rollNumber": "Roll Number"
     }
   },
   "transport": {
