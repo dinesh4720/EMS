@@ -6,7 +6,7 @@ import {
   Wand2, Package, Library, Building2, Bus, FileBarChart, Database,
   DoorOpen, BarChart3, Sparkles, ChevronRight, Palette, Wallet,
   CalendarCheck, FileText, BookMarked, UserCheck, SendHorizontal,
-  Search, X, MoreHorizontal,
+  Search, X, MoreHorizontal, Receipt,
 } from "lucide-react";
 import { useChatNotifications } from "../../context/ChatNotificationContext";
 import { useApp } from "../../context/AppContext";
@@ -85,6 +85,12 @@ const PRIMARY_MODULES = [
     icon: IndianRupee,
     label: "Fees",
   },
+  {
+    id: "expenses",
+    href: "/expenses",
+    icon: Receipt,
+    label: "Expenses",
+  },
 ];
 
 const OPERATIONS = [
@@ -140,6 +146,7 @@ function getActiveModuleId(pathname) {
   if (isRouteActive(pathname, "/calendar")) return "calendar";
   if (isRouteActive(pathname, "/messaging")) return "messaging";
   if (isRouteActive(pathname, "/fees")) return "fees";
+  if (isRouteActive(pathname, "/expenses")) return "expenses";
   if (isRouteActive(pathname, "/front-desk")) return "front-desk";
   if (isRouteActive(pathname, "/library")) return "library";
   if (isRouteActive(pathname, "/inventory")) return "inventory";

@@ -510,6 +510,7 @@ const ClassPerformance = () => {
           </Table>
         </div>
       </div>
+      </div>
     </PageShell>
   );
 };

@@ -24,6 +24,7 @@ const ClassesPage = lazyWithRetry(() => import("./pages/classes"));
 const CalendarPage = lazyWithRetry(() => import("./pages/calendar"));
 const MessagingPage = lazyWithRetry(() => import("./pages/messaging"));
 const FeesPage = lazyWithRetry(() => import("./pages/fees"));
+const ExpensesPage = lazyWithRetry(() => import("./pages/expenses"));
 const SettingsPage = lazyWithRetry(() => import("./pages/settings"));
 const AcademicLayout = lazyWithRetry(() => import("./pages/academics"));
 const FormAssignments = lazyWithRetry(() => import("./pages/intake-forms/FormAssignments"));
@@ -334,6 +335,13 @@ function AuthenticatedApp() {
                       <RouteEB>
                         <PermissionGuard module="fees">
                           <FeesPage />
+                        </PermissionGuard>
+                      </RouteEB>
+                    } />
+                    <Route path="/expenses/*" element={
+                      <RouteEB>
+                        <PermissionGuard module="expenses">
+                          <ExpensesPage />
                         </PermissionGuard>
                       </RouteEB>
                     } />

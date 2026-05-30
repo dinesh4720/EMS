@@ -334,7 +334,7 @@ export function createAdminUser(): User {
     schoolId: SCHOOL_ID,
     permissions: {
       students: true, classes: true, staff: true, attendance: true,
-      academics: true, fees: true, messaging: true, frontDesk: true,
+      academics: true, fees: true, expenses: true, messaging: true, frontDesk: true,
       library: true, settings: true, analytics: true, reports: true,
       timetable: true, hostel: true, transport: true, inventory: true,
       homework: true, calendar: true, payroll: true, aiAssistant: true,
@@ -370,7 +370,7 @@ export function createAccountantUser(): User {
     employeeId: 'EMP-003',
     permissions: {
       students: true, classes: false, staff: false, attendance: false,
-      academics: false, fees: true, messaging: true, frontDesk: false,
+      academics: false, fees: true, expenses: true, messaging: true, frontDesk: false,
       library: false, settings: false, analytics: true, reports: true,
       timetable: false, hostel: false, transport: false, inventory: false,
       homework: false, calendar: false, payroll: true, aiAssistant: false,
@@ -387,7 +387,7 @@ export function createPrincipalUser(): User {
     schoolId: SCHOOL_ID,
     permissions: {
       students: true, classes: true, staff: true, attendance: true,
-      academics: true, fees: true, messaging: true, frontDesk: true,
+      academics: true, fees: true, expenses: true, messaging: true, frontDesk: true,
       library: true, settings: true, analytics: true, reports: true,
       timetable: true, hostel: true, transport: true, inventory: true,
       homework: true, calendar: true, payroll: true, aiAssistant: true,
