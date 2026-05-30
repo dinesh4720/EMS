@@ -22,6 +22,7 @@ import PrintPreviewModal from "../../components/ui/PrintPreviewModal";
 import { staffAttendanceApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { PageShell } from "../../components/ui";
+import { isActiveStaff } from "./utils/staffHelpers";
 
 // Mobile breakpoint — below this the right pane collapses to a Drawer
 const MOBILE_MAX = 1099;
@@ -35,7 +36,7 @@ const FILTERS = [
 
 function staffMatchesFilter(s, filter, todayStatusOf) {
   if (filter === "all") return true;
-  if (filter === "active") return (s.status || "active") === "active";
+  if (filter === "active") return isActiveStaff(s);
   if (filter === "today") {
     const status = todayStatusOf?.(s);
     return status === "present" || status === "absent" || status === "leave";
@@ -322,7 +323,7 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
     let active = 0;
     let today = 0;
     for (const s of staff) {
-      if ((s.status || "active") === "active") active++;
+      if (isActiveStaff(s)) active++;
       const tStatus = todayStatusOf(s);
       if (tStatus === "present" || tStatus === "absent" || tStatus === "leave") today++;
     }
