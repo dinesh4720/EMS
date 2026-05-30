@@ -43,28 +43,7 @@ test.describe('TC112 — Email Campaigns', () => {
 
     await installMockApi(page, state);
 
-    // Override email campaign endpoints
-    await page.route('**/api/email-campaigns', async (route) => {
-      const method = route.request().method();
-      if (method === 'POST') {
-        let body: Record<string, unknown> = {};
-        try { body = JSON.parse(route.request().postData() || '{}'); } catch { /* */ }
-
-        const campaign = seedEmailCampaign(state, body as Parameters<typeof seedEmailCampaign>[1]);
-        return route.fulfill({
-          status: 201,
-          contentType: 'application/json',
-          body: JSON.stringify(campaign),
-        });
-      }
-
-      return route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ campaigns: state.emailCampaigns, total: state.emailCampaigns.length, totalPages: 1, currentPage: 1 }),
-      });
-    });
-
+    // Override email campaign endpoints (send, analytics — list/POST are handled by central mock)
     await page.route('**/api/email-campaigns/*/send', async (route) => {
       const url = route.request().url();
       const id = url.split('/email-campaigns/')[1]?.split('/send')[0];
@@ -100,38 +79,26 @@ test.describe('TC112 — Email Campaigns', () => {
 
   /* ───────── 1. Campaigns page loads ───────── */
 
-  test.fixme('1) campaigns page loads and lists existing campaigns', async ({ page }) => {
-    await page.goto('/messaging');
+  test('1) campaigns page loads and lists existing campaigns', async ({ page }) => {
+    await page.goto('/messaging/email-campaigns');
     await page.waitForLoadState('networkidle');
 
     const bodyText = await page.textContent('body');
-
-    // Navigate to campaigns tab if needed
-    const campaignsTab = page.getByText(/campaign/i).first();
-    if (await campaignsTab.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await campaignsTab.click();
-      await page.waitForTimeout(500);
-    }
-
-    const updatedText = await page.textContent('body');
-    const hasCampaigns = updatedText?.includes('Welcome Back') ||
-      updatedText?.includes('Fee Reminder') ||
-      updatedText?.toLowerCase().includes('campaign');
+    const hasCampaigns = bodyText?.includes('Welcome Back') ||
+      bodyText?.includes('Fee Reminder') ||
+      bodyText?.toLowerCase().includes('campaign');
 
     expect(hasCampaigns).toBeTruthy();
   });
 
   /* ───────── 2. Both campaigns listed with correct statuses ───────── */
 
-  test.fixme('2) campaigns show correct statuses (sent and draft)', async ({ page }) => {
-    await page.goto('/messaging');
+  test('2) campaigns show correct statuses (sent and draft)', async ({ page }) => {
+    await page.goto('/messaging/email-campaigns');
     await page.waitForLoadState('networkidle');
 
-    const campaignsTab = page.getByText(/campaign/i).first();
-    if (await campaignsTab.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await campaignsTab.click();
-      await page.waitForTimeout(500);
-    }
+    // Wait for campaign data to hydrate
+    await page.waitForSelector('text=Welcome Back Campaign', { timeout: 15000 });
 
     const bodyText = await page.textContent('body');
     const hasSentStatus = bodyText?.toLowerCase().includes('sent');
@@ -143,14 +110,8 @@ test.describe('TC112 — Email Campaigns', () => {
   /* ───────── 3. Create new campaign ───────── */
 
   test('3) create a new email campaign with name, subject, and body', async ({ page }) => {
-    await page.goto('/messaging');
+    await page.goto('/messaging/email-campaigns');
     await page.waitForLoadState('networkidle');
-
-    const campaignsTab = page.getByText(/campaign/i).first();
-    if (await campaignsTab.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await campaignsTab.click();
-      await page.waitForTimeout(500);
-    }
 
     // Click create button
     const createBtn = page.getByRole('button', { name: /new|create|add/i }).first();
@@ -276,15 +237,12 @@ test.describe('TC112 — Email Campaigns', () => {
 
   /* ───────── 8. Campaign target group is displayed ───────── */
 
-  test.fixme('8) campaign target group information is visible', async ({ page }) => {
-    await page.goto('/messaging');
+  test('8) campaign target group information is visible', async ({ page }) => {
+    await page.goto('/messaging/email-campaigns');
     await page.waitForLoadState('networkidle');
 
-    const campaignsTab = page.getByText(/campaign/i).first();
-    if (await campaignsTab.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await campaignsTab.click();
-      await page.waitForTimeout(500);
-    }
+    // Wait for campaign data to hydrate
+    await page.waitForSelector('text=Welcome Back Campaign', { timeout: 15000 });
 
     const bodyText = await page.textContent('body');
     const hasTargetInfo = bodyText?.toLowerCase().includes('parent') ||

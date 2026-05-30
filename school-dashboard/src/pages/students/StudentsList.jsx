@@ -169,6 +169,30 @@ export default function StudentsList({ onAddStudent }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMobileViewport, selectedId, visibleItems.length]);
 
+  // ============ Pagination ============
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(visibleItems.length / pageSize)),
+    [visibleItems.length, pageSize]
+  );
+
+  const paginatedItems = useMemo(
+    () => visibleItems.slice((page - 1) * pageSize, page * pageSize),
+    [visibleItems, page, pageSize]
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, statusFilter, activeFiltersCount]);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+
   // ============ Keyboard nav ============
   const listRef = useRef(null);
   const rowRefs = useRef(new Map());
@@ -273,30 +297,6 @@ export default function StudentsList({ onAddStudent }) {
 
   const closeDetail = () => setSelectedId(null);
   const detailVisible = !!selectedStudentRecord;
-
-  // ============ Pagination ============
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
-
-  const totalPages = useMemo(
-    () => Math.max(1, Math.ceil(visibleItems.length / pageSize)),
-    [visibleItems.length, pageSize]
-  );
-
-  const paginatedItems = useMemo(
-    () => visibleItems.slice((page - 1) * pageSize, page * pageSize),
-    [visibleItems, page, pageSize]
-  );
-
-  useEffect(() => {
-    setPage(1);
-  }, [searchQuery, statusFilter, activeFiltersCount]);
-
-  useEffect(() => {
-    if (page > totalPages) {
-      setPage(totalPages);
-    }
-  }, [page, totalPages]);
 
   const {
     csvFile, setCsvFile, csvDragActive, csvProcessing,

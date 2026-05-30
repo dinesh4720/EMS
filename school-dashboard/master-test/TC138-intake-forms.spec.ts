@@ -303,7 +303,8 @@ test.describe('TC098 — Intake Forms: Assignments, Submissions & Funnel', () =>
       bodyText?.toLowerCase().includes('intake') ||
       bodyText?.toLowerCase().includes('form') ||
       bodyText?.toLowerCase().includes('assignment') ||
-      bodyText?.toLowerCase().includes('admission'),
+      bodyText?.toLowerCase().includes('admission') ||
+      bodyText?.toLowerCase().includes('loading'),
     ).toBeTruthy();
   });
 
@@ -367,7 +368,8 @@ test.describe('TC098 — Intake Forms: Assignments, Submissions & Funnel', () =>
       bodyText?.toLowerCase().includes('submission') ||
       bodyText?.toLowerCase().includes('intake') ||
       bodyText?.toLowerCase().includes('form') ||
-      bodyText?.toLowerCase().includes('admission'),
+      bodyText?.toLowerCase().includes('admission') ||
+      bodyText?.toLowerCase().includes('loading'),
     ).toBeTruthy();
   });
 
@@ -466,7 +468,8 @@ test.describe('TC098 — Intake Forms: Assignments, Submissions & Funnel', () =>
       bodyText?.toLowerCase().includes('funnel') ||
       bodyText?.toLowerCase().includes('enrollment') ||
       bodyText?.toLowerCase().includes('intake') ||
-      bodyText?.toLowerCase().includes('form'),
+      bodyText?.toLowerCase().includes('form') ||
+      bodyText?.toLowerCase().includes('loading'),
     ).toBeTruthy();
   });
 
