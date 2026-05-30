@@ -86,6 +86,15 @@
       "week": "ವಾರ"
     }
   },
+  "exportCenter": {
+    "types": {
+      "students": "ವಿದ್ಯಾರ್ಥಿಗಳು",
+      "staff": "ಸಿಬ್ಬಂದಿ"
+    },
+    "columns": {}
+  },
+  "criticalAlerts": {},
+  "globalSearch": {},
   "common": {
     "cancel": "ರದ್ದುಮಾಡಿ",
     "chunkErrorDesc": "ಹೊಸ ಆವೃತ್ತಿ ಲಭ್ಯವಿರಬಹುದು, ಅಥವಾ ನಿಮ್ಮ ಸಂಪರ್ಕ ಕಡಿದುಹೋಯಿತು. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಲು ಪುನಃ ಲೋಡ್ ಮಾಡಿ.",
@@ -743,6 +752,8 @@
     "removeSubstitution": "ನೀವು ಖಚಿತವಾಗಿ remove this substitution? ಬಯಸುತ್ತೀರಾ?",
     "deleteTemplate": "ನೀವು ಅಳಿಸಲು ಖಚಿತವಾಗಿ ಬಯಸುತ್ತೀರಾ this template?",
     "deleteFeeHead": "ನೀವು ಅಳಿಸಲು ಖಚಿತವಾಗಿ ಬಯಸುತ್ತೀರಾ this fee head? It will be removed from all students.",
+    "deleteItem": "this item? ಅಳಿಸಿ",
+    "deleteItemNamed": "\"{{name}}\" ಅಳಿಸಿ?",
     "discardChanges": "ಉಳಿಸದ ಬದಲಾವಣೆಗಳನ್ನು ತಿರಸ್ಕರಿಸುವುದೇ?",
     "deleteRole": "ನೀವು ಅಳಿಸಲು ಖಚಿತವಾಗಿ ಬಯಸುತ್ತೀರಾ this role?",
     "createParentAccounts": "ಖಾತೆ ಇಲ್ಲದ ಎಲ್ಲಾ ವಿದ್ಯಾರ್ಥಿಗಳಿಗೆ ಪೋಷಕರ ಖಾತೆಗಳನ್ನು ರಚಿಸಲಾಗುತ್ತದೆ. ಮುಂದುವರಿಯಬೇಕೇ?",
@@ -760,6 +771,10 @@
     "deleteLeaveType": "ನೀವು ಅಳಿಸಲು ಖಚಿತವಾಗಿ ಬಯಸುತ್ತೀರಾ this leave type?",
     "deleteFeeTemplate": "ನೀವು ಅಳಿಸಲು ಖಚಿತವಾಗಿ ಬಯಸುತ್ತೀರಾ this template?",
     "deleteAnnouncement": "ನೀವು ಅಳಿಸಲು ಖಚಿತವಾಗಿ ಬಯಸುತ್ತೀರಾ this announcement?",
+    "deleteSubject": "subject \"{{name}}\" ಅಳಿಸಿ?",
+    "deleteBulkStaff": "ನೀವು ಖಚಿತವಾಗಿ {{count}} ಸಿಬ್ಬಂದಿ(ಯನ್ನು) ಅಳಿಸಲು ಬಯಸುತ್ತೀರಾ?",
+    "permanentDeleteStudent": "ನೀವು ಖಚಿತವಾಗಿ {{name}} ಅನ್ನು ಶಾಶ್ವತವಾಗಿ ಅಳಿಸಲು ಬಯಸುತ್ತೀರಾ? This action cannot be undone.",
+    "markPassedOut": "ನೀವು ಖಚಿತವಾಗಿ {{name}} ಅನ್ನು ಪಾಸ್ ಔಟ್ ಎಂದು ಗುರುತಿಸಲು ಬಯಸುತ್ತೀರಾ?",
     "resendFailedRecipients": "ವಿಫಲವಾದ ಎಲ್ಲಾ ಸ್ವೀಕೃತದಾರರಿಗೆ ಮರುಕಳುಹಿಸುವುದೇ?",
     "applyFeeStructure": "ನೀವು ಖಚಿತವಾಗಿ apply this fee structure to all students in this class?\n\nThis will update fee details for all active students. ಬಯಸುತ್ತೀರಾ?",
     "deleteRoute": "route \"{{name}}\"? ಅಳಿಸಿ",

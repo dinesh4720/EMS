@@ -86,6 +86,15 @@
       "week": "Week"
     }
   },
+  "exportCenter": {
+    "types": {
+      "students": "Students",
+      "staff": "Staff"
+    },
+    "columns": {}
+  },
+  "criticalAlerts": {},
+  "globalSearch": {},
   "common": {
     "cancel": "Cancel",
     "chunkErrorDesc": "A new version may be available, or your connection was interrupted. Please reload to try again.",
@@ -704,15 +713,6 @@
       }
     }
   },
-  "criticalAlerts": {
-    "title": "Critical Alerts",
-    "noAlerts": "No critical alerts at this time."
-  },
-  "globalSearch": {
-    "placeholder": "Search across the dashboard...",
-    "noResults": "No results found.",
-    "loading": "Searching..."
-  },
   "aria": {
     "tables": {
       "gatePassLog": "Gate pass log table",
@@ -802,6 +802,8 @@
     "removeSubstitution": "Are you sure you want to remove this substitution?",
     "deleteTemplate": "Are you sure you want to delete this template?",
     "deleteFeeHead": "Are you sure you want to delete this fee head? It will be removed from all students.",
+    "deleteItem": "Delete this item?",
+    "deleteItemNamed": "Delete \"{{name}}\"?",
     "discardChanges": "Discard unsaved changes?",
     "deleteRole": "Are you sure you want to delete this role?",
     "createParentAccounts": "This will create parent accounts for all students that don't have one. Continue?",
@@ -819,18 +821,16 @@
     "deleteLeaveType": "Are you sure you want to delete this leave type?",
     "deleteFeeTemplate": "Are you sure you want to delete this template?",
     "deleteAnnouncement": "Are you sure you want to delete this announcement?",
+    "deleteSubject": "Delete subject \"{{name}}\"?",
+    "deleteBulkStaff": "Are you sure you want to delete {{count}} staff member(s)?",
+    "permanentDeleteStudent": "Are you sure you want to permanently delete {{name}}? This action cannot be undone.",
+    "markPassedOut": "Are you sure you want to mark {{name}} as passed out?",
     "resendFailedRecipients": "Resend to all failed recipients?",
     "applyFeeStructure": "Are you sure you want to apply this fee structure to all students in this class?\n\nThis will update fee details for all active students.",
     "deleteRoute": "Delete route \"{{name}}\"?",
     "deleteVehicle": "Delete vehicle \"{{regNum}}\"?",
     "removeStudentFromRoute": "Remove this student from the route?",
     "setDefaultSalary": "This will set a default salary of 50,000 for all staff who have 0 salary. Continue?",
-    "deleteItem": "Are you sure you want to delete this item?",
-    "deleteItemNamed": "Are you sure you want to delete {{name}}?",
-    "deleteBulkStaff": "Are you sure you want to delete {{count}} staff members?",
-    "permanentDeleteStudent": "Are you sure you want to permanently delete {{name}}? This action cannot be undone.",
-    "markPassedOut": "Are you sure you want to mark this student as passed out?",
-    "deleteSubject": "Are you sure you want to delete the subject {{name}}?",
     "deleteAudit": "Delete this audit?"
   },
   "toast": {
@@ -4137,7 +4137,6 @@
     "classRangePlaceholder": "Or enter range: 1-5 or 6,7,8,9",
     "amountLabel": "Amount (₹)",
     "maxRefundable": "Max refundable: ₹{{amount}}",
-    "cannotExceedTotalPaid": "Cannot exceed ₹{{amount}} (total paid)",
     "createRefund": "Create Refund",
     "collectionMode": {
       "term": "Term-wise",
@@ -4164,20 +4163,6 @@
       "extraCurricular": "Extra-curricular",
       "hostel": "Hostel",
       "other": "Other"
-    }
-  },
-  "exportCenter": {
-    "types": {
-      "students": "Students",
-      "staff": "Staff"
-    },
-    "columns": {
-      "name": "Name",
-      "email": "Email",
-      "phone": "Phone",
-      "class": "Class",
-      "section": "Section",
-      "rollNumber": "Roll Number"
     }
   },
   "transport": {

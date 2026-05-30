@@ -87,28 +87,18 @@ const ALLOWED_ORPHAN_KEYS = [
   'components.clearAll',
   'components.assignSubstitute',
   'fees.pendingAmount',
-  'fees.cannotExceedTotalPaid',
 
-  // Required by i18n.test.js structure tests but not yet used in source code
+  // Expected by tests but not yet wired into source code
+  'confirm.deleteSubject',
   'confirm.deleteBulkStaff',
   'confirm.deleteItem',
   'confirm.deleteItemNamed',
-  'confirm.deleteSubject',
-  'confirm.markPassedOut',
   'confirm.permanentDeleteStudent',
-  'criticalAlerts.noAlerts',
-  'criticalAlerts.title',
-  'exportCenter.columns.class',
-  'exportCenter.columns.email',
-  'exportCenter.columns.name',
-  'exportCenter.columns.phone',
-  'exportCenter.columns.rollNumber',
-  'exportCenter.columns.section',
-  'exportCenter.types.staff',
+  'confirm.markPassedOut',
+
+  // Required by namespace structure tests but not yet wired into source code
   'exportCenter.types.students',
-  'globalSearch.loading',
-  'globalSearch.noResults',
-  'globalSearch.placeholder',
+  'exportCenter.types.staff',
 ];
 
 /**
