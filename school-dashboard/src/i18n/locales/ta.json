@@ -86,6 +86,15 @@
       "week": "வாரம்"
     }
   },
+  "exportCenter": {
+    "types": {
+      "students": "மாணவர்கள்",
+      "staff": "ஊழியர்கள்"
+    },
+    "columns": {}
+  },
+  "criticalAlerts": {},
+  "globalSearch": {},
   "common": {
     "cancel": "ரத்துசெய்",
     "chunkErrorDesc": "புதிய பதிப்பு கிடைக்கலாம் அல்லது உங்கள் இணைப்பு துண்டிக்கப்பட்டது. மீண்டும் முயல பக்கத்தை மீட்டேற்றவும்.",
@@ -743,6 +752,8 @@
     "removeSubstitution": "remove this substitution விரும்புகிறீர்களா?",
     "deleteTemplate": "delete this template விரும்புகிறீர்களா?",
     "deleteFeeHead": "delete this fee head It will be removed from all students. விரும்புகிறீர்களா?",
+    "deleteItem": "this item நீக்கவா?",
+    "deleteItemNamed": "\"{{name}}\" நீக்கவா?",
     "discardChanges": "சேமிக்கப்படாத மாற்றங்களை நிராகரிக்கவா?",
     "deleteRole": "delete this role விரும்புகிறீர்களா?",
     "createParentAccounts": "இது கணக்கு இல்லாத அனைத்து மாணவர்களுக்கும் பெற்றோர் கணக்குகளை உருவாக்கும். தொடரவா?",
@@ -760,6 +771,10 @@
     "deleteLeaveType": "delete this leave type விரும்புகிறீர்களா?",
     "deleteFeeTemplate": "delete this template விரும்புகிறீர்களா?",
     "deleteAnnouncement": "delete this announcement விரும்புகிறீர்களா?",
+    "deleteSubject": "subject \"{{name}}\" நீக்கவா?",
+    "deleteBulkStaff": "நீங்கள் {{count}} ஊழியர்(களை) நீக்க விரும்புகிறீர்களா?",
+    "permanentDeleteStudent": "நீங்கள் {{name}} ஐ நிரந்தரமாக நீக்க விரும்புகிறீர்களா? This action cannot be undone.",
+    "markPassedOut": "நீங்கள் {{name}} ஐ பாஸ்டு அவுட் என குறிக்க விரும்புகிறீர்களா?",
     "resendFailedRecipients": "தோல்வியடைந்த அனைத்து பெறுநர்களுக்கும் மீண்டும் அனுப்பவா?",
     "applyFeeStructure": "apply this fee structure to all students in this class\n\nThis will update fee details for all active students. விரும்புகிறீர்களா?",
     "deleteRoute": "route \"{{name}}\" நீக்கவா?",

@@ -86,6 +86,15 @@
       "week": "వారం"
     }
   },
+  "exportCenter": {
+    "types": {
+      "students": "విద్యార్థులు",
+      "staff": "సిబ్బంది"
+    },
+    "columns": {}
+  },
+  "criticalAlerts": {},
+  "globalSearch": {},
   "common": {
     "cancel": "రద్దు చేయి",
     "chunkErrorDesc": "కొత్త వెర్షన్ అందుబాటులో ఉండవచ్చు, లేదా మీ కనెక్షన్ అంతరాయం కలిగింది. దయచేసి మళ్ళీ ప్రయత్నించడానికి రీలోడ్ చేయండి.",
@@ -743,6 +752,8 @@
     "removeSubstitution": "మీరు remove this substitution అనుకుంటున్నారా?",
     "deleteTemplate": "మీరు తొలగించు this template అనుకుంటున్నారా?",
     "deleteFeeHead": "మీరు ఈ రుసుము హెడ్‌ను తొలగించాలనుకుంటున్నారా? ఇది అన్ని విద్యార్థుల నుండి తొలగించబడుతుంది.",
+    "deleteItem": "తొలగించు this item?",
+    "deleteItemNamed": "తొలగించు \"{{name}}\"?",
     "discardChanges": "సేవ్ చేయని మార్పులను విరమించాలా?",
     "deleteRole": "మీరు తొలగించు this role అనుకుంటున్నారా?",
     "createParentAccounts": "ఇది ఖాతా లేని అన్ని విద్యార్థులకు తల్లిదండ్రుల ఖాతాలను సృష్టిస్తుంది. కొనసాగించాలా?",
@@ -760,6 +771,10 @@
     "deleteLeaveType": "మీరు తొలగించు this leave type అనుకుంటున్నారా?",
     "deleteFeeTemplate": "మీరు తొలగించు this template అనుకుంటున్నారా?",
     "deleteAnnouncement": "మీరు తొలగించు this ప్రకటన అనుకుంటున్నారా?",
+    "deleteSubject": "subject \"{{name}}\" తొలగించు?",
+    "deleteBulkStaff": "మీరు {{count}} సిబ్బంది(ని) తొలగించాలనుకుంటున్నారా?",
+    "permanentDeleteStudent": "మీరు {{name}} ని శాశ్వతంగా తొలగించాలనుకుంటున్నారా? ఈ చర్యను రద్దు చేయలేము.",
+    "markPassedOut": "మీరు {{name}} ని పాస్డ్ అవుట్ గా గుర్తించాలనుకుంటున్నారా?",
     "resendFailedRecipients": "విఫలమైన అన్ని గ్రహీతలకు మళ్ళీ పంపాలా?",
     "applyFeeStructure": "మీరు ఈ రుసుము నిర్మాణాన్ని ఈ తరగతిలోని అన్ని విద్యార్థులకు అమలు చేయాలనుకుంటున్నారా?\n\nఇది అన్ని యాక్టివ్ విద్యార్థుల రుసుము వివరాలను నవీకరిస్తుంది.",
     "deleteRoute": "తొలగించు route \"{{name}}\"?",
