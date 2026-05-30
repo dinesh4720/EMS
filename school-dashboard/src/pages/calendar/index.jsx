@@ -337,19 +337,13 @@ export default function CalendarPage() {
   );
 
   return (
-    <div className="page">
-      <div className="page__head">
-        <div>
-          <h1 className="page__title">{t('calendar.title', 'Calendar')}</h1>
-          <p className="page__sub">{t('calendar.subtitle', 'Manage events, schedules, and appointments')}</p>
-        </div>
-      </div>
-
-      <PageShell
-        scrollable={false}
-        bodyPadding="none"
-        className="flex-1 min-h-0"
-      >
+    <PageShell
+      title={t('calendar.title', 'Calendar')}
+      description={t('calendar.subtitle', 'Manage events, schedules, and appointments')}
+      scrollable={false}
+      bodyPadding="none"
+      className="flex-1 min-h-0"
+    >
         <div className="flex flex-1 min-h-0">
         {/* Main Calendar Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
@@ -438,6 +432,5 @@ export default function CalendarPage() {
         />
         </div>
       </PageShell>
-    </div>
   );
 }

@@ -210,37 +210,41 @@ export default function CalendarToolbar({ currentDate, view, onViewChange, onNav
 
       <div className="flex items-center gap-2">
         {/* View Switcher */}
-        <div className="bg-surface-2 p-0.5 rounded-lg flex items-center border border-divider" role="tablist" aria-label={t('calendar.toolbar.viewSwitcher', 'Calendar view')}>
+        <div className="seg" role="tablist" aria-label={t('calendar.toolbar.viewSwitcher', 'Calendar view')}>
           <button
             role="tab"
+            type="button"
             aria-selected={view === "month"}
             onClick={() => onViewChange("month")}
-            className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1 ${view === "month" ? "bg-surface text-fg shadow-sm" : "text-fg-faint hover:text-fg-muted"}`}
+            className={`seg__btn inline-flex items-center gap-1 ${view === "month" ? "is-active" : ""}`}
           >
             <LayoutGrid size={12} />
             <span className="hidden sm:inline">{t('calendar.views.month', 'Month')}</span>
           </button>
           <button
             role="tab"
+            type="button"
             aria-selected={view === "week"}
             onClick={() => onViewChange("week")}
-            className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-all ${view === "week" ? "bg-surface text-fg shadow-sm" : "text-fg-faint hover:text-fg-muted"}`}
+            className={`seg__btn ${view === "week" ? "is-active" : ""}`}
           >
             {t('calendar.views.week', 'Week')}
           </button>
           <button
             role="tab"
+            type="button"
             aria-selected={view === "day"}
             onClick={() => onViewChange("day")}
-            className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-all ${view === "day" ? "bg-surface text-fg shadow-sm" : "text-fg-faint hover:text-fg-muted"}`}
+            className={`seg__btn ${view === "day" ? "is-active" : ""}`}
           >
             {t('calendar.views.day', 'Day')}
           </button>
           <button
             role="tab"
+            type="button"
             aria-selected={view === "schedule"}
             onClick={() => onViewChange("schedule")}
-            className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1 ${view === "schedule" ? "bg-surface text-fg shadow-sm" : "text-fg-faint hover:text-fg-muted"}`}
+            className={`seg__btn inline-flex items-center gap-1 ${view === "schedule" ? "is-active" : ""}`}
           >
             <List size={12} />
             <span>{t('calendar.views.schedule', 'Schedule')}</span>
