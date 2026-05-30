@@ -6,6 +6,11 @@
  */
 import { expect, test } from '@playwright/test';
 
+// SECURITY: Never hardcode real-looking passwords in test files.
+// Use the env var (loaded from .env.test locally or CI secrets in CI)
+// or fall back to an obvious placeholder.
+const TEST_ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD || 'REPLACE_WITH_LOCAL_TEST_SECRET';
+
 test.use({ viewport: { width: 1280, height: 720 } });
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -119,7 +124,7 @@ async function mockAuthEndpoints(page: import('@playwright/test').Page) {
   // Mock /auth/login
   await page.route('**/auth/login', async (route) => {
     const body = JSON.parse(route.request().postData() || '{}');
-    if (body.email === 'admin@schoolsync.test' && body.password === 'Admin@123') {
+    if (body.email === 'admin@schoolsync.test' && body.password === TEST_ADMIN_PASSWORD) {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -173,7 +178,7 @@ test.describe('TC001: School Setup — Admin Login & Dashboard', () => {
 
     // Fill credentials
     await page.locator('#login-email, input[type="email"], input[name="email"], input[inputmode="email"]').first().fill('admin@schoolsync.test');
-    await page.locator('input[type="password"], input[name="password"]').first().fill('Admin@123');
+    await page.locator('input[type="password"], input[name="password"]').first().fill(TEST_ADMIN_PASSWORD);
 
     // Submit
     markLoggedIn();
@@ -195,7 +200,7 @@ test.describe('TC001: School Setup — Admin Login & Dashboard', () => {
     await page.waitForLoadState('networkidle');
 
     await page.locator('#login-email, input[type="email"], input[name="email"], input[inputmode="email"]').first().fill('admin@schoolsync.test');
-    await page.locator('input[type="password"], input[name="password"]').first().fill('Admin@123');
+    await page.locator('input[type="password"], input[name="password"]').first().fill(TEST_ADMIN_PASSWORD);
 
     markLoggedIn();
     await page.getByRole('button', { name: /sign in|login|log in/i }).first().click();
@@ -216,7 +221,7 @@ test.describe('TC001: School Setup — Admin Login & Dashboard', () => {
     await page.waitForLoadState('networkidle');
 
     await page.locator('#login-email, input[type="email"], input[name="email"], input[inputmode="email"]').first().fill('admin@schoolsync.test');
-    await page.locator('input[type="password"], input[name="password"]').first().fill('Admin@123');
+    await page.locator('input[type="password"], input[name="password"]').first().fill(TEST_ADMIN_PASSWORD);
 
     markLoggedIn();
     await page.getByRole('button', { name: /sign in|login|log in/i }).first().click();
