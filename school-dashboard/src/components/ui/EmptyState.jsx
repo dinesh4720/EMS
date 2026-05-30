@@ -40,7 +40,7 @@ const KIND = {
 const EmptyState = memo(function EmptyState({
   icon: Icon = Inbox,
   illustration,
-  title = "No records yet",
+  title = "Nothing here yet",
   description,
   action,
   secondaryAction,

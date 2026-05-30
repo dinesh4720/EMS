@@ -37,7 +37,7 @@ export function parseError(error) {
   if (!error) {
     return {
       type: ErrorTypes.UNKNOWN,
-      message: 'An unknown error occurred',
+      message: 'Something went wrong. Refresh the page or try again later.',
       details: null
     };
   }
@@ -46,7 +46,7 @@ export function parseError(error) {
   if (error.type) {
     return {
       type: error.type,
-      message: error.message || 'An error occurred',
+      message: error.message || 'Something went wrong. Refresh the page or try again later.',
       details: error.details || null,
       status: error.status || null
     };
@@ -56,7 +56,7 @@ export function parseError(error) {
   if (error.name === 'AbortError' || error.message?.includes('timeout')) {
     return {
       type: ErrorTypes.TIMEOUT,
-      message: 'Request timed out. Please try again.',
+      message: 'Request timed out. Please try again in a moment.',
       details: null
     };
   }
@@ -73,7 +73,7 @@ export function parseError(error) {
   if (error.status === 401 || error.status === 403) {
     return {
       type: ErrorTypes.AUTHORIZATION,
-      message: error.message || 'You do not have permission to perform this action.',
+      message: error.message || "You don't have permission to do this. Contact your administrator if you need access.",
       details: error.details || null,
       status: error.status
     };
@@ -82,7 +82,7 @@ export function parseError(error) {
   if (error.status === 404) {
     return {
       type: ErrorTypes.NOT_FOUND,
-      message: error.message || 'The requested resource was not found.',
+      message: error.message || 'The requested resource was not found. Check the link or refresh the page.',
       details: error.details || null,
       status: error.status
     };
@@ -91,7 +91,7 @@ export function parseError(error) {
   if (error.status === 409 || error.status === 422) {
     return {
       type: ErrorTypes.CONFLICT,
-      message: error.message || 'A scheduling conflict was detected.',
+      message: error.message || 'A scheduling conflict was detected. Choose a different time or teacher.',
       details: error.details || null,
       status: error.status
     };
@@ -100,7 +100,7 @@ export function parseError(error) {
   if (error.status === 400) {
     return {
       type: ErrorTypes.VALIDATION,
-      message: error.message || 'Invalid input. Please check your data.',
+      message: error.message || 'Invalid input. Check the highlighted fields and try again.',
       details: error.details || null,
       status: error.status
     };
@@ -109,7 +109,7 @@ export function parseError(error) {
   // Default case
   return {
     type: ErrorTypes.UNKNOWN,
-    message: error.message || 'An unexpected error occurred',
+    message: error.message || 'Something went wrong. Refresh the page or try again later.',
     details: error.details || null,
     status: error.status || null
   };
@@ -264,8 +264,8 @@ export async function retryWithBackoff(fn, maxRetries = 3, initialDelay = 1000) 
 export async function executeWithFeedback(
   operation,
   {
-    loadingMessage = 'Processing...',
-    successMessage = 'Operation completed successfully',
+    loadingMessage = 'Processing…',
+    successMessage = 'Operation completed',
     errorMessage = null,
     onSuccess = null,
     onError = null,
