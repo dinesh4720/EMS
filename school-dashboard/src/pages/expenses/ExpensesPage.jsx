@@ -264,7 +264,7 @@ export default function ExpensesPage() {
       ]}
       bodyPadding="none"
     >
-      <div className="expenses-page" style={{ paddingBottom: 24 }}>
+      <div className="expenses-page">
         <ExpensesSummary
           summary={summary}
           totalAmount={totalAmount}

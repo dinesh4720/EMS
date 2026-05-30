@@ -188,7 +188,7 @@ export default function ExpenseModal({ isOpen, onClose, expense = null, onSaved 
         onClick={(e) => e.stopPropagation()}
       >
         <div className="fees-sheet__head">
-          <div className="col" style={{ gap: 2, minWidth: 0 }}>
+          <div className="col" style={{ gap: "var(--sp-1)", minWidth: 0 }}>
             <h2 className="fees-sheet__title">{isEdit ? "Edit expense" : "Add expense"}</h2>
             <p className="fees-sheet__subtitle">
               {isEdit ? `Update details for ${expense.title}` : "Record a new school expense"}
@@ -197,7 +197,6 @@ export default function ExpenseModal({ isOpen, onClose, expense = null, onSaved 
           <button
             type="button"
             className="iconbtn"
-            style={{ width: 28, height: 28 }}
             onClick={onClose}
             aria-label="Close sheet"
           >
@@ -349,7 +348,7 @@ export default function ExpenseModal({ isOpen, onClose, expense = null, onSaved 
         </div>
 
         <div className="fees-sheet__foot">
-          <span className="subtle" style={{ fontSize: 12 }}>
+          <span className="subtle" style={{ fontSize: "var(--fs-12)" }}>
             {isEdit ? "Changes will be saved on submit" : "Expense will be recorded immediately"}
           </span>
           <button

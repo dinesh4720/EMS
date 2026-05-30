@@ -7,7 +7,83 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding-bottom: 24px;
+  padding-bottom: var(--sp-6);
+}
+
+/* ── Expenses page chrome (mirrors .fees-page) ────────────────────────────── */
+.expenses-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  padding-bottom: var(--sp-6);
+}
+
+/* ── Expenses summary KPI strip (mirrors .fees-kpi*) ──────────────────────── */
+.expenses-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--divider);
+  border: 1px solid var(--border-token);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.expenses-summary__cell {
+  position: relative;
+  background: var(--surface);
+  border: 0;
+  border-radius: 0;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 120ms ease;
+  overflow: hidden;
+}
+.expenses-summary__cell::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  background: transparent;
+  transition: background 120ms ease;
+}
+.expenses-summary__cell:hover {
+  background: var(--surface-2);
+}
+.expenses-summary__cell.is-active {
+  background: var(--surface);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+.expenses-summary__cell.is-active::before {
+  background: var(--accent);
+}
+.expenses-summary__label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-11);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-subtle);
+  font-weight: 500;
+}
+.expenses-summary__value {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+.expenses-summary__sub {
+  font-size: var(--fs-12);
+  color: var(--fg-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
 }
 
 /* ── KPI strip ────────────────────────────────────────────────────────────── */
