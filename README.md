@@ -2,6 +2,8 @@
 
 Education Management System — a multi-tenant SaaS platform for schools.
 
+![School Dashboard Coverage](school-dashboard/badges/coverage-total.svg)
+
 ## Repository Layout
 
 | Directory | Description |
