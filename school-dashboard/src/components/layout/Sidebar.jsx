@@ -111,6 +111,7 @@ const ADMINISTRATION = [
   { id: "intake-forms", href: "/intake-forms/assignments", icon: FileText, label: "Intake Forms" },
   { id: "data-tools", href: "/data-tools", icon: Database, label: "Data Tools" },
   { id: "style-guide", href: "/style-guide", icon: Palette, label: "Style Guide" },
+  { id: "audit-logs", href: "/audit-logs", icon: ClipboardList, label: "Audit Logs" },
 ];
 
 const ALL_NAV_ITEMS = [
@@ -158,6 +159,7 @@ function getActiveModuleId(pathname) {
   if (isRouteActive(pathname, "/intake-forms")) return "intake-forms";
   if (isRouteActive(pathname, "/data-tools")) return "data-tools";
   if (pathname === "/style-guide") return "style-guide";
+  if (isRouteActive(pathname, "/audit-logs")) return "audit-logs";
   return null;
 }
 

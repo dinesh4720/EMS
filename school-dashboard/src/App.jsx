@@ -56,6 +56,7 @@ const TransferCertificatePage = lazyWithRetry(() => import("./pages/students/Tra
 const ReportsPage = lazyWithRetry(() => import("./pages/reports"));
 const DataToolsPage = lazyWithRetry(() => import("./pages/data-tools"));
 const StyleGuidePage = lazyWithRetry(() => import("./pages/StyleGuide"));
+const AuditLogsPage = lazyWithRetry(() => import("./pages/audit-logs"));
 
 // Lazy load components that aren't needed on initial render
 const PublicFormSubmission = lazyWithRetry(() => import("./pages/PublicFormSubmission"));
@@ -430,6 +431,13 @@ function AuthenticatedApp() {
                       <RouteEB>
                         <PermissionGuard module="settings">
                           <SettingsPage />
+                        </PermissionGuard>
+                      </RouteEB>
+                    } />
+                    <Route path="/audit-logs" element={
+                      <RouteEB>
+                        <PermissionGuard module="audit_logs">
+                          <AuditLogsPage />
                         </PermissionGuard>
                       </RouteEB>
                     } />

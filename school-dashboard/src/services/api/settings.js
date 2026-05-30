@@ -209,4 +209,18 @@ export const ssoApi = {
   regenerateScimToken: (options) => request('/auth/sso/scim/regenerate-token', { method: 'POST', ...(options?.signal ? { signal: options.signal } : {}) }),
 };
 
+// Audit Logs API
+export const auditLogsApi = {
+  getLogs: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/audit-logs${qs ? `?${qs}` : ''}`);
+  },
+  getLog: (id) => request(`/audit-logs/${id}`),
+  exportLogs: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/audit-logs/export${qs ? `?${qs}` : ''}`);
+  },
+  purgeLogs: (retentionMonths = 12) => request('/audit-logs/purge', { method: 'POST', body: JSON.stringify({ retentionMonths }) }),
+};
+
 // Calendar Events API
