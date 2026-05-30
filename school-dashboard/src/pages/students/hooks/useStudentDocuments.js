@@ -143,8 +143,11 @@ export function useStudentDocuments(studentId) {
 
     const loadingToast = toast.loading(t('toast.loading.deletingDocument'));
 
+    const docToDelete = documents[docIndex];
+    const deleteId = docToDelete?.id ?? docId;
+
     try {
-      const result = await request(`/students/${studentId}/documents/${docIndex}`, {
+      const result = await request(`/students/${studentId}/documents/${deleteId}`, {
         method: 'DELETE'
       });
       setDocuments(result.documents || []);
