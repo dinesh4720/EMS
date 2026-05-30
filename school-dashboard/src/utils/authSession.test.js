@@ -28,7 +28,9 @@ function setSessionUser(user) {
 describe('getStoredUser', () => {
   beforeEach(() => {
     sessionStorage.clear();
-    localStorage.clear();
+    if (typeof localStorage !== 'undefined') {
+      localStorage.clear();
+    }
   });
 
   it('returns null when nothing is stored', () => {
@@ -59,12 +61,14 @@ describe('getStoredUser', () => {
     expect(getStoredUser()).toBeNull();
   });
 
-  it('migrates user from localStorage to sessionStorage and clears localStorage', () => {
+  it('ignores localStorage and uses sessionStorage only', () => {
+    if (typeof localStorage === 'undefined') {
+      // When localStorage is unavailable, the test is trivially satisfied.
+      return;
+    }
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(validUser));
     const result = getStoredUser();
-    expect(result).not.toBeNull();
-    // After migration, localStorage entry should be removed
-    expect(localStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
+    expect(result).toBeNull();
   });
 });
 
@@ -119,7 +123,9 @@ describe('getAuthHeaders', () => {
 describe('saveStoredUser', () => {
   beforeEach(() => {
     sessionStorage.clear();
-    localStorage.clear();
+    if (typeof localStorage !== 'undefined') {
+      localStorage.clear();
+    }
   });
 
   it('saves a valid user to sessionStorage', () => {
@@ -171,13 +177,42 @@ describe('saveStoredUser', () => {
 describe('clearStoredUser', () => {
   beforeEach(() => {
     sessionStorage.clear();
-    localStorage.clear();
+    if (typeof localStorage !== 'undefined') {
+      localStorage.clear();
+    }
   });
 
   it('removes the user from sessionStorage', () => {
     setSessionUser(validUser);
     clearStoredUser();
     expect(sessionStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
+  });
+
+  it('does not write auth data to localStorage', () => {
+    saveStoredUser(validUser);
+    if (typeof localStorage !== 'undefined') {
+      expect(localStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
+    }
+  });
+
+  it('falls back to in-memory storage when sessionStorage is unavailable', () => {
+    // Simulate unavailable sessionStorage by overriding setItem to throw
+    const originalSetItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) {
+      if (key === AUTH_STORAGE_KEY) {
+        throw new Error('sessionStorage disabled');
+      }
+      return originalSetItem.call(this, key, value);
+    };
+
+    try {
+      saveStoredUser(validUser);
+      const result = getStoredUser();
+      expect(result).not.toBeNull();
+      expect(result.id).toBe('usr_1');
+    } finally {
+      Storage.prototype.setItem = originalSetItem;
+    }
   });
 
   it('dispatches auth-session-cleared event', () => {

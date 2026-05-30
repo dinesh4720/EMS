@@ -1,7 +1,4 @@
 import {
-  safeGetItem,
-  safeSetItem,
-  safeRemoveItem,
   safeSessionGetItem,
   safeSessionSetItem,
   safeSessionRemoveItem,
@@ -10,6 +7,12 @@ import {
 import logger from './logger';
 
 export const AUTH_STORAGE_KEY = 'app_user';
+
+// SECURITY: In-memory fallback when sessionStorage is unavailable (e.g.
+// private browsing with storage disabled). Never falls back to localStorage
+// because auth data must not survive browser restarts and must not be
+// accessible across tabs in a persistent way.
+let memoryUser = null;
 
 // SECURITY: Only these fields are persisted to sessionStorage. Crucially,
 // `_roleVerified` is intentionally excluded — it is an in-memory-only flag
@@ -64,16 +67,7 @@ function getRawStoredUser() {
   );
   if (sessionUser) return sessionUser;
 
-  const legacyLocalUser = parseJSON(
-    safeGetItem(AUTH_STORAGE_KEY),
-    () => safeRemoveItem(AUTH_STORAGE_KEY),
-  );
-  if (legacyLocalUser) {
-    safeRemoveItem(AUTH_STORAGE_KEY);
-    return legacyLocalUser;
-  }
-
-  return null;
+  return memoryUser;
 }
 
 export function getStoredUser() {
@@ -122,18 +116,18 @@ export function saveStoredUser(user) {
   // Never store tokens in sessionStorage — they live in httpOnly cookies only.
   const serializedUser = JSON.stringify(sanitizedUser);
 
-  // Try sessionStorage first; fall back to localStorage if blocked.
+  // Try sessionStorage first; fall back to in-memory store if blocked.
   safeSessionSetItem(AUTH_STORAGE_KEY, serializedUser);
   if (safeSessionGetItem(AUTH_STORAGE_KEY) === serializedUser) {
-    safeRemoveItem(AUTH_STORAGE_KEY);
+    memoryUser = null;
   } else {
     // sessionStorage unavailable — retry after clearing stale data.
     safeSessionClear();
     safeSessionSetItem(AUTH_STORAGE_KEY, serializedUser);
 
-    // If still not written, fall back to localStorage.
+    // If still not written, use memory-only fallback.
     if (safeSessionGetItem(AUTH_STORAGE_KEY) !== serializedUser) {
-      safeSetItem(AUTH_STORAGE_KEY, serializedUser);
+      memoryUser = sanitizedUser;
     }
   }
 
@@ -142,6 +136,6 @@ export function saveStoredUser(user) {
 
 export function clearStoredUser() {
   safeSessionRemoveItem(AUTH_STORAGE_KEY);
-  safeRemoveItem(AUTH_STORAGE_KEY);
+  memoryUser = null;
   dispatchAuthEvent('auth-session-cleared');
 }
