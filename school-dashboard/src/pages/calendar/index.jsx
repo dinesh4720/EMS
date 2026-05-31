@@ -236,9 +236,15 @@ export default function CalendarPage() {
 
   const navigate = (direction) => {
     const d = new Date(currentDate);
-    if (view === "month" || view === "schedule") d.setMonth(d.getMonth() + direction);
-    else if (view === "week") d.setDate(d.getDate() + direction * 7);
-    else d.setDate(d.getDate() + direction);
+    if (view === "month" || view === "schedule") {
+      const targetMonth = d.getMonth() + direction;
+      const maxDay = new Date(d.getFullYear(), targetMonth + 1, 0).getDate();
+      d.setMonth(targetMonth, Math.min(d.getDate(), maxDay));
+    } else if (view === "week") {
+      d.setDate(d.getDate() + direction * 7);
+    } else {
+      d.setDate(d.getDate() + direction);
+    }
     setCurrentDate(d);
   };
 
