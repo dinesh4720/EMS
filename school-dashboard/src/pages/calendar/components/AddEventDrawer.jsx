@@ -302,7 +302,7 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                   <label className="text-xs font-medium text-fg-muted mb-2 block">{t('calendar.addEvent.preview', 'Preview')}</label>
                   <div className="border border-border-token rounded-lg p-4 bg-surface">
                     {/* Event Preview Card */}
-                    <div className="bg-background rounded-lg border border-border-token p-4">
+                    <div className="bg-surface rounded-lg border border-border-token p-4">
                       <div className="flex items-start gap-3">
                         <div className={`w-3 h-3 rounded-full mt-0.5 ${
                           newEvent.type === 'holiday' ? 'bg-danger-token' :
@@ -311,7 +311,7 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                           'bg-accent'
                         }`} />
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-foreground">
+                          <div className="text-sm font-medium text-fg">
                             {newEvent.title || t('calendar.addEvent.eventTitleFallback', 'Event Title')}
                           </div>
                           <div className="flex items-center gap-2 mt-1.5 text-xs text-fg-muted">
