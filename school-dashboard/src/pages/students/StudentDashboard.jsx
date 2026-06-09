@@ -722,19 +722,22 @@ function DocumentsPanel({ studentId }) {
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
-    params: { id },
+    params: { id: routeId },
     isValid,
   } = useValidatedParams({ id: "objectId" }, { redirectTo: "/students" });
   const { classes, students, updateStudent, refetch: refetchAppData } =
     useApp();
   const { schoolSettings } = useSchool();
 
+  // Support both /students/:id and legacy /students/dashboard?id=...
+  const id = routeId || searchParams.get('id');
+
   const { student, loading: studentLoading, refetch: refetchStudent } =
     useStudentData(id);
 
   // ── URL-driven tab state ─────────────────────────────────────────────
-  const [searchParams, setSearchParams] = useSearchParams();
   const tabFromUrl = searchParams.get("tab");
   const activeTab = TAB_KEYS.includes(tabFromUrl) ? tabFromUrl : "overview";
   const setActiveTab = useCallback(

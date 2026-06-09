@@ -188,6 +188,7 @@ export default function StudentsPage() {
     return (
       <ErrorBoundary>
         <Routes>
+          <Route path="dashboard" element={<StudentDashboard />} />
           <Route path=":id" element={<StudentDashboard />} />
         </Routes>
       </ErrorBoundary>
