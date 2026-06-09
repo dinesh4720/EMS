@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../../context/AuthContext";
 import {
   Card,
@@ -14,16 +14,6 @@ import {
   useDisclosure,
   Spinner,
   Chip,
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
 } from "@heroui/react";
 import {
   Send,
@@ -32,7 +22,6 @@ import {
   RefreshCw,
   Trash2,
   Copy,
-  QrCode,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { intakeFormsApi } from "../../services/api";
@@ -40,6 +29,11 @@ import { format } from "date-fns";
 import { useTranslation } from 'react-i18next';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
+import PageHeader from '../../components/ui/PageHeader';
+import DataTable from '../../components/ui/DataTable';
+import Select from '../../components/ui/Select';
+import IconButton from '../../components/ui/IconButton';
+import DropdownMenu from '../../components/ui/DropdownMenu';
 
 export default function FormAssignments() {
   const { t } = useTranslation();
@@ -192,28 +186,125 @@ export default function FormAssignments() {
     return colors[status] || "default";
   };
 
-  const filteredAssignments = assignments;
+  const columns = useMemo(() => [
+    {
+      key: 'formName',
+      label: t('pages.fORMName'),
+      render: (row) => (
+        <div>
+          <div className="font-medium text-fg">
+            {row.formId?.formName || 'Unknown Form'}
+          </div>
+          <div className="text-xs text-fg-faint">
+            {row.formId?.formType || '—'}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'assignedTo',
+      label: t('pages.aSSIGNEDTo'),
+      render: (row) => (
+        <div className="text-sm">{row.assignedToEmail || row.assignedToPhone || '—'}</div>
+      ),
+    },
+    {
+      key: 'assignedBy',
+      label: t('pages.aSSIGNEDBy'),
+      render: (row) => (
+        <div className="text-sm">{row.assignedBy?.name || '—'}</div>
+      ),
+    },
+    {
+      key: 'status',
+      label: t('pages.sTATUS'),
+      render: (row) => (
+        <Chip
+          size="sm"
+          variant="dot"
+          color={getStatusColor(row.status)}
+        >
+          {row.status}
+        </Chip>
+      ),
+    },
+    {
+      key: 'assignedDate',
+      label: t('pages.aSSIGNEDDate'),
+      render: (row) => (
+        <div className="text-sm">
+          {row.assignedAt ? format(new Date(row.assignedAt), "MMM dd, yyyy") : '—'}
+        </div>
+      ),
+    },
+    {
+      key: 'expires',
+      label: t('pages.eXPIRES'),
+      render: (row) => (
+        <div className="text-sm">
+          {row.expiresAt ? format(new Date(row.expiresAt), "MMM dd, yyyy") : '—'}
+        </div>
+      ),
+    },
+  ], [t]);
+
+  const rowActions = (row) => (
+    <DropdownMenu
+      trigger={
+        <IconButton
+          aria-label={t('aria.menus.assignmentActions')}
+          icon={<MoreVertical size={16} />}
+          size="sm"
+        />
+      }
+      items={[
+        {
+          key: 'view',
+          label: 'View Details',
+          icon: <Eye size={16} />,
+          onClick: () => handleViewDetails(row),
+        },
+        {
+          key: 'copy',
+          label: 'Copy Link',
+          icon: <Copy size={16} />,
+          onClick: () => copyAccessLink(row.accessToken),
+        },
+        {
+          key: 'resend',
+          label: 'Resend Notification',
+          icon: <RefreshCw size={16} />,
+          onClick: () => handleResend(row._id),
+        },
+        {
+          key: 'delete',
+          label: 'Cancel Assignment',
+          icon: <Trash2 size={16} />,
+          isDestructive: true,
+          onClick: () => handleDelete(row._id),
+        },
+      ]}
+      ariaLabel={t('aria.menus.assignmentActions')}
+    />
+  );
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold text-fg">
-            Form Assignments
-          </h2>
-          <p className="text-sm text-fg-muted mt-1">
-            Manage and track form assignments sent to teachers
-          </p>
-        </div>
-        <Button
-          color="primary"
-          startContent={<Send size={16} />}
-          onPress={onOpen}
-        >
-          Assign Form
-        </Button>
-      </div>
+      <PageHeader
+        title="Form Assignments"
+        description="Manage and track form assignments sent to teachers"
+        actions={
+          <Button
+            color="primary"
+            startContent={<Send size={16} />}
+            onPress={onOpen}
+          >
+            Assign Form
+          </Button>
+        }
+        bordered={false}
+        size="lg"
+      />
 
       {/* Filters */}
       <div className="flex gap-2">
@@ -233,115 +324,20 @@ export default function FormAssignments() {
       </div>
 
       {/* Assignments Table */}
-      <Card>
-        <CardBody className="p-0">
-          <div className="overflow-x-auto">
-          <Table
-            aria-label={t('aria.tables.formAssignments')}
-            removeWrapper
-            classNames={{
-              th: "bg-surface-2 text-fg font-semibold",
-              td: "py-4",
-            }}
-          >
-            <TableHeader>
-              <TableColumn scope="col">{t('pages.fORMName')}</TableColumn>
-              <TableColumn scope="col">{t('pages.aSSIGNEDTo')}</TableColumn>
-              <TableColumn scope="col">{t('pages.aSSIGNEDBy')}</TableColumn>
-              <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
-              <TableColumn scope="col">{t('pages.aSSIGNEDDate')}</TableColumn>
-              <TableColumn scope="col">{t('pages.eXPIRES')}</TableColumn>
-              <TableColumn scope="col">{t('pages.aCTIONS')}</TableColumn>
-            </TableHeader>
-            <TableBody
-              items={filteredAssignments}
-              emptyContent="No assignments found"
-              loadingContent={<Spinner />}
-              isLoading={loading}
-            >
-              {(assignment) => (
-                <TableRow key={assignment._id}>
-                  <TableCell>
-                    <div className="font-medium text-fg">
-                      {assignment.formId?.formName || 'Unknown Form'}
-                    </div>
-                    <div className="text-xs text-fg-faint">
-                      {assignment.formId?.formType || '—'}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">{assignment.assignedToEmail || assignment.assignedToPhone || '—'}</div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">{assignment.assignedBy?.name || '—'}</div>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      size="sm"
-                      variant="dot"
-                      color={getStatusColor(assignment.status)}
-                    >
-                      {assignment.status}
-                    </Chip>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      {assignment.assignedAt ? format(new Date(assignment.assignedAt), "MMM dd, yyyy") : '—'}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      {assignment.expiresAt ? format(new Date(assignment.expiresAt), "MMM dd, yyyy") : '—'}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Dropdown>
-                      <DropdownTrigger>
-                        <Button isIconOnly size="sm" variant="light" aria-label="More actions">
-                          <MoreVertical size={16} />
-                        </Button>
-                      </DropdownTrigger>
-                      <DropdownMenu aria-label={t('aria.menus.assignmentActions')}>
-                        <DropdownItem
-                          key="view"
-                          startContent={<Eye size={16} />}
-                          onPress={() => handleViewDetails(assignment)}
-                        >
-                          View Details
-                        </DropdownItem>
-                        <DropdownItem
-                          key="copy"
-                          startContent={<Copy size={16} />}
-                          onPress={() => copyAccessLink(assignment.accessToken)}
-                        >
-                          Copy Link
-                        </DropdownItem>
-                        <DropdownItem
-                          key="resend"
-                          startContent={<RefreshCw size={16} />}
-                          onPress={() => handleResend(assignment._id)}
-                        >
-                          Resend Notification
-                        </DropdownItem>
-                        <DropdownItem
-                          key="delete"
-                          className="text-danger"
-                          color="danger"
-                          startContent={<Trash2 size={16} />}
-                          onPress={() => handleDelete(assignment._id)}
-                        >
-                          Cancel Assignment
-                        </DropdownItem>
-                      </DropdownMenu>
-                    </Dropdown>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-          </div>
-        </CardBody>
-      </Card>
+      <DataTable
+        ariaLabel={t('aria.tables.formAssignments')}
+        columns={columns}
+        data={assignments}
+        keyField="_id"
+        loading={loading}
+        emptyState={{
+          title: 'No assignments found',
+          description: 'Assign a form to see records here.',
+        }}
+        rowActions={rowActions}
+        pagination
+        defaultPageSize={10}
+      />
 
       {/* Assign Form Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="2xl">
@@ -349,28 +345,23 @@ export default function FormAssignments() {
           <ModalHeader>{t('pages.assignForm')}</ModalHeader>
           <ModalBody>
             <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block text-fg">
-                  Select Form
-                </label>
-                <select
-                  className="w-full px-3 py-2 border border-border-token rounded-lg bg-surface text-fg"
-                  value={assignmentData.formId}
-                  onChange={(e) =>
-                    setAssignmentData({
-                      ...assignmentData,
-                      formId: e.target.value,
-                    })
-                  }
-                >
-                  <option value="">{t('pages.chooseAForm')}</option>
-                  {forms.map((form) => (
-                    <option key={form.id} value={form.id}>
-                      {form.formName}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <Select
+                label="Select Form"
+                placeholder={t('pages.chooseAForm')}
+                value={assignmentData.formId}
+                onChange={(e) =>
+                  setAssignmentData({
+                    ...assignmentData,
+                    formId: e.target.value,
+                  })
+                }
+              >
+                {forms.map((form) => (
+                  <option key={form.id} value={form.id}>
+                    {form.formName}
+                  </option>
+                ))}
+              </Select>
 
               <Textarea
                 label={t('pages.emailAddresses')}
