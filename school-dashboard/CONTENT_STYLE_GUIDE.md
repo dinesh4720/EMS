@@ -1,6 +1,6 @@
 # Content Style Guide — School Dashboard
 
-> Last updated: 2026-05-30  
+> Last updated: 2026-06-09  
 > Owner: Content / UX Writer  
 > Scope: All UI copy in `school-dashboard` (labels, buttons, CTAs, placeholders, tooltips, error messages, success messages, empty states, loading states, onboarding, confirmations)
 
@@ -123,6 +123,30 @@ Every error message must answer two questions:
 - ❌ "An unexpected error occurred"
 - ❌ "Something went wrong"
 
+### Form error messages
+Field-level errors follow the same two-part pattern:
+```
+[What is wrong] + [How to fix it]
+```
+
+**Examples:**
+- ✅ "Enter a valid email address (e.g., name@school.edu)"
+- ✅ "Roll number must be 6 digits"
+- ❌ "Invalid input"
+- ❌ "Required"
+
+### Toast error messages
+Toast errors must also answer what failed and how to recover:
+```
+[What failed] + [How to recover]
+```
+
+**Examples:**
+- ✅ "Exam could not be created. Check your connection and try again."
+- ✅ "Fee record failed to save. Refresh the page or try again later."
+- ❌ "Error saving exam"
+- ❌ "Something went wrong"
+
 ### Generic fallbacks (use only when server provides no detail)
 - Network: "Connection interrupted. Check your network and try again."
 - Timeout: "Request timed out. Please try again."
@@ -141,7 +165,13 @@ Every error message must answer two questions:
 
 ### Formula
 ```
-Heading: [Action-oriented instruction]
+[Context] + [Action]
+```
+
+The heading must give context *and* a next step. Never leave the user with only "No X found."
+
+```
+Heading: [Context + action-oriented instruction]
 Body (optional): [Brief context or how to start]
 CTA (optional): [Verb-first button]
 ```
@@ -215,6 +245,7 @@ Placeholders should show an example or restate the field's purpose — never rep
 | Avoid | Use Instead | Why |
 |-------|-------------|-----|
 | "Click here" | Verb-first CTA | Accessible, action-oriented |
+| "Click to…" | Verb-first CTA | Same as above |
 | "OK" | Specific verb ("Save", "Confirm", "Got it") | Vague |
 | "Oops" / "Uh oh" | Direct statement | Professional tone |
 | "Something went wrong" (alone) | Specific error + next step | Unhelpful |
@@ -222,6 +253,14 @@ Placeholders should show an example or restate the field's purpose — never rep
 | "Successfully" | Omit | Implied by success state |
 | "Just" / "Simply" / "Easily" | Omit | Condescending |
 | "Invalid input" | State what is invalid and why | Specificity |
+
+### Where the ban applies
+Remove all "Click here" and "Click to…" copy from:
+- Tooltips
+- Helper text
+- Toast messages
+
+Use verb-first CTAs or plain instructional text instead.
 
 ---
 
@@ -243,7 +282,25 @@ Use the same term for the same concept everywhere.
 
 ---
 
-## 12. i18n & Hardcoded Strings
+## 12. Accessibility — Alt Text & ARIA Labels
+
+### Alt text
+- **Avatars / profile images:** `alt="{entity.name} photo"` (e.g., `alt="Rahul Sharma photo"`)
+- **Decorative images:** `alt=""` **only** when the image is purely decorative and paired with `aria-hidden="true"`
+- **Informative images:** Describe the image content, not its filename
+
+### Icon-button labels
+Every icon-only button must have an `aria-label` that is **verb-first** and includes the object being acted on.
+
+- ✅ `aria-label="Edit exam"`
+- ✅ `aria-label="Delete student"`
+- ✅ `aria-label="Send reminder"`
+- ❌ `aria-label="Edit"` (missing object)
+- ❌ `aria-label="Pencil icon"` (describes the icon, not the action)
+
+---
+
+## 13. i18n & Hardcoded Strings
 
 All user-facing copy must live in `src/i18n/locales/en.json` (or the active locale). Hardcoded strings in JSX are a bug.
 
@@ -251,8 +308,9 @@ All user-facing copy must live in `src/i18n/locales/en.json` (or the active loca
 
 ---
 
-## 13. Changelog
+## 14. Changelog
 
 | Date | Change | Author |
 |------|--------|--------|
+| 2026-06-09 | a11y amendments — empty-state formula expanded, toast error formula added, form error formula added, alt text & icon-button ARIA rules, "Click here / Click to…" ban extended to tooltips/helper text/toasts | Content / UX Writer |
 | 2026-05-30 | Initial version — voice & tone, capitalization, punctuation, button rules, error formula, empty-state formula, loading states, forbidden words, terminology glossary, i18n rule | Content / UX Writer |
