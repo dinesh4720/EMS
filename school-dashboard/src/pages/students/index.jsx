@@ -179,10 +179,22 @@ export default function StudentsPage() {
     pathParts[0] === 'students' &&
     pathParts[1] !== 'attendance' &&
     pathParts[1] !== 'submissions' &&
+    pathParts[1] !== 'dashboard' &&
     pathParts[1] !== '';
 
   const isAttendance = location.pathname === "/students/attendance";
   const isSubmissions = location.pathname === "/students/submissions";
+  const isDashboard = location.pathname === "/students/dashboard";
+
+  if (isDashboard) {
+    return (
+      <ErrorBoundary>
+        <Routes>
+          <Route path="dashboard" element={<StudentDashboard />} />
+        </Routes>
+      </ErrorBoundary>
+    );
+  }
 
   if (isProfileView) {
     return (

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, lazy, Suspense, useCallback } from "react";
+import React, { useMemo, useState, lazy, Suspense, useCallback, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
 
@@ -722,10 +722,20 @@ function DocumentsPanel({ studentId }) {
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
-    params: { id },
+    params: { id: pathId },
     isValid,
   } = useValidatedParams({ id: "objectId" }, { redirectTo: "/students" });
+  // Support both /students/:id and /students/dashboard?id=...
+  const id = pathId || searchParams.get("id");
+
+  useEffect(() => {
+    if (!id) {
+      navigate("/students", { replace: true });
+    }
+  }, [id, navigate]);
+
   const { classes, students, updateStudent, refetch: refetchAppData } =
     useApp();
   const { schoolSettings } = useSchool();
@@ -734,7 +744,6 @@ export default function StudentDashboard() {
     useStudentData(id);
 
   // ── URL-driven tab state ─────────────────────────────────────────────
-  const [searchParams, setSearchParams] = useSearchParams();
   const tabFromUrl = searchParams.get("tab");
   const activeTab = TAB_KEYS.includes(tabFromUrl) ? tabFromUrl : "overview";
   const setActiveTab = useCallback(
@@ -995,6 +1004,13 @@ export default function StudentDashboard() {
           >
             <FileText size={13} aria-hidden /> TC
           </button>
+          <button
+            type="button"
+            className="btn"
+            onClick={() => setOpenModal("move")}
+          >
+            <Move size={13} aria-hidden /> Move class
+          </button>
 
           <Dropdown placement="bottom-end">
             <DropdownTrigger>
@@ -1002,7 +1018,7 @@ export default function StudentDashboard() {
                 type="button"
                 className="iconbtn"
                 style={{ width: 32, height: 32 }}
-                aria-label="More student actions"
+                aria-label="Actions"
               >
                 <MoreHorizontal size={16} />
               </button>
@@ -1239,7 +1255,10 @@ export default function StudentDashboard() {
             onClose={closeModal}
             student={student}
             availableClasses={(classes || []).map(
-              (c) => c.name || c.section || ""
+              (c) =>
+                c.name && c.section
+                  ? `${c.name}-${c.section}`
+                  : c.name || c.section || ""
             )}
             classObjects={classes || []}
             onMove={onAdminMutation}
