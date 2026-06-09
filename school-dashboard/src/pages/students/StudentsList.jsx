@@ -446,7 +446,7 @@ export default function StudentsList({ onAddStudent }) {
               }
               action={
                 students.length === 0 ? (
-                  <button type="button" className="btn btn--accent" onClick={onAddStudent}>
+                  <button type="button" className="btn btn--accent" onClick={onAddStudent} aria-label="Add your first student">
                     <Plus size={13} aria-hidden /> New Student
                   </button>
                 ) : (
@@ -512,17 +512,17 @@ export default function StudentsList({ onAddStudent }) {
         )}
         </div>
 
-      </div>
+        {/* Right detail pane — desktop only (second grid column) */}
+        {!isMobileViewport && (
+          <StudentDetailPane
+            student={selectedStudentRecord}
+            onClose={closeDetail}
+            onViewProfile={() => selectedStudentRecord && handleViewProfile(selectedStudentRecord)}
+            onMessageParent={handleMessageParent}
+          />
+        )}
 
-      {/* Right detail pane — desktop only */}
-      {!isMobileViewport && (
-        <StudentDetailPane
-          student={selectedStudentRecord}
-          onClose={closeDetail}
-          onViewProfile={() => selectedStudentRecord && handleViewProfile(selectedStudentRecord)}
-          onMessageParent={handleMessageParent}
-        />
-      )}
+      </div>
 
       {/* Mobile: slide-over drawer for detail */}
       {isMobileViewport && detailVisible && (
