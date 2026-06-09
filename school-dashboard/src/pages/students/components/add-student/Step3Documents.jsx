@@ -24,7 +24,7 @@ function Step3Documents({
     <div className="space-y-5 animate-fade-in text-left">
       <div className="space-y-2">
         <label className="text-sm font-semibold text-default-900">{t('pages.documentUploads')}</label>
-        <p className="text-xs text-default-500">
+        <p className="text-xs text-fg-muted">
           {documentConfigs.some(c => c.isRequired)
             ? 'Upload required documents. Fields marked with * are mandatory.'
             : t('pages.uploadRequiredDocumentsAllDocumentsAreOptionalAndCanBeUploadedLater')}
@@ -33,13 +33,13 @@ function Step3Documents({
 
       {/* Birth Certificate */}
       <div className="space-y-2">
-        <label htmlFor="birthCertificate-upload" className="text-xs font-medium text-default-600">
+        <label htmlFor="birthCertificate-upload" className="text-xs font-medium text-fg-subtle">
           {t('pages.birthCertificate')}
           {isDocRequired('birthCertificate') && <span className="text-danger ml-1">*</span>}
         </label>
         <div
           id="birthCertificate-upload"
-          className={`border border-solid rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-default-50 transition-colors ${errors.birthCertificate ? 'border-danger' : 'border-default-300'}`}
+          className={`border border-solid rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-surface-2 transition-colors ${errors.birthCertificate ? 'border-danger' : 'border-border-token'}`}
           role="button"
           tabIndex={0}
           aria-describedby={errors.birthCertificate ? "birthCertificate-error" : undefined}
@@ -48,11 +48,11 @@ function Step3Documents({
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); birthCertRef.current?.click(); } }}
         >
           <div className="flex items-center gap-3">
-            <FileText size={20} className="text-default-400" />
+            <FileText size={20} className="text-fg-faint" />
             {formData.birthCertificate ? (
-              <span className="text-sm text-default-700">{formData.birthCertificate.name}</span>
+              <span className="text-sm text-fg">{formData.birthCertificate.name}</span>
             ) : (
-              <span className="text-sm text-default-500">{t('pages.clickToUploadBirthCertificate')}</span>
+              <span className="text-sm text-fg-muted">{t('pages.clickToUploadBirthCertificate')}</span>
             )}
           </div>
           {formData.birthCertificate ? (
@@ -60,7 +60,7 @@ function Step3Documents({
               <X size={14} />
             </Button>
           ) : (
-            <Upload size={16} className="text-default-400" />
+            <Upload size={16} className="text-fg-faint" />
           )}
         </div>
         {errors.birthCertificate && <p id="birthCertificate-error" role="alert" aria-live="polite" className="text-xs text-danger">{errors.birthCertificate}</p>}
@@ -70,13 +70,13 @@ function Step3Documents({
 
       {/* Transfer Certificate */}
       <div className="space-y-2">
-        <label htmlFor="transferCertificate-upload" className="text-xs font-medium text-default-600">
+        <label htmlFor="transferCertificate-upload" className="text-xs font-medium text-fg-subtle">
           {t('pages.transferCertificateTc')}
           {isDocRequired('transferCertificate') && <span className="text-danger ml-1">*</span>}
         </label>
         <div
           id="transferCertificate-upload"
-          className={`border border-solid rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-default-50 transition-colors ${errors.transferCertificate ? 'border-danger' : 'border-default-300'}`}
+          className={`border border-solid rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-surface-2 transition-colors ${errors.transferCertificate ? 'border-danger' : 'border-border-token'}`}
           role="button"
           tabIndex={0}
           aria-describedby={errors.transferCertificate ? "transferCertificate-error" : undefined}
@@ -85,11 +85,11 @@ function Step3Documents({
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tcRef.current?.click(); } }}
         >
           <div className="flex items-center gap-3">
-            <FileText size={20} className="text-default-400" />
+            <FileText size={20} className="text-fg-faint" />
             {formData.transferCertificate ? (
-              <span className="text-sm text-default-700">{formData.transferCertificate.name}</span>
+              <span className="text-sm text-fg">{formData.transferCertificate.name}</span>
             ) : (
-              <span className="text-sm text-default-500">{t('pages.clickToUploadTransferCertificate')}</span>
+              <span className="text-sm text-fg-muted">{t('pages.clickToUploadTransferCertificate')}</span>
             )}
           </div>
           {formData.transferCertificate ? (
@@ -97,7 +97,7 @@ function Step3Documents({
               <X size={14} />
             </Button>
           ) : (
-            <Upload size={16} className="text-default-400" />
+            <Upload size={16} className="text-fg-faint" />
           )}
         </div>
         {errors.transferCertificate && <p id="transferCertificate-error" role="alert" aria-live="polite" className="text-xs text-danger">{errors.transferCertificate}</p>}
@@ -107,16 +107,16 @@ function Step3Documents({
 
       {/* Aadhaar Card (Front & Back) */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-default-600">
+        <label className="text-xs font-medium text-fg-subtle">
           {t('pages.aadhaarCardFrontBack')}
           {isDocRequired('aadhaarFront') && <span className="text-danger ml-1">*</span>}
         </label>
-        <p className="text-xs text-default-500">{t('pages.uploadBothSidesOfTheAadhaarCard')}</p>
+        <p className="text-xs text-fg-muted">{t('pages.uploadBothSidesOfTheAadhaarCard')}</p>
 
         {/* Front Side */}
         <div
           id="aadhaarFront-upload"
-          className={`border border-solid rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-default-50 transition-colors ${errors.aadhaarFront ? 'border-danger' : 'border-default-300'}`}
+          className={`border border-solid rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-surface-2 transition-colors ${errors.aadhaarFront ? 'border-danger' : 'border-border-token'}`}
           role="button"
           tabIndex={0}
           aria-label="Upload Aadhaar front side"
@@ -126,11 +126,11 @@ function Step3Documents({
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); aadhaarFrontRef.current?.click(); } }}
         >
           <div className="flex items-center gap-3">
-            <FileText size={20} className="text-default-400" />
+            <FileText size={20} className="text-fg-faint" />
             {formData.aadhaarFront ? (
-              <span className="text-sm text-default-700">Front: {formData.aadhaarFront.name}</span>
+              <span className="text-sm text-fg">Front: {formData.aadhaarFront.name}</span>
             ) : (
-              <span className="text-sm text-default-500">{t('pages.clickToUploadFrontSide')}</span>
+              <span className="text-sm text-fg-muted">{t('pages.clickToUploadFrontSide')}</span>
             )}
           </div>
           {formData.aadhaarFront ? (
@@ -138,7 +138,7 @@ function Step3Documents({
               <X size={14} />
             </Button>
           ) : (
-            <Upload size={16} className="text-default-400" />
+            <Upload size={16} className="text-fg-faint" />
           )}
         </div>
         {errors.aadhaarFront && <p id="aadhaarFront-error" role="alert" aria-live="polite" className="text-xs text-danger">{errors.aadhaarFront}</p>}
@@ -148,7 +148,7 @@ function Step3Documents({
         {/* Back Side */}
         <div
           id="aadhaarBack-upload"
-          className={`border border-solid rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-default-50 transition-colors ${errors.aadhaarBack ? 'border-danger' : 'border-default-300'}`}
+          className={`border border-solid rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-surface-2 transition-colors ${errors.aadhaarBack ? 'border-danger' : 'border-border-token'}`}
           role="button"
           tabIndex={0}
           aria-label="Upload Aadhaar back side"
@@ -158,11 +158,11 @@ function Step3Documents({
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); aadhaarBackRef.current?.click(); } }}
         >
           <div className="flex items-center gap-3">
-            <FileText size={20} className="text-default-400" />
+            <FileText size={20} className="text-fg-faint" />
             {formData.aadhaarBack ? (
-              <span className="text-sm text-default-700">Back: {formData.aadhaarBack.name}</span>
+              <span className="text-sm text-fg">Back: {formData.aadhaarBack.name}</span>
             ) : (
-              <span className="text-sm text-default-500">{t('pages.clickToUploadBackSide')}</span>
+              <span className="text-sm text-fg-muted">{t('pages.clickToUploadBackSide')}</span>
             )}
           </div>
           {formData.aadhaarBack ? (
@@ -170,7 +170,7 @@ function Step3Documents({
               <X size={14} />
             </Button>
           ) : (
-            <Upload size={16} className="text-default-400" />
+            <Upload size={16} className="text-fg-faint" />
           )}
         </div>
         {errors.aadhaarBack && <p id="aadhaarBack-error" role="alert" aria-live="polite" className="text-xs text-danger">{errors.aadhaarBack}</p>}
@@ -180,24 +180,24 @@ function Step3Documents({
 
       {/* Other Documents */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-default-600">{t('pages.otherDocuments')}</label>
-        <p className="text-xs text-default-500">Upload any other relevant documents (medical records, previous report cards, etc.)</p>
+        <label className="text-xs font-medium text-fg-subtle">{t('pages.otherDocuments')}</label>
+        <p className="text-xs text-fg-muted">Upload any other relevant documents (medical records, previous report cards, etc.)</p>
         <div
-          className="border border-solid border-default-300 rounded-lg p-4 flex items-center justify-center gap-2 cursor-pointer hover:bg-default-50 transition-colors"
+          className="border border-solid border-border-token rounded-lg p-4 flex items-center justify-center gap-2 cursor-pointer hover:bg-surface-2 transition-colors"
           role="button"
           tabIndex={0}
           onClick={() => otherDocsRef.current?.click()}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); otherDocsRef.current?.click(); } }}
         >
-          <Upload size={14} className="text-default-500" />
-          <span className="text-sm text-default-600">{t('pages.uploadAdditionalDocuments')}</span>
+          <Upload size={14} className="text-fg-muted" />
+          <span className="text-sm text-fg-subtle">{t('pages.uploadAdditionalDocuments')}</span>
         </div>
         <input ref={otherDocsRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png" className="hidden"
           onChange={(e) => handleMultiFileUpload("otherDocuments", e.target.files)} />
         {formData.otherDocuments?.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
             {formData.otherDocuments?.map((file, i) => (
-              <Chip key={file.name || `doc-${i}`} onClose={() => removeFile("otherDocuments", i)} size="sm" variant="flat" className="h-8 border border-default-200 bg-background">
+              <Chip key={file.name || `doc-${i}`} onClose={() => removeFile("otherDocuments", i)} size="sm" variant="flat" className="h-8 border border-divider bg-surface">
                 {file.name}
               </Chip>
             ))}

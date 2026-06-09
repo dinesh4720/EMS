@@ -31,9 +31,9 @@ function Step2ParentsHealth({
         {parents.map((parent, idx) => {
           const index = formData.parents.findIndex(entry => entry === parent);
           return (
-            <div key={`parent-${idx}`} className="p-4 bg-default-50 rounded-lg border border-default-200 space-y-4">
+            <div key={`parent-${idx}`} className="p-4 bg-surface-2 rounded-lg border border-divider space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-default-700">
+                <span className="text-sm font-medium text-fg">
                   {idx === 0 ? "Primary Parent" : `Parent ${idx + 1}`}
                 </span>
                 {parents.length > 1 && (
@@ -55,7 +55,7 @@ function Step2ParentsHealth({
                     variant="bordered"
                     radius="sm"
                     isRequired={index === 0}
-                    classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                    classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
                   />
                 </div>
                 <Select
@@ -66,7 +66,7 @@ function Step2ParentsHealth({
                   onSelectionChange={keys => updateParent(index, "relationship", Array.from(keys)[0])}
                   variant="bordered"
                   radius="sm"
-                  classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                  classNames={{ trigger: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
                 >
                   {PARENT_RELATIONSHIPS.map(rel => <SelectItem key={rel}>{rel}</SelectItem>)}
                 </Select>
@@ -74,7 +74,7 @@ function Step2ParentsHealth({
                   <Input
                     label={t('pages.phoneNumber')}
                     labelPlacement="outside"
-                    startContent={<span className="text-default-400 text-xs">+91</span>}
+                    startContent={<span className="text-fg-faint text-xs">+91</span>}
                     placeholder={t('students.form.phonePlaceholder')}
                     value={parent.phone}
                     onValueChange={val => {
@@ -88,10 +88,10 @@ function Step2ParentsHealth({
                     radius="sm"
                     isRequired={index === 0}
                     maxLength={10}
-                    classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                    classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
                   />
                   <Checkbox size="sm" isSelected={parent.isWhatsapp} onValueChange={val => updateParent(index, "isWhatsapp", val)}
-                    classNames={{ label: "text-xs text-default-500" }}>
+                    classNames={{ label: "text-xs text-fg-muted" }}>
                     Same as WhatsApp
                   </Checkbox>
                 </div>
@@ -103,7 +103,7 @@ function Step2ParentsHealth({
                   onValueChange={val => updateParent(index, "email", val)}
                   variant="bordered"
                   radius="sm"
-                  classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                  classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
                 />
                 <Input
                   label={t('pages.occupation')}
@@ -114,7 +114,7 @@ function Step2ParentsHealth({
                   variant="bordered"
                   radius="sm"
                   className="col-span-2"
-                  classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                  classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
                 />
               </div>
             </div>
@@ -123,7 +123,7 @@ function Step2ParentsHealth({
 
         {parents.length < 2 && (
           <button
-            className="text-sm font-medium text-primary hover:text-primary-600 transition-colors"
+            className="text-sm font-medium text-primary hover:text-[var(--accent)] transition-colors"
             onClick={() => {
               updateField("parents", [...formData.parents, { name: "", relationship: "Mother", phone: "", email: "", occupation: "", isWhatsapp: true, isParent: true }]);
             }}
@@ -143,9 +143,9 @@ function Step2ParentsHealth({
         {guardians.map((guardian, idx) => {
           const index = formData.parents.findIndex(entry => entry === guardian);
           return (
-            <div key={`guardian-${idx}`} className="p-4 bg-default-50 rounded-lg border border-default-200 space-y-4">
+            <div key={`guardian-${idx}`} className="p-4 bg-surface-2 rounded-lg border border-divider space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-default-700">
+                <span className="text-sm font-medium text-fg">
                   Guardian {idx + 1}
                 </span>
                 <Button size="sm" variant="light" color="danger" onPress={() => removeParent(index)}>
@@ -161,7 +161,7 @@ function Step2ParentsHealth({
                   onValueChange={val => updateParent(index, "name", val)}
                   variant="bordered"
                   radius="sm"
-                  classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                  classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
                 />
                 <Select
                   label={t('pages.relationship')}
@@ -171,7 +171,7 @@ function Step2ParentsHealth({
                   onSelectionChange={keys => updateParent(index, "relationship", Array.from(keys)[0])}
                   variant="bordered"
                   radius="sm"
-                  classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                  classNames={{ trigger: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
                 >
                   {GUARDIAN_RELATIONSHIPS.map(rel => <SelectItem key={rel}>{rel}</SelectItem>)}
                 </Select>
@@ -179,7 +179,7 @@ function Step2ParentsHealth({
                   <Input
                     label={t('pages.phoneNumber')}
                     labelPlacement="outside"
-                    startContent={<span className="text-default-400 text-xs">+91</span>}
+                    startContent={<span className="text-fg-faint text-xs">+91</span>}
                     placeholder={t('students.form.phonePlaceholder')}
                     value={guardian.phone}
                     onValueChange={val => {
@@ -189,10 +189,10 @@ function Step2ParentsHealth({
                     variant="bordered"
                     radius="sm"
                     maxLength={10}
-                    classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                    classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
                   />
                   <Checkbox size="sm" isSelected={guardian.isWhatsapp} onValueChange={val => updateParent(index, "isWhatsapp", val)}
-                    classNames={{ label: "text-xs text-default-500" }}>
+                    classNames={{ label: "text-xs text-fg-muted" }}>
                     Same as WhatsApp
                   </Checkbox>
                 </div>
@@ -204,7 +204,7 @@ function Step2ParentsHealth({
                   onValueChange={val => updateParent(index, "email", val)}
                   variant="bordered"
                   radius="sm"
-                  classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                  classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
                 />
                 <Input
                   label={t('pages.occupation')}
@@ -215,7 +215,7 @@ function Step2ParentsHealth({
                   variant="bordered"
                   radius="sm"
                   className="col-span-2"
-                  classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                  classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
                 />
               </div>
             </div>
@@ -224,7 +224,7 @@ function Step2ParentsHealth({
 
         {guardians.length === 0 && (
           <button
-            className="text-sm font-medium text-primary hover:text-primary-600 transition-colors"
+            className="text-sm font-medium text-primary hover:text-[var(--accent)] transition-colors"
             onClick={() => {
               updateField("parents", [...formData.parents, { name: "", relationship: "Grandparent", phone: "", email: "", occupation: "", isWhatsapp: true, isParent: false }]);
             }}
@@ -242,9 +242,9 @@ function Step2ParentsHealth({
         </div>
 
         {formData.siblings.map((sibling, idx) => (
-          <div key={`sibling-${idx}`} className="p-4 bg-default-50 rounded-lg border border-default-200 space-y-4">
+          <div key={`sibling-${idx}`} className="p-4 bg-surface-2 rounded-lg border border-divider space-y-4">
             <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-default-700">
+              <span className="text-sm font-medium text-fg">
                 Sibling {idx + 1}
               </span>
               <Button size="sm" variant="light" color="danger" onPress={() => removeSibling(idx)}>
@@ -260,7 +260,7 @@ function Step2ParentsHealth({
                 onValueChange={val => updateSibling(idx, "name", val)}
                 variant="bordered"
                 radius="sm"
-                classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
               />
               <div className="flex items-center gap-2 pt-6">
                 <Checkbox size="sm"
@@ -270,7 +270,7 @@ function Step2ParentsHealth({
                     if (!val) updateSibling(idx, "classId", "");
                   }}
                 >
-                  <span className="text-sm text-default-700">{t('pages.isSiblingInThisSchool')}</span>
+                  <span className="text-sm text-fg">{t('pages.isSiblingInThisSchool')}</span>
                 </Checkbox>
               </div>
               {sibling.inSameSchool && (
@@ -282,7 +282,7 @@ function Step2ParentsHealth({
                   onSelectionChange={keys => updateSibling(idx, "classId", Array.from(keys)[0])}
                   variant="bordered"
                   radius="sm"
-                  classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                  classNames={{ trigger: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
                 >
                   {classesWithTeachers.map(cls => (
                     <SelectItem key={cls.id}>
@@ -296,7 +296,7 @@ function Step2ParentsHealth({
         ))}
 
         <button
-          className="text-sm font-medium text-primary hover:text-primary-600 transition-colors"
+          className="text-sm font-medium text-primary hover:text-[var(--accent)] transition-colors"
           onClick={addSibling}
         >
           + Add Sibling
@@ -315,7 +315,7 @@ function Step2ParentsHealth({
           variant="bordered"
           radius="sm"
           minRows={2}
-          classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300" }}
+          classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token" }}
         />
       </div>
 
@@ -325,36 +325,36 @@ function Step2ParentsHealth({
         <div className="grid grid-cols-2 gap-4">
           <div className={cn(
             "cursor-pointer rounded-xl border-2 p-4 flex items-center gap-3 transition-all",
-            formData.transportRequired ? "border-primary bg-primary-50/20" : "border-default-200 hover:border-default-300"
+            formData.transportRequired ? "border-primary bg-[var(--accent-bg)]/20" : "border-divider hover:border-border-token"
           )} onClick={() => updateField("transportRequired", !formData.transportRequired)}>
             <div className={cn(
               "w-10 h-10 rounded-full flex items-center justify-center",
-              formData.transportRequired ? "bg-primary text-white" : "bg-default-100 text-default-400"
+              formData.transportRequired ? "bg-primary text-white" : "bg-surface-2 text-fg-faint"
             )}>
               <Bus size={20} />
             </div>
             <div>
-              <span className={cn("text-sm font-medium", formData.transportRequired ? "text-primary-700" : "text-default-600")}>
+              <span className={cn("text-sm font-medium", formData.transportRequired ? "text-[var(--accent)]" : "text-fg-subtle")}>
                 Transport Required
               </span>
-              <p className="text-xs text-default-500">{t('pages.schoolBusFacility')}</p>
+              <p className="text-xs text-fg-muted">{t('pages.schoolBusFacility')}</p>
             </div>
           </div>
           <div className={cn(
             "cursor-pointer rounded-xl border-2 p-4 flex items-center gap-3 transition-all",
-            formData.hostelRequired ? "border-primary bg-primary-50/20" : "border-default-200 hover:border-default-300"
+            formData.hostelRequired ? "border-primary bg-[var(--accent-bg)]/20" : "border-divider hover:border-border-token"
           )} onClick={() => updateField("hostelRequired", !formData.hostelRequired)}>
             <div className={cn(
               "w-10 h-10 rounded-full flex items-center justify-center",
-              formData.hostelRequired ? "bg-primary text-white" : "bg-default-100 text-default-400"
+              formData.hostelRequired ? "bg-primary text-white" : "bg-surface-2 text-fg-faint"
             )}>
               <Heart size={20} />
             </div>
             <div>
-              <span className={cn("text-sm font-medium", formData.hostelRequired ? "text-primary-700" : "text-default-600")}>
+              <span className={cn("text-sm font-medium", formData.hostelRequired ? "text-[var(--accent)]" : "text-fg-subtle")}>
                 Hostel Required
               </span>
-              <p className="text-xs text-default-500">{t('pages.boardingFacility')}</p>
+              <p className="text-xs text-fg-muted">{t('pages.boardingFacility')}</p>
             </div>
           </div>
         </div>

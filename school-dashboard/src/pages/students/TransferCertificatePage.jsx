@@ -1,8 +1,7 @@
 import { useState, useCallback } from 'react';
 import {
-  Button, Input, Checkbox,
-  Breadcrumbs, BreadcrumbItem,
-} from '@heroui/react';
+  Button, Input, Checkbox, Breadcrumbs,
+} from '../../components/ui';
 import { FileText, Search, Home, Printer } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { request } from '../../services/api';
@@ -57,11 +56,14 @@ export default function TransferCertificatePage() {
 
   return (
     <div className="animate-fade-in tc-page">
-      <Breadcrumbs size="sm">
-        <BreadcrumbItem startContent={<Home size={14} />} onPress={() => navigate('/')}>Home</BreadcrumbItem>
-        <BreadcrumbItem onPress={() => navigate('/students')}>Students</BreadcrumbItem>
-        <BreadcrumbItem>Transfer Certificate</BreadcrumbItem>
-      </Breadcrumbs>
+      <Breadcrumbs
+        size="sm"
+        items={[
+          { label: 'Home', href: '/', icon: <Home size={14} /> },
+          { label: 'Students', href: '/students' },
+          { label: 'Transfer Certificate' },
+        ]}
+      />
 
       <PageLayout
         header={{ title: 'Transfer Certificate', description: 'Search students and generate TC documents' }}
@@ -76,17 +78,15 @@ export default function TransferCertificatePage() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
-              variant="bordered"
               size="sm"
               startContent={<Search size={14} className="text-fg-faint" />}
-              classNames={{ input: 'text-fg', inputWrapper: 'border-border-token h-9' }}
               className="flex-1 max-w-md"
             />
             <Button
               size="sm"
               className="bg-fg text-bg"
-              onPress={handleSearch}
-              isLoading={loading}
+              onClick={handleSearch}
+              loading={loading}
             >
               Search
             </Button>
@@ -97,15 +97,15 @@ export default function TransferCertificatePage() {
                   <span className="mono tnum">{students.length}</span> result{students.length !== 1 ? 's' : ''} ·{' '}
                   <span className="mono tnum">{selected.size}</span> selected
                 </span>
-                <Button size="sm" variant="flat" onPress={selectAll}>
+                <Button size="sm" variant="ghost" onClick={selectAll}>
                   {selected.size === students.length ? 'Clear' : 'Select all'}
                 </Button>
                 {selected.size > 0 && (
                   <Button
                     size="sm"
                     className="bg-fg text-bg"
-                    startContent={<Printer size={14} />}
-                    onPress={() => setModalOpen(true)}
+                    icon={<Printer size={14} />}
+                    onClick={() => setModalOpen(true)}
                   >
                     Generate TC (<span className="mono tnum">{selected.size}</span>)
                   </Button>
@@ -140,7 +140,7 @@ export default function TransferCertificatePage() {
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSelect(s._id); } }}
                   >
                     <Checkbox
-                      isSelected={isSel}
+                      checked={isSel}
                       onChange={() => toggleSelect(s._id)}
                       size="sm"
                       onClick={e => e.stopPropagation()}

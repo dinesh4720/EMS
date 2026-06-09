@@ -88,14 +88,14 @@ export default function AddRemarkDrawer({
       <DrawerContent>
         {(onClose) => (
           <>
-            <DrawerHeader className="border-b border-default-100">
+            <DrawerHeader className="border-b border-divider">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-50 rounded-xl">
                   <MessageSquare size={20} className="text-accent" />
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold">{t('students.profile.remarks.drawerTitle', 'Add Remark')}</h3>
-                  <p className="text-xs text-default-500">{t('students.profile.remarks.drawerSubtitle', 'Add a note or observation about the student')}</p>
+                  <p className="text-xs text-fg-muted">{t('students.profile.remarks.drawerSubtitle', 'Add a note or observation about the student')}</p>
                 </div>
               </div>
             </DrawerHeader>
@@ -174,14 +174,14 @@ export default function AddRemarkDrawer({
               />
 
               {/* Send to Parent */}
-              <div className="p-4 rounded-lg border border-default-200 bg-default-50">
+              <div className="p-4 rounded-lg border border-divider bg-surface-2">
                 <Checkbox size="sm"
                   isSelected={remarkForm.sendToParent}
                   onValueChange={(checked) => setRemarkForm({ ...remarkForm, sendToParent: checked })}
                 >
                   <div className="flex flex-col">
                     <span className="font-medium text-default-900">{t('students.profile.remarks.sendToParent', 'Send to Parent')}</span>
-                    <span className="text-xs text-default-500">
+                    <span className="text-xs text-fg-muted">
                       {remarkForm.sendToParent
                         ? t('students.profile.remarks.visibleToParents', 'Remark will be visible to parents')
                         : t('students.profile.remarks.visibleToStaffOnly', 'Remark will only be visible to staff')
@@ -193,13 +193,13 @@ export default function AddRemarkDrawer({
 
               {/* Preview */}
               {(remarkForm.title || remarkForm.description) && (
-                <div className="p-4 rounded-lg border border-primary-200 bg-primary-50/30">
-                  <p className="text-xs font-semibold text-primary-600 uppercase mb-2">{t('students.profile.remarks.preview', 'Preview')}</p>
+                <div className="p-4 rounded-lg border border-[var(--accent)]/20 bg-[var(--accent-bg)]/30">
+                  <p className="text-xs font-semibold text-[var(--accent)] uppercase mb-2">{t('students.profile.remarks.preview', 'Preview')}</p>
                   {remarkForm.title && (
                     <h4 className="font-semibold text-default-900 mb-1">{remarkForm.title}</h4>
                   )}
                   {remarkForm.description && (
-                    <p className="text-sm text-default-600">{remarkForm.description}</p>
+                    <p className="text-sm text-fg-subtle">{remarkForm.description}</p>
                   )}
                   <div className="flex items-center gap-2 mt-2">
                     <Chip size="sm" variant="flat" color="primary" className="capitalize">
@@ -214,7 +214,7 @@ export default function AddRemarkDrawer({
                 </div>
               )}
             </DrawerBody>
-            <DrawerFooter className="border-t border-default-100">
+            <DrawerFooter className="border-t border-divider">
               <Button
                 variant="flat"
                 onPress={() => {

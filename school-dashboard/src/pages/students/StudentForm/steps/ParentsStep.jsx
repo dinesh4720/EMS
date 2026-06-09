@@ -57,7 +57,7 @@ export default function ParentsStep({
 
         {parents.length < 2 && (
           <button
-            className="text-sm font-medium text-primary hover:text-primary-600 transition-colors"
+            className="text-sm font-medium text-primary hover:text-[var(--accent)] transition-colors"
             onClick={addParent}
           >
             + Add Another Parent
@@ -111,9 +111,9 @@ function ParentCard({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="p-4 bg-default-50 rounded-lg border border-default-200 space-y-4">
+    <div className="p-4 bg-surface-2 rounded-lg border border-divider space-y-4">
       <div className="flex justify-between items-center">
-        <span className="text-sm font-medium text-default-700">
+        <span className="text-sm font-medium text-fg">
           {idx === 0 ? "Primary Parent" : `Parent ${idx + 1}`}
         </span>
         {canRemove && (
@@ -135,7 +135,7 @@ function ParentCard({
             variant="bordered"
             radius="sm"
             isRequired={idx === 0}
-            classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+            classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
           />
         </div>
         <Select
@@ -146,7 +146,7 @@ function ParentCard({
           onSelectionChange={(keys) => updateParent(index, "relationship", Array.from(keys)[0])}
           variant="bordered"
           radius="sm"
-          classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+          classNames={{ trigger: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
         >
           {PARENT_RELATIONSHIPS.map((r) => (
             <SelectItem key={r}>{r}</SelectItem>
@@ -156,7 +156,7 @@ function ParentCard({
           <Input
             label={t('pages.phoneNumber')}
             labelPlacement="outside"
-            startContent={<span className="text-default-400 text-xs">+91</span>}
+            startContent={<span className="text-fg-faint text-xs">+91</span>}
             placeholder={t('students.form.phonePlaceholder')}
             value={parent.phone}
             onValueChange={(v) => {
@@ -169,13 +169,13 @@ function ParentCard({
             radius="sm"
             isRequired={idx === 0}
             maxLength={10}
-            classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+            classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
           />
           <Checkbox
             size="sm"
             isSelected={parent.isWhatsapp}
             onValueChange={(v) => updateParent(index, "isWhatsapp", v)}
-            classNames={{ label: "text-xs text-default-500" }}
+            classNames={{ label: "text-xs text-fg-muted" }}
           >
             Same as WhatsApp
           </Checkbox>
@@ -188,7 +188,7 @@ function ParentCard({
           onValueChange={(v) => updateParent(index, "email", v)}
           variant="bordered"
           radius="sm"
-          classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+          classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
         />
         <Input
           label={t('pages.occupation')}
@@ -199,7 +199,7 @@ function ParentCard({
           variant="bordered"
           radius="sm"
           className="col-span-2"
-          classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+          classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
         />
       </div>
     </div>
@@ -209,18 +209,18 @@ function ParentCard({
 function GuardiansSection({ guardians, formData, updateParent, removeParent, addGuardian }) {
   const { t } = useTranslation();
   return (
-    <div className="space-y-4 pt-2 border-t border-solid border-default-200">
+    <div className="space-y-4 pt-2 border-t border-solid border-divider">
       <div className="flex justify-between items-center">
         <label className="text-sm font-semibold text-default-900">{t('pages.guardianDetails')}</label>
-        <span className="text-xs text-default-500">(Optional)</span>
+        <span className="text-xs text-fg-muted">(Optional)</span>
       </div>
 
       {guardians.map((guardian, idx) => {
         const index = formData.parents.findIndex((p) => p === guardian);
         return (
-          <div key={`parent-${idx}`} className="p-4 bg-default-50 rounded-lg border border-default-200 space-y-4">
+          <div key={`parent-${idx}`} className="p-4 bg-surface-2 rounded-lg border border-divider space-y-4">
             <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-default-700">Guardian {idx + 1}</span>
+              <span className="text-sm font-medium text-fg">Guardian {idx + 1}</span>
               <Button size="sm" variant="light" color="danger" onPress={() => removeParent(index)}>
                 <X size={14} /> Remove
               </Button>
@@ -234,7 +234,7 @@ function GuardiansSection({ guardians, formData, updateParent, removeParent, add
                 onValueChange={(v) => updateParent(index, "name", v)}
                 variant="bordered"
                 radius="sm"
-                classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
               />
               <Select
                 label={t('pages.relationship')}
@@ -244,7 +244,7 @@ function GuardiansSection({ guardians, formData, updateParent, removeParent, add
                 onSelectionChange={(keys) => updateParent(index, "relationship", Array.from(keys)[0])}
                 variant="bordered"
                 radius="sm"
-                classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                classNames={{ trigger: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
               >
                 {GUARDIAN_RELATIONSHIPS.map((r) => (
                   <SelectItem key={r}>{r}</SelectItem>
@@ -257,7 +257,7 @@ function GuardiansSection({ guardians, formData, updateParent, removeParent, add
 
       {guardians.length === 0 && (
         <button
-          className="text-sm font-medium text-primary hover:text-primary-600 transition-colors"
+          className="text-sm font-medium text-primary hover:text-[var(--accent)] transition-colors"
           onClick={addGuardian}
         >
           + Add Guardian
@@ -270,20 +270,20 @@ function GuardiansSection({ guardians, formData, updateParent, removeParent, add
 function SiblingsSection({ siblings, updateSibling, addSibling, removeSibling, classesWithTeachers }) {
   const { t } = useTranslation();
   return (
-    <div className="space-y-4 pt-2 border-t border-solid border-default-200">
+    <div className="space-y-4 pt-2 border-t border-solid border-divider">
       <div className="flex justify-between items-center">
         <label className="text-sm font-semibold text-default-900">{t('pages.siblingDetails')}</label>
-        <span className="text-xs text-default-500">(Optional — same school only)</span>
+        <span className="text-xs text-fg-muted">(Optional — same school only)</span>
       </div>
 
       {siblings.length === 0 && (
-        <p className="text-xs text-default-400">No siblings added yet. Use the button below to add siblings enrolled in this school.</p>
+        <p className="text-xs text-fg-faint">No siblings added yet. Use the button below to add siblings enrolled in this school.</p>
       )}
 
       {siblings.map((sibling, idx) => (
-        <div key={`sibling-${idx}`} className="p-4 bg-default-50 rounded-lg border border-default-200 space-y-4">
+        <div key={`sibling-${idx}`} className="p-4 bg-surface-2 rounded-lg border border-divider space-y-4">
           <div className="flex justify-between items-center">
-            <span className="text-sm font-medium text-default-700">Sibling {idx + 1}</span>
+            <span className="text-sm font-medium text-fg">Sibling {idx + 1}</span>
             <Button size="sm" variant="light" color="danger" onPress={() => removeSibling(idx)}>
               <X size={14} /> Remove
             </Button>
@@ -297,7 +297,7 @@ function SiblingsSection({ siblings, updateSibling, addSibling, removeSibling, c
               onValueChange={(v) => updateSibling(idx, "name", v)}
               variant="bordered"
               radius="sm"
-              classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+              classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
             />
             <div className="flex items-center gap-2 pt-6">
               <Checkbox size="sm"
@@ -307,7 +307,7 @@ function SiblingsSection({ siblings, updateSibling, addSibling, removeSibling, c
                   if (!v) updateSibling(idx, "classId", "");
                 }}
               >
-                <span className="text-sm text-default-700">{t('pages.isSiblingInThisSchool')}</span>
+                <span className="text-sm text-fg">{t('pages.isSiblingInThisSchool')}</span>
               </Checkbox>
             </div>
             {sibling.inSameSchool && (
@@ -319,7 +319,7 @@ function SiblingsSection({ siblings, updateSibling, addSibling, removeSibling, c
                 onSelectionChange={(keys) => updateSibling(idx, "classId", Array.from(keys)[0])}
                 variant="bordered"
                 radius="sm"
-                classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                classNames={{ trigger: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
               >
                 {classesWithTeachers.map((c) => (
                   <SelectItem key={c.id}>
@@ -332,7 +332,7 @@ function SiblingsSection({ siblings, updateSibling, addSibling, removeSibling, c
         </div>
       ))}
 
-      <button className="text-sm font-medium text-primary hover:text-primary-600 transition-colors" onClick={addSibling}>
+      <button className="text-sm font-medium text-primary hover:text-[var(--accent)] transition-colors" onClick={addSibling}>
         + Add Sibling
       </button>
     </div>
@@ -342,7 +342,7 @@ function SiblingsSection({ siblings, updateSibling, addSibling, removeSibling, c
 function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthInfoItem, removeHealthInfoItem }) {
   const { t } = useTranslation();
   return (
-    <div className="space-y-4 pt-2 border-t border-solid border-default-200">
+    <div className="space-y-4 pt-2 border-t border-solid border-divider">
       <label className="text-sm font-semibold text-default-900 block mt-2">{t('pages.healthSafety')}</label>
       <Textarea
         label={t('pages.medicalConditions1')}
@@ -353,19 +353,19 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
         variant="bordered"
         radius="sm"
         minRows={2}
-        classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300" }}
+        classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token" }}
       />
 
       {/* Allergies */}
-      <div className="space-y-3 pt-3 border-t border-dashed border-default-200">
+      <div className="space-y-3 pt-3 border-t border-dashed border-divider">
         <div className="flex justify-between items-center">
-          <label className="text-xs font-semibold text-default-700">Allergies</label>
-          <span className="text-xs text-default-400">(Optional)</span>
+          <label className="text-xs font-semibold text-fg">Allergies</label>
+          <span className="text-xs text-fg-faint">(Optional)</span>
         </div>
         {(formData.healthInfo?.allergies || []).map((allergy, idx) => (
-          <div key={`allergy-${idx}`} className="p-3 bg-default-50 rounded-lg border border-default-200 space-y-3">
+          <div key={`allergy-${idx}`} className="p-3 bg-surface-2 rounded-lg border border-divider space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-xs font-medium text-default-600">Allergy {idx + 1}</span>
+              <span className="text-xs font-medium text-fg-subtle">Allergy {idx + 1}</span>
               <Button size="sm" variant="light" color="danger" onPress={() => removeHealthInfoItem("allergies", idx)}>
                 <X size={14} /> Remove
               </Button>
@@ -379,7 +379,7 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
                 onValueChange={(v) => updateHealthInfoItem("allergies", idx, "name", v)}
                 variant="bordered"
                 radius="sm"
-                classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
               />
               <Select
                 label="Type"
@@ -389,7 +389,7 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
                 onSelectionChange={(keys) => updateHealthInfoItem("allergies", idx, "type", Array.from(keys)[0])}
                 variant="bordered"
                 radius="sm"
-                classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                classNames={{ trigger: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
               >
                 {["food", "medication", "environmental", "insect", "latex", "other"].map((t) => (
                   <SelectItem key={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</SelectItem>
@@ -403,7 +403,7 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
                 onSelectionChange={(keys) => updateHealthInfoItem("allergies", idx, "severity", Array.from(keys)[0])}
                 variant="bordered"
                 radius="sm"
-                classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                classNames={{ trigger: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
               >
                 {["mild", "moderate", "severe", "life-threatening"].map((s) => (
                   <SelectItem key={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
@@ -417,7 +417,7 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
                 onValueChange={(v) => updateHealthInfoItem("allergies", idx, "reaction", v)}
                 variant="bordered"
                 radius="sm"
-                classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
               />
               <Input
                 label="Notes"
@@ -428,13 +428,13 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
                 variant="bordered"
                 radius="sm"
                 className="col-span-2"
-                classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
               />
             </div>
           </div>
         ))}
         <button
-          className="text-sm font-medium text-primary hover:text-primary-600 transition-colors"
+          className="text-sm font-medium text-primary hover:text-[var(--accent)] transition-colors"
           onClick={() => addHealthInfoItem("allergies", { name: "", type: "", severity: "", reaction: "", notes: "" })}
         >
           + Add Allergy
@@ -442,15 +442,15 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
       </div>
 
       {/* Medications */}
-      <div className="space-y-3 pt-3 border-t border-dashed border-default-200">
+      <div className="space-y-3 pt-3 border-t border-dashed border-divider">
         <div className="flex justify-between items-center">
-          <label className="text-xs font-semibold text-default-700">Medications</label>
-          <span className="text-xs text-default-400">(Optional)</span>
+          <label className="text-xs font-semibold text-fg">Medications</label>
+          <span className="text-xs text-fg-faint">(Optional)</span>
         </div>
         {(formData.healthInfo?.medications || []).map((med, idx) => (
-          <div key={`med-${idx}`} className="p-3 bg-default-50 rounded-lg border border-default-200 space-y-3">
+          <div key={`med-${idx}`} className="p-3 bg-surface-2 rounded-lg border border-divider space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-xs font-medium text-default-600">Medication {idx + 1}</span>
+              <span className="text-xs font-medium text-fg-subtle">Medication {idx + 1}</span>
               <Button size="sm" variant="light" color="danger" onPress={() => removeHealthInfoItem("medications", idx)}>
                 <X size={14} /> Remove
               </Button>
@@ -464,7 +464,7 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
                 onValueChange={(v) => updateHealthInfoItem("medications", idx, "name", v)}
                 variant="bordered"
                 radius="sm"
-                classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
               />
               <Input
                 label="Dosage"
@@ -474,7 +474,7 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
                 onValueChange={(v) => updateHealthInfoItem("medications", idx, "dosage", v)}
                 variant="bordered"
                 radius="sm"
-                classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
               />
               <Input
                 label="Frequency"
@@ -484,7 +484,7 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
                 onValueChange={(v) => updateHealthInfoItem("medications", idx, "frequency", v)}
                 variant="bordered"
                 radius="sm"
-                classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
               />
               <Input
                 label="Prescribed By"
@@ -494,7 +494,7 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
                 onValueChange={(v) => updateHealthInfoItem("medications", idx, "prescribedBy", v)}
                 variant="bordered"
                 radius="sm"
-                classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
               />
               <Input
                 label="Start Date"
@@ -504,7 +504,7 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
                 onValueChange={(v) => updateHealthInfoItem("medications", idx, "startDate", v)}
                 variant="bordered"
                 radius="sm"
-                classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
               />
               <Input
                 label="End Date"
@@ -514,7 +514,7 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
                 onValueChange={(v) => updateHealthInfoItem("medications", idx, "endDate", v)}
                 variant="bordered"
                 radius="sm"
-                classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
               />
               <Input
                 label="Notes"
@@ -525,13 +525,13 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
                 variant="bordered"
                 radius="sm"
                 className="col-span-2"
-                classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
               />
             </div>
           </div>
         ))}
         <button
-          className="text-sm font-medium text-primary hover:text-primary-600 transition-colors"
+          className="text-sm font-medium text-primary hover:text-[var(--accent)] transition-colors"
           onClick={() => addHealthInfoItem("medications", { name: "", dosage: "", frequency: "", startDate: "", endDate: "", prescribedBy: "", notes: "" })}
         >
           + Add Medication
@@ -539,15 +539,15 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
       </div>
 
       {/* Health Emergency Contacts */}
-      <div className="space-y-3 pt-3 border-t border-dashed border-default-200">
+      <div className="space-y-3 pt-3 border-t border-dashed border-divider">
         <div className="flex justify-between items-center">
-          <label className="text-xs font-semibold text-default-700">Health Emergency Contacts</label>
-          <span className="text-xs text-default-400">(Optional)</span>
+          <label className="text-xs font-semibold text-fg">Health Emergency Contacts</label>
+          <span className="text-xs text-fg-faint">(Optional)</span>
         </div>
         {(formData.healthInfo?.emergencyContacts || []).map((contact, idx) => (
-          <div key={`he-contact-${idx}`} className="p-3 bg-default-50 rounded-lg border border-default-200 space-y-3">
+          <div key={`he-contact-${idx}`} className="p-3 bg-surface-2 rounded-lg border border-divider space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-xs font-medium text-default-600">Emergency Contact {idx + 1}</span>
+              <span className="text-xs font-medium text-fg-subtle">Emergency Contact {idx + 1}</span>
               <Button size="sm" variant="light" color="danger" onPress={() => removeHealthInfoItem("emergencyContacts", idx)}>
                 <X size={14} /> Remove
               </Button>
@@ -561,7 +561,7 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
                 onValueChange={(v) => updateHealthInfoItem("emergencyContacts", idx, "name", v)}
                 variant="bordered"
                 radius="sm"
-                classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
               />
               <Input
                 label="Relationship"
@@ -571,12 +571,12 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
                 onValueChange={(v) => updateHealthInfoItem("emergencyContacts", idx, "relationship", v)}
                 variant="bordered"
                 radius="sm"
-                classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
               />
               <Input
                 label="Phone"
                 labelPlacement="outside"
-                startContent={<span className="text-default-400 text-xs">+91</span>}
+                startContent={<span className="text-fg-faint text-xs">+91</span>}
                 placeholder="10-digit mobile"
                 value={contact.phone || ""}
                 onValueChange={(v) => {
@@ -586,12 +586,12 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
                 variant="bordered"
                 radius="sm"
                 maxLength={10}
-                classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
               />
               <Input
                 label="Alternate Phone"
                 labelPlacement="outside"
-                startContent={<span className="text-default-400 text-xs">+91</span>}
+                startContent={<span className="text-fg-faint text-xs">+91</span>}
                 placeholder="10-digit mobile"
                 value={contact.alternatePhone || ""}
                 onValueChange={(v) => {
@@ -601,7 +601,7 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
                 variant="bordered"
                 radius="sm"
                 maxLength={10}
-                classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
               />
               <Input
                 label="Email"
@@ -611,7 +611,7 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
                 onValueChange={(v) => updateHealthInfoItem("emergencyContacts", idx, "email", v)}
                 variant="bordered"
                 radius="sm"
-                classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
               />
               <Input
                 label="Priority"
@@ -622,13 +622,13 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
                 onValueChange={(v) => updateHealthInfoItem("emergencyContacts", idx, "priority", v ? parseInt(v) : "")}
                 variant="bordered"
                 radius="sm"
-                classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
               />
             </div>
           </div>
         ))}
         <button
-          className="text-sm font-medium text-primary hover:text-primary-600 transition-colors"
+          className="text-sm font-medium text-primary hover:text-[var(--accent)] transition-colors"
           onClick={() => addHealthInfoItem("emergencyContacts", { name: "", relationship: "", phone: "", alternatePhone: "", email: "", priority: 1 })}
         >
           + Add Emergency Contact
@@ -641,47 +641,47 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
 function TransportSection({ formData, updateField }) {
   const { t } = useTranslation();
   return (
-    <div className="space-y-4 pt-2 border-t border-solid border-default-200">
+    <div className="space-y-4 pt-2 border-t border-solid border-divider">
       <label className="text-sm font-semibold text-default-900 block mt-2">{t('pages.additionalRequirements')}</label>
       <div className="grid grid-cols-2 gap-4">
         <div
           className={`cursor-pointer rounded-xl border-2 p-4 flex items-center gap-3 transition-all ${
-            formData.transportRequired ? "border-primary bg-primary-50/20 dark:bg-primary-900/20" : "border-default-200 hover:border-default-300"
+            formData.transportRequired ? "border-primary bg-[var(--accent-bg)]/20 dark:bg-primary-900/20" : "border-divider hover:border-border-token"
           }`}
           onClick={() => updateField("transportRequired", !formData.transportRequired)}
         >
           <div
             className={`w-10 h-10 rounded-full flex items-center justify-center ${
-              formData.transportRequired ? "bg-primary text-white" : "bg-default-100 text-default-400"
+              formData.transportRequired ? "bg-primary text-white" : "bg-surface-2 text-fg-faint"
             }`}
           >
             <Users size={20} />
           </div>
           <div>
-            <span className={`text-sm font-medium ${formData.transportRequired ? "text-primary-700 dark:text-primary-300" : "text-default-600"}`}>
+            <span className={`text-sm font-medium ${formData.transportRequired ? "text-[var(--accent)] dark:text-primary-300" : "text-fg-subtle"}`}>
               Transport Required
             </span>
-            <p className="text-xs text-default-500">{t('pages.schoolBusFacility')}</p>
+            <p className="text-xs text-fg-muted">{t('pages.schoolBusFacility')}</p>
           </div>
         </div>
         <div
           className={`cursor-pointer rounded-xl border-2 p-4 flex items-center gap-3 transition-all ${
-            formData.hostelRequired ? "border-primary bg-primary-50/20 dark:bg-primary-900/20" : "border-default-200 hover:border-default-300"
+            formData.hostelRequired ? "border-primary bg-[var(--accent-bg)]/20 dark:bg-primary-900/20" : "border-divider hover:border-border-token"
           }`}
           onClick={() => updateField("hostelRequired", !formData.hostelRequired)}
         >
           <div
             className={`w-10 h-10 rounded-full flex items-center justify-center ${
-              formData.hostelRequired ? "bg-primary text-white" : "bg-default-100 text-default-400"
+              formData.hostelRequired ? "bg-primary text-white" : "bg-surface-2 text-fg-faint"
             }`}
           >
             <Users size={20} />
           </div>
           <div>
-            <span className={`text-sm font-medium ${formData.hostelRequired ? "text-primary-700 dark:text-primary-300" : "text-default-600"}`}>
+            <span className={`text-sm font-medium ${formData.hostelRequired ? "text-[var(--accent)] dark:text-primary-300" : "text-fg-subtle"}`}>
               Hostel Required
             </span>
-            <p className="text-xs text-default-500">{t('pages.boardingFacility')}</p>
+            <p className="text-xs text-fg-muted">{t('pages.boardingFacility')}</p>
           </div>
         </div>
       </div>

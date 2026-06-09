@@ -114,20 +114,20 @@ export default function RegularizeAttendanceDrawer({ isOpen, onOpenChange, stude
       <DrawerContent>
         {(onClose) => (
           <>
-            <DrawerHeader className="border-b border-default-100">
+            <DrawerHeader className="border-b border-divider">
               <h3 className="text-lg font-semibold">
                 {t('students.profile.overview.regularizeAttendance', 'Regularize Attendance')}
               </h3>
             </DrawerHeader>
             <DrawerBody className="p-0">
-              <div className="p-6 bg-warning-50/50 dark:bg-warning-950/20 border-b border-warning-100 dark:border-warning-900/30">
+              <div className="p-6 bg-[var(--warn-bg)]/50 dark:bg-warning-950/20 border-b border-[var(--warn)]/20 dark:border-warning-900/30">
                 <div className="flex items-center gap-3">
-                  <AlertTriangle className="text-warning-600 dark:text-warning-400" size={24} />
+                  <AlertTriangle className="text-[var(--warn)] dark:text-warning-400" size={24} />
                   <div>
                     <h4 className="font-semibold text-warning-900 dark:text-warning-200">
                       {t('students.profile.overview.unaccountedAbsences', 'Unaccounted Absences')}
                     </h4>
-                    <p className="text-sm text-warning-700 dark:text-warning-400">
+                    <p className="text-sm text-[var(--warn)] dark:text-warning-400">
                       {t('students.profile.overview.selectDaysInstruction', 'Select days to mark as present or add reason.')}
                     </p>
                   </div>
@@ -137,7 +137,7 @@ export default function RegularizeAttendanceDrawer({ isOpen, onOpenChange, stude
                 {loading ? (
                   <div className="space-y-4">
                     {Array.from({ length: 3 }).map((_, i) => (
-                      <div key={`skel-${i}`} className="flex items-center justify-between p-4 border border-default-200 rounded-xl">
+                      <div key={`skel-${i}`} className="flex items-center justify-between p-4 border border-divider rounded-xl">
                         <div className="flex items-center gap-4">
                           <div className="w-5 h-5 animate-shimmer rounded" />
                           <div className="flex items-center gap-3">
@@ -151,14 +151,14 @@ export default function RegularizeAttendanceDrawer({ isOpen, onOpenChange, stude
                   </div>
                 ) : absentDates.length === 0 ? (
                   <div className="text-center py-8">
-                    <CalendarCheck size={40} className="mx-auto mb-3 text-default-300" />
-                    <p className="text-sm text-default-500">
+                    <CalendarCheck size={40} className="mx-auto mb-3 text-fg-faint" />
+                    <p className="text-sm text-fg-muted">
                       No unaccounted absences found in the last 30 days.
                     </p>
                   </div>
                 ) : (
                   absentDates.map((item) => (
-                    <div key={item.date} className="flex items-center justify-between p-4 border border-default-200 rounded-xl">
+                    <div key={item.date} className="flex items-center justify-between p-4 border border-divider rounded-xl">
                       <div className="flex items-center gap-4">
                         <Checkbox
                           size="sm"
@@ -166,12 +166,12 @@ export default function RegularizeAttendanceDrawer({ isOpen, onOpenChange, stude
                           onChange={() => toggleDate(item.date)}
                         />
                         <div className="flex items-center gap-3">
-                          <div className="p-2 bg-default-100 rounded-lg text-default-500">
+                          <div className="p-2 bg-surface-2 rounded-lg text-fg-muted">
                             <CalendarCheck size={20} />
                           </div>
                           <div>
                             <span className="font-medium text-default-900">{formatShortDate(item.date)}</span>
-                            <p className="text-xs text-default-400 capitalize">{item.status}</p>
+                            <p className="text-xs text-fg-faint capitalize">{item.status}</p>
                           </div>
                         </div>
                       </div>

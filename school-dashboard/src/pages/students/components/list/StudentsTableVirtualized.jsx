@@ -204,7 +204,7 @@ function StudentsTableVirtualized({
                                 className="text-center py-16"
                             >
                                 <div className="flex flex-col items-center gap-2">
-                                    <p className="text-default-500 text-sm">
+                                    <p className="text-fg-muted text-sm">
                                         {hasActiveFilters
                                             ? t('students.list.noMatchingStudents', 'No students match your current filters')
                                             : t('students.list.noStudentsYet', 'No students found')}
@@ -244,7 +244,7 @@ function StudentsTableVirtualized({
                                     selectedKeys === "all" ||
                                     selectedKeys.has(student.id?.toString());
 
-                                const selectedBg = "bg-primary-50";
+                                const selectedBg = "bg-[var(--accent-bg)]";
                                 const defaultBg = "bg-surface group-hover:bg-surface-2";
                                 const bgClass = isSelected ? selectedBg : defaultBg;
 
@@ -254,7 +254,7 @@ function StudentsTableVirtualized({
                                         data-index={virtualRow.index}
                                         ref={rowVirtualizer.measureElement}
                                         className={`group cursor-pointer transition-colors hover:bg-surface-2/50 ${
-                                            isSelected ? "bg-primary-50" : ""
+                                            isSelected ? "bg-[var(--accent-bg)]" : ""
                                         }`}
                                         onClick={(e) => {
                                             closeAllDropdowns();
@@ -279,7 +279,7 @@ function StudentsTableVirtualized({
                                         <td
                                             className={`py-4 border-b border-border-token text-center transition-colors w-12 min-w-12 ${
                                                 isSelected
-                                                    ? "bg-primary-50"
+                                                    ? "bg-[var(--accent-bg)]"
                                                     : "group-hover:bg-surface-2"
                                             }`}
                                             onClick={(e) => e.stopPropagation()}

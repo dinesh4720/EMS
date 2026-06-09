@@ -205,7 +205,7 @@ export default function StudentForm({
   };
 
   return (
-    <div className="h-full flex flex-col bg-background">
+    <div className="h-full flex flex-col bg-surface">
       {/* Stepper — design-system primitive */}
       <div className="px-4 pt-4 pb-3">
         <Stepper steps={steps} current={step} />

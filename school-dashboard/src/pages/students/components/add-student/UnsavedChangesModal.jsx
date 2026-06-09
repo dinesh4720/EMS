@@ -1,4 +1,4 @@
-import { Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
+import { Button, Modal } from "../../../../components/ui";
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -19,31 +19,24 @@ function UnsavedChangesModal({ isOpen, onStay, onDiscard }) {
       size="sm"
       isDismissable={false}
       hideCloseButton
-      portalContainer={document.body}
-      classNames={{
-        base: "z-[999999]",
-        wrapper: "z-[999999]",
-        backdrop: "z-[999999]",
-      }}
+      className="z-[999999]"
     >
-      <ModalContent>
-        <ModalHeader className="flex flex-col gap-1">
-          <h3 className="text-lg font-semibold">{t('pages.unsavedChanges')}</h3>
-        </ModalHeader>
-        <ModalBody>
-          <p className="text-sm text-default-600">
-            You have unsaved changes. Are you sure you want to close? Your changes will be lost.
-          </p>
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="light" onPress={onStay}>
-            Stay
-          </Button>
-          <Button color="danger" variant="flat" onPress={onDiscard}>
-            Discard Changes
-          </Button>
-        </ModalFooter>
-      </ModalContent>
+      <Modal.Header className="flex flex-col gap-1">
+        <h3 className="text-lg font-semibold">{t('pages.unsavedChanges')}</h3>
+      </Modal.Header>
+      <Modal.Body>
+        <p className="text-sm text-fg-subtle">
+          You have unsaved changes. Are you sure you want to close? Your changes will be lost.
+        </p>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="ghost" size="sm" onClick={onStay}>
+          Stay
+        </Button>
+        <Button variant="danger" size="sm" onClick={onDiscard}>
+          Discard Changes
+        </Button>
+      </Modal.Footer>
     </Modal>
   );
 }

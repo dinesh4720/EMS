@@ -39,7 +39,7 @@ function ActionsCell({
                         isIconOnly
                         size="sm"
                         variant="light"
-                        className={student.isPinned ? "text-primary" : "text-default-400"}
+                        className={student.isPinned ? "text-primary" : "text-fg-faint"}
                         aria-label={student.isPinned ? "Unpin student" : "Pin student"}
                         onMouseDown={(e) => e.preventDefault()}
                         onPress={() => {
@@ -60,7 +60,7 @@ function ActionsCell({
                         isIconOnly
                         size="sm"
                         variant="light"
-                        className="text-default-400"
+                        className="text-fg-faint"
                         aria-label="Edit student details"
                         onMouseDown={(e) => e.preventDefault()}
                         onPress={() => {
@@ -79,7 +79,7 @@ function ActionsCell({
                             isIconOnly
                             size="sm"
                             variant="light"
-                            className="text-default-400"
+                            className="text-fg-faint"
                             aria-label="More actions"
                             onMouseDown={(e) => e.preventDefault()}
                         >

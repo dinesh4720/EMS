@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
-  Card, CardBody, Button, Checkbox,
-  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  Input, useDisclosure,
-} from '@heroui/react';
+  Card, Button, Modal, Input, Checkbox,
+} from '../../../components/ui';
 import {
   AlertTriangle, ArrowUpCircle, ArrowRight,
 } from 'lucide-react';
@@ -14,7 +12,9 @@ export default function StepConfirm({ onNext, onBack, wizardState, setWizardStat
   const [executing, setExecuting] = useState(false);
   const [generateRolls, setGenerateRolls] = useState(false);
   const [confirmText, setConfirmText] = useState('');
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const onOpen = () => setIsConfirmOpen(true);
+  const onClose = () => setIsConfirmOpen(false);
 
   const CONFIRM_PHRASE = 'CONFIRM';
 
@@ -39,7 +39,7 @@ export default function StepConfirm({ onNext, onBack, wizardState, setWizardStat
 
   const openConfirmModal = () => {
     setConfirmText('');
-    onOpen();
+    setIsConfirmOpen(true);
   };
 
   const handleExecute = async () => {
@@ -82,22 +82,22 @@ export default function StepConfirm({ onNext, onBack, wizardState, setWizardStat
   return (
     <div className="space-y-4">
       {/* Warning banner */}
-      <Card shadow="sm" className="bg-warn-bg border-warn">
-        <CardBody className="p-4">
+      <Card className="bg-[var(--warn-bg)] border border-[var(--warn)]/20">
+        <Card.Content className="p-4">
           <div className="flex items-start gap-3">
-            <AlertTriangle size={18} className="text-warn mt-0.5 shrink-0" />
+            <AlertTriangle size={18} className="text-[var(--warn)] mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-medium text-warn">
+              <p className="text-sm font-medium text-[var(--warn)]">
                 Confirm Year-End Promotion
               </p>
-              <p className="text-xs text-warn mt-1">
+              <p className="text-xs text-[var(--warn)] mt-1">
                 This will move students from <span className="mono tnum">{fromYear}</span> to{' '}
                 <span className="mono tnum">{toYear}</span>. Fee structures will be reset and new ones created.
                 You can rollback this operation from the History tab if needed.
               </p>
             </div>
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
 
       {/* Metrics */}
@@ -121,8 +121,8 @@ export default function StepConfirm({ onNext, onBack, wizardState, setWizardStat
       </div>
 
       {/* Class-wise breakdown */}
-      <Card shadow="sm" className="bg-surface border border-border-token">
-        <CardBody className="p-4">
+      <Card className="bg-surface border border-border-token">
+        <Card.Content className="p-4">
           <p className="text-sm font-semibold text-fg mb-3">Class-wise breakdown</p>
           <div className="space-y-1.5">
             {classMappings.map((m) => {
@@ -153,22 +153,19 @@ export default function StepConfirm({ onNext, onBack, wizardState, setWizardStat
               );
             })}
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
 
       {/* Options */}
-      <Card shadow="sm" className="bg-surface border border-border-token">
-        <CardBody className="p-4">
+      <Card className="bg-surface border border-border-token">
+        <Card.Content className="p-4">
           <Checkbox
-            isSelected={generateRolls}
+            checked={generateRolls}
             onChange={(e) => setGenerateRolls(e.target.checked)}
             size="sm"
-          >
-            <span className="text-sm text-fg">
-              Auto-generate roll numbers for promoted students
-            </span>
-          </Checkbox>
-        </CardBody>
+            label="Auto-generate roll numbers for promoted students"
+          />
+        </Card.Content>
       </Card>
 
       {/* Sticky foot */}
@@ -178,14 +175,15 @@ export default function StepConfirm({ onNext, onBack, wizardState, setWizardStat
           <span>students will be processed</span>
         </div>
         <div style={{ flex: 1 }} />
-        <Button variant="flat" onPress={onBack}>
+        <Button variant="ghost" size="sm" onClick={onBack}>
           Back
         </Button>
         <Button
-          color="primary"
-          onPress={openConfirmModal}
-          isLoading={executing}
-          startContent={!executing && <ArrowUpCircle size={16} />}
+          variant="primary"
+          size="sm"
+          onClick={openConfirmModal}
+          loading={executing}
+          icon={!executing && <ArrowUpCircle size={16} />}
         >
           Execute Year-End Promotion
         </Button>
@@ -193,56 +191,53 @@ export default function StepConfirm({ onNext, onBack, wizardState, setWizardStat
 
       {/* Type-to-confirm modal */}
       <Modal
-        isOpen={isOpen}
+        isOpen={isConfirmOpen}
         onClose={onClose}
         size="sm"
-        classNames={{ backdrop: 'bg-black/40', base: 'bg-surface' }}
       >
-        <ModalContent>
-          <ModalHeader className="border-b border-divider py-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-danger-bg rounded-lg">
-                <AlertTriangle size={18} className="text-danger-token" />
-              </div>
-              <h3 className="text-base font-medium text-fg">
-                Confirm Year-End Promotion
-              </h3>
+        <Modal.Header className="border-b border-divider py-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-[var(--danger-bg)] rounded-lg">
+              <AlertTriangle size={18} className="text-[var(--danger)]" />
             </div>
-          </ModalHeader>
-          <ModalBody className="py-4 space-y-3">
-            <p className="text-sm text-fg">
-              This will permanently move all students from{' '}
-              <strong className="mono tnum">{fromYear}</strong> to{' '}
-              <strong className="mono tnum">{toYear}</strong> and reset
-              current-year fee structures. This action cannot be undone without a rollback.
-            </p>
-            <p className="text-sm text-fg-muted">
-              Type <strong className="text-danger-token">{CONFIRM_PHRASE}</strong> to proceed:
-            </p>
-            <Input
-              autoFocus
-              placeholder={CONFIRM_PHRASE}
-              value={confirmText}
-              onValueChange={setConfirmText}
-              variant="bordered"
-              size="sm"
-              classNames={{ input: 'font-mono tracking-widest' }}
-            />
-          </ModalBody>
-          <ModalFooter className="border-t border-divider">
-            <Button variant="light" onPress={onClose}>
-              Cancel
-            </Button>
-            <Button
-              color="danger"
-              onPress={handleExecute}
-              isDisabled={confirmText !== CONFIRM_PHRASE}
-              startContent={<ArrowUpCircle size={15} />}
-            >
-              Execute Promotion
-            </Button>
-          </ModalFooter>
-        </ModalContent>
+            <h3 className="text-base font-medium text-fg">
+              Confirm Year-End Promotion
+            </h3>
+          </div>
+        </Modal.Header>
+        <Modal.Body className="py-4 space-y-3">
+          <p className="text-sm text-fg">
+            This will permanently move all students from{' '}
+            <strong className="mono tnum">{fromYear}</strong> to{' '}
+            <strong className="mono tnum">{toYear}</strong> and reset
+            current-year fee structures. This action cannot be undone without a rollback.
+          </p>
+          <p className="text-sm text-fg-muted">
+            Type <strong className="text-[var(--danger)]">{CONFIRM_PHRASE}</strong> to proceed:
+          </p>
+          <Input
+            autoFocus
+            placeholder={CONFIRM_PHRASE}
+            value={confirmText}
+            onChange={(e) => setConfirmText(e.target.value)}
+            size="sm"
+            className="font-mono tracking-widest"
+          />
+        </Modal.Body>
+        <Modal.Footer className="border-t border-divider">
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={handleExecute}
+            disabled={confirmText !== CONFIRM_PHRASE}
+            icon={<ArrowUpCircle size={15} />}
+          >
+            Execute Promotion
+          </Button>
+        </Modal.Footer>
       </Modal>
     </div>
   );

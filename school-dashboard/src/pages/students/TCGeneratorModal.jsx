@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Textarea } from "@heroui/react";
+import { Button, Modal, Input, Textarea } from "../../components/ui";
 import { ArrowRight, ArrowLeft, Printer } from "lucide-react";
 import toast from "react-hot-toast";
 import { TransferCertificateTemplate } from "./TransferCertificateTemplate";
@@ -377,9 +377,9 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
   const dup = formData.tcNumber && Array.from(allUsedTcNumbers).filter(n => n === formData.tcNumber).length > 1;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="5xl" scrollBehavior="inside" isDismissable={!isGenerating}>
-      <ModalContent>
-        <ModalHeader className="flex flex-col gap-1 border-b border-divider">
+    <Modal isOpen={isOpen} onClose={onClose} size="xl" isDismissable={!isGenerating}>
+      
+        <Modal.Header className="flex flex-col gap-1 border-b border-divider">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-base font-semibold">
@@ -402,9 +402,9 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
               )}
             </div>
           </div>
-        </ModalHeader>
+        </Modal.Header>
 
-        <ModalBody className="p-0">
+        <Modal.Body className="p-0">
           {formLoading ? (
             <div className="p-6"><DetailPageSkeleton fields={8} /></div>
           ) : !isGenerating ? (
@@ -418,53 +418,53 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
                   <Input
                     label="TC Number *"
                     value={formData.tcNumber || ""}
-                    onValueChange={(v) => handleInputChange("tcNumber", v)}
+                    onChange={(e) => handleInputChange("tcNumber", e.target.value)}
                     description={dup ? 'Duplicate TC number — please change' : 'Auto-generated · editable'}
                     isInvalid={dup}
-                    classNames={{ input: 'font-mono' }}
+                    
                   />
                   <Input
                     label="Admission No."
                     value={formData.admissionNo || ""}
-                    onValueChange={(v) => handleInputChange("admissionNo", v)}
-                    classNames={{ input: 'font-mono' }}
+                    onChange={(e) => handleInputChange("admissionNo", e.target.value)}
+                    
                   />
 
                   <div className="col-span-full text-sm font-semibold border-b border-divider pb-2 mt-2 text-fg">
                     {t('pages.personalDetails')}
                   </div>
-                  <Input label={t('pages.name1')} value={formData.studentName || ""} onValueChange={(v) => handleInputChange("studentName", v)} />
-                  <Input label={t('pages.motherSName')} value={formData.motherName || ""} onValueChange={(v) => handleInputChange("motherName", v)} />
-                  <Input label={t('pages.fatherSName1')} value={formData.fatherName || ""} onValueChange={(v) => handleInputChange("fatherName", v)} />
-                  <Input label={t('pages.nationality1')} value={formData.nationality || ""} onValueChange={(v) => handleInputChange("nationality", v)} />
-                  <Input label={t('pages.religion1')} value={formData.religion || ""} onValueChange={(v) => handleInputChange("religion", v)} />
-                  <Input label={t('pages.community')} value={formData.community || ""} onValueChange={(v) => handleInputChange("community", v)} />
-                  <Input label={t('pages.motherTongue1')} value={formData.motherTongue || ""} onValueChange={(v) => handleInputChange("motherTongue", v)} />
-                  <Input label="SC/ST?" value={formData.isScSt || ""} onValueChange={(v) => handleInputChange("isScSt", v)} />
-                  <Input label={t('pages.dateOfBirth2')} type="date" value={formData.dob || ""} onValueChange={(v) => handleInputChange("dob", v)} />
+                  <Input label={t('pages.name1')} value={formData.studentName || ""} onChange={(e) => handleInputChange("studentName", e.target.value)} />
+                  <Input label={t('pages.motherSName')} value={formData.motherName || ""} onChange={(e) => handleInputChange("motherName", e.target.value)} />
+                  <Input label={t('pages.fatherSName1')} value={formData.fatherName || ""} onChange={(e) => handleInputChange("fatherName", e.target.value)} />
+                  <Input label={t('pages.nationality1')} value={formData.nationality || ""} onChange={(e) => handleInputChange("nationality", e.target.value)} />
+                  <Input label={t('pages.religion1')} value={formData.religion || ""} onChange={(e) => handleInputChange("religion", e.target.value)} />
+                  <Input label={t('pages.community')} value={formData.community || ""} onChange={(e) => handleInputChange("community", e.target.value)} />
+                  <Input label={t('pages.motherTongue1')} value={formData.motherTongue || ""} onChange={(e) => handleInputChange("motherTongue", e.target.value)} />
+                  <Input label="SC/ST?" value={formData.isScSt || ""} onChange={(e) => handleInputChange("isScSt", e.target.value)} />
+                  <Input label={t('pages.dateOfBirth2')} type="date" value={formData.dob || ""} onChange={(e) => handleInputChange("dob", e.target.value)} />
 
                   <div className="col-span-full text-sm font-semibold border-b border-divider pb-2 mt-2 text-fg">
                     {t('pages.academicDetails')}
                   </div>
-                  <Input label={t('pages.dateOfAdmission')} value={formData.dateOfAdmission || ""} onValueChange={(v) => handleInputChange("dateOfAdmission", v)} />
-                  <Input label={t('pages.admissionClass')} value={formData.admissionClass || ""} onValueChange={(v) => handleInputChange("admissionClass", v)} />
-                  <Input label={t('pages.classLeaving')} value={formData.standardLeaving || ""} onValueChange={(v) => handleInputChange("standardLeaving", v)} />
-                  <Input label={t('pages.examResult')} value={formData.examResult || ""} onValueChange={(v) => handleInputChange("examResult", v)} />
-                  <Input label={t('pages.failed1')} value={formData.whetherFailed || ""} onValueChange={(v) => handleInputChange("whetherFailed", v)} />
-                  <Textarea label={t('pages.subjectsStudied')} value={formData.subjects || ""} onValueChange={(v) => handleInputChange("subjects", v)} className="col-span-full" />
-                  <Input label={t('pages.qualifiedForPromotion')} value={formData.qualifiedForPromotion || ""} onValueChange={(v) => handleInputChange("qualifiedForPromotion", v)} />
+                  <Input label={t('pages.dateOfAdmission')} value={formData.dateOfAdmission || ""} onChange={(e) => handleInputChange("dateOfAdmission", e.target.value)} />
+                  <Input label={t('pages.admissionClass')} value={formData.admissionClass || ""} onChange={(e) => handleInputChange("admissionClass", e.target.value)} />
+                  <Input label={t('pages.classLeaving')} value={formData.standardLeaving || ""} onChange={(e) => handleInputChange("standardLeaving", e.target.value)} />
+                  <Input label={t('pages.examResult')} value={formData.examResult || ""} onChange={(e) => handleInputChange("examResult", e.target.value)} />
+                  <Input label={t('pages.failed1')} value={formData.whetherFailed || ""} onChange={(e) => handleInputChange("whetherFailed", e.target.value)} />
+                  <Textarea label={t('pages.subjectsStudied')} value={formData.subjects || ""} onChange={(e) => handleInputChange("subjects", e.target.value)} className="col-span-full" />
+                  <Input label={t('pages.qualifiedForPromotion')} value={formData.qualifiedForPromotion || ""} onChange={(e) => handleInputChange("qualifiedForPromotion", e.target.value)} />
 
                   <div className="col-span-full text-sm font-semibold border-b border-divider pb-2 mt-2 text-fg">
                     {t('pages.otherDetails')}
                   </div>
-                  <Input label={t('pages.feesPaid')} value={formData.paidFees || ""} onValueChange={(v) => handleInputChange("paidFees", v)} />
-                  <Input label={t('pages.scholarship')} value={formData.scholarship || ""} onValueChange={(v) => handleInputChange("scholarship", v)} />
-                  <Input label={t('pages.workingDays')} value={formData.workingDays || ""} onValueChange={(v) => handleInputChange("workingDays", v)} classNames={{ input: 'font-mono' }} />
-                  <Input label={t('pages.presentDays')} value={formData.presentDays || ""} onValueChange={(v) => handleInputChange("presentDays", v)} classNames={{ input: 'font-mono' }} />
-                  <Input label={t('pages.generalConduct')} value={formData.generalConduct || ""} onValueChange={(v) => handleInputChange("generalConduct", v)} />
-                  <Input label={t('pages.reasonForLeaving')} value={formData.reasonForLeaving || ""} onValueChange={(v) => handleInputChange("reasonForLeaving", v)} />
-                  <Input label={t('pages.applicationDate')} type="date" value={formData.applicationDate || ""} onValueChange={(v) => handleInputChange("applicationDate", v)} />
-                  <Input label={t('pages.issueDate')} type="date" value={formData.issueDate || ""} onValueChange={(v) => handleInputChange("issueDate", v)} />
+                  <Input label={t('pages.feesPaid')} value={formData.paidFees || ""} onChange={(e) => handleInputChange("paidFees", e.target.value)} />
+                  <Input label={t('pages.scholarship')} value={formData.scholarship || ""} onChange={(e) => handleInputChange("scholarship", e.target.value)} />
+                  <Input label={t('pages.workingDays')} value={formData.workingDays || ""} onChange={(e) => handleInputChange("workingDays", e.target.value)}  />
+                  <Input label={t('pages.presentDays')} value={formData.presentDays || ""} onChange={(e) => handleInputChange("presentDays", e.target.value)}  />
+                  <Input label={t('pages.generalConduct')} value={formData.generalConduct || ""} onChange={(e) => handleInputChange("generalConduct", e.target.value)} />
+                  <Input label={t('pages.reasonForLeaving')} value={formData.reasonForLeaving || ""} onChange={(e) => handleInputChange("reasonForLeaving", e.target.value)} />
+                  <Input label={t('pages.applicationDate')} type="date" value={formData.applicationDate || ""} onChange={(e) => handleInputChange("applicationDate", e.target.value)} />
+                  <Input label={t('pages.issueDate')} type="date" value={formData.issueDate || ""} onChange={(e) => handleInputChange("issueDate", e.target.value)} />
                 </div>
               </div>
 
@@ -528,18 +528,18 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
               data={{ ...formData, serialNo: formData.tcNumber || '', emisNo: currentStudent?.emisNo || '' }}
             />
           </div>
-        </ModalBody>
+        </Modal.Body>
 
-        <ModalFooter className="border-t border-divider">
+        <Modal.Footer className="border-t border-divider">
           {!isGenerating ? (
             <div className="flex justify-between w-full items-center">
               <div className="flex gap-2">
                 {hasMovedNext && (
                   <Button
-                    variant="flat"
-                    onPress={handlePrevious}
-                    isDisabled={!canGoBack}
-                    startContent={<ArrowLeft size={14} />}
+                    variant="ghost" size="sm"
+                    onClick={handlePrevious}
+                    disabled={!canGoBack}
+                    icon={<ArrowLeft size={14} />}
                   >
                     Previous
                   </Button>
@@ -550,14 +550,14 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
                 <span className="text-xs text-fg-faint mono tnum">
                   {currentIndex + 1} of {students.length}
                 </span>
-                <Button variant="flat" onPress={onClose}>
+                <Button variant="ghost" size="sm" onClick={onClose}>
                   Cancel
                 </Button>
                 <Button
-                  color="primary"
-                  onPress={handleNext}
+                  variant="primary"
+                  onClick={handleNext}
                   endContent={isLastStudent ? <Printer size={14} /> : <ArrowRight size={14} />}
-                  isDisabled={dup}
+                  disabled={dup}
                 >
                   {isLastStudent ? "Generate all TCs" : "Next"}
                 </Button>
@@ -568,8 +568,8 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
               <p className="text-fg-faint text-sm">{t('pages.pleaseWait')}</p>
             </div>
           )}
-        </ModalFooter>
-      </ModalContent>
+        </Modal.Footer>
+      
     </Modal>
   );
 }

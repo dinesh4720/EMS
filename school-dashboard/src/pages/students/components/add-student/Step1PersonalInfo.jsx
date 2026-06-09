@@ -53,7 +53,7 @@ function Step1PersonalInfo({
           />
         ) : (
           <div
-            className="w-20 h-20 rounded-full border-2 border-border-token bg-surface-2 flex items-center justify-center cursor-pointer hover:border-primary-400 transition-colors"
+            className="w-20 h-20 rounded-full border-2 border-border-token bg-surface-2 flex items-center justify-center cursor-pointer hover:border-[var(--accent)] transition-colors"
             onClick={() => pictureInputRef.current?.click()}
           >
             <User size={32} className="text-fg-faint" />
@@ -62,7 +62,7 @@ function Step1PersonalInfo({
         <div className="flex flex-col gap-1 text-left">
           <div className="flex items-center gap-3">
             <button
-              className="text-sm font-semibold text-primary hover:text-primary-600 transition-colors cursor-pointer"
+              className="text-sm font-semibold text-primary hover:text-[var(--accent)] transition-colors cursor-pointer"
               onClick={() => setIsCameraCaptureOpen(true)}
             >
               {formData.picture ? "Change Photo" : "Add Photo"}
@@ -71,7 +71,7 @@ function Step1PersonalInfo({
               <>
                 <span className="text-fg-faint">|</span>
                 <button
-                  className="text-sm font-semibold text-danger hover:text-danger-600 transition-colors cursor-pointer"
+                  className="text-sm font-semibold text-danger hover:text-[var(--danger)] transition-colors cursor-pointer"
                   onClick={() => updateField("picture", null)}
                 >
                   Delete
@@ -286,7 +286,7 @@ function Step1PersonalInfo({
                 radius="sm"
                 isRequired
                 classNames={{
-                  inputWrapper: "bg-bg border-1 border-border-token hover:border-primary-400 hover:bg-surface-2 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 h-10 pr-10 cursor-pointer"
+                  inputWrapper: "bg-bg border-1 border-border-token hover:border-[var(--accent)] hover:bg-surface-2 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 h-10 pr-10 cursor-pointer"
                 }}
                 endContent={
                   <button

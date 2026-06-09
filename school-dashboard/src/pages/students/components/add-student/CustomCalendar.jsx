@@ -124,20 +124,20 @@ function CustomCalendar({ selectedDate, onSelect }) {
   };
 
   return (
-    <div className="bg-content1 border border-default-200 rounded-lg shadow-xl p-4 min-w-[320px]" role="dialog" aria-label="Date picker">
+    <div className="bg-surface border border-divider rounded-lg shadow-xl p-4 min-w-[320px]" role="dialog" aria-label="Date picker">
       {/* Header with month and year navigation */}
       <div className="flex items-center justify-between mb-4">
         <button
           type="button"
           onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-          className="p-1 hover:bg-default-100 rounded transition-colors"
+          className="p-1 hover:bg-surface-2 rounded transition-colors"
           aria-label="Previous month"
         >
-          <ChevronLeft size={20} className="text-default-600" />
+          <ChevronLeft size={20} className="text-fg-subtle" />
         </button>
 
         <div className="flex items-center gap-2">
-          <div className="font-semibold text-default-700" aria-live="polite">
+          <div className="font-semibold text-fg" aria-live="polite">
             {format(currentMonth, 'MMMM')}
           </div>
 
@@ -147,7 +147,7 @@ function CustomCalendar({ selectedDate, onSelect }) {
               type="button"
               onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
               onKeyDown={handleYearDropdownKeyDown}
-              className="font-semibold text-default-700 hover:text-primary transition-colors px-2 py-1 hover:bg-default-100 rounded flex items-center gap-1"
+              className="font-semibold text-fg hover:text-primary transition-colors px-2 py-1 hover:bg-surface-2 rounded flex items-center gap-1"
               aria-expanded={isYearDropdownOpen}
               aria-haspopup="listbox"
               aria-label={`Year ${format(currentMonth, 'yyyy')}, click to change`}
@@ -171,7 +171,7 @@ function CustomCalendar({ selectedDate, onSelect }) {
                   role="listbox"
                   aria-label="Select year"
                   onKeyDown={handleYearDropdownKeyDown}
-                  className="absolute top-full left-0 mt-1 bg-content1 border border-default-200 rounded-lg shadow-xl max-h-60 overflow-y-auto z-50 min-w-[100px]"
+                  className="absolute top-full left-0 mt-1 bg-surface border border-divider rounded-lg shadow-xl max-h-60 overflow-y-auto z-50 min-w-[100px]"
                 >
                   {years.map(year => (
                     <button
@@ -190,8 +190,8 @@ function CustomCalendar({ selectedDate, onSelect }) {
                           setIsYearDropdownOpen(false);
                         }
                       }}
-                      className={`w-full px-4 py-2 text-left text-sm hover:bg-default-100 transition-colors ${
-                        year === currentMonth.getFullYear() ? 'bg-primary-50 text-primary font-semibold' : 'text-default-700'
+                      className={`w-full px-4 py-2 text-left text-sm hover:bg-surface-2 transition-colors ${
+                        year === currentMonth.getFullYear() ? 'bg-[var(--accent-bg)] text-primary font-semibold' : 'text-fg'
                       }`}
                     >
                       {year}
@@ -206,17 +206,17 @@ function CustomCalendar({ selectedDate, onSelect }) {
         <button
           type="button"
           onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-          className="p-1 hover:bg-default-100 rounded transition-colors"
+          className="p-1 hover:bg-surface-2 rounded transition-colors"
           aria-label="Next month"
         >
-          <ChevronRight size={20} className="text-default-600" />
+          <ChevronRight size={20} className="text-fg-subtle" />
         </button>
       </div>
 
       {/* Week day headers */}
       <div className="grid grid-cols-7 gap-1 mb-2" role="row">
         {weekDays.map(day => (
-          <div key={day} className="text-center text-xs font-medium text-default-500 py-1" role="columnheader" abbr={day}>
+          <div key={day} className="text-center text-xs font-medium text-fg-muted py-1" role="columnheader" abbr={day}>
             {day}
           </div>
         ))}
@@ -250,10 +250,10 @@ function CustomCalendar({ selectedDate, onSelect }) {
               aria-current={isToday ? 'date' : undefined}
               className={`
                 aspect-square flex items-center justify-center text-sm rounded transition-colors
-                ${isDisabled ? 'text-default-300 cursor-not-allowed opacity-50' : !isCurrentMonth ? 'text-default-300' : 'text-default-700'}
+                ${isDisabled ? 'text-fg-faint cursor-not-allowed opacity-50' : !isCurrentMonth ? 'text-fg-faint' : 'text-fg'}
                 ${isSelected && !isDisabled ? 'bg-primary text-white font-semibold' : ''}
                 ${isToday && !isSelected && !isDisabled ? 'border-2 border-primary' : ''}
-                ${!isSelected && !isDisabled ? 'hover:bg-default-100' : ''}
+                ${!isSelected && !isDisabled ? 'hover:bg-surface-2' : ''}
                 ${isFocused && !isDisabled ? 'ring-2 ring-primary ring-offset-1' : ''}
               `}
             >

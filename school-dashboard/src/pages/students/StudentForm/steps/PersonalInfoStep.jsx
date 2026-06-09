@@ -102,7 +102,7 @@ export default function PersonalInfoStep({
             variant="bordered"
             radius="sm"
             isRequired
-            classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+            classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
           />
 
           <DateOfBirthInput
@@ -120,7 +120,7 @@ export default function PersonalInfoStep({
 
       {/* Gender */}
       <div className="space-y-1" ref={genderRef}>
-        <label id="gender-label" className="text-xs font-medium text-default-600">
+        <label id="gender-label" className="text-xs font-medium text-fg-subtle">
           Gender <span className="text-danger">*</span>
         </label>
         <RadioGroup
@@ -197,23 +197,23 @@ function ProfileSection({ formData, updateField }) {
           color="primary"
         />
       ) : (
-        <div className="w-20 h-20 rounded-full border-2 border-default-200 bg-default-50 flex items-center justify-center">
-          <User size={32} className="text-default-400" />
+        <div className="w-20 h-20 rounded-full border-2 border-divider bg-surface-2 flex items-center justify-center">
+          <User size={32} className="text-fg-faint" />
         </div>
       )}
       <div className="flex flex-col gap-1 text-left">
         <div className="flex items-center gap-3">
           <button
-            className="text-sm font-semibold text-primary hover:text-primary-600 transition-colors"
+            className="text-sm font-semibold text-primary hover:text-[var(--accent)] transition-colors"
             onClick={() => {/* Open camera modal */}}
           >
             {formData.picture ? "Change Photo" : "Add Photo"}
           </button>
           {formData.picture && (
             <>
-              <span className="text-default-300">|</span>
+              <span className="text-fg-faint">|</span>
               <button
-                className="text-sm font-semibold text-danger hover:text-danger-600 transition-colors"
+                className="text-sm font-semibold text-danger hover:text-[var(--danger)] transition-colors"
                 onClick={() => updateField("picture", null)}
               >
                 Delete
@@ -221,7 +221,7 @@ function ProfileSection({ formData, updateField }) {
             </>
           )}
         </div>
-        <p className="text-xs text-default-500 max-w-[250px]">
+        <p className="text-xs text-fg-muted max-w-[250px]">
           Take a photo or upload from device
         </p>
       </div>
@@ -259,7 +259,7 @@ function DateOfBirthInput({ value, onChange, error, inputRef }) {
         radius="sm"
         isRequired
         maxLength={10}
-        classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-primary-400 h-10" }}
+        classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-[var(--accent)] h-10" }}
       />
     </div>
   );
@@ -277,7 +277,7 @@ function ClassSection({ formData, errors, classesWithTeachers, onClassChange, on
     : [];
 
   return (
-    <div className="space-y-2 pt-2 border-t border-solid border-default-200" ref={inputRef}>
+    <div className="space-y-2 pt-2 border-t border-solid border-divider" ref={inputRef}>
       <label className="text-sm font-semibold text-default-900 block mt-2">{t('pages.classInformation')}</label>
       <div className="grid grid-cols-2 gap-4">
         <Select
@@ -291,7 +291,7 @@ function ClassSection({ formData, errors, classesWithTeachers, onClassChange, on
           errorMessage={errors.classGrade}
           variant="bordered"
           radius="sm"
-          classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+          classNames={{ trigger: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
         >
           {uniqueClasses.map((className) => (
             <SelectItem key={className}>{className}</SelectItem>
@@ -310,7 +310,7 @@ function ClassSection({ formData, errors, classesWithTeachers, onClassChange, on
           errorMessage={errors.section}
           variant="bordered"
           radius="sm"
-          classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+          classNames={{ trigger: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
         >
           {availableSections.map((section) => (
             <SelectItem key={section}>{section}</SelectItem>
@@ -324,20 +324,20 @@ function ClassSection({ formData, errors, classesWithTeachers, onClassChange, on
 function ContactSection({ formData, updateField }) {
   const { t } = useTranslation();
   return (
-    <div className="space-y-2 pt-2 border-t border-solid border-default-200">
+    <div className="space-y-2 pt-2 border-t border-solid border-divider">
       <label className="text-sm font-semibold text-default-900 block mt-2">{t('pages.contactDetails1')}</label>
       <div className="grid grid-cols-2 gap-4">
         <Input
           label={t('pages.mobileNumber')}
           labelPlacement="outside"
-          startContent={<span className="text-default-400 text-xs">+91</span>}
+          startContent={<span className="text-fg-faint text-xs">+91</span>}
           placeholder={t('pages.studentSMobileIfAny')}
           value={formData.mobile}
           onValueChange={(v) => updateField("mobile", v.replace(/\D/g, "").slice(0, 10))}
           variant="bordered"
           radius="sm"
           maxLength={10}
-          classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+          classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
         />
         <Input
           label={t('pages.emailAddress')}
@@ -347,7 +347,7 @@ function ContactSection({ formData, updateField }) {
           onValueChange={(v) => updateField("email", v)}
           variant="bordered"
           radius="sm"
-          classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+          classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
         />
       </div>
     </div>
@@ -368,7 +368,7 @@ function AddressSection({ formData, errors, updateField, onZipCodeChange, isZipL
         radius="sm"
         isRequired
         minRows={2}
-        classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300" }}
+        classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token" }}
       />
       <div className="grid grid-cols-3 gap-4">
         <Input
@@ -380,7 +380,7 @@ function AddressSection({ formData, errors, updateField, onZipCodeChange, isZipL
           variant="bordered"
           radius="sm"
           isRequired
-          classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+          classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
         />
         <Select
           label={t('pages.state1')}
@@ -390,7 +390,7 @@ function AddressSection({ formData, errors, updateField, onZipCodeChange, isZipL
           onSelectionChange={(keys) => { onManualCityStateEntry(); updateField("state", Array.from(keys)[0]); }}
           variant="bordered"
           radius="sm"
-          classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+          classNames={{ trigger: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
         >
           {INDIAN_STATES.map((s) => (
             <SelectItem key={s}>{s}</SelectItem>
@@ -407,7 +407,7 @@ function AddressSection({ formData, errors, updateField, onZipCodeChange, isZipL
           isRequired
           maxLength={6}
           isLoading={isZipLookupLoading}
-          classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+          classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
         />
       </div>
     </div>
@@ -417,7 +417,7 @@ function AddressSection({ formData, errors, updateField, onZipCodeChange, isZipL
 function OptionalSection({ formData, updateField }) {
   const { t } = useTranslation();
   return (
-    <div className="space-y-2 pt-2 border-t border-solid border-default-200">
+    <div className="space-y-2 pt-2 border-t border-solid border-divider">
       <label className="text-sm font-semibold text-default-900 block mt-2">{t('pages.optionalInformation')}</label>
       <div className="grid grid-cols-2 gap-4">
         <Input
@@ -429,7 +429,7 @@ function OptionalSection({ formData, updateField }) {
           variant="bordered"
           radius="sm"
           maxLength={12}
-          classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+          classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
         />
         <Select
           label={t('pages.bloodGroup1')}
@@ -439,7 +439,7 @@ function OptionalSection({ formData, updateField }) {
           onSelectionChange={(keys) => updateField("bloodGroup", Array.from(keys)[0])}
           variant="bordered"
           radius="sm"
-          classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+          classNames={{ trigger: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
         >
           {BLOOD_GROUPS.map((b) => (
             <SelectItem key={b}>{b}</SelectItem>
@@ -453,7 +453,7 @@ function OptionalSection({ formData, updateField }) {
           onSelectionChange={(keys) => updateField("religion", Array.from(keys)[0])}
           variant="bordered"
           radius="sm"
-          classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+          classNames={{ trigger: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
         >
           {RELIGIONS.map((r) => (
             <SelectItem key={r}>{r}</SelectItem>
@@ -467,7 +467,7 @@ function OptionalSection({ formData, updateField }) {
           onSelectionChange={(keys) => updateField("category", Array.from(keys)[0])}
           variant="bordered"
           radius="sm"
-          classNames={{ trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10" }}
+          classNames={{ trigger: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
         >
           {CATEGORIES.map((c) => (
             <SelectItem key={c}>{c}</SelectItem>

@@ -23,7 +23,7 @@ export default function DocumentsStep({
     <div className="space-y-5 animate-fade-in text-left">
       <div className="space-y-2">
         <label className="text-sm font-semibold text-default-900">{t('pages.documentUploads')}</label>
-        <p className="text-xs text-default-500">
+        <p className="text-xs text-fg-muted">
           Upload required documents. All documents are optional and can be uploaded later.
         </p>
       </div>
@@ -50,8 +50,8 @@ export default function DocumentsStep({
 
       {/* Aadhaar Card */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-default-600">{t('pages.aadhaarCardFrontBack')}</label>
-        <p className="text-xs text-default-500">{t('pages.uploadBothSidesOfTheAadhaarCard')}</p>
+        <label className="text-xs font-medium text-fg-subtle">{t('pages.aadhaarCardFrontBack')}</label>
+        <p className="text-xs text-fg-muted">{t('pages.uploadBothSidesOfTheAadhaarCard')}</p>
 
         <DocumentUploadField
           label={formData.aadhaarFront ? `Front: ${formData.aadhaarFront.name}` : "Click to upload FRONT side"}
@@ -111,12 +111,12 @@ function DocumentUploadField({ label, file, onUpload, onRemove, inputRef, accept
 
   return (
     <div className="space-y-2">
-      {!compact && <label className="text-xs font-medium text-default-600">{label}</label>}
+      {!compact && <label className="text-xs font-medium text-fg-subtle">{label}</label>}
       <div
         className={`border border-solid rounded-lg p-4 flex items-center justify-between cursor-pointer transition-colors ${
           file
-            ? "border-success-300 bg-success-50/50 hover:bg-success-50"
-            : "border-default-300 hover:bg-default-50"
+            ? "border-[var(--ok)]/20 bg-[var(--ok-bg)]/50 hover:bg-[var(--ok-bg)]"
+            : "border-border-token hover:bg-surface-2"
         }`}
         onClick={() => !isProcessing && inputRef.current?.click()}
       >
@@ -124,23 +124,23 @@ function DocumentUploadField({ label, file, onUpload, onRemove, inputRef, accept
           {file ? (
             <CheckCircle size={20} className="text-success flex-shrink-0" />
           ) : (
-            <FileText size={20} className="text-default-400 flex-shrink-0" />
+            <FileText size={20} className="text-fg-faint flex-shrink-0" />
           )}
           <div className="min-w-0 flex-1">
             {isProcessing ? (
               <div className="space-y-1">
-                <span className="text-sm text-default-500">Processing...</span>
+                <span className="text-sm text-fg-muted">Processing...</span>
                 <Progress size="sm" isIndeterminate color="primary" className="max-w-full" />
               </div>
             ) : file ? (
               <div className="min-w-0">
-                <span className="text-sm text-default-700 truncate block">{file.name || label}</span>
+                <span className="text-sm text-fg truncate block">{file.name || label}</span>
                 {file.size && (
-                  <span className="text-xs text-default-400">{formatFileSize(file.size)}</span>
+                  <span className="text-xs text-fg-faint">{formatFileSize(file.size)}</span>
                 )}
               </div>
             ) : (
-              <span className="text-sm text-default-500">{compact ? label : `Click to upload ${label.toLowerCase()}`}</span>
+              <span className="text-sm text-fg-muted">{compact ? label : `Click to upload ${label.toLowerCase()}`}</span>
             )}
           </div>
         </div>
@@ -158,7 +158,7 @@ function DocumentUploadField({ label, file, onUpload, onRemove, inputRef, accept
             <X size={14} />
           </Button>
         ) : (
-          <Upload size={16} className="text-default-400 flex-shrink-0" />
+          <Upload size={16} className="text-fg-faint flex-shrink-0" />
         )}
       </div>
       <input ref={inputRef} type="file" accept={accept} className="hidden" onChange={handleFileChange} />
@@ -182,19 +182,19 @@ function MultiDocumentUploadField({ label, description, files, onUpload, onRemov
 
   return (
     <div className="space-y-2">
-      <label className="text-xs font-medium text-default-600">{label}</label>
-      <p className="text-xs text-default-500">{description}</p>
+      <label className="text-xs font-medium text-fg-subtle">{label}</label>
+      <p className="text-xs text-fg-muted">{description}</p>
       {isProcessing ? (
-        <div className="border border-solid border-default-300 rounded-lg p-4">
+        <div className="border border-solid border-border-token rounded-lg p-4">
           <Progress size="sm" isIndeterminate color="primary" label="Processing files..." className="max-w-full" />
         </div>
       ) : (
         <div
-          className="border border-solid border-default-300 rounded-lg p-4 flex items-center justify-center gap-2 cursor-pointer hover:bg-default-50 transition-colors"
+          className="border border-solid border-border-token rounded-lg p-4 flex items-center justify-center gap-2 cursor-pointer hover:bg-surface-2 transition-colors"
           onClick={() => inputRef.current?.click()}
         >
-          <Upload size={14} className="text-default-500" />
-          <span className="text-sm text-default-600">{t('pages.uploadAdditionalDocuments')}</span>
+          <Upload size={14} className="text-fg-muted" />
+          <span className="text-sm text-fg-subtle">{t('pages.uploadAdditionalDocuments')}</span>
         </div>
       )}
       <input ref={inputRef} type="file" multiple accept={accept} className="hidden" onChange={handleFilesChange} />
@@ -206,7 +206,7 @@ function MultiDocumentUploadField({ label, description, files, onUpload, onRemov
               onClose={() => onRemove(i)}
               size="sm"
               variant="flat"
-              className="h-8 border border-default-200 bg-background"
+              className="h-8 border border-divider bg-surface"
             >
               {file.name} {file.size ? `(${formatFileSize(file.size)})` : ''}
             </Chip>

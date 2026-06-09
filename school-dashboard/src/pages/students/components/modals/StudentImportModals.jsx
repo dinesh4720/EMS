@@ -1,4 +1,4 @@
-import { Chip, Spinner, Progress } from "@heroui/react";
+import { Chip, CircularProgress, Progress } from "../../../../components/ui";
 import { Accordion, AccordionItem } from "@heroui/accordion";
 import {
     Check, Download, Upload, FileSpreadsheet, FileText, AlertTriangle, Info,
@@ -57,7 +57,7 @@ export function StudentCsvUploadModal({
                     >
                         {csvProcessing ? (
                             <>
-                                <Spinner size="sm" />
+                                <CircularProgress size="sm" indeterminate />
                                 Processing…
                             </>
                         ) : (
@@ -303,7 +303,7 @@ export function StudentCsvPreviewModal({
                     >
                         {csvProcessing ? (
                             <>
-                                <Spinner size="sm" />
+                                <CircularProgress size="sm" indeterminate />
                                 Importing {importProgress.current}/{importProgress.total}…
                             </>
                         ) : (
@@ -378,6 +378,7 @@ export function StudentCsvPreviewModal({
                             value={(importProgress.current / importProgress.total) * 100}
                             color="primary"
                             size="sm"
+                            size="sm"
                             className="w-full"
                         />
                     </div>
@@ -437,7 +438,7 @@ export function StudentCsvPreviewModal({
                                             </div>
                                         </div>
                                     }
-                                    indicator={<ChevronRight size={16} className="text-default-400 transition-transform duration-200" />}
+                                    indicator={<ChevronRight size={16} className="text-fg-faint transition-transform duration-200" />}
                                 >
                                     <div className="col gap-2" style={{ paddingTop: 4, paddingBottom: 4 }}>
                                         {classData.students.map((student, idx) => (
@@ -466,9 +467,9 @@ export function StudentCsvPreviewModal({
                                                         </div>
                                                     </div>
                                                     <div className="row gap-1" style={{ flexShrink: 0 }}>
-                                                        {student.isDuplicate && <Chip size="sm" color="warning" variant="flat" className="h-5 text-xs">{t('pages.duplicate1')}</Chip>}
-                                                        {!student.isDuplicate && student.warnings.length > 0 && <Chip size="sm" color="warning" variant="flat" className="h-5 text-xs">{student.warnings.length} {student.warnings.length === 1 ? 'Warn' : 'Warns'}</Chip>}
-                                                        {!student.isDuplicate && !student.valid && <Chip size="sm" color="danger" variant="flat" className="h-5 text-xs">{t('pages.invalid')}</Chip>}
+                                                        {student.isDuplicate && <Chip size="sm" color="warning" className="h-5 text-xs">{t('pages.duplicate1')}</Chip>}
+                                                        {!student.isDuplicate && student.warnings.length > 0 && <Chip size="sm" color="warning" className="h-5 text-xs">{student.warnings.length} {student.warnings.length === 1 ? 'Warn' : 'Warns'}</Chip>}
+                                                        {!student.isDuplicate && !student.valid && <Chip size="sm" color="danger" className="h-5 text-xs">{t('pages.invalid')}</Chip>}
                                                     </div>
                                                 </div>
 

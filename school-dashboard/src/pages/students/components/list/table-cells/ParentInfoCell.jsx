@@ -60,7 +60,7 @@ function ParentInfoCell({
                                 }
                             }}
                             placeholder={t("pages.enterPhone")}
-                            className="text-xs px-2 py-1 border border-default-300 rounded w-28 focus:outline-none focus:border-primary"
+                            className="text-xs px-2 py-1 border border-border-token rounded w-28 focus:outline-none focus:border-primary"
                             onClick={(e) => e.stopPropagation()}
                             aria-label={t("pages.enterPhone")}
                             autoFocus
@@ -86,7 +86,7 @@ function ParentInfoCell({
                         </Button>
                     </div>
                 ) : student.parentPhone && isValidPhone(student.parentPhone) ? (
-                    <span className="text-default-500 text-sm">
+                    <span className="text-fg-muted text-sm">
                         {formatPhoneNumber(student.parentPhone)}
                     </span>
                 ) : (

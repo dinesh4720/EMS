@@ -25,7 +25,7 @@ function AcademicPerformanceCell({ student, className }) {
                     </Chip>
                 </Tooltip>
             ) : (
-                <span className="text-xs text-default-400">No data</span>
+                <span className="text-xs text-fg-faint">No data</span>
             )}
         </td>
     );

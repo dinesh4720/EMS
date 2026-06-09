@@ -6,11 +6,11 @@ import { formatCurrency } from "../../../../../utils/numberFormatter";
 
 function getFeeStatusStyle(status) {
     switch (status) {
-        case "paid":    return "bg-success-50 border-success-200 text-success-700";
-        case "pending": return "bg-warning-50 border-warning-200 text-warning-700";
-        case "overdue": return "bg-danger-50 border-danger-200 text-danger-700";
-        case "partial": return "bg-primary-50 border-primary-200 text-primary-700";
-        default:        return "bg-default-100 border-default-200 text-default-600";
+        case "paid":    return "bg-[var(--ok-bg)] border-[var(--ok)]/20 text-[var(--ok)]";
+        case "pending": return "bg-[var(--warn-bg)] border-[var(--warn)]/20 text-[var(--warn)]";
+        case "overdue": return "bg-[var(--danger-bg)] border-[var(--danger)]/20 text-[var(--danger)]";
+        case "partial": return "bg-[var(--accent-bg)] border-[var(--accent)]/20 text-[var(--accent)]";
+        default:        return "bg-surface-2 border-divider text-fg-subtle";
     }
 }
 
@@ -90,7 +90,7 @@ function FeeStatusCell({ student, className, studentFeeStructures, currentAcadem
                 <div
                     className={`inline-flex items-center px-2 py-1 rounded-lg border text-xs font-medium capitalize cursor-default ${
                         details.status === "not-initialized"
-                            ? "bg-warning-50 border-warning-200 text-warning-700"
+                            ? "bg-[var(--warn-bg)] border-[var(--warn)]/20 text-[var(--warn)]"
                             : getFeeStatusStyle(details.status)
                     }`}
                 >
