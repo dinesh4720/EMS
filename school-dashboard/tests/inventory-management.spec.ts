@@ -190,6 +190,7 @@ async function gotoAndWait(page: import('@playwright/test').Page, path: string, 
 /* ───────────────── Tests ───────────────── */
 
 test.describe('Inventory — Maintenance, Procurement, Audits & Reports', () => {
+  test.describe.configure({ mode: 'serial' });
   let state: MockState;
 
   test.beforeEach(async ({ page }) => {
@@ -457,6 +458,7 @@ test.describe('Inventory — Maintenance, Procurement, Audits & Reports', () => 
 /* ───────────────── Assets & Vendors (12 tests) ───────────────── */
 
 test.describe('Inventory — Assets & Vendors', () => {
+  test.describe.configure({ mode: 'serial' });
   let state: MockState;
 
   test.beforeEach(async ({ page }) => {
