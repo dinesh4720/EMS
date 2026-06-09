@@ -126,10 +126,6 @@ export default function AiAssistantPage() {
 
   const handleSend = async () => {
     if (!input.trim() || isLoading || isRecording || isTranscribing) return;
-    if (!selectedModel || !hasAvailableModels) {
-      toast.error(t('toast.error.theAiAssistantIsNotConfiguredRightNow'));
-      return;
-    }
 
     const userMessage = { role: 'user', content: input };
     setMessages((prev) => [...prev, userMessage]);
@@ -184,7 +180,7 @@ export default function AiAssistantPage() {
         ? t('pages.messageAssistant') || 'Message the school AI assistant...'
         : t('pages.askAboutSchool') || 'Ask about students, staff, classes, or school work...';
 
-  const canSend = !!input.trim() && !isRecording && !isTranscribing && !!selectedModel && hasAvailableModels;
+  const canSend = !!input.trim() && !isRecording && !isTranscribing && !isLoading;
 
   return (
     <div className="flex h-full bg-surface text-fg font-sans transition-colors duration-300 overflow-hidden">
