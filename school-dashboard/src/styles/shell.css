@@ -1562,6 +1562,7 @@
   white-space: nowrap;
 }
 .btn:hover { background: var(--surface-hover); border-color: var(--border-strong); }
+.btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); }
 
 .btn--primary {
   background: var(--fg);
@@ -1597,6 +1598,7 @@
   transition: background 120ms, color 120ms;
 }
 .iconbtn:hover { background: var(--surface-hover); color: var(--fg); }
+.iconbtn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); }
 .iconbtn__dot {
   position: absolute;
   top: 6px; right: 6px;
@@ -1812,6 +1814,7 @@
   white-space: nowrap;
 }
 .seg__btn:hover { color: var(--fg); }
+.seg__btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); }
 .seg__btn.is-active { background: var(--surface); color: var(--fg); font-weight: 520; box-shadow: var(--shadow-sm); }
 
 /* Status badge */

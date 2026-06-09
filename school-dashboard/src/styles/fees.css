@@ -45,6 +45,11 @@
 .fees-kpi__cell:hover {
   background: var(--surface-2);
 }
+.fees-kpi__cell:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent);
+  z-index: 1;
+}
 .fees-kpi__cell.is-active {
   background: var(--surface);
   box-shadow: inset 0 -2px 0 var(--accent);
@@ -305,6 +310,7 @@
   outline: none;
   border-color: var(--accent);
   background: var(--surface-2);
+  box-shadow: 0 0 0 3px var(--accent-bg);
 }
 .fees-sheet__field input[aria-invalid="true"],
 .fees-sheet__field select[aria-invalid="true"] {
@@ -338,7 +344,8 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .fees-sheet,
-  .fees-sheet__backdrop { animation: none; }
+  .fees-sheet__backdrop,
+  .fees-preview { animation: none; }
 }
 
 /* ── Refunds KPI strip (5-up) ─────────────────────────────────────────────── */
@@ -392,6 +399,16 @@
 .dp-metric__value--danger { color: var(--danger); }
 .dp-metric__value--ok     { color: var(--ok); }
 
+/* Touch target improvements for fees-specific interactive elements */
+.fees-heads__amt .iconbtn {
+  min-width: 36px;
+  min-height: 36px;
+}
+.fees-table__action .btn--sm {
+  min-height: 32px;
+  min-width: 32px;
+}
+
 /* Mobile — stack KPI + form rows; full-width drawer */
 @media (max-width: 1023px) {
   .fees-kpi { grid-template-columns: 1fr; }
@@ -419,6 +436,11 @@
   transition: background 80ms;
 }
 .refundlist__row:hover { background: var(--surface-2); }
+.refundlist__row:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent);
+  z-index: 1;
+}
 .refundlist__row.is-active {
   background: var(--surface);
   box-shadow: inset 2px 0 0 var(--accent);

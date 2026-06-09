@@ -179,7 +179,7 @@ export default function PaymentsTable({
         </div>
       )}
 
-      <div className="fees-table" role="table">
+      <div className="fees-table" role="table" aria-label="Payments">
         <div className="fees-table__head" role="row">
           <input
             type="checkbox"
@@ -187,12 +187,12 @@ export default function PaymentsTable({
             checked={allSelected}
             onChange={toggleAll}
           />
-          <span>Roll</span>
-          <span>Student</span>
-          <span>Term</span>
-          <span className="fees-table__amount">Amount</span>
-          <span>Status</span>
-          <span className="fees-table__action">Action</span>
+          <span role="columnheader">Roll</span>
+          <span role="columnheader">Student</span>
+          <span role="columnheader">Term</span>
+          <span role="columnheader" className="fees-table__amount">Amount</span>
+          <span role="columnheader">Status</span>
+          <span role="columnheader" className="fees-table__action">Action</span>
         </div>
 
         {rows.map((p) => {
@@ -218,19 +218,19 @@ export default function PaymentsTable({
                 checked={isSelected}
                 onChange={() => toggleRow(id)}
               />
-              <span className="mono tnum">{rollNo}</span>
-              <span>
+              <span role="cell" className="mono tnum">{rollNo}</span>
+              <span role="cell">
                 <div className="fees-table__name">{studentName}</div>
                 <div className="fees-table__sub">
                   {className && <span>{className}</span>}
                 </div>
               </span>
-              <span className="subtle">{term}</span>
-              <span className="fees-table__amount tnum">
+              <span role="cell" className="subtle">{term}</span>
+              <span role="cell" className="fees-table__amount tnum">
                 {fmtINR(p.amount)}
               </span>
-              <span><StatusPill status={status} /></span>
-              <span className="fees-table__action row gap-1">
+              <span role="cell"><StatusPill status={status} /></span>
+              <span role="cell" className="fees-table__action row gap-1">
                 <RowAction
                   status={status}
                   onCollect={() => onCollect?.(studentId, p)}

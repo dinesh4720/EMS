@@ -724,11 +724,12 @@ export default function Refunds() {
               </button>
             </header>
             <div className="composer__body">
-              <label className="field">
+              <label className="field" htmlFor="reject-reason">
                 <span className="field__label">
                   {t("pages.rejectionReason", "Reason for rejection")} <span className="req">*</span>
                 </span>
                 <textarea
+                  id="reject-reason"
                   className="textarea"
                   rows={3}
                   value={rejectReason}
@@ -795,7 +796,7 @@ export default function Refunds() {
             <div className="composer__body">
               <div className="fgrid">
                 {/* Student search picker */}
-                <div className="field span-2">
+                <label className="field span-2" htmlFor="refund-student-search">
                   <span className="field__label">
                     {t("pages.student", "Student")} <span className="req">*</span>
                   </span>
@@ -817,6 +818,7 @@ export default function Refunds() {
                     <div className="field__icon-wrap">
                       <Search size={14} className="field__icon" aria-hidden />
                       <input
+                        id="refund-student-search"
                         className="input input--with-icon"
                         placeholder={t(
                           "pages.searchStudentsByNameOrAdmissionNo",
@@ -824,9 +826,16 @@ export default function Refunds() {
                         )}
                         value={studentSearch}
                         onChange={(e) => setStudentSearch(e.target.value)}
+                        role="combobox"
+                        aria-expanded={studentResults.length > 0}
+                        aria-controls="refund-student-results"
+                        aria-autocomplete="list"
                       />
                       {studentResults.length > 0 && studentSearch && (
                         <div
+                          id="refund-student-results"
+                          role="listbox"
+                          aria-label={t("pages.studentResults", "Student results")}
                           className="autocomplete-dropdown"
                           style={{
                             position: "absolute",
@@ -845,6 +854,7 @@ export default function Refunds() {
                             <button
                               key={s._id}
                               type="button"
+                              role="option"
                               onClick={() => handleSelectStudent(s)}
                               className="autocomplete-item"
                               style={{
@@ -906,13 +916,14 @@ export default function Refunds() {
                       {formErrors.studentId}
                     </span>
                   )}
-                </div>
+                </label>
 
-                <label className="field">
+                <label className="field" htmlFor="refund-amount">
                   <span className="field__label">
                     {t("fees.amountLabel")} <span className="req">*</span>
                   </span>
                   <input
+                    id="refund-amount"
                     type="number"
                     className={`input mono tnum${formErrors.amount ? " input--err" : ""}`}
                     placeholder={t("fees.amountPlaceholder")}
@@ -936,11 +947,12 @@ export default function Refunds() {
                   )}
                 </label>
 
-                <label className="field">
+                <label className="field" htmlFor="refund-mode">
                   <span className="field__label">
                     {t("pages.refundMode")} <span className="req">*</span>
                   </span>
                   <select
+                    id="refund-mode"
                     className="select"
                     value={newRefundForm.refundMode}
                     onChange={(e) =>
@@ -963,11 +975,12 @@ export default function Refunds() {
                   )}
                 </label>
 
-                <label className="field span-2">
+                <label className="field span-2" htmlFor="refund-reason">
                   <span className="field__label">
                     {t("pages.reason")} <span className="req">*</span>
                   </span>
                   <textarea
+                    id="refund-reason"
                     className={`textarea${formErrors.reason ? " textarea--err" : ""}`}
                     placeholder={t("pages.reasonForRefund")}
                     value={newRefundForm.reason}
@@ -983,9 +996,10 @@ export default function Refunds() {
                   )}
                 </label>
 
-                <label className="field span-2">
+                <label className="field span-2" htmlFor="refund-remarks">
                   <span className="field__label">{t("pages.remarksOptional")}</span>
                   <textarea
+                    id="refund-remarks"
                     className="textarea"
                     placeholder={t("pages.additionalNotes1")}
                     value={newRefundForm.remarks}

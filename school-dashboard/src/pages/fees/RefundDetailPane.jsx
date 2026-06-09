@@ -111,7 +111,7 @@ export default function RefundDetailPane({
           </span>
           <div className="row gap-2" style={{ marginTop: 6, flexWrap: "wrap" }}>
             <span className={`status status--${tone}`}>
-              <span className="dot" />
+              <span className="dot" aria-hidden="true" />
               {status}
             </span>
             {refund.refundMode && (
