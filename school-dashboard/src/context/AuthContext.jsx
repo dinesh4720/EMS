@@ -114,6 +114,18 @@ export const AuthProvider = ({ children }) => {
     return () => window.removeEventListener('auth-session-cleared', handleSessionCleared);
   }, [location.pathname, navigate]);
 
+  const setAuthenticatedUser = (userData) => {
+    // SECURITY: Strip token fields before storing — tokens live in httpOnly
+    // cookies only. Keeping them in React state exposes them to XSS via
+    // React DevTools or injected scripts.
+    const { token: _t, refreshToken: _rt, tokenExpiresAt: _tat, ...safeUserData } = userData;
+    saveStoredUser(safeUserData);
+    // SECURITY: Role came from the server response — mark as verified.
+    setUser({ ...safeUserData, _roleVerified: true });
+    setIsAuthenticated(true);
+    navigate(isSuperAdminRole(safeUserData.role) ? '/super-admin' : '/');
+  };
+
   const login = async (emailOrPhone, password) => {
     try {
       const response = await fetch(`${API_URL}/auth/login`, {
@@ -136,16 +148,8 @@ export const AuthProvider = ({ children }) => {
       }
 
       const userData = await response.json();
-      // SECURITY: Strip token fields before storing — tokens live in httpOnly
-      // cookies only. Keeping them in React state exposes them to XSS via
-      // React DevTools or injected scripts.
-      const { token: _t, refreshToken: _rt, tokenExpiresAt: _tat, ...safeUserData } = userData;
-      saveStoredUser(safeUserData);
-      // SECURITY: Role came from the server login response — mark as verified.
-      setUser({ ...safeUserData, _roleVerified: true });
-      setIsAuthenticated(true);
-      navigate(isSuperAdminRole(safeUserData.role) ? '/super-admin' : '/');
-      return safeUserData;
+      setAuthenticatedUser(userData);
+      return userData;
     } catch (error) {
       logger.error('Login error:', error?.message || error);
       throw error;
@@ -183,6 +187,7 @@ export const AuthProvider = ({ children }) => {
       login,
       logout,
       loading,
+      setAuthenticatedUser,
     }}>
       {children}
     </AuthContext.Provider>

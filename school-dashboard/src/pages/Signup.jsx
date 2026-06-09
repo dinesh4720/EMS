@@ -5,6 +5,7 @@ import { Building2, Eye, EyeOff, Lock, Mail, ShieldCheck, User } from "lucide-re
 
 import { API_URL } from "../config/api.js";
 import { signupSchema, parseFormSchema } from "../validators/formSchemas";
+import { useAuth } from "../context/AuthContext";
 
 import AuthVisual from "../components/auth/AuthVisual";
 import AuthBrand from "../components/auth/AuthBrand";
@@ -37,6 +38,7 @@ function InviteValidatingState({ label }) {
 export default function Signup() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { setAuthenticatedUser } = useAuth();
   const [searchParams] = useSearchParams();
   const inviteToken = searchParams.get("inviteToken") || "";
 
@@ -132,10 +134,14 @@ export default function Signup() {
           const data = await response.json().catch(() => ({}));
           throw new Error(data.error || "Signup failed");
         }
-        navigate("/login", {
-          state: {
-            message: "Invite accepted. Please sign in with your new admin account.",
-          },
+        const data = await response.json();
+        // Log the new admin in immediately using the returned auth payload
+        setAuthenticatedUser({
+          ...data.user,
+          school: data.school,
+          token: data.token,
+          refreshToken: data.refreshToken,
+          tokenExpiresAt: data.tokenExpiresAt,
         });
       } catch (error) {
         setErrors((prev) => ({
