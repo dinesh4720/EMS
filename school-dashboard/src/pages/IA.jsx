@@ -190,7 +190,9 @@ const MODULES = [
       "TransferCertificate",
       "StudentFormSubmissions",
     ],
-    status: ["⬜", "⬜", "⬜", "⬜"],
+    status: ["🔄", "⬜", "⬜", "⬜"],
+    auditDate: "2026-06-09",
+    issue: "DK-979",
   },
   {
     name: "Style Guide",
