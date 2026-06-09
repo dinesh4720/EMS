@@ -1171,7 +1171,7 @@ export default function TimetableWizardModal({
               {isGenerating ? (
                 <div className="space-y-4 py-4">
                   <div className="flex items-center justify-center gap-3">
-                    <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
+                    <div className="w-5 h-5 border-2 border-border-strong border-t-fg rounded-full animate-spin" />
                     <p className="text-sm text-fg-muted">{t('pages.generatingTimetable')}</p>
                   </div>
                   <div className="bg-surface rounded-lg border border-border-token overflow-hidden">

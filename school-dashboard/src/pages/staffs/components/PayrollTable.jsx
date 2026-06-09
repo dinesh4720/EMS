@@ -83,10 +83,10 @@ export default function PayrollTable({
           const employee = staff.find(s => String(s._id || s.id) === String(record.employeeId));
           if (!employee) return null;
           const isSelected = selectedKeys.has(record._id);
-          const cellClass = `py-5 border-b border-default-200 px-3 transition-colors ${isSelected ? "bg-primary-50" : "group-hover:bg-gray-50"}`;
+          const cellClass = `py-5 border-b border-default-200 px-3 transition-colors ${isSelected ? "bg-primary-50" : "group-hover:bg-surface-hover"}`;
           return (
             <>
-              <td className={`py-5 border-b border-default-200 pl-6 pr-3 transition-colors w-12 ${isSelected ? "bg-primary-50" : "group-hover:bg-gray-50"}`} onClick={(e) => e.stopPropagation()}>
+              <td className={`py-5 border-b border-default-200 pl-6 pr-3 transition-colors w-12 ${isSelected ? "bg-primary-50" : "group-hover:bg-surface-hover"}`} onClick={(e) => e.stopPropagation()}>
                 <Checkbox
                   size="md"
                   classNames={{ base: "p-0 m-0", wrapper: "m-0" }}
@@ -127,7 +127,7 @@ export default function PayrollTable({
               <td className={cellClass}>
                 <Chip color={getStatusColor(record.status)} size="sm" variant="flat">{getStatusLabel(record.status)}</Chip>
               </td>
-              <td className={`py-5 border-b border-default-200 pr-6 transition-colors ${isSelected ? "bg-primary-50" : "group-hover:bg-gray-50"}`}>
+              <td className={`py-5 border-b border-default-200 pr-6 transition-colors ${isSelected ? "bg-primary-50" : "group-hover:bg-surface-hover"}`}>
                 <div className="flex justify-end gap-1 items-center">
                   {record.isLocked && (
                     <div className="flex items-center gap-1 text-xs text-warning-600 bg-warning-50 px-2 py-1 rounded-full border border-warning-200">

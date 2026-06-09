@@ -18,8 +18,11 @@ const ALLOWED_FONT_FAMILIES = [
   "monospace",
 ];
 
+// NOTE: light/dark `mode` is intentionally NOT owned here. `next-themes`
+// is the single source of truth for the colour scheme — it toggles `.dark`
+// on <html>, which flips every design token in tokens.css. This hook only
+// owns the typography/shape preferences that `applyThemeStyle` injects.
 const DEFAULT_THEME = {
-  mode: "light",
   fontFamily: "Inter",
   fontSizeScale: 1,
   borderRadius: 12,
@@ -67,7 +70,6 @@ export function sanitizeThemeSettings(raw) {
   }
 
   return {
-    mode: raw.mode === "dark" ? "dark" : "light",
     fontFamily: validateFontFamily(raw.fontFamily),
     fontSizeScale: clamp(
       raw.fontSizeScale,

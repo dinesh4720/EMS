@@ -63,7 +63,7 @@ export const trashApi = {
 import { request } from "../../services/api";
 import { getDateLocale } from '../../i18n/index';
 import { useTranslation } from 'react-i18next';
-import SkeletonTable from '../../components/skeletons/SkeletonTable';
+import { SkeletonTable } from '../../components/ui/Skeleton';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
 

@@ -126,7 +126,7 @@ export default function OnboardingFlow({ onComplete }) {
                 {/* Skip Button */}
                 <button
                     onClick={handleSkip}
-                    className="absolute top-4 right-4 z-50 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-zinc-200 transition-colors rounded-full hover:bg-surface-2"
+                    className="absolute top-4 right-4 z-50 p-2 text-fg-faint hover:text-fg-muted transition-colors rounded-full hover:bg-surface-2"
                     title={t('components.skipOnboarding')}
                 >
                     <X size={20} />
@@ -168,7 +168,7 @@ export default function OnboardingFlow({ onComplete }) {
                                                 {step.title}
                                             </p>
                                             {isActive && (
-                                                <p className="text-xs text-gray-400 truncate">
+                                                <p className="text-xs text-fg-faint truncate">
                                                     {step.description}
                                                 </p>
                                             )}
@@ -316,13 +316,13 @@ export default function OnboardingFlow({ onComplete }) {
                                         <div className="space-y-6 animate-fade-in">
                                             <div className="flex items-center gap-6 mb-6 p-4 border border-dashed border-gray-300 dark:border-zinc-700 rounded-2xl bg-surface-2">
                                                 <div className="w-24 h-24 rounded-full bg-surface flex items-center justify-center border-2 border-gray-100 dark:border-zinc-700 shadow-sm">
-                                                    <User className="text-gray-300" size={40} />
+                                                    <User className="text-fg-faint" size={40} />
                                                 </div>
                                                 <div className="flex-1">
                                                     <h4 className="text-sm font-semibold text-fg mb-1">{t('components.profilePhoto')}</h4>
                                                     <p className="text-xs text-fg-muted mb-3">{t('components.uploadYourAdministratorProfilePicture')}</p>
                                                     <div className="flex gap-3">
-                                                        <button className="px-4 py-2 bg-surface border border-border-token rounded-lg text-xs font-medium hover:bg-gray-50 transition-colors">{t('components.chooseFile')}</button>
+                                                        <button className="px-4 py-2 bg-surface border border-border-token rounded-lg text-xs font-medium hover:bg-surface-hover transition-colors">{t('components.chooseFile')}</button>
                                                         <button className="px-4 py-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg text-xs font-medium transition-colors">{t('components.remove')}</button>
                                                     </div>
                                                 </div>

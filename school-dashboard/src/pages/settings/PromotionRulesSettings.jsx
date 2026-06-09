@@ -4,7 +4,7 @@ import { ArrowUpCircle, Save } from 'lucide-react';
 import { request } from '../../services/api';
 import toast from 'react-hot-toast';
 import HelpIcon from '../../components/ui/HelpIcon';
-import SkeletonForm from '../../components/skeletons/SkeletonForm';
+import { SkeletonForm } from '../../components/ui/Skeleton';
 
 
 const FEE_OPTIONS = [

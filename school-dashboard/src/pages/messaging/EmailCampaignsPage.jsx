@@ -277,7 +277,7 @@ export default function EmailCampaignsPage() {
                               className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors disabled:opacity-50"
                               title="Send now"
                             >
-                              <Send size={15} className={sending === c._id ? 'text-gray-300 animate-pulse' : 'text-blue-500'} />
+                              <Send size={15} className={sending === c._id ? 'text-fg-faint animate-pulse' : 'text-blue-500'} />
                             </button>
                           )}
                           <button

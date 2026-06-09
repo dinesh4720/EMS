@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { announcementsApi } from "../../services/api";
 import toast from "react-hot-toast";
-import SkeletonList from "../../components/skeletons/SkeletonList";
+import { SkeletonList } from "../../components/ui/Skeleton";
 
 const CHANNEL_CONFIG = {
   email: { label: "Email", icon: Mail, color: "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300", dot: "bg-blue-500" },
@@ -218,7 +218,7 @@ export default function CommunicationLogs() {
         <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 p-4 dark:border-zinc-800">
           {/* Search */}
           <div className="relative flex-1 min-w-[200px]">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-faint" />
             <input
               type="text"
               placeholder="Search by title or content…"

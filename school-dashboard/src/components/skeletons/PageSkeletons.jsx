@@ -1,15 +1,16 @@
 /**
  * PageSkeletons - Composed page-level skeleton loaders
- * Pre-built skeletons for common page layouts (table pages, card grids, detail pages)
+ * Pre-built skeletons for common page layouts (table pages, card grids, detail
+ * pages). These compose the canonical primitives from components/ui/Skeleton —
+ * this file holds layout composition only, never its own bone implementation.
  */
 
-import SkeletonTable from './SkeletonTable';
-import SkeletonCard from './SkeletonCard';
-import SkeletonForm from './SkeletonForm';
-
-const Bone = ({ className = "" }) => (
-  <div className={`animate-shimmer rounded ${className}`} />
-);
+import {
+  Bone,
+  SkeletonTable,
+  SkeletonCard,
+  SkeletonForm,
+} from "../ui/Skeleton";
 
 /** Full table page skeleton with optional title, search bar, KPI cards, and table */
 export const TablePageSkeleton = ({

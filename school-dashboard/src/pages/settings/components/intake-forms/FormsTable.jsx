@@ -9,7 +9,7 @@ import {
   TableCell,
 } from "@heroui/react";
 import { Edit2, Trash2, Eye, Copy } from "lucide-react";
-import SkeletonTable from "../../../../components/skeletons/SkeletonTable";
+import { SkeletonTable } from "../../../../components/ui/Skeleton";
 
 const FormsTable = ({ forms, loading, onPreview, onEdit, onDuplicate, onDelete, t }) => {
   return (

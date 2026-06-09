@@ -35,11 +35,17 @@ export default function Providers({ children }) {
     <HelmetProvider>
       <QueryClientProvider client={queryClient}>
         <HeroUIProvider>
-          {/* TODO: Phase 4d · Dark mode pass — once every screen is audited
-           * for contrast/legibility in dark mode, restore enableSystem and
-           * ship a real toggle in the topbar. Until then we force light so
-           * the new design lands consistently regardless of OS preference. */}
-          <NextThemesProvider attribute="class" defaultTheme="light" enableSystem={false}>
+          {/* Dark mode (Phase 4d, shipped): next-themes is the single source of
+           * truth — it toggles `.dark` on <html>, which flips every design token
+           * in tokens.css. `defaultTheme="system"` respects the OS preference on
+           * first load; the topbar Sun/Moon toggle still wins and persists.
+           * `disableTransitionOnChange` avoids a token-transition flash on switch. */}
+          <NextThemesProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
             <BrowserRouter>
               {children}
               <ToastLimiter />

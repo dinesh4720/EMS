@@ -11,10 +11,13 @@ export { default as EmptyState } from "./EmptyState";
 export { default as ErrorState } from "./ErrorState";
 export {
   default as Skeleton,
+  Bone,
   SkeletonText,
   SkeletonRow,
   SkeletonCard,
   SkeletonTable,
+  SkeletonList,
+  SkeletonForm,
 } from "./Skeleton";
 export { default as MinimalCard } from "./MinimalCard";
 export { default as Card } from "./Card";

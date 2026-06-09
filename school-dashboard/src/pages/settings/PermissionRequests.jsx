@@ -29,7 +29,7 @@ import { useAuth } from "../../context/AuthContext";
 import { usePermissions } from "../../context/PermissionContext";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
-import SkeletonTable from '../../components/skeletons/SkeletonTable';
+import { SkeletonTable } from '../../components/ui/Skeleton';
 
 
 import { formatShortDate, formatDateTime} from '../../utils/dateFormatter';

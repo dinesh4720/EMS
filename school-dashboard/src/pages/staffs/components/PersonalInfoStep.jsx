@@ -309,7 +309,7 @@ function PersonalInfoStep({
           <div key={contact._key} className="p-3 border border-border-token rounded-lg space-y-3 relative group hover:border-gray-300 dark:hover:border-zinc-600 transition-colors">
             {(formData.emergencyContacts || []).length > 1 && (
               <button
-                className="absolute top-2 right-2 text-gray-400 hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute top-2 right-2 text-fg-faint hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity"
                 onClick={() => removeEmergencyContact(index)}
               >
                 <X size={14} />

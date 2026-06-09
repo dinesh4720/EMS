@@ -18,6 +18,7 @@
 @import "./styles/academics.css";
 @import "./styles/auth.css";
 @import "./styles/styleguide.css";
+@import "./styles/ia.css";
 /* CSS-09: Component-level print utilities (page breaks, color-adjust, image/table handling) */
 @import "./styles/print.css";
 @variant dark (&:where(.dark, .dark *));
@@ -571,40 +572,45 @@ html.dark.scrollbar-visible * {
   transform-origin: var(--scale-origin, center);
 }
 
-/* Shimmer — preferred skeleton effect (more polished than animate-pulse).
- * Uses a solid base + a sweeping highlight band so the animation reads as
- * motion, not a faint hue change. Was nearly invisible when the stops
- * resolved to alpha-blended border tokens; now uses explicit OKLCH stops
- * that contrast against the parent surface in both light and dark mode. */
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+/* Shimmer — the single skeleton-loading effect.
+ * A solid base tint plus one slow, soft highlight band sweeping across. Tuned
+ * to read as CALM: a long 2.2s cycle, a low-contrast highlight, and a gentle
+ * wide band — so a page full of skeletons feels quiet, not like a field of
+ * flickering light. Linear timing keeps the sweep steady (no swoosh/pulse at
+ * the edges). Keep the contrast low here; brightening it is what made a screen
+ * full of these read as "glitched".
+ *
+ * NOTE the keyframes name is `skeleton-shimmer`, NOT `shimmer`. HeroUI registers
+ * its own `@keyframes shimmer` that does `transform: translate(200%)` (a sliding
+ * overlay). Sharing the bare name `shimmer` let HeroUI's slide win the global
+ * cascade — so every bone translated 200% sideways and clipped out of its
+ * container. That name collision was the original "glitched + overflowing" bug.
+ * A unique keyframes name keeps the two effects from ever colliding again. */
+@keyframes skeleton-shimmer {
+  0% { background-position: 150% 0; }
+  100% { background-position: -150% 0; }
 }
 
 .animate-shimmer {
   background-color: oklch(94% 0.004 80);
   background-image: linear-gradient(
     100deg,
-    transparent 0%,
-    transparent 35%,
-    oklch(99% 0 0 / 0.95) 50%,
-    transparent 65%,
-    transparent 100%
+    transparent 25%,
+    oklch(99% 0 0 / 0.45) 50%,
+    transparent 75%
   );
   background-size: 200% 100%;
   background-repeat: no-repeat;
-  animation: shimmer 1.4s ease-in-out infinite;
+  animation: skeleton-shimmer 2.2s linear infinite;
 }
 
 .dark .animate-shimmer {
   background-color: oklch(26% 0.008 280);
   background-image: linear-gradient(
     100deg,
-    transparent 0%,
-    transparent 35%,
-    oklch(40% 0.01 280 / 0.85) 50%,
-    transparent 65%,
-    transparent 100%
+    transparent 25%,
+    oklch(38% 0.01 280 / 0.5) 50%,
+    transparent 75%
   );
 }
 

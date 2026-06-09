@@ -26,7 +26,7 @@ import { announcementsApi } from '../../../../services/api';
 import toast from 'react-hot-toast';
 import { getDateLocale } from '../../../../i18n/index';
 import { useTranslation } from 'react-i18next';
-import SkeletonList from '../../../../components/skeletons/SkeletonList';
+import { SkeletonList } from '../../../../components/ui/Skeleton';
 import ConfirmDialog from '../../../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../../../hooks/useConfirmDialog';
 import logger from '../../../../utils/logger';

@@ -117,7 +117,7 @@ function RoleQualificationsStep({
         {(Array.isArray(formData.staffType) ? formData.staffType.includes("Teacher") : formData.staffType === "Teaching") && (
           <div className="space-y-3 pt-5 border-t border-divider">
             <SectionHeader icon={BookOpen} title={t('staff.form.teachingAssignments')} />
-            <div className="p-4 border border-gray-200 rounded-lg space-y-3">
+            <div className="p-4 border border-border-token rounded-lg space-y-3">
               <div className="flex justify-between items-center">
                 <div>
                   <span className="text-sm font-medium text-fg">{t('staff.form.isClassTeacher')}</span>
@@ -179,7 +179,7 @@ function RoleQualificationsStep({
 
         {(formData.professionalQualifications || []).map((qual, i) => (
           <div key={qual._id || `qual-${i}`} className="p-4 border border-border-token rounded-lg space-y-3 relative group hover:border-gray-300 dark:hover:border-zinc-600 transition-colors">
-            <button className="absolute top-3 right-3 text-gray-400 hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded-md" onClick={() => removeQualification(i)}>
+            <button className="absolute top-3 right-3 text-fg-faint hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-surface-hover rounded-md" onClick={() => removeQualification(i)}>
               <X size={14} />
             </button>
             <div className="grid grid-cols-12 gap-3 pr-8">
@@ -208,11 +208,11 @@ function RoleQualificationsStep({
               </div>
             </div>
             <div className="flex items-center gap-3 pt-2 border-t border-divider">
-              <button className="inline-flex items-center gap-1.5 text-xs font-medium text-fg-muted hover:text-gray-800 transition-colors px-2 py-1 rounded-md hover:bg-gray-100" onClick={() => document.getElementById(`qual-doc-${i}`).click()}>
+              <button className="inline-flex items-center gap-1.5 text-xs font-medium text-fg-muted hover:text-fg transition-colors px-2 py-1 rounded-md hover:bg-surface-hover" onClick={() => document.getElementById(`qual-doc-${i}`).click()}>
                 <Upload size={12} /> {t('staff.form.uploadCertificate')}
               </button>
               {qual.documents && qual.documents.length > 0 && (
-                <button className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-400 cursor-not-allowed px-2 py-1" disabled title={t('pages.comingSoon')}>
+                <button className="inline-flex items-center gap-1.5 text-xs font-medium text-fg-faint cursor-not-allowed px-2 py-1" disabled title={t('pages.comingSoon')}>
                   <FileScan size={12} /> Extract Info
                 </button>
               )}
@@ -231,7 +231,7 @@ function RoleQualificationsStep({
         ))}
 
         {(formData.professionalQualifications || []).length === 0 && (
-          <div className="text-center py-10 border-2 border-dashed border-border-token rounded-lg flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-gray-300 transition-colors" onClick={addQualification}>
+          <div className="text-center py-10 border-2 border-dashed border-border-token rounded-lg flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-border-strong transition-colors" onClick={addQualification}>
             <div className="w-10 h-10 rounded-full bg-surface-2 flex items-center justify-center text-fg-faint">
               <GraduationCap size={20} />
             </div>

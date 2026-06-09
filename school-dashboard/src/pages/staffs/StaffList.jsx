@@ -9,7 +9,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { Plus, MessageSquare, CheckCircle2, Users, Printer, Download } from "lucide-react";
 import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/common/Pagination";
-import SkeletonTable from "../../components/skeletons/SkeletonTable";
+import { SkeletonTable } from "../../components/ui/Skeleton";
 import { useApp } from "../../context/AppContext";
 import ToolbarSearch from "../../components/ui/ToolbarSearch";
 import BulkActionBar from "../../components/ui/BulkActionBar";
@@ -359,6 +359,33 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMobileViewport, selectedId, visible.length]);
 
+  // ============ Pagination ============
+  // Declared before the keyboard-nav section because moveSelection() reads
+  // `paginatedVisible` in its body and dependency array — referencing it after
+  // this point would hit the temporal dead zone and throw on every render.
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(visible.length / pageSize)),
+    [visible.length, pageSize]
+  );
+
+  const paginatedVisible = useMemo(
+    () => visible.slice((page - 1) * pageSize, page * pageSize),
+    [visible, page, pageSize]
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [q, filter, activeFiltersCount]);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+
   // ============ Keyboard nav (Step 3) — scoped to list focus ============
   const listRef = useRef(null);
   const rowRefs = useRef(new Map());
@@ -468,30 +495,6 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
   );
 
   const closeDetail = () => setSelectedId(null);
-
-  // ============ Pagination ============
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
-
-  const totalPages = useMemo(
-    () => Math.max(1, Math.ceil(visible.length / pageSize)),
-    [visible.length, pageSize]
-  );
-
-  const paginatedVisible = useMemo(
-    () => visible.slice((page - 1) * pageSize, page * pageSize),
-    [visible, page, pageSize]
-  );
-
-  useEffect(() => {
-    setPage(1);
-  }, [q, filter, activeFiltersCount]);
-
-  useEffect(() => {
-    if (page > totalPages) {
-      setPage(totalPages);
-    }
-  }, [page, totalPages]);
 
   // The detail pane in mobile mode is a slide-over Drawer
   const detailVisible = !!selectedStaff;
@@ -748,31 +751,31 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
         )}
         </div>
 
-      </div>
+        {/* Right detail pane — desktop only (second grid column) */}
+        {!isMobileViewport && (
+          <StaffDetailPane
+            staff={selectedStaff}
+            todayStatus={selectedStaff ? todayStatusOf(selectedStaff) : null}
+            attendancePct={selectedStaff?.attendancePct}
+            checkInTime={
+              selectedStaff
+                ? staffAttendance?.[selectedStaff._id || selectedStaff.id]?.[
+                    todayKey
+                  ]?.checkIn || null
+                : null
+            }
+            recentActivity={[]}
+            onClose={closeDetail}
+            onViewProfile={() =>
+              selectedStaff && handleViewProfile(selectedStaff)
+            }
+            onMarkAttendance={() =>
+              selectedStaff && handleMarkAttendanceFor(selectedStaff)
+            }
+          />
+        )}
 
-      {/* Right detail pane — desktop only inline; mobile renders below */}
-      {!isMobileViewport && (
-        <StaffDetailPane
-          staff={selectedStaff}
-          todayStatus={selectedStaff ? todayStatusOf(selectedStaff) : null}
-          attendancePct={selectedStaff?.attendancePct}
-          checkInTime={
-            selectedStaff
-              ? staffAttendance?.[selectedStaff._id || selectedStaff.id]?.[
-                  todayKey
-                ]?.checkIn || null
-              : null
-          }
-          recentActivity={[]}
-          onClose={closeDetail}
-          onViewProfile={() =>
-            selectedStaff && handleViewProfile(selectedStaff)
-          }
-          onMarkAttendance={() =>
-            selectedStaff && handleMarkAttendanceFor(selectedStaff)
-          }
-        />
-      )}
+      </div>
 
       {/* Mobile: slide-over drawer for detail */}
       {isMobileViewport && detailVisible && (

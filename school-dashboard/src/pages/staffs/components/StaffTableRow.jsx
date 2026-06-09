@@ -13,7 +13,7 @@ const STATUS_STYLES = {
     inactive:   "bg-danger-50 border-danger-200 text-danger-700",
     "on-leave": "bg-warning-50 border-warning-200 text-warning-700",
     suspended:  "bg-orange-50 border-orange-200 text-orange-700",
-    terminated: "bg-gray-50 border-gray-200 text-gray-700",
+    terminated: "bg-surface-2 border-border-token text-fg-muted",
 };
 
 const STATUS_MENU_ITEMS = [
