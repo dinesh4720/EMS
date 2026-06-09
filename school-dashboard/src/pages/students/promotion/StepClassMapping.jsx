@@ -139,7 +139,7 @@ export default function StepClassMapping({ onNext, onBack, wizardState, setWizar
       {mappings.length === 0 && (
         <Card shadow="sm" className="bg-warn-bg border-warn">
           <CardBody className="p-4 flex items-center gap-2">
-            <AlertTriangle size={16} className="text-warn" />
+            <AlertTriangle size={16} className="text-warn" aria-hidden />
             <p className="text-sm text-warn">
               No classes found for {wizardState.fromYear}. Make sure classes exist for the current academic year.
             </p>
@@ -165,7 +165,7 @@ export default function StepClassMapping({ onNext, onBack, wizardState, setWizar
                 {m.fromClassName}{m.fromSection ? ` (${m.fromSection})` : ''}
               </span>
               <span className="cmap-row__sub flex items-center gap-1">
-                <Users size={11} />
+                <Users size={11} aria-hidden />
                 {m.studentCount} students
                 {m.blockedCount > 0 && (
                   <span className="chip chip--danger" style={{ marginLeft: 4 }}>
@@ -175,12 +175,12 @@ export default function StepClassMapping({ onNext, onBack, wizardState, setWizar
               </span>
             </div>
 
-            <ArrowRight size={14} className="cmap-row__arrow" />
+            <ArrowRight size={14} className="cmap-row__arrow" aria-hidden />
 
             <div className="cmap-row__to">
               {m.graduate ? (
                 <div className="flex items-center gap-2">
-                  <GraduationCap size={14} className="text-accent" />
+                  <GraduationCap size={14} className="text-accent" aria-hidden />
                   <span className="text-sm font-medium" style={{ color: 'var(--accent)' }}>
                     Graduate / Alumni
                   </span>
@@ -212,7 +212,7 @@ export default function StepClassMapping({ onNext, onBack, wizardState, setWizar
               className={m.graduate ? 'bg-accent text-white' : ''}
               onPress={() => updateMapping(idx, 'graduate', !m.graduate)}
               isDisabled={!m.included}
-              startContent={<GraduationCap size={13} />}
+              startContent={<GraduationCap size={13} aria-hidden />}
             >
               {m.graduate ? 'Graduating' : 'Graduate'}
             </Button>

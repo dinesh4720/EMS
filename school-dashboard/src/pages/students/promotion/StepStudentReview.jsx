@@ -250,10 +250,10 @@ export default function StepStudentReview({ onNext, onBack, wizardState, setWiza
 
                     return (
                       <div key={sid} className={`sdec-row sdec-row--${decision}`}>
-                        {decision === 'promoted' && <ArrowUpCircle size={14} className="text-ok shrink-0" />}
-                        {decision === 'detained' && <Minus size={14} className="text-warn shrink-0" />}
-                        {decision === 'graduated' && <GraduationCap size={14} className="text-accent shrink-0" />}
-                        {decision === 'transferred' && <ArrowUpCircle size={14} className="text-info-token shrink-0" />}
+                        {decision === 'promoted' && <ArrowUpCircle size={14} className="text-ok shrink-0" aria-hidden />}
+                        {decision === 'detained' && <Minus size={14} className="text-warn shrink-0" aria-hidden />}
+                        {decision === 'graduated' && <GraduationCap size={14} className="text-accent shrink-0" aria-hidden />}
+                        {decision === 'transferred' && <ArrowUpCircle size={14} className="text-info-token shrink-0" aria-hidden />}
 
                         <div className="flex-1 min-w-0">
                           <p className="sdec-row__name truncate">{s.name}</p>

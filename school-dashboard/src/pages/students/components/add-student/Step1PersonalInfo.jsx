@@ -56,7 +56,7 @@ function Step1PersonalInfo({
             className="w-20 h-20 rounded-full border-2 border-border-token bg-surface-2 flex items-center justify-center cursor-pointer hover:border-primary-400 transition-colors"
             onClick={() => pictureInputRef.current?.click()}
           >
-            <User size={32} className="text-fg-faint" />
+            <User size={32} className="text-fg-faint" aria-hidden />
           </div>
         )}
         <div className="flex flex-col gap-1 text-left">

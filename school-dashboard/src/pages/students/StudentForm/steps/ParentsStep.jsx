@@ -118,7 +118,7 @@ function ParentCard({
         </span>
         {canRemove && (
           <Button size="sm" variant="light" color="danger" onPress={() => removeParent(index)}>
-            <X size={14} /> Remove
+            <X size={14} aria-hidden /> Remove
           </Button>
         )}
       </div>
@@ -222,7 +222,7 @@ function GuardiansSection({ guardians, formData, updateParent, removeParent, add
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium text-default-700">Guardian {idx + 1}</span>
               <Button size="sm" variant="light" color="danger" onPress={() => removeParent(index)}>
-                <X size={14} /> Remove
+                <X size={14} aria-hidden /> Remove
               </Button>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -277,7 +277,7 @@ function SiblingsSection({ siblings, updateSibling, addSibling, removeSibling, c
       </div>
 
       {siblings.length === 0 && (
-        <p className="text-xs text-default-400">No siblings added yet. Use the button below to add siblings enrolled in this school.</p>
+        <p className="text-xs text-default-600">No siblings added yet. Use the button below to add siblings enrolled in this school.</p>
       )}
 
       {siblings.map((sibling, idx) => (
@@ -285,7 +285,7 @@ function SiblingsSection({ siblings, updateSibling, addSibling, removeSibling, c
           <div className="flex justify-between items-center">
             <span className="text-sm font-medium text-default-700">Sibling {idx + 1}</span>
             <Button size="sm" variant="light" color="danger" onPress={() => removeSibling(idx)}>
-              <X size={14} /> Remove
+              <X size={14} aria-hidden /> Remove
             </Button>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -360,14 +360,14 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
       <div className="space-y-3 pt-3 border-t border-dashed border-default-200">
         <div className="flex justify-between items-center">
           <label className="text-xs font-semibold text-default-700">Allergies</label>
-          <span className="text-xs text-default-400">(Optional)</span>
+          <span className="text-xs text-default-600">(Optional)</span>
         </div>
         {(formData.healthInfo?.allergies || []).map((allergy, idx) => (
           <div key={`allergy-${idx}`} className="p-3 bg-default-50 rounded-lg border border-default-200 space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-xs font-medium text-default-600">Allergy {idx + 1}</span>
               <Button size="sm" variant="light" color="danger" onPress={() => removeHealthInfoItem("allergies", idx)}>
-                <X size={14} /> Remove
+                <X size={14} aria-hidden /> Remove
               </Button>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -445,14 +445,14 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
       <div className="space-y-3 pt-3 border-t border-dashed border-default-200">
         <div className="flex justify-between items-center">
           <label className="text-xs font-semibold text-default-700">Medications</label>
-          <span className="text-xs text-default-400">(Optional)</span>
+          <span className="text-xs text-default-600">(Optional)</span>
         </div>
         {(formData.healthInfo?.medications || []).map((med, idx) => (
           <div key={`med-${idx}`} className="p-3 bg-default-50 rounded-lg border border-default-200 space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-xs font-medium text-default-600">Medication {idx + 1}</span>
               <Button size="sm" variant="light" color="danger" onPress={() => removeHealthInfoItem("medications", idx)}>
-                <X size={14} /> Remove
+                <X size={14} aria-hidden /> Remove
               </Button>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -542,14 +542,14 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
       <div className="space-y-3 pt-3 border-t border-dashed border-default-200">
         <div className="flex justify-between items-center">
           <label className="text-xs font-semibold text-default-700">Health Emergency Contacts</label>
-          <span className="text-xs text-default-400">(Optional)</span>
+          <span className="text-xs text-default-600">(Optional)</span>
         </div>
         {(formData.healthInfo?.emergencyContacts || []).map((contact, idx) => (
           <div key={`he-contact-${idx}`} className="p-3 bg-default-50 rounded-lg border border-default-200 space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-xs font-medium text-default-600">Emergency Contact {idx + 1}</span>
               <Button size="sm" variant="light" color="danger" onPress={() => removeHealthInfoItem("emergencyContacts", idx)}>
-                <X size={14} /> Remove
+                <X size={14} aria-hidden /> Remove
               </Button>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -655,7 +655,7 @@ function TransportSection({ formData, updateField }) {
               formData.transportRequired ? "bg-primary text-white" : "bg-default-100 text-default-400"
             }`}
           >
-            <Users size={20} />
+            <Users size={20} aria-hidden />
           </div>
           <div>
             <span className={`text-sm font-medium ${formData.transportRequired ? "text-primary-700 dark:text-primary-300" : "text-default-600"}`}>
@@ -675,7 +675,7 @@ function TransportSection({ formData, updateField }) {
               formData.hostelRequired ? "bg-primary text-white" : "bg-default-100 text-default-400"
             }`}
           >
-            <Users size={20} />
+            <Users size={20} aria-hidden />
           </div>
           <div>
             <span className={`text-sm font-medium ${formData.hostelRequired ? "text-primary-700 dark:text-primary-300" : "text-default-600"}`}>

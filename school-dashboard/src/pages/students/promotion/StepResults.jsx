@@ -24,9 +24,9 @@ export default function StepResults({ wizardState, onReset, onGoToHistory }) {
         <CardBody className="p-4">
           <div className="flex items-start gap-3">
             {hasErrors ? (
-              <XCircle size={22} className="text-warn mt-0.5" />
+              <XCircle size={22} className="text-warn mt-0.5" aria-hidden />
             ) : (
-              <CheckCircle size={22} className="text-ok mt-0.5" />
+              <CheckCircle size={22} className="text-ok mt-0.5" aria-hidden />
             )}
             <div>
               <p className="text-base font-semibold text-fg">
@@ -89,19 +89,19 @@ export default function StepResults({ wizardState, onReset, onGoToHistory }) {
                   <div className="flex gap-1.5 ml-auto">
                     {cm.promotedCount > 0 && (
                       <span className="chip chip--ok mono tnum flex items-center gap-1">
-                        <ArrowUpCircle size={10} />
+                        <ArrowUpCircle size={10} aria-hidden />
                         {cm.promotedCount}
                       </span>
                     )}
                     {cm.detainedCount > 0 && (
                       <span className="chip chip--warn mono tnum flex items-center gap-1">
-                        <Minus size={10} />
+                        <Minus size={10} aria-hidden />
                         {cm.detainedCount}
                       </span>
                     )}
                     {cm.graduatedCount > 0 && (
                       <span className="chip chip--accent mono tnum flex items-center gap-1">
-                        <GraduationCap size={10} />
+                        <GraduationCap size={10} aria-hidden />
                         {cm.graduatedCount}
                       </span>
                     )}
@@ -136,7 +136,7 @@ export default function StepResults({ wizardState, onReset, onGoToHistory }) {
         <div style={{ flex: 1 }} />
         <Button
           variant="flat"
-          startContent={<RotateCcw size={14} />}
+          startContent={<RotateCcw size={14} aria-hidden />}
           onPress={onGoToHistory}
         >
           View history & rollback

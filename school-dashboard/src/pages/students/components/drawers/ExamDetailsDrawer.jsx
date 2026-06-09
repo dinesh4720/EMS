@@ -25,7 +25,7 @@ export default function ExamDetailsDrawer({ isOpen, onOpenChange, selectedExam, 
           <>
             <DrawerHeader className="border-b border-default-100">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-xl text-primary"><FileText size={20} /></div>
+                <div className="p-2 bg-primary/10 rounded-xl text-primary"><FileText size={20} aria-hidden /></div>
                 <div>
                   <h3 className="text-lg font-semibold">{selectedExam?.name || t('students.profile.overview.examDetails', 'Exam Details')}</h3>
                   <p className="text-xs text-default-500">{selectedExam?.date}</p>
@@ -74,7 +74,7 @@ export default function ExamDetailsDrawer({ isOpen, onOpenChange, selectedExam, 
                   </div>
                 ) : (
                   <div className="text-center py-8 text-default-400">
-                    <BookOpen size={32} className="mx-auto mb-2 opacity-50" />
+                    <BookOpen size={32} className="mx-auto mb-2 opacity-50" aria-hidden />
                     <p className="text-sm">{t('students.profile.overview.noSubjectResults', 'No subject results available')}</p>
                   </div>
                 )}
@@ -82,7 +82,7 @@ export default function ExamDetailsDrawer({ isOpen, onOpenChange, selectedExam, 
             </DrawerBody>
             <DrawerFooter className="border-t border-default-100">
               <Button variant="light" onPress={onClose}>{t('common.close', 'Close')}</Button>
-              <Button color="primary" startContent={<Download size={16} />}>{t('students.profile.overview.downloadReport', 'Download Report')}</Button>
+              <Button color="primary" startContent={<Download size={16} aria-hidden />}>{t('students.profile.overview.downloadReport', 'Download Report')}</Button>
             </DrawerFooter>
           </>
         )}

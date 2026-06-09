@@ -127,6 +127,7 @@ export function StudentCsvUploadModal({
                         type="file"
                         accept=".csv"
                         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0, cursor: "pointer" }}
+                        aria-label="Choose a CSV file to upload"
                         onChange={(e) => handleCsvFileSelect(e.target.files[0])}
                     />
                     <div className="col" style={{ gap: 10, alignItems: "center" }}>
@@ -140,7 +141,7 @@ export function StudentCsvUploadModal({
                                 color: csvFile ? "white" : "var(--fg-faint)",
                             }}
                         >
-                            {csvFile ? <Check size={22} /> : <Upload size={22} />}
+                            {csvFile ? <Check size={22} aria-hidden /> : <Upload size={22} aria-hidden />}
                         </span>
                         {csvFile ? (
                             <>
@@ -375,6 +376,7 @@ export function StudentCsvPreviewModal({
                             </span>
                         </div>
                         <Progress
+                            aria-label="Import progress"
                             value={(importProgress.current / importProgress.total) * 100}
                             color="primary"
                             size="sm"
@@ -423,7 +425,7 @@ export function StudentCsvPreviewModal({
                                                     color: hasInvalid ? "var(--danger)" : classData.duplicateCount > 0 ? "var(--warn)" : "var(--ok)",
                                                 }}
                                             >
-                                                <GraduationCap size={14} />
+                                                <GraduationCap size={14} aria-hidden />
                                             </span>
                                             <div className="col" style={{ gap: 1 }}>
                                                 <p style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>{classKey}</p>
@@ -437,7 +439,7 @@ export function StudentCsvPreviewModal({
                                             </div>
                                         </div>
                                     }
-                                    indicator={<ChevronRight size={16} className="text-default-400 transition-transform duration-200" />}
+                                    indicator={<ChevronRight size={16} className="text-default-400 transition-transform duration-200" aria-hidden />}
                                 >
                                     <div className="col gap-2" style={{ paddingTop: 4, paddingBottom: 4 }}>
                                         {classData.students.map((student, idx) => (

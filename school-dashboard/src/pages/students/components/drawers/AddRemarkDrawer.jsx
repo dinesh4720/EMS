@@ -91,7 +91,7 @@ export default function AddRemarkDrawer({
             <DrawerHeader className="border-b border-default-100">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-50 rounded-xl">
-                  <MessageSquare size={20} className="text-accent" />
+                  <MessageSquare size={20} className="text-accent" aria-hidden />
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold">{t('students.profile.remarks.drawerTitle', 'Add Remark')}</h3>
@@ -206,7 +206,7 @@ export default function AddRemarkDrawer({
                       {remarkForm.customType || remarkForm.type || t('students.profile.remarks.noType', 'No Type')}
                     </Chip>
                     {remarkForm.sendToParent && (
-                      <Chip size="sm" variant="flat" color="success" startContent={<Mail size={12} />}>
+                      <Chip size="sm" variant="flat" color="success" startContent={<Mail size={12} aria-hidden />}>
                         {t('students.profile.remarks.willSend', 'Will Send')}
                       </Chip>
                     )}
@@ -227,7 +227,7 @@ export default function AddRemarkDrawer({
               <Button
                 color="primary"
                 onPress={handleSaveRemark}
-                startContent={<Plus size={16} />}
+                startContent={<Plus size={16} aria-hidden />}
                 isDisabled={!remarkForm.title.trim() || !remarkForm.description.trim() || (!remarkForm.type && !remarkForm.customType.trim()) || isSubmitting}
                 isLoading={isSubmitting}
               >

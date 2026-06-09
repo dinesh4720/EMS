@@ -122,9 +122,9 @@ function DocumentUploadField({ label, file, onUpload, onRemove, inputRef, accept
       >
         <div className="flex items-center gap-3 min-w-0 flex-1">
           {file ? (
-            <CheckCircle size={20} className="text-success flex-shrink-0" />
+            <CheckCircle size={20} className="text-success flex-shrink-0" aria-hidden />
           ) : (
-            <FileText size={20} className="text-default-400 flex-shrink-0" />
+            <FileText size={20} className="text-default-400 flex-shrink-0" aria-hidden />
           )}
           <div className="min-w-0 flex-1">
             {isProcessing ? (
@@ -136,7 +136,7 @@ function DocumentUploadField({ label, file, onUpload, onRemove, inputRef, accept
               <div className="min-w-0">
                 <span className="text-sm text-default-700 truncate block">{file.name || label}</span>
                 {file.size && (
-                  <span className="text-xs text-default-400">{formatFileSize(file.size)}</span>
+                  <span className="text-xs text-default-600">{formatFileSize(file.size)}</span>
                 )}
               </div>
             ) : (
@@ -155,10 +155,10 @@ function DocumentUploadField({ label, file, onUpload, onRemove, inputRef, accept
               onRemove();
             }}
           >
-            <X size={14} />
+            <X size={14} aria-hidden />
           </Button>
         ) : (
-          <Upload size={16} className="text-default-400 flex-shrink-0" />
+          <Upload size={16} className="text-default-400 flex-shrink-0" aria-hidden />
         )}
       </div>
       <input ref={inputRef} type="file" accept={accept} className="hidden" onChange={handleFileChange} />
@@ -193,7 +193,7 @@ function MultiDocumentUploadField({ label, description, files, onUpload, onRemov
           className="border border-solid border-default-300 rounded-lg p-4 flex items-center justify-center gap-2 cursor-pointer hover:bg-default-50 transition-colors"
           onClick={() => inputRef.current?.click()}
         >
-          <Upload size={14} className="text-default-500" />
+          <Upload size={14} className="text-default-500" aria-hidden />
           <span className="text-sm text-default-600">{t('pages.uploadAdditionalDocuments')}</span>
         </div>
       )}

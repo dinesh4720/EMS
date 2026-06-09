@@ -51,6 +51,8 @@ export default function AttendanceHeatmap({ monthAttendance }) {
                 v === 1 ? "ok" : v === 2 ? "absent" : "off"
               }`}
               title={CellTitle(v, i)}
+              role="img"
+              aria-label={CellTitle(v, i)}
             />
           ))}
         </div>

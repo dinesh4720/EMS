@@ -89,7 +89,7 @@ const StudentsFiltersBar = forwardRef(function StudentsFiltersBar({
                                 setSortOpen(false);
                             }}
                             startContent={sortDescriptor.column === "name" && sortDescriptor.direction === "ascending"
-                                ? <Check size={14} className="text-teal-600" /> : <span className="w-3.5" />}
+                                ? <Check size={14} className="text-teal-600" aria-hidden /> : <span className="w-3.5" />}
                         >{t("pages.nameAZ")}</DropdownItem>
                         <DropdownItem
                             key="sort-name-desc"
@@ -98,7 +98,7 @@ const StudentsFiltersBar = forwardRef(function StudentsFiltersBar({
                                 setSortOpen(false);
                             }}
                             startContent={sortDescriptor.column === "name" && sortDescriptor.direction === "descending"
-                                ? <Check size={14} className="text-teal-600" /> : <span className="w-3.5" />}
+                                ? <Check size={14} className="text-teal-600" aria-hidden /> : <span className="w-3.5" />}
                         >{t("pages.nameZA")}</DropdownItem>
                         <DropdownItem
                             key="sort-class-asc"
@@ -107,7 +107,7 @@ const StudentsFiltersBar = forwardRef(function StudentsFiltersBar({
                                 setSortOpen(false);
                             }}
                             startContent={sortDescriptor.column === "class" && sortDescriptor.direction === "ascending"
-                                ? <Check size={14} className="text-teal-600" /> : <span className="w-3.5" />}
+                                ? <Check size={14} className="text-teal-600" aria-hidden /> : <span className="w-3.5" />}
                         >{t("pages.classAscending")}</DropdownItem>
                         <DropdownItem
                             key="sort-class-desc"
@@ -116,7 +116,7 @@ const StudentsFiltersBar = forwardRef(function StudentsFiltersBar({
                                 setSortOpen(false);
                             }}
                             startContent={sortDescriptor.column === "class" && sortDescriptor.direction === "descending"
-                                ? <Check size={14} className="text-teal-600" /> : <span className="w-3.5" />}
+                                ? <Check size={14} className="text-teal-600" aria-hidden /> : <span className="w-3.5" />}
                         >{t("pages.classDescending")}</DropdownItem>
                     </DropdownSection>
                 </DropdownMenu>
@@ -166,19 +166,19 @@ const StudentsFiltersBar = forwardRef(function StudentsFiltersBar({
                     <DropdownSection title="Actions">
                         <DropdownItem
                             key="tc"
-                            startContent={<FileText size={14} />}
+                            startContent={<FileText size={14} aria-hidden />}
                             onPress={() => { onNavigateToTC(); setMoreDropdownOpen(false); }}
                         >Transfer Certificate</DropdownItem>
                     </DropdownSection>
                     <DropdownSection title="Import / Export">
                         <DropdownItem
                             key="upload"
-                            startContent={<FileSpreadsheet size={14} />}
+                            startContent={<FileSpreadsheet size={14} aria-hidden />}
                             onPress={() => { setCsvFile(null); onCsvUploadOpen(); setMoreDropdownOpen(false); }}
                         >Bulk Upload CSV</DropdownItem>
                         <DropdownItem
                             key="download"
-                            startContent={<Download size={14} />}
+                            startContent={<Download size={14} aria-hidden />}
                             onPress={() => { downloadStudentList(); setMoreDropdownOpen(false); }}
                         >Download List CSV</DropdownItem>
                     </DropdownSection>
@@ -301,33 +301,33 @@ const StudentsFiltersBar = forwardRef(function StudentsFiltersBar({
                         className="max-h-[400px] overflow-y-auto"
                     >
                         <DropdownSection title={t("pages.academicActions")}>
-                            <DropdownItem key="promote" startContent={<ArrowUpCircle size={14} />} onPress={() => handleBulkAction("promote")}>
+                            <DropdownItem key="promote" startContent={<ArrowUpCircle size={14} aria-hidden />} onPress={() => handleBulkAction("promote")}>
                                 Promote / Mark Passed Out
                             </DropdownItem>
-                            <DropdownItem key="tc" startContent={<FileText size={14} />} onPress={() => handleBulkAction("tc")}>
+                            <DropdownItem key="tc" startContent={<FileText size={14} aria-hidden />} onPress={() => handleBulkAction("tc")}>
                                 Generate TC
                             </DropdownItem>
                         </DropdownSection>
                         <DropdownSection title={t("pages.statusUpdates")}>
-                            <DropdownItem key="deactivate" startContent={<UserX size={14} />} onPress={() => handleBulkAction("deactivate")}>
+                            <DropdownItem key="deactivate" startContent={<UserX size={14} aria-hidden />} onPress={() => handleBulkAction("deactivate")}>
                                 Mark Inactive
                             </DropdownItem>
-                            <DropdownItem key="alumni" startContent={<GraduationCap size={14} />} onPress={() => handleBulkAction("alumni")}>
+                            <DropdownItem key="alumni" startContent={<GraduationCap size={14} aria-hidden />} onPress={() => handleBulkAction("alumni")}>
                                 Mark as Alumni
                             </DropdownItem>
                         </DropdownSection>
                         <DropdownSection title={t("pages.communication1")}>
-                            <DropdownItem key="message" startContent={<MessageSquare size={14} />} onPress={() => handleBulkAction("message")}>
+                            <DropdownItem key="message" startContent={<MessageSquare size={14} aria-hidden />} onPress={() => handleBulkAction("message")}>
                                 Send Message to Parent
                             </DropdownItem>
                         </DropdownSection>
                         <DropdownSection title={t("pages.export1")}>
-                            <DropdownItem key="download-selected" startContent={<Download size={14} />} onPress={downloadSelectedStudents}>
+                            <DropdownItem key="download-selected" startContent={<Download size={14} aria-hidden />} onPress={downloadSelectedStudents}>
                                 Download Selected as CSV
                             </DropdownItem>
                         </DropdownSection>
                         <DropdownSection title="Danger Zone">
-                            <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 size={14} />} onPress={() => handleBulkAction("delete")}>
+                            <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 size={14} aria-hidden />} onPress={() => handleBulkAction("delete")}>
                                 Delete Selected
                             </DropdownItem>
                         </DropdownSection>
