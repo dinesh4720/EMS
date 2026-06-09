@@ -478,7 +478,7 @@
     "locked": "లాక్ చేయబడింది ({{seconds}}సె)",
     "inviteOnlyNote": "కొత్త పాఠశాలలు ఆహ్వానం ద్వారా మాత్రమే చేర్చబడతాయి. మీ సంస్థకు పంపిన సైనప్ లింక్ ఉపయోగించండి.",
     "privacyPolicy": "గోప్యతా విధానం",
-    "copyright": "© {{year}} SchoolSync",
+    "copyright": "© {{year}} EMS",
     "lockoutError": "చాలా విఫల ప్రయత్నాలు. {{mins}} ని {{secs}} సె లో మళ్ళీ ప్రయత్నించండి.",
     "lockedFor": "చాలా విఫల ప్రయత్నాలు. ఖాతా {{mins}} నిమిషాలు లాక్ చేయబడింది.",
     "loginFailedAttempts": "{{message}}. {{remaining}} ప్రయత్న{{plural}} మిగిలి ఉన్నాయి.",
@@ -509,7 +509,7 @@
     "subtitle": "కొత్త అడ్మిన్ ఖాతాలు ధృవీకరించబడిన ఆహ్వాన లింక్‌ల నుండి మాత్రమే సృష్టించబడతాయి.",
     "validatingInvite": "ఆహ్వాన లింక్ ధృవీకరిస్తోంది...",
     "inviteRequired": "ఆహ్వానం అవసరం",
-    "inviteHelp": "తాజా ఆహ్వాన URL కోసం మీ SchoolSync ఆన్‌బోర్డింగ్ సంప్రదింపును అడగండి.",
+    "inviteHelp": "తాజా ఆహ్వాన URL కోసం మీ EMS ఆన్‌బోర్డింగ్ సంప్రదింపును అడగండి.",
     "backToLogin": "లాగిన్‌కు తిరిగి వెళ్ళు",
     "inviteVerified": "ఆహ్వానం ధృవీకరించబడింది",
     "fullNameLabel": "పూర్తి పేరు",
@@ -533,7 +533,7 @@
     "createAccount": "అడ్మిన్ ఖాతా సృష్టించు",
     "alreadyHaveAccount": "ఇప్పటికే ఖాతా ఉందా?",
     "signIn": "సైన్ ఇన్",
-    "copyright": "© {{year}} SchoolSync",
+    "copyright": "© {{year}} EMS",
     "errors": {
       "inviteRequired": "ఖాతా సృష్టించడానికి చెల్లుబాటయ్యే ఆహ్వాన లింక్ అవసరం."
     }
@@ -1403,7 +1403,7 @@
     "librarians": "గ్రంథపాలకులు",
     "labAssistants": "ల్యాబ్ అసిస్టెంట్లు",
     "topDepartments": "ఉన్నత విభాగాలు",
-    "schoolSync1": "SchoolSync",
+    "schoolSync1": "EMS",
     "goodAfternoonAdmin": "శుభ మధ్యాహ్నం, అడ్మిన్",
     "whatSOn": "ఏముంది",
     "attach": "జత చేయి",

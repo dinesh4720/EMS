@@ -478,7 +478,7 @@
     "locked": "लॉक ({{seconds}}s)",
     "inviteOnlyNote": "नए विद्यालय केवल आमंत्रण द्वारा जुड़ते हैं। अपने संगठन को भेजे गए साइनअप लिंक का उपयोग करें।",
     "privacyPolicy": "गोपनीयता नीति",
-    "copyright": "© {{year}} SchoolSync",
+    "copyright": "© {{year}} EMS",
     "lockoutError": "बहुत अधिक विफल प्रयास। {{mins}} मिनट {{secs}} सेकंड बाद पुनः प्रयास करें।",
     "lockedFor": "बहुत अधिक विफल प्रयास। खाता {{mins}} मिनट के लिए लॉक है।",
     "loginFailedAttempts": "{{message}}. {{remaining}} प्रयास शेष।",
@@ -509,7 +509,7 @@
     "subtitle": "नए एडमिन खाते केवल सत्यापित आमंत्रण लिंक से बनाए जाते हैं।",
     "validatingInvite": "आमंत्रण लिंक सत्यापित हो रहा है...",
     "inviteRequired": "आमंत्रण आवश्यक",
-    "inviteHelp": "नए आमंत्रण URL के लिए अपने SchoolSync ऑनबोर्डिंग संपर्क से पूछें।",
+    "inviteHelp": "नए आमंत्रण URL के लिए अपने EMS ऑनबोर्डिंग संपर्क से पूछें।",
     "backToLogin": "लॉगिन पर वापस जाएं",
     "inviteVerified": "आमंत्रण सत्यापित",
     "fullNameLabel": "पूरा नाम",
@@ -533,7 +533,7 @@
     "createAccount": "एडमिन खाता बनाएं",
     "alreadyHaveAccount": "पहले से खाता है?",
     "signIn": "साइन इन करें",
-    "copyright": "© {{year}} SchoolSync",
+    "copyright": "© {{year}} EMS",
     "errors": {
       "inviteRequired": "खाता बनाने के लिए एक वैध आमंत्रण लिंक आवश्यक है।"
     }
@@ -1403,7 +1403,7 @@
     "librarians": "पुस्तकाध्यक्ष",
     "labAssistants": "प्रयोगशाला सहायक",
     "topDepartments": "शीर्ष विभाग",
-    "schoolSync1": "SchoolSync",
+    "schoolSync1": "EMS",
     "goodAfternoonAdmin": "शुभ दोपहर, एडमिन",
     "whatSOn": "क्या है",
     "attach": "संलग्न करें",
