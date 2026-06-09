@@ -1,6 +1,5 @@
 const { expo } = require('./app.json');
 
-const LOCAL_API_URL = 'http://localhost:3001';
 const VALID_ENVS = new Set(['development', 'staging', 'production']);
 
 const getValue = (value) => (
@@ -22,7 +21,7 @@ const resolveUrl = ({ genericKey, fallback }) => {
 
 const apiBaseUrl = resolveUrl({
   genericKey: 'EXPO_PUBLIC_API_BASE_URL',
-  fallback: appEnv === 'development' ? LOCAL_API_URL : undefined,
+  fallback: undefined,
 });
 
 if (!apiBaseUrl) {
