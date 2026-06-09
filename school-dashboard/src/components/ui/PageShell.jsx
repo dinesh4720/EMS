@@ -174,7 +174,7 @@ const PageShell = memo(function PageShell({
           {children}
         </div>
         {aside && (
-          <aside className="w-72 shrink-0 border-l border-divider overflow-auto">
+          <aside className="w-72 shrink-0 border-l border-divider overflow-auto hidden lg:block">
             {aside}
           </aside>
         )}

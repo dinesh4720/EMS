@@ -309,7 +309,8 @@ export default function Subjects() {
           />
         </div>
       ) : (
-        <table className="table" aria-label={t('aria.tables.subjects')}>
+        <div className="overflow-x-auto">
+          <table className="table" aria-label={t('aria.tables.subjects')}>
           <thead>
             <tr>
               <th scope="col">{t('pages.sUBJECT')}</th>
@@ -389,7 +390,8 @@ export default function Subjects() {
               </tr>
             ))}
           </tbody>
-        </table>
+          </table>
+        </div>
       )}
 
       {/* Add Subject Modal */}

@@ -34,7 +34,7 @@ export default function FeeHeadsListView({
   }
 
   return (
-    <div className="rounded-lg border border-divider overflow-hidden bg-surface">
+    <div className="rounded-lg border border-divider overflow-hidden overflow-x-auto bg-surface">
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-surface-2 border-b border-divider">
