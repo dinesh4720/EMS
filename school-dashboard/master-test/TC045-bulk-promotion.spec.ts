@@ -126,6 +126,75 @@ async function installPromotionMockApi(
       return json({ data: state.promotionRecords, total: state.promotionRecords.length });
     }
 
+    // GET /api/promotions/check-year
+    if (path === '/api/promotions/check-year' && method === 'GET') {
+      return json({ exists: true, classCount: state.classes.length });
+    }
+
+    // POST /api/promotions/new-academic-year
+    if (path === '/api/promotions/new-academic-year' && method === 'POST') {
+      return json({ classesCreated: state.classes.length });
+    }
+
+    // GET /api/promotions/preview-all
+    if (path === '/api/promotions/preview-all' && method === 'GET') {
+      const classStudents = state.students.filter((s) => s.classId === CLASS_10A_ID);
+      return json({
+        classMappings: [
+          {
+            fromClassId: CLASS_10A_ID,
+            fromClassName: '10',
+            fromSection: 'A',
+            studentCount: classStudents.length,
+            eligibleCount: classStudents.length,
+            blockedCount: 0,
+            isGraduating: false,
+            suggestedTargetClassId: CLASS_11A_ID,
+            suggestedTargetClassName: '11-A',
+            targetClassExists: true,
+            targetCapacity: 40,
+          },
+        ],
+        targetClassOptions: [
+          { _id: CLASS_11A_ID, label: '11-A' },
+        ],
+      });
+    }
+
+    // POST /api/promotions/execute-all
+    if (path === '/api/promotions/execute-all' && method === 'POST') {
+      const payload = JSON.parse(request.postData() || '{}');
+      const totalStudents = (payload.classMappings || []).reduce(
+        (sum: number, cm: { studentDecisions?: unknown[] }) => sum + (cm.studentDecisions?.length || 0),
+        0,
+      );
+      state.promotionCounter += 1;
+      const recordId = `promo-record-${state.promotionCounter}`;
+      const summary = { promoted: totalStudents, detained: 0, transferred: 0, graduated: 0, errors: 0 };
+      state.promotionRecords.push({
+        _id: recordId,
+        summary,
+        status: 'completed',
+        fromAcademicYear: payload.fromAcademicYear,
+        toAcademicYear: payload.toAcademicYear,
+        executedAt: new Date().toISOString(),
+        executedBy: state.user.name,
+      });
+      return json({
+        summary: { totalStudents, promoted: totalStudents, detained: 0, graduated: 0, errors: 0 },
+        classMappings: (payload.classMappings || []).map((cm: { fromClassId: string; toClassId?: string }) => ({
+          fromClassId: cm.fromClassId,
+          fromClassName: '10',
+          toClassName: '11-A',
+          studentCount: totalStudents,
+          promotedCount: totalStudents,
+          detainedCount: 0,
+          graduatedCount: 0,
+        })),
+        errors: [],
+      });
+    }
+
     // GET /api/promotions/records/:id
     const recordMatch = path.match(/^\/api\/promotions\/records\/([^/]+)$/);
     if (recordMatch && method === 'GET') {
@@ -206,29 +275,15 @@ test.describe('TC045: Bulk Promotion Wizard', () => {
     await page.goto('/students/promotion');
     await page.waitForLoadState('networkidle');
 
-    // Look for from-year selector
-    const fromSelect = page.locator(
-      'select[name="fromYear"], [data-testid="from-year"], select:has(option[value="2025-2026"])',
-    ).first();
-    const hasFromSelect = await fromSelect.isVisible({ timeout: 5000 }).catch(() => false);
-    if (hasFromSelect) {
-      await fromSelect.selectOption('2025-2026');
-    }
-
-    // Look for to-year selector
-    const toSelect = page.locator(
-      'select[name="toYear"], [data-testid="to-year"], select:has(option[value="2026-2027"])',
-    ).first();
-    const hasToSelect = await toSelect.isVisible({ timeout: 5000 }).catch(() => false);
-    if (hasToSelect) {
-      await toSelect.selectOption('2026-2027');
-    }
+    // Wait for the promotion wizard to be ready (target year check resolved)
+    await page.getByText(/classes ready/i).waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
 
     // Click Next / Continue
     const nextBtn = page.getByRole('button', { name: /next|continue/i }).first();
-    const hasNext = await nextBtn.isVisible({ timeout: 3000 }).catch(() => false);
+    const hasNext = await nextBtn.isVisible({ timeout: 5000 }).catch(() => false);
     if (hasNext) {
       await nextBtn.click();
+      await page.waitForTimeout(500);
     }
 
     // Verify we moved to Step 2: Class Mapping
@@ -240,7 +295,8 @@ test.describe('TC045: Bulk Promotion Wizard', () => {
     await page.goto('/students/promotion');
     await page.waitForLoadState('networkidle');
 
-    // Navigate past Step 1
+    // Wait for wizard ready and navigate past Step 1
+    await page.getByText(/classes ready/i).waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
     const nextBtn = page.getByRole('button', { name: /next|continue/i }).first();
     const hasNext = await nextBtn.isVisible({ timeout: 5000 }).catch(() => false);
     if (hasNext) {
@@ -248,30 +304,12 @@ test.describe('TC045: Bulk Promotion Wizard', () => {
       await page.waitForTimeout(500);
     }
 
-    // Verify class mapping section
+    // Verify class mapping section rendered
+    await expect(page.getByText(/Class Mappings/i).first()).toBeVisible({ timeout: 10000 });
+
+    // Verify the 10-A class mapping row is visible
     const bodyText = await page.textContent('body');
     expect(bodyText?.toLowerCase()).toMatch(/class mapping|map|10/i);
-
-    // Look for Add Mapping button
-    const addMappingBtn = page.getByRole('button', { name: /add mapping/i });
-    const hasAddMapping = await addMappingBtn.isVisible({ timeout: 3000 }).catch(() => false);
-    if (hasAddMapping) {
-      await addMappingBtn.click();
-    }
-
-    // Select source class 10-A
-    const sourceSelect = page.locator('select').first();
-    const hasSource = await sourceSelect.isVisible({ timeout: 3000 }).catch(() => false);
-    if (hasSource) {
-      await sourceSelect.selectOption(CLASS_10A_ID);
-    }
-
-    // Select target class 11-A
-    const targetSelect = page.locator('select').nth(1);
-    const hasTarget = await targetSelect.isVisible({ timeout: 3000 }).catch(() => false);
-    if (hasTarget) {
-      await targetSelect.selectOption(CLASS_11A_ID);
-    }
   });
 
   test('4) Step 3: verify 8 students listed with eligibility status', async ({ page }) => {
@@ -357,6 +395,9 @@ test.describe('TC045: Bulk Promotion Wizard', () => {
   test('6) Step 5: results summary after executing promotion', async ({ page }) => {
     await page.goto('/students/promotion');
     await page.waitForLoadState('networkidle');
+
+    // Wait for the promotion page to fully load
+    await expect(page.getByRole('heading', { name: 'Year-End Promotion' })).toBeVisible({ timeout: 15000 });
 
     const bodyText = await page.textContent('body');
     expect(bodyText?.toLowerCase()).toMatch(/promotion|promote/i);
