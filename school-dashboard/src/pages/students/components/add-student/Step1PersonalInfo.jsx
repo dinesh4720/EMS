@@ -1,4 +1,4 @@
-import { Input, Select, SelectItem, Checkbox, Textarea, Avatar, RadioGroup, Radio } from "@heroui/react";
+import { Input, Select, RadioGroup, Checkbox, Textarea, Avatar } from "../../../../components/ui";
 import { Upload, X, User, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { parse, isValid } from "date-fns";
@@ -47,9 +47,7 @@ function Step1PersonalInfo({
           <Avatar
             src={picturePreviewUrl}
             className="w-20 h-20 text-3xl"
-            isBordered
-            radius="full"
-            color="primary"
+            shape="circle"
           />
         ) : (
           <div
@@ -92,16 +90,11 @@ function Step1PersonalInfo({
           <div ref={fullNameRef}>
             <Input
               label={t('pages.fullName1')}
-              labelPlacement="outside"
               placeholder={t('pages.enterStudentSFullName')}
               value={formData.fullName}
-              onValueChange={val => updateField("fullName", val.replace(/[0-9]/g, ''))}
-              isInvalid={!!errors.fullName}
-              errorMessage={errors.fullName}
-              variant="bordered"
-              radius="sm"
-              isRequired
-              classNames={{ inputWrapper: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
+              onChange={(e) => updateField("fullName", e.target.value.replace(/[0-9]/g, ''))}
+              error={errors.fullName}
+              required
             />
           </div>
 
@@ -111,12 +104,12 @@ function Step1PersonalInfo({
 
             <div className="relative">
               <Input
-                labelPlacement="outside"
                 placeholder={t('students.form.dobPlaceholder')}
                 value={formData.dateOfBirth || ''}
                 onClick={() => setIsDobCalendarOpen(true)}
                 onFocus={() => setIsDobCalendarOpen(true)}
-                onValueChange={(value) => {
+                onChange={(e) => {
+                  const value = e.target.value;
                   const currentYear = new Date().getFullYear();
                   const maxYear = currentYear - 1;
 
@@ -280,14 +273,7 @@ function Step1PersonalInfo({
                     // setDobValidation is handled by parent via validateDOBInRealTime
                   }
                 }}
-                isInvalid={!!errors.dateOfBirth}
-                errorMessage={errors.dateOfBirth}
-                variant="bordered"
-                radius="sm"
-                isRequired
-                classNames={{
-                  inputWrapper: "bg-bg border-1 border-border-token hover:border-[var(--accent)] hover:bg-surface-2 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 h-10 pr-10 cursor-pointer"
-                }}
+                error={errors.dateOfBirth}
                 endContent={
                   <button
                     type="button"
@@ -343,19 +329,12 @@ function Step1PersonalInfo({
 
       {/* Gender */}
       <div className="space-y-2" ref={genderRef}>
-        <label className="text-xs font-medium text-fg-muted">Gender <span className="text-red-500">*</span></label>
+        <label className="text-xs font-medium text-fg-muted">Gender <span className="text-danger">*</span></label>
         <RadioGroup
-          orientation="horizontal"
           value={formData.gender}
-          onValueChange={val => updateField("gender", val)}
-          classNames={{ wrapper: "gap-4" }}
-          isInvalid={!!errors.gender}
-          errorMessage={errors.gender}
-        >
-          {GENDERS.map(gender => (
-            <Radio key={gender} value={gender} size="sm" classNames={{ label: "text-sm" }}>{gender}</Radio>
-          ))}
-        </RadioGroup>
+          onChange={(e) => updateField("gender", e.target.value)}
+          options={GENDERS.map(gender => ({ value: gender, label: gender }))}
+        />
       </div>
 
       {/* Class Info */}
@@ -366,61 +345,39 @@ function Step1PersonalInfo({
           <div ref={classRef}>
             <Select
               label={t('pages.class1')}
-              labelPlacement="outside"
               placeholder={t('pages.selectClass2')}
-              selectedKeys={formData.classGrade ? [formData.classGrade] : []}
-              onSelectionChange={keys => {
-                const selectedClass = classesWithTeachers.find(cls => cls.name === Array.from(keys)[0]);
-                updateField("classGrade", Array.from(keys)[0]);
+              value={formData.classGrade || ""}
+              onChange={(e) => {
+                const selectedClass = classesWithTeachers.find(cls => cls.name === e.target.value);
+                updateField("classGrade", e.target.value);
                 updateField("section", selectedClass?.section || ""); // Auto-select section
                 updateField("rollNumber", ""); // Reset roll number
               }}
-              isRequired
-              isInvalid={!!errors.classGrade}
-              errorMessage={errors.classGrade}
-              variant="bordered"
-              radius="sm"
-              classNames={{ trigger: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
-            >
-              {uniqueClassNames.map(className => (
-                <SelectItem key={className}>{className}</SelectItem>
-              ))}
-            </Select>
+              required
+              options={uniqueClassNames.map(className => ({ value: className, label: className }))}
+            />
           </div>
 
           {/* Section Selection */}
           <div>
             <Select
               label={t('pages.section1')}
-              labelPlacement="outside"
               placeholder={t('pages.selectSection')}
-              selectedKeys={formData.section ? [formData.section] : []}
-              onSelectionChange={keys => updateField("section", Array.from(keys)[0])}
-              isRequired
-              isDisabled={!formData.classGrade}
-              isInvalid={!!errors.section}
-              errorMessage={errors.section}
-              variant="bordered"
-              radius="sm"
-              classNames={{ trigger: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
-            >
-              {availableSections.map(section => (
-                <SelectItem key={section}>{section}</SelectItem>
-              ))}
-            </Select>
+              value={formData.section || ""}
+              onChange={(e) => updateField("section", e.target.value)}
+              required
+              disabled={!formData.classGrade}
+              options={availableSections.map(section => ({ value: section, label: section }))}
+            />
           </div>
         </div>
         <div className="grid grid-cols-1 gap-4 mt-4">
           <Input
             label={t('pages.rollNumber2')}
-            labelPlacement="outside"
             placeholder={t('pages.autoGenerated')}
             value={formData.rollNumber}
-            variant="bordered"
-            radius="sm"
-            isReadOnly
+            readOnly
             description="Auto-generated from roll number settings. Cannot be modified."
-            classNames={{ inputWrapper: "bg-surface-2 border-1 border-border-token h-10" }}
           />
         </div>
       </div>
@@ -432,100 +389,77 @@ function Step1PersonalInfo({
           <div className="space-y-2">
             <Input
               label={t('pages.mobileNumber')}
-              labelPlacement="outside"
               startContent={<span className="text-fg-faint text-xs">+91</span>}
               placeholder={t('pages.studentSMobileIfAny')}
               value={formData.mobile}
-              onValueChange={val => {
-                const digitsOnly = val.replace(/\D/g, '').slice(0, 10);
+              onChange={(e) => {
+                const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 10);
                 updateField("mobile", digitsOnly);
               }}
-              variant="bordered"
-              radius="sm"
               maxLength={10}
-              classNames={{ inputWrapper: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
             />
-            <Checkbox size="sm" isSelected={formData.isWhatsapp} onValueChange={val => updateField("isWhatsapp", val)}
-              classNames={{ label: "text-xs text-fg-muted" }}>
-              Same for WhatsApp
-            </Checkbox>
+            <Checkbox
+              size="sm"
+              checked={formData.isWhatsapp}
+              onChange={(e) => updateField("isWhatsapp", e.target.checked)}
+              label="Same for WhatsApp"
+            />
           </div>
           <Input
             label={t('pages.emailAddress')}
-            labelPlacement="outside"
             placeholder={t('students.form.studentEmailPlaceholder')}
             value={formData.email}
-            onValueChange={val => updateField("email", val)}
-            variant="bordered"
-            radius="sm"
-            classNames={{ inputWrapper: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
+            onChange={(e) => updateField("email", e.target.value)}
           />
           {!formData.isWhatsapp && (
             <Input
               label={t('pages.whatsAppNumber')}
-              labelPlacement="outside"
               startContent={<span className="text-fg-faint text-xs">+91</span>}
               placeholder={t('pages.whatsAppNumber')}
               value={formData.whatsappNumber}
-              onValueChange={val => updateField("whatsappNumber", val)}
-              variant="bordered"
-              radius="sm"
-              classNames={{ inputWrapper: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
+              onChange={(e) => updateField("whatsappNumber", e.target.value)}
             />
           )}
         </div>
         <Textarea
           label={t('pages.address2')}
-          labelPlacement="outside"
           placeholder={t('pages.fullResidentialAddress')}
           value={formData.address}
-          onValueChange={val => updateField("address", val)}
-          variant="bordered"
-          radius="sm"
-          isRequired
-          minRows={2}
-          classNames={{ inputWrapper: "bg-bg border-1 border-border-token hover:border-border-strong" }}
+          onChange={(e) => updateField("address", e.target.value)}
+          required
+          rows={2}
         />
         <div className="grid grid-cols-3 gap-4">
           <Input
             label={t('pages.city1')}
-            labelPlacement="outside"
             placeholder={t('pages.city1')}
             value={formData.city}
-            onValueChange={val => {
-              updateField("city", val);
+            onChange={(e) => {
+              updateField("city", e.target.value);
               manualCityStateEntryRef.current = true;  // Mark as manually entered
             }}
-            variant="bordered"
-            radius="sm"
-            isRequired
-            classNames={{ inputWrapper: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
+            required
           />
           <div className="relative">
             <Select
               key="state-select"
               label={t('pages.state1')}
-              labelPlacement="outside"
               placeholder={t('pages.selectState')}
-              selectedKeys={stateSelectedKeys}
-              onSelectionChange={keys => {
-                updateField("state", Array.from(keys)[0]);
+              value={Array.isArray(stateSelectedKeys) ? stateSelectedKeys[0] || "" : stateSelectedKeys || ""}
+              onChange={(e) => {
+                updateField("state", e.target.value);
                 manualCityStateEntryRef.current = true;  // Mark as manually entered
               }}
-              variant="bordered"
-              radius="sm"
-              classNames={{ trigger: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
-            >
-              {INDIAN_STATES.map(state => <SelectItem key={state}>{state}</SelectItem>)}
-            </Select>
+              options={INDIAN_STATES.map(state => ({ value: state, label: state }))}
+            />
           </div>
           <div className="relative">
             <Input
               label={t('pages.zIPCode')}
-              labelPlacement="outside"
               placeholder={t('pages.pINCode')}
               value={formData.zipCode}
-              onValueChange={val => {
+              onChange={(e) => {
+                const val = e.target.value;
                 const digitsOnly = val.replace(/\D/g, '').slice(0, 6);
                 updateField("zipCode", digitsOnly);
 
@@ -567,12 +501,8 @@ function Step1PersonalInfo({
                   }, 500);
                 }
               }}
-              variant="bordered"
-              radius="sm"
-              isRequired
+              required
               maxLength={6}
-              isLoading={isZipLookupLoading}
-              classNames={{ inputWrapper: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
             />
             {/* Absolute positioned loading indicator to prevent layout shift */}
             {isZipLookupLoading && (
@@ -591,116 +521,72 @@ function Step1PersonalInfo({
         <div className="grid grid-cols-2 gap-4">
           <Input
             label={t('pages.aadhaarNumber')}
-            labelPlacement="outside"
             placeholder={t('students.form.aadhaarPlaceholder')}
             value={formData.aadhaarNumber}
-            onValueChange={val => updateField("aadhaarNumber", val.replace(/\D/g, '').slice(0, 12))}
-            variant="bordered"
-            radius="sm"
+            onChange={(e) => updateField("aadhaarNumber", e.target.value.replace(/\D/g, '').slice(0, 12))}
             maxLength={12}
-            classNames={{ inputWrapper: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
           />
           <Select
             label={t('pages.bloodGroup1')}
-            labelPlacement="outside"
             placeholder={t('pages.select1')}
-            selectedKeys={formData.bloodGroup ? [formData.bloodGroup] : []}
-            onSelectionChange={keys => updateField("bloodGroup", Array.from(keys)[0])}
-            variant="bordered"
-            radius="sm"
-            classNames={{ trigger: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
-          >
-            {BLOOD_GROUPS.map(bg => <SelectItem key={bg}>{bg}</SelectItem>)}
-          </Select>
+            value={formData.bloodGroup || ""}
+            onChange={(e) => updateField("bloodGroup", e.target.value)}
+            options={BLOOD_GROUPS.map(bg => ({ value: bg, label: bg }))}
+          />
           <Input
             label={t('pages.nationality1')}
-            labelPlacement="outside"
             placeholder={t('students.form.nationalityPlaceholder')}
             value={formData.nationality}
-            onValueChange={val => updateField("nationality", val)}
-            variant="bordered"
-            radius="sm"
-            classNames={{ inputWrapper: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
+            onChange={(e) => updateField("nationality", e.target.value)}
           />
           <Select
             label={t('pages.religion1')}
-            labelPlacement="outside"
             placeholder={t('pages.select1')}
-            selectedKeys={formData.religion ? [formData.religion] : []}
-            onSelectionChange={keys => updateField("religion", Array.from(keys)[0])}
-            variant="bordered"
-            radius="sm"
-            classNames={{ trigger: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
-          >
-            {RELIGIONS.map(rel => <SelectItem key={rel}>{rel}</SelectItem>)}
-          </Select>
+            value={formData.religion || ""}
+            onChange={(e) => updateField("religion", e.target.value)}
+            options={RELIGIONS.map(rel => ({ value: rel, label: rel }))}
+          />
           <Select
             label={t('pages.category1')}
-            labelPlacement="outside"
             placeholder={t('pages.select1')}
-            selectedKeys={formData.category ? [formData.category] : []}
-            onSelectionChange={keys => updateField("category", Array.from(keys)[0])}
-            variant="bordered"
-            radius="sm"
-            classNames={{ trigger: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
-          >
-            {CATEGORIES.map(cat => <SelectItem key={cat}>{cat}</SelectItem>)}
-          </Select>
+            value={formData.category || ""}
+            onChange={(e) => updateField("category", e.target.value)}
+            options={CATEGORIES.map(cat => ({ value: cat, label: cat }))}
+          />
           <Select
             label={t('pages.motherTongue1')}
-            labelPlacement="outside"
             placeholder={t('pages.select1')}
-            selectedKeys={formData.motherTongue ? [formData.motherTongue] : []}
-            onSelectionChange={keys => updateField("motherTongue", Array.from(keys)[0])}
-            variant="bordered"
-            radius="sm"
-            classNames={{ trigger: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
-          >
-            {MOTHER_TONGUES.map(tongue => <SelectItem key={tongue}>{tongue}</SelectItem>)}
-          </Select>
+            value={formData.motherTongue || ""}
+            onChange={(e) => updateField("motherTongue", e.target.value)}
+            options={MOTHER_TONGUES.map(tongue => ({ value: tongue, label: tongue }))}
+          />
           <Input
             label={t('pages.previousSchool1')}
-            labelPlacement="outside"
             placeholder={t('pages.nameOfPreviousSchool')}
             value={formData.previousSchool}
-            onValueChange={val => updateField("previousSchool", val)}
-            variant="bordered"
-            radius="sm"
+            onChange={(e) => updateField("previousSchool", e.target.value)}
             className="col-span-2"
-            classNames={{ inputWrapper: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
           />
           <Input
             label={t('pages.transferCertificateNo')}
-            labelPlacement="outside"
             placeholder={t('pages.tCNumber')}
             value={formData.tcNumber}
-            onValueChange={val => updateField("tcNumber", val.replace(/\D/g, ''))}
-            variant="bordered"
-            radius="sm"
+            onChange={(e) => updateField("tcNumber", e.target.value.replace(/\D/g, ''))}
             className="col-span-2"
-            classNames={{ inputWrapper: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
           />
           <Input
             label={t('pages.mediumOfInstruction')}
-            labelPlacement="outside"
             placeholder={t('pages.enterMediumOfInstruction')}
             value={formData.mediumOfInstruction}
-            onValueChange={val => updateField("mediumOfInstruction", val)}
-            variant="bordered"
-            radius="sm"
+            onChange={(e) => updateField("mediumOfInstruction", e.target.value)}
             className="col-span-2"
-            classNames={{ inputWrapper: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
           />
           <Input
             label={t('pages.house')}
-            labelPlacement="outside"
             placeholder={t('pages.enterHouse')}
             value={formData.house}
-            onValueChange={val => updateField("house", val)}
-            variant="bordered"
-            radius="sm"
+            onChange={(e) => updateField("house", e.target.value)}
             className="col-span-2"
-            classNames={{ inputWrapper: "bg-bg border-1 border-border-token hover:border-border-strong h-10" }}
           />
         </div>
       </div>

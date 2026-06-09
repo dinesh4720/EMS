@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, CardBody, Select, SelectItem, Button, Checkbox } from '@heroui/react';
+import { Card, Select, Button, Checkbox } from '../../../components/ui';
 import { ArrowRight, GraduationCap, Users, AlertTriangle } from 'lucide-react';
 import { promotionApi } from '../../../services/api/extensions';
 import { TablePageSkeleton } from '../../../components/skeletons/PageSkeletons';
@@ -137,13 +137,13 @@ export default function StepClassMapping({ onNext, onBack, wizardState, setWizar
       </p>
 
       {mappings.length === 0 && (
-        <Card shadow="sm" className="bg-warn-bg border-warn">
-          <CardBody className="p-4 flex items-center gap-2">
+        <Card elevation="raised" className="bg-warn-bg border-warn">
+          <Card.Content className="p-4 flex items-center gap-2">
             <AlertTriangle size={16} className="text-warn" />
             <p className="text-sm text-warn">
               No classes found for {wizardState.fromYear}. Make sure classes exist for the current academic year.
             </p>
-          </CardBody>
+          </Card.Content>
         </Card>
       )}
 
@@ -154,10 +154,10 @@ export default function StepClassMapping({ onNext, onBack, wizardState, setWizar
             className={`cmap-row ${!m.included ? 'is-disabled' : ''} ${m.graduate ? 'is-graduate' : ''}`}
           >
             <Checkbox
-              isSelected={m.included}
+              checked={m.included}
               onChange={(e) => updateMapping(idx, 'included', e.target.checked)}
               size="sm"
-              isDisabled={m.studentCount === 0}
+              disabled={m.studentCount === 0}
             />
 
             <div className="cmap-row__from">
@@ -189,30 +189,26 @@ export default function StepClassMapping({ onNext, onBack, wizardState, setWizar
                 <Select
                   size="sm"
                   placeholder="Select target class"
-                  selectedKeys={m.toClassId ? [m.toClassId] : []}
-                  onSelectionChange={(keys) => updateMapping(idx, 'toClassId', [...keys][0] || '')}
-                  variant="bordered"
+                  value={m.toClassId || ''}
+                  onChange={(e) => updateMapping(idx, 'toClassId', e.target.value)}
                   className="max-w-xs"
-                  classNames={{ trigger: 'h-9' }}
-                  isDisabled={!m.included}
+                  disabled={!m.included}
                   aria-label="Target class"
-                >
-                  {(previewData?.targetClassOptions || []).map((opt) => (
-                    <SelectItem key={opt._id} value={opt._id}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </Select>
+                  options={(previewData?.targetClassOptions || []).map((opt) => ({
+                    value: opt._id,
+                    label: opt.label,
+                  }))}
+                />
               )}
             </div>
 
             <Button
               size="sm"
-              variant={m.graduate ? 'solid' : 'flat'}
+              variant={m.graduate ? 'primary' : 'ghost'}
               className={m.graduate ? 'bg-accent text-white' : ''}
-              onPress={() => updateMapping(idx, 'graduate', !m.graduate)}
-              isDisabled={!m.included}
-              startContent={<GraduationCap size={13} />}
+              onClick={() => updateMapping(idx, 'graduate', !m.graduate)}
+              disabled={!m.included}
+              icon={<GraduationCap size={13} />}
             >
               {m.graduate ? 'Graduating' : 'Graduate'}
             </Button>
@@ -238,13 +234,13 @@ export default function StepClassMapping({ onNext, onBack, wizardState, setWizar
           <span>students</span>
         </div>
         <div style={{ flex: 1 }} />
-        <Button variant="flat" onPress={onBack}>
+        <Button variant="ghost" onClick={onBack}>
           Back
         </Button>
         <Button
-          color="primary"
-          onPress={handleNext}
-          isDisabled={includedMappings.length === 0}
+          variant="primary"
+          onClick={handleNext}
+          disabled={includedMappings.length === 0}
         >
           Next: Review Students
         </Button>

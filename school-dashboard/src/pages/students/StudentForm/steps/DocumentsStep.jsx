@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Chip, Progress } from "@heroui/react";
+import { Button, Chip, Progress } from "../../../../components/ui";
 import { FileText, Upload, X, CheckCircle } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 
@@ -22,7 +22,7 @@ export default function DocumentsStep({
   return (
     <div className="space-y-5 animate-fade-in text-left">
       <div className="space-y-2">
-        <label className="text-sm font-semibold text-default-900">{t('pages.documentUploads')}</label>
+        <label className="text-sm font-semibold text-fg">{t('pages.documentUploads')}</label>
         <p className="text-xs text-fg-muted">
           Upload required documents. All documents are optional and can be uploaded later.
         </p>
@@ -50,7 +50,7 @@ export default function DocumentsStep({
 
       {/* Aadhaar Card */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-fg-subtle">{t('pages.aadhaarCardFrontBack')}</label>
+        <label className="text-xs font-medium text-fg-muted">{t('pages.aadhaarCardFrontBack')}</label>
         <p className="text-xs text-fg-muted">{t('pages.uploadBothSidesOfTheAadhaarCard')}</p>
 
         <DocumentUploadField
@@ -111,7 +111,7 @@ function DocumentUploadField({ label, file, onUpload, onRemove, inputRef, accept
 
   return (
     <div className="space-y-2">
-      {!compact && <label className="text-xs font-medium text-fg-subtle">{label}</label>}
+      {!compact && <label className="text-xs font-medium text-fg-muted">{label}</label>}
       <div
         className={`border border-solid rounded-lg p-4 flex items-center justify-between cursor-pointer transition-colors ${
           file
@@ -122,7 +122,7 @@ function DocumentUploadField({ label, file, onUpload, onRemove, inputRef, accept
       >
         <div className="flex items-center gap-3 min-w-0 flex-1">
           {file ? (
-            <CheckCircle size={20} className="text-success flex-shrink-0" />
+            <CheckCircle size={20} className="text-ok flex-shrink-0" />
           ) : (
             <FileText size={20} className="text-fg-faint flex-shrink-0" />
           )}
@@ -130,7 +130,7 @@ function DocumentUploadField({ label, file, onUpload, onRemove, inputRef, accept
             {isProcessing ? (
               <div className="space-y-1">
                 <span className="text-sm text-fg-muted">Processing...</span>
-                <Progress size="sm" isIndeterminate color="primary" className="max-w-full" />
+                <Progress size="sm" indeterminate color="primary" className="max-w-full" />
               </div>
             ) : file ? (
               <div className="min-w-0">
@@ -147,16 +147,13 @@ function DocumentUploadField({ label, file, onUpload, onRemove, inputRef, accept
         {file ? (
           <Button
             size="sm"
-            variant="light"
-            color="danger"
-            isIconOnly
-            onPress={(e) => {
+            variant="ghost"
+            icon={<X size={14} />}
+            onClick={(e) => {
               e.stopPropagation();
               onRemove();
             }}
-          >
-            <X size={14} />
-          </Button>
+          />
         ) : (
           <Upload size={16} className="text-fg-faint flex-shrink-0" />
         )}
@@ -182,11 +179,11 @@ function MultiDocumentUploadField({ label, description, files, onUpload, onRemov
 
   return (
     <div className="space-y-2">
-      <label className="text-xs font-medium text-fg-subtle">{label}</label>
+      <label className="text-xs font-medium text-fg-muted">{label}</label>
       <p className="text-xs text-fg-muted">{description}</p>
       {isProcessing ? (
         <div className="border border-solid border-border-token rounded-lg p-4">
-          <Progress size="sm" isIndeterminate color="primary" label="Processing files..." className="max-w-full" />
+          <Progress size="sm" indeterminate color="primary" label="Processing files..." className="max-w-full" />
         </div>
       ) : (
         <div
@@ -194,7 +191,7 @@ function MultiDocumentUploadField({ label, description, files, onUpload, onRemov
           onClick={() => inputRef.current?.click()}
         >
           <Upload size={14} className="text-fg-muted" />
-          <span className="text-sm text-fg-subtle">{t('pages.uploadAdditionalDocuments')}</span>
+          <span className="text-sm text-fg-muted">{t('pages.uploadAdditionalDocuments')}</span>
         </div>
       )}
       <input ref={inputRef} type="file" multiple accept={accept} className="hidden" onChange={handleFilesChange} />
@@ -203,9 +200,8 @@ function MultiDocumentUploadField({ label, description, files, onUpload, onRemov
           {files.map((file, i) => (
             <Chip
               key={`doc-${file.name}-${i}`}
-              onClose={() => onRemove(i)}
+              onRemove={() => onRemove(i)}
               size="sm"
-              variant="flat"
               className="h-8 border border-divider bg-surface"
             >
               {file.name} {file.size ? `(${formatFileSize(file.size)})` : ''}

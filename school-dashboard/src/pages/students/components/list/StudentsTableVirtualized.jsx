@@ -1,7 +1,5 @@
 import React from "react";
-import {
-    Button, Checkbox,
-} from "@heroui/react";
+import { Checkbox, Button } from "../../../../components/ui";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -91,6 +89,9 @@ function StudentsTableVirtualized({
         onClearFilters,
     } = useStudentsTableActions();
 
+    const allSelected = filteredItems.length > 0 && selectedKeys.size === filteredItems.length;
+    const someSelected = selectedKeys.size > 0 && selectedKeys.size < filteredItems.length;
+
     return (
         <div
             ref={tableContainerRef}
@@ -104,22 +105,15 @@ function StudentsTableVirtualized({
                         <th className="bg-surface border-b border-border-token text-center w-12 min-w-12">
                             <Checkbox
                                 size="md"
-                                classNames={{ base: "p-0 m-0", wrapper: "m-0" }}
-                                isSelected={
-                                    filteredItems.length > 0 &&
-                                    selectedKeys.size === filteredItems.length
-                                }
-                                isIndeterminate={
-                                    selectedKeys.size > 0 &&
-                                    selectedKeys.size < filteredItems.length
-                                }
-                                onValueChange={(checked) => {
-                                    if (checked) {
+                                checked={allSelected}
+                                indeterminate={someSelected}
+                                onChange={() => {
+                                    if (allSelected) {
+                                        setSelectedKeys(new Set([]));
+                                    } else {
                                         setSelectedKeys(
                                             new Set(filteredItems.map((s) => s.id.toString()))
                                         );
-                                    } else {
-                                        setSelectedKeys(new Set([]));
                                     }
                                 }}
                                 aria-label={t("aria.buttons.selectAllStudents")}
@@ -212,8 +206,8 @@ function StudentsTableVirtualized({
                                     {hasActiveFilters && onClearFilters && (
                                         <Button
                                             size="sm"
-                                            variant="bordered"
-                                            onPress={onClearFilters}
+                                            variant="outline"
+                                            onClick={onClearFilters}
                                             className="mt-1"
                                         >
                                             {t('common.clearFilters', 'Clear Filters')}
@@ -286,19 +280,18 @@ function StudentsTableVirtualized({
                                         >
                                             <Checkbox
                                                 size="md"
-                                                classNames={{ base: "p-0 m-0", wrapper: "m-0" }}
-                                                isSelected={isSelected}
-                                                onValueChange={(checked) => {
+                                                checked={isSelected}
+                                                onChange={() => {
                                                     const id = student.id.toString();
                                                     const newKeys = new Set(
                                                         selectedKeys === "all"
                                                             ? filteredItems.map((s) => s.id.toString())
                                                             : selectedKeys
                                                     );
-                                                    if (checked) {
-                                                        newKeys.add(id);
-                                                    } else {
+                                                    if (newKeys.has(id)) {
                                                         newKeys.delete(id);
+                                                    } else {
+                                                        newKeys.add(id);
                                                     }
                                                     setSelectedKeys(newKeys);
                                                 }}

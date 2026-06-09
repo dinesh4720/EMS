@@ -1,16 +1,10 @@
 import { useTranslation } from 'react-i18next';
 import {
-  Drawer, DrawerContent, DrawerHeader, DrawerBody, Button
-} from "@heroui/react";
+  Drawer, Button
+} from "../../../../components/ui";
 import { Phone } from "lucide-react";
 import { formatDate } from '../../../../utils/dateFormatter';
 import { formatCurrency } from '../../../../utils/numberFormatter';
-
-const drawerClassNames = {
-  wrapper: "!z-50",
-  base: "m-2 rounded-xl shadow-xl dark:shadow-zinc-900/50 h-[calc(100%-1rem)]",
-  backdrop: "!z-40"
-};
 
 export function AttendanceDetailDrawer({ isOpen, onOpenChange, attendanceStats }) {
   const { t } = useTranslation();
@@ -18,32 +12,20 @@ export function AttendanceDetailDrawer({ isOpen, onOpenChange, attendanceStats }
   return (
     <Drawer
       isOpen={isOpen}
-      onOpenChange={onOpenChange}
-      placement="right"
+      onClose={() => onOpenChange(false)}
       size="sm"
-      classNames={drawerClassNames}
+      title={t('students.profile.overview.attendanceDetails', 'Attendance Details')}
     >
-      <DrawerContent>
-        {() => (
-          <>
-            <DrawerHeader className="border-b border-divider">
-              <h3 className="text-lg font-semibold">{t('students.profile.overview.attendanceDetails', 'Attendance Details')}</h3>
-            </DrawerHeader>
-            <DrawerBody className="p-6">
-              <div className="space-y-6">
-                <div className="text-center p-6 bg-[var(--accent-bg)] rounded-2xl">
-                  <div className="text-4xl font-bold text-primary">{attendanceStats?.percentage || 0}%</div>
-                  <div className="text-sm text-[var(--accent)]">{t('students.profile.overview.overallAttendance', 'Overall Attendance')}</div>
-                </div>
-                <div>
-                  <h4 className="font-medium mb-3">{t('students.profile.overview.attendanceHistory', 'Attendance History')}</h4>
-                  <p className="text-sm text-fg-muted">{t('students.profile.overview.attendanceHistoryDesc', 'Detailed calendar view and log will be here.')}</p>
-                </div>
-              </div>
-            </DrawerBody>
-          </>
-        )}
-      </DrawerContent>
+      <div className="space-y-6">
+        <div className="text-center p-6 bg-[var(--accent-bg)] rounded-2xl">
+          <div className="text-4xl font-bold text-primary">{attendanceStats?.percentage || 0}%</div>
+          <div className="text-sm text-[var(--accent)]">{t('students.profile.overview.overallAttendance', 'Overall Attendance')}</div>
+        </div>
+        <div>
+          <h4 className="font-medium mb-3">{t('students.profile.overview.attendanceHistory', 'Attendance History')}</h4>
+          <p className="text-sm text-fg-muted">{t('students.profile.overview.attendanceHistoryDesc', 'Detailed calendar view and log will be here.')}</p>
+        </div>
+      </div>
     </Drawer>
   );
 }
@@ -55,40 +37,32 @@ export function FeeStatusDrawer({ isOpen, onOpenChange, onViewFees, studentFeeSt
   return (
     <Drawer
       isOpen={isOpen}
-      onOpenChange={onOpenChange}
-      placement="right"
+      onClose={() => onOpenChange(false)}
       size="sm"
-      classNames={drawerClassNames}
+      title={t('students.profile.overview.feeDetails', 'Fee Details')}
     >
-      <DrawerContent>
-        {(onClose) => (
-          <>
-            <DrawerHeader className="border-b border-divider">
-              <h3 className="text-lg font-semibold">{t('students.profile.overview.feeDetails', 'Fee Details')}</h3>
-            </DrawerHeader>
-            <DrawerBody className="p-6">
-              <div className="space-y-6">
-                <div className={`p-4 border rounded-xl ${hasPending ? 'border-[var(--warn)]/20 bg-[var(--warn-bg)]' : 'border-[var(--ok)]/20 bg-[var(--ok-bg)]'}`}>
-                  <h4 className={`font-semibold mb-1 ${hasPending ? 'text-[var(--warn)]' : 'text-[var(--ok)]'}`}>
-                    {hasPending ? t('students.profile.overview.paymentDue', 'Payment Due') : t('students.profile.overview.allFeesPaid', 'All Fees Paid')}
-                  </h4>
-                  <p className={`text-2xl font-bold ${hasPending ? 'text-warning-800' : 'text-success-800'}`}>
-                    {formatCurrency(studentFeeStructure?.totalBalance || 0)}
-                  </p>
-                  {studentFeeStructure?.nextDueDate && hasPending && (
-                    <p className="text-xs text-[var(--warn)]">
-                      {t('students.profile.overview.dueDateLabel', 'Due Date')}: {formatDate(studentFeeStructure.nextDueDate)}
-                    </p>
-                  )}
-                </div>
-                <Button color="primary" fullWidth onPress={() => { onClose(); onViewFees(); }}>
-                  {t('students.profile.overview.viewFullFeeStructure', 'View Full Fee Structure')}
-                </Button>
-              </div>
-            </DrawerBody>
-          </>
-        )}
-      </DrawerContent>
+      {(onClose) => (
+        <>
+          <div className="space-y-6">
+            <div className={`p-4 border rounded-xl ${hasPending ? 'border-[var(--warn)]/20 bg-[var(--warn-bg)]' : 'border-[var(--ok)]/20 bg-[var(--ok-bg)]'}`}>
+              <h4 className={`font-semibold mb-1 ${hasPending ? 'text-[var(--warn)]' : 'text-[var(--ok)]'}`}>
+                {hasPending ? t('students.profile.overview.paymentDue', 'Payment Due') : t('students.profile.overview.allFeesPaid', 'All Fees Paid')}
+              </h4>
+              <p className={`text-2xl font-bold ${hasPending ? 'text-warn' : 'text-ok'}`}>
+                {formatCurrency(studentFeeStructure?.totalBalance || 0)}
+              </p>
+              {studentFeeStructure?.nextDueDate && hasPending && (
+                <p className="text-xs text-[var(--warn)]">
+                  {t('students.profile.overview.dueDateLabel', 'Due Date')}: {formatDate(studentFeeStructure.nextDueDate)}
+                </p>
+              )}
+            </div>
+            <Button variant="primary" fullWidth onClick={() => { onClose(); onViewFees(); }}>
+              {t('students.profile.overview.viewFullFeeStructure', 'View Full Fee Structure')}
+            </Button>
+          </div>
+        </>
+      )}
     </Drawer>
   );
 }
@@ -100,52 +74,42 @@ export function ParentAppDrawer({ isOpen, onOpenChange, parentAppInfo }) {
   return (
     <Drawer
       isOpen={isOpen}
-      onOpenChange={onOpenChange}
-      placement="right"
+      onClose={() => onOpenChange(false)}
       size="sm"
-      classNames={drawerClassNames}
+      title={t('students.profile.overview.parentApp', 'Parent App')}
     >
-      <DrawerContent>
-        {() => (
+      <div className="space-y-4">
+        {isConnected ? (
           <>
-            <DrawerHeader className="border-b border-divider">
-              <h3 className="text-lg font-semibold">{t('students.profile.overview.parentApp', 'Parent App')}</h3>
-            </DrawerHeader>
-            <DrawerBody className="p-6">
-              {isConnected ? (
-                <>
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="p-3 bg-[var(--ok-bg)] rounded-full text-success"><Phone size={24} /></div>
-                    <div>
-                      <h4 className="font-bold">{t('students.profile.overview.connected', 'Connected')}</h4>
-                      {parentAppInfo?.activeSince && <p className="text-sm text-fg-muted">{t('students.profile.overview.activeSince', 'Active since')} {parentAppInfo.activeSince}</p>}
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    {parentAppInfo?.lastLogin && (
-                      <div className="flex justify-between border-b border-divider pb-2">
-                        <span className="text-fg-muted">{t('students.profile.overview.lastLogin', 'Last Login')}</span>
-                        <span>{parentAppInfo.lastLogin}</span>
-                      </div>
-                    )}
-                    {parentAppInfo?.device && (
-                      <div className="flex justify-between border-b border-divider pb-2">
-                        <span className="text-fg-muted">{t('students.profile.overview.device', 'Device')}</span>
-                        <span>{parentAppInfo.device}</span>
-                      </div>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <div className="text-center py-12">
-                  <Phone size={32} className="mx-auto text-fg-faint mb-3" />
-                  <p className="text-sm text-fg-muted">{t('students.profile.overview.parentAppNotConnected', 'Parent app not connected yet')}</p>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3 bg-[var(--ok-bg)] rounded-full text-ok"><Phone size={24} /></div>
+              <div>
+                <h4 className="font-bold">{t('students.profile.overview.connected', 'Connected')}</h4>
+                {parentAppInfo?.activeSince && <p className="text-sm text-fg-muted">{t('students.profile.overview.activeSince', 'Active since')} {parentAppInfo.activeSince}</p>}
+              </div>
+            </div>
+            <div className="space-y-4">
+              {parentAppInfo?.lastLogin && (
+                <div className="flex justify-between border-b border-divider pb-2">
+                  <span className="text-fg-muted">{t('students.profile.overview.lastLogin', 'Last Login')}</span>
+                  <span>{parentAppInfo.lastLogin}</span>
                 </div>
               )}
-            </DrawerBody>
+              {parentAppInfo?.device && (
+                <div className="flex justify-between border-b border-divider pb-2">
+                  <span className="text-fg-muted">{t('students.profile.overview.device', 'Device')}</span>
+                  <span>{parentAppInfo.device}</span>
+                </div>
+              )}
+            </div>
           </>
+        ) : (
+          <div className="text-center py-12">
+            <Phone size={32} className="mx-auto text-fg-faint mb-3" />
+            <p className="text-sm text-fg-muted">{t('students.profile.overview.parentAppNotConnected', 'Parent app not connected yet')}</p>
+          </div>
         )}
-      </DrawerContent>
+      </div>
     </Drawer>
   );
 }

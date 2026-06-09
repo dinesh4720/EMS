@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { Input, Select, SelectItem, Checkbox, Textarea, Button } from "@heroui/react";
+import { Input, Select, Checkbox, Textarea, Button } from "../../../../components/ui";
 import { X, Users } from "lucide-react";
 import { PARENT_RELATIONSHIPS, GUARDIAN_RELATIONSHIPS } from "../../../../constants/studentConstants";
 import { useTranslation } from 'react-i18next';
@@ -34,7 +34,7 @@ export default function ParentsStep({
       {/* Parent Details */}
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <label className="text-sm font-semibold text-default-900">{t('pages.parentDetails')}</label>
+          <label className="text-sm font-semibold text-fg">{t('pages.parentDetails')}</label>
         </div>
 
         {parents.map((parent, idx) => {
@@ -117,7 +117,7 @@ function ParentCard({
           {idx === 0 ? "Primary Parent" : `Parent ${idx + 1}`}
         </span>
         {canRemove && (
-          <Button size="sm" variant="light" color="danger" onPress={() => removeParent(index)}>
+          <Button size="sm" variant="danger" onClick={() => removeParent(index)}>
             <X size={14} /> Remove
           </Button>
         )}
@@ -126,80 +126,54 @@ function ParentCard({
         <div ref={parentNameRef}>
           <Input
             label={t('pages.fullName1')}
-            labelPlacement="outside"
             placeholder={t('pages.parentName1')}
             value={parent.name}
-            onValueChange={(v) => updateParent(index, "name", v)}
-            isInvalid={idx === 0 && !!errors.parentName}
-            errorMessage={idx === 0 ? errors.parentName : ""}
-            variant="bordered"
-            radius="sm"
-            isRequired={idx === 0}
-            classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
+            onChange={(e) => { const v = e.target.value; updateParent(index, "name", v); }}
+            error={idx === 0 ? errors.parentName : ""}
+            required={idx === 0}
           />
         </div>
         <Select
           label={t('pages.relationship')}
-          labelPlacement="outside"
           placeholder={t('pages.select1')}
-          selectedKeys={parent.relationship ? [parent.relationship] : []}
-          onSelectionChange={(keys) => updateParent(index, "relationship", Array.from(keys)[0])}
-          variant="bordered"
-          radius="sm"
-          classNames={{ trigger: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
-        >
-          {PARENT_RELATIONSHIPS.map((r) => (
-            <SelectItem key={r}>{r}</SelectItem>
-          ))}
-        </Select>
+          value={parent.relationship || ""}
+          onChange={(e) => { const v = e.target.value; updateParent(index, "relationship", v); }}
+          options={PARENT_RELATIONSHIPS.map((r) => ({ value: r, label: r }))}
+        />
         <div className="space-y-2" ref={parentPhoneRef}>
           <Input
             label={t('pages.phoneNumber')}
-            labelPlacement="outside"
             startContent={<span className="text-fg-faint text-xs">+91</span>}
             placeholder={t('students.form.phonePlaceholder')}
             value={parent.phone}
-            onValueChange={(v) => {
+            onChange={(e) => {
+              const v = e.target.value;
               const digitsOnly = v.replace(/\D/g, "").slice(0, 10);
               updateParent(index, "phone", digitsOnly);
             }}
-            isInvalid={idx === 0 && !!errors.parentPhone}
-            errorMessage={idx === 0 ? errors.parentPhone : ""}
-            variant="bordered"
-            radius="sm"
-            isRequired={idx === 0}
+            error={idx === 0 ? errors.parentPhone : ""}
+            required={idx === 0}
             maxLength={10}
-            classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
           />
           <Checkbox
             size="sm"
-            isSelected={parent.isWhatsapp}
-            onValueChange={(v) => updateParent(index, "isWhatsapp", v)}
-            classNames={{ label: "text-xs text-fg-muted" }}
-          >
-            Same as WhatsApp
-          </Checkbox>
+            checked={parent.isWhatsapp}
+            onChange={(e) => { const v = e.target.checked; updateParent(index, "isWhatsapp", v); }}
+            label="Same as WhatsApp"
+          />
         </div>
         <Input
           label={t('pages.email1')}
-          labelPlacement="outside"
           placeholder={t('students.form.parentEmailPlaceholder')}
           value={parent.email}
-          onValueChange={(v) => updateParent(index, "email", v)}
-          variant="bordered"
-          radius="sm"
-          classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
+          onChange={(e) => { const v = e.target.value; updateParent(index, "email", v); }}
         />
         <Input
           label={t('pages.occupation')}
-          labelPlacement="outside"
           placeholder={t('students.form.occupationPlaceholder')}
           value={parent.occupation}
-          onValueChange={(v) => updateParent(index, "occupation", v)}
-          variant="bordered"
-          radius="sm"
+          onChange={(e) => { const v = e.target.value; updateParent(index, "occupation", v); }}
           className="col-span-2"
-          classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
         />
       </div>
     </div>
@@ -211,7 +185,7 @@ function GuardiansSection({ guardians, formData, updateParent, removeParent, add
   return (
     <div className="space-y-4 pt-2 border-t border-solid border-divider">
       <div className="flex justify-between items-center">
-        <label className="text-sm font-semibold text-default-900">{t('pages.guardianDetails')}</label>
+        <label className="text-sm font-semibold text-fg">{t('pages.guardianDetails')}</label>
         <span className="text-xs text-fg-muted">(Optional)</span>
       </div>
 
@@ -221,35 +195,24 @@ function GuardiansSection({ guardians, formData, updateParent, removeParent, add
           <div key={`parent-${idx}`} className="p-4 bg-surface-2 rounded-lg border border-divider space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium text-fg">Guardian {idx + 1}</span>
-              <Button size="sm" variant="light" color="danger" onPress={() => removeParent(index)}>
+              <Button size="sm" variant="danger" onClick={() => removeParent(index)}>
                 <X size={14} /> Remove
               </Button>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <Input
                 label={t('pages.fullName1')}
-                labelPlacement="outside"
                 placeholder={t('pages.guardianName')}
                 value={guardian.name}
-                onValueChange={(v) => updateParent(index, "name", v)}
-                variant="bordered"
-                radius="sm"
-                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
+                onChange={(e) => { const v = e.target.value; updateParent(index, "name", v); }}
               />
               <Select
                 label={t('pages.relationship')}
-                labelPlacement="outside"
                 placeholder={t('pages.select1')}
-                selectedKeys={guardian.relationship ? [guardian.relationship] : []}
-                onSelectionChange={(keys) => updateParent(index, "relationship", Array.from(keys)[0])}
-                variant="bordered"
-                radius="sm"
-                classNames={{ trigger: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
-              >
-                {GUARDIAN_RELATIONSHIPS.map((r) => (
-                  <SelectItem key={r}>{r}</SelectItem>
-                ))}
-              </Select>
+                value={guardian.relationship || ""}
+                onChange={(e) => { const v = e.target.value; updateParent(index, "relationship", v); }}
+                options={GUARDIAN_RELATIONSHIPS.map((r) => ({ value: r, label: r }))}
+              />
             </div>
           </div>
         );
@@ -272,7 +235,7 @@ function SiblingsSection({ siblings, updateSibling, addSibling, removeSibling, c
   return (
     <div className="space-y-4 pt-2 border-t border-solid border-divider">
       <div className="flex justify-between items-center">
-        <label className="text-sm font-semibold text-default-900">{t('pages.siblingDetails')}</label>
+        <label className="text-sm font-semibold text-fg">{t('pages.siblingDetails')}</label>
         <span className="text-xs text-fg-muted">(Optional — same school only)</span>
       </div>
 
@@ -284,49 +247,36 @@ function SiblingsSection({ siblings, updateSibling, addSibling, removeSibling, c
         <div key={`sibling-${idx}`} className="p-4 bg-surface-2 rounded-lg border border-divider space-y-4">
           <div className="flex justify-between items-center">
             <span className="text-sm font-medium text-fg">Sibling {idx + 1}</span>
-            <Button size="sm" variant="light" color="danger" onPress={() => removeSibling(idx)}>
+            <Button size="sm" variant="danger" onClick={() => removeSibling(idx)}>
               <X size={14} /> Remove
             </Button>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Input
               label={t('pages.siblingName')}
-              labelPlacement="outside"
               placeholder={t('pages.siblingSFullName')}
               value={sibling.name}
-              onValueChange={(v) => updateSibling(idx, "name", v)}
-              variant="bordered"
-              radius="sm"
-              classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
+              onChange={(e) => { const v = e.target.value; updateSibling(idx, "name", v); }}
             />
             <div className="flex items-center gap-2 pt-6">
               <Checkbox size="sm"
-                isSelected={sibling.inSameSchool}
-                onValueChange={(v) => {
+                checked={sibling.inSameSchool}
+                onChange={(e) => {
+                  const v = e.target.checked;
                   updateSibling(idx, "inSameSchool", v);
                   if (!v) updateSibling(idx, "classId", "");
                 }}
-              >
-                <span className="text-sm text-fg">{t('pages.isSiblingInThisSchool')}</span>
-              </Checkbox>
+                label={<span className="text-sm text-fg">{t('pages.isSiblingInThisSchool')}</span>}
+              />
             </div>
             {sibling.inSameSchool && (
               <Select
                 label={t('pages.class1')}
-                labelPlacement="outside"
                 placeholder={t('pages.selectClass2')}
-                selectedKeys={sibling.classId ? [sibling.classId] : []}
-                onSelectionChange={(keys) => updateSibling(idx, "classId", Array.from(keys)[0])}
-                variant="bordered"
-                radius="sm"
-                classNames={{ trigger: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
-              >
-                {classesWithTeachers.map((c) => (
-                  <SelectItem key={c.id}>
-                    {c.name} {c.section}
-                  </SelectItem>
-                ))}
-              </Select>
+                value={sibling.classId || ""}
+                onChange={(e) => { const v = e.target.value; updateSibling(idx, "classId", v); }}
+                options={classesWithTeachers.map((c) => ({ value: c.id, label: `${c.name} ${c.section}` }))}
+              />
             )}
           </div>
         </div>
@@ -343,17 +293,13 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
   const { t } = useTranslation();
   return (
     <div className="space-y-4 pt-2 border-t border-solid border-divider">
-      <label className="text-sm font-semibold text-default-900 block mt-2">{t('pages.healthSafety')}</label>
+      <label className="text-sm font-semibold text-fg block mt-2">{t('pages.healthSafety')}</label>
       <Textarea
         label={t('pages.medicalConditions1')}
-        labelPlacement="outside"
         placeholder={t('pages.anyAllergiesMedicalConditionsOrSpecialNeedsOptional')}
         value={formData.medicalConditions}
-        onValueChange={(v) => updateField("medicalConditions", v)}
-        variant="bordered"
-        radius="sm"
-        minRows={2}
-        classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token" }}
+        onChange={(e) => { const v = e.target.value; updateField("medicalConditions", v); }}
+        rows={2}
       />
 
       {/* Allergies */}
@@ -365,70 +311,44 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
         {(formData.healthInfo?.allergies || []).map((allergy, idx) => (
           <div key={`allergy-${idx}`} className="p-3 bg-surface-2 rounded-lg border border-divider space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-xs font-medium text-fg-subtle">Allergy {idx + 1}</span>
-              <Button size="sm" variant="light" color="danger" onPress={() => removeHealthInfoItem("allergies", idx)}>
+              <span className="text-xs font-medium text-fg-muted">Allergy {idx + 1}</span>
+              <Button size="sm" variant="danger" onClick={() => removeHealthInfoItem("allergies", idx)}>
                 <X size={14} /> Remove
               </Button>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <Input
                 label="Name"
-                labelPlacement="outside"
                 placeholder="e.g. Peanuts"
                 value={allergy.name || ""}
-                onValueChange={(v) => updateHealthInfoItem("allergies", idx, "name", v)}
-                variant="bordered"
-                radius="sm"
-                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
+                onChange={(e) => { const v = e.target.value; updateHealthInfoItem("allergies", idx, "name", v); }}
               />
               <Select
                 label="Type"
-                labelPlacement="outside"
                 placeholder="Select type"
-                selectedKeys={allergy.type ? [allergy.type] : []}
-                onSelectionChange={(keys) => updateHealthInfoItem("allergies", idx, "type", Array.from(keys)[0])}
-                variant="bordered"
-                radius="sm"
-                classNames={{ trigger: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
-              >
-                {["food", "medication", "environmental", "insect", "latex", "other"].map((t) => (
-                  <SelectItem key={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</SelectItem>
-                ))}
-              </Select>
+                value={allergy.type || ""}
+                onChange={(e) => { const v = e.target.value; updateHealthInfoItem("allergies", idx, "type", v); }}
+                options={["food", "medication", "environmental", "insect", "latex", "other"].map((t) => ({ value: t, label: t.charAt(0).toUpperCase() + t.slice(1) }))}
+              />
               <Select
                 label="Severity"
-                labelPlacement="outside"
                 placeholder="Select severity"
-                selectedKeys={allergy.severity ? [allergy.severity] : []}
-                onSelectionChange={(keys) => updateHealthInfoItem("allergies", idx, "severity", Array.from(keys)[0])}
-                variant="bordered"
-                radius="sm"
-                classNames={{ trigger: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
-              >
-                {["mild", "moderate", "severe", "life-threatening"].map((s) => (
-                  <SelectItem key={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
-                ))}
-              </Select>
+                value={allergy.severity || ""}
+                onChange={(e) => { const v = e.target.value; updateHealthInfoItem("allergies", idx, "severity", v); }}
+                options={["mild", "moderate", "severe", "life-threatening"].map((s) => ({ value: s, label: s.charAt(0).toUpperCase() + s.slice(1) }))}
+              />
               <Input
                 label="Reaction"
-                labelPlacement="outside"
                 placeholder="e.g. Skin rash"
                 value={allergy.reaction || ""}
-                onValueChange={(v) => updateHealthInfoItem("allergies", idx, "reaction", v)}
-                variant="bordered"
-                radius="sm"
-                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
+                onChange={(e) => { const v = e.target.value; updateHealthInfoItem("allergies", idx, "reaction", v); }}
               />
               <Input
                 label="Notes"
-                labelPlacement="outside"
                 placeholder="Additional notes"
                 value={allergy.notes || ""}
-                onValueChange={(v) => updateHealthInfoItem("allergies", idx, "notes", v)}
-                variant="bordered"
-                radius="sm"
+                onChange={(e) => { const v = e.target.value; updateHealthInfoItem("allergies", idx, "notes", v); }}
                 className="col-span-2"
-                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
               />
             </div>
           </div>
@@ -450,82 +370,54 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
         {(formData.healthInfo?.medications || []).map((med, idx) => (
           <div key={`med-${idx}`} className="p-3 bg-surface-2 rounded-lg border border-divider space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-xs font-medium text-fg-subtle">Medication {idx + 1}</span>
-              <Button size="sm" variant="light" color="danger" onPress={() => removeHealthInfoItem("medications", idx)}>
+              <span className="text-xs font-medium text-fg-muted">Medication {idx + 1}</span>
+              <Button size="sm" variant="danger" onClick={() => removeHealthInfoItem("medications", idx)}>
                 <X size={14} /> Remove
               </Button>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <Input
                 label="Name"
-                labelPlacement="outside"
                 placeholder="e.g. Paracetamol"
                 value={med.name || ""}
-                onValueChange={(v) => updateHealthInfoItem("medications", idx, "name", v)}
-                variant="bordered"
-                radius="sm"
-                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
+                onChange={(e) => { const v = e.target.value; updateHealthInfoItem("medications", idx, "name", v); }}
               />
               <Input
                 label="Dosage"
-                labelPlacement="outside"
                 placeholder="e.g. 500mg"
                 value={med.dosage || ""}
-                onValueChange={(v) => updateHealthInfoItem("medications", idx, "dosage", v)}
-                variant="bordered"
-                radius="sm"
-                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
+                onChange={(e) => { const v = e.target.value; updateHealthInfoItem("medications", idx, "dosage", v); }}
               />
               <Input
                 label="Frequency"
-                labelPlacement="outside"
                 placeholder="e.g. Twice daily"
                 value={med.frequency || ""}
-                onValueChange={(v) => updateHealthInfoItem("medications", idx, "frequency", v)}
-                variant="bordered"
-                radius="sm"
-                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
+                onChange={(e) => { const v = e.target.value; updateHealthInfoItem("medications", idx, "frequency", v); }}
               />
               <Input
                 label="Prescribed By"
-                labelPlacement="outside"
                 placeholder="Doctor name"
                 value={med.prescribedBy || ""}
-                onValueChange={(v) => updateHealthInfoItem("medications", idx, "prescribedBy", v)}
-                variant="bordered"
-                radius="sm"
-                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
+                onChange={(e) => { const v = e.target.value; updateHealthInfoItem("medications", idx, "prescribedBy", v); }}
               />
               <Input
                 label="Start Date"
-                labelPlacement="outside"
                 placeholder="DD/MM/YYYY"
                 value={med.startDate || ""}
-                onValueChange={(v) => updateHealthInfoItem("medications", idx, "startDate", v)}
-                variant="bordered"
-                radius="sm"
-                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
+                onChange={(e) => { const v = e.target.value; updateHealthInfoItem("medications", idx, "startDate", v); }}
               />
               <Input
                 label="End Date"
-                labelPlacement="outside"
                 placeholder="DD/MM/YYYY"
                 value={med.endDate || ""}
-                onValueChange={(v) => updateHealthInfoItem("medications", idx, "endDate", v)}
-                variant="bordered"
-                radius="sm"
-                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
+                onChange={(e) => { const v = e.target.value; updateHealthInfoItem("medications", idx, "endDate", v); }}
               />
               <Input
                 label="Notes"
-                labelPlacement="outside"
                 placeholder="Additional notes"
                 value={med.notes || ""}
-                onValueChange={(v) => updateHealthInfoItem("medications", idx, "notes", v)}
-                variant="bordered"
-                radius="sm"
+                onChange={(e) => { const v = e.target.value; updateHealthInfoItem("medications", idx, "notes", v); }}
                 className="col-span-2"
-                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
               />
             </div>
           </div>
@@ -547,82 +439,63 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
         {(formData.healthInfo?.emergencyContacts || []).map((contact, idx) => (
           <div key={`he-contact-${idx}`} className="p-3 bg-surface-2 rounded-lg border border-divider space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-xs font-medium text-fg-subtle">Emergency Contact {idx + 1}</span>
-              <Button size="sm" variant="light" color="danger" onPress={() => removeHealthInfoItem("emergencyContacts", idx)}>
+              <span className="text-xs font-medium text-fg-muted">Emergency Contact {idx + 1}</span>
+              <Button size="sm" variant="danger" onClick={() => removeHealthInfoItem("emergencyContacts", idx)}>
                 <X size={14} /> Remove
               </Button>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <Input
                 label="Name"
-                labelPlacement="outside"
                 placeholder="Contact name"
                 value={contact.name || ""}
-                onValueChange={(v) => updateHealthInfoItem("emergencyContacts", idx, "name", v)}
-                variant="bordered"
-                radius="sm"
-                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
+                onChange={(e) => { const v = e.target.value; updateHealthInfoItem("emergencyContacts", idx, "name", v); }}
               />
               <Input
                 label="Relationship"
-                labelPlacement="outside"
                 placeholder="e.g. Uncle"
                 value={contact.relationship || ""}
-                onValueChange={(v) => updateHealthInfoItem("emergencyContacts", idx, "relationship", v)}
-                variant="bordered"
-                radius="sm"
-                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
+                onChange={(e) => { const v = e.target.value; updateHealthInfoItem("emergencyContacts", idx, "relationship", v); }}
               />
               <Input
                 label="Phone"
-                labelPlacement="outside"
                 startContent={<span className="text-fg-faint text-xs">+91</span>}
                 placeholder="10-digit mobile"
                 value={contact.phone || ""}
-                onValueChange={(v) => {
+                onChange={(e) => {
+                  const v = e.target.value;
                   const digitsOnly = v.replace(/\D/g, "").slice(0, 10);
                   updateHealthInfoItem("emergencyContacts", idx, "phone", digitsOnly);
                 }}
-                variant="bordered"
-                radius="sm"
                 maxLength={10}
-                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
               />
               <Input
                 label="Alternate Phone"
-                labelPlacement="outside"
                 startContent={<span className="text-fg-faint text-xs">+91</span>}
                 placeholder="10-digit mobile"
                 value={contact.alternatePhone || ""}
-                onValueChange={(v) => {
+                onChange={(e) => {
+                  const v = e.target.value;
                   const digitsOnly = v.replace(/\D/g, "").slice(0, 10);
                   updateHealthInfoItem("emergencyContacts", idx, "alternatePhone", digitsOnly);
                 }}
-                variant="bordered"
-                radius="sm"
                 maxLength={10}
-                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
               />
               <Input
                 label="Email"
-                labelPlacement="outside"
                 placeholder="Email address"
                 value={contact.email || ""}
-                onValueChange={(v) => updateHealthInfoItem("emergencyContacts", idx, "email", v)}
-                variant="bordered"
-                radius="sm"
-                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
+                onChange={(e) => { const v = e.target.value; updateHealthInfoItem("emergencyContacts", idx, "email", v); }}
               />
               <Input
                 label="Priority"
-                labelPlacement="outside"
                 placeholder="e.g. 1"
                 type="number"
                 value={contact.priority?.toString() || ""}
-                onValueChange={(v) => updateHealthInfoItem("emergencyContacts", idx, "priority", v ? parseInt(v) : "")}
-                variant="bordered"
-                radius="sm"
-                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  updateHealthInfoItem("emergencyContacts", idx, "priority", v ? parseInt(v) : "");
+                }}
               />
             </div>
           </div>
@@ -642,7 +515,7 @@ function TransportSection({ formData, updateField }) {
   const { t } = useTranslation();
   return (
     <div className="space-y-4 pt-2 border-t border-solid border-divider">
-      <label className="text-sm font-semibold text-default-900 block mt-2">{t('pages.additionalRequirements')}</label>
+      <label className="text-sm font-semibold text-fg block mt-2">{t('pages.additionalRequirements')}</label>
       <div className="grid grid-cols-2 gap-4">
         <div
           className={`cursor-pointer rounded-xl border-2 p-4 flex items-center gap-3 transition-all ${
@@ -658,7 +531,7 @@ function TransportSection({ formData, updateField }) {
             <Users size={20} />
           </div>
           <div>
-            <span className={`text-sm font-medium ${formData.transportRequired ? "text-[var(--accent)] dark:text-primary-300" : "text-fg-subtle"}`}>
+            <span className={`text-sm font-medium ${formData.transportRequired ? "text-[var(--accent)] dark:text-primary-300" : "text-fg-muted"}`}>
               Transport Required
             </span>
             <p className="text-xs text-fg-muted">{t('pages.schoolBusFacility')}</p>
@@ -678,7 +551,7 @@ function TransportSection({ formData, updateField }) {
             <Users size={20} />
           </div>
           <div>
-            <span className={`text-sm font-medium ${formData.hostelRequired ? "text-[var(--accent)] dark:text-primary-300" : "text-fg-subtle"}`}>
+            <span className={`text-sm font-medium ${formData.hostelRequired ? "text-[var(--accent)] dark:text-primary-300" : "text-fg-muted"}`}>
               Hostel Required
             </span>
             <p className="text-xs text-fg-muted">{t('pages.boardingFacility')}</p>

@@ -1,5 +1,5 @@
 import { useRef, useMemo, useState } from "react";
-import { Button } from "@heroui/react";
+import { Button } from "../../../components/ui";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import toast from "react-hot-toast";
 import { useStudentForm } from "../hooks/useStudentForm";
@@ -238,21 +238,22 @@ export default function StudentForm({
           {step > 1 && (
             <Button
               size="sm"
-              variant="bordered"
-              onPress={handlePrev}
+              variant="outline"
+              onClick={handlePrev}
               className="border-border-token text-fg font-medium"
-              startContent={<ArrowLeft size={12} />}
+              icon={<ArrowLeft size={12} />}
             >
               {t('common.back', 'Back')}
             </Button>
           )}
           <Button
             size="sm"
-            color="primary"
-            onPress={step === 3 ? handleSubmit : handleNext}
-            isLoading={isSubmitting}
+            variant="primary"
+            onClick={step === 3 ? handleSubmit : handleNext}
+            loading={isSubmitting}
             className="font-medium whitespace-nowrap"
-            endContent={step === 3 ? null : <ArrowRight size={12} />}
+            icon={step === 3 ? null : <ArrowRight size={12} />}
+            iconPosition="right"
           >
             {step === 3
               ? (initialData ? "Update student" : "Add student")

@@ -1,4 +1,4 @@
-import { Button, Chip } from "@heroui/react";
+import { Button, Chip } from "../../components/ui";
 import { Upload, X, FileText } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 
@@ -23,7 +23,7 @@ function Step3Documents({
   return (
     <div className="space-y-5 animate-fade-in text-left">
       <div className="space-y-2">
-        <label className="text-sm font-semibold text-default-900">{t('pages.documentUploads')}</label>
+        <label className="text-sm font-semibold text-fg">{t('pages.documentUploads')}</label>
         <p className="text-xs text-fg-muted">
           {documentConfigs.some(c => c.isRequired)
             ? 'Upload required documents. Fields marked with * are mandatory.'
@@ -33,7 +33,7 @@ function Step3Documents({
 
       {/* Birth Certificate */}
       <div className="space-y-2">
-        <label htmlFor="birthCertificate-upload" className="text-xs font-medium text-fg-subtle">
+        <label htmlFor="birthCertificate-upload" className="text-xs font-medium text-fg-muted">
           {t('pages.birthCertificate')}
           {isDocRequired('birthCertificate') && <span className="text-danger ml-1">*</span>}
         </label>
@@ -56,9 +56,7 @@ function Step3Documents({
             )}
           </div>
           {formData.birthCertificate ? (
-            <Button size="sm" variant="light" color="danger" onPress={(e) => { e.stopPropagation(); updateField("birthCertificate", null); }}>
-              <X size={14} />
-            </Button>
+            <Button size="sm" variant="ghost" icon={<X size={14} />} onClick={(e) => { e.stopPropagation(); updateField("birthCertificate", null); }} />
           ) : (
             <Upload size={16} className="text-fg-faint" />
           )}
@@ -70,7 +68,7 @@ function Step3Documents({
 
       {/* Transfer Certificate */}
       <div className="space-y-2">
-        <label htmlFor="transferCertificate-upload" className="text-xs font-medium text-fg-subtle">
+        <label htmlFor="transferCertificate-upload" className="text-xs font-medium text-fg-muted">
           {t('pages.transferCertificateTc')}
           {isDocRequired('transferCertificate') && <span className="text-danger ml-1">*</span>}
         </label>
@@ -93,9 +91,7 @@ function Step3Documents({
             )}
           </div>
           {formData.transferCertificate ? (
-            <Button size="sm" variant="light" color="danger" onPress={(e) => { e.stopPropagation(); updateField("transferCertificate", null); }}>
-              <X size={14} />
-            </Button>
+            <Button size="sm" variant="ghost" icon={<X size={14} />} onClick={(e) => { e.stopPropagation(); updateField("transferCertificate", null); }} />
           ) : (
             <Upload size={16} className="text-fg-faint" />
           )}
@@ -107,7 +103,7 @@ function Step3Documents({
 
       {/* Aadhaar Card (Front & Back) */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-fg-subtle">
+        <label className="text-xs font-medium text-fg-muted">
           {t('pages.aadhaarCardFrontBack')}
           {isDocRequired('aadhaarFront') && <span className="text-danger ml-1">*</span>}
         </label>
@@ -134,9 +130,7 @@ function Step3Documents({
             )}
           </div>
           {formData.aadhaarFront ? (
-            <Button size="sm" variant="light" color="danger" onPress={(e) => { e.stopPropagation(); updateField("aadhaarFront", null); }}>
-              <X size={14} />
-            </Button>
+            <Button size="sm" variant="ghost" icon={<X size={14} />} onClick={(e) => { e.stopPropagation(); updateField("aadhaarFront", null); }} />
           ) : (
             <Upload size={16} className="text-fg-faint" />
           )}
@@ -166,9 +160,7 @@ function Step3Documents({
             )}
           </div>
           {formData.aadhaarBack ? (
-            <Button size="sm" variant="light" color="danger" onPress={(e) => { e.stopPropagation(); updateField("aadhaarBack", null); }}>
-              <X size={14} />
-            </Button>
+            <Button size="sm" variant="ghost" icon={<X size={14} />} onClick={(e) => { e.stopPropagation(); updateField("aadhaarBack", null); }} />
           ) : (
             <Upload size={16} className="text-fg-faint" />
           )}
@@ -180,7 +172,7 @@ function Step3Documents({
 
       {/* Other Documents */}
       <div className="space-y-2">
-        <label className="text-xs font-medium text-fg-subtle">{t('pages.otherDocuments')}</label>
+        <label className="text-xs font-medium text-fg-muted">{t('pages.otherDocuments')}</label>
         <p className="text-xs text-fg-muted">Upload any other relevant documents (medical records, previous report cards, etc.)</p>
         <div
           className="border border-solid border-border-token rounded-lg p-4 flex items-center justify-center gap-2 cursor-pointer hover:bg-surface-2 transition-colors"
@@ -190,14 +182,14 @@ function Step3Documents({
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); otherDocsRef.current?.click(); } }}
         >
           <Upload size={14} className="text-fg-muted" />
-          <span className="text-sm text-fg-subtle">{t('pages.uploadAdditionalDocuments')}</span>
+          <span className="text-sm text-fg-muted">{t('pages.uploadAdditionalDocuments')}</span>
         </div>
         <input ref={otherDocsRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png" className="hidden"
           onChange={(e) => handleMultiFileUpload("otherDocuments", e.target.files)} />
         {formData.otherDocuments?.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
             {formData.otherDocuments?.map((file, i) => (
-              <Chip key={file.name || `doc-${i}`} onClose={() => removeFile("otherDocuments", i)} size="sm" variant="flat" className="h-8 border border-divider bg-surface">
+              <Chip key={file.name || `doc-${i}`} onRemove={() => removeFile("otherDocuments", i)} size="sm" className="h-8 border border-divider bg-surface">
                 {file.name}
               </Chip>
             ))}

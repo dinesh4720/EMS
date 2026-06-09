@@ -1,4 +1,5 @@
-import { Input, Select, SelectItem, Checkbox, Textarea, Button, cn } from "@heroui/react";
+import { Input, Select, Checkbox, Textarea, Button } from "../../../../components/ui";
+import { cn } from "../../../../utils/cn";
 import { X, Bus, Heart } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import { PARENT_RELATIONSHIPS, GUARDIAN_RELATIONSHIPS } from "../../../../constants/studentConstants";
@@ -37,7 +38,7 @@ function Step2ParentsHealth({
                   {idx === 0 ? "Primary Parent" : `Parent ${idx + 1}`}
                 </span>
                 {parents.length > 1 && (
-                  <Button size="sm" variant="light" color="danger" onPress={() => removeParent(index)}>
+                  <Button size="sm" variant="danger" onClick={() => removeParent(index)}>
                     <X size={14} /> Remove
                   </Button>
                 )}
@@ -46,75 +47,50 @@ function Step2ParentsHealth({
                 <div ref={index === 0 ? parentNameRef : null}>
                   <Input
                     label={t('pages.fullName1')}
-                    labelPlacement="outside"
                     placeholder={t('pages.parentName1')}
                     value={parent.name}
-                    onValueChange={val => updateParent(index, "name", val)}
-                    isInvalid={index === 0 && !!errors.parentName}
-                    errorMessage={index === 0 ? errors.parentName : ""}
-                    variant="bordered"
-                    radius="sm"
-                    isRequired={index === 0}
-                    classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
+                    onChange={e => { const val = e.target.value; updateParent(index, "name", val); }}
+                    error={index === 0 ? errors.parentName : ""}
+                    required={index === 0}
                   />
                 </div>
                 <Select
                   label={t('pages.relationship')}
-                  labelPlacement="outside"
                   placeholder={t('pages.select1')}
-                  selectedKeys={parent.relationship ? [parent.relationship] : []}
-                  onSelectionChange={keys => updateParent(index, "relationship", Array.from(keys)[0])}
-                  variant="bordered"
-                  radius="sm"
-                  classNames={{ trigger: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
-                >
-                  {PARENT_RELATIONSHIPS.map(rel => <SelectItem key={rel}>{rel}</SelectItem>)}
-                </Select>
+                  value={parent.relationship || ""}
+                  onChange={e => { const val = e.target.value; updateParent(index, "relationship", val); }}
+                  options={PARENT_RELATIONSHIPS.map(rel => ({ value: rel, label: rel }))}
+                />
                 <div className="space-y-2" ref={index === 0 ? parentPhoneRef : null}>
                   <Input
                     label={t('pages.phoneNumber')}
-                    labelPlacement="outside"
                     startContent={<span className="text-fg-faint text-xs">+91</span>}
                     placeholder={t('students.form.phonePlaceholder')}
                     value={parent.phone}
-                    onValueChange={val => {
-                      // Only allow digits and limit to 10 characters
+                    onChange={e => {
+                      const val = e.target.value;
                       const digitsOnly = val.replace(/\D/g, '').slice(0, 10);
                       updateParent(index, "phone", digitsOnly);
                     }}
-                    isInvalid={index === 0 && !!errors.parentPhone}
-                    errorMessage={index === 0 ? errors.parentPhone : ""}
-                    variant="bordered"
-                    radius="sm"
-                    isRequired={index === 0}
+                    error={index === 0 ? errors.parentPhone : ""}
+                    required={index === 0}
                     maxLength={10}
-                    classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
                   />
-                  <Checkbox size="sm" isSelected={parent.isWhatsapp} onValueChange={val => updateParent(index, "isWhatsapp", val)}
-                    classNames={{ label: "text-xs text-fg-muted" }}>
-                    Same as WhatsApp
-                  </Checkbox>
+                  <Checkbox size="sm" checked={parent.isWhatsapp} onChange={e => { const val = e.target.checked; updateParent(index, "isWhatsapp", val); }}
+                    label="Same as WhatsApp" />
                 </div>
                 <Input
                   label={t('pages.email1')}
-                  labelPlacement="outside"
                   placeholder={t('students.form.parentEmailPlaceholder')}
                   value={parent.email}
-                  onValueChange={val => updateParent(index, "email", val)}
-                  variant="bordered"
-                  radius="sm"
-                  classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
+                  onChange={e => { const val = e.target.value; updateParent(index, "email", val); }}
                 />
                 <Input
                   label={t('pages.occupation')}
-                  labelPlacement="outside"
                   placeholder={t('students.form.occupationPlaceholder')}
                   value={parent.occupation}
-                  onValueChange={val => updateParent(index, "occupation", val)}
-                  variant="bordered"
-                  radius="sm"
+                  onChange={e => { const val = e.target.value; updateParent(index, "occupation", val); }}
                   className="col-span-2"
-                  classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
                 />
               </div>
             </div>
@@ -148,74 +124,52 @@ function Step2ParentsHealth({
                 <span className="text-sm font-medium text-fg">
                   Guardian {idx + 1}
                 </span>
-                <Button size="sm" variant="light" color="danger" onPress={() => removeParent(index)}>
+                <Button size="sm" variant="danger" onClick={() => removeParent(index)}>
                   <X size={14} /> Remove
                 </Button>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   label={t('pages.fullName1')}
-                  labelPlacement="outside"
                   placeholder={t('pages.guardianName')}
                   value={guardian.name}
-                  onValueChange={val => updateParent(index, "name", val)}
-                  variant="bordered"
-                  radius="sm"
-                  classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
+                  onChange={e => { const val = e.target.value; updateParent(index, "name", val); }}
                 />
                 <Select
                   label={t('pages.relationship')}
-                  labelPlacement="outside"
                   placeholder={t('pages.select1')}
-                  selectedKeys={guardian.relationship ? [guardian.relationship] : []}
-                  onSelectionChange={keys => updateParent(index, "relationship", Array.from(keys)[0])}
-                  variant="bordered"
-                  radius="sm"
-                  classNames={{ trigger: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
-                >
-                  {GUARDIAN_RELATIONSHIPS.map(rel => <SelectItem key={rel}>{rel}</SelectItem>)}
-                </Select>
+                  value={guardian.relationship || ""}
+                  onChange={e => { const val = e.target.value; updateParent(index, "relationship", val); }}
+                  options={GUARDIAN_RELATIONSHIPS.map(rel => ({ value: rel, label: rel }))}
+                />
                 <div className="space-y-2">
                   <Input
                     label={t('pages.phoneNumber')}
-                    labelPlacement="outside"
                     startContent={<span className="text-fg-faint text-xs">+91</span>}
                     placeholder={t('students.form.phonePlaceholder')}
                     value={guardian.phone}
-                    onValueChange={val => {
+                    onChange={e => {
+                      const val = e.target.value;
                       const digitsOnly = val.replace(/\D/g, '').slice(0, 10);
                       updateParent(index, "phone", digitsOnly);
                     }}
-                    variant="bordered"
-                    radius="sm"
                     maxLength={10}
-                    classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
                   />
-                  <Checkbox size="sm" isSelected={guardian.isWhatsapp} onValueChange={val => updateParent(index, "isWhatsapp", val)}
-                    classNames={{ label: "text-xs text-fg-muted" }}>
-                    Same as WhatsApp
-                  </Checkbox>
+                  <Checkbox size="sm" checked={guardian.isWhatsapp} onChange={e => { const val = e.target.checked; updateParent(index, "isWhatsapp", val); }}
+                    label="Same as WhatsApp" />
                 </div>
                 <Input
                   label={t('pages.email1')}
-                  labelPlacement="outside"
                   placeholder={t('students.form.guardianEmailPlaceholder')}
                   value={guardian.email}
-                  onValueChange={val => updateParent(index, "email", val)}
-                  variant="bordered"
-                  radius="sm"
-                  classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
+                  onChange={e => { const val = e.target.value; updateParent(index, "email", val); }}
                 />
                 <Input
                   label={t('pages.occupation')}
-                  labelPlacement="outside"
                   placeholder={t('students.form.occupationPlaceholder')}
                   value={guardian.occupation}
-                  onValueChange={val => updateParent(index, "occupation", val)}
-                  variant="bordered"
-                  radius="sm"
+                  onChange={e => { const val = e.target.value; updateParent(index, "occupation", val); }}
                   className="col-span-2"
-                  classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
                 />
               </div>
             </div>
@@ -247,49 +201,36 @@ function Step2ParentsHealth({
               <span className="text-sm font-medium text-fg">
                 Sibling {idx + 1}
               </span>
-              <Button size="sm" variant="light" color="danger" onPress={() => removeSibling(idx)}>
+              <Button size="sm" variant="danger" onClick={() => removeSibling(idx)}>
                 <X size={14} /> Remove
               </Button>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <Input
                 label={t('pages.siblingName')}
-                labelPlacement="outside"
                 placeholder={t('pages.siblingSFullName')}
                 value={sibling.name}
-                onValueChange={val => updateSibling(idx, "name", val)}
-                variant="bordered"
-                radius="sm"
-                classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
+                onChange={e => { const val = e.target.value; updateSibling(idx, "name", val); }}
               />
               <div className="flex items-center gap-2 pt-6">
                 <Checkbox size="sm"
-                  isSelected={sibling.inSameSchool}
-                  onValueChange={val => {
+                  checked={sibling.inSameSchool}
+                  onChange={e => {
+                    const val = e.target.checked;
                     updateSibling(idx, "inSameSchool", val);
                     if (!val) updateSibling(idx, "classId", "");
                   }}
-                >
-                  <span className="text-sm text-fg">{t('pages.isSiblingInThisSchool')}</span>
-                </Checkbox>
+                  label={<span className="text-sm text-fg">{t('pages.isSiblingInThisSchool')}</span>}
+                />
               </div>
               {sibling.inSameSchool && (
                 <Select
                   label={t('pages.class1')}
-                  labelPlacement="outside"
                   placeholder={t('pages.selectClass2')}
-                  selectedKeys={sibling.classId ? [sibling.classId] : []}
-                  onSelectionChange={keys => updateSibling(idx, "classId", Array.from(keys)[0])}
-                  variant="bordered"
-                  radius="sm"
-                  classNames={{ trigger: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
-                >
-                  {classesWithTeachers.map(cls => (
-                    <SelectItem key={cls.id}>
-                      {cls.name} {cls.section}
-                    </SelectItem>
-                  ))}
-                </Select>
+                  value={sibling.classId || ""}
+                  onChange={e => { const val = e.target.value; updateSibling(idx, "classId", val); }}
+                  options={classesWithTeachers.map(cls => ({ value: cls.id, label: `${cls.name} ${cls.section}` }))}
+                />
               )}
             </div>
           </div>
@@ -308,14 +249,10 @@ function Step2ParentsHealth({
         <h3 className="text-sm font-medium text-fg">{t('pages.healthSafety')}</h3>
         <Textarea
           label={t('pages.medicalConditions1')}
-          labelPlacement="outside"
           placeholder={t('pages.anyAllergiesMedicalConditionsOrSpecialNeedsOptional')}
           value={formData.medicalConditions}
-          onValueChange={val => updateField("medicalConditions", val)}
-          variant="bordered"
-          radius="sm"
-          minRows={2}
-          classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token" }}
+          onChange={e => { const val = e.target.value; updateField("medicalConditions", val); }}
+          rows={2}
         />
       </div>
 
@@ -334,7 +271,7 @@ function Step2ParentsHealth({
               <Bus size={20} />
             </div>
             <div>
-              <span className={cn("text-sm font-medium", formData.transportRequired ? "text-[var(--accent)]" : "text-fg-subtle")}>
+              <span className={cn("text-sm font-medium", formData.transportRequired ? "text-[var(--accent)]" : "text-fg-muted")}>
                 Transport Required
               </span>
               <p className="text-xs text-fg-muted">{t('pages.schoolBusFacility')}</p>
@@ -351,7 +288,7 @@ function Step2ParentsHealth({
               <Heart size={20} />
             </div>
             <div>
-              <span className={cn("text-sm font-medium", formData.hostelRequired ? "text-[var(--accent)]" : "text-fg-subtle")}>
+              <span className={cn("text-sm font-medium", formData.hostelRequired ? "text-[var(--accent)]" : "text-fg-muted")}>
                 Hostel Required
               </span>
               <p className="text-xs text-fg-muted">{t('pages.boardingFacility')}</p>

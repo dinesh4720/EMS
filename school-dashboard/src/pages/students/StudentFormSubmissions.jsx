@@ -1,26 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-} from "@heroui/react";
-import {
-  Eye,
-  CheckCircle,
-  XCircle,
-  MoreVertical,
-  Download,
-  User,
-  Edit,
-  Send,
+  Eye, CheckCircle, XCircle, MoreVertical,
+  Download, User, Edit, Send,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { intakeFormsApi } from "../../services/api";
@@ -29,13 +11,8 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from "../../context/AuthContext";
 import logger from "../../utils/logger";
 import {
-  Button,
-  Card,
-  Chip,
-  Modal,
-  Textarea,
-  ErrorState,
-  CircularProgress,
+  Button, Chip, Modal, Textarea, ErrorState,
+  DataTable, DropdownMenu,
 } from "../../components/ui";
 import "../../styles/student.css";
 
@@ -247,6 +224,83 @@ export default function StudentFormSubmissions() {
     );
   };
 
+  const columns = [
+    {
+      key: "formName",
+      label: t('pages.fORMName'),
+      render: (s) => (
+        <div>
+          <div className="font-medium text-fg">{s.formName || s.form?.formName}</div>
+          <div className="text-xs text-fg-muted">{s.formType || s.form?.formType}</div>
+        </div>
+      ),
+    },
+    {
+      key: "studentName",
+      label: t('pages.sTUDENTName'),
+      render: (s) => (
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-[var(--accent-bg)] flex items-center justify-center">
+            <User size={16} className="text-[var(--accent)]" />
+          </div>
+          <div className="text-sm font-medium">{getStudentName(s)}</div>
+        </div>
+      ),
+    },
+    {
+      key: "parentContact",
+      label: t('pages.pARENTContact'),
+      render: (s) => <div className="text-sm">{getParentContact(s)}</div>,
+    },
+    {
+      key: "submittedAt",
+      label: t('pages.sUBMITTEDDate'),
+      render: (s) => (
+        <div className="text-sm">
+          {s.submittedAt
+            ? format(new Date(s.submittedAt), "MMM dd, yyyy HH:mm")
+            : '—'}
+        </div>
+      ),
+    },
+    {
+      key: "status",
+      label: t('pages.sTATUS'),
+      render: (s) => (
+        <Chip size="sm" color={getStatusColor(s.reviewStatus)}>
+          {getStatusLabel(s.reviewStatus)}
+        </Chip>
+      ),
+    },
+  ];
+
+  const rowActions = (submission) => (
+    <DropdownMenu
+      ariaLabel={t('aria.menus.submissionActions')}
+      trigger={
+        <Button size="sm" variant="ghost" aria-label="More actions" icon={<MoreVertical size={16} />} />
+      }
+      items={[
+        {
+          key: "view",
+          label: "Review Submission",
+          icon: <Eye size={16} />,
+          onClick: () => handleViewSubmission(submission._id),
+        },
+        ...(submission.studentId
+          ? [
+              {
+                key: "student",
+                label: "View Student Record",
+                icon: <User size={16} />,
+                onClick: () => navigate(`/students/${submission.studentId}`),
+              },
+            ]
+          : []),
+      ]}
+    />
+  );
+
   if (fetchError) {
     return (
       <div className="space-y-6">
@@ -314,101 +368,15 @@ export default function StudentFormSubmissions() {
       </p>
 
       {/* Submissions Table */}
-      <Card padding="none">
-        <div className="overflow-x-auto">
-          <Table
-            aria-label={t('aria.tables.studentFormSubmissions')}
-            removeWrapper
-            classNames={{
-              th: "bg-surface-2 text-fg font-semibold",
-              td: "py-4",
-            }}
-          >
-            <TableHeader>
-              <TableColumn scope="col">{t('pages.fORMName')}</TableColumn>
-              <TableColumn scope="col">{t('pages.sTUDENTName')}</TableColumn>
-              <TableColumn scope="col">{t('pages.pARENTContact')}</TableColumn>
-              <TableColumn scope="col">{t('pages.sUBMITTEDDate')}</TableColumn>
-              <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
-              <TableColumn scope="col">{t('pages.aCTIONS')}</TableColumn>
-            </TableHeader>
-            <TableBody
-              items={submissions}
-              emptyContent="No submissions found"
-              loadingContent={<CircularProgress />}
-              isLoading={loading}
-            >
-              {(submission) => (
-                <TableRow key={submission._id}>
-                  <TableCell>
-                    <div className="font-medium text-fg">
-                      {submission.formName || submission.form?.formName}
-                    </div>
-                    <div className="text-xs text-fg-muted">
-                      {submission.formType || submission.form?.formType}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-[var(--accent-bg)] flex items-center justify-center">
-                        <User size={16} className="text-[var(--accent)]" />
-                      </div>
-                      <div className="text-sm font-medium">
-                        {getStudentName(submission)}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">{getParentContact(submission)}</div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      {submission.submittedAt
-                        ? format(new Date(submission.submittedAt), "MMM dd, yyyy HH:mm")
-                        : '—'}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      size="sm"
-                      color={getStatusColor(submission.reviewStatus)}
-                    >
-                      {getStatusLabel(submission.reviewStatus)}
-                    </Chip>
-                  </TableCell>
-                  <TableCell>
-                    <Dropdown>
-                      <DropdownTrigger>
-                        <Button size="sm" variant="ghost" aria-label="More actions" icon={<MoreVertical size={16} />} />
-                      </DropdownTrigger>
-                      <DropdownMenu aria-label={t('aria.menus.submissionActions')}>
-                        <DropdownItem
-                          key="view"
-                          startContent={<Eye size={16} />}
-                          onPress={() => handleViewSubmission(submission._id)}
-                        >
-                          Review Submission
-                        </DropdownItem>
-                        {submission.studentId && (
-                          <DropdownItem
-                            key="student"
-                            startContent={<User size={16} />}
-                            onPress={() =>
-                              navigate(`/students/${submission.studentId}`)
-                            }
-                          >
-                            View Student Record
-                          </DropdownItem>
-                        )}
-                      </DropdownMenu>
-                    </Dropdown>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </Card>
+      <DataTable
+        columns={columns}
+        data={submissions}
+        keyField="_id"
+        loading={loading}
+        emptyState={{ title: "No submissions found" }}
+        rowActions={rowActions}
+        ariaLabel={t('aria.tables.studentFormSubmissions')}
+      />
 
       {/* Review Submission Modal */}
       <Modal

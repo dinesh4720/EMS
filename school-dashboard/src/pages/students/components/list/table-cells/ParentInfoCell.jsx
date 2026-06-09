@@ -1,5 +1,5 @@
 import React from "react";
-import { Button } from "@heroui/react";
+import { Button } from "../../../../components/ui";
 import { useTranslation } from "react-i18next";
 
 function isValidPhone(phone) {
@@ -40,7 +40,7 @@ function ParentInfoCell({
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={(e) => e.stopPropagation()}
             >
-                <span className="text-default-900 text-sm font-medium truncate">
+                <span className="text-fg text-sm font-medium truncate">
                     {student.parentName || "Parent"}
                 </span>
                 {editingPhoneId === student.id ? (
@@ -67,17 +67,17 @@ function ParentInfoCell({
                         />
                         <Button
                             size="sm"
-                            color="primary"
+                            variant="primary"
                             className="h-6 min-w-12 text-xs"
-                            onPress={() => handleSavePhone(student.id)}
+                            onClick={() => handleSavePhone(student.id)}
                         >
                             Save
                         </Button>
                         <Button
                             size="sm"
-                            variant="light"
+                            variant="ghost"
                             className="h-6 min-w-12 text-xs"
-                            onPress={() => {
+                            onClick={() => {
                                 setEditingPhoneId(null);
                                 setPhoneInput("");
                             }}
@@ -96,7 +96,7 @@ function ParentInfoCell({
                             setEditingPhoneId(student.id);
                             setPhoneInput("");
                         }}
-                        className="text-primary text-xs hover:underline text-left"
+                        className="text-accent text-xs hover:underline text-left"
                     >
                         + Add phone number
                     </button>

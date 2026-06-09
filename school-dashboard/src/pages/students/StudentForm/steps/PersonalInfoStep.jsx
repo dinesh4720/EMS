@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useMemo } from "react";
-import { Input, Select, SelectItem, RadioGroup, Radio, Checkbox, Textarea, Avatar } from "@heroui/react";
+import { Input, Select, RadioGroup, Checkbox, Textarea, Avatar } from "../../../../components/ui";
 import { User, Calendar } from "lucide-react";
 import { GENDERS, BLOOD_GROUPS, RELIGIONS, CATEGORIES, MOTHER_TONGUES } from "../../../../constants/studentConstants";
 import { INDIAN_STATES, normalizeStateName } from "../../../../constants/states";
@@ -73,11 +73,11 @@ export default function PersonalInfoStep({
     }
   };
 
-  const handleClassChange = (keys) => {
+  const handleClassChange = (value) => {
     const selectedClass = classesWithTeachers.find(
-      (c) => c.name === Array.from(keys)[0]
+      (c) => c.name === value
     );
-    updateField("classGrade", Array.from(keys)[0]);
+    updateField("classGrade", value);
     updateField("section", selectedClass?.section || "");
     updateField("rollNumber", "");
   };
@@ -89,20 +89,15 @@ export default function PersonalInfoStep({
 
       {/* Personal Information */}
       <div className="space-y-2" ref={fullNameRef}>
-        <label className="text-sm font-semibold text-default-900">{t('pages.personalInformation1')}</label>
+        <label className="text-sm font-semibold text-fg">{t('pages.personalInformation1')}</label>
         <div className="grid grid-cols-2 gap-4">
           <Input
             label={t('pages.fullName1')}
-            labelPlacement="outside"
             placeholder={t('pages.enterStudentSFullName')}
             value={formData.fullName}
-            onValueChange={(v) => updateField("fullName", v.replace(/[0-9]/g, ""))}
-            isInvalid={!!errors.fullName}
-            errorMessage={errors.fullName}
-            variant="bordered"
-            radius="sm"
-            isRequired
-            classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
+            onChange={(e) => updateField("fullName", e.target.value.replace(/[0-9]/g, ""))}
+            error={errors.fullName}
+            required
           />
 
           <DateOfBirthInput
@@ -120,24 +115,15 @@ export default function PersonalInfoStep({
 
       {/* Gender */}
       <div className="space-y-1" ref={genderRef}>
-        <label id="gender-label" className="text-xs font-medium text-fg-subtle">
+        <label id="gender-label" className="text-xs font-medium text-fg-muted">
           Gender <span className="text-danger">*</span>
         </label>
         <RadioGroup
-          orientation="horizontal"
           value={formData.gender}
-          onValueChange={(v) => updateField("gender", v)}
-          classNames={{ wrapper: "gap-4" }}
-          isInvalid={!!errors.gender}
-          errorMessage={errors.gender}
+          onChange={(e) => updateField("gender", e.target.value)}
           aria-labelledby="gender-label"
-        >
-          {GENDERS.map((g) => (
-            <Radio key={g} value={g} size="sm" classNames={{ label: "text-sm" }}>
-              {g}
-            </Radio>
-          ))}
-        </RadioGroup>
+          options={GENDERS.map((g) => ({ value: g, label: g }))}
+        />
       </div>
 
       {/* Class Information */}
@@ -192,9 +178,7 @@ function ProfileSection({ formData, updateField }) {
         <Avatar
           src={avatarSrc}
           className="w-20 h-20 text-3xl"
-          isBordered
-          radius="full"
-          color="primary"
+          shape="circle"
         />
       ) : (
         <div className="w-20 h-20 rounded-full border-2 border-divider bg-surface-2 flex items-center justify-center">
@@ -249,17 +233,12 @@ function DateOfBirthInput({ value, onChange, error, inputRef }) {
     <div ref={inputRef}>
       <Input
         label="Date of Birth"
-        labelPlacement="outside"
         placeholder="DD/MM/YYYY"
         value={value || ""}
-        onValueChange={handleDateInput}
-        isInvalid={!!error}
-        errorMessage={error}
-        variant="bordered"
-        radius="sm"
-        isRequired
+        onChange={(e) => handleDateInput(e.target.value)}
+        error={error}
+        required
         maxLength={10}
-        classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-[var(--accent)] h-10" }}
       />
     </div>
   );
@@ -278,44 +257,26 @@ function ClassSection({ formData, errors, classesWithTeachers, onClassChange, on
 
   return (
     <div className="space-y-2 pt-2 border-t border-solid border-divider" ref={inputRef}>
-      <label className="text-sm font-semibold text-default-900 block mt-2">{t('pages.classInformation')}</label>
+      <label className="text-sm font-semibold text-fg block mt-2">{t('pages.classInformation')}</label>
       <div className="grid grid-cols-2 gap-4">
         <Select
           label={t('pages.class1')}
-          labelPlacement="outside"
           placeholder={t('pages.selectClass2')}
-          selectedKeys={formData.classGrade ? [formData.classGrade] : []}
-          onSelectionChange={onClassChange}
-          isRequired
-          isInvalid={!!errors.classGrade}
-          errorMessage={errors.classGrade}
-          variant="bordered"
-          radius="sm"
-          classNames={{ trigger: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
-        >
-          {uniqueClasses.map((className) => (
-            <SelectItem key={className}>{className}</SelectItem>
-          ))}
-        </Select>
+          value={formData.classGrade || ""}
+          onChange={(e) => onClassChange(e.target.value)}
+          required
+          options={uniqueClasses.map((className) => ({ value: className, label: className }))}
+        />
 
         <Select
           label={t('pages.section1')}
-          labelPlacement="outside"
           placeholder={t('pages.selectSection')}
-          selectedKeys={formData.section ? [formData.section] : []}
-          onSelectionChange={(keys) => onSectionChange(Array.from(keys)[0])}
-          isRequired
-          isDisabled={!formData.classGrade}
-          isInvalid={!!errors.section}
-          errorMessage={errors.section}
-          variant="bordered"
-          radius="sm"
-          classNames={{ trigger: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
-        >
-          {availableSections.map((section) => (
-            <SelectItem key={section}>{section}</SelectItem>
-          ))}
-        </Select>
+          value={formData.section || ""}
+          onChange={(e) => onSectionChange(e.target.value)}
+          required
+          disabled={!formData.classGrade}
+          options={availableSections.map((section) => ({ value: section, label: section }))}
+        />
       </div>
     </div>
   );
@@ -325,29 +286,21 @@ function ContactSection({ formData, updateField }) {
   const { t } = useTranslation();
   return (
     <div className="space-y-2 pt-2 border-t border-solid border-divider">
-      <label className="text-sm font-semibold text-default-900 block mt-2">{t('pages.contactDetails1')}</label>
+      <label className="text-sm font-semibold text-fg block mt-2">{t('pages.contactDetails1')}</label>
       <div className="grid grid-cols-2 gap-4">
         <Input
           label={t('pages.mobileNumber')}
-          labelPlacement="outside"
           startContent={<span className="text-fg-faint text-xs">+91</span>}
           placeholder={t('pages.studentSMobileIfAny')}
           value={formData.mobile}
-          onValueChange={(v) => updateField("mobile", v.replace(/\D/g, "").slice(0, 10))}
-          variant="bordered"
-          radius="sm"
+          onChange={(e) => updateField("mobile", e.target.value.replace(/\D/g, "").slice(0, 10))}
           maxLength={10}
-          classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
         />
         <Input
           label={t('pages.emailAddress')}
-          labelPlacement="outside"
           placeholder={t('students.form.studentEmailPlaceholder')}
           value={formData.email}
-          onValueChange={(v) => updateField("email", v)}
-          variant="bordered"
-          radius="sm"
-          classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
+          onChange={(e) => updateField("email", e.target.value)}
         />
       </div>
     </div>
@@ -360,54 +313,34 @@ function AddressSection({ formData, errors, updateField, onZipCodeChange, isZipL
     <div className="space-y-2">
       <Textarea
         label={t('pages.address2')}
-        labelPlacement="outside"
         placeholder={t('pages.fullResidentialAddress')}
         value={formData.address}
-        onValueChange={(v) => updateField("address", v)}
-        variant="bordered"
-        radius="sm"
-        isRequired
-        minRows={2}
-        classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token" }}
+        onChange={(e) => updateField("address", e.target.value)}
+        required
+        rows={2}
       />
       <div className="grid grid-cols-3 gap-4">
         <Input
           label={t('pages.city1')}
-          labelPlacement="outside"
           placeholder={t('pages.city1')}
           value={formData.city}
-          onValueChange={(v) => { onManualCityStateEntry(); updateField("city", v); }}
-          variant="bordered"
-          radius="sm"
-          isRequired
-          classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
+          onChange={(e) => { onManualCityStateEntry(); updateField("city", e.target.value); }}
+          required
         />
         <Select
           label={t('pages.state1')}
-          labelPlacement="outside"
           placeholder={t('pages.selectState')}
-          selectedKeys={formData.state ? [formData.state] : []}
-          onSelectionChange={(keys) => { onManualCityStateEntry(); updateField("state", Array.from(keys)[0]); }}
-          variant="bordered"
-          radius="sm"
-          classNames={{ trigger: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
-        >
-          {INDIAN_STATES.map((s) => (
-            <SelectItem key={s}>{s}</SelectItem>
-          ))}
-        </Select>
+          value={formData.state || ""}
+          onChange={(e) => { onManualCityStateEntry(); updateField("state", e.target.value); }}
+          options={INDIAN_STATES.map((s) => ({ value: s, label: s }))}
+        />
         <Input
           label={t('pages.zIPCode')}
-          labelPlacement="outside"
           placeholder={t('pages.pINCode')}
           value={formData.zipCode}
-          onValueChange={onZipCodeChange}
-          variant="bordered"
-          radius="sm"
-          isRequired
+          onChange={(e) => onZipCodeChange(e.target.value)}
+          required
           maxLength={6}
-          isLoading={isZipLookupLoading}
-          classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
         />
       </div>
     </div>
@@ -418,61 +351,36 @@ function OptionalSection({ formData, updateField }) {
   const { t } = useTranslation();
   return (
     <div className="space-y-2 pt-2 border-t border-solid border-divider">
-      <label className="text-sm font-semibold text-default-900 block mt-2">{t('pages.optionalInformation')}</label>
+      <label className="text-sm font-semibold text-fg block mt-2">{t('pages.optionalInformation')}</label>
       <div className="grid grid-cols-2 gap-4">
         <Input
           label={t('pages.aadhaarNumber')}
-          labelPlacement="outside"
           placeholder={t('students.form.aadhaarPlaceholder')}
           value={formData.aadhaarNumber}
-          onValueChange={(v) => updateField("aadhaarNumber", v.replace(/\D/g, "").slice(0, 12))}
-          variant="bordered"
-          radius="sm"
+          onChange={(e) => updateField("aadhaarNumber", e.target.value.replace(/\D/g, "").slice(0, 12))}
           maxLength={12}
-          classNames={{ inputWrapper: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
         />
         <Select
           label={t('pages.bloodGroup1')}
-          labelPlacement="outside"
           placeholder={t('pages.select1')}
-          selectedKeys={formData.bloodGroup ? [formData.bloodGroup] : []}
-          onSelectionChange={(keys) => updateField("bloodGroup", Array.from(keys)[0])}
-          variant="bordered"
-          radius="sm"
-          classNames={{ trigger: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
-        >
-          {BLOOD_GROUPS.map((b) => (
-            <SelectItem key={b}>{b}</SelectItem>
-          ))}
-        </Select>
+          value={formData.bloodGroup || ""}
+          onChange={(e) => updateField("bloodGroup", e.target.value)}
+          options={BLOOD_GROUPS.map((b) => ({ value: b, label: b }))}
+        />
         <Select
           label={t('pages.religion1')}
-          labelPlacement="outside"
           placeholder={t('pages.selectReligion', 'Select Religion')}
-          selectedKeys={formData.religion ? [formData.religion] : []}
-          onSelectionChange={(keys) => updateField("religion", Array.from(keys)[0])}
-          variant="bordered"
-          radius="sm"
-          classNames={{ trigger: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
-        >
-          {RELIGIONS.map((r) => (
-            <SelectItem key={r}>{r}</SelectItem>
-          ))}
-        </Select>
+          value={formData.religion || ""}
+          onChange={(e) => updateField("religion", e.target.value)}
+          options={RELIGIONS.map((r) => ({ value: r, label: r }))}
+        />
         <Select
           label={t('pages.category1')}
-          labelPlacement="outside"
           placeholder={t('pages.select1')}
-          selectedKeys={formData.category ? [formData.category] : []}
-          onSelectionChange={(keys) => updateField("category", Array.from(keys)[0])}
-          variant="bordered"
-          radius="sm"
-          classNames={{ trigger: "bg-surface border-1 border-divider hover:border-border-token h-10" }}
-        >
-          {CATEGORIES.map((c) => (
-            <SelectItem key={c}>{c}</SelectItem>
-          ))}
-        </Select>
+          value={formData.category || ""}
+          onChange={(e) => updateField("category", e.target.value)}
+          options={CATEGORIES.map((c) => ({ value: c, label: c }))}
+        />
       </div>
     </div>
   );
