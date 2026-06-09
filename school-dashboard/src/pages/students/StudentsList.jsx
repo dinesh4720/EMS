@@ -9,6 +9,7 @@ import { useSearchParams } from "react-router-dom";
 // Translations removed — all text is plain English to match StaffList style
 import { Plus, Users, Printer } from "lucide-react";
 import EmptyState from "../../components/ui/EmptyState";
+import ErrorState from "../../components/ui/ErrorState";
 import Pagination from "../../components/common/Pagination";
 import { useNavigate } from "react-router-dom";
 import { useStudentsListData } from "./hooks/useStudentsListData";
@@ -64,7 +65,7 @@ export default function StudentsList({ onAddStudent }) {
   const navigate = useNavigate();
   const {
     // loading
-    contextLoading, listLoading,
+    contextLoading, listLoading, listError,
     // students data
     students, filteredItems, visibleItems, selectedCount, classes,
     // filter state
@@ -317,6 +318,25 @@ export default function StudentsList({ onAddStudent }) {
         scrollable={false}
       >
         <StudentsListSkeleton />
+      </PageShell>
+    );
+  }
+
+  if (listError) {
+    return (
+      <PageShell
+        title="Students"
+        description="Failed to load"
+        breadcrumbs={[{ label: "Home", href: "/" }, { label: "Students" }]}
+        bodyPadding="none"
+        scrollable={false}
+      >
+        <ErrorState
+          title="Failed to load students"
+          description={listError.message || "Something went wrong while fetching the student list."}
+          onRetry={refreshStudentsList}
+          size="md"
+        />
       </PageShell>
     );
   }

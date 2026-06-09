@@ -3,7 +3,7 @@ import { useState, useMemo, memo, useRef, useEffect, useCallback } from "react";
 import {
     Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
     Dropdown, DropdownTrigger, DropdownMenu, DropdownItem,
-    Popover, PopoverTrigger, PopoverContent, Calendar
+    Calendar
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { Filter, ChevronDown, ChevronLeft, ChevronRight, CalendarDays, Check, X, Clock, UserCheck, UserX, Users, Layers, AlertCircle, Save } from "lucide-react";
@@ -17,9 +17,11 @@ import Button from "../../components/ui/Button";
 import StatCard from "../../components/ui/StatCard";
 import Alert from "../../components/ui/Alert";
 import EmptyState from "../../components/ui/EmptyState";
+import ErrorState from "../../components/ui/ErrorState";
 import SearchInput from "../../components/ui/SearchInput";
 import Chip from "../../components/ui/Chip";
 import IconButton from "../../components/ui/IconButton";
+import Popover from "../../components/ui/Popover";
 
 
 
@@ -243,21 +245,21 @@ const StudentAttendance = memo(function StudentAttendance() {
 
     const getStatusStyle = (status) => {
         switch (status) {
-            case "present": return "bg-success-50 border-success-200 text-success-700";
-            case "absent": return "bg-danger-50 border-danger-200 text-danger-700";
-            case "leave": return "bg-warning-50 border-warning-200 text-warning-700";
-            case "halfday": return "bg-secondary-50 border-secondary-200 text-secondary-700";
-            default: return "bg-default-100 border-default-200 text-default-600";
+            case "present": return "bg-[var(--ok-bg)] border-[var(--ok)]/20 text-[var(--ok)]";
+            case "absent": return "bg-[var(--danger-bg)] border-[var(--danger)]/20 text-[var(--danger)]";
+            case "leave": return "bg-[var(--warn-bg)] border-[var(--warn)]/20 text-[var(--warn)]";
+            case "halfday": return "bg-[var(--info-bg)] border-[var(--info)]/20 text-[var(--info)]";
+            default: return "bg-surface-2 border-divider text-fg-subtle";
         }
     };
 
     const getStatusIcon = (status) => {
         switch (status) {
-            case "present": return <Check size={14} className="text-success-600" />;
-            case "absent": return <X size={14} className="text-danger-600" />;
-            case "leave": return <Clock size={14} className="text-warning-600" />;
-            case "halfday": return <AlertCircle size={14} className="text-secondary-600" />;
-            default: return <Clock size={14} className="text-default-500" />;
+            case "present": return <Check size={14} className="text-[var(--ok)]" />;
+            case "absent": return <X size={14} className="text-[var(--danger)]" />;
+            case "leave": return <Clock size={14} className="text-[var(--warn)]" />;
+            case "halfday": return <AlertCircle size={14} className="text-[var(--info)]" />;
+            default: return <Clock size={14} className="text-fg-muted" />;
         }
     };
 
@@ -287,8 +289,9 @@ const StudentAttendance = memo(function StudentAttendance() {
                                 setSelectedDate(date.toISOString().split('T')[0]);
                             }}
                         />
-                        <Popover placement="bottom-start">
-                            <PopoverTrigger>
+                        <Popover
+                            placement="bottom-start"
+                            trigger={
                                 <button
                                     type="button"
                                     className="inline-flex items-center gap-2 h-8 px-3 rounded-md border border-[var(--color-border-strong)] text-sm bg-transparent text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:ring-offset-2 whitespace-nowrap"
@@ -296,14 +299,14 @@ const StudentAttendance = memo(function StudentAttendance() {
                                     <CalendarDays size={16} className="text-[var(--color-text-muted)] flex-shrink-0" />
                                     <span>{formatShortDate(selectedDate)}</span>
                                 </button>
-                            </PopoverTrigger>
-                            <PopoverContent className="p-0">
-                                <Calendar
-                                    value={parseDate(selectedDate)}
-                                    onChange={(date) => setSelectedDate(date.toString())}
-                                    aria-label={t('aria.inputs.selectDate')}
-                                />
-                            </PopoverContent>
+                            }
+                            contentClassName="p-0"
+                        >
+                            <Calendar
+                                value={parseDate(selectedDate)}
+                                onChange={(date) => setSelectedDate(date.toString())}
+                                aria-label={t('aria.inputs.selectDate')}
+                            />
                         </Popover>
                         <IconButton
                             variant="outline"
@@ -456,9 +459,14 @@ const StudentAttendance = memo(function StudentAttendance() {
                 </Alert>
             )}
             {fetchError && !attendanceLoading && (
-                <Alert variant="danger" className="mt-3 sm:mx-1">
-                    {fetchError}
-                </Alert>
+                <div className="mt-3 sm:mx-1">
+                    <ErrorState
+                        title="Failed to load attendance"
+                        description={fetchError}
+                        onRetry={() => { setFetchError(null); setAttendanceLoading(true); }}
+                        size="sm"
+                    />
+                </div>
             )}
 
             {/* Class selection hint */}
@@ -484,10 +492,10 @@ const StudentAttendance = memo(function StudentAttendance() {
                 classNames={{
                     base: "-mx-6 overflow-visible [&_table]:w-[calc(100%+3rem)] [&_table]:border-spacing-0",
                     thead: "[&>tr]:first:shadow-none [&>tr>th:first-child]:pl-6 [&>tr>th:first-child]:pr-3 [&>tr>th:first-child]:w-12",
-                    th: "bg-transparent text-default-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200 last:pr-6 first:hover:bg-transparent first:cursor-default",
-                    td: "py-5 border-b border-default-200 group-data-[last=true]:border-none last:pr-6 transition-colors",
-                    tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-12 [&>tr:first-child>td]:pt-5 [&>tr[data-selected=true]>td]:bg-primary-50",
-                    tr: "transition-colors hover:bg-surface-2/50 data-[selected=true]:bg-primary-50",
+                    th: "bg-transparent text-fg-faint font-medium text-xs uppercase tracking-wider h-12 border-b border-divider last:pr-6 first:hover:bg-transparent first:cursor-default",
+                    td: "py-5 border-b border-divider group-data-[last=true]:border-none last:pr-6 transition-colors",
+                    tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-12 [&>tr:first-child>td]:pt-5 [&>tr[data-selected=true]>td]:bg-[var(--accent-bg)]",
+                    tr: "transition-colors hover:bg-surface-2/50 data-[selected=true]:bg-[var(--accent-bg)]",
                 }}
             >
                 <TableHeader>
