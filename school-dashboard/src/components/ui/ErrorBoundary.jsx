@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { isChunkError } from '../../utils/lazyWithRetry';
 import logger from '../../utils/logger';
+import { Sentry } from '../../lib/sentry';
 
 function ChunkErrorFallback({ onReload }) {
   const { t } = useTranslation();
@@ -62,6 +63,13 @@ class ErrorBoundary extends React.Component {
         ? error
         : new Error(typeof error === 'string' ? error : JSON.stringify(error) || 'Unknown error');
     logger.error('[ErrorBoundary] Caught error:', displayError.message, info.componentStack);
+
+    if (Sentry?.captureException) {
+      Sentry.captureException(displayError, {
+        tags: { mechanism: 'errorboundary' },
+        contexts: { react: { componentStack: info.componentStack } },
+      });
+    }
   }
 
   handleReset = () => {

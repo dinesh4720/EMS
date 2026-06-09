@@ -40,6 +40,7 @@ export default defineConfig({
     force: false, // Set to true if issues persist
   },
   build: {
+    sourcemap: true,
     commonjsOptions: {
       include: [/node_modules/],
       transformMixedEsModules: true,
