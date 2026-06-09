@@ -13,6 +13,7 @@ import {
   Check,
   LayoutGrid,
   IndianRupee,
+  X,
 } from "lucide-react";
 
 import { useApp } from "../context/AppContext";
@@ -139,20 +140,20 @@ function readPersistedVisible() {
 
 function DashboardSection({ title, count, children }) {
   return (
-    <div className="dash-section">
+    <section className="dash-section" aria-label={title}>
       <h2 className="dash-section-title">
         {title}
         {count != null && <span className="dash-section-count">{count}</span>}
       </h2>
       <div className="dash-section-card">{children}</div>
-    </div>
+    </section>
   );
 }
 
 function EmptyState({ icon: Icon, message }) {
   return (
     <div className="empty">
-      {Icon && <Icon size={20} strokeWidth={1.5} />}
+      {Icon && <Icon size={20} strokeWidth={1.5} aria-hidden="true" />}
       <span>{message}</span>
     </div>
   );
@@ -225,7 +226,7 @@ function PeopleSection({ staff, students, staffAttendance, classes }) {
 
   function PersonRow({ name, sub, badge, photo, type }) {
     return (
-      <div className="pulse">
+      <div className="pulse" role="listitem">
         <PhotoAvatar name={name} src={photo} size="sm" type={type} className="pulse__avatar-img" />
         <div className="pulse__main">
           <div className="pulse__name">{name}</div>
@@ -240,9 +241,13 @@ function PeopleSection({ staff, students, staffAttendance, classes }) {
     <div className="dash-section">
       <div className="dash-people-header">
         <h2 className="dash-section-title">People</h2>
-        <div className="dash-people-tabs">
+        <div className="dash-people-tabs" role="tablist" aria-label="People filter">
           <button
             type="button"
+            role="tab"
+            aria-selected={tab === "staff"}
+            aria-controls="people-tabpanel"
+            id="people-tab-staff"
             className={`dash-people-tab${tab === "staff" ? " is-active" : ""}`}
             onClick={() => setTab("staff")}
           >
@@ -250,6 +255,10 @@ function PeopleSection({ staff, students, staffAttendance, classes }) {
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={tab === "students"}
+            aria-controls="people-tabpanel"
+            id="people-tab-students"
             className={`dash-people-tab${tab === "students" ? " is-active" : ""}`}
             onClick={() => setTab("students")}
           >
@@ -257,9 +266,9 @@ function PeopleSection({ staff, students, staffAttendance, classes }) {
           </button>
         </div>
       </div>
-      <div className="dash-section-card">
+      <div className="dash-section-card" id="people-tabpanel" role="tabpanel" aria-labelledby={`people-tab-${tab}`}>
         {tab === "staff" ? (
-          <div className="pulse-list">
+          <div className="pulse-list" role="list">
             {absentStaff.length > 0 && (
               <>
                 <div className="pulse__group">Absent today · {absentStaff.length}</div>
@@ -314,7 +323,7 @@ function PeopleSection({ staff, students, staffAttendance, classes }) {
             )}
           </div>
         ) : (
-          <div className="pulse-list">
+          <div className="pulse-list" role="list">
             {studentBirthdays.length > 0 && (
               <>
                 <div className="pulse__group">Birthdays · {studentBirthdays.length}</div>
@@ -377,6 +386,7 @@ function PeopleSection({ staff, students, staffAttendance, classes }) {
 function TimelineRow({ time, title, meta, status, mine, now, done }) {
   return (
     <div
+      role="listitem"
       className={`trow${mine ? " trow--mine" : ""}${now ? " trow--now" : ""}${done ? " trow--done" : ""}`}
       aria-current={now ? "true" : undefined}
     >
@@ -409,25 +419,38 @@ function ActionItem({ kind, title, body, meta, primary, onPrimary, onDismiss }) 
   const Icon = iconMap[kind] || Info;
 
   return (
-    <div className={`action-item ${toneClass}`}>
+    <div className={`action-item ${toneClass}`} role="listitem">
       <div className="action-item__top">
-        <div className={`action-item__icon action-item__icon--${kind}`}>
+        <div className={`action-item__icon action-item__icon--${kind}`} aria-hidden="true">
           <Icon size={16} strokeWidth={2} />
         </div>
         <div className="action-item__content">
           <div className="action-item__title">{title}</div>
           <div className="action-item__meta">
             {body}
-            {meta && <span className="action-item__meta-sep">·</span>}
+            {meta && <span className="action-item__meta-sep" aria-hidden="true">·</span>}
             {meta}
           </div>
         </div>
-        {primary && (
-          <button type="button" className="action-item__cta" onClick={onPrimary}>
-            {primary}
-            <ArrowRight size={12} />
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {primary && (
+            <button type="button" className="action-item__cta" onClick={onPrimary}>
+              {primary}
+              <ArrowRight size={12} aria-hidden="true" />
+            </button>
+          )}
+          {onDismiss && (
+            <button
+              type="button"
+              className="iconbtn iconbtn--sm"
+              onClick={onDismiss}
+              aria-label={`Dismiss ${title}`}
+              title={`Dismiss ${title}`}
+            >
+              <X size={12} />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -435,8 +458,8 @@ function ActionItem({ kind, title, body, meta, primary, onPrimary, onDismiss }) 
 
 function NoticeRow({ title, content, date }) {
   return (
-    <div className="notice-row">
-      <div className="notice-row__dot" />
+    <div className="notice-row" role="listitem">
+      <div className="notice-row__dot" aria-hidden="true" />
       <div className="notice-row__content">
         <div className="notice-row__title">{title}</div>
         {content && (
@@ -452,8 +475,8 @@ function NoticeRow({ title, content, date }) {
 
 function PaymentRow({ student, className, amount, date }) {
   return (
-    <div className="payment-row">
-      <div className="payment-row__amount">{compactINR(amount)}</div>
+    <div className="payment-row" role="listitem">
+      <div className="payment-row__amount" aria-label={`Amount ${compactINR(amount)}`}>{compactINR(amount)}</div>
       <div className="payment-row__content">
         <div className="payment-row__student">{student}</div>
         <div className="payment-row__meta">
@@ -710,7 +733,7 @@ function Dashboard() {
               {schedule.length === 0 ? (
                 <EmptyState icon={CalendarDays} message="No events scheduled" />
               ) : (
-                <div className="timeline">
+                <div className="timeline" role="list">
                   {schedule.map((row, i) => (
                     <TimelineRow
                       key={row.time}
@@ -740,7 +763,7 @@ function Dashboard() {
           return (
             priorities.length > 0 && (
               <DashboardSection title="Actions" count={pendingCount}>
-                <div className="action-list">
+                <div className="action-list" role="list">
                   {priorities.map((priority) => (
                     <ActionItem
                       key={priority.id}
@@ -773,7 +796,7 @@ function Dashboard() {
               {!recentAnnouncements || recentAnnouncements.length === 0 ? (
                 <EmptyState icon={Megaphone} message="No recent notices" />
               ) : (
-                <div className="notice-list">
+                <div className="notice-list" role="list">
                   {recentAnnouncements.map((notice) => (
                     <NoticeRow
                       key={notice.id}
@@ -792,7 +815,7 @@ function Dashboard() {
               {!recentPayments || recentPayments.length === 0 ? (
                 <EmptyState icon={IndianRupee} message="No recent payments" />
               ) : (
-                <div className="payment-list">
+                <div className="payment-list" role="list">
                   {recentPayments.map((payment) => (
                     <PaymentRow
                       key={payment.id}
@@ -879,7 +902,7 @@ function Dashboard() {
       </header>
 
       {/* ─── Widget Grid ─── */}
-      <div className="widget-grid">
+      <div className="widget-grid" role="region" aria-label="Dashboard widgets">
         {visibleWidgets.map((key) => (
           <div key={key} className={`widget-wrapper widget-wrapper--${key}`}>
             {renderWidget(key)}

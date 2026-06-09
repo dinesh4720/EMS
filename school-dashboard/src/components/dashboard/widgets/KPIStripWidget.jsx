@@ -16,7 +16,7 @@ function compactINR(n) {
   return `₹${Math.round(n)}`;
 }
 
-function KPICard({ icon: Icon, label, value, sub, tone, onClick, loading }) {
+function KPICard({ icon: Icon, label, value, sub, tone, onClick, loading, "aria-label": ariaLabel }) {
   if (loading) {
     return (
       <div className="kpi-card" aria-busy="true">
@@ -30,9 +30,9 @@ function KPICard({ icon: Icon, label, value, sub, tone, onClick, loading }) {
     );
   }
   return (
-    <button type="button" className="kpi-card" onClick={onClick}>
+    <button type="button" className="kpi-card" onClick={onClick} aria-label={ariaLabel || `${label}: ${value}. ${sub || ""}`}>
       <div className="kpi-card__top">
-        <div className={`kpi-card__icon kpi-card__icon--${tone}`}>
+        <div className={`kpi-card__icon kpi-card__icon--${tone}`} aria-hidden="true">
           <Icon size={18} strokeWidth={2} />
         </div>
         <span className="kpi-card__label">{label}</span>
@@ -75,6 +75,7 @@ export default function KPIStripWidget({
         tone="accent"
         onClick={() => navigate("/students")}
         loading={loading}
+        aria-label={`Attendance today: ${attendanceSnapshot.studentRate != null ? `${attendanceSnapshot.studentRate}%` : "—"}. ${attendanceSnapshot.studentTotal > 0 ? `${attendanceSnapshot.studentPresent} of ${attendanceSnapshot.studentTotal} present` : "Awaiting attendance"}`}
       />
       <KPICard
         icon={IndianRupee}
@@ -88,6 +89,7 @@ export default function KPIStripWidget({
         tone="ok"
         onClick={() => navigate("/fees")}
         loading={loading}
+        aria-label={`Fees this month: ${paymentSnapshot.month != null ? compactINR(paymentSnapshot.month) : "—"}. ${paymentSnapshot.totalPending != null ? `${compactINR(paymentSnapshot.totalPending)} outstanding` : "Awaiting payment data"}`}
       />
       <KPICard
         icon={Users}
@@ -97,6 +99,7 @@ export default function KPIStripWidget({
         tone="info"
         onClick={() => navigate("/students")}
         loading={loading}
+        aria-label={`Total students: ${totalActiveStudents > 0 ? totalActiveStudents.toLocaleString() : "—"}. ${totalActiveStudents > 0 ? "Active enrollments" : "No students yet"}`}
       />
       <KPICard
         icon={AlertTriangle}
@@ -110,6 +113,7 @@ export default function KPIStripWidget({
         tone={feeDefaultersCount > 0 ? "warn" : "ok"}
         onClick={() => navigate("/fees")}
         loading={loading}
+        aria-label={`Fee defaulters: ${feeDefaultersCount > 0 ? feeDefaultersCount : "—"}. ${feeDefaultersCount > 0 ? `${feeDefaultersCount} student${feeDefaultersCount === 1 ? "" : "s"} past due` : "All fees up to date"}`}
       />
     </div>
   );

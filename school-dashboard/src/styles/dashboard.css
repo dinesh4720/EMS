@@ -177,6 +177,12 @@
   box-shadow: var(--shadow-sm);
 }
 
+.kpi-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-color: var(--accent);
+}
+
 .kpi-card__top {
   display: flex;
   align-items: center;
@@ -334,8 +340,8 @@
 }
 
 .widget-customizer__visibility {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: var(--r-sm);
   display: grid;
   place-items: center;
@@ -355,6 +361,11 @@
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-fg);
+}
+
+.widget-customizer__visibility:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .widget-customizer__foot {
@@ -397,6 +408,12 @@
 .stat-card:hover {
   border-color: var(--border-strong);
   box-shadow: var(--shadow-sm);
+}
+
+.stat-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-color: var(--accent);
 }
 
 .stat-card__row {
@@ -488,6 +505,11 @@
   color: var(--fg);
 }
 
+.quick-action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .quick-action__label {
   white-space: nowrap;
 }
@@ -542,6 +564,12 @@
 
 .dash-section-dropdown__item:hover {
   background: var(--surface-hover);
+}
+
+.dash-section-dropdown__item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  border-radius: 6px;
 }
 
 .dash-section-dropdown__check {
@@ -690,6 +718,11 @@
   background: var(--surface-hover);
 }
 
+.trow:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
 /* Time column */
 .trow__time {
   font-family: var(--font-mono);
@@ -738,17 +771,17 @@
 /* Past events — muted */
 .trow--done {
   border-left-color: var(--ok);
-  opacity: 0.55;
+  opacity: 0.75;
 }
 
 .trow--done .trow__title {
   text-decoration: line-through;
-  text-decoration-color: var(--fg-faint);
+  text-decoration-color: var(--fg-subtle);
   text-decoration-thickness: 1px;
 }
 
 .trow--done .trow__time {
-  color: var(--fg-faint);
+  color: var(--fg-subtle);
 }
 
 /* Current event — warm highlight */
@@ -826,6 +859,11 @@
   background: var(--surface-hover);
 }
 
+.activity:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
 .activity__icon {
   width: 24px;
   height: 24px;
@@ -883,8 +921,8 @@
 }
 
 .activity__time {
-  font-size: 10px;
-  color: var(--fg-faint);
+  font-size: 11px;
+  color: var(--fg-subtle);
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
@@ -913,6 +951,11 @@
   background: var(--surface-hover);
   border-color: var(--border-strong);
   box-shadow: var(--shadow-sm);
+}
+
+.action-item__cta:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .action-item__top {
@@ -1061,13 +1104,13 @@
 }
 
 .pri__dismiss {
-  width: 20px;
-  height: 20px;
+  width: 28px;
+  height: 28px;
   display: inline-grid;
   place-items: center;
   border-radius: 4px;
   background: transparent;
-  color: var(--fg-faint);
+  color: var(--fg-subtle);
   font-size: 14px;
   line-height: 1;
   cursor: pointer;
@@ -1079,6 +1122,11 @@
 .pri__dismiss:hover {
   background: var(--surface-2);
   color: var(--fg);
+}
+
+.pri__dismiss:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .pri__pill {
@@ -1173,11 +1221,11 @@
 }
 
 .pulse__group {
-  font-size: 9.5px;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--fg-faint);
+  color: var(--fg-subtle);
   padding: 6px 10px 2px;
   border-top: 1px solid var(--divider);
 }
@@ -1235,6 +1283,11 @@
   box-shadow: var(--shadow-sm);
 }
 
+.dash-people-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* ============================================================
    Notice rows
    ============================================================ */
@@ -1252,6 +1305,11 @@
 
 .notice-row:hover {
   background: var(--surface-hover);
+}
+
+.notice-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 
 .notice-row + .notice-row {
@@ -1288,7 +1346,7 @@
 
 .notice-row__date {
   font-size: 11px;
-  color: var(--fg-faint);
+  color: var(--fg-subtle);
   margin-top: 4px;
   font-family: var(--font-mono);
 }
@@ -1310,6 +1368,11 @@
 
 .payment-row:hover {
   background: var(--surface-hover);
+}
+
+.payment-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 
 .payment-row + .payment-row {
@@ -1439,6 +1502,11 @@
   border-color: var(--border-strong);
 }
 
+.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .btn--primary {
   background: var(--fg);
   color: var(--bg);
@@ -1473,6 +1541,11 @@
   color: var(--fg);
 }
 
+.btn--ghost:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .btn--sm {
   height: 22px;
   padding: 0 6px;
@@ -1480,9 +1553,9 @@
 }
 
 .btn--xs {
-  height: 20px;
-  padding: 0 6px;
-  font-size: 10.5px;
+  height: 24px;
+  padding: 0 8px;
+  font-size: 11px;
 }
 
 .iconbtn {
@@ -1503,14 +1576,19 @@
   color: var(--fg);
 }
 
+.iconbtn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .iconbtn:disabled {
   opacity: 0.6;
   cursor: default;
 }
 
 .iconbtn--sm {
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
 }
 
 .is-spinning {
@@ -1846,7 +1924,7 @@
 }
 
 .plan-card__num-of {
-  color: var(--fg-faint);
+  color: var(--fg-subtle);
   font-size: 12px;
   margin-left: 4px;
 }
@@ -1885,4 +1963,31 @@
   justify-content: space-between;
   padding: 6px 12px;
   border-top: 1px solid var(--divider);
+}
+
+/* ============================================================
+   Reduced motion support — dashboard module
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .kpi-card,
+  .stat-card,
+  .quick-action,
+  .activity,
+  .notice-row,
+  .payment-row,
+  .action-item,
+  .action-item__cta,
+  .dash-people-tab,
+  .widget-customizer__item,
+  .widget-customizer__visibility,
+  .iconbtn,
+  .btn,
+  .plan-card__bar-fill {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .is-spinning {
+    animation: none !important;
+  }
 }

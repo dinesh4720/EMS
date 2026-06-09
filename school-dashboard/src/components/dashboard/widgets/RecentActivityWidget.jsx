@@ -45,8 +45,8 @@ function ActivityRow({ type, title, meta, time, onClick }) {
   const Icon = ACTIVITY_ICONS[type] || Activity;
   const tone = ACTIVITY_TONES[type] || "info";
   return (
-    <button type="button" className="activity" onClick={onClick}>
-      <div className={`activity__icon activity__icon--${tone}`}>
+    <button type="button" className="activity" onClick={onClick} aria-label={`${title}${meta ? `, ${meta}` : ""}, ${time}`}>
+      <div className={`activity__icon activity__icon--${tone}`} aria-hidden="true">
         <Icon size={14} />
       </div>
       <div className="activity__main">

@@ -51,7 +51,7 @@ export default function FeeTrendWidget({ data = [], loading = false }) {
       emptyDescription="Collection trends appear once receipts are posted"
       variant="widget"
     >
-      <ResponsiveContainer width="100%" height={200}>
+      <ResponsiveContainer width="100%" height={200} role="img" aria-label="Fee collection trend chart showing monthly receipts over last 6 months">
         <AreaChart
           data={data}
           margin={{ top: 5, right: 5, left: -10, bottom: 0 }}

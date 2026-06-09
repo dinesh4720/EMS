@@ -51,7 +51,9 @@ const MODULES = [
   {
     name: "Dashboard",
     pages: ["DashboardPage"],
-    status: ["⬜", "⬜", "⬜", "⬜"],
+    status: ["⬜", "✅", "⬜", "⬜"],
+    auditDate: "2026-06-09",
+    issue: "DK-998",
   },
   {
     name: "Data Tools",

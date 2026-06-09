@@ -23,10 +23,47 @@ function useBodyScrollLock(locked) {
   }, [locked]);
 }
 
+function useFocusTrap(containerRef, isOpen) {
+  useEffect(() => {
+    if (!isOpen || !containerRef.current) return;
+
+    const container = containerRef.current;
+    const focusables = container.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+
+    if (first) first.focus();
+
+    function handleKeyDown(e) {
+      if (e.key !== "Tab") return;
+      if (focusables.length === 0) {
+        e.preventDefault();
+        return;
+      }
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
+
+    container.addEventListener("keydown", handleKeyDown);
+    return () => container.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, containerRef]);
+}
+
 function WidgetItem({ widgetKey, label, visible, index, total, onToggle, onMoveUp, onMoveDown }) {
   return (
-    <div className="widget-customizer__item">
-      <div className="widget-customizer__drag">
+    <div className="widget-customizer__item" role="listitem">
+      <div className="widget-customizer__drag" aria-hidden="true">
         <GripVertical size={14} className="text-fg-faint" />
       </div>
       <span className="widget-customizer__name">{label}</span>
@@ -36,29 +73,29 @@ function WidgetItem({ widgetKey, label, visible, index, total, onToggle, onMoveU
           className="iconbtn iconbtn--sm"
           onClick={() => onMoveUp(index)}
           disabled={index === 0}
-          aria-label="Move up"
+          aria-label={`Move ${label} up`}
           title="Move up"
         >
-          <ArrowUp size={10} />
+          <ArrowUp size={10} aria-hidden="true" />
         </button>
         <button
           type="button"
           className="iconbtn iconbtn--sm"
           onClick={() => onMoveDown(index)}
           disabled={index === total - 1}
-          aria-label="Move down"
+          aria-label={`Move ${label} down`}
           title="Move down"
         >
-          <ArrowDown size={10} />
+          <ArrowDown size={10} aria-hidden="true" />
         </button>
         <button
           type="button"
           className={`widget-customizer__visibility${visible ? " is-visible" : ""}`}
           onClick={() => onToggle(widgetKey)}
-          aria-label={visible ? "Hide widget" : "Show widget"}
+          aria-label={visible ? `Hide ${label} widget` : `Show ${label} widget`}
           title={visible ? "Hide widget" : "Show widget"}
         >
-          {visible ? <Eye size={13} /> : <EyeOff size={13} />}
+          {visible ? <Eye size={13} aria-hidden="true" /> : <EyeOff size={13} aria-hidden="true" />}
         </button>
       </div>
     </div>
@@ -74,6 +111,8 @@ export default function WidgetCustomizer({
   onChangeVisible,
 }) {
   useBodyScrollLock(isOpen);
+  const overlayRef = useRef(null);
+  useFocusTrap(overlayRef, isOpen);
 
   const [localOrder, setLocalOrder] = useState(order);
   const [localVisible, setLocalVisible] = useState(visible);
@@ -135,15 +174,15 @@ export default function WidgetCustomizer({
   if (!isOpen) return null;
 
   const overlay = (
-    <div className="widget-customizer-overlay" role="dialog" aria-modal="true" aria-label="Customize dashboard">
+    <div ref={overlayRef} className="widget-customizer-overlay" role="dialog" aria-modal="true" aria-label="Customize dashboard" onClick={onClose}>
       <div className="widget-customizer" onClick={(e) => e.stopPropagation()}>
         <div className="widget-customizer__head">
           <div className="widget-customizer__title">
-            <LayoutGrid size={16} />
+            <LayoutGrid size={16} aria-hidden="true" />
             Customize dashboard
           </div>
-          <button type="button" className="iconbtn iconbtn--sm" onClick={onClose} aria-label="Close">
-            <X size={12} />
+          <button type="button" className="iconbtn iconbtn--sm" onClick={onClose} aria-label="Close customizer">
+            <X size={12} aria-hidden="true" />
           </button>
         </div>
 
@@ -152,7 +191,7 @@ export default function WidgetCustomizer({
             Show, hide, and reorder widgets. Click Done when finished.
           </p>
 
-          <div className="widget-customizer__list">
+          <div className="widget-customizer__list" role="list">
             {localOrder.map((key, i) => {
               const meta = getWidgetMeta(key);
               if (!meta) return null;
@@ -178,7 +217,7 @@ export default function WidgetCustomizer({
             Reset to default
           </button>
           <button type="button" className="btn btn--accent" onClick={handleSave}>
-            <Check size={13} />
+            <Check size={13} aria-hidden="true" />
             Done
           </button>
         </div>
