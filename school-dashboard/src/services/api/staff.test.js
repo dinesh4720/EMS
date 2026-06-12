@@ -179,6 +179,24 @@ describe('studentsApi', () => {
     studentsApi.getRemarks('stu1', 'all');
     expect(request).toHaveBeenCalledWith('/students/stu1/remarks');
   });
+
+  it('promote — POSTs to /students/:id/promote with serialised body', () => {
+    const data = { targetClassId: 'cls1' };
+    studentsApi.promote('stu1', data);
+    expect(request).toHaveBeenCalledWith('/students/stu1/promote', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  });
+
+  it('bulkPromote — POSTs to /students/bulk-promote with serialised body', () => {
+    const data = { promotions: [{ studentId: 'stu1', targetClassId: 'cls1' }] };
+    studentsApi.bulkPromote(data);
+    expect(request).toHaveBeenCalledWith('/students/bulk-promote', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------
