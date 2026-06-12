@@ -1,5 +1,7 @@
 # Owlin Tracker
 
+> For ownership, repository boundaries, and the decision to keep Owlin inside the EMS monorepo for now, see [`OWNERSHIP.md`](./OWNERSHIP.md).
+
 Internal analytics subsystem for EMS. Owlin currently tracks `school-dashboard` usage and ships with its own SDK, event collector server, and analytics dashboard.
 
 ## What Owlin Tracks
