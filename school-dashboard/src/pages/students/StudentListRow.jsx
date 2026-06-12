@@ -59,21 +59,10 @@ const StudentListRow = forwardRef(function StudentListRow(
               onToggleCheck(student, e);
             }
           }}
-          className="studentlist__checkbox"
-          style={{
-            width: 16,
-            height: 16,
-            borderRadius: 4,
-            border: "1px solid var(--border-strong)",
-            background: isChecked ? "var(--accent)" : "var(--surface)",
-            display: "grid",
-            placeItems: "center",
-            flexShrink: 0,
-            cursor: "pointer",
-          }}
+          className={`studentlist__checkbox ${isChecked ? "is-checked" : ""}`}
         >
           {isChecked && (
-            <svg width="10" height="10" viewBox="0 0 16 16" fill="none" aria-hidden>
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden>
               <path
                 d="M3 8.5l3.5 3.5 7-8"
                 stroke="white"

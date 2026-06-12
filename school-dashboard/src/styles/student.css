@@ -564,6 +564,33 @@
   box-shadow: inset 0 0 0 2px var(--accent-bg);
 }
 
+/* Row checkbox — visible in both checked and unchecked states */
+.studentlist__checkbox {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1.5px solid var(--border-strong);
+  background: var(--surface);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background 120ms, border-color 120ms, box-shadow 120ms;
+}
+.studentlist__row:hover .studentlist__checkbox,
+.studentlist__checkbox:hover {
+  border-color: var(--accent);
+}
+.studentlist__checkbox[aria-checked="true"],
+.studentlist__checkbox.is-checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.studentlist__checkbox:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-bg);
+}
+
 /* Profile arrow icon on row — visible on row hover */
 .studentlist__profile-arrow {
   opacity: 0;
