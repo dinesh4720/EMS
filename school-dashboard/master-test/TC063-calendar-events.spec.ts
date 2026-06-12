@@ -57,10 +57,14 @@ test.describe('TC063 — Calendar Events', () => {
   test('1) calendar page loads showing month view', async ({ page }) => {
     await page.goto('/calendar');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     await expect(page).not.toHaveURL(/\/login/);
 
     const currentMonthName = today.toLocaleDateString('en-US', { month: 'long' });
+    // Wait for the hydrated calendar UI before reading its text
+    await expect(page.locator('#root')).toContainText(currentMonthName, { timeout: 10000 });
+
     const bodyText = await page.locator('#root').textContent();
     expect(bodyText).toContain(currentMonthName);
 
@@ -74,6 +78,7 @@ test.describe('TC063 — Calendar Events', () => {
   test('2) seeded events appear on the calendar', async ({ page }) => {
     await page.goto('/calendar');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.locator('#root').textContent();
     expect(bodyText).toContain('Staff Meeting');
@@ -85,6 +90,7 @@ test.describe('TC063 — Calendar Events', () => {
   test('3) clicking Add Event opens the event creation drawer', async ({ page }) => {
     await page.goto('/calendar');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const addBtn = page.getByRole('button', { name: /add event/i }).first();
     if (await addBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
@@ -101,6 +107,7 @@ test.describe('TC063 — Calendar Events', () => {
   test('4) create Parent-Teacher Meeting event', async ({ page }) => {
     await page.goto('/calendar');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const addBtn = page.getByRole('button', { name: /add event/i }).first();
     if (!(await addBtn.isVisible({ timeout: 5000 }).catch(() => false))) return;
@@ -151,6 +158,7 @@ test.describe('TC063 — Calendar Events', () => {
 
     await page.goto('/calendar');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.locator('#root').textContent();
     expect(bodyText).toContain('Parent-Teacher Meeting');
@@ -161,6 +169,7 @@ test.describe('TC063 — Calendar Events', () => {
   test('6) clicking an event shows its details', async ({ page }) => {
     await page.goto('/calendar');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Click on Staff Meeting event
     const eventEl = page.locator('div').filter({ hasText: /^Staff Meeting$/ }).first();
@@ -190,6 +199,7 @@ test.describe('TC063 — Calendar Events', () => {
   test('7) editing an event updates its title in state', async ({ page }) => {
     await page.goto('/calendar');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const eventToUpdate = state.calendarEvents.find(e => e.title === 'Staff Meeting');
     expect(eventToUpdate).toBeTruthy();
@@ -201,6 +211,7 @@ test.describe('TC063 — Calendar Events', () => {
 
     await page.goto('/calendar');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const bodyText = await page.locator('#root').textContent();
     expect(bodyText).toContain('Updated Staff Meeting');
@@ -211,6 +222,7 @@ test.describe('TC063 — Calendar Events', () => {
   test('8) deleting an event removes it from the calendar', async ({ page }) => {
     await page.goto('/calendar');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Verify event exists first
     let bodyText = await page.locator('#root').textContent();
@@ -235,6 +247,16 @@ test.describe('TC063 — Calendar Events', () => {
           await deleteBtn.click();
           await page.waitForTimeout(500);
 
+          // Confirm the delete in the confirmation dialog
+          const confirmDialog = page.locator('[data-testid="ds-confirm-dialog"]').first();
+          if (await confirmDialog.isVisible({ timeout: 3000 }).catch(() => false)) {
+            const confirmBtn = confirmDialog.getByRole('button', { name: /delete/i }).first();
+            if (await confirmBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+              await confirmBtn.click();
+              await page.waitForTimeout(500);
+            }
+          }
+
           expect(state.calendarEvents.some(e => e.title === 'Final Exam')).toBeFalsy();
         }
       }
@@ -246,23 +268,23 @@ test.describe('TC063 — Calendar Events', () => {
   test('9) events display with type-based color coding', async ({ page }) => {
     await page.goto('/calendar');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     // Events should be rendered in the grid with distinct color classes
-    const allEventDivs = page.locator('.grid.grid-cols-7 [class*="truncate"]');
+    const allEventDivs = page.locator('.calendar-event');
     const count = await allEventDivs.count();
     expect(count).toBeGreaterThan(0);
 
-    // Collect color class patterns
+    // Collect type-based class patterns (e.g. calendar-event--exam)
     const classPatterns = new Set<string>();
     for (let i = 0; i < Math.min(count, 10); i++) {
       const cls = await allEventDivs.nth(i).getAttribute('class');
-      if (cls?.includes('warning')) classPatterns.add('warning');
-      if (cls?.includes('secondary')) classPatterns.add('secondary');
-      if (cls?.includes('primary')) classPatterns.add('primary');
-      if (cls?.includes('danger')) classPatterns.add('danger');
+      if (cls?.includes('calendar-event--holiday')) classPatterns.add('holiday');
+      if (cls?.includes('calendar-event--exam')) classPatterns.add('exam');
+      if (cls?.includes('calendar-event--meeting')) classPatterns.add('meeting');
     }
 
-    // We seeded meeting (secondary) and exam (warning) — at least 1 distinct style
+    // We seeded meeting and exam — at least 1 distinct type style
     expect(classPatterns.size).toBeGreaterThanOrEqual(1);
   });
 
@@ -271,6 +293,7 @@ test.describe('TC063 — Calendar Events', () => {
   test('10) event creation form has title, type, and time fields', async ({ page }) => {
     await page.goto('/calendar');
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     const addBtn = page.getByRole('button', { name: /add event/i }).first();
     if (!(await addBtn.isVisible({ timeout: 5000 }).catch(() => false))) return;
