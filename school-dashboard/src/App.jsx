@@ -100,7 +100,7 @@ import { AppProvider, useApp } from "./context/AppContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ChatNotificationProvider } from "./context/ChatNotificationContext";
 import { PermissionProvider } from "./context/PermissionContext";
-import { AiAssistantProvider, AiAssistantLayout, AiAssistantPanel } from "./components/AiAssistant/AiAssistantPanel";
+import { AiAssistantProvider, AiAssistantLayout } from "./components/AiAssistant/AiAssistantPanel";
 import PermissionGuard from "./components/PermissionGuard";
 import StructuredData from "./components/StructuredData";
 import { AlertCircle, X } from "lucide-react";

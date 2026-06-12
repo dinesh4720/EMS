@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CheckCircle } from "lucide-react";
 
 import AcademicsKpiStrip from "../../components/academics/AcademicsKpiStrip";
@@ -32,7 +32,11 @@ import ActivityLogCard from "../../components/overview/ActivityLogCard";
 import AnalyticsChartCard from "../../components/overview/AnalyticsChartCard";
 import ProfileStatCard from "../../components/overview/ProfileStatCard";
 import QuickStatsCard from "../../components/overview/QuickStatsCard";
-import AiAssistantPanel from "../../components/AiAssistant/AiAssistantPanel";
+import {
+  AiAssistantProvider,
+  AiAssistantPanel,
+  useAiAssistant,
+} from "../../components/AiAssistant/AiAssistantPanel";
 import ChatComposer from "../../components/AiAssistant/ChatComposer";
 import ModelSelector from "../../components/AiAssistant/ModelSelector";
 import StatusCard from "../../components/publicForm/StatusCard";
@@ -41,6 +45,56 @@ import TimetableCleanup from "../../components/timetable/TimetableCleanup";
 import TimetableValidationPanel from "../../components/timetable/TimetableValidationPanel";
 
 import { Story, StoryGroup } from "./shared";
+
+function ModelSelectorStory() {
+  const [selectedId, setSelectedId] = useState("school-model-1");
+  const [isOpen, setIsOpen] = useState(false);
+  const models = [
+    {
+      id: "school-model-1",
+      name: "School Model A",
+      description: "Balanced model for everyday school questions",
+      available: true,
+    },
+    {
+      id: "school-model-2",
+      name: "School Model B",
+      description: "Faster model for quick lookups",
+      available: true,
+    },
+  ];
+
+  return (
+    <ModelSelector
+      models={models}
+      selectedId={selectedId}
+      selectedMeta={models.find((model) => model.id === selectedId)}
+      isLoading={false}
+      isOpen={isOpen}
+      onToggle={() => setIsOpen((open) => !open)}
+      onSelect={(id) => {
+        setSelectedId(id);
+        setIsOpen(false);
+      }}
+    />
+  );
+}
+
+function AiAssistantPanelStory() {
+  const { openPanel } = useAiAssistant();
+
+  useEffect(() => {
+    openPanel();
+  }, [openPanel]);
+
+  return (
+    <AiAssistantPanel>
+      <div className="p-4 text-sm text-fg-faint">
+        AI assistant panel content
+      </div>
+    </AiAssistantPanel>
+  );
+}
 
 export default function DomainSection() {
   const [chatMsg, setChatMsg] = useState("");
@@ -174,13 +228,15 @@ export default function DomainSection() {
 
       <StoryGroup id="domain-ai" title="AI Assistant">
         <Story title="AiAssistantPanel" layout="plain">
-          <AiAssistantPanel />
+          <AiAssistantProvider>
+            <AiAssistantPanelStory />
+          </AiAssistantProvider>
         </Story>
         <Story title="ChatComposer" layout="col">
           <ChatComposer value={chatMsg} onChange={setChatMsg} onSend={() => {}} />
         </Story>
         <Story title="ModelSelector" layout="row">
-          <ModelSelector models={["gpt-4o", "gpt-4o-mini"]} selected="gpt-4o" onSelect={() => {}} />
+          <ModelSelectorStory />
         </Story>
       </StoryGroup>
 

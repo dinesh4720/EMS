@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
-import { X, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import './AiAssistantPanel.css';
 import { useTranslation } from 'react-i18next';
 
@@ -9,7 +9,6 @@ import { useTranslation } from 'react-i18next';
 const AiAssistantContext = createContext(null);
 
 export const useAiAssistant = () => {
-  const { t } = useTranslation();
   const context = useContext(AiAssistantContext);
   if (!context) {
     throw new Error('useAiAssistant must be used within AiAssistantProvider');
@@ -18,7 +17,6 @@ export const useAiAssistant = () => {
 };
 
 export const AiAssistantProvider = ({ children }) => {
-  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [isIdle, setIsIdle] = useState(false);
   const [panelWidth, setPanelWidth] = useState(600);
@@ -161,13 +159,3 @@ export function AiAssistantToggle() {
   );
 }
 
-// ============================================
-// EXPORT: All components
-// ============================================
-export default {
-  AiAssistantProvider,
-  useAiAssistant,
-  AiAssistantLayout,
-  AiAssistantPanel,
-  AiAssistantToggle,
-};

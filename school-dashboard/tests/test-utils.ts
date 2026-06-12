@@ -2216,10 +2216,10 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
     if (path === '/ai/models' || path.match(/^\/ai\/models/)) {
       return json({
         models: [
-          { id: 'gpt-4o', name: 'GPT-4o', available: true, default: true },
-          { id: 'gpt-4o-mini', name: 'GPT-4o Mini', available: true },
+          { id: 'school-model-a', name: 'School Model A', available: true, default: true },
+          { id: 'school-model-b', name: 'School Model B', available: true },
         ],
-        defaultModelId: 'gpt-4o',
+        defaultModelId: 'school-model-a',
       });
     }
     if (path === '/ai/transcribe' || path.match(/^\/ai\/transcribe/)) {
