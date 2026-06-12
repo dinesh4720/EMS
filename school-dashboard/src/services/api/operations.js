@@ -26,6 +26,15 @@ export const announcementsApi = {
   getStats: () => request('/announcements/stats'),
 };
 
+// Communication Logs API (real delivery logs from AnnouncementRecipient)
+export const communicationLogsApi = {
+  getAll: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/communication-logs${query ? `?${query}` : ''}`);
+  },
+  getStats: () => request('/communication-logs/stats'),
+};
+
 // Reminders API
 export const remindersApi = {
   getAll: (params) => {

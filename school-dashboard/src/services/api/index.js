@@ -20,7 +20,7 @@ export {
   feesApi, studentFeesApi, payrollApi,
 } from './fees.js';
 export {
-  uploadApi, announcementsApi, remindersApi, callsApi,
+  uploadApi, announcementsApi, communicationLogsApi, remindersApi, callsApi,
   visitorsApi, gatePassesApi, frontDeskApi, lookupPincode, substitutionAlertsApi,
   searchApi,
 } from './operations.js';

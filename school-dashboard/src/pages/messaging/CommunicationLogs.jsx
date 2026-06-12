@@ -4,7 +4,7 @@ import {
   Users, Calendar, Search, X, ChevronLeft, ChevronRight,
   AlertCircle, BarChart2,
 } from "lucide-react";
-import { announcementsApi } from "../../services/api";
+import { communicationLogsApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { SkeletonList } from "../../components/ui/Skeleton";
 
@@ -15,19 +15,21 @@ const CHANNEL_CONFIG = {
   inapp: { label: "In-App", icon: Bell, color: "bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300", dot: "bg-purple-500" },
 };
 
-const PAGE_SIZE = 15;
+const STATUS_CONFIG = {
+  pending: { label: "Pending", color: "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300" },
+  sent: { label: "Sent", color: "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300" },
+  delivered: { label: "Delivered", color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300" },
+  read: { label: "Read", color: "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300" },
+  failed: { label: "Failed", color: "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300" },
+};
 
-function getRecipientsLabel(recipients) {
-  if (!recipients?.length) return "—";
-  if (recipients.some((r) => r.type === "all")) return "Whole School";
-  return recipients.map((r) => r.type.charAt(0).toUpperCase() + r.type.slice(1)).join(", ");
-}
+const PAGE_SIZE = 15;
 
 function formatDate(dateString) {
   if (!dateString) return "—";
-  const d = new Date(dateString);
-  if (isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
 function StatCard({ label, value, icon: Icon, color, sub }) {
@@ -46,55 +48,85 @@ function StatCard({ label, value, icon: Icon, color, sub }) {
 }
 
 function ChannelBadge({ channel }) {
-  const cfg = CHANNEL_CONFIG[channel.type] || CHANNEL_CONFIG.inapp;
+  const cfg = CHANNEL_CONFIG[channel] || CHANNEL_CONFIG.inapp;
   const Icon = cfg.icon;
-  const delivered = channel.stats?.deliveredCount ?? 0;
-  const sent = channel.stats?.sentCount ?? 0;
-  const failed = channel.stats?.failedCount ?? 0;
-
   return (
     <div className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${cfg.color}`}>
       <Icon size={11} />
       <span>{cfg.label}</span>
-      {sent > 0 && (
-        <span className="opacity-70">
-          · {delivered}/{sent}
-          {failed > 0 && <span className="text-red-500 dark:text-red-400"> ({failed} failed)</span>}
-        </span>
-      )}
     </div>
+  );
+}
+
+function StatusBadge({ status }) {
+  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
+  return (
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${cfg.color}`}>
+      {cfg.label}
+    </span>
   );
 }
 
 export default function CommunicationLogs() {
   const mountedRef = useRef(true);
-  const [announcements, setAnnouncements] = useState([]);
-  const [stats, setStats] = useState({ sentThisMonth: 0, totalDelivered: 0, scheduled: 0 });
+  const [logs, setLogs] = useState([]);
+  const [stats, setStats] = useState({ sentThisMonth: 0, totalDelivered: 0, totalFailed: 0, totalSent: 0, scheduled: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [channelFilter, setChannelFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
   const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
-  useEffect(() => {
-    mountedRef.current = true;
-    loadData();
-    return () => { mountedRef.current = false; };
-  }, []);
+  const debounceRef = useRef(null);
 
-  const loadData = async () => {
+  const dateRange = useMemo(() => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    switch (dateFilter) {
+      case "today":
+        return { dateFrom: today.toISOString().split("T")[0], dateTo: today.toISOString().split("T")[0] };
+      case "week": {
+        const weekAgo = new Date(today);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        return { dateFrom: weekAgo.toISOString().split("T")[0], dateTo: today.toISOString().split("T")[0] };
+      }
+      case "month": {
+        const monthAgo = new Date(today);
+        monthAgo.setMonth(monthAgo.getMonth() - 1);
+        return { dateFrom: monthAgo.toISOString().split("T")[0], dateTo: today.toISOString().split("T")[0] };
+      }
+      default:
+        return {};
+    }
+  }, [dateFilter]);
+
+  const loadData = async (currentPage = page) => {
     setLoading(true);
     setError(null);
     try {
-      const [announcementsRes, statsRes] = await Promise.all([
-        announcementsApi.getAll({ status: "sent", limit: 200 }),
-        announcementsApi.getStats(),
+      const params = {
+        page: String(currentPage),
+        limit: String(PAGE_SIZE),
+        ...(channelFilter !== "all" && { channel: channelFilter }),
+        ...(statusFilter !== "all" && { status: statusFilter }),
+        ...(searchQuery.trim() && { search: searchQuery.trim() }),
+        ...dateRange,
+      };
+
+      const [logsRes, statsRes] = await Promise.all([
+        communicationLogsApi.getAll(params),
+        communicationLogsApi.getStats(),
       ]);
       if (!mountedRef.current) return;
-      const list = announcementsRes?.announcements ?? (Array.isArray(announcementsRes) ? announcementsRes : []);
-      setAnnouncements(list);
-      setStats(statsRes ?? { sentThisMonth: 0, totalDelivered: 0, scheduled: 0 });
+
+      setLogs(logsRes?.logs ?? []);
+      setTotalPages(logsRes?.totalPages ?? 1);
+      setTotal(logsRes?.total ?? 0);
+      setStats(statsRes ?? { sentThisMonth: 0, totalDelivered: 0, totalFailed: 0, totalSent: 0, scheduled: 0 });
     } catch (err) {
       if (!mountedRef.current) return;
       const msg = err?.message || "Failed to load communication logs";
@@ -105,39 +137,38 @@ export default function CommunicationLogs() {
     }
   };
 
-  const filtered = useMemo(() => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const weekAgo = new Date(today); weekAgo.setDate(weekAgo.getDate() - 7);
-    const monthAgo = new Date(today); monthAgo.setMonth(monthAgo.getMonth() - 1);
+  useEffect(() => {
+    mountedRef.current = true;
+    loadData(1);
+    return () => { mountedRef.current = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    return announcements.filter((a) => {
-      const search = searchQuery.toLowerCase();
-      const matchesSearch = !search ||
-        a.title?.toLowerCase().includes(search) ||
-        a.content?.toLowerCase().includes(search);
+  // Refetch when filters change, resetting to page 1
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setPage(1);
+      loadData(1);
+    }, 250);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, channelFilter, statusFilter, dateFilter]);
 
-      const matchesChannel = channelFilter === "all" ||
-        a.channels?.some((c) => c.type === channelFilter);
-
-      const date = new Date(a.sentAt || a.createdAt);
-      const matchesDate =
-        dateFilter === "all" ? true :
-        dateFilter === "today" ? date >= today :
-        dateFilter === "week" ? date >= weekAgo :
-        date >= monthAgo;
-
-      return matchesSearch && matchesChannel && matchesDate;
-    });
-  }, [announcements, searchQuery, channelFilter, dateFilter]);
-
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  // Refetch when page changes (filters already applied in loadData)
+  useEffect(() => {
+    loadData(page);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
   const clearFilters = () => {
-    setSearchQuery(""); setChannelFilter("all"); setDateFilter("all"); setPage(1);
+    setSearchQuery("");
+    setChannelFilter("all");
+    setStatusFilter("all");
+    setDateFilter("all");
+    setPage(1);
   };
-  const hasFilters = searchQuery || channelFilter !== "all" || dateFilter !== "all";
+  const hasFilters = searchQuery || channelFilter !== "all" || statusFilter !== "all" || dateFilter !== "all";
 
   if (loading) {
     return (
@@ -175,7 +206,7 @@ export default function CommunicationLogs() {
               <p className="mt-1 text-sm text-fg-muted">{error}</p>
             </div>
             <button
-              onClick={loadData}
+              onClick={() => loadData(page)}
               className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
             >
               Retry
@@ -204,11 +235,11 @@ export default function CommunicationLogs() {
           sub="across all channels"
         />
         <StatCard
-          label="Total Campaigns"
-          value={announcements.length.toLocaleString()}
+          label="Total Communications"
+          value={stats.totalSent?.toLocaleString() ?? total.toLocaleString()}
           icon={BarChart2}
           color="bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400"
-          sub="sent announcements"
+          sub="sent messages"
         />
       </div>
 
@@ -221,9 +252,9 @@ export default function CommunicationLogs() {
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-faint" />
             <input
               type="text"
-              placeholder="Search by title or content…"
+              placeholder="Search by recipient or subject…"
               value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pl-8 pr-3 text-sm text-gray-700 placeholder-gray-400 focus:border-indigo-300 focus:outline-none focus:ring-1 focus:ring-indigo-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:placeholder-zinc-500"
             />
           </div>
@@ -231,7 +262,7 @@ export default function CommunicationLogs() {
           {/* Channel filter */}
           <select
             value={channelFilter}
-            onChange={(e) => { setChannelFilter(e.target.value); setPage(1); }}
+            onChange={(e) => setChannelFilter(e.target.value)}
             className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:border-indigo-300 focus:outline-none focus:ring-1 focus:ring-indigo-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
           >
             <option value="all">All Channels</option>
@@ -241,10 +272,24 @@ export default function CommunicationLogs() {
             <option value="inapp">In-App</option>
           </select>
 
+          {/* Status filter */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:border-indigo-300 focus:outline-none focus:ring-1 focus:ring-indigo-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+          >
+            <option value="all">All Statuses</option>
+            <option value="sent">Sent</option>
+            <option value="delivered">Delivered</option>
+            <option value="read">Read</option>
+            <option value="failed">Failed</option>
+            <option value="pending">Pending</option>
+          </select>
+
           {/* Date filter */}
           <select
             value={dateFilter}
-            onChange={(e) => { setDateFilter(e.target.value); setPage(1); }}
+            onChange={(e) => setDateFilter(e.target.value)}
             className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:border-indigo-300 focus:outline-none focus:ring-1 focus:ring-indigo-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
           >
             <option value="all">All Time</option>
@@ -263,12 +308,12 @@ export default function CommunicationLogs() {
           )}
 
           <span className="ml-auto text-xs text-fg-faint">
-            {filtered.length} {filtered.length === 1 ? "entry" : "entries"}
+            {total} {total === 1 ? "entry" : "entries"}
           </span>
         </div>
 
         {/* List */}
-        {paginated.length === 0 ? (
+        {logs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-2">
               <Send size={22} className="text-fg-faint" />
@@ -289,8 +334,8 @@ export default function CommunicationLogs() {
           </div>
         ) : (
           <ul className="divide-y divide-divider">
-            {paginated.map((a) => (
-              <li key={a._id} className="flex flex-col gap-3 p-4 hover:bg-surface-2/50 transition-colors sm:flex-row sm:items-start sm:gap-4">
+            {logs.map((log) => (
+              <li key={`${log._id}-${log.channel}`} className="flex flex-col gap-3 p-4 hover:bg-surface-2/50 transition-colors sm:flex-row sm:items-start sm:gap-4">
                 {/* Icon */}
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">
                   <Send size={15} />
@@ -299,43 +344,31 @@ export default function CommunicationLogs() {
                 {/* Main content */}
                 <div className="flex-1 min-w-0 space-y-1.5">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{a.title}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{log.announcementTitle || log.subject || "—"}</p>
+                    <ChannelBadge channel={log.channel} />
+                    <StatusBadge status={log.status} />
                   </div>
 
-                  {a.content && (
-                    <p className="text-xs text-fg-muted line-clamp-1">{a.content}</p>
-                  )}
-
-                  {/* Channels */}
-                  {a.channels?.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {a.channels.map((ch, i) => (
-                        <ChannelBadge key={`${ch.type}-${i}`} channel={ch} />
-                      ))}
-                    </div>
+                  {log.content && (
+                    <p className="text-xs text-fg-muted line-clamp-1">{log.content}</p>
                   )}
 
                   {/* Meta row */}
                   <div className="flex flex-wrap items-center gap-3 text-xs text-fg-faint">
                     <span className="flex items-center gap-1">
                       <Users size={11} />
-                      {getRecipientsLabel(a.recipients)}
+                      {log.recipientName || log.name || "—"}
                     </span>
-                    {a.analytics?.totalRecipients > 0 && (
-                      <span className="flex items-center gap-1">
-                        <CheckCircle2 size={11} />
-                        {a.analytics.deliveredCount ?? 0}/{a.analytics.totalRecipients} delivered
-                        {a.analytics.failedCount > 0 && (
-                          <span className="text-red-400"> · {a.analytics.failedCount} failed</span>
-                        )}
-                      </span>
-                    )}
+                    <span className="flex items-center gap-1">
+                      <Mail size={11} />
+                      {log.recipient || log.recipientEmail || log.recipientPhone || "—"}
+                    </span>
                     <span className="flex items-center gap-1">
                       <Calendar size={11} />
-                      {formatDate(a.sentAt || a.createdAt)}
+                      {formatDate(log.sentAt || log.createdAt)}
                     </span>
-                    {a.createdBy?.name && (
-                      <span>by {a.createdBy.name}</span>
+                    {log.userType && (
+                      <span>{log.userType}</span>
                     )}
                   </div>
                 </div>
@@ -352,14 +385,14 @@ export default function CommunicationLogs() {
             </p>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
                 disabled={page === 1}
                 className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
               >
                 <ChevronLeft size={14} />
               </button>
               <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
                 disabled={page === totalPages}
                 className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
               >

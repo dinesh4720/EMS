@@ -11,6 +11,7 @@ vi.mock('../../config/api.js', () => ({ API_URL: 'http://test' }));
 import { request } from './core.js';
 import {
   announcementsApi,
+  communicationLogsApi,
   remindersApi,
   callsApi,
   visitorsApi,
@@ -91,6 +92,29 @@ describe('announcementsApi', () => {
   it('getAnalytics calls /analytics endpoint', () => {
     announcementsApi.getAnalytics('ann002');
     expect(request).toHaveBeenCalledWith('/announcements/ann002/analytics');
+  });
+});
+
+// ─── communicationLogsApi ─────────────────────────────────────────────────────
+
+describe('communicationLogsApi', () => {
+  it('getAll calls /communication-logs without params', () => {
+    communicationLogsApi.getAll();
+    expect(request).toHaveBeenCalledWith('/communication-logs');
+  });
+
+  it('getAll appends query string when params provided', () => {
+    communicationLogsApi.getAll({ channel: 'email', page: '1', limit: '20' });
+    const url = request.mock.calls[0][0];
+    expect(url).toContain('/communication-logs?');
+    expect(url).toContain('channel=email');
+    expect(url).toContain('page=1');
+    expect(url).toContain('limit=20');
+  });
+
+  it('getStats calls /communication-logs/stats', () => {
+    communicationLogsApi.getStats();
+    expect(request).toHaveBeenCalledWith('/communication-logs/stats');
   });
 });
 

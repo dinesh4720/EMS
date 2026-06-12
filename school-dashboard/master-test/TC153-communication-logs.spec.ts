@@ -25,8 +25,8 @@ test.describe('TC113 — Communication Logs', () => {
 
     await installMockApi(page, state);
 
-    // Override announcements endpoint ( CommunicationLogs uses announcementsApi )
-    await page.route('**/api/announcements**', async (route) => {
+    // Override communication-logs endpoint (CommunicationLogs uses communicationLogsApi)
+    await page.route('**/api/communication-logs**', async (route) => {
       const url = new URL(route.request().url());
       const path = url.pathname;
 
@@ -34,35 +34,40 @@ test.describe('TC113 — Communication Logs', () => {
         return route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify({ sentThisMonth: 5, totalSent: 42, totalScheduled: 3 }),
+          body: JSON.stringify({ sentThisMonth: 5, totalDelivered: 42, totalFailed: 2, totalSent: 47, scheduled: 3 }),
         });
       }
 
-      const typeFilter = url.searchParams.get('type');
+      const channelFilter = url.searchParams.get('channel');
+      const statusFilter = url.searchParams.get('status');
       const searchQuery = url.searchParams.get('search') || url.searchParams.get('q') || '';
       const pageNum = parseInt(url.searchParams.get('page') || '1');
       const limit = parseInt(url.searchParams.get('limit') || '20');
 
       const allLogs = [
-        { _id: 'log-1', id: 'log-1', type: 'email', recipient: 'parent1@test.com', recipientName: 'Suresh Kumar', subject: 'Fee Payment Reminder', status: 'sent', createdAt: '2026-03-30T10:00:00Z', channel: 'email' },
-        { _id: 'log-2', id: 'log-2', type: 'sms', recipient: '9876543210', recipientName: 'Radha Sharma', subject: 'Attendance Alert', status: 'sent', createdAt: '2026-03-29T14:00:00Z', channel: 'sms' },
-        { _id: 'log-3', id: 'log-3', type: 'push', recipient: 'device-token-abc', recipientName: 'Priya Gupta', subject: 'Exam Results Published', status: 'sent', createdAt: '2026-03-28T09:00:00Z', channel: 'inapp' },
-        { _id: 'log-4', id: 'log-4', type: 'email', recipient: 'parent2@test.com', recipientName: 'Amit Patel', subject: 'Holiday Notice', status: 'sent', createdAt: '2026-03-27T16:00:00Z', channel: 'email' },
-        { _id: 'log-5', id: 'log-5', type: 'sms', recipient: '9876543211', recipientName: 'Kavita Singh', subject: 'Bus Route Change', status: 'sent', createdAt: '2026-03-26T08:00:00Z', channel: 'sms' },
-        { _id: 'log-6', id: 'log-6', type: 'push', recipient: 'device-token-xyz', recipientName: 'Rajan Menon', subject: 'New Announcement', status: 'sent', createdAt: '2026-03-25T11:00:00Z', channel: 'inapp' },
-        { _id: 'log-7', id: 'log-7', type: 'email', recipient: 'parent3@test.com', recipientName: 'Deepika Rao', subject: 'Report Card Ready', status: 'sent', createdAt: '2026-03-24T15:00:00Z', channel: 'email' },
-        { _id: 'log-8', id: 'log-8', type: 'sms', recipient: '9876543212', recipientName: 'Suresh Kumar', subject: 'PTM Reminder', status: 'sent', createdAt: '2026-03-23T10:00:00Z', channel: 'sms' },
+        { _id: 'log-1', id: 'log-1', type: 'email', channel: 'email', recipient: 'parent1@test.com', recipientName: 'Suresh Kumar', name: 'Suresh Kumar', subject: 'Fee Payment Reminder', announcementTitle: 'Fee Payment Reminder', content: 'Fee payment is due next week.', status: 'sent', sentAt: '2026-03-30T10:00:00Z', createdAt: '2026-03-30T10:00:00Z' },
+        { _id: 'log-2', id: 'log-2', type: 'sms', channel: 'sms', recipient: '9876543210', recipientName: 'Radha Sharma', name: 'Radha Sharma', subject: 'Attendance Alert', announcementTitle: 'Attendance Alert', content: 'Your child was absent today.', status: 'delivered', sentAt: '2026-03-29T14:00:00Z', createdAt: '2026-03-29T14:00:00Z' },
+        { _id: 'log-3', id: 'log-3', type: 'push', channel: 'inapp', recipient: 'device-token-abc', recipientName: 'Priya Gupta', name: 'Priya Gupta', subject: 'Exam Results Published', announcementTitle: 'Exam Results Published', content: 'Exam results are now live.', status: 'read', sentAt: '2026-03-28T09:00:00Z', createdAt: '2026-03-28T09:00:00Z' },
+        { _id: 'log-4', id: 'log-4', type: 'email', channel: 'email', recipient: 'parent2@test.com', recipientName: 'Amit Patel', name: 'Amit Patel', subject: 'Holiday Notice', announcementTitle: 'Holiday Notice', content: 'School will be closed tomorrow.', status: 'sent', sentAt: '2026-03-27T16:00:00Z', createdAt: '2026-03-27T16:00:00Z' },
+        { _id: 'log-5', id: 'log-5', type: 'sms', channel: 'sms', recipient: '9876543211', recipientName: 'Kavita Singh', name: 'Kavita Singh', subject: 'Bus Route Change', announcementTitle: 'Bus Route Change', content: 'Bus route 4 has changed.', status: 'failed', sentAt: '2026-03-26T08:00:00Z', createdAt: '2026-03-26T08:00:00Z' },
+        { _id: 'log-6', id: 'log-6', type: 'push', channel: 'inapp', recipient: 'device-token-xyz', recipientName: 'Rajan Menon', name: 'Rajan Menon', subject: 'New Announcement', announcementTitle: 'New Announcement', content: 'A new announcement has been posted.', status: 'delivered', sentAt: '2026-03-25T11:00:00Z', createdAt: '2026-03-25T11:00:00Z' },
+        { _id: 'log-7', id: 'log-7', type: 'email', channel: 'email', recipient: 'parent3@test.com', recipientName: 'Deepika Rao', name: 'Deepika Rao', subject: 'Report Card Ready', announcementTitle: 'Report Card Ready', content: 'Report cards are ready for download.', status: 'sent', sentAt: '2026-03-24T15:00:00Z', createdAt: '2026-03-24T15:00:00Z' },
+        { _id: 'log-8', id: 'log-8', type: 'sms', channel: 'sms', recipient: '9876543212', recipientName: 'Suresh Kumar', name: 'Suresh Kumar', subject: 'PTM Reminder', announcementTitle: 'PTM Reminder', content: 'PTM is scheduled for Saturday.', status: 'sent', sentAt: '2026-03-23T10:00:00Z', createdAt: '2026-03-23T10:00:00Z' },
       ];
 
       let filtered = allLogs;
-      if (typeFilter) {
-        filtered = filtered.filter(l => l.type === typeFilter);
+      if (channelFilter) {
+        filtered = filtered.filter(l => l.channel === channelFilter);
+      }
+      if (statusFilter) {
+        filtered = filtered.filter(l => l.status === statusFilter);
       }
       if (searchQuery) {
         filtered = filtered.filter(l =>
           l.recipientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
           l.recipient.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          l.subject.toLowerCase().includes(searchQuery.toLowerCase()),
+          l.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          l.announcementTitle.toLowerCase().includes(searchQuery.toLowerCase()),
         );
       }
 
@@ -72,7 +77,7 @@ test.describe('TC113 — Communication Logs', () => {
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ announcements: paginated, total: filtered.length, totalPages: Math.ceil(filtered.length / limit), currentPage: pageNum }),
+        body: JSON.stringify({ logs: paginated, total: filtered.length, totalPages: Math.ceil(filtered.length / limit), currentPage: pageNum }),
       });
     });
   });
