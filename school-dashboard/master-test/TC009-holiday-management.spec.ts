@@ -21,7 +21,8 @@ test.use({ viewport: { width: 1280, height: 720 } });
 async function installHolidayRoutes(page: import('@playwright/test').Page, state: MockState) {
   await installMockApi(page, state);
 
-  await page.route('**/api/holidays**', async (route) => {
+  // The real UI reads and writes holidays via /api/settings/holidays
+  await page.route('**/api/settings/holidays**', async (route) => {
     const request = route.request();
     const url = new URL(request.url());
     const path = url.pathname;
@@ -32,18 +33,19 @@ async function installHolidayRoutes(page: import('@playwright/test').Page, state
     const json = (data: unknown, status = 200) =>
       route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(data) });
 
-    if (path === '/api/holidays' && method === 'GET') {
+    if (path === '/api/settings/holidays' && method === 'GET') {
       return json(state.holidays);
     }
 
-    if (path === '/api/holidays' && method === 'POST') {
+    if (path === '/api/settings/holidays' && method === 'POST') {
       const body = JSON.parse(request.postData() || '{}');
+      const id = `hol-${Date.now()}`;
       const newHoliday = {
-        _id: `hol-${Date.now()}`,
-        id: `hol-${Date.now()}`,
+        _id: id,
+        id,
         name: body.name || 'New Holiday',
         date: body.date || new Date().toISOString().split('T')[0],
-        type: body.type || 'school',
+        type: body.type || 'School',
         description: body.description || '',
         schoolId: SCHOOL_ID,
       };
@@ -51,12 +53,12 @@ async function installHolidayRoutes(page: import('@playwright/test').Page, state
       return json(newHoliday, 201);
     }
 
-    const idMatch = path.match(/^\/api\/holidays\/([^/]+)$/);
+    const idMatch = path.match(/^\/api\/settings\/holidays\/([^/]+)$/);
     if (idMatch) {
       const id = idMatch[1];
       if (method === 'PUT' || method === 'PATCH') {
         const body = JSON.parse(request.postData() || '{}');
-        const idx = state.holidays.findIndex((h: Record<string, unknown>) => h._id === id);
+        const idx = state.holidays.findIndex((h: Record<string, unknown>) => h._id === id || h.id === id);
         if (idx >= 0) {
           Object.assign(state.holidays[idx], body);
           return json(state.holidays[idx]);
@@ -64,7 +66,7 @@ async function installHolidayRoutes(page: import('@playwright/test').Page, state
         return json({ error: 'Not found' }, 404);
       }
       if (method === 'DELETE') {
-        state.holidays = state.holidays.filter((h: Record<string, unknown>) => h._id !== id);
+        state.holidays = state.holidays.filter((h: Record<string, unknown>) => h._id !== id && h.id !== id);
         return json({ message: 'Deleted' });
       }
     }
@@ -138,41 +140,40 @@ test.describe('TC009: Holiday Management — CRUD & Statistics', () => {
       await addBtn.click();
       await page.waitForTimeout(500);
 
-      // Fill holiday name
-      const nameInput = page.locator('input[name="name"], input[placeholder*="name" i], input[placeholder*="holiday" i]').last();
-      const hasName = await nameInput.isVisible({ timeout: 3000 }).catch(() => false);
-      if (hasName) await nameInput.fill('School Foundation Day');
+      // Use inputs inside the modal to avoid matching page-level fields
+      const modal = page.locator('[role="dialog"]');
+      await modal.waitFor({ state: 'visible', timeout: 5000 });
+      const modalInputs = modal.locator('input');
 
-      // Fill date
-      const dateInput = page.locator('input[name="date"], input[type="date"]').last();
-      const hasDate = await dateInput.isVisible({ timeout: 3000 }).catch(() => false);
-      if (hasDate) await dateInput.fill('2026-07-15');
+      // Fill holiday name (first input in modal)
+      await modalInputs.nth(0).fill('School Foundation Day');
 
-      // Select type
-      const typeSelect = page.locator('select[name="type"], select[name="holidayType"]').last();
-      const hasTypeSelect = await typeSelect.isVisible({ timeout: 3000 }).catch(() => false);
-      if (hasTypeSelect) {
-        await typeSelect.selectOption({ label: 'School' }).catch(() =>
-          typeSelect.selectOption({ value: 'school' }).catch(() => {}),
-        );
+      // Fill date (second input in modal)
+      await modalInputs.nth(1).fill('2026-03-15');
+
+      // Select type via the HeroUI Select trigger (button inside the modal)
+      const typeTrigger = modal.locator('button').filter({ hasText: /national|regional|school/i }).first();
+      const hasTypeTrigger = await typeTrigger.isVisible({ timeout: 3000 }).catch(() => false);
+      if (hasTypeTrigger) {
+        await typeTrigger.click();
+        await page.locator('[role="listbox"] [role="option"]', { hasText: 'School' }).first().click();
       }
 
-      // Save
-      const saveBtn = page.getByRole('button', { name: /save|add|create|submit/i }).last();
-      const hasSave = await saveBtn.isVisible({ timeout: 3000 }).catch(() => false);
-      if (hasSave) {
-        await saveBtn.click();
-        await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(3000);
-      }
+      // Save via the modal's Add Holiday button
+      const saveBtn = modal.getByRole('button', { name: /add holiday|update holiday|save/i });
+      await expect(saveBtn).toBeEnabled({ timeout: 5000 });
+      await saveBtn.click();
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(3000);
 
-      // Verify API was called
+      // Verify the create API was called through the settings holidays endpoint
       const postCalled = [...state.requestLog].some(
-        (entry) => entry.includes('POST') && entry.includes('/holidays'),
+        (entry) => entry.includes('POST') && entry.includes('/settings/holidays'),
       );
-      if (postCalled) {
-        expect(state.holidays.length).toBeGreaterThan(initialCount);
-      }
+      expect(postCalled).toBe(true);
+
+      // Verify the new holiday appears in the UI
+      await expect(page.locator('body')).toContainText('School Foundation Day', { timeout: 5000 });
     }
   });
 
