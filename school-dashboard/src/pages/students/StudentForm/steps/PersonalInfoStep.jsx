@@ -6,6 +6,7 @@ import { INDIAN_STATES, normalizeStateName } from "../../../../constants/states"
 import { lookupPincode } from "../../../../services/api";
 import { useTranslation } from 'react-i18next';
 import logger from '../../../../utils/logger';
+import CameraCaptureModal from "../../../../components/photo/CameraCaptureModal";
 
 
 /**
@@ -25,6 +26,7 @@ export default function PersonalInfoStep({
   const { t } = useTranslation();
   const [dobValidation, setDobValidation] = useState({ isValid: false, message: "", warning: "" });
   const [isDobCalendarOpen, setIsDobCalendarOpen] = useState(false);
+  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
   const [isZipLookupLoading, setIsZipLookupLoading] = useState(false);
   const zipLookupTimeoutRef = useRef(null);
   const manualCityStateEntryRef = useRef(false);
@@ -85,7 +87,7 @@ export default function PersonalInfoStep({
   return (
     <div className="space-y-5 animate-fade-in text-left">
       {/* Profile Section */}
-      <ProfileSection formData={formData} updateField={updateField} />
+      <ProfileSection formData={formData} updateField={updateField} onOpenPhotoModal={() => setIsPhotoModalOpen(true)} />
 
       {/* Personal Information */}
       <div className="space-y-2" ref={fullNameRef}>
@@ -165,12 +167,19 @@ export default function PersonalInfoStep({
 
       {/* Optional Information */}
       <OptionalSection formData={formData} updateField={updateField} />
+
+      {/* Photo capture / upload modal */}
+      <CameraCaptureModal
+        isOpen={isPhotoModalOpen}
+        onClose={() => setIsPhotoModalOpen(false)}
+        onPhotoCaptured={(file) => updateField("picture", file)}
+      />
     </div>
   );
 }
 
 // Sub-components would go here...
-function ProfileSection({ formData, updateField }) {
+function ProfileSection({ formData, updateField, onOpenPhotoModal }) {
   const picturePreviewUrl = useMemo(() => {
     if (formData.picture instanceof File) {
       return URL.createObjectURL(formData.picture);
@@ -205,7 +214,7 @@ function ProfileSection({ formData, updateField }) {
         <div className="flex items-center gap-3">
           <button
             className="text-sm font-semibold text-primary hover:text-primary-600 transition-colors"
-            onClick={() => {/* Open camera modal */}}
+            onClick={onOpenPhotoModal}
           >
             {formData.picture ? "Change Photo" : "Add Photo"}
           </button>
