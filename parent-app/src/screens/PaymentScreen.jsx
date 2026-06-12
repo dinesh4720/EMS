@@ -20,20 +20,13 @@ import { Card, Button } from '../components';
 import { formatCurrency } from '../utils/helpers';
 import api from '../services/api';
 import { useTranslation } from 'react-i18next';
+import { getDefaultAcademicYear } from '../constants';
 import {
   CreditCard,
   CheckCircle,
   Shield,
   X,
 } from 'lucide-react-native';
-
-const getDefaultAcademicYear = (referenceDate = new Date()) => {
-  const startYear = referenceDate.getMonth() >= 3
-    ? referenceDate.getFullYear()
-    : referenceDate.getFullYear() - 1;
-
-  return `${startYear}-${String((startYear + 1) % 100).padStart(2, '0')}`;
-};
 
 const PaymentScreen = ({ navigation, route }) => {
   const { t } = useTranslation();
