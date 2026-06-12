@@ -11,13 +11,11 @@
     },
     "ios": {
       "supportsTablet": true,
-      "_TODO_bundleIdentifier": "TODO: Replace 'com.yourbrand' with your actual brand before App Store submission",
-      "bundleIdentifier": "com.yourbrand.ems.staffapp",
+      "bundleIdentifier": "com.schoolsync.ems.staffapp",
       "buildNumber": "1"
     },
     "android": {
-      "_TODO_package": "TODO: Replace 'com.yourbrand' with your actual brand before Play Store submission",
-      "package": "com.yourbrand.ems.staffapp",
+      "package": "com.schoolsync.ems.staffapp",
       "versionCode": 1
     },
     "plugins": [
