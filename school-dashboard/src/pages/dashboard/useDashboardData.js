@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   announcementsApi,
   attendanceApi,
+  dashboardApi,
   feesApi,
   studentFeesApi,
 } from "../../services/api";
@@ -39,6 +40,11 @@ export default function useDashboardData({
   const [dashboardError, setDashboardError] = useState(null);
   const [paymentsLoaded, setPaymentsLoaded] = useState(false);
   const [feeDefaultersCount, setFeeDefaultersCount] = useState(0);
+  const [dashboardFeed, setDashboardFeed] = useState({
+    priorities: [],
+    schedule: [],
+    moments: [],
+  });
   const [reloadKey, setReloadKey] = useState(0);
 
   const studentsRef = useRef(students);
@@ -53,11 +59,12 @@ export default function useDashboardData({
       setPaymentsLoaded(false);
 
       try {
-        const [paymentsResult, announcementsResult, feeStructuresResult] =
+        const [paymentsResult, announcementsResult, feeStructuresResult, feedResult] =
           await Promise.allSettled([
             feesApi.getPayments({ academicYear: currentAcademicYear }),
             announcementsApi.getAll({}),
             studentFeesApi.getAll(currentAcademicYear),
+            dashboardApi.getFeed(),
           ]);
 
         if (cancelled) return;
@@ -106,6 +113,21 @@ export default function useDashboardData({
           ).slice(0, 6)
         );
         setFeeCollectionData(createFeeCollectionSeries(settledPayments));
+        setDashboardFeed(
+          feedResult.status === 'fulfilled' && feedResult.value
+            ? {
+                priorities: Array.isArray(feedResult.value.priorities)
+                  ? feedResult.value.priorities
+                  : [],
+                schedule: Array.isArray(feedResult.value.schedule)
+                  ? feedResult.value.schedule
+                  : [],
+                moments: Array.isArray(feedResult.value.moments)
+                  ? feedResult.value.moments
+                  : [],
+              }
+            : { priorities: [], schedule: [], moments: [] }
+        );
         setPaymentSnapshot({
           totalPending:
             feeStructuresResult.status === "fulfilled" ? totalPending : null,
@@ -284,6 +306,7 @@ export default function useDashboardData({
     paymentSnapshot,
     attendanceSnapshot,
     feeDefaultersCount,
+    dashboardFeed,
     dashboardLoading,
     dashboardError,
     paymentsLoaded,

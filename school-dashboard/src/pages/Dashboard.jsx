@@ -536,6 +536,7 @@ function Dashboard() {
     recentPayments,
     recentAnnouncements,
     feeCollectionData,
+    dashboardFeed,
     dashboardLoading,
     reload,
   } = useDashboardData({
@@ -598,64 +599,42 @@ function Dashboard() {
 
   /* Priorities */
   const priorities = useMemo(() => {
-    const items = [];
-    if (feeDefaultersCount > 0) {
-      const overdue =
-        paymentSnapshot.totalPending != null ? compactINR(paymentSnapshot.totalPending) : null;
-      items.push({
-        id: "fees",
-        kind: "danger",
-        title: overdue ? `${overdue} unpaid fees` : `${feeDefaultersCount} fee defaulters`,
-        body: `${feeDefaultersCount} student${feeDefaultersCount === 1 ? "" : "s"} past cutoff`,
-        meta: "Reminder ready",
-        primary: "Send reminders",
-        onPrimary: () => navigate("/fees"),
-      });
-    }
-    items.push({
-      id: "coverage",
-      kind: "warn",
-      title: "Period 3 · 10-B unstaffed",
-      body: "Substitute not assigned",
-      meta: "10:30 – 11:15",
-      primary: "Assign substitute",
-      onPrimary: () => navigate("/staffs"),
-    });
-    items.push({
-      id: "ptm",
-      kind: "info",
-      title: "PTM agenda · Dec 20",
-      body: "Finalize discussion points",
-      meta: "3 days left",
-      primary: "Open agenda",
-      onPrimary: () => navigate("/ptm"),
-    });
-    return items.filter((item) => !dismissed.has(item.id)).slice(0, 3);
-  }, [feeDefaultersCount, paymentSnapshot.totalPending, navigate, dismissed]);
+    const routeMap = {
+      '/fees': '/fees',
+      '/staffs': '/staffs',
+      '/staff': '/staffs',
+      '/ptm': '/ptm',
+      '/calendar': '/calendar',
+    };
+    const items = (dashboardFeed?.priorities || [])
+      .map((item) => ({
+        ...item,
+        onPrimary: () => navigate(routeMap[item.route] || item.route || '/'),
+      }))
+      .slice(0, 3);
+    return items.filter((item) => !dismissed.has(item.id));
+  }, [dashboardFeed?.priorities, navigate, dismissed]);
 
   const pendingCount = priorities.length;
 
   /* Schedule */
   const schedule = useMemo(
-    () => [
-      { time: "09:00", title: "Morning assembly", meta: "Auditorium · You're addressing Grade 9–12", mine: true },
-      { time: "10:30", title: "Walk-through · Grade 6 wing", meta: "With the coordinator" },
-      { time: "11:30", title: "Parent meet · 10-A", meta: "Concern: math grades · 30 min", mine: true },
-      { time: "13:30", title: "Staff briefing · 7 leads", meta: "Weekly sync · Conf room A" },
-      { time: "15:30", title: "Annual day rehearsal", meta: "Auditorium · Grade 9–12 · drop-in" },
-    ],
-    []
+    () => (dashboardFeed?.schedule || []),
+    [dashboardFeed?.schedule]
   );
 
   const nowIndex = useMemo(() => {
     const minutes = now.getHours() * 60 + now.getMinutes();
     const starts = schedule.map((row) => {
-      const [hr, min] = row.time.split(":").map(Number);
+      if (!row.time || row.allDay || row.time.toLowerCase() === 'all day') return null;
+      const [hr, min] = String(row.time).split(':').map(Number);
+      if (Number.isNaN(hr) || Number.isNaN(min)) return null;
       return hr * 60 + min;
     });
     let idx = -1;
     for (let i = 0; i < starts.length; i += 1) {
-      if (minutes >= starts[i]) idx = i;
+      const start = starts[i];
+      if (start != null && minutes >= start) idx = i;
     }
     if (idx < 0) return -1;
     return minutes - starts[idx] < 90 ? idx : -1;
@@ -890,10 +869,15 @@ function Dashboard() {
       {/* ─── Moments Footer ─── */}
       <div className="moments">
         <span className="moments__lab">Week</span>
-        <span>
-          <b>3</b> inter-school finals
-        </span>
-        <span className="moments__dot">·</span>
+        {(dashboardFeed?.moments || []).map((moment, index) => (
+          <React.Fragment key={moment.label || index}>
+            {index > 0 && <span className="moments__dot">·</span>}
+            <span>
+              <b>{moment.value}</b> {moment.label}
+            </span>
+          </React.Fragment>
+        ))}
+        {(dashboardFeed?.moments || []).length > 0 && <span className="moments__dot">·</span>}
         <span>
           <b>
             {attendanceSnapshot.studentRate != null ? `${attendanceSnapshot.studentRate}%` : "—"}

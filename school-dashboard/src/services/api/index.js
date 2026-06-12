@@ -5,6 +5,7 @@
  */
 
 export { clearApiCache, request, requestUpload, requestBlob } from './core.js';
+export { dashboardApi } from './dashboard.js';
 export { staffApi, studentsApi, trashApi } from './staff.js';
 export { examsApi, homeworkApi, resultsApi, academicPerformanceApi, subjectsApi, examScheduleApi } from './academics.js';
 export {
