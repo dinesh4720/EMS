@@ -142,6 +142,14 @@ class ApiService {
     return this.post(CONFIG.API_ENDPOINTS.LOGIN, credentials);
   }
 
+  async sendOtp(phone) {
+    return this.post(CONFIG.API_ENDPOINTS.SEND_OTP, { phone });
+  }
+
+  async verifyOtp({ phone, otp }) {
+    return this.post(CONFIG.API_ENDPOINTS.VERIFY_OTP, { phone, otp });
+  }
+
   async logout() {
     try {
       await this.post(CONFIG.API_ENDPOINTS.LOGOUT, {});

@@ -76,6 +76,32 @@ export const AuthProvider = ({ children: childrenProp }) => {
     }
   };
 
+  const persistAuthSession = async (parent, accessToken, refreshToken) => {
+    // Store access token in AsyncStorage; refresh token in SecureStore (encrypted)
+    await AsyncStorage.setItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN, accessToken);
+    await SecureStore.setItemAsync(SECURE_REFRESH_KEY, refreshToken);
+
+    // Store user data
+    const userData = {
+      id: parent.id,
+      name: parent.name,
+      phone: parent.phone,
+      email: parent.email,
+      avatar: parent.avatar,
+    };
+    await AsyncStorage.setItem(CONFIG.STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
+
+    // Store children data
+    const childrenArr = parent.children || [];
+    await AsyncStorage.setItem(CONFIG.STORAGE_KEYS.CHILDREN_DATA, JSON.stringify(childrenArr));
+    await AsyncStorage.setItem(CONFIG.STORAGE_KEYS.SELECTED_CHILD, '0');
+
+    setUser(userData);
+    setChildrenList(childrenArr);
+    setSelectedChildIndex(0);
+    setIsAuthenticated(true);
+  };
+
   const login = async (credentials) => {
     try {
       const response = await api.login({
@@ -91,35 +117,53 @@ export const AuthProvider = ({ children: childrenProp }) => {
       }
 
       const { parent, accessToken, refreshToken } = response.data;
-
-      // Store access token in AsyncStorage; refresh token in SecureStore (encrypted)
-      await AsyncStorage.setItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN, accessToken);
-      await SecureStore.setItemAsync(SECURE_REFRESH_KEY, refreshToken);
-
-      // Store user data
-      const userData = {
-        id: parent.id,
-        name: parent.name,
-        phone: parent.phone,
-        email: parent.email,
-        avatar: parent.avatar,
-      };
-      await AsyncStorage.setItem(CONFIG.STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
-
-      // Store children data
-      const childrenArr = parent.children || [];
-      await AsyncStorage.setItem(CONFIG.STORAGE_KEYS.CHILDREN_DATA, JSON.stringify(childrenArr));
-      await AsyncStorage.setItem(CONFIG.STORAGE_KEYS.SELECTED_CHILD, '0');
-
-      setUser(userData);
-      setChildrenList(childrenArr);
-      setSelectedChildIndex(0);
-      setIsAuthenticated(true);
+      await persistAuthSession(parent, accessToken, refreshToken);
 
       return { success: true };
     } catch (error) {
       console.error('Login error:', error);
       return { success: false, error: error.message || 'Login failed' };
+    }
+  };
+
+  const loginWithOtp = async ({ phone, otp }) => {
+    try {
+      const response = await api.verifyOtp({ phone, otp });
+
+      if (!response.success) {
+        return {
+          success: false,
+          error: response.error?.message || 'OTP verification failed',
+          code: response.error?.code,
+        };
+      }
+
+      const { parent, accessToken, refreshToken } = response.data;
+      await persistAuthSession(parent, accessToken, refreshToken);
+
+      return { success: true };
+    } catch (error) {
+      console.error('OTP login error:', error);
+      return { success: false, error: error.message || 'OTP verification failed', code: error.code };
+    }
+  };
+
+  const sendOtp = async (phone) => {
+    try {
+      const response = await api.sendOtp(phone);
+
+      if (!response.success) {
+        return {
+          success: false,
+          error: response.error?.message || 'Failed to send OTP',
+          code: response.error?.code,
+        };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Send OTP error:', error);
+      return { success: false, error: error.message || 'Failed to send OTP', code: error.code };
     }
   };
 
@@ -155,6 +199,8 @@ export const AuthProvider = ({ children: childrenProp }) => {
     loading,
     isAuthenticated,
     login,
+    loginWithOtp,
+    sendOtp,
     logout,
     switchChild,
   };
