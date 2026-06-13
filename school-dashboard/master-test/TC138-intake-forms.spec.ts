@@ -104,7 +104,8 @@ async function installIntakeFormRoutes(
   // Assignments endpoint
   await page.route('**/api/intake-forms/assignments*', async (route) => {
     const method = route.request().method();
-    state.requestLog.add(`${method} /api/intake-forms/assignments`);
+    const url = new URL(route.request().url());
+    state.requestLog.add(`${method} ${url.pathname}`);
 
     if (method === 'POST') {
       const body = JSON.parse(route.request().postData() || '{}');
@@ -141,46 +142,12 @@ async function installIntakeFormRoutes(
     });
   });
 
-  // Submissions endpoint
-  await page.route('**/api/intake-forms/submissions**', async (route) => {
+  // Submissions list endpoint
+  await page.route('**/api/intake-forms/submissions*', async (route) => {
     const method = route.request().method();
     const url = new URL(route.request().url());
     const path = url.pathname;
     state.requestLog.add(`${method} ${path}`);
-
-    // GET specific submission
-    if (method === 'GET' && path.match(/\/submissions\/[^/]+$/)) {
-      const subId = path.split('/').pop();
-      const submission = submissions.find((s) => s._id === subId);
-      if (submission) {
-        return route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(submission),
-        });
-      }
-      return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ error: 'Not found' }) });
-    }
-
-    // PUT - approve/reject
-    if (method === 'PUT' || method === 'PATCH') {
-      const subId = path.split('/')[4]; // /api/intake-forms/submissions/:id
-      const body = JSON.parse(route.request().postData() || '{}');
-      const idx = submissions.findIndex((s) => s._id === subId);
-
-      if (idx >= 0) {
-        if (body.status) submissions[idx].status = body.status;
-        if (body.status === 'approved' || body.status === 'rejected') {
-          submissions[idx].reviewedAt = new Date().toISOString();
-        }
-        return route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(submissions[idx]),
-        });
-      }
-      return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ error: 'Not found' }) });
-    }
 
     // GET - list submissions
     const assignmentId = url.searchParams.get('assignmentId');
@@ -199,10 +166,49 @@ async function installIntakeFormRoutes(
     });
   });
 
+  // Submission detail endpoint (GET / PUT)
+  await page.route('**/api/intake-forms/submissions/*', async (route) => {
+    const method = route.request().method();
+    const url = new URL(route.request().url());
+    const path = url.pathname;
+    const pathParts = path.split('/').filter(Boolean);
+    const subId = pathParts[pathParts.length - 1];
+    state.requestLog.add(`${method} /api/intake-forms/submissions/${subId}`);
+
+    const idx = submissions.findIndex((s) => s._id === subId);
+    if (idx < 0) {
+      return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ error: 'Not found' }) });
+    }
+
+    if (method === 'GET') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(submissions[idx]),
+      });
+    }
+
+    if (method === 'PUT' || method === 'PATCH') {
+      const body = JSON.parse(route.request().postData() || '{}');
+      if (body.status) submissions[idx].status = body.status;
+      if (body.status === 'approved' || body.status === 'rejected') {
+        submissions[idx].reviewedAt = new Date().toISOString();
+      }
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(submissions[idx]),
+      });
+    }
+
+    return route.fulfill({ status: 405, contentType: 'application/json', body: JSON.stringify({ error: 'Method not allowed' }) });
+  });
+
   // Approve endpoint
   await page.route('**/api/intake-forms/submissions/*/approve', async (route) => {
     const url = new URL(route.request().url());
-    const subId = url.pathname.split('/')[4];
+    const pathParts = url.pathname.split('/').filter(Boolean);
+    const subId = pathParts[pathParts.length - 2];
     state.requestLog.add(`POST /api/intake-forms/submissions/${subId}/approve`);
 
     const idx = submissions.findIndex((s) => s._id === subId);
@@ -221,7 +227,8 @@ async function installIntakeFormRoutes(
   // Reject endpoint
   await page.route('**/api/intake-forms/submissions/*/reject', async (route) => {
     const url = new URL(route.request().url());
-    const subId = url.pathname.split('/')[4];
+    const pathParts = url.pathname.split('/').filter(Boolean);
+    const subId = pathParts[pathParts.length - 2];
     state.requestLog.add(`POST /api/intake-forms/submissions/${subId}/reject`);
 
     const idx = submissions.findIndex((s) => s._id === subId);
@@ -247,21 +254,24 @@ async function installIntakeFormRoutes(
     const rejected = submissions.filter((s) => s.status === 'rejected').length;
     const enrolled = 0; // Would track actual enrollments
 
+    const safePct = (count: number) =>
+      totalSubmitted > 0 ? Math.round((count / totalSubmitted) * 100) : 0;
+
     return route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
         funnel: [
-          { stage: 'Submitted', count: totalSubmitted, percentage: 100 },
-          { stage: 'Under Review', count: underReview, percentage: Math.round((underReview / totalSubmitted) * 100) },
-          { stage: 'Approved', count: approved, percentage: Math.round((approved / totalSubmitted) * 100) },
-          { stage: 'Rejected', count: rejected, percentage: Math.round((rejected / totalSubmitted) * 100) },
+          { stage: 'Submitted', count: totalSubmitted, percentage: safePct(totalSubmitted) },
+          { stage: 'Under Review', count: underReview, percentage: safePct(underReview) },
+          { stage: 'Approved', count: approved, percentage: safePct(approved) },
+          { stage: 'Rejected', count: rejected, percentage: safePct(rejected) },
           { stage: 'Enrolled', count: enrolled, percentage: 0 },
         ],
         classWise: [
           { classId: CLASS_10A_ID, className: '10-A', submitted: totalSubmitted, approved, rejected, pending: totalSubmitted - approved - rejected },
         ],
-        conversionRate: totalSubmitted > 0 ? Math.round((approved / totalSubmitted) * 100) : 0,
+        conversionRate: safePct(approved),
       }),
     });
   });
