@@ -123,7 +123,7 @@ const MODULES = [
       "LibraryReports",
       "ReturnBookModal",
     ],
-    status: ["✅", "⬜", "✅", "⬜"],
+    status: ["✅", "✅", "✅", "✅"],
     auditDate: "2026-05-21",
     issue: "DK-446",
   },

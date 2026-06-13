@@ -8,7 +8,7 @@ import IssueBookModal from "./IssueBookModal";
 import ReturnBookModal from "./ReturnBookModal";
 import { getDateLocale } from '../../i18n/index';
 import { useTranslation } from 'react-i18next';
-import { EmptyState, ErrorState, SkeletonTable } from '../../components/ui';
+import { EmptyState, ErrorState, SkeletonTable, Button as UIButton } from '../../components/ui';
 import ExportMenu from '../../components/ui/ExportMenu';
 import PrintPreviewModal from '../../components/ui/PrintPreviewModal';
 import Input from '../../components/ui/Input';
@@ -122,9 +122,10 @@ export default function IssuedBooksList() {
             placeholder="Search student or book…"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            startContent={<Search size={16} className="text-fg-faint" />}
+            startContent={<Search size={16} className="text-fg-faint" aria-hidden="true" />}
             className="max-w-xs"
             size="sm"
+            aria-label="Search issued books by student or book"
           />
           <Select
             selectedKeys={[status]}
@@ -152,14 +153,13 @@ export default function IssuedBooksList() {
             filename="issued-books"
             title="Issued Books"
           />
-          <button
-            type="button"
-            className="btn btn--sm"
+          <UIButton
+            variant="outline"
+            size="sm"
+            icon={<Printer size={14} aria-hidden="true" />}
             onClick={() => setPrintOpen(true)}
             aria-label="Print preview"
-          >
-            <Printer size={14} aria-hidden />
-          </button>
+          />
           <Button size="sm" color="primary" startContent={<BookUp size={16} />} onPress={issueModal.onOpen}>
             Issue Book
           </Button>
@@ -184,7 +184,7 @@ export default function IssuedBooksList() {
       ) : (
         <div className="bg-surface border border-divider rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm" role="listbox" aria-label={t('pages.issuedBooks')}>
+            <table className="w-full text-sm" aria-label={t('pages.issuedBooks')}>
               <thead>
                 <tr className="bg-surface-2 border-b border-divider">
                   <th scope="col" className="text-left px-4 py-3 font-medium text-fg-muted">{t('pages.book')}</th>
