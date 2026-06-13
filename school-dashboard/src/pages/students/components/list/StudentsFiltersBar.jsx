@@ -236,6 +236,7 @@ const StudentsFiltersBar = forwardRef(function StudentsFiltersBar({
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     aria-label="Search students"
+                    role="searchbox"
                     autoComplete="off"
                 />
                 {searchQuery ? (
