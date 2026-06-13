@@ -132,22 +132,22 @@ const PTMPage = () => {
 
             <div className="space-y-1.5 text-sm text-fg-muted">
               <div className="flex items-center gap-2">
-                <Calendar size={14} className="text-fg-faint" aria-hidden="true" />
+                <Calendar size={14} className="text-fg-muted" aria-hidden="true" />
                 {formatShortDate(session.sessionDate)}
               </div>
               <div className="flex items-center gap-2">
-                <Clock size={14} className="text-fg-faint" aria-hidden="true" />
+                <Clock size={14} className="text-fg-muted" aria-hidden="true" />
                 {session.startTime} – {session.endTime}
-                <span className="text-xs text-fg-faint">({session.slotDuration} min slots)</span>
+                <span className="text-xs text-fg-muted">({session.slotDuration} min slots)</span>
               </div>
               {session.venue && (
                 <div className="flex items-center gap-2">
-                  <MapPin size={14} className="text-fg-faint" aria-hidden="true" />
+                  <MapPin size={14} className="text-fg-muted" aria-hidden="true" />
                   {session.venue}
                 </div>
               )}
               <div className="flex items-center gap-2">
-                <Users size={14} className="text-fg-faint" aria-hidden="true" />
+                <Users size={14} className="text-fg-muted" aria-hidden="true" />
                 {slotsCount} slot{slotsCount === 1 ? '' : 's'} booked
               </div>
             </div>
@@ -160,7 +160,7 @@ const PTMPage = () => {
                     {cls.section ? ` (${cls.section})` : ''}
                   </div>
                 )}
-                {teacher && <div className="text-fg-faint truncate">{teacher.name}</div>}
+                {teacher && <div className="text-fg-muted truncate">{teacher.name}</div>}
               </div>
               <div className="flex items-center gap-1 shrink-0">
                 <IconButton
@@ -220,10 +220,10 @@ const PTMPage = () => {
     return (
       <div className="space-y-4">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard label="Total" value={stats.total} icon={Users} color="gray" />
-          <StatCard label="Scheduled" value={stats.scheduled} icon={Activity} color="blue" />
-          <StatCard label="Completed" value={stats.completed} icon={CheckCircle} color="green" />
-          <StatCard label="Cancelled" value={stats.cancelled} icon={XCircle} color="red" />
+          <StatCard label="Total" value={stats.total} icon={Users} color="gray" headingLevel="h2" />
+          <StatCard label="Scheduled" value={stats.scheduled} icon={Activity} color="blue" headingLevel="h2" />
+          <StatCard label="Completed" value={stats.completed} icon={CheckCircle} color="green" headingLevel="h2" />
+          <StatCard label="Cancelled" value={stats.cancelled} icon={XCircle} color="red" headingLevel="h2" />
         </div>
 
         <div className="seg" role="tablist" aria-label="Filter by status">
