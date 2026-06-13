@@ -9,7 +9,7 @@ import {
   SkeletonTable,
 } from '../../../components/ui';
 import { formatDateTime } from '../../../utils/dateFormatter';
-import { PLAN_OPTIONS, PLAN_STATUS_OPTIONS } from './CreateSchoolForm';
+import { PLAN_STATUS_OPTIONS } from './CreateSchoolForm';
 
 const STATUS_OPTIONS = [
   { value: 'active', label: 'Active' },
@@ -26,8 +26,17 @@ export default function SchoolRegistryTable({
   onProvision,
   rowSaving,
   provisioning,
+  dirtySchoolIds = [],
 }) {
   const { t } = useTranslation();
+
+  const planOptions = [
+    { value: 'starter', label: t('plans.starter') },
+    { value: 'growth', label: t('plans.growth') },
+    { value: 'enterprise', label: t('plans.enterprise') },
+  ];
+
+  const isDirty = (schoolId) => dirtySchoolIds.includes(schoolId);
 
   return (
     <Card padding="md" radius="lg">
@@ -37,11 +46,11 @@ export default function SchoolRegistryTable({
             {t('pages.schoolRegistry')}
           </h2>
           <p className="mt-1 text-xs text-fg-muted">
-            Manage plan state and re-run provisioning without touching the database manually.
+            {t('pages.schoolRegistryDescription')}
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={onRefresh}>
-          Refresh
+          {t('common.refresh')}
         </Button>
       </div>
 
@@ -53,7 +62,7 @@ export default function SchoolRegistryTable({
         <EmptyState
           icon={Building2}
           title={t('pages.noSchoolsFound')}
-          description="Create the first school using the form on the left."
+          description={t('pages.schoolsEmptyDescription')}
         />
       ) : (
         <div className="overflow-x-auto">
@@ -80,15 +89,15 @@ export default function SchoolRegistryTable({
                       {school.code}
                     </div>
                     <div className="mt-2 text-xs text-fg-muted">
-                      {school.counts?.staff || 0} staff
+                      {t('pages.staffCount', { count: school.counts?.staff || 0 })}
                     </div>
                   </td>
                   <td className="py-4 pr-4">
                     <div className="font-medium text-fg">
-                      {school.admin?.name || 'Not provisioned'}
+                      {school.admin?.name || t('pages.notProvisioned')}
                     </div>
                     <div className="mt-1 text-xs text-fg-muted">
-                      {school.admin?.email || school.contactEmail || 'No admin email'}
+                      {school.admin?.email || school.contactEmail || t('pages.noAdminEmail')}
                     </div>
                   </td>
                   <td className="py-4 pr-4">
@@ -98,7 +107,7 @@ export default function SchoolRegistryTable({
                         aria-label={t('pages.plan')}
                         value={school.draftPlan}
                         onChange={(e) => onUpdateDraft(school.id, 'draftPlan', e.target.value)}
-                        options={PLAN_OPTIONS}
+                        options={planOptions}
                       />
                       <Select
                         size="sm"
@@ -120,23 +129,23 @@ export default function SchoolRegistryTable({
                   </td>
                   <td className="py-4 pr-4">
                     <div className="font-medium capitalize text-fg">
-                      {school.provisioning?.status || 'pending'}
+                      {school.provisioning?.status || t('pages.pendingProvisioning')}
                     </div>
                     <div className="mt-1 text-xs text-fg-muted">
                       {school.provisioning?.lastProvisionedAt
                         ? formatDateTime(school.provisioning.lastProvisionedAt)
-                        : 'Not provisioned yet'}
+                        : t('pages.notProvisionedYet')}
                     </div>
                   </td>
                   <td className="py-4 text-right">
                     <div className="flex justify-end gap-2">
                       <Button
-                        variant="outline"
+                        variant={isDirty(school.id) ? 'primary' : 'outline'}
                         size="sm"
                         onClick={() => onSave(school)}
                         loading={rowSaving[school.id]}
                       >
-                        Save
+                        {t('common.save')}
                       </Button>
                       <Button
                         variant="primary"
@@ -144,7 +153,7 @@ export default function SchoolRegistryTable({
                         onClick={() => onProvision(school)}
                         loading={provisioning[school.id]}
                       >
-                        Provision
+                        {t('pages.provision')}
                       </Button>
                     </div>
                   </td>

@@ -72,6 +72,7 @@ const PageShell = memo(function PageShell({
   activeTab,
   onTabChange,
   tabsVariant = "pills",
+  tabsBaseId,
   size = "md",
   bodyPadding = "md",
   scrollable = true,
@@ -152,6 +153,7 @@ const PageShell = memo(function PageShell({
             activeKey={activeTab}
             onChange={onTabChange}
             variant={tabsVariant}
+            baseId={tabsBaseId}
           />
         </div>
       )}
