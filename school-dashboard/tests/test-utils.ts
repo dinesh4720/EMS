@@ -1322,20 +1322,6 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
       state.substitutions = (state.substitutions as any[]).filter((s: any) => s.id !== id && s._id !== id);
       return json({ message: 'Deleted' });
     }
-    if (path.match(/^\/substitutions\/([^/]+)\/approve$/)) {
-      const id = path.split('/')[2];
-      if (!state.substitutions) state.substitutions = [];
-      const idx = (state.substitutions as any[]).findIndex((s: any) => s.id === id || s._id === id);
-      if (idx >= 0) { (state.substitutions as any[])[idx].status = 'approved'; return json((state.substitutions as any[])[idx]); }
-      return json({ error: 'Not found' }, 404);
-    }
-    if (path.match(/^\/substitutions\/([^/]+)\/reject$/)) {
-      const id = path.split('/')[2];
-      if (!state.substitutions) state.substitutions = [];
-      const idx = (state.substitutions as any[]).findIndex((s: any) => s.id === id || s._id === id);
-      if (idx >= 0) { (state.substitutions as any[])[idx].status = 'rejected'; return json((state.substitutions as any[])[idx]); }
-      return json({ error: 'Not found' }, 404);
-    }
     if (path === '/substitutions/today') {
       const today = new Date().toISOString().split('T')[0];
       if (!state.substitutions) state.substitutions = [];
