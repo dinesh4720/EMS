@@ -1,5 +1,5 @@
 import { forwardRef } from "react";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Star } from "lucide-react";
 import PhotoAvatar from "../../components/PhotoAvatar";
 
 // Status tone map — uses --ok-bg / --warn-bg / --danger-bg / --info-bg tokens
@@ -17,9 +17,12 @@ const StudentListRow = forwardRef(function StudentListRow(
     student,
     isActive,
     isChecked,
+    isPinned,
     onSelect,
     onToggleCheck,
     onViewProfile,
+    onPin,
+    onUnpin,
     attendancePct,
   },
   ref
@@ -32,6 +35,14 @@ const StudentListRow = forwardRef(function StudentListRow(
   const code = student.admissionNo || student.code || student.rollNumber || "";
 
   const handleRowClick = () => onSelect?.(student);
+
+  const handlePinClick = (e) => {
+    e.stopPropagation();
+    if (isPinned) onUnpin?.(student);
+    else onPin?.(student);
+  };
+
+  const showPin = Boolean(onPin && onUnpin);
 
   return (
     <button
@@ -155,6 +166,21 @@ const StudentListRow = forwardRef(function StudentListRow(
           </span>
         )}
       </div>
+      {showPin && (
+        <button
+          type="button"
+          aria-label={isPinned ? "Unpin student" : "Pin student"}
+          data-testid="student-pin-button"
+          onClick={handlePinClick}
+          className={`studentlist__pin-btn ${isPinned ? "is-pinned" : ""}`}
+        >
+          <Star
+            size={14}
+            className={isPinned ? "lucide-star is-filled" : "lucide-star"}
+            fill={isPinned ? "currentColor" : "none"}
+          />
+        </button>
+      )}
       {onViewProfile && (
         <span
           role="button"
