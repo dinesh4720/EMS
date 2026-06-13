@@ -52,6 +52,7 @@
   --sidebar-w: 224px;
   --sidebar-w-collapsed: 56px;
   --sidebar-mobile-w: 280px;
+  --breakpoint-two-pane: 1100px;
   --bottom-bar-h: 56px;
   --bottom-sheet-max-h: 70vh;
 

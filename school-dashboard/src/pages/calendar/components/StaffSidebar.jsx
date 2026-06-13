@@ -1,12 +1,11 @@
-import {
-  Select, SelectItem, ScrollShadow
-} from "@heroui/react";
+import Select from "../../../components/ui/Select";
 import IconButton from "../../../components/ui/IconButton";
 import Chip from "../../../components/ui/Chip";
 import Avatar from "../../../components/ui/Avatar";
+import ErrorState from "../../../components/ui/ErrorState";
 import {
   ChevronLeft, ChevronRight, Clock, Users,
-  User, BookOpen
+  User, BookOpen, X
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from 'react-i18next';
@@ -14,7 +13,12 @@ import { formatDateTime } from "../../../utils/dateFormatter";
 import EmptyState from "../../../components/ui/EmptyState";
 
 // Mobile breakpoint — below this the right pane collapses
-const MOBILE_MAX = 1099;
+// Reads from design-system token --breakpoint-two-pane (DESIGN_SYSTEM.md § Responsive)
+const MOBILE_MAX = (() => {
+  if (typeof window === 'undefined') return 1099;
+  const bp = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--breakpoint-two-pane')) || 1100;
+  return bp - 1;
+})();
 
 export default function StaffSidebar({
   selectedStaff,
@@ -23,6 +27,8 @@ export default function StaffSidebar({
   upcomingAppointments = [],
   loadingTimetable,
   loadingAppointments,
+  timetableError,
+  appointmentsError,
   onStaffChange,
   onEventClick,
   defaultPeriods = [],
@@ -85,34 +91,37 @@ export default function StaffSidebar({
             </IconButton>
           </div>
 
-          <div className="p-3 border-b border-divider">
-            <Select
-              size="sm"
-              placeholder={t('calendar.sidebar.selectStaff', 'Select staff member')}
-              selectedKeys={selectedStaff ? [String(selectedStaff.id)] : []}
-              onChange={(e) => {
-                const staffId = e.target.value;
-                const member = teachers.find(t => String(t.id) === staffId);
-                onStaffChange(member || null);
-              }}
-              variant="bordered"
-              classNames={{ trigger: "h-9" }}
-              startContent={<User size={14} className="text-fg-faint" />}
-              isClearable
-              onClear={() => onStaffChange(null)}
-            >
-              {teachers.map((teacher) => (
-                <SelectItem key={String(teacher.id)} textValue={teacher.name}>
-                  <div className="flex items-center gap-2">
-                    <Avatar size="xs" name={teacher.name} />
-                    <span>{teacher.name}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </Select>
+          <div className="p-3 border-b border-divider flex items-center gap-2">
+            <div className="flex-1 min-w-0">
+              <Select
+                size="sm"
+                placeholder={t('calendar.sidebar.selectStaff', 'Select staff member')}
+                value={selectedStaff ? String(selectedStaff.id) : ""}
+                onChange={(e) => {
+                  const staffId = e.target.value;
+                  const member = teachers.find(t => String(t.id) === staffId);
+                  onStaffChange(member || null);
+                }}
+                options={teachers.map((teacher) => ({
+                  value: String(teacher.id),
+                  label: teacher.name,
+                }))}
+              />
+            </div>
+            {selectedStaff && (
+              <IconButton
+                size="sm"
+                variant="ghost"
+                aria-label={t('calendar.sidebar.clearStaff', 'Clear staff selection')}
+                className="text-fg-faint shrink-0"
+                onClick={() => onStaffChange(null)}
+              >
+                <X size={14} />
+              </IconButton>
+            )}
           </div>
 
-          <ScrollShadow className="flex-1">
+          <div className="flex-1 overflow-auto">
             {selectedStaff ? (
               <div className="p-3 space-y-4">
                 <div className="flex items-center gap-3 p-2 rounded-lg bg-surface-2">
@@ -131,6 +140,13 @@ export default function StaffSidebar({
                     <div className="space-y-1.5">
                       {[...Array(3)].map((_, i) => <div key={`classes-skeleton-${i}`} className="h-10 animate-shimmer rounded-lg" />)}
                     </div>
+                  ) : timetableError ? (
+                    <ErrorState
+                      size="sm"
+                      title={t('calendar.sidebar.timetableError', "Couldn't load classes")}
+                      error={timetableError}
+                      onRetry={() => window.location.reload()}
+                    />
                   ) : todaySchedule.filter(s => s.classId && s.subject).length > 0 ? (
                     <div className="space-y-1.5">
                       {todaySchedule.map((slot, idx) => {
@@ -194,6 +210,13 @@ export default function StaffSidebar({
                     <div className="space-y-1.5">
                       {[...Array(2)].map((_, i) => <div key={`appt-skeleton-${i}`} className="h-10 animate-shimmer rounded-lg" />)}
                     </div>
+                  ) : appointmentsError ? (
+                    <ErrorState
+                      size="sm"
+                      title={t('calendar.sidebar.appointmentsError', "Couldn't load appointments")}
+                      error={appointmentsError}
+                      onRetry={() => window.location.reload()}
+                    />
                   ) : upcomingAppointments.length > 0 ? (
                     <div className="space-y-1.5">
                       {upcomingAppointments.map((apt) => (
@@ -242,7 +265,7 @@ export default function StaffSidebar({
                             };
                             handleAppointmentKeyDown(e, event);
                           }}
-                          className="p-2 rounded-lg border border-[color:var(--ok)]/30 bg-ok-bg hover:opacity-90 cursor-pointer"
+                          className="p-2 rounded-lg border border-ok/30 bg-ok-bg hover:opacity-90 cursor-pointer"
                         >
                           <div className="flex items-center justify-between">
                             <div className="text-xs font-medium text-ok">{apt.visitorName}</div>
@@ -271,7 +294,7 @@ export default function StaffSidebar({
                 description={t('calendar.sidebar.selectStaffPrompt', 'Select a staff member to view their schedule')}
               />
             )}
-          </ScrollShadow>
+          </div>
         </div>
       ) : (
         <div className="flex flex-col items-center py-3">

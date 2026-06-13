@@ -51,7 +51,7 @@ export default function MonthView({
         type="button"
         onClick={() => onDateClick(dateKey)}
         aria-label={`${day} ${isToday ? "(today)" : ""}`}
-        className={`calendar-month__cell text-left group relative focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]
+        className={`calendar-month__cell text-left group relative focus:outline-none focus-visible:ring-2 focus-visible:ring-accent
           ${isToday ? "is-today" : ""}
           ${isSelectedStaffDay && !isToday ? "bg-surface-2" : ""}
         `}
