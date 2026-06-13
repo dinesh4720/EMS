@@ -3,7 +3,7 @@ import { Calendar, Clock, MapPin, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { ptmApi } from '../../services/api';
-import { Input, Select, Textarea, Button, Divider } from '../../components/ui';
+import { Input, Select, Textarea, Button, SectionHeading, Divider } from '../../components/ui';
 import { ptmSessionSchema, parseFormSchema } from '../../validators/formSchemas';
 
 const EMPTY_FORM = {
@@ -94,38 +94,34 @@ const CreatePTMSessionModal = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
-        <h4 className="text-sm font-medium text-fg mb-3 flex items-center gap-2">
-          <Users size={16} className="text-fg-faint" aria-hidden="true" />
+      <div className="space-y-4">
+        <SectionHeading as="h3" size="sm" icon={Users}>
           Session Details
-        </h4>
-        <div className="space-y-4">
-          <Input
-            label="Session Title"
-            placeholder={t('ptm.sessionTitlePlaceholder', 'e.g., Term 1 Parent-Teacher Meeting')}
-            value={form.title}
-            onChange={(e) => handleChange('title', e.target.value)}
-            error={errors.title}
-            required
-          />
-          <Textarea
-            label="Description"
-            placeholder={t('ptm.notesPlaceholder', 'Optional context for parents and staff')}
-            value={form.description}
-            onChange={(e) => handleChange('description', e.target.value)}
-            error={errors.description}
-            rows={3}
-          />
-        </div>
+        </SectionHeading>
+        <Input
+          label="Session Title"
+          placeholder={t('ptm.sessionTitlePlaceholder', 'e.g., Term 1 Parent-Teacher Meeting')}
+          value={form.title}
+          onChange={(e) => handleChange('title', e.target.value)}
+          error={errors.title}
+          required
+        />
+        <Textarea
+          label="Description"
+          placeholder={t('ptm.notesPlaceholder', 'Optional context for parents and staff')}
+          value={form.description}
+          onChange={(e) => handleChange('description', e.target.value)}
+          error={errors.description}
+          rows={3}
+        />
       </div>
 
       <Divider />
 
-      <div>
-        <h4 className="text-sm font-medium text-fg mb-3 flex items-center gap-2">
-          <Calendar size={16} className="text-fg-faint" aria-hidden="true" />
+      <div className="space-y-4">
+        <SectionHeading as="h3" size="sm" icon={Calendar}>
           Schedule
-        </h4>
+        </SectionHeading>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
             type="date"
@@ -169,11 +165,10 @@ const CreatePTMSessionModal = ({
 
       <Divider />
 
-      <div>
-        <h4 className="text-sm font-medium text-fg mb-3 flex items-center gap-2">
-          <Users size={16} className="text-fg-faint" aria-hidden="true" />
+      <div className="space-y-4">
+        <SectionHeading as="h3" size="sm" icon={Users}>
           Assignment
-        </h4>
+        </SectionHeading>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Select
             label="Class"
