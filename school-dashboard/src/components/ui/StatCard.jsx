@@ -27,7 +27,7 @@ const colorMap = {
   info: { text: 'text-info-token', bg: 'bg-info-bg' },
 };
 
-function StatCard({ label, value, subtext, icon: Icon, color = 'gray', trend, href, isLoading }) {
+function StatCard({ label, value, subtext, icon: Icon, color = 'gray', trend, href, isLoading, headingLevel: Heading = 'h3' }) {
   const navigate = useNavigate();
   const colors = colorMap[color] || colorMap.gray;
   const isClickable = !!href && !isLoading;
@@ -65,9 +65,9 @@ function StatCard({ label, value, subtext, icon: Icon, color = 'gray', trend, hr
         {isLoading ? (
           <div className="h-6 w-20 animate-shimmer rounded" />
         ) : (
-          <h3 className="text-xl font-semibold text-fg">
+          <Heading className="text-xl font-semibold text-fg">
             {value}
-          </h3>
+          </Heading>
         )}
         <p className="text-xs font-medium text-fg-muted mt-0.5">
           {label}
@@ -102,6 +102,7 @@ StatCard.propTypes = {
   }),
   href: PropTypes.string,
   isLoading: PropTypes.bool,
+  headingLevel: PropTypes.elementType,
 };
 
 export default React.memo(StatCard);

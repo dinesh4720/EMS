@@ -1803,8 +1803,8 @@
   gap: 1px;
 }
 .seg__btn {
-  padding: 0 10px;
-  height: 22px;
+  padding: 0 12px;
+  min-height: 44px;
   font-size: 12px;
   font-weight: 460;
   color: var(--fg-muted);

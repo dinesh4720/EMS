@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useId } from "react";
 import PropTypes from "prop-types";
 import { X } from "lucide-react";
 import ModalBase from "./ModalBase";
@@ -54,6 +54,8 @@ const Modal = memo(function Modal({
   className = "",
 }) {
   const sizeClass = SIZE_CLASS[size] || SIZE_CLASS.md;
+  const descriptionId = useId();
+  const effectiveDescribedBy = ariaDescribedBy || (description ? descriptionId : undefined);
 
   return (
     <ModalBase
@@ -61,7 +63,7 @@ const Modal = memo(function Modal({
       onClose={onClose}
       portalId="ds-modal-root"
       labelledBy={title ? "ds-modal-title" : undefined}
-      describedBy={ariaDescribedBy}
+      describedBy={effectiveDescribedBy}
       className="ds-backdrop"
       closeOnBackdrop={isDismissable}
     >
@@ -79,7 +81,7 @@ const Modal = memo(function Modal({
                 </span>
               ) : null}
               {description ? (
-                <span className="ds-modal__desc">{description}</span>
+                <span id={descriptionId} className="ds-modal__desc">{description}</span>
               ) : null}
             </div>
             {!hideCloseButton && (
