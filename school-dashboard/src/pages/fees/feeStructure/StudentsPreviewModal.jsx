@@ -69,9 +69,7 @@ export default function StudentsPreviewModal({
   return createPortal(
     <div
       className="composer-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-label={t("pages.studentsInClass", "Students in Class")}
+      role="presentation"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -79,8 +77,9 @@ export default function StudentsPreviewModal({
     >
       <aside
         className="detail-pane fees-preview"
-        role="complementary"
-        aria-label={`Preview: ${className}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("pages.studentsInClass", "Students in Class")}
       >
         <div className="detail-pane__head">
           <button
@@ -215,7 +214,7 @@ export default function StudentsPreviewModal({
             onClick={onApply}
             disabled={applying}
           >
-            <CheckCircle size={11} />
+            <CheckCircle size={11} aria-hidden />
             {applying
               ? t("common.applying", "Applying…")
               : t("pages.applyToAllStudents", "Apply to All Students")}

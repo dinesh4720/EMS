@@ -171,6 +171,7 @@
   min-width: 0;
 }
 .opt:hover { border-color: var(--border-strong); color: var(--fg); }
+.opt:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); border-color: var(--accent); }
 .opt.is-active {
   background: var(--accent-bg);
   border-color: var(--accent-border);
