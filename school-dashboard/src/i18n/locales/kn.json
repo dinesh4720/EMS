@@ -396,41 +396,6 @@
       }
     }
   },
-  "formSubmissions": {
-    "title": "ಫಾರ್ಮ್ ಸಲ್ಲಿಕೆಗಳು",
-    "subtitle": "ಸಿಬ್ಬಂದಿ ಆನ್‌ಬೋರ್ಡಿಂಗ್ ಸಲ್ಲಿಕೆಗಳನ್ನು ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಅನುಮೋದಿಸಿ",
-    "loadFailed": "ಸಲ್ಲಿಕೆಗಳನ್ನು ಲೋಡ್ ಮಾಡಲು ವಿಫಲವಾಗಿದೆ",
-    "loadDetailsFailed": "ಸಲ್ಲಿಕೆ ವಿವರಗಳನ್ನು ಲೋಡ್ ಮಾಡಲು ವಿಫಲವಾಗಿದೆ",
-    "rejectionReasonRequired": "ತಿರಸ್ಕರಣೆಗೆ ಕಾರಣವನ್ನು ಒದಗಿಸಿ",
-    "approvedSuccess": "ಸಲ್ಲಿಕೆ ಅನುಮೋದಿಸಲಾಗಿದೆ! ಸಿಬ್ಬಂದಿ ದಾಖಲೆ ರಚಿಸಲಾಗಿದೆ.",
-    "rejectedSuccess": "ಸಲ್ಲಿಕೆ ತಿರಸ್ಕರಿಸಲಾಗಿದೆ",
-    "reviewFailed": "ಸಲ್ಲಿಕೆಯನ್ನು ಪರಿಶೀಲಿಸಲು ವಿಫಲವಾಗಿದೆ",
-    "notProvided": "ಒದಗಿಸಿಲ್ಲ",
-    "noSubmissions": "ಯಾವುದೇ ಸಲ್ಲಿಕೆಗಳು ಕಂಡುಬಂದಿಲ್ಲ",
-    "colFormName": "ಫಾರ್ಮ್ ಹೆಸರು",
-    "colSubmittedBy": "ಸಲ್ಲಿಸಿದವರು",
-    "colSubmittedDate": "ಸಲ್ಲಿಸಿದ ದಿನಾಂಕ",
-    "colStatus": "ಸ್ಥಿತಿ",
-    "colReviewedBy": "ಪರಿಶೀಲಿಸಿದವರು",
-    "reviewSubmission": "ಸಲ್ಲಿಕೆಯನ್ನು ಪರಿಶೀಲಿಸಿ",
-    "viewStaffRecord": "ಸಿಬ್ಬಂದಿ ದಾಖಲೆ ವೀಕ್ಷಿಸಿ",
-    "modalTitle": "ಸಲ್ಲಿಕೆಯನ್ನು ಪರಿಶೀಲಿಸಿ",
-    "submittedInfo": "ಸಲ್ಲಿಸಿದ ಮಾಹಿತಿ",
-    "reviewDecision": "ಪರಿಶೀಲನಾ ನಿರ್ಧಾರ",
-    "reviewNotesLabel": "ಪರಿಶೀಲನಾ ಟಿಪ್ಪಣಿಗಳು",
-    "reviewNotesPlaceholder": "ಈ ಸಲ್ಲಿಕೆಯ ಬಗ್ಗೆ ಟಿಪ್ಪಣಿಗಳನ್ನು ಸೇರಿಸಿ (ತಿರಸ್ಕರಣೆಗೆ ಅಗತ್ಯ)",
-    "reviewInfo": "ಪರಿಶೀಲನಾ ಮಾಹಿತಿ",
-    "reviewedAt": "ಪರಿಶೀಲಿಸಿದ ಸಮಯ",
-    "reject": "ತಿರಸ್ಕರಿಸಿ",
-    "approveAndCreate": "ಅನುಮೋದಿಸಿ ಮತ್ತು ಸಿಬ್ಬಂದಿ ರಚಿಸಿ",
-    "status": {
-      "pending": "ಬಾಕಿ",
-      "approved": "ಅನುಮೋದಿತ",
-      "rejected": "ತಿರಸ್ಕೃತ",
-      "needsRevision": "ಪರಿಷ್ಕರಣೆ ಅಗತ್ಯ",
-      "all": "ಎಲ್ಲಾ"
-    }
-  },
   "privacyPolicy": {
     "title": "ಗೌಪ್ಯತಾ ನೀತಿ",
     "subtitle": "SchoolSync ನಿಯೋಜನೆಗಳಿಗೆ ಮೂಲ ಗೌಪ್ಯತಾ ಸೂಚನೆ. ಉತ್ಪಾದನಾ ಬಿಡುಗಡೆಯ ಮೊದಲು ಈ ಡಾಕ್ಯುಮೆಂಟ್ ಅನ್ನು ಶಾಲೆಯ ಕಾನೂನು ಅಥವಾ ಅನುಸರಣೆ ಮಾಲೀಕರು ಪರಿಶೀಲಿಸಿ ಅನುಮೋದಿಸಬೇಕು.",
@@ -3905,5 +3870,121 @@
     "feeHeadNum": "ಶುಲ್ಕ ಶೀರ್ಷಿಕೆ #{{num}}",
     "templateUsedByStudents": "ಈ ಟೆಂಪ್ಲೇಟ್ {{structureCount}} ತರಗತಿ ಶುಲ್ಕ ರಚನೆಗಳಲ್ಲಿ {{studentCount}} ವಿದ್ಯಾರ್ಥಿಗಳಿಗೆ ಅನ್ವಯಿಸಲಾಗಿದೆ.",
     "templateUsedByStructures": "ಈ ಟೆಂಪ್ಲೇಟ್ {{structureCount}} ತರಗತಿ ಶುಲ್ಕ ರಚನೆಗಳಿಂದ ಬಳಸಲ್ಪಡುತ್ತಿದೆ."
+  },
+  "intakeForms": {
+    "enrollmentFunnel": {
+      "title": "Enrollment ಫನಲ್",
+      "description": "ಪ್ರತಿ ಹಂತದಲ್ಲಿ ಫಾರ್ಮ್ ಅಸೈನ್ಮೆಂಟ್ ಪ್ರಗತಿಯನ್ನು ಟ್ರ್ಯಾಕ್ ಮಾಡಿ",
+      "conversionFunnel": "ಪರಿವರ್ತನೆ ಫನಲ್",
+      "stages": {
+        "assigned": "ನಿಯೋಜಿಸಲಾಗಿದೆ",
+        "submitted": "ಸಲ್ಲಿಸಲಾಗಿದೆ",
+        "approved": "ಅನುಮೋದಿತ",
+        "rejected": "ತಿರಸ್ಕರಿಸಲಾಗಿದೆ",
+        "inProgress": "ಪ್ರಗತಿಯಲ್ಲಿದೆ"
+      },
+      "barAriaLabel": "{{label}}: {{count}} ರಲ್ಲಿ {{max}}"
+    },
+    "assignments": {
+      "title": "ಫಾರ್ಮ್ ಅಸೈನ್ಮೆಂಟ್ಸ್",
+      "description": "ಶಿಕ್ಷಕರಿಗೆ ಕಳುಹಿಸಲಾದ ಫಾರ್ಮ್ ಅಸೈನ್ಮೆಂಟ್ಸ್ ಅನ್ನು ನಿರ್ವಹಿಸಿ ಮತ್ತು ಟ್ರ್ಯಾಕ್ ಮಾಡಿ",
+      "assignForm": "ಫಾರ್ಮ್ ನಿಯೋಜಿಸಿ",
+      "unknownForm": "ಅಜ್ಞಾತ ಫಾರ್ಮ್",
+      "toast": {
+        "assigned": "{{count}} ಸ್ವೀಕೃತದಾರರಿಗೆ ಫಾರ್ಮ್ ನಿಯೋಜಿಸಲಾಗಿದೆ",
+        "assignFailed": "ಫಾರ್ಮ್ ನಿಯೋಜಿಸಲು ವಿಫಲವಾಗಿದೆ"
+      },
+      "status": {
+        "all": "ಎಲ್ಲಾ",
+        "pending": "ಬಾಕಿ",
+        "submitted": "ಸಲ್ಲಿಸಲಾಗಿದೆ",
+        "approved": "ಅನುಮೋದಿತ",
+        "rejected": "ತಿರಸ್ಕರಿಸಲಾಗಿದೆ"
+      },
+      "empty": {
+        "title": "ಯಾವುದೇ ಅಸೈನ್ಮೆಂಟ್ ಕಂಡುಬಂದಿಲ್ಲ",
+        "description": "ದಾಖಲೆಗಳನ್ನು ಇಲ್ಲಿ ನೋಡಲು ಒಂದು ಫಾರ್ಮ್ ನಿಯೋಜಿಸಿ.",
+        "filteredTitle": "ಯಾವುದೇ ಅಸೈನ್ಮೆಂಟ್ ಹೊಂದಾಣಿಕೆಯಾಗಿಲ್ಲ",
+        "filteredDescription": "ಸ್ಥಿತಿ ಫಿಲ್ಟರ್ ಅನ್ನು ಹೊಂದಿಸಲು ಪ್ರಯತ್ನಿಸಿ."
+      },
+      "columns": {
+        "formName": "ಫಾರ್ಮ್ ಹೆಸರು",
+        "assignedTo": "ನಿಯೋಜಿಸಲಾದವರು",
+        "assignedBy": "ನಿಯೋಜಿಸಿದವರು",
+        "status": "ಸ್ಥಿತಿ",
+        "assignedDate": "ನಿಯೋಜನೆಯ ದಿನಾಂಕ",
+        "expires": "ಅವಧಿ ಮುಗಿಯುತ್ತದೆ"
+      },
+      "actions": {
+        "viewDetails": "ವಿವರಗಳನ್ನು ವೀಕ್ಷಿಸಿ",
+        "copyLink": "ಲಿಂಕ್ ನಕಲಿಸಿ",
+        "resendNotification": "ಸೂಚನೆಯನ್ನು ಮರುಕಳುಹಿಸಿ",
+        "cancelAssignment": "ಅಸೈನ್ಮೆಂಟ್ ರದ್ದುಮಾಡಿ"
+      },
+      "modal": {
+        "sectionTitle": "ಅಸೈನ್ಮೆಂಟ್ ಸ್ವೀಕೃತದಾರರು",
+        "sectionDescription": "ಒಂದು ಫಾರ್ಮ್ ಆಯ್ಕೆಮಾಡಿ ಮತ್ತು ಸ್ವೀಕೃತದಾರರನ್ನು ಸೇರಿಸಿ. ಪ್ರತಿ ಸ್ವೀಕೃತದಾರರಿಗೆ ಅದ್ವಿತೀಯ ಪ್ರವೇಶ ಲಿಂಕ್ ಸಿಗುತ್ತದೆ.",
+        "selectFormLabel": "ಫಾರ್ಮ್ ಆಯ್ಕೆಮಾಡಿ",
+        "selectFormPlaceholder": "ಒಂದು ಫಾರ್ಮ್ ಆಯ್ಕೆಮಾಡಿ...",
+        "emailAddressesLabel": "ಇಮೇಲ್ ವಿಳಾಸಗಳು",
+        "emailAddressesHint": "ಉದಾ: teacher1@school.com, teacher2@school.com",
+        "emailAddressesPlaceholder": "ಇಮೇಲ್ ವಿಳಾಸಗಳನ್ನು ನಮೂದಿಸಿ (ಪ್ರತಿ ಸಾಲಿಗೆ ಒಂದು ಅಥವಾ ಅಲ್ಪವಿರಾಮದಿಂದ ಬೇರ್ಪಡಿಸಿ)",
+        "phoneNumbersLabel": "ದೂರವಾಣಿ ಸಂಖ್ಯೆಗಳು",
+        "phoneNumbersHint": "ಉದಾ: +919876543210, +919876543211",
+        "phoneNumbersPlaceholder": "ದೂರವಾಣಿ ಸಂಖ್ಯೆಗಳನ್ನು ನಮೂದಿಸಿ (ಪ್ರತಿ ಸಾಲಿಗೆ ಒಂದು ಅಥವಾ ಅಲ್ಪವಿರಾಮದಿಂದ ಬೇರ್ಪಡಿಸಿ)",
+        "expiresInDaysLabel": "ದಿನಗಳಲ್ಲಿ ಅವಧಿ ಮುಗಿಯುತ್ತದೆ",
+        "assignmentDetailsTitle": "ಅಸೈನ್ಮೆಂಟ್ ವಿವರಗಳು",
+        "formNameLabel": "ಫಾರ್ಮ್ ಹೆಸರು",
+        "assignedToLabel": "ನಿಯೋಜಿಸಲಾದವರು",
+        "accessLinkLabel": "ಪ್ರವೇಶ ಲಿಂಕ್",
+        "copyAccessLink": "ಪ್ರವೇಶ ಲಿಂಕ್ ನಕಲಿಸಿ",
+        "statusLabel": "ಸ್ಥಿತಿ",
+        "assignedDateLabel": "ನಿಯೋಜನೆಯ ದಿನಾಂಕ",
+        "expiresOnLabel": "ಅವಧಿ ಮುಗಿಯುವ ದಿನಾಂಕ"
+      }
+    },
+    "submissions": {
+      "title": "ಫಾರ್ಮ್ ಸಬ್ಮಿಷನ್ಸ್",
+      "description": "ಸಿಬ್ಬಂದಿ ಆನ್‌ಬೋರ್ಡಿಂಗ್ ಸಬ್ಮಿಷನ್ಸ್ ಅನ್ನು ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಅನುಮೋದಿಸಿ",
+      "loadFailed": "ಸಬ್ಮಿಷನ್ಸ್ ಲೋಡ್ ಮಾಡಲು ವಿಫಲವಾಗಿದೆ",
+      "loadDetailsFailed": "ಸಬ್ಮಿಷನ್ ವಿವರಗಳನ್ನು ಲೋಡ್ ಮಾಡಲು ವಿಫಲವಾಗಿದೆ",
+      "rejectionReasonRequired": "ತಿರಸ್ಕರಣೆಯ ಕಾರಣವನ್ನು ಒದಗಿಸಿ",
+      "approvedSuccess": "ಸಬ್ಮಿಷನ್ ಅನುಮೋದಿತ. ಸಿಬ್ಬಂದಿ ದಾಖಲೆ ರಚಿಸಲಾಗಿದೆ.",
+      "rejectedSuccess": "ಸಬ್ಮಿಷನ್ ತಿರಸ್ಕರಿಸಲಾಗಿದೆ",
+      "reviewFailed": "ಸಬ್ಮಿಷನ್ ಪರಿಶೀಲಿಸಲು ವಿಫಲವಾಗಿದೆ",
+      "notProvided": "ಒದಗಿಸಲಾಗಿಲ್ಲ",
+      "reviewSubmission": "ಸಬ್ಮಿಷನ್ ಪರಿಶೀಲಿಸಿ",
+      "viewStaffRecord": "ಸಿಬ್ಬಂದಿ ದಾಖಲೆ ವೀಕ್ಷಿಸಿ",
+      "modalTitle": "ಸಬ್ಮಿಷನ್ ಪರಿಶೀಲಿಸಿ",
+      "submittedBy": "ಸಲ್ಲಿಸಿದವರು",
+      "submittedInfo": "ಸಲ್ಲಿಸಿದ ಮಾಹಿತಿ",
+      "reviewDecision": "ಪರಿಶೀಲನೆ ನಿರ್ಧಾರ",
+      "reviewNotesLabel": "ಪರಿಶೀಲನೆ ಟಿಪ್ಪಣಿಗಳು",
+      "reviewNotesPlaceholder": "ಈ ಸಬ್ಮಿಷನ್ ಬಗ್ಗೆ ಟಿಪ್ಪಣಿಗಳನ್ನು ಸೇರಿಸಿ (ತಿರಸ್ಕರಣೆಗೆ ಅಗತ್ಯ)",
+      "reviewInfo": "ಪರಿಶೀಲನೆ ಮಾಹಿತಿ",
+      "reviewedAt": "ಪರಿಶೀಲಿಸಿದ ದಿನಾಂಕ",
+      "reject": "ತಿರಸ್ಕರಿಸಿ",
+      "approveAndCreate": "ಅನುಮೋದಿಸಿ ಮತ್ತು ಸಿಬ್ಬಂದಿ ರಚಿಸಿ",
+      "status": {
+        "pending": "ಬಾಕಿ",
+        "approved": "ಅನುಮೋದಿತ",
+        "rejected": "ತಿರಸ್ಕರಿಸಲಾಗಿದೆ",
+        "needsRevision": "ಸಂಶೋಧನೆ ಅಗತ್ಯವಿದೆ",
+        "all": "ಎಲ್ಲಾ"
+      },
+      "columns": {
+        "formName": "ಫಾರ್ಮ್ ಹೆಸರು",
+        "submittedBy": "ಸಲ್ಲಿಸಿದವರು",
+        "submittedDate": "ಸಬ್ಮಿಷನ್ ದಿನಾಂಕ",
+        "status": "ಸ್ಥಿತಿ",
+        "reviewedBy": "ಪರಿಶೀಲಿಸಿದವರು"
+      },
+      "empty": {
+        "title": "ಯಾವುದೇ ಸಬ್ಮಿಷನ್ ಕಂಡುಬಂದಿಲ್ಲ",
+        "description": "ಸಬ್ಮಿಷನ್ಸ್ ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತವೆ.",
+        "filteredTitle": "ಯಾವುದೇ ಸಬ್ಮಿಷನ್ ಹೊಂದಾಣಿಕೆಯಾಗಿಲ್ಲ",
+        "filteredDescription": "ಸ್ಥಿತಿ ಫಿಲ್ಟರ್ ಅನ್ನು ಹೊಂದಿಸಲು ಪ್ರಯತ್ನಿಸಿ."
+      }
+    }
   }
 }

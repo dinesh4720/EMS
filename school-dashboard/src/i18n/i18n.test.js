@@ -21,7 +21,7 @@ describe('en.json – structure and completeness', () => {
     const required = [
       'billing', 'calendar', 'common', 'exportCenter', 'confirm',
       'aria', 'constants', 'criticalAlerts', 'globalSearch',
-      'formSubmissions', 'login', 'signup',
+      'intakeForms', 'login', 'signup',
     ];
     for (const ns of required) {
       expect(enJSON, `Missing namespace: ${ns}`).toHaveProperty(ns);

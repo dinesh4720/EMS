@@ -449,41 +449,6 @@
       }
     }
   },
-  "formSubmissions": {
-    "title": "Form Submissions",
-    "subtitle": "Review and approve staff onboarding submissions",
-    "loadFailed": "Failed to load submissions",
-    "loadDetailsFailed": "Failed to load submission details",
-    "rejectionReasonRequired": "Please provide a reason for rejection",
-    "approvedSuccess": "Submission approved. Staff record created.",
-    "rejectedSuccess": "Submission rejected",
-    "reviewFailed": "Failed to review submission",
-    "notProvided": "Not provided",
-    "noSubmissions": "No submissions found",
-    "colFormName": "FORM NAME",
-    "colSubmittedBy": "SUBMITTED BY",
-    "colSubmittedDate": "SUBMITTED DATE",
-    "colStatus": "STATUS",
-    "colReviewedBy": "REVIEWED BY",
-    "reviewSubmission": "Review Submission",
-    "viewStaffRecord": "View Staff Record",
-    "modalTitle": "Review Submission",
-    "submittedInfo": "Submitted Information",
-    "reviewDecision": "Review Decision",
-    "reviewNotesLabel": "Review Notes",
-    "reviewNotesPlaceholder": "Add notes about this submission (required for rejection)",
-    "reviewInfo": "Review Information",
-    "reviewedAt": "Reviewed At",
-    "reject": "Reject",
-    "approveAndCreate": "Approve & Create staff",
-    "status": {
-      "pending": "Pending",
-      "approved": "Approved",
-      "rejected": "Rejected",
-      "needsRevision": "Needs Revision",
-      "all": "All"
-    }
-  },
   "privacyPolicy": {
     "title": "Privacy Policy",
     "subtitle": "Baseline privacy notice for SchoolSync deployments. This document should be reviewed and approved by the school's legal or compliance owner before production rollout.",
@@ -4248,5 +4213,121 @@
     "starter": "Starter",
     "growth": "Growth",
     "enterprise": "Enterprise"
+  },
+  "intakeForms": {
+    "enrollmentFunnel": {
+      "title": "Enrollment Funnel",
+      "description": "Track the progress of form assignments through each stage",
+      "conversionFunnel": "Conversion Funnel",
+      "stages": {
+        "assigned": "Assigned",
+        "submitted": "Submitted",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "inProgress": "In Progress"
+      },
+      "barAriaLabel": "{{label}}: {{count}} of {{max}}"
+    },
+    "assignments": {
+      "title": "Form Assignments",
+      "description": "Manage and track form assignments sent to teachers",
+      "assignForm": "Assign Form",
+      "unknownForm": "Unknown Form",
+      "toast": {
+        "assigned": "Form assigned to {{count}} recipient(s)",
+        "assignFailed": "Failed to assign form"
+      },
+      "status": {
+        "all": "All",
+        "pending": "Pending",
+        "submitted": "Submitted",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "empty": {
+        "title": "No assignments found",
+        "description": "Assign a form to see records here.",
+        "filteredTitle": "No assignments match",
+        "filteredDescription": "Try adjusting the status filter."
+      },
+      "columns": {
+        "formName": "Form Name",
+        "assignedTo": "Assigned To",
+        "assignedBy": "Assigned By",
+        "status": "Status",
+        "assignedDate": "Assigned Date",
+        "expires": "Expires"
+      },
+      "actions": {
+        "viewDetails": "View Details",
+        "copyLink": "Copy Link",
+        "resendNotification": "Resend Notification",
+        "cancelAssignment": "Cancel Assignment"
+      },
+      "modal": {
+        "sectionTitle": "Assignment recipients",
+        "sectionDescription": "Choose a form and add recipients. Each recipient gets a unique access link.",
+        "selectFormLabel": "Select Form",
+        "selectFormPlaceholder": "Choose a form...",
+        "emailAddressesLabel": "Email Addresses",
+        "emailAddressesHint": "Example: teacher1@school.com, teacher2@school.com",
+        "emailAddressesPlaceholder": "Enter email addresses (one per line or comma-separated)",
+        "phoneNumbersLabel": "Phone Numbers",
+        "phoneNumbersHint": "Example: +919876543210, +919876543211",
+        "phoneNumbersPlaceholder": "Enter phone numbers (one per line or comma-separated)",
+        "expiresInDaysLabel": "Expires In (Days)",
+        "assignmentDetailsTitle": "Assignment Details",
+        "formNameLabel": "Form Name",
+        "assignedToLabel": "Assigned To",
+        "accessLinkLabel": "Access Link",
+        "copyAccessLink": "Copy access link",
+        "statusLabel": "Status",
+        "assignedDateLabel": "Assigned Date",
+        "expiresOnLabel": "Expires On"
+      }
+    },
+    "submissions": {
+      "title": "Form Submissions",
+      "description": "Review and approve staff onboarding submissions",
+      "loadFailed": "Failed to load submissions",
+      "loadDetailsFailed": "Failed to load submission details",
+      "rejectionReasonRequired": "Please provide a reason for rejection",
+      "approvedSuccess": "Submission approved. Staff record created.",
+      "rejectedSuccess": "Submission rejected",
+      "reviewFailed": "Failed to review submission",
+      "notProvided": "Not provided",
+      "reviewSubmission": "Review Submission",
+      "viewStaffRecord": "View Staff Record",
+      "modalTitle": "Review Submission",
+      "submittedBy": "Submitted by",
+      "submittedInfo": "Submitted Information",
+      "reviewDecision": "Review Decision",
+      "reviewNotesLabel": "Review Notes",
+      "reviewNotesPlaceholder": "Add notes about this submission (required for rejection)",
+      "reviewInfo": "Review Information",
+      "reviewedAt": "Reviewed At",
+      "reject": "Reject",
+      "approveAndCreate": "Approve & Create staff",
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "needsRevision": "Needs Revision",
+        "all": "All"
+      },
+      "columns": {
+        "formName": "Form Name",
+        "submittedBy": "Submitted By",
+        "submittedDate": "Submitted Date",
+        "status": "Status",
+        "reviewedBy": "Reviewed By"
+      },
+      "empty": {
+        "title": "No submissions found",
+        "description": "Submissions will appear here.",
+        "filteredTitle": "No submissions match",
+        "filteredDescription": "Try adjusting the status filter."
+      }
+    }
   }
 }

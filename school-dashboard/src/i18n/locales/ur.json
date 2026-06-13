@@ -396,41 +396,6 @@
       }
     }
   },
-  "formSubmissions": {
-    "title": "فارم جمع کرانے",
-    "subtitle": "عملے کی آن بورڈنگ جمع کرانے کا جائزہ لیں اور منظور کریں",
-    "loadFailed": "جمع کرانے لوڈ کرنے میں ناکامی",
-    "loadDetailsFailed": "تفصیلات لوڈ کرنے میں ناکامی",
-    "rejectionReasonRequired": "براہ کرم مسترد کرنے کی وجہ بتائیں",
-    "approvedSuccess": "جمع کرانا منظور! عملے کا ریکارڈ بن گیا۔",
-    "rejectedSuccess": "جمع کرانا مسترد ہو گیا",
-    "reviewFailed": "جائزے میں ناکامی",
-    "notProvided": "فراہم نہیں کیا گیا",
-    "noSubmissions": "کوئی جمع کرانا نہیں ملا",
-    "colFormName": "فارم کا نام",
-    "colSubmittedBy": "جمع کرانے والا",
-    "colSubmittedDate": "جمع کرانے کی تاریخ",
-    "colStatus": "حالت",
-    "colReviewedBy": "جائزہ لینے والا",
-    "reviewSubmission": "جمع کرانے کا جائزہ لیں",
-    "viewStaffRecord": "عملے کا ریکارڈ دیکھیں",
-    "modalTitle": "جمع کرانے کا جائزہ",
-    "submittedInfo": "جمع کی گئی معلومات",
-    "reviewDecision": "جائزے کا فیصلہ",
-    "reviewNotesLabel": "جائزے کے نوٹس",
-    "reviewNotesPlaceholder": "اس جمع کرانے کے بارے میں نوٹس شامل کریں (مسترد کرنے کے لیے ضروری)",
-    "reviewInfo": "جائزے کی معلومات",
-    "reviewedAt": "جائزہ لیا گیا",
-    "reject": "مسترد کریں",
-    "approveAndCreate": "منظور کریں اور عملہ بنائیں",
-    "status": {
-      "pending": "زیر التواء",
-      "approved": "منظور شدہ",
-      "rejected": "مسترد شدہ",
-      "needsRevision": "نظرثانی ضروری",
-      "all": "تمام"
-    }
-  },
   "privacyPolicy": {
     "title": "رازداری کی پالیسی",
     "subtitle": "SchoolSync تعیناتیوں کے لیے بنیادی رازداری نوٹس۔ پروڈکشن سے پہلے اسکول کے قانونی مالک سے جائزہ لیا جانا چاہیے۔",
@@ -3905,5 +3870,121 @@
     "feeHeadNum": "فیس ہیڈ #{{num}}",
     "templateUsedByStudents": "یہ ٹیمپلیٹ {{structureCount}} کلاس فیس ڈھانچوں میں {{studentCount}} طلباء پر لاگو ہے۔",
     "templateUsedByStructures": "یہ ٹیمپلیٹ {{structureCount}} کلاس فیس ڈھانچوں میں استعمال ہو رہا ہے۔"
+  },
+  "intakeForms": {
+    "enrollmentFunnel": {
+      "title": "انرولمنٹ فنل",
+      "description": "ہر مرحلے میں فارم اسائنمنٹ کی پیشرفت کا ٹریک کریں",
+      "conversionFunnel": "تبدیلی فنل",
+      "stages": {
+        "assigned": "تفویض کردہ",
+        "submitted": "جمع کرایا گیا",
+        "approved": "منظور شدہ",
+        "rejected": "مسترد",
+        "inProgress": "جاری ہے"
+      },
+      "barAriaLabel": "{{label}}: {{count}} میں سے {{max}}"
+    },
+    "assignments": {
+      "title": "فارم اسائنمنٹس",
+      "description": "اساتذہ کو بھیجے گئے فارم اسائنمنٹس کا نظم اور ٹریک کریں",
+      "assignForm": "فارم تفویض کریں",
+      "unknownForm": "نامعلوم فارم",
+      "toast": {
+        "assigned": "{{count}} وصول کنندہ(وں) کو فارم تفویض کیا گیا",
+        "assignFailed": "فارم تفویض کرنے میں ناکام"
+      },
+      "status": {
+        "all": "تمام",
+        "pending": "زیر التوا",
+        "submitted": "جمع کرایا گیا",
+        "approved": "منظور شدہ",
+        "rejected": "مسترد"
+      },
+      "empty": {
+        "title": "کوئی اسائنمنٹ نہیں ملی",
+        "description": "یہاں ریکارڈ دیکھنے کے لیے ایک فارم تفویض کریں۔",
+        "filteredTitle": "کوئی اسائنمنٹ مماثل نہیں",
+        "filteredDescription": "حالت فلٹر کو ایڈجسٹ کرنے کی کوشش کریں۔"
+      },
+      "columns": {
+        "formName": "فارم کا نام",
+        "assignedTo": "جس کو تفویض کیا",
+        "assignedBy": "جس نے تفویض کیا",
+        "status": "حالت",
+        "assignedDate": "تفویض کی تاریخ",
+        "expires": "ختم ہوتا ہے"
+      },
+      "actions": {
+        "viewDetails": "تفصیلات دیکھیں",
+        "copyLink": "لنک کاپی کریں",
+        "resendNotification": "نوٹیفکیشن دوبارہ بھیجیں",
+        "cancelAssignment": "اسائنمنٹ منسوخ کریں"
+      },
+      "modal": {
+        "sectionTitle": "اسائنمنٹ وصول کنندگان",
+        "sectionDescription": "ایک فارم منتخب کریں اور وصول کنندگان شامل کریں۔ ہر وصول کنندہ کو ایک منفرد رسائی لنک ملتا ہے۔",
+        "selectFormLabel": "فارم منتخب کریں",
+        "selectFormPlaceholder": "ایک فارم منتخب کریں...",
+        "emailAddressesLabel": "ای میل ایڈریس",
+        "emailAddressesHint": "مثال: teacher1@school.com, teacher2@school.com",
+        "emailAddressesPlaceholder": "ای میل ایڈریس درج کریں (فی لائن ایک یا کوما سے الگ)",
+        "phoneNumbersLabel": "فون نمبر",
+        "phoneNumbersHint": "مثال: +919876543210, +919876543211",
+        "phoneNumbersPlaceholder": "فون نمبر درج کریں (فی لائن ایک یا کوما سے الگ)",
+        "expiresInDaysLabel": "دنوں میں ختم ہوتا ہے",
+        "assignmentDetailsTitle": "اسائنمنٹ کی تفصیلات",
+        "formNameLabel": "فارم کا نام",
+        "assignedToLabel": "جس کو تفویض کیا",
+        "accessLinkLabel": "رسائی لنک",
+        "copyAccessLink": "رسائی لنک کاپی کریں",
+        "statusLabel": "حالت",
+        "assignedDateLabel": "تفویض کی تاریخ",
+        "expiresOnLabel": "ختم ہونے کی تاریخ"
+      }
+    },
+    "submissions": {
+      "title": "فارم جمع کرانے",
+      "description": "اسٹاف آن بورڈنگ جمع کرانے کا جائزہ لیں اور منظور کریں",
+      "loadFailed": "جمع کرانے لوڈ کرنے میں ناکام",
+      "loadDetailsFailed": "جمع کرانے کی تفصیلات لوڈ کرنے میں ناکام",
+      "rejectionReasonRequired": "براہ کرم مسترد کرنے کی وجہ فراہم کریں",
+      "approvedSuccess": "جمع کرانا منظور۔ اسٹاف ریکارڈ بنایا گیا۔",
+      "rejectedSuccess": "جمع کرانا مسترد",
+      "reviewFailed": "جمع کرانے کا جائزہ لینے میں ناکام",
+      "notProvided": "فراہم نہیں کیا گیا",
+      "reviewSubmission": "جمع کرانے کا جائزہ لیں",
+      "viewStaffRecord": "اسٹاف ریکارڈ دیکھیں",
+      "modalTitle": "جمع کرانے کا جائزہ لیں",
+      "submittedBy": "جمع کرانے والا",
+      "submittedInfo": "جمع کرائی گئی معلومات",
+      "reviewDecision": "جائزہ کا فیصلہ",
+      "reviewNotesLabel": "جائزہ نوٹس",
+      "reviewNotesPlaceholder": "اس جمع کرانے کے بارے میں نوٹس شامل کریں (مسترد کرنے کے لیے ضروری)",
+      "reviewInfo": "جائزہ کی معلومات",
+      "reviewedAt": "جائزہ لینے کی تاریخ",
+      "reject": "مسترد کریں",
+      "approveAndCreate": "منظور کریں اور اسٹاف بنائیں",
+      "status": {
+        "pending": "زیر التوا",
+        "approved": "منظور شدہ",
+        "rejected": "مسترد",
+        "needsRevision": "تنقیح کی ضرورت",
+        "all": "تمام"
+      },
+      "columns": {
+        "formName": "فارم کا نام",
+        "submittedBy": "جمع کرانے والا",
+        "submittedDate": "جمع کرانے کی تاریخ",
+        "status": "حالت",
+        "reviewedBy": "جائزہ لینے والا"
+      },
+      "empty": {
+        "title": "کوئی جمع کرانے نہیں ملا",
+        "description": "جمع کرانے یہاں ظاہر ہوں گے۔",
+        "filteredTitle": "کوئی جمع کرانا مماثل نہیں",
+        "filteredDescription": "حالت فلٹر کو ایڈجسٹ کرنے کی کوشش کریں۔"
+      }
+    }
   }
 }

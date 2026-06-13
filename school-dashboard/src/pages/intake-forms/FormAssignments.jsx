@@ -4,15 +4,12 @@ import {
   Card,
   CardBody,
   Button,
-  Input,
-  Textarea,
   Modal,
   ModalContent,
   ModalHeader,
   ModalBody,
   ModalFooter,
   useDisclosure,
-  Spinner,
   Chip,
 } from "@heroui/react";
 import {
@@ -22,6 +19,7 @@ import {
   RefreshCw,
   Trash2,
   Copy,
+  FileText,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { intakeFormsApi } from "../../services/api";
@@ -32,8 +30,15 @@ import useConfirmDialog from '../../hooks/useConfirmDialog';
 import PageHeader from '../../components/ui/PageHeader';
 import DataTable from '../../components/ui/DataTable';
 import Select from '../../components/ui/Select';
+import Input from '../../components/ui/Input';
+import Textarea from '../../components/ui/Textarea';
 import IconButton from '../../components/ui/IconButton';
 import DropdownMenu from '../../components/ui/DropdownMenu';
+import EmptyState from '../../components/ui/EmptyState';
+import FormField from '../../components/ui/FormField';
+import FormSection from '../../components/ui/FormSection';
+
+const STATUS_FILTERS = ["all", "pending", "submitted", "approved", "rejected"];
 
 export default function FormAssignments() {
   const { t } = useTranslation();
@@ -115,9 +120,7 @@ export default function FormAssignments() {
         assignedBy: user?.id || user?.name || user?.email,
       });
 
-      toast.success(
-        `Form assigned to ${emails.length + phones.length} recipient(s)`
-      );
+      toast.success(t('intakeForms.assignments.toast.assigned', { count: emails.length + phones.length }));
       onClose();
       fetchAssignments();
       setAssignmentData({
@@ -127,7 +130,7 @@ export default function FormAssignments() {
         expiresInDays: 30,
       });
     } catch (error) {
-      toast.error(error.message || "Failed to assign form");
+      toast.error(error.message || t('intakeForms.assignments.toast.assignFailed'));
     } finally {
       setLoading(false);
     }
@@ -189,11 +192,11 @@ export default function FormAssignments() {
   const columns = useMemo(() => [
     {
       key: 'formName',
-      label: t('pages.fORMName'),
+      label: t('intakeForms.assignments.columns.formName'),
       render: (row) => (
         <div>
           <div className="font-medium text-fg">
-            {row.formId?.formName || 'Unknown Form'}
+            {row.formId?.formName || t('intakeForms.assignments.unknownForm')}
           </div>
           <div className="text-xs text-fg-faint">
             {row.formId?.formType || '—'}
@@ -203,21 +206,21 @@ export default function FormAssignments() {
     },
     {
       key: 'assignedTo',
-      label: t('pages.aSSIGNEDTo'),
+      label: t('intakeForms.assignments.columns.assignedTo'),
       render: (row) => (
         <div className="text-sm">{row.assignedToEmail || row.assignedToPhone || '—'}</div>
       ),
     },
     {
       key: 'assignedBy',
-      label: t('pages.aSSIGNEDBy'),
+      label: t('intakeForms.assignments.columns.assignedBy'),
       render: (row) => (
         <div className="text-sm">{row.assignedBy?.name || '—'}</div>
       ),
     },
     {
       key: 'status',
-      label: t('pages.sTATUS'),
+      label: t('intakeForms.assignments.columns.status'),
       render: (row) => (
         <Chip
           size="sm"
@@ -230,7 +233,7 @@ export default function FormAssignments() {
     },
     {
       key: 'assignedDate',
-      label: t('pages.aSSIGNEDDate'),
+      label: t('intakeForms.assignments.columns.assignedDate'),
       render: (row) => (
         <div className="text-sm">
           {row.assignedAt ? format(new Date(row.assignedAt), "MMM dd, yyyy") : '—'}
@@ -239,7 +242,7 @@ export default function FormAssignments() {
     },
     {
       key: 'expires',
-      label: t('pages.eXPIRES'),
+      label: t('intakeForms.assignments.columns.expires'),
       render: (row) => (
         <div className="text-sm">
           {row.expiresAt ? format(new Date(row.expiresAt), "MMM dd, yyyy") : '—'}
@@ -260,25 +263,25 @@ export default function FormAssignments() {
       items={[
         {
           key: 'view',
-          label: 'View Details',
+          label: t('intakeForms.assignments.actions.viewDetails'),
           icon: <Eye size={16} />,
           onClick: () => handleViewDetails(row),
         },
         {
           key: 'copy',
-          label: 'Copy Link',
+          label: t('intakeForms.assignments.actions.copyLink'),
           icon: <Copy size={16} />,
           onClick: () => copyAccessLink(row.accessToken),
         },
         {
           key: 'resend',
-          label: 'Resend Notification',
+          label: t('intakeForms.assignments.actions.resendNotification'),
           icon: <RefreshCw size={16} />,
           onClick: () => handleResend(row._id),
         },
         {
           key: 'delete',
-          label: 'Cancel Assignment',
+          label: t('intakeForms.assignments.actions.cancelAssignment'),
           icon: <Trash2 size={16} />,
           isDestructive: true,
           onClick: () => handleDelete(row._id),
@@ -288,18 +291,26 @@ export default function FormAssignments() {
     />
   );
 
+  const formOptions = useMemo(
+    () => forms.map((form) => ({ value: form.id, label: form.formName })),
+    [forms]
+  );
+
+  const isFiltered = filterStatus !== "all";
+  const showEmptyState = !loading && assignments.length === 0;
+
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Form Assignments"
-        description="Manage and track form assignments sent to teachers"
+        title={t('intakeForms.assignments.title')}
+        description={t('intakeForms.assignments.description')}
         actions={
           <Button
             color="primary"
             startContent={<Send size={16} />}
             onPress={onOpen}
           >
-            Assign Form
+            {t('intakeForms.assignments.assignForm')}
           </Button>
         }
         bordered={false}
@@ -308,115 +319,141 @@ export default function FormAssignments() {
 
       {/* Filters */}
       <div className="flex gap-2">
-        {["all", "pending", "submitted", "approved", "rejected"].map(
-          (status) => (
-            <Button
-              key={status}
-              size="sm"
-              variant={filterStatus === status ? "solid" : "flat"}
-              color={filterStatus === status ? "primary" : "default"}
-              onPress={() => setFilterStatus(status)}
-              aria-pressed={filterStatus === status}
-            >
-              {status.charAt(0).toUpperCase() + status.slice(1)}
-            </Button>
-          )
-        )}
+        {STATUS_FILTERS.map((status) => (
+          <Button
+            key={status}
+            size="sm"
+            variant={filterStatus === status ? "solid" : "flat"}
+            color={filterStatus === status ? "primary" : "default"}
+            onPress={() => setFilterStatus(status)}
+            aria-pressed={filterStatus === status}
+          >
+            {t(`intakeForms.assignments.status.${status}`)}
+          </Button>
+        ))}
       </div>
 
-      {/* Assignments Table */}
-      <DataTable
-        ariaLabel={t('aria.tables.formAssignments') || 'Form assignments table'}
-        columns={columns}
-        data={assignments}
-        keyField="_id"
-        loading={loading}
-        emptyState={{
-          title: 'No assignments found',
-          description: 'Assign a form to see records here.',
-        }}
-        rowActions={rowActions}
-        pagination
-        defaultPageSize={10}
-      />
+      {/* Assignments Table / Empty State */}
+      {showEmptyState ? (
+        <Card className="bg-surface border border-divider">
+          <CardBody>
+            <EmptyState
+              icon={FileText}
+              title={isFiltered ? t('intakeForms.assignments.empty.filteredTitle') : t('intakeForms.assignments.empty.title')}
+              description={isFiltered ? t('intakeForms.assignments.empty.filteredDescription') : t('intakeForms.assignments.empty.description')}
+              action={
+                !isFiltered ? (
+                  <Button color="primary" startContent={<Send size={16} />} onPress={onOpen}>
+                    {t('intakeForms.assignments.assignForm')}
+                  </Button>
+                ) : null
+              }
+              size="md"
+            />
+          </CardBody>
+        </Card>
+      ) : (
+        <DataTable
+          ariaLabel={t('aria.tables.formAssignments') || 'Form assignments table'}
+          columns={columns}
+          data={assignments}
+          keyField="_id"
+          loading={loading}
+          rowActions={rowActions}
+          pagination
+          defaultPageSize={10}
+        />
+      )}
 
       {/* Assign Form Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="2xl">
         <ModalContent>
-          <ModalHeader>{t('pages.assignForm')}</ModalHeader>
+          <ModalHeader>{t('intakeForms.assignments.assignForm')}</ModalHeader>
           <ModalBody>
-            <div className="space-y-4">
-              <Select
-                label="Select Form"
-                placeholder={t('pages.chooseAForm')}
-                value={assignmentData.formId}
-                onChange={(e) =>
-                  setAssignmentData({
-                    ...assignmentData,
-                    formId: e.target.value,
-                  })
-                }
+            <FormSection
+              title={t('intakeForms.assignments.modal.sectionTitle')}
+              description={t('intakeForms.assignments.modal.sectionDescription')}
+            >
+              <FormField
+                label={t('intakeForms.assignments.modal.selectFormLabel')}
+                required
               >
-                {forms.map((form) => (
-                  <option key={form.id} value={form.id}>
-                    {form.formName}
-                  </option>
-                ))}
-              </Select>
+                <Select
+                  placeholder={t('intakeForms.assignments.modal.selectFormPlaceholder')}
+                  value={assignmentData.formId}
+                  options={formOptions}
+                  onChange={(e) =>
+                    setAssignmentData({
+                      ...assignmentData,
+                      formId: e.target.value,
+                    })
+                  }
+                />
+              </FormField>
 
-              <Textarea
-                label={t('pages.emailAddresses')}
-                placeholder={t('pages.enterEmailAddressesOnePerLineOrCommaSeparated')}
-                value={assignmentData.emails}
-                onChange={(e) =>
-                  setAssignmentData({
-                    ...assignmentData,
-                    emails: e.target.value,
-                  })
-                }
-                minRows={3}
-                description="Example: teacher1@school.com, teacher2@school.com"
-              />
+              <FormField
+                label={t('intakeForms.assignments.modal.emailAddressesLabel')}
+                description={t('intakeForms.assignments.modal.emailAddressesHint')}
+              >
+                <Textarea
+                  placeholder={t('intakeForms.assignments.modal.emailAddressesPlaceholder')}
+                  value={assignmentData.emails}
+                  onChange={(e) =>
+                    setAssignmentData({
+                      ...assignmentData,
+                      emails: e.target.value,
+                    })
+                  }
+                  rows={3}
+                />
+              </FormField>
 
-              <Textarea
-                label={t('pages.phoneNumbers')}
-                placeholder={t('pages.enterPhoneNumbersOnePerLineOrCommaSeparated')}
-                value={assignmentData.phones}
-                onChange={(e) =>
-                  setAssignmentData({
-                    ...assignmentData,
-                    phones: e.target.value,
-                  })
-                }
-                minRows={3}
-                description="Example: +919876543210, +919876543211"
-              />
+              <FormField
+                label={t('intakeForms.assignments.modal.phoneNumbersLabel')}
+                description={t('intakeForms.assignments.modal.phoneNumbersHint')}
+              >
+                <Textarea
+                  placeholder={t('intakeForms.assignments.modal.phoneNumbersPlaceholder')}
+                  value={assignmentData.phones}
+                  onChange={(e) =>
+                    setAssignmentData({
+                      ...assignmentData,
+                      phones: e.target.value,
+                    })
+                  }
+                  rows={3}
+                />
+              </FormField>
 
-              <Input
-                type="number"
-                label={t('pages.expiresInDays')}
-                value={assignmentData.expiresInDays}
-                onChange={(e) =>
-                  setAssignmentData({
-                    ...assignmentData,
-                    expiresInDays: parseInt(e.target.value),
-                  })
-                }
-                min={1}
-                max={365}
-              />
-            </div>
+              <FormField
+                label={t('intakeForms.assignments.modal.expiresInDaysLabel')}
+                required
+              >
+                <Input
+                  type="number"
+                  value={assignmentData.expiresInDays}
+                  onChange={(e) =>
+                    setAssignmentData({
+                      ...assignmentData,
+                      expiresInDays: parseInt(e.target.value),
+                    })
+                  }
+                  min={1}
+                  max={365}
+                />
+              </FormField>
+            </FormSection>
           </ModalBody>
           <ModalFooter>
             <Button variant="light" onPress={onClose}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               color="primary"
               onPress={handleAssign}
               isLoading={loading}
             >
-              Assign Form
+              {t('intakeForms.assignments.assignForm')}
             </Button>
           </ModalFooter>
         </ModalContent>
@@ -427,93 +464,79 @@ export default function FormAssignments() {
       {/* Assignment Details Modal */}
       <Modal isOpen={isDetailsOpen} onClose={onDetailsClose} size="lg">
         <ModalContent>
-          <ModalHeader>{t('pages.assignmentDetails')}</ModalHeader>
+          <ModalHeader>{t('intakeForms.assignments.modal.assignmentDetailsTitle')}</ModalHeader>
           <ModalBody>
             {selectedAssignment && (
-              <dl className="space-y-4">
-                <div>
-                  <dt className="text-sm font-medium text-fg-muted">
-                    Form Name
-                  </dt>
-                  <dd className="text-base font-semibold">
-                    {selectedAssignment.formId?.formName || 'Unknown Form'}
-                  </dd>
-                </div>
+              <FormSection columns={1}>
+                <dl className="space-y-4">
+                  <FormField label={t('intakeForms.assignments.modal.formNameLabel')}>
+                    <div className="text-base font-semibold text-fg">
+                      {selectedAssignment.formId?.formName || t('intakeForms.assignments.unknownForm')}
+                    </div>
+                  </FormField>
 
-                <div>
-                  <dt className="text-sm font-medium text-fg-muted">
-                    Assigned To
-                  </dt>
-                  <dd className="text-base">{selectedAssignment.assignedToEmail || selectedAssignment.assignedToPhone || '—'}</dd>
-                </div>
+                  <FormField label={t('intakeForms.assignments.modal.assignedToLabel')}>
+                    <div className="text-base text-fg">
+                      {selectedAssignment.assignedToEmail || selectedAssignment.assignedToPhone || '—'}
+                    </div>
+                  </FormField>
 
-                <div>
-                  <dt className="text-sm font-medium text-fg-muted">
-                    Access Link
-                  </dt>
-                  <dd className="flex gap-2 mt-1">
-                    <Input
-                      value={`${window.location.origin}/form/${selectedAssignment.accessToken}`}
-                      readOnly
-                      size="sm"
-                    />
-                    <Button
-                      isIconOnly
-                      size="sm"
-                      aria-label={t('pages.copyAccessLink')}
-                      onPress={() =>
-                        copyAccessLink(selectedAssignment.accessToken)
-                      }
-                    >
-                      <Copy size={16} />
-                    </Button>
-                  </dd>
-                </div>
+                  <FormField label={t('intakeForms.assignments.modal.accessLinkLabel')}>
+                    <div className="flex gap-2 mt-1">
+                      <Input
+                        value={`${window.location.origin}/form/${selectedAssignment.accessToken}`}
+                        readOnly
+                        size="sm"
+                      />
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        aria-label={t('intakeForms.assignments.modal.copyAccessLink')}
+                        onPress={() =>
+                          copyAccessLink(selectedAssignment.accessToken)
+                        }
+                      >
+                        <Copy size={16} />
+                      </Button>
+                    </div>
+                  </FormField>
 
-                <div>
-                  <dt className="text-sm font-medium text-fg-muted">
-                    Status
-                  </dt>
-                  <dd className="mt-1">
-                    <Chip
-                      size="sm"
-                      variant="dot"
-                      color={getStatusColor(selectedAssignment.status)}
-                    >
-                      {selectedAssignment.status}
-                    </Chip>
-                  </dd>
-                </div>
+                  <FormField label={t('intakeForms.assignments.modal.statusLabel')}>
+                    <div className="mt-1">
+                      <Chip
+                        size="sm"
+                        variant="dot"
+                        color={getStatusColor(selectedAssignment.status)}
+                      >
+                        {selectedAssignment.status}
+                      </Chip>
+                    </div>
+                  </FormField>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <dt className="text-sm font-medium text-fg-muted">
-                      Assigned Date
-                    </dt>
-                    <dd className="text-sm">
-                      {format(
-                        new Date(selectedAssignment.assignedAt),
-                        "MMM dd, yyyy"
-                      )}
-                    </dd>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField label={t('intakeForms.assignments.modal.assignedDateLabel')}>
+                      <div className="text-sm text-fg">
+                        {format(
+                          new Date(selectedAssignment.assignedAt),
+                          "MMM dd, yyyy"
+                        )}
+                      </div>
+                    </FormField>
+                    <FormField label={t('intakeForms.assignments.modal.expiresOnLabel')}>
+                      <div className="text-sm text-fg">
+                        {format(
+                          new Date(selectedAssignment.expiresAt),
+                          "MMM dd, yyyy"
+                        )}
+                      </div>
+                    </FormField>
                   </div>
-                  <div>
-                    <dt className="text-sm font-medium text-fg-muted">
-                      Expires On
-                    </dt>
-                    <dd className="text-sm">
-                      {format(
-                        new Date(selectedAssignment.expiresAt),
-                        "MMM dd, yyyy"
-                      )}
-                    </dd>
-                  </div>
-                </div>
-              </dl>
+                </dl>
+              </FormSection>
             )}
           </ModalBody>
           <ModalFooter>
-            <Button onPress={onDetailsClose}>{t('pages.close2')}</Button>
+            <Button onPress={onDetailsClose}>{t('common.close')}</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

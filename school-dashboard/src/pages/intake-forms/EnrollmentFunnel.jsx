@@ -8,11 +8,11 @@ import toast from "react-hot-toast";
 import { intakeFormsApi } from "../../services/api";
 
 const FUNNEL_STAGES = [
-  { key: "assigned", label: "Assigned", icon: Users, barColor: "bg-accent", iconBgColor: "bg-accent-bg", iconTextColor: "text-accent" },
-  { key: "in_progress", label: "In Progress", icon: Clock, barColor: "bg-warn", iconBgColor: "bg-warn-bg", iconTextColor: "text-warn" },
-  { key: "submitted", label: "Submitted", icon: FileCheck, barColor: "bg-info-token", iconBgColor: "bg-info-bg", iconTextColor: "text-info-token" },
-  { key: "approved", label: "Approved", icon: CheckCircle, barColor: "bg-ok", iconBgColor: "bg-ok-bg", iconTextColor: "text-ok" },
-  { key: "rejected", label: "Rejected", icon: XCircle, barColor: "bg-danger-token", iconBgColor: "bg-danger-bg", iconTextColor: "text-danger-token" },
+  { key: "assigned", dataKey: "assigned", icon: Users, barColor: "bg-accent", iconBgColor: "bg-accent-bg", iconTextColor: "text-accent" },
+  { key: "inProgress", dataKey: "in_progress", icon: Clock, barColor: "bg-warn", iconBgColor: "bg-warn-bg", iconTextColor: "text-warn" },
+  { key: "submitted", dataKey: "submitted", icon: FileCheck, barColor: "bg-info-token", iconBgColor: "bg-info-bg", iconTextColor: "text-info-token" },
+  { key: "approved", dataKey: "approved", icon: CheckCircle, barColor: "bg-ok", iconBgColor: "bg-ok-bg", iconTextColor: "text-ok" },
+  { key: "rejected", dataKey: "rejected", icon: XCircle, barColor: "bg-danger-token", iconBgColor: "bg-danger-bg", iconTextColor: "text-danger-token" },
 ];
 
 export default function EnrollmentFunnel() {
@@ -58,8 +58,8 @@ export default function EnrollmentFunnel() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Enrollment Funnel"
-        description="Track the progress of form assignments through each stage"
+        title={t('intakeForms.enrollmentFunnel.title')}
+        description={t('intakeForms.enrollmentFunnel.description')}
         bordered={false}
         size="lg"
       />
@@ -79,10 +79,11 @@ export default function EnrollmentFunnel() {
                       <Icon size={20} className={stage.iconTextColor} aria-hidden="true" />
                     </div>
                     <p className="text-2xl font-bold text-fg">
-                      {stats[stage.key]}
+                      {stats[stage.dataKey]}
                     </p>
                     <p className="text-xs text-fg-muted mt-1">
-                      {stage.label}
+                      {t(`intakeForms.enrollmentFunnel.stages.${stage.key}`)}
+
                     </p>
                   </CardBody>
                 </Card>
@@ -94,22 +95,22 @@ export default function EnrollmentFunnel() {
           <Card className="bg-surface border border-divider">
             <CardBody className="p-6">
               <h3 className="text-lg font-semibold text-fg mb-6">
-                Conversion Funnel
+                {t('intakeForms.enrollmentFunnel.conversionFunnel')}
               </h3>
               <div className="space-y-3">
                 {FUNNEL_STAGES.filter((s) => s.key !== "rejected").map((stage, index) => {
-                  const width = maxCount > 0 ? Math.max((stats[stage.key] / maxCount) * 100, 8) : 8;
+                  const width = maxCount > 0 ? Math.max((stats[stage.dataKey] / maxCount) * 100, 8) : 8;
                   const conversionRate =
                     index > 0
-                      ? stats[FUNNEL_STAGES[index - 1].key] > 0
-                        ? ((stats[stage.key] / stats[FUNNEL_STAGES[index - 1].key]) * 100).toFixed(1)
+                      ? stats[FUNNEL_STAGES[index - 1].dataKey] > 0
+                        ? ((stats[stage.dataKey] / stats[FUNNEL_STAGES[index - 1].dataKey]) * 100).toFixed(1)
                         : "0.0"
                       : "100.0";
 
                   return (
                     <div key={stage.key} className="flex items-center gap-4">
                       <div className="w-28 text-sm font-medium text-fg text-right shrink-0">
-                        {stage.label}
+                        {t(`intakeForms.enrollmentFunnel.stages.${stage.key}`)}
                       </div>
                       <div className="flex-1 relative">
                         <div className="h-10 bg-surface-2 rounded-lg overflow-hidden">
@@ -119,11 +120,11 @@ export default function EnrollmentFunnel() {
                             role="progressbar"
                             aria-valuemin={0}
                             aria-valuemax={maxCount}
-                            aria-valuenow={stats[stage.key]}
-                            aria-label={`${stage.label}: ${stats[stage.key]} of ${maxCount}`}
+                            aria-valuenow={stats[stage.dataKey]}
+                            aria-label={t('intakeForms.enrollmentFunnel.barAriaLabel', { label: t(`intakeForms.enrollmentFunnel.stages.${stage.key}`), count: stats[stage.dataKey], max: maxCount })}
                           >
                             <span className="text-sm font-semibold text-accent-fg">
-                              {stats[stage.key]}
+                              {stats[stage.dataKey]}
                             </span>
                           </div>
                         </div>
@@ -147,7 +148,7 @@ export default function EnrollmentFunnel() {
                 <div className="mt-6 pt-4 border-t border-border-token">
                   <div className="flex items-center gap-4">
                     <div className="w-28 text-sm font-medium text-fg text-right shrink-0">
-                      Rejected
+                      {t('intakeForms.enrollmentFunnel.stages.rejected')}
                     </div>
                     <div className="flex-1 relative">
                       <div className="h-10 bg-surface-2 rounded-lg overflow-hidden">
@@ -160,7 +161,7 @@ export default function EnrollmentFunnel() {
                           aria-valuemin={0}
                           aria-valuemax={maxCount}
                           aria-valuenow={stats.rejected}
-                          aria-label={`Rejected: ${stats.rejected} of ${maxCount}`}
+                          aria-label={t('intakeForms.enrollmentFunnel.barAriaLabel', { label: t('intakeForms.enrollmentFunnel.stages.rejected'), count: stats.rejected, max: maxCount })}
                         >
                           <span className="text-sm font-semibold text-accent-fg">
                             {stats.rejected}

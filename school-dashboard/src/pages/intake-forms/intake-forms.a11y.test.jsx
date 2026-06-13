@@ -96,12 +96,12 @@ describe("Intake Forms module accessibility", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /all/i })).toHaveAttribute("aria-pressed", "true");
+      expect(screen.getByRole("button", { name: /intakeForms\.assignments\.status\.all/i })).toHaveAttribute("aria-pressed", "true");
     });
 
     const filters = ["all", "pending", "submitted", "approved", "rejected"];
     filters.forEach((status) => {
-      const btn = screen.getByRole("button", { name: new RegExp(`^${status}$`, "i") });
+      const btn = screen.getByRole("button", { name: new RegExp(`intakeForms\\.assignments\\.status\\.${status}`, "i") });
       expect(btn).toHaveAttribute("aria-pressed", status === "all" ? "true" : "false");
     });
   });
@@ -114,12 +114,13 @@ describe("Intake Forms module accessibility", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /formSubmissions\.status\.pending/i })).toHaveAttribute("aria-pressed", "true");
+      expect(screen.getByRole("button", { name: /intakeForms\.submissions\.status\.pending/i })).toHaveAttribute("aria-pressed", "true");
     });
 
     const filters = ["pending", "approved", "rejected", "needs_revision", "all"];
     filters.forEach((status) => {
-      const btn = screen.getByRole("button", { name: new RegExp(`formSubmissions\\.status\\.${status.replace(/_/g, "")}`, "i") });
+      const key = status.replace(/_(.)/g, (_, c) => c.toUpperCase());
+      const btn = screen.getByRole("button", { name: new RegExp(`intakeForms\\.submissions\\.status\\.${key}`, "i") });
       expect(btn).toHaveAttribute("aria-pressed", status === "pending" ? "true" : "false");
     });
   });
