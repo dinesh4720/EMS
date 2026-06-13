@@ -1,10 +1,15 @@
 import { useEffect, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { notificationsApi } from '../services/api';
 
 /**
- * Polls for unread notification count at a fixed interval.
- * Pauses polling while the notification panel is open (it fetches its own data).
- * Clears the interval whenever paused changes or the component unmounts.
+ * Polls for the unread notification count at a fixed interval.
+ *
+ * [DK-846] Migrated from a hand-rolled setInterval + fetch to React Query's
+ * `refetchInterval`. This dedupes the request with any other consumer of the
+ * same query key, picks up the shared retry/backoff config (lib/queryClient.js),
+ * and surfaces the query in React Query Devtools. Polling pauses while the
+ * notification panel is open (it fetches its own data) via `enabled: !paused`.
  *
  * @param {object} options
  * @param {(count: number) => void} options.onCountChange - Called with the latest unread count
@@ -15,22 +20,27 @@ export function useLiveNotifications({ onCountChange, paused = false, intervalMs
     const onCountChangeRef = useRef(onCountChange);
     onCountChangeRef.current = onCountChange;
 
+    const { data, isError } = useQuery({
+        queryKey: ['notifications', 'unread-count'],
+        queryFn: () => notificationsApi.getUnreadCount(),
+        enabled: !paused,
+        refetchInterval: paused ? false : intervalMs,
+        // Keep the poll lightweight: don't refetch a hidden tab on its interval.
+        refetchIntervalInBackground: false,
+        select: (res) => res?.count ?? 0,
+    });
+
+    // Mirror the query result into the caller's setter. While paused we leave the
+    // count untouched — the open panel owns it. On error fall back to 0, matching
+    // the previous hand-rolled behaviour.
     useEffect(() => {
         if (paused) return;
-
-        const fetchUnreadCount = () => {
-            notificationsApi.getUnreadCount()
-                .then((data) => {
-                    onCountChangeRef.current(data?.count ?? 0);
-                })
-                .catch(() => {
-                    onCountChangeRef.current(0);
-                });
-        };
-
-        fetchUnreadCount();
-
-        const interval = setInterval(fetchUnreadCount, intervalMs);
-        return () => clearInterval(interval);
-    }, [paused, intervalMs]);
+        if (isError) {
+            onCountChangeRef.current(0);
+            return;
+        }
+        if (data !== undefined) {
+            onCountChangeRef.current(data);
+        }
+    }, [data, isError, paused]);
 }

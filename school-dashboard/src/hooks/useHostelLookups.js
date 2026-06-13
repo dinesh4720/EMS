@@ -1,77 +1,72 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { hostelApi, studentsApi } from "../services/api";
+import { useDebounce } from "./useDebounce";
 
 /**
  * Custom hook to manage hostel lookup data (hostel list, rooms, students).
- * Students are fetched via debounced server-side search instead of bulk limit:500
- * to avoid loading hundreds of student records per allocation modal open (MF-24).
+ *
+ * [DK-846] Migrated from hand-rolled useState/useEffect fetching to React Query
+ * so the lookups get caching, request deduplication, background refetch and the
+ * shared retry/backoff config for free (see lib/queryClient.js). Students are
+ * still fetched via a debounced server-side search instead of a bulk limit:500
+ * load, to avoid pulling hundreds of records every time the allocation modal
+ * opens (MF-24).
  *
  * @param {string} hostelIdForRooms - Load available rooms for this hostel
  * @param {string} studentSearch    - Search term for async student lookup (debounced 300ms)
  */
+const LOOKUPS_KEY = "hostel-lookups";
+
 export function useHostelLookups(hostelIdForRooms, studentSearch = "") {
-  const [hostels, setHostels] = useState([]);
-  const [rooms, setRooms] = useState([]);
-  const [students, setStudents] = useState([]);
-  const [studentsLoading, setStudentsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const debounceRef = useRef(null);
+  const queryClient = useQueryClient();
 
-  const clearError = useCallback(() => setError(null), []);
+  // Raw term drives show/hide immediately (so clearing the field hides results
+  // at once); the debounced term drives the query so we don't fire a request on
+  // every keystroke (MF-24).
+  const rawSearch = (studentSearch || "").trim();
+  const debouncedSearch = useDebounce(rawSearch, 300);
+  const queryEnabled = debouncedSearch.length >= 2;
+  const showStudents = rawSearch.length >= 2;
 
-  // Load hostel list once on mount
-  useEffect(() => {
-    let cancelled = false;
-    hostelApi.getHostels()
-      .then((d) => { if (!cancelled) setHostels(d.hostels || []); })
-      .catch((err) => { if (!cancelled) setError(err.message || "Failed to load hostels"); });
-    return () => { cancelled = true; };
-  }, []);
+  const hostelsQuery = useQuery({
+    queryKey: [LOOKUPS_KEY, "hostels"],
+    queryFn: () => hostelApi.getHostels(),
+    select: (res) => res?.hostels || [],
+  });
 
-  // Load available rooms when selected hostel changes
-  useEffect(() => {
-    let cancelled = false;
-    if (hostelIdForRooms) {
-      hostelApi.getRooms({ hostelId: hostelIdForRooms, available: true })
-        .then((d) => { if (!cancelled) setRooms(d.rooms || []); })
-        .catch((err) => { if (!cancelled) setError(err.message || "Failed to load rooms"); });
-    } else {
-      setRooms([]);
-    }
-    return () => { cancelled = true; };
-  }, [hostelIdForRooms]);
+  const roomsQuery = useQuery({
+    queryKey: [LOOKUPS_KEY, "rooms", hostelIdForRooms || null],
+    queryFn: () => hostelApi.getRooms({ hostelId: hostelIdForRooms, available: true }),
+    enabled: Boolean(hostelIdForRooms),
+    select: (res) => res?.rooms || [],
+  });
 
-  // Debounced server-side search — only fires after 300ms idle, min 2 chars
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
+  const studentsQuery = useQuery({
+    queryKey: [LOOKUPS_KEY, "student-search", debouncedSearch],
+    queryFn: () => studentsApi.list({ search: debouncedSearch, limit: 30 }),
+    enabled: queryEnabled,
+    placeholderData: (prev) => prev,
+    select: (res) => res?.data || [],
+  });
 
-    if (!studentSearch || studentSearch.trim().length < 2) {
-      setStudents([]);
-      return;
-    }
+  // Preserve the previous string-message error contract (first error wins).
+  const error =
+    hostelsQuery.error?.message ||
+    roomsQuery.error?.message ||
+    studentsQuery.error?.message ||
+    null;
 
-    let cancelled = false;
+  const clearError = useCallback(() => {
+    queryClient.resetQueries({ queryKey: [LOOKUPS_KEY] });
+  }, [queryClient]);
 
-    debounceRef.current = setTimeout(async () => {
-      if (!cancelled) setStudentsLoading(true);
-      try {
-        const data = await studentsApi.list({ search: studentSearch.trim(), limit: 30 });
-        if (!cancelled) setStudents(data.data || []);
-      } catch (err) {
-        if (!cancelled) {
-          setStudents([]);
-          setError(err.message || "Failed to search students");
-        }
-      } finally {
-        if (!cancelled) setStudentsLoading(false);
-      }
-    }, 300);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(debounceRef.current);
-    };
-  }, [studentSearch]);
-
-  return { hostels, rooms, students, studentsLoading, error, clearError };
+  return {
+    hostels: hostelsQuery.data || [],
+    rooms: hostelIdForRooms ? (roomsQuery.data || []) : [],
+    students: showStudents ? (studentsQuery.data || []) : [],
+    studentsLoading: showStudents && studentsQuery.isFetching,
+    error,
+    clearError,
+  };
 }
