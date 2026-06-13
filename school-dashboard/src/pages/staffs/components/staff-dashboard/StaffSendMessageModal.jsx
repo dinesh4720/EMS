@@ -34,7 +34,6 @@ export default function StaffSendMessageModal({ isOpen, onClose, message, setMes
             onChange={(e) => setMessage(e.target.value)}
             minRows={4}
             variant="bordered"
-            autoFocus
           />
         </ModalBody>
         <ModalFooter>

@@ -178,7 +178,7 @@ const MODULES = [
       "BulkSubjectAssignment",
       "StaffAttendanceRegularize",
     ],
-    status: ["⬜", "⬜", "✅", "⬜"],
+    status: ["⬜", "✅", "✅", "⬜"],
   },
   {
     name: "Students",

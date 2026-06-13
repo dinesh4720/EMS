@@ -55,8 +55,9 @@ function IdentityDocumentsStep({
 
       <div className="space-y-3 pt-5 border-t border-border-token">
         <SectionHeader icon={FileText} title={t('staff.form.otherCertificates')} optional />
-        <div
-          className="border-2 border-dashed border-border-token rounded-lg p-6 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-border-strong transition-colors text-center"
+        <button
+          type="button"
+          className="border-2 border-dashed border-border-token rounded-lg p-6 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-border-strong transition-colors text-center w-full bg-transparent"
           onClick={() => qualDocsInputRef.current?.click()}
         >
           <div className="w-10 h-10 rounded-full bg-surface-2 flex items-center justify-center text-fg-faint">
@@ -64,8 +65,8 @@ function IdentityDocumentsStep({
           </div>
           <p className="text-xs text-fg-muted">{t('staff.form.clickToUpload')}</p>
           <p className="text-2xs text-fg-faint">{t('pages.pDFJpgPng')}</p>
-          <input ref={qualDocsInputRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => handleFileUpload("qualificationDocs", e.target.files)} />
-        </div>
+        </button>
+        <input ref={qualDocsInputRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => handleFileUpload("qualificationDocs", e.target.files)} />
         {formData.qualificationDocs.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
             {formData.qualificationDocs.map((file, i) => (

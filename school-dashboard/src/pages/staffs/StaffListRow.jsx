@@ -44,46 +44,27 @@ const StaffListRow = forwardRef(function StaffListRow(
   const role = roleLabel(staff.role);
   const classes = classesLabel(staff.assignedClasses);
   const code = staff.staffNumber || staff.code || "";
+  const id = staff._id || staff.id;
 
   const handleRowClick = () => onSelect?.(staff);
 
   return (
-    <button
+    <div
       ref={ref}
-      type="button"
-      role="option"
-      aria-selected={isActive}
-      onClick={handleRowClick}
+      role="listitem"
+      aria-current={isActive ? "true" : undefined}
       className={`stafflist__row ${isActive ? "is-active" : ""}`}
-      data-staff-id={staff._id || staff.id}
+      data-staff-id={id}
     >
       {onToggleCheck && (
-        <span
-          role="checkbox"
-          aria-checked={isChecked}
-          tabIndex={-1}
+        <button
+          type="button"
+          aria-pressed={isChecked}
+          aria-label={`Select ${staff.name}`}
+          className="stafflist__checkbox"
           onClick={(e) => {
             e.stopPropagation();
             onToggleCheck(staff, e);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === " " || e.key === "Enter") {
-              e.preventDefault();
-              e.stopPropagation();
-              onToggleCheck(staff, e);
-            }
-          }}
-          className="stafflist__checkbox"
-          style={{
-            width: 16,
-            height: 16,
-            borderRadius: 4,
-            border: "1px solid var(--border-strong)",
-            background: isChecked ? "var(--accent)" : "var(--surface)",
-            display: "grid",
-            placeItems: "center",
-            flexShrink: 0,
-            cursor: "pointer",
           }}
         >
           {isChecked && (
@@ -97,81 +78,88 @@ const StaffListRow = forwardRef(function StaffListRow(
               />
             </svg>
           )}
-        </span>
+        </button>
       )}
-      <PhotoAvatar
-        src={staff.picture || staff.photo}
-        alt={staff.name}
-        name={staff.name}
-        size="sm"
-        type="staff"
-      />
-      <div
-        className="col"
-        style={{
-          minWidth: 0,
-          flex: 1,
-          lineHeight: 1.3,
-          alignItems: "flex-start",
-        }}
+      <button
+        type="button"
+        className="stafflist__row-main"
+        onClick={handleRowClick}
+        aria-label={`Open ${staff.name} profile`}
       >
-        <div className="row gap-2" style={{ width: "100%", minWidth: 0 }}>
-          <span
-            style={{
-              fontWeight: 520,
-              letterSpacing: "-0.01em",
-              fontSize: 13,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              minWidth: 0,
-              flex: 1,
-            }}
-          >
-            {staff.name}
-          </span>
-          {code && (
+        <PhotoAvatar
+          src={staff.picture || staff.photo}
+          alt={staff.name}
+          name={staff.name}
+          size="sm"
+          type="staff"
+        />
+        <div
+          className="col"
+          style={{
+            minWidth: 0,
+            flex: 1,
+            lineHeight: 1.3,
+            alignItems: "flex-start",
+          }}
+        >
+          <div className="row gap-2" style={{ width: "100%", minWidth: 0 }}>
             <span
-              className="subtle mono tnum"
-              style={{ fontSize: 11, flexShrink: 0 }}
+              style={{
+                fontWeight: 520,
+                letterSpacing: "-0.01em",
+                fontSize: 13,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                minWidth: 0,
+                flex: 1,
+              }}
             >
-              {code}
+              {staff.name}
             </span>
-          )}
-        </div>
-        {(role || classes) && (
-          <div
-            className="row gap-2"
-            style={{ width: "100%", minWidth: 0 }}
-          >
-            {role && (
-              <span className="subtle" style={{ fontSize: 12 }}>
-                {role}
-              </span>
-            )}
-            {classes && (
-              <span className="faint" style={{ fontSize: 12 }}>
-                · {classes}
+            {code && (
+              <span
+                className="subtle mono tnum"
+                style={{ fontSize: 11, flexShrink: 0 }}
+              >
+                {code}
               </span>
             )}
           </div>
-        )}
-      </div>
-      <div className="col gap-1" style={{ alignItems: "flex-end", flexShrink: 0 }}>
-        <span className={`status status--${tone}`}>
-          <span className="dot" />
-          {status}
-        </span>
-        {attendancePct != null && (
-          <span
-            className="mono tnum subtle"
-            style={{ fontSize: 11 }}
-          >
-            {attendancePct}%
+          {(role || classes) && (
+            <div
+              className="row gap-2"
+              style={{ width: "100%", minWidth: 0 }}
+            >
+              {role && (
+                <span className="subtle" style={{ fontSize: 12 }}>
+                  {role}
+                </span>
+              )}
+              {classes && (
+                <span className="faint" style={{ fontSize: 12 }}>
+                  · {classes}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="col gap-1" style={{ alignItems: "flex-end", flexShrink: 0 }}>
+          <span className={`status status--${tone}`}>
+            <span className="dot" />
+            {status}
           </span>
-        )}
-      </div>
-    </button>
+          {attendancePct != null && (
+            <span
+              className="mono tnum subtle"
+              style={{ fontSize: 11 }}
+            >
+              {attendancePct}%
+            </span>
+          )}
+        </div>
+      </button>
+    </div>
   );
 });
 
