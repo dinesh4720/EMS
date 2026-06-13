@@ -89,7 +89,7 @@ const MODULES = [
   {
     name: "Hostel",
     pages: ["HostelDashboard", "HostelList", "RoomsList", "AllocationsList"],
-    status: ["✅", "⬜", "✅", "⬜"],
+    status: ["✅", "✅", "✅", "⬜"],
     auditDate: "2026-05-23",
     issue: "DK-561",
   },

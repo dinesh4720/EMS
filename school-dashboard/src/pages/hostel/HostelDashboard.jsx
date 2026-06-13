@@ -42,14 +42,14 @@ export default function HostelDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      <section aria-label="Hostel overview" className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard icon={Building2} label={t('pages.totalHostels')} value={stats.totalHostels || 0} color="blue" />
         <StatCard icon={DoorOpen} label={t('pages.totalRooms')} value={stats.totalRooms || 0} color="green" />
         <StatCard icon={BedDouble} label={t('pages.totalCapacity')} value={stats.totalCapacity || 0} subtext={`${stats.availableBeds || 0} beds available`} color="purple" />
         <StatCard icon={Users} label={t('pages.occupiedBeds')} value={stats.occupiedBeds || 0} color="amber" />
         <StatCard icon={TrendingUp} label={t('pages.occupancyRate')} value={`${Math.round(stats.occupancyRate || 0)}%`} color="cyan" />
         <StatCard icon={Users} label={t('pages.activeAllocations')} value={stats.activeAllocations || 0} subtext={`${stats.vacatedAllocations || 0} vacated`} color="rose" />
-      </div>
+      </section>
     </div>
   );
 }
