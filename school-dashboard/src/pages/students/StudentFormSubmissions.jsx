@@ -216,7 +216,7 @@ export default function StudentFormSubmissions() {
         <Button
           size="sm"
           variant="flat"
-          startContent={<Download size={14} />}
+          startContent={<Download size={14} aria-hidden />}
           as="a"
           href={value}
           target="_blank"
@@ -333,7 +333,7 @@ export default function StudentFormSubmissions() {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center">
-                        <User size={16} className="text-primary-600" />
+                        <User size={16} className="text-primary-600" aria-hidden />
                       </div>
                       <div className="text-sm font-medium">
                         {getStudentName(submission)}
@@ -363,13 +363,13 @@ export default function StudentFormSubmissions() {
                     <Dropdown>
                       <DropdownTrigger>
                         <Button isIconOnly size="sm" variant="light" aria-label="More actions">
-                          <MoreVertical size={16} />
+                          <MoreVertical size={16} aria-hidden />
                         </Button>
                       </DropdownTrigger>
                       <DropdownMenu aria-label={t('aria.menus.submissionActions')}>
                         <DropdownItem
                           key="view"
-                          startContent={<Eye size={16} />}
+                          startContent={<Eye size={16} aria-hidden />}
                           onPress={() => handleViewSubmission(submission._id)}
                         >
                           Review Submission
@@ -377,7 +377,7 @@ export default function StudentFormSubmissions() {
                         {submission.studentId && (
                           <DropdownItem
                             key="student"
-                            startContent={<User size={16} />}
+                            startContent={<User size={16} aria-hidden />}
                             onPress={() =>
                               navigate(`/students/${submission.studentId}`)
                             }
@@ -537,7 +537,7 @@ export default function StudentFormSubmissions() {
                 <Button
                   color="secondary"
                   variant="flat"
-                  startContent={<Edit size={16} />}
+                  startContent={<Edit size={16} aria-hidden />}
                   onPress={() => {
                     onReviewClose();
                     onEditRequestOpen();
@@ -548,7 +548,7 @@ export default function StudentFormSubmissions() {
                 <Button
                   color="danger"
                   variant="flat"
-                  startContent={<XCircle size={16} />}
+                  startContent={<XCircle size={16} aria-hidden />}
                   onPress={() => handleReview("rejected")}
                   isLoading={loading}
                 >
@@ -556,7 +556,7 @@ export default function StudentFormSubmissions() {
                 </Button>
                 <Button
                   color="success"
-                  startContent={<CheckCircle size={16} />}
+                  startContent={<CheckCircle size={16} aria-hidden />}
                   onPress={() => handleReview("approved")}
                   isLoading={loading}
                 >
@@ -580,7 +580,7 @@ export default function StudentFormSubmissions() {
           <ModalHeader>
             <div className="flex items-center gap-3">
               <div className="p-2 bg-secondary-100 rounded-xl">
-                <Send size={20} className="text-secondary-600" />
+                <Send size={20} className="text-secondary-600" aria-hidden />
               </div>
               <div>
                 <h3 className="text-xl font-semibold">{t('pages.requestEditReSubmit')}</h3>
@@ -625,7 +625,7 @@ export default function StudentFormSubmissions() {
               onPress={handleRequestEdit}
               isLoading={loading}
               isDisabled={!editRequestNotes.trim()}
-              startContent={!loading && <Send size={16} />}
+              startContent={!loading && <Send size={16} aria-hidden />}
             >
               Send Edit Request
             </Button>

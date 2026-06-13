@@ -129,7 +129,7 @@ export default function StudentPromotionPage() {
   return (
     <div className="animate-fade-in promo-page">
       <Breadcrumbs size="sm">
-        <BreadcrumbItem startContent={<Home size={14} />} onPress={() => navigate('/')}>Home</BreadcrumbItem>
+        <BreadcrumbItem startContent={<Home size={14} aria-hidden />} onPress={() => navigate('/')}>Home</BreadcrumbItem>
         <BreadcrumbItem onPress={() => navigate('/students')}>Students</BreadcrumbItem>
         <BreadcrumbItem>Year-End Promotion</BreadcrumbItem>
       </Breadcrumbs>
@@ -152,7 +152,7 @@ export default function StudentPromotionPage() {
                 onClick={() => switchTab('promote')}
                 className={`promo-tab ${activeTab === 'promote' ? 'is-active' : ''}`}
               >
-                <ArrowUpCircle size={13} />
+                <ArrowUpCircle size={13} aria-hidden />
                 <span>Promote Students</span>
               </button>
               <button
@@ -162,7 +162,7 @@ export default function StudentPromotionPage() {
                 onClick={() => switchTab('history')}
                 className={`promo-tab ${activeTab === 'history' ? 'is-active' : ''}`}
               >
-                <History size={13} />
+                <History size={13} aria-hidden />
                 <span>History</span>
                 {history.length > 0 && (
                   <span className="promo-tab__count">{history.length}</span>
@@ -193,7 +193,7 @@ export default function StudentPromotionPage() {
                         aria-current={isActive ? 'step' : undefined}
                       >
                         <span className="steprail__num">
-                          {isDone ? <CheckCircle size={10} /> : <Icon size={10} />}
+                          {isDone ? <CheckCircle size={10} aria-hidden /> : <Icon size={10} />}
                         </span>
                         <span className="steprail__label">{s.label}</span>
                       </button>
@@ -291,7 +291,7 @@ export default function StudentPromotionPage() {
                               size="sm"
                               variant="flat"
                               color="danger"
-                              startContent={<RotateCcw size={13} />}
+                              startContent={<RotateCcw size={13} aria-hidden />}
                               onPress={() => openRollback(rec)}
                               className="shrink-0"
                             >
@@ -320,7 +320,7 @@ export default function StudentPromotionPage() {
           <ModalHeader className="border-b border-divider py-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-danger-bg rounded-lg">
-                <RotateCcw size={18} className="text-danger-token" />
+                <RotateCcw size={18} className="text-danger-token" aria-hidden />
               </div>
               <h3 className="text-base font-medium text-fg">Rollback Promotion</h3>
             </div>

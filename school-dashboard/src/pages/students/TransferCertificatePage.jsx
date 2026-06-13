@@ -58,7 +58,7 @@ export default function TransferCertificatePage() {
   return (
     <div className="animate-fade-in tc-page">
       <Breadcrumbs size="sm">
-        <BreadcrumbItem startContent={<Home size={14} />} onPress={() => navigate('/')}>Home</BreadcrumbItem>
+        <BreadcrumbItem startContent={<Home size={14} aria-hidden />} onPress={() => navigate('/')}>Home</BreadcrumbItem>
         <BreadcrumbItem onPress={() => navigate('/students')}>Students</BreadcrumbItem>
         <BreadcrumbItem>Transfer Certificate</BreadcrumbItem>
       </Breadcrumbs>
@@ -78,7 +78,7 @@ export default function TransferCertificatePage() {
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
               variant="bordered"
               size="sm"
-              startContent={<Search size={14} className="text-fg-faint" />}
+              startContent={<Search size={14} className="text-fg-faint" aria-hidden />}
               classNames={{ input: 'text-fg', inputWrapper: 'border-border-token h-9' }}
               className="flex-1 max-w-md"
             />
@@ -104,7 +104,7 @@ export default function TransferCertificatePage() {
                   <Button
                     size="sm"
                     className="bg-fg text-bg"
-                    startContent={<Printer size={14} />}
+                    startContent={<Printer size={14} aria-hidden />}
                     onPress={() => setModalOpen(true)}
                   >
                     Generate TC (<span className="mono tnum">{selected.size}</span>)
@@ -119,7 +119,7 @@ export default function TransferCertificatePage() {
 
           {!loading && searched && students.length === 0 && (
             <div className="text-center py-12 border-2 border-dashed border-border-token rounded-xl">
-              <FileText size={36} className="mx-auto mb-3 text-fg-faint" />
+              <FileText size={36} className="mx-auto mb-3 text-fg-faint" aria-hidden />
               <p className="text-fg-muted">No students found for "{search}"</p>
             </div>
           )}
@@ -165,7 +165,7 @@ export default function TransferCertificatePage() {
 
           {!loading && !searched && (
             <div className="text-center py-20">
-              <FileText size={44} className="mx-auto mb-4 text-fg-faint" />
+              <FileText size={44} className="mx-auto mb-4 text-fg-faint" aria-hidden />
               <p className="text-fg-muted">Search for students to generate Transfer Certificates</p>
             </div>
           )}

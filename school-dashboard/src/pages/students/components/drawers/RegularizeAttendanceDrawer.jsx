@@ -122,7 +122,7 @@ export default function RegularizeAttendanceDrawer({ isOpen, onOpenChange, stude
             <DrawerBody className="p-0">
               <div className="p-6 bg-warning-50/50 dark:bg-warning-950/20 border-b border-warning-100 dark:border-warning-900/30">
                 <div className="flex items-center gap-3">
-                  <AlertTriangle className="text-warning-600 dark:text-warning-400" size={24} />
+                  <AlertTriangle className="text-warning-600 dark:text-warning-400" size={24} aria-hidden />
                   <div>
                     <h4 className="font-semibold text-warning-900 dark:text-warning-200">
                       {t('students.profile.overview.unaccountedAbsences', 'Unaccounted Absences')}
@@ -151,7 +151,7 @@ export default function RegularizeAttendanceDrawer({ isOpen, onOpenChange, stude
                   </div>
                 ) : absentDates.length === 0 ? (
                   <div className="text-center py-8">
-                    <CalendarCheck size={40} className="mx-auto mb-3 text-default-300" />
+                    <CalendarCheck size={40} className="mx-auto mb-3 text-default-300" aria-hidden />
                     <p className="text-sm text-default-500">
                       No unaccounted absences found in the last 30 days.
                     </p>
@@ -167,11 +167,11 @@ export default function RegularizeAttendanceDrawer({ isOpen, onOpenChange, stude
                         />
                         <div className="flex items-center gap-3">
                           <div className="p-2 bg-default-100 rounded-lg text-default-500">
-                            <CalendarCheck size={20} />
+                            <CalendarCheck size={20} aria-hidden />
                           </div>
                           <div>
                             <span className="font-medium text-default-900">{formatShortDate(item.date)}</span>
-                            <p className="text-xs text-default-400 capitalize">{item.status}</p>
+                            <p className="text-xs text-default-600 capitalize">{item.status}</p>
                           </div>
                         </div>
                       </div>

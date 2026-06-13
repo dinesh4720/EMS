@@ -253,8 +253,8 @@ const StudentAttendance = memo(function StudentAttendance() {
 
     const getStatusIcon = (status) => {
         switch (status) {
-            case "present": return <Check size={14} className="text-success-600" />;
-            case "absent": return <X size={14} className="text-danger-600" />;
+            case "present": return <Check size={14} className="text-success-600" aria-hidden />;
+            case "absent": return <X size={14} className="text-danger-600" aria-hidden />;
             case "leave": return <Clock size={14} className="text-warning-600" />;
             case "halfday": return <AlertCircle size={14} className="text-secondary-600" />;
             default: return <Clock size={14} className="text-default-500" />;
@@ -280,7 +280,7 @@ const StudentAttendance = memo(function StudentAttendance() {
                             variant="outline"
                             size="sm"
                             aria-label={t('common.previous', 'Previous day')}
-                            icon={<ChevronLeft size={14} />}
+                            icon={<ChevronLeft size={14} aria-hidden />}
                             onClick={() => {
                                 const date = new Date(selectedDate);
                                 date.setDate(date.getDate() - 1);
@@ -293,7 +293,7 @@ const StudentAttendance = memo(function StudentAttendance() {
                                     type="button"
                                     className="inline-flex items-center gap-2 h-8 px-3 rounded-md border border-[var(--color-border-strong)] text-sm bg-transparent text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:ring-offset-2 whitespace-nowrap"
                                 >
-                                    <CalendarDays size={16} className="text-[var(--color-text-muted)] flex-shrink-0" />
+                                    <CalendarDays size={16} className="text-[var(--color-text-muted)] flex-shrink-0" aria-hidden />
                                     <span>{formatShortDate(selectedDate)}</span>
                                 </button>
                             </PopoverTrigger>
@@ -309,7 +309,7 @@ const StudentAttendance = memo(function StudentAttendance() {
                             variant="outline"
                             size="sm"
                             aria-label={t('common.next', 'Next day')}
-                            icon={<ChevronRight size={14} />}
+                            icon={<ChevronRight size={14} aria-hidden />}
                             onClick={() => {
                                 const date = new Date(selectedDate);
                                 date.setDate(date.getDate() + 1);
@@ -345,7 +345,7 @@ const StudentAttendance = memo(function StudentAttendance() {
                             >
                                 <Filter size={16} className="text-[var(--color-text-muted)]" />
                                 <span>{classFilter === "all" ? t('pages.class1', 'Class') : classFilter}</span>
-                                <ChevronDown size={14} className="text-[var(--color-text-muted)]" />
+                                <ChevronDown size={14} className="text-[var(--color-text-muted)]" aria-hidden />
                             </button>
                         </DropdownTrigger>
                         <DropdownMenu
@@ -413,13 +413,13 @@ const StudentAttendance = memo(function StudentAttendance() {
                             onAction={handleBulkAction}
                             disabledKeys={selectedKeys !== "all" && selectedKeys.size === 0 ? ["present", "absent", "leave", "halfday"] : []}
                         >
-                            <DropdownItem key="present" startContent={<Check size={14} className="text-success" />} className="text-success">
+                            <DropdownItem key="present" startContent={<Check size={14} className="text-success" aria-hidden />} className="text-success">
                                 {t('attendance.markSelectedPresent', 'Mark Selected Present')}
                             </DropdownItem>
                             <DropdownItem key="halfday" startContent={<AlertCircle size={14} className="text-secondary" />} className="text-secondary">
                                 {t('attendance.markSelectedHalfDay', 'Mark Selected Half Day')}
                             </DropdownItem>
-                            <DropdownItem key="absent" startContent={<X size={14} className="text-danger" />} className="text-danger">
+                            <DropdownItem key="absent" startContent={<X size={14} className="text-danger" aria-hidden />} className="text-danger">
                                 {t('attendance.markSelectedAbsent', 'Mark Selected Absent')}
                             </DropdownItem>
                             <DropdownItem key="leave" startContent={<Clock size={14} className="text-warning" />} className="text-warning">
@@ -432,7 +432,7 @@ const StudentAttendance = memo(function StudentAttendance() {
                     <Button
                         variant="primary"
                         size="sm"
-                        icon={<Save size={16} />}
+                        icon={<Save size={16} aria-hidden />}
                         onClick={handleSaveAttendance}
                         loading={isSaving}
                         disabled={isSaving}
@@ -543,16 +543,16 @@ const StudentAttendance = memo(function StudentAttendance() {
                                             >
                                                 {getStatusIcon(att.status)}
                                                 <span className="capitalize">{att.status}</span>
-                                                <ChevronDown size={12} className="opacity-50" />
+                                                <ChevronDown size={12} className="opacity-50" aria-hidden />
                                             </button>
                                         </DropdownTrigger>
                                         <DropdownMenu
                                             aria-label={t('aria.misc.changeStatusUpper')}
                                             onAction={(key) => handleStatusChange(student.id, key)}
                                         >
-                                            <DropdownItem key="present" startContent={<Check size={14} className="text-success" />}>{t('pages.present2')}</DropdownItem>
+                                            <DropdownItem key="present" startContent={<Check size={14} className="text-success" aria-hidden />}>{t('pages.present2')}</DropdownItem>
                                             <DropdownItem key="halfday" startContent={<AlertCircle size={14} className="text-secondary" />}>{t('pages.halfDay')}</DropdownItem>
-                                            <DropdownItem key="absent" startContent={<X size={14} className="text-danger" />}>{t('pages.absent2')}</DropdownItem>
+                                            <DropdownItem key="absent" startContent={<X size={14} className="text-danger" aria-hidden />}>{t('pages.absent2')}</DropdownItem>
                                             <DropdownItem key="leave" startContent={<Clock size={14} className="text-warning" />}>{t('pages.onLeave1')}</DropdownItem>
                                         </DropdownMenu>
                                     </Dropdown>

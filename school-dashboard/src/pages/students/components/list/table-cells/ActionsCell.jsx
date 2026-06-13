@@ -50,7 +50,7 @@ function ActionsCell({
                             }
                         }}
                     >
-                        {student.isPinned ? <PinOff size={16} /> : <Pin size={16} />}
+                        {student.isPinned ? <PinOff size={16} aria-hidden /> : <Pin size={16} aria-hidden />}
                     </Button>
                 </Tooltip>
 
@@ -68,7 +68,7 @@ function ActionsCell({
                             setIsEditDrawerOpen(true);
                         }}
                     >
-                        <Edit size={16} />
+                        <Edit size={16} aria-hidden />
                     </Button>
                 </Tooltip>
 
@@ -83,7 +83,7 @@ function ActionsCell({
                             aria-label="More actions"
                             onMouseDown={(e) => e.preventDefault()}
                         >
-                            <MoreVertical size={18} />
+                            <MoreVertical size={18} aria-hidden />
                         </Button>
                     </DropdownTrigger>
                     <DropdownMenu
@@ -93,7 +93,7 @@ function ActionsCell({
                         <DropdownSection title={t("pages.statusActions")}>
                             <DropdownItem
                                 key="inactive"
-                                startContent={<UserX size={14} />}
+                                startContent={<UserX size={14} aria-hidden />}
                                 onPress={() => {
                                     setStatusChangeData({
                                         student,
@@ -107,7 +107,7 @@ function ActionsCell({
                             </DropdownItem>
                             <DropdownItem
                                 key="alumni"
-                                startContent={<GraduationCap size={14} />}
+                                startContent={<GraduationCap size={14} aria-hidden />}
                                 onPress={() => {
                                     setStatusChangeData({
                                         student,
@@ -123,7 +123,7 @@ function ActionsCell({
                         <DropdownSection title={t("pages.academicActions")}>
                             <DropdownItem
                                 key="promote"
-                                startContent={<ArrowUpCircle size={14} />}
+                                startContent={<ArrowUpCircle size={14} aria-hidden />}
                                 onPress={() => {
                                     setSelectedKeys(new Set([student.id.toString()]));
                                     onPromoteOpen();
@@ -133,7 +133,7 @@ function ActionsCell({
                             </DropdownItem>
                             <DropdownItem
                                 key="tc"
-                                startContent={<FileText size={14} />}
+                                startContent={<FileText size={14} aria-hidden />}
                                 onPress={() => {
                                     setTcStudents([student]);
                                     onTcModalOpen();
@@ -145,7 +145,7 @@ function ActionsCell({
                         <DropdownSection title={t("pages.communication1")}>
                             <DropdownItem
                                 key="message"
-                                startContent={<MessageSquare size={14} />}
+                                startContent={<MessageSquare size={14} aria-hidden />}
                                 onPress={() => {
                                     setSelectedKeys(new Set([student.id.toString()]));
                                     handleBulkAction("message");
@@ -159,7 +159,7 @@ function ActionsCell({
                                 key="delete"
                                 className="text-danger"
                                 color="danger"
-                                startContent={<Trash2 size={14} />}
+                                startContent={<Trash2 size={14} aria-hidden />}
                                 onPress={() => {
                                     setStudentToDelete(student);
                                     onDeleteOpen();

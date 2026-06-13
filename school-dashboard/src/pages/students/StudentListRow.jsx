@@ -47,6 +47,7 @@ const StudentListRow = forwardRef(function StudentListRow(
         <span
           role="checkbox"
           aria-checked={isChecked}
+          aria-label={`Select ${student.name}`}
           tabIndex={-1}
           onClick={(e) => {
             e.stopPropagation();
@@ -184,7 +185,7 @@ const StudentListRow = forwardRef(function StudentListRow(
             marginLeft: 4,
           }}
         >
-          <ArrowUpRight size={14} />
+          <ArrowUpRight size={14} aria-hidden />
         </span>
       )}
     </button>

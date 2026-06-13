@@ -39,7 +39,7 @@ function StepperHeader({ currentStep }) {
                     : "border-fg-faint text-fg-faint bg-surface"
               )}>
                 {isCompleted
-                  ? <Check size={16} strokeWidth={2.5} />
+                  ? <Check size={16} strokeWidth={2.5} aria-hidden />
                   : <stepItem.icon size={16} strokeWidth={2} />
                 }
               </div>

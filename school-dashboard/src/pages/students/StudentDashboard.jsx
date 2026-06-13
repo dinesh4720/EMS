@@ -1020,7 +1020,7 @@ export default function StudentDashboard() {
                 style={{ width: 32, height: 32 }}
                 aria-label="Actions"
               >
-                <MoreHorizontal size={16} />
+                <MoreHorizontal size={16} aria-hidden />
               </button>
             </DropdownTrigger>
             <DropdownMenu

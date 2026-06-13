@@ -241,7 +241,7 @@ export default function StudentForm({
               variant="bordered"
               onPress={handlePrev}
               className="border-border-token text-fg font-medium"
-              startContent={<ArrowLeft size={12} />}
+              startContent={<ArrowLeft size={12} aria-hidden />}
             >
               {t('common.back', 'Back')}
             </Button>
@@ -252,7 +252,7 @@ export default function StudentForm({
             onPress={step === 3 ? handleSubmit : handleNext}
             isLoading={isSubmitting}
             className="font-medium whitespace-nowrap"
-            endContent={step === 3 ? null : <ArrowRight size={12} />}
+            endContent={step === 3 ? null : <ArrowRight size={12} aria-hidden />}
           >
             {step === 3
               ? (initialData ? "Update student" : "Add student")

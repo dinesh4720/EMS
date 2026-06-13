@@ -6,6 +6,10 @@ import {
   useCallback,
   forwardRef,
   useImperativeHandle,
+  useId,
+  Children,
+  isValidElement,
+  cloneElement,
 } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -824,7 +828,7 @@ const AddStudentComposer = forwardRef(function AddStudentComposer(
             onClick={handleClose}
             aria-label="Close"
           >
-            <X size={13} />
+            <X size={13} aria-hidden />
           </button>
           <div className="composer__crumbs">
             <span>Students</span>
@@ -849,7 +853,7 @@ const AddStudentComposer = forwardRef(function AddStudentComposer(
                 aria-current={activeSection === s.id ? "true" : undefined}
               >
                 <span className="cnav__num" aria-hidden>
-                  {s.done ? <Check size={10} strokeWidth={2.5} /> : s.index + 1}
+                  {s.done ? <Check size={10} strokeWidth={2.5} aria-hidden /> : s.index + 1}
                 </span>
                 <span style={{ flex: 1, textAlign: "left" }}>{s.label}</span>
                 {s.countLabel && <span className="cnav__count">{s.countLabel}</span>}
@@ -913,7 +917,7 @@ const AddStudentComposer = forwardRef(function AddStudentComposer(
                       className="btn btn--sm"
                       onClick={() => pictureInputRef.current?.click()}
                     >
-                      <Upload size={11} /> Upload
+                      <Upload size={11} aria-hidden /> Upload
                     </button>
                     <button
                       type="button"
@@ -1032,7 +1036,7 @@ const AddStudentComposer = forwardRef(function AddStudentComposer(
 
               <details className="disclosure-block" style={{ marginTop: 12 }}>
                 <summary className="disclosure">
-                  <Plus size={11} />
+                  <Plus size={11} aria-hidden />
                   Religion, category, nationality &amp; more
                 </summary>
                 <div className="fgrid" style={{ marginTop: 12 }}>
@@ -1316,7 +1320,7 @@ const AddStudentComposer = forwardRef(function AddStudentComposer(
                           onClick={() => removeParent(idx)}
                           aria-label="Remove contact"
                         >
-                          <Trash2 size={11} /> Remove
+                          <Trash2 size={11} aria-hidden /> Remove
                         </button>
                       )}
                     </div>
@@ -1409,7 +1413,7 @@ const AddStudentComposer = forwardRef(function AddStudentComposer(
                 onClick={addParent}
                 style={{ marginTop: 4 }}
               >
-                <Plus size={11} />
+                <Plus size={11} aria-hidden />
                 Add another parent or guardian
               </button>
 
@@ -1478,7 +1482,7 @@ const AddStudentComposer = forwardRef(function AddStudentComposer(
                           aria-label="Remove sibling"
                           style={{ marginLeft: "auto" }}
                         >
-                          <Trash2 size={11} />
+                          <Trash2 size={11} aria-hidden />
                         </button>
                       </div>
                     </ComposerField>
@@ -1490,7 +1494,7 @@ const AddStudentComposer = forwardRef(function AddStudentComposer(
                   onClick={addSibling}
                   style={{ marginTop: 4 }}
                 >
-                  <Plus size={11} />
+                  <Plus size={11} aria-hidden />
                   Add sibling
                 </button>
               </div>
@@ -1628,7 +1632,7 @@ const AddStudentComposer = forwardRef(function AddStudentComposer(
                         onClick={() => removeHealthInfoItem("allergies", idx)}
                         aria-label={`Remove allergy ${idx + 1}`}
                       >
-                        <Trash2 size={11} />
+                        <Trash2 size={11} aria-hidden />
                         Remove
                       </button>
                     </div>
@@ -1648,7 +1652,7 @@ const AddStudentComposer = forwardRef(function AddStudentComposer(
                   }
                   style={{ marginTop: 4 }}
                 >
-                  <Plus size={11} />
+                  <Plus size={11} aria-hidden />
                   Add allergy
                 </button>
               </div>
@@ -1752,7 +1756,7 @@ const AddStudentComposer = forwardRef(function AddStudentComposer(
                         onClick={() => removeHealthInfoItem("medications", idx)}
                         aria-label={`Remove medication ${idx + 1}`}
                       >
-                        <Trash2 size={11} />
+                        <Trash2 size={11} aria-hidden />
                         Remove
                       </button>
                     </div>
@@ -1774,7 +1778,7 @@ const AddStudentComposer = forwardRef(function AddStudentComposer(
                   }
                   style={{ marginTop: 4 }}
                 >
-                  <Plus size={11} />
+                  <Plus size={11} aria-hidden />
                   Add medication
                 </button>
               </div>
@@ -1890,7 +1894,7 @@ const AddStudentComposer = forwardRef(function AddStudentComposer(
                         onClick={() => removeHealthInfoItem("emergencyContacts", idx)}
                         aria-label={`Remove emergency contact ${idx + 1}`}
                       >
-                        <Trash2 size={11} />
+                        <Trash2 size={11} aria-hidden />
                         Remove
                       </button>
                     </div>
@@ -1911,7 +1915,7 @@ const AddStudentComposer = forwardRef(function AddStudentComposer(
                   }
                   style={{ marginTop: 4 }}
                 >
-                  <Plus size={11} />
+                  <Plus size={11} aria-hidden />
                   Add emergency contact
                 </button>
               </div>
@@ -2018,7 +2022,7 @@ const AddStudentComposer = forwardRef(function AddStudentComposer(
                     <ul style={{ marginTop: 6, fontSize: 12, color: "var(--fg-muted)" }}>
                       {form.otherDocuments.map((f, i) => (
                         <li key={`${f.name}-${f.size}-${i}`} className="row gap-2" style={{ alignItems: "center" }}>
-                          <FileText size={11} />
+                          <FileText size={11} aria-hidden />
                           <span style={{ flex: 1 }}>{f.name}</span>
                           <button
                             type="button"
@@ -2031,7 +2035,7 @@ const AddStudentComposer = forwardRef(function AddStudentComposer(
                             }
                             aria-label={`Remove ${f.name}`}
                           >
-                            <X size={10} />
+                            <X size={10} aria-hidden />
                           </button>
                         </li>
                       ))}
@@ -2085,7 +2089,7 @@ const AddStudentComposer = forwardRef(function AddStudentComposer(
               : initialData
                 ? "Save changes"
                 : "Add student"}
-            {!isSubmitting && <ChevronRight size={11} />}
+            {!isSubmitting && <ChevronRight size={11} aria-hidden />}
           </button>
         </div>
       </div>
@@ -2168,22 +2172,48 @@ function ComposerField({
   registerField,
   children,
 }) {
+  const baseId = useId();
+  const fieldId = name ? `field-${name}-${baseId}` : baseId;
+  const hintId = hint || error ? `${fieldId}-hint` : undefined;
+
+  // Recursively clone children to attach id / aria-describedby to the first
+  // input, select, or textarea so the label is programmatically associated.
+  const attachIds = (child) => {
+    if (!isValidElement(child)) return child;
+    const type = child.type;
+    const isFormControl =
+      type === "input" || type === "select" || type === "textarea";
+    if (isFormControl) {
+      return cloneElement(child, {
+        id: fieldId,
+        "aria-describedby": hintId || child.props?.["aria-describedby"],
+      });
+    }
+    const childChildren = child.props?.children;
+    if (childChildren) {
+      return cloneElement(child, {
+        children: Children.map(childChildren, attachIds),
+      });
+    }
+    return child;
+  };
+
   return (
     <div
       className={`field ${className}`}
       ref={name && registerField ? registerField(name) : undefined}
     >
-      <label className="field__label">
+      <label className="field__label" htmlFor={fieldId}>
         {label}
         {required && <span className="req">*</span>}
       </label>
-      {children}
+      {Children.map(children, attachIds)}
       {error ? (
-        <span role="alert" className="field__hint" style={{ color: "var(--danger)" }}>
+        <span id={hintId} role="alert" className="field__hint" style={{ color: "var(--danger)" }}>
           {error}
         </span>
       ) : hint ? (
-        <span className="field__hint">{hint}</span>
+        <span id={hintId} className="field__hint">{hint}</span>
       ) : null}
     </div>
   );
@@ -2248,6 +2278,9 @@ function DocField({
   inputRef,
   registerField,
 }) {
+  const baseId = useId();
+  const fieldId = `docfile-${field}-${baseId}`;
+  const hintId = error ? `${fieldId}-hint` : undefined;
   const hasNew = file instanceof File;
   const existingUrl =
     typeof existing === "string"
@@ -2257,7 +2290,7 @@ function DocField({
 
   return (
     <div className="field" ref={registerField ? registerField(field) : undefined}>
-      <label className="field__label">
+      <label className="field__label" htmlFor={fieldId}>
         {label}
         {required && <span className="req">*</span>}
       </label>
@@ -2300,19 +2333,20 @@ function DocField({
           accept=".pdf,.jpg,.jpeg,.png"
           style={{ display: "none" }}
           onChange={(e) => onFile(e.target.files?.[0])}
-          id={`docfile-${field}`}
+          id={fieldId}
+          aria-describedby={hintId}
         />
-        <label htmlFor={`docfile-${field}`} className="btn btn--sm" style={{ cursor: "pointer" }}>
-          <Upload size={11} /> {hasNew || existingUrl ? "Replace" : "Upload"}
+        <label htmlFor={fieldId} className="btn btn--sm" style={{ cursor: "pointer" }}>
+          <Upload size={11} aria-hidden /> {hasNew || existingUrl ? "Replace" : "Upload"}
         </label>
         {hasNew && (
           <button type="button" className="btn btn--sm btn--ghost" onClick={onClear} aria-label="Clear">
-            <X size={10} />
+            <X size={10} aria-hidden />
           </button>
         )}
       </div>
       {error && (
-        <span role="alert" className="field__hint" style={{ color: "var(--danger)" }}>
+        <span id={hintId} role="alert" className="field__hint" style={{ color: "var(--danger)" }}>
           {error}
         </span>
       )}

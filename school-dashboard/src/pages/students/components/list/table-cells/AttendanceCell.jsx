@@ -15,7 +15,7 @@ function AttendanceCell({ attendance, className }) {
                 <span
                     className={`text-xs font-semibold ${
                         isInvalid
-                            ? "text-default-400"
+                            ? "text-default-600"
                             : getAttendanceColor(attendance) === "success"
                               ? "text-success"
                               : getAttendanceColor(attendance) === "warning"
