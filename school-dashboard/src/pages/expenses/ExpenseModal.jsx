@@ -1,8 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { X, Receipt } from "lucide-react";
 import toast from "react-hot-toast";
+
 import { expensesApi } from "../../services/api";
 import logger from "../../utils/logger";
+import { expenseSchema } from "../../validators/formSchemas";
+import useZodForm from "../../hooks/useZodForm";
 
 const CATEGORY_OPTIONS = [
   { value: "salaries", label: "Salaries" },
@@ -38,75 +41,49 @@ function todayLocalISO() {
   return `${y}-${mo}-${day}`;
 }
 
-function validateExpense(data) {
-  const errors = {};
-  if (!data.title?.trim()) errors.title = "Title is required";
-  if (data.title?.trim().length > 200) errors.title = "Title must be under 200 characters";
-  if (data.amount === "" || data.amount == null || Number(data.amount) < 0) {
-    errors.amount = "Amount must be 0 or greater";
+function getInitialValues(expense) {
+  if (expense) {
+    return {
+      title: expense.title || "",
+      amount: expense.amount ?? "",
+      category: expense.category || "",
+      paymentMode: expense.paymentMode || "cash",
+      expenseDate: expense.expenseDate
+        ? new Date(expense.expenseDate).toISOString().split("T")[0]
+        : todayLocalISO(),
+      description: expense.description || "",
+      receiptUrl: expense.receiptUrl || "",
+      vendor: expense.vendor || "",
+      status: expense.status || "pending",
+      approvedBy: expense.approvedBy || "",
+    };
   }
-  if (!data.category) errors.category = "Category is required";
-  if (!data.expenseDate) errors.expenseDate = "Date is required";
-  if (data.description?.length > 1000) errors.description = "Description must be under 1000 characters";
-  if (data.vendor?.length > 200) errors.vendor = "Vendor must be under 200 characters";
-  if (data.receiptUrl && data.receiptUrl !== "") {
-    try {
-      new URL(data.receiptUrl);
-    } catch {
-      errors.receiptUrl = "Please enter a valid URL";
-    }
-  }
-  return errors;
+  return {
+    title: "",
+    amount: "",
+    category: "",
+    paymentMode: "cash",
+    expenseDate: todayLocalISO(),
+    description: "",
+    receiptUrl: "",
+    vendor: "",
+    status: "pending",
+    approvedBy: "",
+  };
 }
 
 export default function ExpenseModal({ isOpen, onClose, expense = null, onSaved }) {
   const cardRef = useRef(null);
   const isEdit = Boolean(expense);
 
-  const [title, setTitle] = useState("");
-  const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState("");
-  const [paymentMode, setPaymentMode] = useState("cash");
-  const [expenseDate, setExpenseDate] = useState(todayLocalISO());
-  const [description, setDescription] = useState("");
-  const [receiptUrl, setReceiptUrl] = useState("");
-  const [vendor, setVendor] = useState("");
-  const [status, setStatus] = useState("pending");
-  const [approvedBy, setApprovedBy] = useState("");
-  const [errors, setErrors] = useState({});
-  const [submitting, setSubmitting] = useState(false);
+  const { register, handleSubmit, reset, errors, isSubmitting, onInvalid } =
+    useZodForm(expenseSchema, {
+      defaultValues: getInitialValues(expense),
+    });
 
   useEffect(() => {
-    if (!isOpen) return;
-    if (expense) {
-      setTitle(expense.title || "");
-      setAmount(expense.amount ?? "");
-      setCategory(expense.category || "");
-      setPaymentMode(expense.paymentMode || "cash");
-      setExpenseDate(
-        expense.expenseDate
-          ? new Date(expense.expenseDate).toISOString().split("T")[0]
-          : todayLocalISO()
-      );
-      setDescription(expense.description || "");
-      setReceiptUrl(expense.receiptUrl || "");
-      setVendor(expense.vendor || "");
-      setStatus(expense.status || "pending");
-      setApprovedBy(expense.approvedBy || "");
-    } else {
-      setTitle("");
-      setAmount("");
-      setCategory("");
-      setPaymentMode("cash");
-      setExpenseDate(todayLocalISO());
-      setDescription("");
-      setReceiptUrl("");
-      setVendor("");
-      setStatus("pending");
-      setApprovedBy("");
-    }
-    setErrors({});
-  }, [isOpen, expense]);
+    reset(getInitialValues(expense));
+  }, [expense, reset]);
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -127,28 +104,20 @@ export default function ExpenseModal({ isOpen, onClose, expense = null, onSaved 
     return () => window.removeEventListener("keydown", onKey);
   }, [isOpen, onClose]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const onSubmit = async (data) => {
     const payload = {
-      title: title.trim(),
-      amount: Number(amount),
-      category,
-      paymentMode,
-      expenseDate,
-      description: description.trim(),
-      receiptUrl: receiptUrl.trim(),
-      vendor: vendor.trim(),
-      status,
-      approvedBy: approvedBy.trim(),
+      title: data.title.trim(),
+      amount: Number(data.amount),
+      category: data.category,
+      paymentMode: data.paymentMode,
+      expenseDate: data.expenseDate,
+      description: data.description.trim(),
+      receiptUrl: data.receiptUrl.trim(),
+      vendor: data.vendor.trim(),
+      status: data.status,
+      approvedBy: data.approvedBy.trim(),
     };
-    const fieldErrors = validateExpense(payload, isEdit);
-    if (Object.keys(fieldErrors).length > 0) {
-      setErrors(fieldErrors);
-      toast.error(Object.values(fieldErrors)[0] || "Please fix the highlighted fields");
-      return;
-    }
 
-    setSubmitting(true);
     try {
       if (isEdit) {
         await expensesApi.update(expense._id || expense.id, payload);
@@ -162,8 +131,6 @@ export default function ExpenseModal({ isOpen, onClose, expense = null, onSaved 
     } catch (err) {
       logger.error("Expense save failed:", err);
       toast.error(err?.message || "Failed to save expense");
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -184,7 +151,7 @@ export default function ExpenseModal({ isOpen, onClose, expense = null, onSaved 
         aria-modal="true"
         aria-label={isEdit ? "Edit expense" : "Add expense"}
         tabIndex={-1}
-        onSubmit={handleSubmit}
+        onSubmit={handleSubmit(onSubmit, onInvalid)}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="fees-sheet__head">
@@ -211,12 +178,11 @@ export default function ExpenseModal({ isOpen, onClose, expense = null, onSaved 
             <input
               type="text"
               placeholder="e.g. Monthly electricity bill"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
               aria-invalid={errors.title ? "true" : undefined}
               required
+              {...register("title")}
             />
-            {errors.title && <span className="fees-sheet__error">{errors.title}</span>}
+            {errors.title && <span className="fees-sheet__error">{errors.title.message}</span>}
           </div>
 
           <div className="fees-sheet__field-row">
@@ -228,24 +194,22 @@ export default function ExpenseModal({ isOpen, onClose, expense = null, onSaved 
                 step="0.01"
                 placeholder="0"
                 className="mono tnum"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
                 aria-invalid={errors.amount ? "true" : undefined}
                 required
+                {...register("amount")}
               />
-              {errors.amount && <span className="fees-sheet__error">{errors.amount}</span>}
+              {errors.amount && <span className="fees-sheet__error">{errors.amount.message}</span>}
             </div>
             <div className="fees-sheet__field">
               <label className="fees-sheet__label">Date</label>
               <input
                 type="date"
-                value={expenseDate}
-                onChange={(e) => setExpenseDate(e.target.value)}
                 className="mono tnum"
                 aria-invalid={errors.expenseDate ? "true" : undefined}
                 required
+                {...register("expenseDate")}
               />
-              {errors.expenseDate && <span className="fees-sheet__error">{errors.expenseDate}</span>}
+              {errors.expenseDate && <span className="fees-sheet__error">{errors.expenseDate.message}</span>}
             </div>
           </div>
 
@@ -253,10 +217,9 @@ export default function ExpenseModal({ isOpen, onClose, expense = null, onSaved 
             <div className="fees-sheet__field">
               <label className="fees-sheet__label">Category</label>
               <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
                 aria-invalid={errors.category ? "true" : undefined}
                 required
+                {...register("category")}
               >
                 <option value="">— Select —</option>
                 {CATEGORY_OPTIONS.map((opt) => (
@@ -265,14 +228,11 @@ export default function ExpenseModal({ isOpen, onClose, expense = null, onSaved 
                   </option>
                 ))}
               </select>
-              {errors.category && <span className="fees-sheet__error">{errors.category}</span>}
+              {errors.category && <span className="fees-sheet__error">{errors.category.message}</span>}
             </div>
             <div className="fees-sheet__field">
               <label className="fees-sheet__label">Payment Mode</label>
-              <select
-                value={paymentMode}
-                onChange={(e) => setPaymentMode(e.target.value)}
-              >
+              <select {...register("paymentMode")}>
                 {PAYMENT_MODE_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
@@ -287,12 +247,11 @@ export default function ExpenseModal({ isOpen, onClose, expense = null, onSaved 
             <textarea
               rows={3}
               placeholder="Optional details about this expense"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
               aria-invalid={errors.description ? "true" : undefined}
               style={{ resize: "vertical" }}
+              {...register("description")}
             />
-            {errors.description && <span className="fees-sheet__error">{errors.description}</span>}
+            {errors.description && <span className="fees-sheet__error">{errors.description.message}</span>}
           </div>
 
           <div className="fees-sheet__field-row">
@@ -301,22 +260,20 @@ export default function ExpenseModal({ isOpen, onClose, expense = null, onSaved 
               <input
                 type="text"
                 placeholder="Vendor or payee name"
-                value={vendor}
-                onChange={(e) => setVendor(e.target.value)}
                 aria-invalid={errors.vendor ? "true" : undefined}
+                {...register("vendor")}
               />
-              {errors.vendor && <span className="fees-sheet__error">{errors.vendor}</span>}
+              {errors.vendor && <span className="fees-sheet__error">{errors.vendor.message}</span>}
             </div>
             <div className="fees-sheet__field">
               <label className="fees-sheet__label">Receipt URL</label>
               <input
                 type="url"
                 placeholder="https://..."
-                value={receiptUrl}
-                onChange={(e) => setReceiptUrl(e.target.value)}
                 aria-invalid={errors.receiptUrl ? "true" : undefined}
+                {...register("receiptUrl")}
               />
-              {errors.receiptUrl && <span className="fees-sheet__error">{errors.receiptUrl}</span>}
+              {errors.receiptUrl && <span className="fees-sheet__error">{errors.receiptUrl.message}</span>}
             </div>
           </div>
 
@@ -324,10 +281,7 @@ export default function ExpenseModal({ isOpen, onClose, expense = null, onSaved 
             <div className="fees-sheet__field-row">
               <div className="fees-sheet__field">
                 <label className="fees-sheet__label">Status</label>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                >
+                <select {...register("status")}>
                   {STATUS_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
@@ -340,8 +294,7 @@ export default function ExpenseModal({ isOpen, onClose, expense = null, onSaved 
                 <input
                   type="text"
                   placeholder="Name of approver"
-                  value={approvedBy}
-                  onChange={(e) => setApprovedBy(e.target.value)}
+                  {...register("approvedBy")}
                 />
               </div>
             </div>
@@ -355,10 +308,10 @@ export default function ExpenseModal({ isOpen, onClose, expense = null, onSaved 
           <button
             type="submit"
             className="btn btn--accent btn--sm"
-            disabled={submitting}
+            disabled={isSubmitting}
           >
             <Receipt size={13} aria-hidden />{" "}
-            {submitting ? "Saving…" : isEdit ? "Update expense" : "Add expense"}
+            {isSubmitting ? "Saving…" : isEdit ? "Update expense" : "Add expense"}
           </button>
         </div>
       </form>

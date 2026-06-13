@@ -215,6 +215,34 @@ export const createRefundSchema = z.object({
 });
 
 // ────────────────────────────────────────────────────────────
+// EXPENSES
+// ────────────────────────────────────────────────────────────
+
+export const EXPENSE_CATEGORY_VALUES = [
+  'salaries', 'utilities', 'maintenance', 'supplies', 'equipment',
+  'events', 'transport', 'marketing', 'other',
+];
+
+export const EXPENSE_PAYMENT_MODE_VALUES = ['cash', 'cheque', 'bank_transfer', 'upi', 'other'];
+export const EXPENSE_STATUS_VALUES = ['pending', 'approved', 'rejected'];
+
+export const expenseSchema = z.object({
+  title: z.string().min(1, 'Title is required').max(200, 'Title must be under 200 characters').trim(),
+  amount: z.coerce.number().min(0, 'Amount must be 0 or greater'),
+  category: z.enum(EXPENSE_CATEGORY_VALUES, { errorMap: () => ({ message: 'Category is required' }) }),
+  paymentMode: z.enum(EXPENSE_PAYMENT_MODE_VALUES).default('cash'),
+  expenseDate: z.string().min(1, 'Date is required'),
+  description: z.string().max(1000, 'Description must be under 1000 characters').optional().or(z.literal('')),
+  vendor: z.string().max(200, 'Vendor must be under 200 characters').optional().or(z.literal('')),
+  receiptUrl: z
+    .union([z.literal(''), z.string().url('Please enter a valid URL')])
+    .optional()
+    .or(z.literal('')),
+  status: z.enum(EXPENSE_STATUS_VALUES).default('pending'),
+  approvedBy: z.string().max(200).optional().or(z.literal('')),
+});
+
+// ────────────────────────────────────────────────────────────
 // LIBRARY
 // ────────────────────────────────────────────────────────────
 
