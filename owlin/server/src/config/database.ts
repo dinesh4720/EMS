@@ -10,7 +10,6 @@ export function connectDatabase(): Client {
     url: env.TURSO_URL,
     authToken: env.TURSO_AUTH_TOKEN,
   });
-  console.log('✅ Connected to Turso database');
   return _db;
 }
 

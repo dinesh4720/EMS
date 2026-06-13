@@ -19,8 +19,6 @@ export function setupSocket(httpServer: HttpServer): SocketServer {
   });
 
   _io.on('connection', (socket) => {
-    console.log(`🔌 Socket connected: ${socket.id}`);
-
     socket.on('subscribe:project', (projectId: string) => {
       socket.join(`project:${projectId}`);
     });
@@ -28,13 +26,8 @@ export function setupSocket(httpServer: HttpServer): SocketServer {
     socket.on('unsubscribe:project', (projectId: string) => {
       socket.leave(`project:${projectId}`);
     });
-
-    socket.on('disconnect', () => {
-      console.log(`🔌 Socket disconnected: ${socket.id}`);
-    });
   });
 
-  console.log('✅ Socket.IO ready');
   return _io;
 }
 

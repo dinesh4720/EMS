@@ -4,21 +4,15 @@ import { TABLES, INDEXES } from './schema.js';
 export async function runMigrations(): Promise<void> {
   const db = getDb();
 
-  console.log('🔄 Running database migrations...');
-
   // Create tables
-  for (const [name, sql] of Object.entries(TABLES)) {
+  for (const sql of Object.values(TABLES)) {
     await db.execute(sql);
-    console.log(`  ✅ Table: ${name}`);
   }
 
   // Create indexes
   for (const sql of INDEXES) {
     await db.execute(sql);
   }
-  console.log(`  ✅ ${INDEXES.length} indexes created`);
-
-  console.log('✅ Migrations complete');
 }
 
 /**
