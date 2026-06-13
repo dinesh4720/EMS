@@ -11,14 +11,18 @@ They are separate from the security issues (CRITICAL_ISSUES.md) and product gaps
 ## 🔴 CRITICAL
 
 ### 1. Live AI API keys committed directly into the frontend .env file
+- **Status:** Resolved — tracked `.env` files removed in [#817](https://github.com/dinesh4720/EMS/commit/58e1db74), frontend now uses backend proxy exclusively.
 - **File:** `school-dashboard/.env`
-- **What's in it:**
+- **What was in it:**
   ```
   VITE_GROQ_API_KEY=gsk_bc9sokensv8AgaZ2ij6TWGdyb3FY...
   VITE_GEMINI_API_KEY=AIzaSyCgOFqLBI8tt4Iz6JRTXnQw...
   ```
-- **Why this is catastrophic:** `VITE_*` variables are baked directly into the JavaScript bundle at build time. Anyone who opens the browser DevTools, or downloads the built JS file, can see these keys in plain text. These are **live, billable API keys**. Anyone who finds them can use your Groq and Google Gemini quota — potentially running up hundreds of dollars in charges.
-- **Fix:** AI API calls must go through your backend, not directly from the browser. The frontend should call your own server (`/api/ai/chat`), which then calls Groq/Gemini with the key stored server-side in an environment variable that is never exposed to the client.
+- **Resolution:**
+  - Removed `school-dashboard/.env`, `.env.production`, and `.env.test` from git tracking.
+  - Replaced with safe `.env.example` files that contain no AI keys.
+  - Frontend `aiService.js` now calls `/api/ai/chat`, `/api/ai/models`, and `/api/ai/transcribe` on the backend.
+  - AI provider keys (`GROQ_API_KEY`, `GEMINI_API_KEY`) are stored only in the backend environment.
 
 ---
 
@@ -120,13 +124,18 @@ They are separate from the security issues (CRITICAL_ISSUES.md) and product gaps
 ---
 
 ### 12. The AI assistant calls external AI APIs directly from the browser with hardcoded model names
+- **Status:** Resolved — all AI traffic proxied through backend; branding and filtering implemented.
 - **File:** `school-dashboard/src/services/aiService.js`
-- **Issues:**
+- **Issues (historical):**
   - Calls Groq and Gemini directly from the client (API keys exposed — see Issue #1)
   - Uses hardcoded model names: `llama-3.3-70b-versatile`, `whisper-large-v3-turbo`, `gemini-2.5-pro`
   - The footer says "ChatGPT can make mistakes" — copy-pasted from a different product, wrong AI vendor
   - No content filtering — users can ask the AI anything using the school's API quota
-- **Fix:** Proxy all AI calls through the backend. Add a system prompt that constrains the AI to school-related questions. Fix the branding. Store model names in config, not hardcoded strings.
+- **Resolution:**
+  - All AI calls are proxied through `POST /api/ai/chat`, `GET /api/ai/models`, and `POST /api/ai/transcribe`.
+  - Model names are configured server-side in `backend/config/ai.js` with env overrides (`GROQ_CHAT_MODEL`, `GROQ_TRANSCRIPTION_MODEL`, `GEMINI_CHAT_MODEL`).
+  - Branding updated to "School AI assistant can make mistakes. Verify important information."
+  - Content filtering and school-scope guard added via `assessSchoolScope()` and `buildAiSystemPrompt()` in `backend/config/ai.js`.
 
 ---
 
@@ -148,7 +157,7 @@ They are separate from the security issues (CRITICAL_ISSUES.md) and product gaps
 ## 📋 Fix Priority Order
 
 ### Fix before going live
-1. [ ] Move AI API calls to the backend — remove `VITE_GROQ_API_KEY` and `VITE_GEMINI_API_KEY` from the frontend entirely
+1. [x] Move AI API calls to the backend — remove `VITE_GROQ_API_KEY` and `VITE_GEMINI_API_KEY` from the frontend entirely
 2. [ ] Add `JWT_SECRET` to `render.yaml` and `.env.example`
 3. [ ] Remove duplicate staff attendance routes from `server.js`
 4. [ ] Add a `/health` endpoint for hosting platform checks
@@ -164,5 +173,5 @@ They are separate from the security issues (CRITICAL_ISSUES.md) and product gaps
 10. [ ] Complete `render.yaml` with all services and environment variables
 11. [ ] Add a root orchestration script or `docker-compose.yml`
 12. [ ] Decide what `owlin` is and move it to its own repo if it's a separate product
-13. [ ] Add content filtering and proper backend proxying to the AI assistant
+13. [x] Add content filtering and proper backend proxying to the AI assistant
 14. [ ] Remove `backend/school.db` from git tracking
