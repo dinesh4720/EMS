@@ -1,3 +1,4 @@
+import './config/environment'
 import './utils/bootstrapLogging'
 import { initGlobalErrorHandlers } from './lib/globalErrorHandlers'
 initGlobalErrorHandlers()
