@@ -64,8 +64,13 @@ export function request(endpoint, options = {}) {
 
   // [AUDIT-857] Return the existing in-flight promise for concurrent GET/HEAD calls
   // to avoid duplicate network requests for the same endpoint.
+  // If the stored request was already aborted (e.g., React StrictMode remount),
+  // do not reuse its promise — start a fresh request instead.
   if ((method === 'GET' || method === 'HEAD') && _inflightRequests.has(url)) {
-    return _inflightRequests.get(url);
+    const inflight = _inflightRequests.get(url);
+    if (!inflight.signal || !inflight.signal.aborted) {
+      return inflight.promise;
+    }
   }
 
   // Create the actual request function
@@ -232,7 +237,7 @@ export function request(endpoint, options = {}) {
 
   // [AUDIT-857] Register and auto-clean GET/HEAD promises in the dedup map.
   if (method === 'GET' || method === 'HEAD') {
-    _inflightRequests.set(url, promise);
+    _inflightRequests.set(url, { promise, signal: options.signal });
     void promise
       .finally(() => _inflightRequests.delete(url))
       .catch(() => {});
