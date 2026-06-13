@@ -302,7 +302,7 @@ flag after spending an afternoon reading the code.
 
 ## 🟡 MEDIUM — Quality and polish issues
 
-### 14. AiAssistantPage is mounted twice in App.jsx
+### 14. AiAssistantPage is mounted twice in App.jsx ✅ RESOLVED
 
 - **File:** `school-dashboard/src/App.jsx`
 - **What happens:** `AiAssistantPage` appears once inside the main layout
@@ -313,6 +313,8 @@ flag after spending an afternoon reading the code.
   both panels.
 - **Fix:** Remove one of the two mounts. Pick where the AI assistant should
   live (floating overlay vs. dedicated page) and commit to one.
+- **Status:** Resolved. The duplicate mount was removed; only the `/ai-assistant`
+  route remains, and `AiAssistantLayout` is now a pass-through wrapper.
 
 ---
 
@@ -526,7 +528,7 @@ flag after spending an afternoon reading the code.
 10. [ ] Delete StaffListRefactored.jsx and StudentOverviewRefactored.jsx
 11. [ ] Delete all `.example.jsx`, `.DESIGN.md`, `.README.md`, `.quickstart.md`
         files from inside `src/`
-12. [ ] Remove the duplicate AiAssistantPage mount from App.jsx
+12. [x] Remove the duplicate AiAssistantPage mount from App.jsx
 13. [ ] Remove the Cloudflare tunnel hostname from vite.config.js
 14. [ ] Fix `key={index}` → `key={item._id}` in lists (58 files, highest-risk
         ones: StudentsList, Payments, AttendanceTable)
