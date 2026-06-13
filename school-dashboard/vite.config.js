@@ -102,6 +102,9 @@ export default defineConfig({
   test: {
     include: ['src/**/*.test.{js,jsx,ts,tsx}'],
     exclude: ['tests/**', 'node_modules/**'],
+    // Installs a Web Storage polyfill when Node's experimental global shadows
+    // jsdom's localStorage (Node >= 22). See src/test/setup.js for details.
+    setupFiles: ['./src/test/setup.js'],
     coverage: {
       provider: 'v8',
       // Include all .js source files that are exercised by the unit test suite.
@@ -109,7 +112,7 @@ export default defineConfig({
       // (Playwright) rather than unit tests, so they are intentionally excluded
       // to keep the coverage report meaningful.
       include: ['src/**/*.js'],
-      exclude: ['node_modules/', 'tests/', '**/*.test.{js,jsx,ts,tsx}', '**/*.config.js'],
+      exclude: ['node_modules/', 'tests/', 'src/test/', '**/*.test.{js,jsx,ts,tsx}', '**/*.config.js'],
       reporter: ['text', 'json-summary', 'html'],
       thresholds: {
         lines: 20,
