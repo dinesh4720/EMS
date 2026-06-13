@@ -1,5 +1,5 @@
 import { ScrollShadow } from "@heroui/react";
-import { Search, Phone, Video, MoreVertical, Pin, Check, CheckCheck, Forward, Download, Mic, MessageCircle, Plus, ChevronLeft } from "lucide-react";
+import { Search, Phone, Video, Pin, Check, CheckCheck, Forward, Download, Mic, MessageCircle, Plus, ChevronLeft } from "lucide-react";
 import MessageActionsMenu from "./MessageActionsMenu";
 import MessageReactions from "./MessageReactions";
 import EmojiPicker from "./EmojiPicker";
@@ -150,14 +150,7 @@ export default function ChatMessageList({
               <Video size={18} />
             </IconButton>
           </Tooltip>
-          <Tooltip content={t('common.moreOptions', 'More options')}>
-            <IconButton
-              variant="ghost"
-              aria-label={t('common.moreOptions', 'More options')}
-            >
-              <MoreVertical size={18} />
-            </IconButton>
-          </Tooltip>
+          {/* More-options menu placeholder removed: inert button violates accessibility. Re-add only when an action is wired. */}
         </div>
       </div>
 
@@ -171,7 +164,8 @@ export default function ChatMessageList({
             </div>
             <div className="flex gap-2">
               {pinnedMessages.map((msg, i) => (
-                <div
+                <button
+                  type="button"
                   key={msg.id || msg._id || `pinned-${i}`}
                   onClick={() => {
                     const messageElement = document.getElementById(`message-${msg.id}`);
@@ -183,7 +177,8 @@ export default function ChatMessageList({
                       }, 2000);
                     }
                   }}
-                  className="flex-shrink-0 max-w-xs px-3 py-2 bg-surface rounded-xl border border-default-200 dark:border-zinc-700 hover:border-primary hover:shadow-md dark:hover:shadow-zinc-900/50 hover:shadow-primary/10 cursor-pointer transition-all duration-200 group"
+                  className="flex-shrink-0 max-w-xs px-3 py-2 bg-surface rounded-xl border border-default-200 dark:border-zinc-700 hover:border-primary hover:shadow-md dark:hover:shadow-zinc-900/50 hover:shadow-primary/10 cursor-pointer transition-all duration-200 group text-left"
+                  aria-label={t('messaging.chat.jumpToPinnedMessage', 'Jump to pinned message from {{sender}}', { sender: msg.senderName || t('common.unknown', 'Unknown') })}
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs font-semibold text-primary truncate group-hover:text-primary-600">
@@ -196,7 +191,7 @@ export default function ChatMessageList({
                   <p className="text-xs text-default-600 dark:text-zinc-400 truncate">
                     {msg.content || (msg.type === 'image' ? 'Image' : msg.type === 'video' ? 'Video' : msg.type === 'audio' ? 'Voice' : msg.type === 'file' ? 'File' : 'Message')}
                   </p>
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -232,10 +227,12 @@ export default function ChatMessageList({
               <div className="relative max-w-[75%]">
                 {/* Emoji Button */}
                 {(!editingMessage) && (
-                  <div className={`absolute top-1 ${isMe ? '-left-9' : '-right-9'} opacity-0 group-hover:opacity-100 transition-opacity duration-200`}>
+                  <div className={`absolute top-1 ${isMe ? '-left-9' : '-right-9'} opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-within:opacity-100 transition-opacity duration-200`}>
                     <button
+                      type="button"
                       onClick={() => onMessageAction('react', { message: msg })}
-                      className="w-7 h-7 flex items-center justify-center rounded-full bg-surface hover:bg-primary/10 dark:hover:bg-primary/20 text-default-500 hover:text-primary transition-all duration-200 border border-default-200 dark:border-zinc-700 shrink-0 shadow-sm hover:shadow-md dark:shadow-zinc-900/50"
+                      className="w-7 h-7 flex items-center justify-center rounded-full bg-surface hover:bg-primary/10 dark:hover:bg-primary/20 text-default-500 hover:text-primary transition-all duration-200 border border-default-200 dark:border-zinc-700 shrink-0 shadow-sm hover:shadow-md dark:shadow-zinc-900/50 focus-visible:ring-2 focus-visible:ring-primary/50"
+                      aria-label={t('pages.addReaction')}
                       title={t('pages.addReaction')}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -262,7 +259,7 @@ export default function ChatMessageList({
 
                 {/* Message Actions Menu */}
                 {(!editingMessage) && (
-                  <div className={`absolute top-1 ${isMe ? '-right-9' : '-left-9'} opacity-0 group-hover:opacity-100 transition-opacity duration-200`}>
+                  <div className={`absolute top-1 ${isMe ? '-right-9' : '-left-9'} opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-within:opacity-100 transition-opacity duration-200`}>
                     <MessageActionsMenu
                       message={msg}
                       currentUserId={user.id}
@@ -288,13 +285,27 @@ export default function ChatMessageList({
                   {/* Reply to indicator */}
                   {msg.replyTo && (
                     <div
-                      className={`mb-2 pb-2 border-l-2 ${isMe ? 'border-white/30' : 'border-primary/30 dark:border-primary/50'} pl-2 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 rounded-r transition-colors`}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={t('messaging.chat.jumpToReply', 'Jump to replied message')}
+                      className={`mb-2 pb-2 border-l-2 ${isMe ? 'border-white/30' : 'border-primary/30 dark:border-primary/50'} pl-2 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 rounded-r transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50`}
                       onClick={() => {
                         const replyEl = document.getElementById(`message-${msg.replyTo.id || msg.replyTo._id}`);
                         if (replyEl) {
                           replyEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
                           replyEl.classList.add('ring-2', 'ring-primary', 'ring-opacity-50');
                           setTimeout(() => replyEl.classList.remove('ring-2', 'ring-primary', 'ring-opacity-50'), 2000);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          const replyEl = document.getElementById(`message-${msg.replyTo.id || msg.replyTo._id}`);
+                          if (replyEl) {
+                            replyEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            replyEl.classList.add('ring-2', 'ring-primary', 'ring-opacity-50');
+                            setTimeout(() => replyEl.classList.remove('ring-2', 'ring-primary', 'ring-opacity-50'), 2000);
+                          }
                         }
                       }}
                     >
@@ -341,12 +352,18 @@ export default function ChatMessageList({
                   ) : (
                     <>
                       {msg.type === 'image' && msg.fileUrl && (
-                        <img
-                          src={msg.fileUrl}
-                          alt={msg.fileName}
-                          className="max-w-full max-h-80 rounded-xl mb-2 cursor-pointer hover:opacity-95 transition-opacity"
+                        <button
+                          type="button"
                           onClick={() => window.open(msg.fileUrl, '_blank', 'noopener,noreferrer')}
-                        />
+                          aria-label={t('messaging.chat.openImage', 'Open image {{fileName}}', { fileName: msg.fileName })}
+                          className="block max-w-full max-h-80 rounded-xl mb-2 cursor-pointer hover:opacity-95 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 p-0 border-0 bg-transparent"
+                        >
+                          <img
+                            src={msg.fileUrl}
+                            alt={msg.fileName}
+                            className="max-w-full max-h-80 rounded-xl"
+                          />
+                        </button>
                       )}
                       {msg.type === 'video' && msg.fileUrl && (
                         <video
@@ -375,8 +392,18 @@ export default function ChatMessageList({
                         </div>
                       )}
                       {msg.type === 'file' && msg.fileUrl && (
-                        <div className="flex items-center gap-3 mb-2 p-3 bg-black/10 dark:bg-white/5 rounded-xl hover:bg-black/15 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          aria-label={t('messaging.chat.downloadFile', 'Download file {{fileName}}', { fileName: msg.fileName })}
+                          className="flex items-center gap-3 mb-2 p-3 bg-black/10 dark:bg-white/5 rounded-xl hover:bg-black/15 dark:hover:bg-white/10 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                           onClick={() => window.open(msg.fileUrl, '_blank', 'noopener,noreferrer')}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              window.open(msg.fileUrl, '_blank', 'noopener,noreferrer');
+                            }
+                          }}
                         >
                           <div className="text-2xl">{getFileIcon(msg.fileName)}</div>
                           <div className="flex-1 min-w-0">
@@ -422,11 +449,18 @@ export default function ChatMessageList({
         {/* Typing Indicator */}
         {typingUsers.size > 0 && (
           <div className="flex justify-start">
-            <div className="bg-default-100 dark:bg-zinc-800 px-4 py-3 rounded-2xl rounded-bl-md shadow-sm">
-              <div className="flex gap-1.5 items-center">
-                <span className="w-2 h-2 bg-default-400 dark:bg-zinc-500 rounded-full animate-bounce [animation-duration:600ms]" />
-                <span className="w-2 h-2 bg-default-400 dark:bg-zinc-500 rounded-full animate-bounce [animation-duration:600ms] [animation-delay:150ms]" />
-                <span className="w-2 h-2 bg-default-400 dark:bg-zinc-500 rounded-full animate-bounce [animation-duration:600ms] [animation-delay:300ms]" />
+            <div
+              className="bg-default-100 dark:bg-zinc-800 px-4 py-3 rounded-2xl rounded-bl-md shadow-sm"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              <span className="sr-only">
+                {Array.from(typingUsers).join(', ')} {t('messaging.chat.typing', 'is typing')}
+              </span>
+              <div className="flex gap-1.5 items-center" aria-hidden="true">
+                <span className="w-2 h-2 bg-default-400 dark:bg-zinc-500 rounded-full animate-bounce motion-reduce:animate-none [animation-duration:600ms]" />
+                <span className="w-2 h-2 bg-default-400 dark:bg-zinc-500 rounded-full animate-bounce motion-reduce:animate-none [animation-duration:600ms] [animation-delay:150ms]" />
+                <span className="w-2 h-2 bg-default-400 dark:bg-zinc-500 rounded-full animate-bounce motion-reduce:animate-none [animation-duration:600ms] [animation-delay:300ms]" />
               </div>
             </div>
           </div>

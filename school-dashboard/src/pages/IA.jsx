@@ -137,7 +137,9 @@ const MODULES = [
       "Reminders",
       "CommunicationLogs",
     ],
-    status: ["⬜", "⬜", "✅", "⬜"],
+    status: ["⬜", "✅", "✅", "⬜"],
+    auditDate: "2026-06-14",
+    issue: "DK-1007",
   },
   {
     name: "PTM",

@@ -114,6 +114,7 @@ const Avatar = forwardRef(function Avatar(
       {status && (
         <span
           aria-label={status}
+          role="img"
           className={cn(
             "absolute right-0 bottom-0 rounded-full ring-2 ring-white dark:ring-zinc-900",
             STATUS_SIZE[size],
