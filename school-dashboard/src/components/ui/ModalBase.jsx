@@ -2,6 +2,12 @@ import { useEffect, useRef, useCallback, useState, useLayoutEffect } from "react
 import { createPortal } from "react-dom";
 
 /**
+ * Tracks the number of open modals so we only remove aria-hidden/inert from
+ * the page root when the last nested modal closes.
+ */
+let openModalCount = 0;
+
+/**
  * ModalBase — Accessible custom modal wrapper with focus trapping.
  *
  * Use this as the base for any custom portal-based modals (i.e. modals NOT
@@ -12,6 +18,7 @@ import { createPortal } from "react-dom";
  *  - Closing on Escape key
  *  - Optional outside-click (backdrop) close
  *  - Blocking body scroll while open
+ *  - Hiding and inerting the main page content while open (nested-modal aware)
  *
  * @param {boolean}  isOpen
  * @param {function} onClose
@@ -43,20 +50,65 @@ export default function ModalBase({
 }) {
   const dialogRef = useRef(null);
   const previousFocusRef = useRef(null);
+  const pageRootRef = useRef(null);
 
   const FOCUSABLE =
-    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), area[href], details > summary';
+    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), area[href], details > summary, [contenteditable]:not([contenteditable="false"]), iframe';
+
+  const findPageRoot = useCallback(() => {
+    if (typeof document === "undefined") return null;
+    return (
+      document.getElementById("root") ||
+      document.querySelector("main") ||
+      document.body
+    );
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
       previousFocusRef.current = document.activeElement;
+      const root = findPageRoot();
+      pageRootRef.current = root;
+      if (root) {
+        openModalCount += 1;
+        root.setAttribute("aria-hidden", "true");
+        if ("inert" in HTMLElement.prototype) {
+          root.inert = true;
+        }
+      }
     } else {
+      const root = pageRootRef.current;
+      if (root) {
+        openModalCount = Math.max(0, openModalCount - 1);
+        if (openModalCount === 0) {
+          root.removeAttribute("aria-hidden");
+          if ("inert" in HTMLElement.prototype) {
+            root.inert = false;
+          }
+        }
+      }
+      pageRootRef.current = null;
       if (previousFocusRef.current && typeof previousFocusRef.current.focus === "function") {
         previousFocusRef.current.focus();
       }
       previousFocusRef.current = null;
     }
-  }, [isOpen]);
+
+    return () => {
+      // Safety cleanup: if the component unmounts while open, decrement and
+      // restore the page root when the last modal is gone.
+      const root = pageRootRef.current;
+      if (root) {
+        openModalCount = Math.max(0, openModalCount - 1);
+        if (openModalCount === 0) {
+          root.removeAttribute("aria-hidden");
+          if ("inert" in HTMLElement.prototype) {
+            root.inert = false;
+          }
+        }
+      }
+    };
+  }, [isOpen, findPageRoot]);
 
   useEffect(() => {
     if (!isOpen || !dialogRef.current) return;
@@ -161,7 +213,7 @@ export default function ModalBase({
       aria-labelledby={labelledBy}
       aria-describedby={describedBy}
       tabIndex={-1}
-      className={className}
+      className={cn("ds-modal-focus-container", className)}
       onClick={handleClick}
       style={{ outline: "none" }}
     >
@@ -169,4 +221,8 @@ export default function ModalBase({
     </div>,
     portalEl
   );
+}
+
+function cn(...classes) {
+  return classes.filter(Boolean).join(" ");
 }

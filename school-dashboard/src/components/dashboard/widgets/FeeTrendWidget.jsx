@@ -11,6 +11,7 @@ import {
 import { TrendingUp } from "lucide-react";
 import { useChartTheme, CHART_COLORS } from "../../../utils/chartTheme";
 import ChartCard from "../../ui/ChartCard";
+import { useChartAnimation } from "../../../hooks/useChartAnimation";
 
 const compactNumber = new Intl.NumberFormat("en-IN", {
   notation: "compact",
@@ -37,6 +38,7 @@ function FeeTooltip({ active, payload, label }) {
 
 export default function FeeTrendWidget({ data = [], loading = false }) {
   const chart = useChartTheme();
+  const animation = useChartAnimation();
   const hasData = data.some((row) => row.collected > 0);
 
   return (
@@ -84,6 +86,7 @@ export default function FeeTrendWidget({ data = [], loading = false }) {
             strokeWidth={2.5}
             fillOpacity={1}
             fill="url(#feeGradient)"
+            {...animation}
           />
         </AreaChart>
       </ResponsiveContainer>

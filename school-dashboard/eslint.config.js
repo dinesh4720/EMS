@@ -3,6 +3,9 @@ import globals from 'globals';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
+import jsxA11y from 'eslint-plugin-jsx-a11y';
+
+const UI_COMPONENT_GLOB = 'src/components/ui/**/*.{js,jsx}';
 
 export default [
   {
@@ -43,11 +46,16 @@ export default [
       react,
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
+      'jsx-a11y': jsxA11y,
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
       'react/jsx-uses-vars': 'error',
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+      // Accessibility — baseline recommended rules as warnings while the
+      // codebase is being remediated (DK-992). Shared UI components enforce
+      // the critical subset as errors below.
+      ...jsxA11y.configs.recommended.rules,
       // Naming conventions
       camelcase: ['warn', { properties: 'never', ignoreDestructuring: true, allow: ['^_'] }],
       // Prevent overly short variable names (except loop counters and common abbreviations)
@@ -66,6 +74,20 @@ export default [
       // Prevent eval
       'no-eval': 'error',
       'no-implied-eval': 'error',
+    },
+  },
+  // DK-992: hard a11y gates for shared UI components so the design system
+  // cannot regress. These rules are errors inside src/components/ui only.
+  {
+    files: [UI_COMPONENT_GLOB],
+    rules: {
+      'jsx-a11y/alt-text': 'error',
+      'jsx-a11y/anchor-is-valid': 'error',
+      'jsx-a11y/click-events-have-key-events': 'error',
+      'jsx-a11y/control-has-associated-label': 'error',
+      'jsx-a11y/label-has-associated-control': 'error',
+      'jsx-a11y/no-noninteractive-element-interactions': 'error',
+      'jsx-a11y/no-static-element-interactions': 'error',
     },
   },
 ];

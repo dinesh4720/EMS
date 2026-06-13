@@ -61,6 +61,9 @@
   --color-ok-bg: var(--ok-bg);
   --color-warn: var(--warn);
   --color-warn-bg: var(--warn-bg);
+
+  /* Focus indicator — full-opacity accent for 3:1 contrast on all surfaces */
+  --color-focus-ring: var(--accent);
   --color-danger-token: var(--danger);
   --color-danger-bg: var(--danger-bg);
   --color-info-token: var(--info);

@@ -19,12 +19,16 @@ function defaultFilter(option, query) {
   );
 }
 
+function optionId(triggerId, value) {
+  return `${triggerId}-option-${value}`;
+}
+
 /**
  * MultiSelect — multi-select dropdown that shows chosen values as inline chips.
  *
  * Controlled via `value` (array) and `onChange(nextArray)`. Options of the
  * shape `{ value, label, disabled? }`. Supports search, max-selections cap,
- * and clear-all. Keyboard: ArrowUp/Down, Enter, Backspace to remove last chip.
+ * and clear-all. Keyboard: ArrowUp/Down, Home, End, Enter, Backspace to remove last chip.
  */
 export default function MultiSelect({
   options = [],
@@ -47,6 +51,7 @@ export default function MultiSelect({
 }) {
   const generatedId = useId();
   const triggerId = id || generatedId;
+  const listboxId = `${triggerId}-listbox`;
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [highlight, setHighlight] = useState(0);
@@ -77,6 +82,15 @@ export default function MultiSelect({
     setHighlight(0);
   }, [query]);
 
+  // Keep the active option scrolled into view.
+  useEffect(() => {
+    if (!open || !filtered.length) return;
+    const active = document.getElementById(optionId(triggerId, filtered[highlight]?.value));
+    if (active) {
+      active.scrollIntoView({ block: "nearest" });
+    }
+  }, [highlight, open, filtered, triggerId]);
+
   const toggle = (opt) => {
     if (opt.disabled) return;
     if (selectedSet.has(opt.value)) {
@@ -93,10 +107,20 @@ export default function MultiSelect({
   const handleKeyDown = (e) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setHighlight((prev) => Math.min(prev + 1, filtered.length - 1));
+      if (filtered.length) {
+        setHighlight((prev) => Math.min(prev + 1, filtered.length - 1));
+      }
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setHighlight((prev) => Math.max(prev - 1, 0));
+      if (filtered.length) {
+        setHighlight((prev) => Math.max(prev - 1, 0));
+      }
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      if (filtered.length) setHighlight(0);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      if (filtered.length) setHighlight(filtered.length - 1);
     } else if (e.key === "Enter") {
       e.preventDefault();
       const opt = filtered[highlight];
@@ -113,6 +137,9 @@ export default function MultiSelect({
   const visibleChips = selectedOptions.slice(0, maxVisibleChips);
   const overflow = selectedOptions.length - visibleChips.length;
   const ariaLabel = ariaLabelProp || (typeof label === "string" ? label : undefined);
+
+  const activeDescendant =
+    open && filtered[highlight] ? optionId(triggerId, filtered[highlight].value) : undefined;
 
   return (
     <div className={cn("inline-block w-full", className)}>
@@ -137,13 +164,15 @@ export default function MultiSelect({
             aria-haspopup="listbox"
             aria-label={ariaLabel}
             aria-expanded={open}
+            aria-controls={listboxId}
+            aria-activedescendant={activeDescendant}
             disabled={disabled}
             className={cn(
               "inline-flex items-center gap-1.5 w-full rounded-lg border",
               "border-[var(--color-border-strong)] bg-[var(--color-bg)]",
               "text-[var(--color-text-primary)] transition-colors",
               "hover:border-[var(--color-primary)]",
-              "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
+              "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring,var(--color-primary))]",
               "disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[var(--color-bg-secondary)]",
               TRIGGER_SIZE[size],
               triggerClassName
@@ -159,18 +188,17 @@ export default function MultiSelect({
                   className="inline-flex items-center gap-1 rounded bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] text-xs px-1.5 py-0.5 max-w-[160px]"
                 >
                   <span className="truncate">{opt.label}</span>
-                  <span
-                    role="button"
-                    tabIndex={-1}
+                  <button
+                    type="button"
                     aria-label={`Remove ${opt.label}`}
                     onClick={(e) => {
                       e.stopPropagation();
                       removeValue(opt.value);
                     }}
-                    className="hover:text-[var(--color-error)] cursor-pointer"
+                    className="inline-flex items-center justify-center rounded hover:text-[var(--color-error)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring,var(--color-primary))] min-w-[20px] min-h-[20px]"
                   >
                     <X size={12} aria-hidden="true" />
-                  </span>
+                  </button>
                 </span>
               ))}
               {overflow > 0 && (
@@ -180,18 +208,18 @@ export default function MultiSelect({
               )}
             </span>
             {selectedOptions.length > 0 && (
-              <span
-                role="button"
+              <button
+                type="button"
                 tabIndex={-1}
                 aria-label="Clear all"
                 onClick={(e) => {
                   e.stopPropagation();
                   clearAll();
                 }}
-                className="p-0.5 rounded hover:bg-[var(--color-bg-secondary)] flex-shrink-0"
+                className="p-0.5 rounded hover:bg-[var(--color-bg-secondary)] flex-shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring,var(--color-primary))]"
               >
                 <X size={14} className="text-[var(--color-text-muted)]" aria-hidden="true" />
-              </span>
+              </button>
             )}
             <ChevronDown
               size={16}
@@ -221,6 +249,7 @@ export default function MultiSelect({
             />
           </div>
           <ul
+            id={listboxId}
             role="listbox"
             aria-multiselectable="true"
             aria-label={ariaLabel}
@@ -242,6 +271,7 @@ export default function MultiSelect({
                 return (
                   <li
                     key={opt.value}
+                    id={optionId(triggerId, opt.value)}
                     role="option"
                     aria-selected={isSelected}
                     aria-disabled={opt.disabled || capped || undefined}
@@ -285,7 +315,7 @@ export default function MultiSelect({
                 <button
                   type="button"
                   onClick={clearAll}
-                  className="text-[var(--color-primary)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] rounded"
+                  className="text-[var(--color-primary)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring,var(--color-primary))] rounded"
                 >
                   Clear all
                 </button>

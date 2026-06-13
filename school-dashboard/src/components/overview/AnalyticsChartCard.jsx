@@ -12,6 +12,7 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import { useChartTheme } from '../../utils/chartTheme';
+import { useChartAnimation } from '../../hooks/useChartAnimation';
 
 function AnalyticsChartCard({
   icon: Icon,
@@ -29,6 +30,7 @@ function AnalyticsChartCard({
   className = ''
 }) {
   const chart = useChartTheme();
+  const animation = useChartAnimation();
 
   const defaultFormatter = (value) => [`${value}%`, dataKey.charAt(0).toUpperCase() + dataKey.slice(1)];
 
@@ -54,7 +56,7 @@ function AnalyticsChartCard({
               labelStyle={chart.tooltipLabelStyle}
               formatter={tooltipFormatter || defaultFormatter}
             />
-            <Bar dataKey={dataKey} fill={barColor} radius={[4, 4, 0, 0]} />
+            <Bar dataKey={dataKey} fill={barColor} radius={[4, 4, 0, 0]} {...animation} />
           </BarChart>
         </ResponsiveContainer>
       );
@@ -79,6 +81,7 @@ function AnalyticsChartCard({
             strokeWidth={2}
             dot={{ fill: lineColor, r: 4 }}
             activeDot={{ r: 6 }}
+            {...animation}
           />
         </RechartsLineChart>
       </ResponsiveContainer>

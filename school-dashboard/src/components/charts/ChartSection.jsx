@@ -11,6 +11,7 @@ import { TrendingUp, Users, Wallet } from 'lucide-react';
 import { useChartTheme, CHART_COLORS } from '../../utils/chartTheme';
 import { getDateLocale } from '../../i18n/index';
 import { useTranslation } from 'react-i18next';
+import { useChartAnimation } from '../../hooks/useChartAnimation';
 
 
 const compactNumber = new Intl.NumberFormat(getDateLocale(), {
@@ -45,6 +46,7 @@ function FeeTooltip({ active, payload, label }) {
 
 function ChartSection({ attendanceRows = [], feeCollectionData = [], loading = false, paymentsLoaded = true }) {
   const chart = useChartTheme();
+  const animation = useChartAnimation();
   const { t } = useTranslation();
   const hasAttendanceData = attendanceRows.some((row) => Number.isFinite(row.value));
   const hasFeeData = feeCollectionData.some((row) => row.collected > 0);
@@ -184,7 +186,7 @@ function ChartSection({ attendanceRows = [], feeCollectionData = [], loading = f
                       tickFormatter={(value) => compactNumber.format(value)}
                     />
                     <Tooltip content={<FeeTooltip />} />
-                    <Bar dataKey="collected" name="Collected" fill={CHART_COLORS.neutral} radius={[4, 4, 0, 0]} barSize={22} />
+                    <Bar dataKey="collected" name="Collected" fill={CHART_COLORS.neutral} radius={[4, 4, 0, 0]} barSize={22} {...animation} />
                   </BarChart>
                 )}
               </div>

@@ -8,6 +8,13 @@
  * reliably without changing production code.
  */
 
+import { expect } from 'vitest';
+import * as matchers from 'vitest-axe/matchers';
+import '@testing-library/jest-dom/vitest';
+import 'vitest-axe/extend-expect';
+
+expect.extend(matchers);
+
 function createMemoryStorage() {
   const store = new Map();
   return {

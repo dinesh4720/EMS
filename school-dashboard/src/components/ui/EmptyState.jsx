@@ -1,6 +1,8 @@
-import { memo } from "react";
+import { memo, useEffect } from "react";
+import PropTypes from "prop-types";
 import { Inbox } from "lucide-react";
 import { cn } from "../../utils/cn";
+import MinimalButton from "./MinimalButton";
 
 const SIZE = {
   sm: {
@@ -44,6 +46,10 @@ const EmptyState = memo(function EmptyState({
   description,
   action,
   secondaryAction,
+  actionLabel,
+  onAction,
+  secondaryActionLabel,
+  onSecondaryAction,
   size = "md",
   kind = "default",
   className,
@@ -51,6 +57,40 @@ const EmptyState = memo(function EmptyState({
 }) {
   const styles = SIZE[size] || SIZE.md;
   const tone = KIND[kind] || KIND.default;
+
+  useEffect(() => {
+    if (import.meta.env?.DEV && action && !actionLabel) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        "[EmptyState] The `action` prop is provided without `actionLabel`. Prefer `actionLabel` + `onAction` for accessible action buttons."
+      );
+    }
+  }, [action, actionLabel]);
+
+  const renderAction = () => {
+    if (actionLabel && onAction) {
+      return (
+        <MinimalButton variant="secondary" size="sm" onClick={onAction}>
+          {actionLabel}
+        </MinimalButton>
+      );
+    }
+    return action;
+  };
+
+  const renderSecondaryAction = () => {
+    if (secondaryActionLabel && onSecondaryAction) {
+      return (
+        <MinimalButton variant="ghost" size="sm" onClick={onSecondaryAction}>
+          {secondaryActionLabel}
+        </MinimalButton>
+      );
+    }
+    return secondaryAction;
+  };
+
+  const hasActions =
+    renderAction() || renderSecondaryAction() || action || secondaryAction;
 
   return (
     <div
@@ -88,10 +128,10 @@ const EmptyState = memo(function EmptyState({
         )}
       </div>
       {children}
-      {(action || secondaryAction) && (
+      {hasActions && (
         <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-          {action}
-          {secondaryAction}
+          {renderAction()}
+          {renderSecondaryAction()}
         </div>
       )}
     </div>
@@ -99,5 +139,22 @@ const EmptyState = memo(function EmptyState({
 });
 
 EmptyState.displayName = "EmptyState";
+
+EmptyState.propTypes = {
+  icon: PropTypes.elementType,
+  illustration: PropTypes.node,
+  title: PropTypes.node,
+  description: PropTypes.node,
+  action: PropTypes.node,
+  secondaryAction: PropTypes.node,
+  actionLabel: PropTypes.string,
+  onAction: PropTypes.func,
+  secondaryActionLabel: PropTypes.string,
+  onSecondaryAction: PropTypes.func,
+  size: PropTypes.oneOf(["sm", "md", "lg"]),
+  kind: PropTypes.oneOf(["default", "ok", "warn", "danger", "info", "accent"]),
+  className: PropTypes.string,
+  children: PropTypes.node,
+};
 
 export default EmptyState;

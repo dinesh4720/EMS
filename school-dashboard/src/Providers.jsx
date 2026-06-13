@@ -15,6 +15,7 @@ import { ThemeProvider as NextThemesProvider } from 'next-themes';
 import { BrowserRouter } from 'react-router-dom';
 import toast, { Toaster, useToasterStore } from 'react-hot-toast';
 import { useEffect } from 'react';
+import { MotionConfig } from 'framer-motion';
 import { queryClient } from './lib/queryClient';
 
 const TOAST_LIMIT = 3;
@@ -47,7 +48,9 @@ export default function Providers({ children }) {
             disableTransitionOnChange
           >
             <BrowserRouter>
-              {children}
+              <MotionConfig reducedMotion="user">
+                {children}
+              </MotionConfig>
               <ToastLimiter />
               <Toaster
                 position="top-center"
@@ -60,19 +63,23 @@ export default function Providers({ children }) {
                    * and role="alert" (error) — both announce via the ARIA live region. */
                   duration: 3000,
                   className: 'ds-toast',
-                  ariaProps: { role: 'status', 'aria-live': 'polite' },
+                  ariaProps: { role: 'status', 'aria-live': 'polite', 'aria-atomic': 'true' },
                   success: {
                     duration: 3000,
                     className: 'ds-toast ds-toast--success',
                     iconTheme: { primary: 'var(--ok)', secondary: 'var(--bg)' },
+                    ariaProps: { role: 'status', 'aria-live': 'polite', 'aria-atomic': 'true' },
                   },
                   error: {
                     duration: 4500,
                     className: 'ds-toast ds-toast--error',
-                    ariaProps: { role: 'alert', 'aria-live': 'assertive' },
+                    ariaProps: { role: 'alert', 'aria-live': 'assertive', 'aria-atomic': 'true' },
                     iconTheme: { primary: 'var(--danger)', secondary: 'var(--bg)' },
                   },
-                  loading: { className: 'ds-toast ds-toast--info' },
+                  loading: {
+                    className: 'ds-toast ds-toast--info',
+                    ariaProps: { role: 'status', 'aria-live': 'polite', 'aria-atomic': 'true' },
+                  },
                 }}
               />
             </BrowserRouter>
