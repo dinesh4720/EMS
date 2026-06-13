@@ -209,14 +209,16 @@ export default function SettingsPage() {
             <input
               type="search"
               placeholder={t('pages.searchSettings')}
+              aria-label={t('pages.searchSettings')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 bg-transparent outline-none text-fg placeholder:text-fg-muted text-sm"
+              className="flex-1 bg-transparent outline-none text-fg placeholder:text-fg-muted text-sm focus-visible:ring-0"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
-                className="text-fg-subtle hover:text-fg text-xs"
+                aria-label="Clear search"
+                className="text-fg-subtle hover:text-fg text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,var(--color-primary))] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)] rounded px-1"
               >
                 Clear
               </button>
@@ -245,7 +247,7 @@ export default function SettingsPage() {
                           <button
                             type="button"
                             onClick={() => item.isAction ? item.onClick() : navigate(item.path)}
-                            className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors
+                            className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,var(--color-primary))] focus-visible:ring-inset
                               ${!item.isAction && active
                                 ? "bg-fg font-medium text-bg"
                                 : "text-fg-muted hover:text-fg hover:bg-surface-hover"}
@@ -275,7 +277,10 @@ export default function SettingsPage() {
             </div>
             <button
               onClick={handleOwlinToggle}
-              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+              role="switch"
+              aria-checked={owlinEnabled}
+              aria-label="Toggle Owlin tracker"
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,var(--color-primary))] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)] ${
                 owlinEnabled ? "bg-[var(--ok)]" : "bg-fg-faint"
               }`}
             >

@@ -58,7 +58,14 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev',
     url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
+    // Always start a dedicated test server so we never accidentally reuse a
+    // stale dev server from another worktree/session.
+    reuseExistingServer: false,
     timeout: 120000,
+    env: {
+      // Force API calls to the test origin so Playwright can intercept them
+      // with the mock API harness in tests/test-utils.ts.
+      VITE_API_URL: '/api',
+    },
   },
 });
