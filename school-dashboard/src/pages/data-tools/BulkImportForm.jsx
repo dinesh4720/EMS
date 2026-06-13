@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useId, useState, useRef } from 'react';
 import { Upload, Download, FileText, Users, UserCheck, DollarSign, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../../components/ui/Button';
@@ -44,7 +44,7 @@ function ResultPanel({ result }) {
 
   return (
     <Card padding="md" radius="lg" className="space-y-4">
-      <h3 className="font-semibold text-fg">Import Result</h3>
+      <h2 className="font-semibold text-fg">Import Result</h2>
       <div className="grid grid-cols-3 gap-3 sm:gap-4 text-center">
         <div className="p-3 bg-green-50 dark:bg-green-950/40 rounded-lg">
           <p className="text-2xl font-bold text-green-600 dark:text-green-400">{result.imported}</p>
@@ -72,9 +72,9 @@ function ResultPanel({ result }) {
 
       {Array.isArray(result.failed) && result.failed.length > 0 && (
         <div className="mt-2">
-          <h4 className="text-sm font-medium text-fg mb-2">
+          <h3 className="text-sm font-medium text-fg mb-2">
             Error Details
-          </h4>
+          </h3>
           <div className="max-h-48 overflow-y-auto space-y-1">
             {result.failed.map((row, i) => (
               <div
@@ -102,6 +102,7 @@ export default function BulkImportForm() {
   const [result, setResult] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
+  const fileInputId = useId();
 
   const validateFile = (picked) => {
     if (!picked) return false;
@@ -254,17 +255,8 @@ export default function BulkImportForm() {
         </span>
       </div>
 
-      <div
-        role="button"
-        tabIndex={0}
-        aria-label="Upload file"
-        onClick={() => fileInputRef.current?.click()}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            fileInputRef.current?.click();
-          }
-        }}
+      <label
+        htmlFor={fileInputId}
         onDrop={handleDrop}
         onDragOver={(e) => {
           e.preventDefault();
@@ -272,8 +264,8 @@ export default function BulkImportForm() {
         }}
         onDragLeave={() => setIsDragging(false)}
         className={
-          'border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ' +
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:ring-offset-2 ' +
+          'block border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ' +
+          'focus-within:outline-none focus-within:ring-2 focus-within:ring-[var(--color-primary)]/30 focus-within:ring-offset-2 ' +
           (isDragging
             ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5'
             : 'border-border-token hover:border-[var(--color-primary)]/60')
@@ -281,6 +273,7 @@ export default function BulkImportForm() {
       >
         <input
           ref={fileInputRef}
+          id={fileInputId}
           type="file"
           className="sr-only"
           accept=".csv,.xlsx,.xls"
@@ -306,7 +299,7 @@ export default function BulkImportForm() {
             </p>
           </div>
         )}
-      </div>
+      </label>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Checkbox

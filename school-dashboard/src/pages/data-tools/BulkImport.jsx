@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import MinimalTabs from '../../components/ui/MinimalTabs';
 import PageHeader from '../../components/ui/PageHeader';
 import BulkImportForm from './BulkImportForm';
@@ -11,6 +11,7 @@ const TABS = [
 
 export default function BulkImport() {
   const [activeTab, setActiveTab] = useState('import');
+  const baseId = useId();
 
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6 animate-fade-in">
@@ -21,9 +22,17 @@ export default function BulkImport() {
         activeKey={activeTab}
         onChange={setActiveTab}
         variant="underline"
+        baseId={baseId}
+        ariaLabel="Bulk import sections"
       />
 
-      {activeTab === 'import' ? <BulkImportForm /> : <BulkImportHistory />}
+      <div
+        role="tabpanel"
+        id={`${baseId}-tabpanel-${activeTab}`}
+        aria-labelledby={`${baseId}-tab-${activeTab}`}
+      >
+        {activeTab === 'import' ? <BulkImportForm /> : <BulkImportHistory />}
+      </div>
     </div>
   );
 }

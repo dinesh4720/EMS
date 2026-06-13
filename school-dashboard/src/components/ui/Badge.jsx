@@ -14,13 +14,13 @@ const COLOR_STYLES = {
   primary:
     "bg-[var(--color-accent)] text-[var(--color-accent-fg)]",
   success:
-    "bg-[var(--color-ok-bg)] text-[var(--color-ok)]",
+    "bg-[var(--color-ok-bg)] text-[var(--ok-hover)]",
   warning:
     "bg-[var(--color-warn-bg)] text-[var(--color-warn)]",
   danger:
-    "bg-[var(--color-danger-bg)] text-[var(--color-danger)]",
+    "bg-[var(--color-danger-bg)] text-[var(--danger-hover)]",
   info:
-    "bg-[var(--color-info-bg)] text-[var(--color-info)]",
+    "bg-[var(--color-info-bg)] text-[var(--info-hover)]",
 };
 
 const OUTLINE_STYLES = {

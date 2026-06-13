@@ -97,7 +97,7 @@ export default function GovtExport() {
         {EXPORT_TYPES.map((type) => (
           <Card key={type.key} radius="lg" padding="md" className="space-y-4">
             <div className="flex items-center justify-between gap-3">
-              <h3 className="font-semibold text-fg">{type.title}</h3>
+              <h2 className="font-semibold text-fg">{type.title}</h2>
               <Badge color={type.badgeColor}>{type.badge}</Badge>
             </div>
 
