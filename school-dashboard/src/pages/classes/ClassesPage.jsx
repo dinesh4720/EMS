@@ -27,7 +27,7 @@ function ClassesPageSkeleton() {
       <Skeleton variant="rect" className="h-12 w-full rounded-lg" />
       <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}>
         {Array.from({ length: 8 }).map((_, i) => (
-          <Skeleton key={i} variant="rect" className="h-40 w-full rounded-lg" />
+          <Skeleton key={`class-skeleton-${i}`} variant="rect" className="h-40 w-full rounded-lg" />
         ))}
       </div>
     </div>

@@ -40,7 +40,7 @@ export function FeesTab({ id, cls, classesEnhancedApi, navigate }) {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {feesLoading ? (
           [1, 2, 3].map(i => (
-            <div key={i} className="bg-surface rounded-lg p-4 border border-divider space-y-2">
+            <div key={`fee-stat-skeleton-${i}`} className="bg-surface rounded-lg p-4 border border-divider space-y-2">
               <Bone className="h-3 w-20" /><Bone className="h-6 w-16" />
             </div>
           ))

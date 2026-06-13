@@ -277,7 +277,7 @@ export default function SlotInfoModal({
               <div className="flex flex-wrap gap-2">
                 {subjectPeriodsPerWeek.map((sp, i) => (
                   <Chip
-                    key={i}
+                    key={`${sp.day}-${sp.period}-${i}`}
                     size="sm"
                     variant={sp.day === day ? 'solid' : 'flat'}
                     color={sp.day === day ? 'primary' : 'default'}

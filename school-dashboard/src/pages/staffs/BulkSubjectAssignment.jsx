@@ -436,7 +436,7 @@ export default function BulkSubjectAssignment() {
           {loading ? (
             <div className="col" style={{ gap: 6, padding: 12 }}>
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="row" style={{ gap: 10, alignItems: "center", padding: 12 }}>
+                <div key={`teacher-skeleton-${i}`} className="row" style={{ gap: 10, alignItems: "center", padding: 12 }}>
                   <div style={{ width: 28, height: 28, borderRadius: 999, background: "var(--surface-2)" }} />
                   <div className="col" style={{ flex: 1, gap: 4 }}>
                     <div style={{ height: 12, width: "30%", background: "var(--surface-2)", borderRadius: 4 }} />

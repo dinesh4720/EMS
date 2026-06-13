@@ -129,7 +129,7 @@ export default function StaffSidebar({
                   </h4>
                   {loadingTimetable ? (
                     <div className="space-y-1.5">
-                      {[...Array(3)].map((_, i) => <div key={i} className="h-10 animate-shimmer rounded-lg" />)}
+                      {[...Array(3)].map((_, i) => <div key={`classes-skeleton-${i}`} className="h-10 animate-shimmer rounded-lg" />)}
                     </div>
                   ) : todaySchedule.filter(s => s.classId && s.subject).length > 0 ? (
                     <div className="space-y-1.5">
@@ -138,7 +138,7 @@ export default function StaffSidebar({
                         const period = defaultPeriods[idx];
                         return (
                           <div
-                            key={`slot-${idx}`}
+                            key={slot.classId ? `slot-${slot.classId}-${idx}` : `slot-${idx}`}
                             role="button"
                             tabIndex={0}
                             aria-label={`${slot.subject}, ${getClassName(slot.classId)}`}
@@ -192,7 +192,7 @@ export default function StaffSidebar({
                   </h4>
                   {loadingAppointments ? (
                     <div className="space-y-1.5">
-                      {[...Array(2)].map((_, i) => <div key={i} className="h-10 animate-shimmer rounded-lg" />)}
+                      {[...Array(2)].map((_, i) => <div key={`appt-skeleton-${i}`} className="h-10 animate-shimmer rounded-lg" />)}
                     </div>
                   ) : upcomingAppointments.length > 0 ? (
                     <div className="space-y-1.5">

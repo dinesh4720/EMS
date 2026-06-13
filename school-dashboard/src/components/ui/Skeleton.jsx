@@ -80,7 +80,7 @@ function SkeletonText({ lines = 3, className }) {
     <div className={cn("space-y-2", className)} aria-busy="true" aria-live="polite">
       {Array.from({ length: lines }).map((_, i) => (
         <Skeleton
-          key={i}
+          key={`skeleton-text-line-${i}`}
           variant="text"
           className={cn("h-3", i === lines - 1 ? "w-2/3" : "w-full")}
         />
@@ -131,7 +131,7 @@ function SkeletonCard({
       )}
       <div className="p-4 space-y-3">
         {Array.from({ length: bodyLines }).map((_, i) => (
-          <Bone key={i} className={bodyLineHeight} style={{ width: lineWidth(i) }} />
+          <Bone key={`skeleton-card-line-${i}`} className={bodyLineHeight} style={{ width: lineWidth(i) }} />
         ))}
       </div>
     </div>
@@ -172,7 +172,7 @@ function SkeletonTable({ rows = 5, columns = 4, className }) {
     >
       <div className="flex items-center gap-4 px-4 py-3 border-b border-divider bg-surface-2">
         {cols.map((col, i) => (
-          <div key={i} className={cellClass(col)} style={cellStyle(col)}>
+          <div key={`skeleton-th-${i}`} className={cellClass(col)} style={cellStyle(col)}>
             <Bone
               className="h-3"
               style={
@@ -186,11 +186,11 @@ function SkeletonTable({ rows = 5, columns = 4, className }) {
       </div>
       {Array.from({ length: rows }).map((_, r) => (
         <div
-          key={r}
+          key={`skeleton-row-${r}`}
           className="flex items-center gap-4 px-4 py-3 border-b border-divider last:border-0"
         >
           {cols.map((col, c) => (
-            <div key={c} className={cellClass(col)} style={cellStyle(col)}>
+            <div key={`skeleton-cell-${r}-${c}`} className={cellClass(col)} style={cellStyle(col)}>
               <Bone className="h-3" />
             </div>
           ))}
@@ -218,7 +218,7 @@ function SkeletonList({
     >
       {Array.from({ length: items }).map((_, i) => (
         <div
-          key={i}
+          key={`skeleton-list-item-${i}`}
           className="flex items-center gap-3 p-3 bg-surface rounded-lg border border-divider"
         >
           {avatar && <Bone className="w-10 h-10 rounded-full shrink-0" />}
@@ -248,7 +248,7 @@ function SkeletonForm({
       className={cn("space-y-4 min-w-0", className)}
     >
       {Array.from({ length: fields }).map((_, i) => (
-        <div key={i} className="space-y-2">
+        <div key={`skeleton-field-${i}`} className="space-y-2">
           <Bone className="h-4 w-1/4" />
           <Bone className="h-10 w-full" />
         </div>

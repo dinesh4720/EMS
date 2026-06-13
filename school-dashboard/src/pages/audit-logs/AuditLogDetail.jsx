@@ -173,7 +173,7 @@ export default function AuditLogDetail({
                 </thead>
                 <tbody className="divide-y" style={{ borderColor: "var(--border-token)" }}>
                   {changes.map((change, i) => (
-                    <tr key={i}>
+                    <tr key={change.field ? `change-${change.field}` : `change-${i}`}>
                       <td className="px-3 py-2 font-medium" style={{ color: "var(--fg)", fontSize: 12 }}>
                         {change.field}
                       </td>

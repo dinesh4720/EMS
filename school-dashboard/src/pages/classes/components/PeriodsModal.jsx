@@ -26,7 +26,7 @@ export function PeriodsModal({
         <ModalBody>
           <div className="space-y-3">
             {periods.map((period, i) => (
-              <div key={`period-edit-${i}`} className="flex gap-2 items-end">
+              <div key={period._id || period.id || `period-edit-${i}`} className="flex gap-2 items-end">
                 <Input
                   size="sm"
                   value={period.name}

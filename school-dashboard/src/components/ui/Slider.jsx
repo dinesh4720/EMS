@@ -80,7 +80,7 @@ export default function Slider({
             <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between px-px pointer-events-none">
               {tickMarks.map((i) => (
                 <span
-                  key={i}
+                  key={`tick-${i}`}
                   className="block w-px h-2 bg-[var(--color-border-strong)]"
                 />
               ))}
@@ -132,7 +132,7 @@ export default function Slider({
       {legend && legend.length > 0 ? (
         <div className="flex justify-between font-mono text-[10.5px] text-[var(--color-text-faint)] tabular-nums">
           {legend.map((label, i) => (
-            <span key={i}>{label}</span>
+            <span key={`legend-${i}`}>{label}</span>
           ))}
         </div>
       ) : null}

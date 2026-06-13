@@ -204,7 +204,7 @@ export default function WebhooksPage() {
       {loading ? (
         <div className="space-y-3" aria-busy="true" aria-live="polite">
           {Array.from({ length: 3 }).map((_, i) => (
-            <SkeletonCard key={i} />
+            <SkeletonCard key={`webhook-skeleton-${i}`} />
           ))}
         </div>
       ) : loadError ? (

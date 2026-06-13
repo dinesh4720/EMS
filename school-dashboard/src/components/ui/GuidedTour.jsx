@@ -296,7 +296,7 @@ export default function GuidedTour({ steps, isOpen, onClose, tourId, autoStart =
         <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginTop: 16 }}>
           {steps.map((_, i) => (
             <div
-              key={i}
+              key={`tour-dot-${i}`}
               className={i === stepIndex ? 'bg-indigo-600 dark:bg-indigo-400' : 'bg-surface-2'}
               style={{
                 width: i === stepIndex ? 20 : 8,

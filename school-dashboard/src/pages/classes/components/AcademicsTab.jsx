@@ -76,7 +76,7 @@ export function AcademicsTab({ id, cls, classesEnhancedApi }) {
 
         {loading ? (
           <div className="p-4 space-y-3">
-            {[1, 2, 3].map(i => <Bone key={i} className="h-14 w-full" />)}
+            {[1, 2, 3].map(i => <Bone key={`exam-skeleton-${i}`} className="h-14 w-full" />)}
           </div>
         ) : exams.length === 0 ? (
           <div className="p-8 text-center">

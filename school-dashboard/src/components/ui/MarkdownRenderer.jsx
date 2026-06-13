@@ -32,7 +32,7 @@ function renderInline(text) {
     const href = sanitizeUrl(rawUrl);
     parts.push(
       <a
-        key={match.index}
+        key={`frag-${match.index}`}
         href={href}
         target="_blank"
         rel="noopener noreferrer"

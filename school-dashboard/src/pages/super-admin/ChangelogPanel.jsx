@@ -230,7 +230,7 @@ export default function ChangelogPanel() {
         <div className="space-y-3" aria-busy="true" aria-live="polite">
           {Array.from({ length: 3 }).map((_, i) => (
             <div
-              key={i}
+              key={`changelog-skel-${i}`}
               className="rounded-lg border border-divider p-4"
             >
               <Skeleton variant="text" className="h-4 w-1/3" />
