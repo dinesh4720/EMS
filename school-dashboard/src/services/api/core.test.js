@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 /**
@@ -139,6 +140,82 @@ describe('fetch request handling', () => {
     const { request } = await import('./core');
     await expect(request('/students')).rejects.toMatchObject({
       status: 429,
+      code: 'RATE_LIMITED',
+      retryAfterMs: 60000,
     });
+  });
+
+  it('normalizes every thrown error to a single ApiError shape', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      headers: { get: vi.fn().mockReturnValue(null) },
+      json: vi.fn().mockResolvedValue({ error: 'Boom' }),
+    });
+
+    const { request, ApiError } = await import('./core');
+    await expect(request('/students')).rejects.toBeInstanceOf(ApiError);
+    await expect(request('/students')).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 500,
+      code: 'SERVER',
+      message: 'Boom',
+    });
+  });
+
+  it('surfaces the first field-level message for a 400 validation error', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 400,
+      headers: { get: vi.fn().mockReturnValue(null) },
+      json: vi.fn().mockResolvedValue({
+        error: 'Validation failed',
+        details: [{ message: 'Must be a valid email address' }],
+      }),
+    });
+
+    const { request } = await import('./core');
+    await expect(request('/students', { method: 'POST' })).rejects.toMatchObject({
+      status: 400,
+      code: 'VALIDATION',
+      message: 'Must be a valid email address',
+    });
+  });
+
+  it('classifies a transport failure (fetch reject) as a network ApiError', async () => {
+    global.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+
+    const { request } = await import('./core');
+    await expect(request('/students')).rejects.toMatchObject({
+      name: 'ApiError',
+      code: 'NETWORK',
+    });
+  });
+
+  it('on an unrecoverable 401, clears the session and emits session-expired', async () => {
+    // First call (the request) → 401; second call (token refresh) → not ok.
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        headers: { get: vi.fn().mockReturnValue(null) },
+        json: vi.fn().mockResolvedValue({ error: 'Token expired' }),
+      })
+      .mockResolvedValueOnce({ ok: false, status: 401 });
+
+    const sessionExpired = vi.fn();
+    window.addEventListener('session-expired', sessionExpired, { once: true });
+
+    const { request } = await import('./core');
+    const { clearStoredUser } = await import('../../utils/authSession');
+
+    await expect(request('/students')).rejects.toMatchObject({
+      status: 401,
+      code: 'UNAUTHORIZED',
+    });
+    expect(clearStoredUser).toHaveBeenCalledTimes(1);
+    expect(sessionExpired).toHaveBeenCalledTimes(1);
+    expect(sessionExpired.mock.calls[0][0].detail.message).toMatch(/session has expired/i);
   });
 });
