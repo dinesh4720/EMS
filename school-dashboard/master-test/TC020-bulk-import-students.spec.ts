@@ -168,10 +168,7 @@ test.describe('TC020 - Bulk Import Students via CSV', () => {
       .first();
     await importBtn.click();
 
-    const templateBtn = page.getByRole('button', { name: /download template|sample/i })
-      .or(page.getByRole('link', { name: /download template|sample/i }))
-      .or(page.getByText(/download template/i))
-      .first();
+    const templateBtn = page.locator('button').filter({ hasText: /Download CSV Template/i });
     await expect(templateBtn).toBeVisible();
   });
 
@@ -184,10 +181,8 @@ test.describe('TC020 - Bulk Import Students via CSV', () => {
       .first();
     await importBtn.click();
 
-    // Verify drag-drop area or file input is present
-    const dropZone = page.getByText(/drag.*drop|drop.*file|choose file|upload csv/i)
-      .or(page.locator('input[type="file"]'))
-      .first();
+    // Verify drag-drop area is present
+    const dropZone = page.getByText(/Drag & drop your CSV file here/i);
     await expect(dropZone).toBeVisible();
   });
 
@@ -203,15 +198,15 @@ test.describe('TC020 - Bulk Import Students via CSV', () => {
     // Mock file upload via file input
     const fileInput = page.locator('input[type="file"]').first();
     const csvContent = [
-      'Full Name,Date of Birth,Gender,Class,Section,Phone,Email',
-      'Priya Sharma,2011-05-15,Female,10,A,9876543001,priya@test.com',
-      'Rahul Verma,2011-03-20,Male,10,A,9876543002,rahul@test.com',
-      'Anita Patel,2010-08-10,Female,11,A,9876543003,anita@test.com',
-      'Vikram Singh,2010-11-05,Male,11,A,9876543004,vikram@test.com',
-      'Meena Kumari,2011-01-25,Female,10,A,9876543005,meena@test.com',
-      'Amit Joshi,2010-09-30,Male,11,A,9876543006,amit@test.com',
-      ',,,,,,,',
-      'Priya Sharma,2011-05-15,Female,10,A,9876543001,priya@test.com',
+      'Full Name,Date of Birth,Gender,Class,Section,Phone,Email,Parent Name,Parent Phone',
+      'Priya Sharma,2011-05-15,Female,10,A,9876543001,priya@test.com,Rajesh Sharma,9876543001',
+      'Rahul Verma,2011-03-20,Male,10,A,9876543002,rahul@test.com,Sunil Verma,9876543002',
+      'Anita Patel,2010-08-10,Female,11,A,9876543003,anita@test.com,Deepak Patel,9876543003',
+      'Vikram Singh,2010-11-05,Male,11,A,9876543004,vikram@test.com,Ramesh Singh,9876543004',
+      'Meena Kumari,2011-01-25,Female,10,A,9876543005,meena@test.com,Suresh Kumar,9876543005',
+      'Amit Joshi,2010-09-30,Male,11,A,9876543006,amit@test.com,Manoj Joshi,9876543006',
+      ',,,,,,,,',
+      'Priya Sharma,2011-05-15,Female,10,A,9876543001,priya@test.com,Rajesh Sharma,9876543001',
     ].join('\n');
 
     await fileInput.setInputFiles({
@@ -220,8 +215,14 @@ test.describe('TC020 - Bulk Import Students via CSV', () => {
       buffer: Buffer.from(csvContent),
     });
 
-    // Wait for preview to load
-    await page.waitForTimeout(1000);
+    // Click the upload/process button to generate the preview
+    const uploadBtn = page.getByRole('button', { name: /upload students/i });
+    await expect(uploadBtn).toBeEnabled({ timeout: 3000 });
+    await uploadBtn.click();
+
+    // Wait for preview modal to load
+    const previewModal = page.getByRole('dialog').or(page.locator('[role="dialog"]')).first();
+    await expect(previewModal).toBeVisible({ timeout: 5000 });
 
     // Verify summary cards appear
     const totalIndicator = page.getByText(/total|8/i).first();
@@ -254,16 +255,23 @@ test.describe('TC020 - Bulk Import Students via CSV', () => {
     await fileInput.setInputFiles({
       name: 'students.csv',
       mimeType: 'text/csv',
-      buffer: Buffer.from('Full Name,Class,Section\nTest,10,A\n'),
+      buffer: Buffer.from('Full Name,Class,Section,Parent Name,Parent Phone\nTest,10,A,Parent,9876543001\n'),
     });
 
-    await page.waitForTimeout(1000);
+    // Click the upload/process button to generate the preview
+    const uploadBtn = page.getByRole('button', { name: /upload students/i });
+    await expect(uploadBtn).toBeEnabled({ timeout: 3000 });
+    await uploadBtn.click();
+
+    // Wait for preview modal
+    const importArea = page.getByRole('dialog').or(page.locator('[role="dialog"]')).first();
+    await expect(importArea).toBeVisible({ timeout: 5000 });
 
     // Look for class grouping text
-    const classGroup = page.getByText(/10-A|11-A|class.*group/i).first();
-    // The grouping may or may not be visible depending on the UI - just check the page loaded
-    const importArea = page.getByRole('dialog').or(page.locator('[role="dialog"]')).first();
-    await expect(importArea).toBeVisible();
+    const classGroup = page.getByText(/10-A|11-A|class.*group|10 - Section A/i).first();
+    if (await classGroup.isVisible().catch(() => false)) {
+      await expect(classGroup).toBeVisible();
+    }
   });
 
   test('should execute import and show success message', async ({ page }) => {
@@ -280,16 +288,21 @@ test.describe('TC020 - Bulk Import Students via CSV', () => {
     await fileInput.setInputFiles({
       name: 'students.csv',
       mimeType: 'text/csv',
-      buffer: Buffer.from('Full Name,Class,Section\nTest Student,10,A\n'),
+      buffer: Buffer.from('Full Name,Class,Section,Parent Name,Parent Phone\nTest Student,10,A,Parent,9876543001\n'),
     });
 
-    await page.waitForTimeout(1000);
+    // Click the upload/process button to validate and open the preview
+    const uploadBtn = page.getByRole('button', { name: /upload students/i });
+    await expect(uploadBtn).toBeEnabled({ timeout: 3000 });
+    await uploadBtn.click();
 
-    // Click import/confirm button
-    const confirmBtn = page.getByRole('button', { name: /import|confirm|upload|submit/i }).last();
-    if (await confirmBtn.isVisible().catch(() => false)) {
-      await confirmBtn.click();
-    }
+    // Wait for preview modal and confirm the import
+    const previewModal = page.getByRole('dialog').or(page.locator('[role="dialog"]')).first();
+    await expect(previewModal).toBeVisible({ timeout: 5000 });
+
+    const importBtnPreview = page.getByRole('button', { name: /add|import/i }).last();
+    await expect(importBtnPreview).toBeEnabled({ timeout: 3000 });
+    await importBtnPreview.click();
 
     // Verify success message or progress indicator
     const successMsg = page.getByText(/success|imported|completed|students added/i).first();

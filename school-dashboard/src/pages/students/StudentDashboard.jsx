@@ -67,6 +67,9 @@ const MoveClassModal = lazy(() =>
   import("./components/modals/MoveClassModal")
 );
 const EditStudentDrawer = lazy(() => import("./EditStudentDrawer"));
+const WriteRemarkModal = lazy(() =>
+  import("./components/modals/WriteRemarkModal")
+);
 
 // REVAMP-12 · Student detail dashboard
 // Hero with avatar, status pills, dp-metric strip, tabbed content
@@ -467,6 +470,13 @@ function RemarksPanel({ studentId, onAddRemark }) {
   }
   return (
     <div className="col gap-3">
+      {onAddRemark && (
+        <div className="row" style={{ justifyContent: "flex-end" }}>
+          <button type="button" className="btn btn--accent" onClick={onAddRemark}>
+            <Plus size={13} aria-hidden /> Add remark
+          </button>
+        </div>
+      )}
       {list.map((r) => {
         const visible = !!r.sentToParent;
         return (
@@ -486,7 +496,7 @@ function RemarksPanel({ studentId, onAddRemark }) {
             </div>
             <div style={{ padding: "10px 14px 14px" }}>
               <p style={{ fontSize: 13, margin: 0, color: "var(--fg)" }}>
-                {r.description || r.note || ""}
+                {r.description || r.note || r.remark || ""}
               </p>
               {(r.createdBy?.name || r.createdAt) && (
                 <div
@@ -1199,7 +1209,7 @@ export default function StudentDashboard() {
           />
         )}
         {activeTab === "remarks" && (
-          <RemarksPanel studentId={id} onAddRemark={undefined} />
+          <RemarksPanel studentId={id} onAddRemark={() => setOpenModal("remark")} />
         )}
         {activeTab === "documents" && <DocumentsPanel studentId={id} />}
         {activeTab === "ratings" && (
@@ -1277,6 +1287,17 @@ export default function StudentDashboard() {
               (c) => c.name || c.section || ""
             )}
             classesWithTeachers={classes || []}
+          />
+        )}
+        {openModal === "remark" && (
+          <WriteRemarkModal
+            isOpen
+            onClose={closeModal}
+            student={student}
+            onSave={() => {
+              refetchStudent?.();
+              refetchAppData?.();
+            }}
           />
         )}
       </Suspense>

@@ -69,6 +69,47 @@ const parseCSVLine = (line) => {
     return fields;
 };
 
+const HEADER_ALIASES = {
+    'full name': 'name',
+    'name': 'name',
+    'admission id': 'admissionId',
+    'admission no': 'admissionId',
+    'admission number': 'admissionId',
+    'roll no': 'rollNo',
+    'roll number': 'rollNo',
+    'date of birth': 'dateOfBirth',
+    'dob': 'dateOfBirth',
+    'blood group': 'bloodGroup',
+    'aadhaar number': 'aadhaarNumber',
+    'whatsapp number': 'whatsappNumber',
+    'zip code': 'zipCode',
+    'parent name': 'parentName',
+    'parent phone': 'parentPhone',
+    'parent email': 'parentEmail',
+    'parent relationship': 'parentRelationship',
+    'parent occupation': 'parentOccupation',
+    'emergency contact name': 'emergencyContactName',
+    'emergency contact phone': 'emergencyContactPhone',
+    'previous school': 'previousSchool',
+    'medical conditions': 'medicalConditions',
+    'fee status': 'feeStatus',
+    'attendance %': 'attendancePercentage',
+    'attendance percentage': 'attendancePercentage',
+};
+
+const toCamelCase = (str) => {
+    const words = str.toLowerCase().trim().split(/\s+/).filter(Boolean);
+    if (words.length === 0) return str;
+    return words[0] + words.slice(1).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+};
+
+const normalizeHeader = (header) => {
+    const clean = stripHtml(header).trim();
+    const key = clean.toLowerCase();
+    if (HEADER_ALIASES[key]) return HEADER_ALIASES[key];
+    return toCamelCase(clean);
+};
+
 export const parseCSV = (csvText) => {
     const lines = csvText.split(/\r?\n/).filter(line => line.trim());
 
@@ -76,7 +117,7 @@ export const parseCSV = (csvText) => {
         throw new Error('CSV file is empty or has no data rows');
     }
 
-    const headers = parseCSVLine(lines[0]).map(stripHtml);
+    const headers = parseCSVLine(lines[0]).map(normalizeHeader);
 
     const data = [];
     for (let i = 1; i < lines.length; i++) {
@@ -311,15 +352,26 @@ export const validateStudentData = (student, existingStudents = [], allClasses =
 };
 
 export const checkForDuplicates = (validatedStudents, existingStudents) => {
+    const seenAdmissionIds = new Set();
+    const seenDetails = new Set();
+
     return validatedStudents.map(student => {
+        const data = student.data;
+        const detailKey = [
+            data.name?.toLowerCase(),
+            data.class,
+            data.parentPhone
+        ].join('|');
+
+        // First check against existing students in the system
         const duplicateById = existingStudents.find(existing =>
-            existing.admissionId === student.data.admissionId
+            existing.admissionId === data.admissionId
         );
 
         const duplicateByDetails = existingStudents.find(existing =>
-            existing.name.toLowerCase() === student.data.name.toLowerCase() &&
-            existing.class === student.data.class &&
-            existing.parentPhone === student.data.parentPhone
+            existing.name.toLowerCase() === data.name.toLowerCase() &&
+            existing.class === data.class &&
+            existing.parentPhone === data.parentPhone
         );
 
         if (duplicateById) {
@@ -328,7 +380,7 @@ export const checkForDuplicates = (validatedStudents, existingStudents) => {
                 isDuplicate: true,
                 errors: {
                     ...student.errors,
-                    duplicate: `Student with admission ID "${student.data.admissionId}" already exists in system`
+                    duplicate: `Student with admission ID "${data.admissionId}" already exists in system`
                 }
             };
         }
@@ -339,10 +391,36 @@ export const checkForDuplicates = (validatedStudents, existingStudents) => {
                 isDuplicate: true,
                 errors: {
                     ...student.errors,
-                    duplicate: `Similar student already exists in ${student.data.class} with same name and parent phone`
+                    duplicate: `Similar student already exists in ${data.class} with same name and parent phone`
                 }
             };
         }
+
+        // Then check for duplicates within the CSV being imported
+        if (data.admissionId && seenAdmissionIds.has(data.admissionId)) {
+            return {
+                ...student,
+                isDuplicate: true,
+                errors: {
+                    ...student.errors,
+                    duplicate: `Duplicate admission ID "${data.admissionId}" found in import file`
+                }
+            };
+        }
+
+        if (seenDetails.has(detailKey)) {
+            return {
+                ...student,
+                isDuplicate: true,
+                errors: {
+                    ...student.errors,
+                    duplicate: `Duplicate student found in import file with same name, class and parent phone`
+                }
+            };
+        }
+
+        if (data.admissionId) seenAdmissionIds.add(data.admissionId);
+        seenDetails.add(detailKey);
 
         return student;
     });

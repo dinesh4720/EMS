@@ -7,7 +7,7 @@ import {
 } from "react";
 import { useSearchParams } from "react-router-dom";
 // Translations removed — all text is plain English to match StaffList style
-import { Plus, Users, Printer } from "lucide-react";
+import { Plus, Users, Printer, FileSpreadsheet } from "lucide-react";
 import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/common/Pagination";
 import { useNavigate } from "react-router-dom";
@@ -349,6 +349,14 @@ export default function StudentsList({ onAddStudent }) {
             aria-label="Print preview"
           >
             <Printer size={14} aria-hidden />
+          </button>
+          <button
+            type="button"
+            className="btn btn--sm"
+            onClick={() => { setCsvFile(null); onCsvUploadOpen(); }}
+          >
+            <FileSpreadsheet size={13} aria-hidden />
+            Import
           </button>
           <button
             type="button"

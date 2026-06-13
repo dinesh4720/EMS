@@ -45,8 +45,11 @@ async function installRemarksMockApi(
       const newRemark: RemarkRecord = {
         _id: remarkId, id: remarkId,
         studentId,
-        category: body.category || 'General',
-        remark: body.remark || body.text || body.content || '',
+        category: body.category || body.type || 'General',
+        title: body.title || '',
+        description: body.description || body.remark || body.text || body.content || '',
+        remark: body.description || body.remark || body.text || body.content || '',
+        sentToParent: body.sentToParent ?? false,
         date: body.date || new Date().toISOString().split('T')[0],
         schoolId: SCHOOL_ID,
       };
@@ -75,8 +78,11 @@ async function installRemarksMockApi(
       const newRemark: RemarkRecord = {
         _id: remarkId, id: remarkId,
         studentId: body.studentId || '',
-        category: body.category || 'General',
-        remark: body.remark || body.text || body.content || '',
+        category: body.category || body.type || 'General',
+        title: body.title || '',
+        description: body.description || body.remark || body.text || body.content || '',
+        remark: body.description || body.remark || body.text || body.content || '',
+        sentToParent: body.sentToParent ?? false,
         date: body.date || new Date().toISOString().split('T')[0],
         schoolId: SCHOOL_ID,
       };
@@ -299,10 +305,7 @@ test.describe('TC026 - Student Remarks', () => {
     }
 
     // Write remark text
-    const remarkTextArea = page.getByLabel(/remark|comment|note/i)
-      .or(page.getByPlaceholder(/remark|comment|write|type/i))
-      .or(page.locator('textarea'))
-      .first();
+    const remarkTextArea = page.locator('textarea#remark-desc, textarea[placeholder*="remark" i], textarea').first();
     if (await remarkTextArea.isVisible().catch(() => false)) {
       await remarkTextArea.fill('Exceptional progress in Science practicals. Demonstrates strong lab skills.');
     }

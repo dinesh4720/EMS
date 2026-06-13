@@ -13,7 +13,7 @@ export default defineConfig({
     ['list']
   ],
   use: {
-    baseURL: process.env.BASE_URL || 'http://localhost:5173',
+    baseURL: process.env.BASE_URL || `http://localhost:${process.env.PW_TEST_PORT || 5173}`,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -27,8 +27,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:5173',
+    command: `npm run dev -- --port ${process.env.PW_TEST_PORT || 5173}`,
+    url: `http://localhost:${process.env.PW_TEST_PORT || 5173}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
   },

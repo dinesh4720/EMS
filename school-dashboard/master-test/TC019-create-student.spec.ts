@@ -28,7 +28,7 @@ test.describe('TC019 - Create Student', () => {
     await expect(listCount).toBeVisible({ timeout: 10000 });
 
     // Click "New Student" button
-    const newStudentBtn = page.getByRole('button', { name: /new student/i });
+    const newStudentBtn = page.getByRole('button', { name: /new student/i }).first();
     await expect(newStudentBtn).toBeVisible();
     await newStudentBtn.click();
 

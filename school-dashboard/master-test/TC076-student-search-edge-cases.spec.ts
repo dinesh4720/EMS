@@ -149,10 +149,7 @@ test.describe('TC076 - Student Search Edge Cases', () => {
     await page.goto('/students');
     await page.waitForLoadState('networkidle');
 
-    const searchInput = page.getByRole('searchbox')
-      .or(page.getByPlaceholder(/search/i))
-      .or(page.getByLabel(/search/i))
-      .first();
+    const searchInput = page.locator('input[name="student-search-query"]');
 
     await searchInput.fill('Arjun');
     await page.waitForTimeout(500); // debounce
@@ -165,10 +162,7 @@ test.describe('TC076 - Student Search Edge Cases', () => {
     await page.goto('/students');
     await page.waitForLoadState('networkidle');
 
-    const searchInput = page.getByRole('searchbox')
-      .or(page.getByPlaceholder(/search/i))
-      .or(page.getByLabel(/search/i))
-      .first();
+    const searchInput = page.locator('input[name="student-search-query"]');
 
     await searchInput.fill('ar');
     await page.waitForTimeout(500);
@@ -182,10 +176,7 @@ test.describe('TC076 - Student Search Edge Cases', () => {
     await page.goto('/students');
     await page.waitForLoadState('networkidle');
 
-    const searchInput = page.getByRole('searchbox')
-      .or(page.getByPlaceholder(/search/i))
-      .or(page.getByLabel(/search/i))
-      .first();
+    const searchInput = page.locator('input[name="student-search-query"]');
 
     await searchInput.fill('xyz');
     await page.waitForTimeout(500);
@@ -209,10 +200,7 @@ test.describe('TC076 - Student Search Edge Cases', () => {
     await page.goto('/students');
     await page.waitForLoadState('networkidle');
 
-    const searchInput = page.getByRole('searchbox')
-      .or(page.getByPlaceholder(/search/i))
-      .or(page.getByLabel(/search/i))
-      .first();
+    const searchInput = page.locator('input[name="student-search-query"]');
 
     await searchInput.fill('1');
     await page.waitForTimeout(500);
@@ -230,10 +218,7 @@ test.describe('TC076 - Student Search Edge Cases', () => {
     await page.goto('/students');
     await page.waitForLoadState('networkidle');
 
-    const searchInput = page.getByRole('searchbox')
-      .or(page.getByPlaceholder(/search/i))
-      .or(page.getByLabel(/search/i))
-      .first();
+    const searchInput = page.locator('input[name="student-search-query"]');
 
     await searchInput.fill('ADM-0001');
     await page.waitForTimeout(500);
@@ -247,10 +232,7 @@ test.describe('TC076 - Student Search Edge Cases', () => {
     await page.goto('/students');
     await page.waitForLoadState('networkidle');
 
-    const searchInput = page.getByRole('searchbox')
-      .or(page.getByPlaceholder(/search/i))
-      .or(page.getByLabel(/search/i))
-      .first();
+    const searchInput = page.locator('input[name="student-search-query"]');
 
     // Search first
     await searchInput.fill('Arjun');
@@ -269,10 +251,7 @@ test.describe('TC076 - Student Search Edge Cases', () => {
     await page.goto('/students');
     await page.waitForLoadState('networkidle');
 
-    const searchInput = page.getByRole('searchbox')
-      .or(page.getByPlaceholder(/search/i))
-      .or(page.getByLabel(/search/i))
-      .first();
+    const searchInput = page.locator('input[name="student-search-query"]');
 
     await searchInput.fill('  Arjun  ');
     await page.waitForTimeout(500);
@@ -286,10 +265,7 @@ test.describe('TC076 - Student Search Edge Cases', () => {
     await page.goto('/students');
     await page.waitForLoadState('networkidle');
 
-    const searchInput = page.getByRole('searchbox')
-      .or(page.getByPlaceholder(/search/i))
-      .or(page.getByLabel(/search/i))
-      .first();
+    const searchInput = page.locator('input[name="student-search-query"]');
 
     await searchInput.fill('arjun');
     await page.waitForTimeout(500);
@@ -302,10 +278,7 @@ test.describe('TC076 - Student Search Edge Cases', () => {
     await page.goto('/students');
     await page.waitForLoadState('networkidle');
 
-    const searchInput = page.getByRole('searchbox')
-      .or(page.getByPlaceholder(/search/i))
-      .or(page.getByLabel(/search/i))
-      .first();
+    const searchInput = page.locator('input[name="student-search-query"]');
 
     await searchInput.fill('ARJUN');
     await page.waitForTimeout(500);
@@ -318,10 +291,7 @@ test.describe('TC076 - Student Search Edge Cases', () => {
     await page.goto('/students');
     await page.waitForLoadState('networkidle');
 
-    const searchInput = page.getByRole('searchbox')
-      .or(page.getByPlaceholder(/search/i))
-      .or(page.getByLabel(/search/i))
-      .first();
+    const searchInput = page.locator('input[name="student-search-query"]');
 
     await searchInput.fill("O'Brien");
     await page.waitForTimeout(500);
@@ -337,10 +307,7 @@ test.describe('TC076 - Student Search Edge Cases', () => {
     await page.goto('/students');
     await page.waitForLoadState('networkidle');
 
-    const searchInput = page.getByRole('searchbox')
-      .or(page.getByPlaceholder(/search/i))
-      .or(page.getByLabel(/search/i))
-      .first();
+    const searchInput = page.locator('input[name="student-search-query"]');
 
     await searchInput.fill('Ram');
     await page.waitForTimeout(500);
@@ -363,10 +330,7 @@ test.describe('TC076 - Student Search Edge Cases', () => {
     }
 
     // Search for part of the long name
-    const searchInput = page.getByRole('searchbox')
-      .or(page.getByPlaceholder(/search/i))
-      .or(page.getByLabel(/search/i))
-      .first();
+    const searchInput = page.locator('input[name="student-search-query"]');
 
     await searchInput.fill('Vikram Rathore');
     await page.waitForTimeout(500);
@@ -379,10 +343,7 @@ test.describe('TC076 - Student Search Edge Cases', () => {
     await page.goto('/students');
     await page.waitForLoadState('networkidle');
 
-    const searchInput = page.getByRole('searchbox')
-      .or(page.getByPlaceholder(/search/i))
-      .or(page.getByLabel(/search/i))
-      .first();
+    const searchInput = page.locator('input[name="student-search-query"]');
 
     await searchInput.fill('ADM-000');
     await page.waitForTimeout(500);
@@ -398,10 +359,7 @@ test.describe('TC076 - Student Search Edge Cases', () => {
     await page.goto('/students');
     await page.waitForLoadState('networkidle');
 
-    const searchInput = page.getByRole('searchbox')
-      .or(page.getByPlaceholder(/search/i))
-      .or(page.getByLabel(/search/i))
-      .first();
+    const searchInput = page.locator('input[name="student-search-query"]');
 
     // Type rapidly character by character
     await searchInput.type('Arjun', { delay: 50 });
@@ -416,10 +374,7 @@ test.describe('TC076 - Student Search Edge Cases', () => {
     await page.goto('/students');
     await page.waitForLoadState('networkidle');
 
-    const searchInput = page.getByRole('searchbox')
-      .or(page.getByPlaceholder(/search/i))
-      .or(page.getByLabel(/search/i))
-      .first();
+    const searchInput = page.locator('input[name="student-search-query"]');
 
     // Focus and blur without typing
     await searchInput.focus();

@@ -58,10 +58,7 @@ test.describe('TC021 - Student List Filters', () => {
     await page.goto('/students');
     await page.waitForLoadState('networkidle');
 
-    const searchInput = page.getByRole('searchbox')
-      .or(page.getByPlaceholder(/search/i))
-      .or(page.getByLabel(/search/i))
-      .first();
+    const searchInput = page.locator('input[name="student-search-query"]');
     await searchInput.fill('Aarav');
 
     await page.waitForTimeout(500); // debounce
@@ -74,10 +71,7 @@ test.describe('TC021 - Student List Filters', () => {
     await page.goto('/students');
     await page.waitForLoadState('networkidle');
 
-    const searchInput = page.getByRole('searchbox')
-      .or(page.getByPlaceholder(/search/i))
-      .or(page.getByLabel(/search/i))
-      .first();
+    const searchInput = page.locator('input[name="student-search-query"]');
 
     // Use the admission ID of the first student (ADM-0001)
     await searchInput.fill('ADM-0001');
@@ -193,10 +187,7 @@ test.describe('TC021 - Student List Filters', () => {
     await page.waitForLoadState('networkidle');
 
     // Apply a search filter first
-    const searchInput = page.getByRole('searchbox')
-      .or(page.getByPlaceholder(/search/i))
-      .or(page.getByLabel(/search/i))
-      .first();
+    const searchInput = page.locator('input[name="student-search-query"]');
     await searchInput.fill('Aarav');
     await page.waitForTimeout(500);
 
