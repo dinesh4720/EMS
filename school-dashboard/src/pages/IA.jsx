@@ -178,7 +178,9 @@ const MODULES = [
       "BulkSubjectAssignment",
       "StaffAttendanceRegularize",
     ],
-    status: ["⬜", "⬜", "⬜", "⬜"],
+    status: ["✅", "⬜", "⬜", "✅"],
+    auditDate: "2026-06-14",
+    issue: "DK-973",
   },
   {
     name: "Students",

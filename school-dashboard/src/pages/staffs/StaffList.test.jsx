@@ -25,19 +25,6 @@ vi.mock("../../context/AppContext", () => ({
   useApp: () => ({ staff: [], staffAttendance: {}, loading: false }),
 }));
 
-// Stub the page chrome so the test focuses on StaffList's own render body.
-// Rendering `children` lets the empty-state inside the list area show through;
-// the toolbar/actions props (which hold heavier components) are intentionally
-// not rendered.
-vi.mock("../../components/ui", () => ({
-  PageShell: ({ title, children }) => (
-    <div>
-      <h1>{title}</h1>
-      {children}
-    </div>
-  ),
-}));
-
 // Closed modal — render nothing to avoid portal noise in jsdom.
 vi.mock("../../components/ui/PrintPreviewModal", () => ({ default: () => null }));
 
@@ -58,7 +45,7 @@ describe("StaffList", () => {
       )
     ).not.toThrow();
 
-    // The page shell title and the empty-state copy both render.
+    // The page title and the empty-state copy both render.
     expect(screen.getByText("Staff")).toBeTruthy();
     expect(screen.getByText("No staff yet")).toBeTruthy();
   });

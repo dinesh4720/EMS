@@ -6,10 +6,10 @@ import { useTranslation } from "react-i18next";
 import SectionHeader from "./SectionHeader";
 
 const inputStyles = {
-  inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10",
+  inputWrapper: "bg-background border-1 border-border-token hover:border-fg-subtle h-10",
 };
 const selectStyles = {
-  trigger: "bg-background border-1 border-default-200 hover:border-default-300 h-10",
+  trigger: "bg-background border-1 border-border-token hover:border-fg-subtle h-10",
 };
 
 const employmentTypes = [
@@ -40,7 +40,7 @@ function PersonalInfoStep({
   return (
     <div className="space-y-5 animate-fade-in text-left">
       {/* Profile Photo */}
-      <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-zinc-900 dark:to-zinc-800/50 border border-gray-200/60 dark:border-zinc-700/60">
+      <div className="flex items-center gap-4 p-4 rounded-xl bg-surface-2 border border-border-token">
         {formData.picture ? (
           <Avatar
             src={formData.picture instanceof File ? picturePreviewUrl : formData.picture}
@@ -51,17 +51,17 @@ function PersonalInfoStep({
           />
         ) : (
           <div
-            className="w-16 h-16 rounded-full border-2 border-dashed border-gray-300 dark:border-zinc-600 bg-surface-2 flex items-center justify-center shrink-0 cursor-pointer hover:border-gray-400 transition-colors"
+            className="w-16 h-16 rounded-full border-2 border-dashed border-fg-faint bg-surface-2 flex items-center justify-center shrink-0 cursor-pointer hover:border-fg-subtle transition-colors"
             onClick={onOpenCameraCapture}
           >
-            <User size={24} className="text-gray-300 dark:text-zinc-500" />
+            <User size={24} className="text-fg-faint" />
           </div>
         )}
         <div className="flex flex-col gap-1.5">
           <p className="text-sm font-medium text-fg">{t('staff.form.staffPhoto')}</p>
           <div className="flex items-center gap-2">
             <button
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary-600 transition-colors px-2.5 py-1 rounded-md hover:bg-primary/5 cursor-pointer"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-accent hover:text-accent-hover transition-colors px-2.5 py-1 rounded-md hover:bg-accent-bg-subtle cursor-pointer"
               onClick={onOpenCameraCapture}
             >
               <Camera size={12} />
@@ -69,7 +69,7 @@ function PersonalInfoStep({
             </button>
             {formData.picture && (
               <button
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-danger hover:text-danger-600 transition-colors px-2.5 py-1 rounded-md hover:bg-danger/5 cursor-pointer"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-danger-token hover:text-danger-hover transition-colors px-2.5 py-1 rounded-md hover:bg-danger-bg cursor-pointer"
                 onClick={() => updateField("picture", null)}
               >
                 <Trash2 size={12} />
@@ -141,7 +141,7 @@ function PersonalInfoStep({
               className="w-full"
               classNames={{
                 base: "w-full",
-                inputWrapper: "hover:border-default-300 transition-colors data-[hover=true]:border-default-300",
+                inputWrapper: "hover:border-fg-subtle transition-colors data-[hover=true]:border-fg-subtle",
               }}
             />
           </div>
@@ -149,7 +149,7 @@ function PersonalInfoStep({
 
         {/* Gender */}
         <div className="space-y-2">
-          <label className="text-xs font-medium text-fg-muted">{t('staff.about.gender')} <span className="text-red-500">*</span></label>
+          <label className="text-xs font-medium text-fg-muted">{t('staff.about.gender')} <span className="text-danger-token">*</span></label>
           <RadioGroup
             orientation="horizontal"
             value={formData.gender}
@@ -215,7 +215,7 @@ function PersonalInfoStep({
             <Input
               label={t('staff.form.mobileLabel')}
               labelPlacement="outside"
-              startContent={<span className="text-default-400 text-xs">+91</span>}
+              startContent={<span className="text-fg-faint text-xs">+91</span>}
               placeholder={t('staff.form.mobilePlaceholder')}
               value={formData.phone}
               onValueChange={v => {
@@ -232,7 +232,7 @@ function PersonalInfoStep({
               classNames={inputStyles}
             />
             <Checkbox
-              classNames={{ label: "text-xs text-default-500" }}
+              classNames={{ label: "text-xs text-fg-muted" }}
               size="sm"
               isSelected={formData.isWhatsapp}
               onValueChange={v => {
@@ -251,7 +251,7 @@ function PersonalInfoStep({
               type="tel"
               maxLength={10}
               pattern="[0-9]*"
-              startContent={<span className="text-default-400 text-xs">+91</span>}
+              startContent={<span className="text-fg-faint text-xs">+91</span>}
               placeholder={t('staff.form.whatsappPlaceholder')}
               value={formData.whatsappNumber}
               onValueChange={v => {
@@ -297,7 +297,7 @@ function PersonalInfoStep({
           radius="sm"
           minRows={2}
           description={`${(formData.address || '').length}/200`}
-          classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300" }}
+          classNames={{ inputWrapper: "bg-background border-1 border-border-token hover:border-fg-subtle" }}
         />
       </div>
 
@@ -306,7 +306,7 @@ function PersonalInfoStep({
         <SectionHeader icon={ShieldAlert} title={t('staff.form.emergencyContacts')} />
         <p className="text-xs text-fg-muted -mt-1">{t('staff.form.emergencyContactsHint')}</p>
         {(formData.emergencyContacts || []).map((contact, index) => (
-          <div key={contact._key} className="p-3 border border-border-token rounded-lg space-y-3 relative group hover:border-gray-300 dark:hover:border-zinc-600 transition-colors">
+          <div key={contact._key} className="p-3 border border-border-token rounded-lg space-y-3 relative group hover:border-fg-subtle transition-colors">
             {(formData.emergencyContacts || []).length > 1 && (
               <button
                 className="absolute top-2 right-2 text-fg-faint hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity"
@@ -316,15 +316,15 @@ function PersonalInfoStep({
               </button>
             )}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <Input placeholder={t('pages.contactName1')} value={contact.name} onValueChange={v => handleEmergencyContactChange(index, "name", v)} size="sm" radius="sm" variant="bordered" classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-9" }} />
-              <Input placeholder={t('pages.relationship')} value={contact.relationship} onValueChange={v => handleEmergencyContactChange(index, "relationship", v)} size="sm" radius="sm" variant="bordered" classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-9" }} />
-              <Input placeholder={t('pages.phoneNumber1')} value={contact.phone} onValueChange={v => handleEmergencyContactChange(index, "phone", v)} size="sm" radius="sm" variant="bordered" isInvalid={!!errors[`emergencyPhone_${index}`]} errorMessage={errors[`emergencyPhone_${index}`]} startContent={<span className="text-default-400 text-2xs">+91</span>} classNames={{ inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-9" }} />
+              <Input placeholder={t('pages.contactName1')} value={contact.name} onValueChange={v => handleEmergencyContactChange(index, "name", v)} size="sm" radius="sm" variant="bordered" classNames={{ inputWrapper: "bg-background border-1 border-border-token hover:border-fg-subtle h-9" }} />
+              <Input placeholder={t('pages.relationship')} value={contact.relationship} onValueChange={v => handleEmergencyContactChange(index, "relationship", v)} size="sm" radius="sm" variant="bordered" classNames={{ inputWrapper: "bg-background border-1 border-border-token hover:border-fg-subtle h-9" }} />
+              <Input placeholder={t('pages.phoneNumber1')} value={contact.phone} onValueChange={v => handleEmergencyContactChange(index, "phone", v)} size="sm" radius="sm" variant="bordered" isInvalid={!!errors[`emergencyPhone_${index}`]} errorMessage={errors[`emergencyPhone_${index}`]} startContent={<span className="text-fg-faint text-2xs">+91</span>} classNames={{ inputWrapper: "bg-background border-1 border-border-token hover:border-fg-subtle h-9" }} />
             </div>
           </div>
         ))}
         <button
           onClick={addEmergencyContact}
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary-600 transition-colors px-2.5 py-1 rounded-md hover:bg-primary/5 cursor-pointer"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-accent hover:text-accent-hover transition-colors px-2.5 py-1 rounded-md hover:bg-accent-bg-subtle cursor-pointer"
         >
           <Plus size={12} />
           {t('staff.form.addContact')}

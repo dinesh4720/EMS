@@ -8,7 +8,7 @@ export default function StaffOverviewStats({ stats }) {
       {stats.map((stat) => (
         <div
           key={stat.label}
-          className="bg-surface rounded-lg p-4 border border-divider hover:border-gray-200 dark:hover:border-zinc-700 transition-colors"
+          className="bg-surface rounded-lg p-4 border border-divider hover:border-border-strong transition-colors"
         >
           <div className="flex items-start justify-between mb-3">
             <div className="w-9 h-9 rounded-lg bg-surface-2 flex items-center justify-center">
