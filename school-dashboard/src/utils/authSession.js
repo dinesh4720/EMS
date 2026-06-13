@@ -139,3 +139,14 @@ export function clearStoredUser() {
   memoryUser = null;
   dispatchAuthEvent('auth-session-cleared');
 }
+
+// SECURITY: Remove legacy mock-credentials that were stored in localStorage by
+// an earlier version of AuthContext (DASHBOARD_AUDIT.md #2). This ensures
+// browsers that had the old code do not retain plaintext passwords in storage.
+export function clearLegacyCredentials() {
+  try {
+    localStorage.removeItem('app_credentials');
+  } catch {
+    // ignore (e.g. private browsing with storage disabled)
+  }
+}

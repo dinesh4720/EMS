@@ -7,6 +7,7 @@ import {
   getAuthHeaders,
   saveStoredUser,
   clearStoredUser,
+  clearLegacyCredentials,
 } from './authSession';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -226,5 +227,37 @@ describe('clearStoredUser', () => {
     setSessionUser(validUser);
     clearStoredUser();
     expect(getStoredUser()).toBeNull();
+  });
+});
+
+// ─── clearLegacyCredentials ───────────────────────────────────────────────────
+
+describe('clearLegacyCredentials', () => {
+  beforeEach(() => {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.clear();
+    }
+  });
+
+  it('removes the legacy app_credentials key from localStorage', () => {
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
+    localStorage.setItem('app_credentials', JSON.stringify({ 'a@b.com': { password: '123' } }));
+    clearLegacyCredentials();
+    expect(localStorage.getItem('app_credentials')).toBeNull();
+  });
+
+  it('does not throw when localStorage is unavailable', () => {
+    // Overriding removeItem to simulate disabled storage
+    const originalRemoveItem = Storage.prototype.removeItem;
+    Storage.prototype.removeItem = function () {
+      throw new Error('Storage disabled');
+    };
+    try {
+      expect(() => clearLegacyCredentials()).not.toThrow();
+    } finally {
+      Storage.prototype.removeItem = originalRemoveItem;
+    }
   });
 });
