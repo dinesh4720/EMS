@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -15,16 +15,6 @@ import {
   useDisclosure,
   Spinner,
   Chip,
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
 } from "@heroui/react";
 import {
   Eye,
@@ -37,6 +27,10 @@ import {
 import toast from "react-hot-toast";
 import { intakeFormsApi } from "../../services/api";
 import { format } from "date-fns";
+import PageHeader from '../../components/ui/PageHeader';
+import DataTable from '../../components/ui/DataTable';
+import IconButton from '../../components/ui/IconButton';
+import DropdownMenu from '../../components/ui/DropdownMenu';
 
 export default function FormSubmissions() {
   const { t } = useTranslation();
@@ -150,19 +144,99 @@ export default function FormSubmissions() {
     return <span>{value}</span>;
   };
 
+  const columns = useMemo(() => [
+    {
+      key: 'formName',
+      label: t('formSubmissions.colFormName'),
+      render: (row) => (
+        <div>
+          <div className="font-medium text-fg">
+            {row.formId?.formName || row.formName || '-'}
+          </div>
+          <div className="text-xs text-fg-faint">
+            {row.formId?.formType || row.formType || '-'}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'submittedBy',
+      label: t('formSubmissions.colSubmittedBy'),
+      render: (row) => (
+        <div className="text-sm">{row.submittedByEmail || row.submittedByPhone || row.submittedBy || '-'}</div>
+      ),
+    },
+    {
+      key: 'submittedDate',
+      label: t('formSubmissions.colSubmittedDate'),
+      render: (row) => (
+        <div className="text-sm">
+          {format(
+            new Date(row.submittedAt),
+            "MMM dd, yyyy HH:mm"
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      label: t('formSubmissions.colStatus'),
+      render: (row) => (
+        <Chip
+          size="sm"
+          variant="dot"
+          color={getStatusColor(row.reviewStatus)}
+        >
+          {row.reviewStatus}
+        </Chip>
+      ),
+    },
+    {
+      key: 'reviewedBy',
+      label: t('formSubmissions.colReviewedBy'),
+      render: (row) => (
+        <div className="text-sm">
+          {row.reviewedBy || "-"}
+        </div>
+      ),
+    },
+  ], [t]);
+
+  const rowActions = (row) => (
+    <DropdownMenu
+      trigger={
+        <IconButton
+          aria-label={t('aria.menus.submissionActions')}
+          icon={<MoreVertical size={16} />}
+          size="sm"
+        />
+      }
+      items={[
+        {
+          key: 'view',
+          label: t('formSubmissions.reviewSubmission'),
+          icon: <Eye size={16} />,
+          onClick: () => handleViewSubmission(row._id || row.id),
+        },
+        ...(row.staffId ? [{
+          key: 'staff',
+          label: t('formSubmissions.viewStaffRecord'),
+          icon: <User size={16} />,
+          onClick: () => navigate(`/staff/${row.staffId}`),
+        }] : []),
+      ]}
+      ariaLabel={t('aria.menus.submissionActions')}
+    />
+  );
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold text-fg">
-            {t('formSubmissions.title')}
-          </h2>
-          <p className="text-sm text-fg-muted mt-1">
-            {t('formSubmissions.subtitle')}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title={t('formSubmissions.title')}
+        description={t('formSubmissions.subtitle')}
+        bordered={false}
+        size="lg"
+      />
 
       {/* Filters */}
       <div className="flex gap-2">
@@ -180,102 +254,20 @@ export default function FormSubmissions() {
       </div>
 
       {/* Submissions Table */}
-      <Card>
-        <CardBody className="p-0">
-          <div className="overflow-x-auto">
-          <Table
-            aria-label={t('aria.tables.formSubmissions')}
-            removeWrapper
-            classNames={{
-              th: "bg-surface-2 text-fg font-semibold",
-              td: "py-4",
-            }}
-          >
-            <TableHeader>
-              <TableColumn scope="col">{t('formSubmissions.colFormName')}</TableColumn>
-              <TableColumn scope="col">{t('formSubmissions.colSubmittedBy')}</TableColumn>
-              <TableColumn scope="col">{t('formSubmissions.colSubmittedDate')}</TableColumn>
-              <TableColumn scope="col">{t('formSubmissions.colStatus')}</TableColumn>
-              <TableColumn scope="col">{t('formSubmissions.colReviewedBy')}</TableColumn>
-              <TableColumn scope="col">{t('formSubmissions.colActions')}</TableColumn>
-            </TableHeader>
-            <TableBody
-              items={submissions}
-              emptyContent={t('formSubmissions.noSubmissions')}
-              loadingContent={<Spinner />}
-              isLoading={loading}
-            >
-              {(submission) => (
-                <TableRow key={submission._id || submission.id}>
-                  <TableCell>
-                    <div className="font-medium text-fg">
-                      {submission.formId?.formName || submission.formName || '-'}
-                    </div>
-                    <div className="text-xs text-fg-faint">
-                      {submission.formId?.formType || submission.formType || '-'}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">{submission.submittedByEmail || submission.submittedByPhone || submission.submittedBy || '-'}</div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      {format(
-                        new Date(submission.submittedAt),
-                        "MMM dd, yyyy HH:mm"
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      size="sm"
-                      variant="dot"
-                      color={getStatusColor(submission.reviewStatus)}
-                    >
-                      {submission.reviewStatus}
-                    </Chip>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      {submission.reviewedBy || "-"}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Dropdown>
-                      <DropdownTrigger>
-                        <Button isIconOnly size="sm" variant="light" aria-label="More actions">
-                          <MoreVertical size={16} />
-                        </Button>
-                      </DropdownTrigger>
-                      <DropdownMenu aria-label={t('aria.menus.submissionActions')}>
-                        <DropdownItem
-                          key="view"
-                          startContent={<Eye size={16} />}
-                          onPress={() => handleViewSubmission(submission._id || submission.id)}
-                        >
-                          {t('formSubmissions.reviewSubmission')}
-                        </DropdownItem>
-                        {submission.staffId && (
-                          <DropdownItem
-                            key="staff"
-                            startContent={<User size={16} />}
-                            onPress={() =>
-                              navigate(`/staff/${submission.staffId}`)
-                            }
-                          >
-                            {t('formSubmissions.viewStaffRecord')}
-                          </DropdownItem>
-                        )}
-                      </DropdownMenu>
-                    </Dropdown>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-          </div>
-        </CardBody>
-      </Card>
+      <DataTable
+        ariaLabel={t('aria.tables.formSubmissions')}
+        columns={columns}
+        data={submissions}
+        keyField="_id"
+        loading={loading}
+        emptyState={{
+          title: t('formSubmissions.noSubmissions'),
+          description: 'Submissions will appear here.',
+        }}
+        rowActions={rowActions}
+        pagination
+        defaultPageSize={10}
+      />
 
       {/* Review Submission Modal */}
       <Modal
@@ -304,15 +296,15 @@ export default function FormSubmissions() {
                   <h4 className="text-lg font-semibold mb-4">
                     {t('formSubmissions.submittedInfo')}
                   </h4>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {selectedSubmission.formId?.fields?.map((field) => (
                       <div
                         key={field.id}
-                        className={`${
+                        className={
                           field.type === "textarea" || field.type === "file"
-                            ? "col-span-2"
-                            : "col-span-1"
-                        }`}
+                            ? "sm:col-span-2"
+                            : ""
+                        }
                       >
                         <label className="text-sm font-medium text-fg-muted block mb-1">
                           {field.label}
