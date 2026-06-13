@@ -60,10 +60,10 @@ const buildPayload = (form) => {
   return payload;
 };
 
-function Field({ label, required, hint, error, span2, children }) {
+function Field({ label, required, hint, error, span2, children, inputId }) {
   return (
     <div className={`field ${span2 ? 'span-2' : ''}`}>
-      <label className="field__label">
+      <label className="field__label" htmlFor={inputId}>
         {label}
         {required && <span className="req">*</span>}
       </label>
@@ -85,6 +85,7 @@ Field.propTypes = {
   hint: PropTypes.node,
   error: PropTypes.node,
   span2: PropTypes.bool,
+  inputId: PropTypes.string,
   children: PropTypes.node.isRequired,
 };
 
@@ -345,16 +346,18 @@ export default function AdmissionFormModal({
                   </div>
                 </div>
                 <div className="fgrid">
-                  <Field label="Student name" required error={errors.studentName}>
+                  <Field label="Student name" required error={errors.studentName} inputId="adm-student-name">
                     <input
+                      id="adm-student-name"
                       className={`input ${errors.studentName ? 'input--err' : ''}`}
                       value={form.studentName}
                       onChange={(e) => setField('studentName', e.target.value)}
                       placeholder="Enter student name"
                     />
                   </Field>
-                  <Field label="Date of birth" error={errors.dateOfBirth}>
+                  <Field label="Date of birth" error={errors.dateOfBirth} inputId="adm-dob">
                     <input
+                      id="adm-dob"
                       className={`input ${errors.dateOfBirth ? 'input--err' : ''}`}
                       type="date"
                       value={form.dateOfBirth}
@@ -362,16 +365,18 @@ export default function AdmissionFormModal({
                       max={`${new Date().getFullYear() - 1}-12-31`}
                     />
                   </Field>
-                  <Field label="Parent/guardian name" required error={errors.parentName}>
+                  <Field label="Parent/guardian name" required error={errors.parentName} inputId="adm-parent-name">
                     <input
+                      id="adm-parent-name"
                       className={`input ${errors.parentName ? 'input--err' : ''}`}
                       value={form.parentName}
                       onChange={(e) => setField('parentName', e.target.value)}
                       placeholder="Enter parent name"
                     />
                   </Field>
-                  <Field label="Phone" required error={errors.phoneNumber}>
+                  <Field label="Phone" required error={errors.phoneNumber} inputId="adm-phone">
                     <input
+                      id="adm-phone"
                       className={`input mono tnum ${errors.phoneNumber ? 'input--err' : ''}`}
                       type="tel"
                       inputMode="numeric"
@@ -383,8 +388,9 @@ export default function AdmissionFormModal({
                       placeholder="10-digit number"
                     />
                   </Field>
-                  <Field label="Email" error={errors.email} span2>
+                  <Field label="Email" error={errors.email} span2 inputId="adm-email">
                     <input
+                      id="adm-email"
                       className={`input ${errors.email ? 'input--err' : ''}`}
                       type="email"
                       value={form.email}
@@ -392,8 +398,9 @@ export default function AdmissionFormModal({
                       placeholder="parent@example.com"
                     />
                   </Field>
-                  <Field label="Class applying for" required error={errors.classApplyingFor}>
+                  <Field label="Class applying for" required error={errors.classApplyingFor} inputId="adm-class">
                     <select
+                      id="adm-class"
                       className={`select ${errors.classApplyingFor ? 'input--err' : ''}`}
                       value={form.classApplyingFor}
                       onChange={(e) => setField('classApplyingFor', e.target.value)}
@@ -405,8 +412,9 @@ export default function AdmissionFormModal({
                     </select>
                   </Field>
                   {showHscGroup && (
-                    <Field label="HSC group (optional)" error={errors.hscGroup}>
+                    <Field label="HSC group (optional)" error={errors.hscGroup} inputId="adm-hsc-group">
                       <select
+                        id="adm-hsc-group"
                         className="select"
                         value={form.hscGroup}
                         onChange={(e) => setField('hscGroup', e.target.value)}
@@ -418,8 +426,9 @@ export default function AdmissionFormModal({
                       </select>
                     </Field>
                   )}
-                  <Field label="Source">
+                  <Field label="Source" inputId="adm-source">
                     <select
+                      id="adm-source"
                       className="select"
                       value={form.source}
                       onChange={(e) => setField('source', e.target.value)}
@@ -429,8 +438,9 @@ export default function AdmissionFormModal({
                       ))}
                     </select>
                   </Field>
-                  <Field label="Status">
+                  <Field label="Status" inputId="adm-status">
                     <select
+                      id="adm-status"
                       className="select"
                       value={form.status}
                       onChange={(e) => setField('status', e.target.value)}
@@ -450,8 +460,9 @@ export default function AdmissionFormModal({
                     <div className="section__hint">Optional — required only if you test the student.</div>
                   </div>
                 </div>
-                <label className="row gap-2" style={{ marginBottom: 12, alignItems: 'center', cursor: 'pointer' }}>
+                <label htmlFor="adm-assessment-required" className="row gap-2" style={{ marginBottom: 12, alignItems: 'center', cursor: 'pointer' }}>
                   <input
+                    id="adm-assessment-required"
                     type="checkbox"
                     checked={form.assessmentRequired}
                     onChange={(e) => setField('assessmentRequired', e.target.checked)}
@@ -460,8 +471,9 @@ export default function AdmissionFormModal({
                 </label>
                 {form.assessmentRequired && (
                   <div className="fgrid">
-                    <Field label="Assign to teacher" required error={errors.assignedTeacher}>
+                    <Field label="Assign to teacher" required error={errors.assignedTeacher} inputId="adm-teacher">
                       <select
+                        id="adm-teacher"
                         className={`select ${errors.assignedTeacher ? 'input--err' : ''}`}
                         value={form.assignedTeacher || ''}
                         onChange={(e) => setField('assignedTeacher', e.target.value)}
@@ -472,24 +484,27 @@ export default function AdmissionFormModal({
                         ))}
                       </select>
                     </Field>
-                    <Field label="Test date" error={errors.testDate}>
+                    <Field label="Test date" error={errors.testDate} inputId="adm-test-date">
                       <input
+                        id="adm-test-date"
                         className={`input ${errors.testDate ? 'input--err' : ''}`}
                         type="date"
                         value={form.testDate}
                         onChange={(e) => setField('testDate', e.target.value)}
                       />
                     </Field>
-                    <Field label="Test time">
+                    <Field label="Test time" inputId="adm-test-time">
                       <input
+                        id="adm-test-time"
                         className="input"
                         type="time"
                         value={form.testTime}
                         onChange={(e) => setField('testTime', e.target.value)}
                       />
                     </Field>
-                    <Field label="Test result">
+                    <Field label="Test result" inputId="adm-test-result">
                       <select
+                        id="adm-test-result"
                         className="select"
                         value={form.testResult}
                         onChange={(e) => setField('testResult', e.target.value)}
@@ -511,8 +526,9 @@ export default function AdmissionFormModal({
                   </div>
                 </div>
                 <div className="fgrid">
-                  <Field label="Admission decision">
+                  <Field label="Admission decision" inputId="adm-decision">
                     <select
+                      id="adm-decision"
                       className="select"
                       value={form.admissionDecision}
                       onChange={(e) => setField('admissionDecision', e.target.value)}
@@ -522,8 +538,9 @@ export default function AdmissionFormModal({
                       ))}
                     </select>
                   </Field>
-                  <Field label="Decision remarks" error={errors.decisionRemarks} span2>
+                  <Field label="Decision remarks" error={errors.decisionRemarks} span2 inputId="adm-decision-remarks">
                     <textarea
+                      id="adm-decision-remarks"
                       className="textarea"
                       value={form.decisionRemarks}
                       onChange={(e) => setField('decisionRemarks', e.target.value)}
@@ -542,8 +559,9 @@ export default function AdmissionFormModal({
                   </div>
                 </div>
                 <div className="fgrid">
-                  <Field label="Payment status" span2>
+                  <Field label="Payment status" span2 inputId="adm-payment-status">
                     <select
+                      id="adm-payment-status"
                       className="select"
                       value={form.paymentStatus}
                       onChange={(e) => setField('paymentStatus', e.target.value)}
@@ -555,8 +573,9 @@ export default function AdmissionFormModal({
                   </Field>
                   {form.paymentStatus === 'paid' && (
                     <>
-                      <Field label="Payment mode">
+                      <Field label="Payment mode" inputId="adm-payment-mode">
                         <select
+                          id="adm-payment-mode"
                           className="select"
                           value={form.paymentMode}
                           onChange={(e) => setField('paymentMode', e.target.value)}
@@ -567,8 +586,9 @@ export default function AdmissionFormModal({
                           ))}
                         </select>
                       </Field>
-                      <Field label="Amount">
+                      <Field label="Amount" inputId="adm-payment-amount">
                         <input
+                          id="adm-payment-amount"
                           className="input mono tnum"
                           type="number"
                           value={form.paymentAmount}
@@ -576,8 +596,9 @@ export default function AdmissionFormModal({
                           placeholder="0"
                         />
                       </Field>
-                      <Field label="Payment date">
+                      <Field label="Payment date" inputId="adm-payment-date">
                         <input
+                          id="adm-payment-date"
                           className="input"
                           type="date"
                           value={form.paymentDate}
@@ -585,8 +606,9 @@ export default function AdmissionFormModal({
                           max={new Date().toLocaleDateString('en-CA')}
                         />
                       </Field>
-                      <Field label="Transaction ID">
+                      <Field label="Transaction ID" inputId="adm-transaction-id">
                         <input
+                          id="adm-transaction-id"
                           className="input mono tnum"
                           value={form.transactionId}
                           onChange={(e) => setField('transactionId', e.target.value)}

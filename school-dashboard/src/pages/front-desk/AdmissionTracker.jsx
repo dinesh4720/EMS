@@ -16,6 +16,7 @@ const formatApplicationId = (a) => {
 export default function AdmissionTracker({ admissions, onCardClick, onStageChange }) {
   const [dragId, setDragId] = useState(null);
   const [dragOverStage, setDragOverStage] = useState(null);
+  const [liveMessage, setLiveMessage] = useState('');
 
   const grouped = useMemo(() => {
     const byStage = Object.fromEntries(STAGE_OPTIONS.map((s) => [s.key, []]));
@@ -57,12 +58,27 @@ export default function AdmissionTracker({ admissions, onCardClick, onStageChang
     setDragId(null);
     setDragOverStage(null);
     if (!id || !onStageChange) return;
+    const stageLabel = STAGE_OPTIONS.find((s) => s.key === stageKey)?.label || stageKey;
+    const admission = admissions.find((a) => a._id === id);
+    setLiveMessage(`Moved ${admission?.studentName || 'admission'} to ${stageLabel}`);
     onStageChange(id, stageKey);
   };
 
+  const handleCardKeyMove = (admission, direction) => {
+    if (!onStageChange) return;
+    const currentIndex = STAGE_OPTIONS.findIndex((s) => s.key === stageOfStatus(admission.status));
+    if (currentIndex === -1) return;
+    const nextIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
+    if (nextIndex < 0 || nextIndex >= STAGE_OPTIONS.length) return;
+    const stageLabel = STAGE_OPTIONS[nextIndex].label;
+    setLiveMessage(`Moved ${admission.studentName || 'admission'} to ${stageLabel}`);
+    onStageChange(admission._id, STAGE_OPTIONS[nextIndex].key);
+  };
+
   return (
-    <div className="adm-board" role="list" aria-label="Admissions board">
-      {STAGE_OPTIONS.map((stage) => {
+    <>
+      <div className="adm-board" role="list" aria-label="Admissions board">
+        {STAGE_OPTIONS.map((stage) => {
         const items = grouped[stage.key] || [];
         const isOver = dragOverStage === stage.key;
         return (
@@ -105,7 +121,17 @@ export default function AdmissionTracker({ admissions, onCardClick, onStageChang
                       onDragStart={(e) => handleDragStart(e, a)}
                       onDragEnd={handleDragEnd}
                       onClick={() => onCardClick?.(a)}
-                      aria-label={`${a.studentName} — ${meta.label}`}
+                      onKeyDown={(e) => {
+                        if (!onStageChange) return;
+                        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                          e.preventDefault();
+                          handleCardKeyMove(a, 'next');
+                        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                          e.preventDefault();
+                          handleCardKeyMove(a, 'prev');
+                        }
+                      }}
+                      aria-label={`${a.studentName} — ${meta.label}. Use arrow keys to move between stages.`}
                     >
                       <span className="adm-card__id mono tnum">
                         {formatApplicationId(a)}
@@ -128,9 +154,13 @@ export default function AdmissionTracker({ admissions, onCardClick, onStageChang
               )}
             </div>
           </div>
-        );
-      })}
-    </div>
+          );
+        })}
+      </div>
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        {liveMessage}
+      </div>
+    </>
   );
 }
 

@@ -26,8 +26,13 @@
   cursor: pointer;
   transition: background 120ms ease, border-color 120ms ease;
   text-align: left;
+  min-height: 44px;
 }
 .fd-kpi__cell:hover { background: var(--surface-2); }
+.fd-kpi__cell:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
 .fd-kpi__cell.is-active {
   border-color: var(--accent);
   background: var(--accent-bg);
@@ -80,9 +85,15 @@
   border-bottom: 1px solid var(--divider);
   font-size: 13px;
   color: var(--fg);
+  min-height: 44px;
 }
 .fd-table__row:last-child { border-bottom: 0; }
 .fd-table__row:hover { background: var(--surface-2); }
+.fd-table__row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  background: var(--surface-2);
+}
 .fd-table__name { font-weight: 520; }
 .fd-table__sub { font-size: 11px; color: var(--fg-subtle); margin-top: 1px; }
 .fd-table__action { text-align: right; }
@@ -143,9 +154,16 @@
 .fd-overlay__field input:focus,
 .fd-overlay__field select:focus,
 .fd-overlay__field textarea:focus {
-  outline: none;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
   border-color: var(--accent);
   background: var(--surface-2);
+}
+.fd-overlay__field input:focus-visible,
+.fd-overlay__field select:focus-visible,
+.fd-overlay__field textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* REVAMP-29 — quick actions row (dense .optgrid) + pagination footer. */
@@ -160,6 +178,18 @@
   letter-spacing: 0.04em;
   color: var(--fg-subtle);
   font-weight: 500;
+}
+
+/* Optgrid buttons are rendered by the parent; ensure focus rings via the
+   existing .opt class or global button focus styles. We add a minimum
+   touch target here for the front-desk quick actions. */
+.fd-quick .opt {
+  min-height: 44px;
+  min-width: 44px;
+}
+.fd-quick .opt:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 .fd-more {
   display: flex;
@@ -182,6 +212,23 @@
     padding: 12px 16px;
   }
   .fd-table__action { text-align: left; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fd-kpi__cell,
+  .fd-table__row,
+  .fd-overlay__field input,
+  .fd-overlay__field select,
+  .fd-overlay__field textarea,
+  .fd-quick .opt,
+  .adm-col,
+  .adm-card,
+  .fd-seg__btn {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* ============================================================
@@ -328,10 +375,15 @@
   font-size: 12.5px;
   color: var(--fg);
   text-align: left;
+  min-height: 44px;
 }
 .adm-card:hover { border-color: var(--border-strong); background: var(--surface-hover); }
 .adm-card:active { cursor: grabbing; }
 .adm-card.is-dragging { opacity: 0.45; }
+.adm-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
 .adm-card__id {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
@@ -418,6 +470,12 @@
   width: 1px;
   background: var(--divider);
 }
+
+/* Ensure the admissions action icon buttons meet minimum touch target. */
+.adm-row__actions .iconbtn {
+  min-height: 32px;
+  min-width: 32px;
+}
 .adm-timeline__step:last-child::before { display: none; }
 .adm-timeline__label {
   font-size: 13px;
@@ -490,12 +548,17 @@
   font-size: 12px;
   font-weight: 500;
   transition: background 120ms ease, color 120ms ease;
+  min-height: 32px;
 }
 .fd-seg__btn:hover { color: var(--fg); }
 .fd-seg__btn.is-active {
   background: var(--surface);
   color: var(--fg);
   box-shadow: var(--shadow-sm);
+}
+.fd-seg__btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .fd-status {
@@ -666,6 +729,19 @@
 .gp-print__footer-label {
   font-size: var(--fs-11);
   color: var(--fg-subtle);
+}
+
+/* Visually hidden live region for screen-reader announcements */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* Conflict indicator for appointments */
