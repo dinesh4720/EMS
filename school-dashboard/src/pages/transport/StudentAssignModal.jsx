@@ -125,7 +125,7 @@ export default function StudentAssignModal({
           {loading ? (
             <div className="space-y-3 animate-pulse">
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-12 bg-surface-2 rounded-lg" />
+                <div key={`student-assign-skeleton-${i}`} className="h-12 bg-surface-2 rounded-lg" />
               ))}
             </div>
           ) : (

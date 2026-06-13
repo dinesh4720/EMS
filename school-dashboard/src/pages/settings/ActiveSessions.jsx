@@ -95,7 +95,7 @@ export default function ActiveSessions() {
         </div>
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="border border-border-token">
+            <Card key={`session-skeleton-${i}`} className="border border-border-token">
               <CardBody className="p-4">
                 <div className="animate-pulse flex items-center gap-4">
                   <div className="w-10 h-10 bg-surface-2 rounded-lg" />

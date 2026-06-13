@@ -69,7 +69,7 @@ export default function ChatSearch({ messages = [], onResultClick }) {
     const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
     return parts.map((part, i) =>
       i % 2 === 1
-        ? <mark key={i} className="bg-primary-100 dark:bg-primary/20 text-primary rounded px-0.5">{part}</mark>
+        ? <mark key={`match-${i}-${part}`} className="bg-primary-100 dark:bg-primary/20 text-primary rounded px-0.5">{part}</mark>
         : part
     );
   };

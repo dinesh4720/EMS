@@ -36,7 +36,7 @@ function StudentsListSkeleton() {
       <div className="flex-1 min-h-0 overflow-hidden">
         {Array.from({ length: 12 }).map((_, i) => (
           <div
-            key={i}
+            key={`student-row-skeleton-${i}`}
             className="flex items-center gap-3 px-4"
             style={{
               padding: "10px 16px",

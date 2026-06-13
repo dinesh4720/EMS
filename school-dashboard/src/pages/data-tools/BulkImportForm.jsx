@@ -76,9 +76,9 @@ function ResultPanel({ result }) {
             Error Details
           </h4>
           <div className="max-h-48 overflow-y-auto space-y-1">
-            {result.failed.map((row, i) => (
+            {result.failed.map((row) => (
               <div
-                key={i}
+                key={`failed-row-${row.row}-${row.error?.slice(0, 20) || ''}`}
                 className="flex items-start gap-2 text-xs p-2 bg-red-50 dark:bg-red-950/40 rounded"
               >
                 <span className="text-red-600 dark:text-red-400 font-mono shrink-0">

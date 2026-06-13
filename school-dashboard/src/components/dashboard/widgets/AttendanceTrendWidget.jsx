@@ -21,8 +21,8 @@ function AttendanceTooltip({ active, payload, label }) {
   return (
     <div className="bg-surface p-3 rounded-lg border border-border-token shadow-sm">
       <p className="text-xs font-medium text-fg-muted mb-1">{label}</p>
-      {payload.map((entry, i) => (
-        <p key={i} className="text-sm font-semibold text-fg" style={{ color: entry.color }}>
+      {payload.map((entry) => (
+        <p key={entry.name} className="text-sm font-semibold text-fg" style={{ color: entry.color }}>
           {entry.name}: {percentFormatter.format(entry.value || 0)}%
         </p>
       ))}

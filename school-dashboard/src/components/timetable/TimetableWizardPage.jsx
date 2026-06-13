@@ -503,8 +503,8 @@ const TimetableWizardPage = () => {
                   { value: timetables.length, label: t('components.timetablesCreated'), color: 'text-green-600 dark:text-green-400' },
                   { value: classes.length - timetables.length, label: t('components.missingTimetables'), color: 'text-orange-600' },
                   { value: classes.filter(c => !c.subjects || c.subjects.length === 0).length, label: t('components.missingSubjects'), color: 'text-red-500' },
-                ].map((stat, i) => (
-                  <div key={i} className="bg-surface rounded-2xl shadow-sm border border-border-token p-6 flex flex-col items-center justify-center text-center">
+                ].map((stat) => (
+                  <div key={stat.label} className="bg-surface rounded-2xl shadow-sm border border-border-token p-6 flex flex-col items-center justify-center text-center">
                     <span className={`text-3xl font-bold mb-1 ${stat.color}`}>{stat.value}</span>
                     <span className="text-sm text-fg-muted font-medium">{stat.label}</span>
                   </div>

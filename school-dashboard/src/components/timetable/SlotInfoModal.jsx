@@ -275,9 +275,9 @@ export default function SlotInfoModal({
                 <h4 className="text-sm font-semibold text-fg">Weekly Schedule</h4>
               </div>
               <div className="flex flex-wrap gap-2">
-                {subjectPeriodsPerWeek.map((sp, i) => (
+                {subjectPeriodsPerWeek.map((sp) => (
                   <Chip
-                    key={i}
+                    key={`${sp.day}-${sp.period}`}
                     size="sm"
                     variant={sp.day === day ? 'solid' : 'flat'}
                     color={sp.day === day ? 'primary' : 'default'}

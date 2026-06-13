@@ -207,7 +207,7 @@ const ResultsEntryModal = ({ examId, onClose }) => {
         <div className="h-10 animate-shimmer rounded" />
         <div className="space-y-2">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="flex gap-4 items-center">
+            <div key={`result-skeleton-${i}`} className="flex gap-4 items-center">
               <div className="h-10 flex-1 animate-shimmer rounded" />
               <div className="h-10 w-24 animate-shimmer rounded" />
               <div className="h-10 w-24 animate-shimmer rounded" />

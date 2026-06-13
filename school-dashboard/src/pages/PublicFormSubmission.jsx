@@ -39,7 +39,7 @@ function FormSkeleton() {
         </div>
         <div className="public-form__card">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="space-y-2">
+            <div key={`form-skeleton-${i}`} className="space-y-2">
               <Skeleton variant="text" className="h-3 w-1/4" />
               <Skeleton variant="rect" className="h-9 w-full" />
             </div>
