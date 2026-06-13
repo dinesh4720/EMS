@@ -57,7 +57,7 @@ export default function Enhanced3DVisual() {
             <div className="e3d-windows">
               {Array.from({ length: 15 }).map((_, i) => (
                 <div
-                  key={i}
+                  key={`e3d-window-${i}`}
                   className="e3d-window"
                   style={{ animationDelay: `${i * 0.15}s` }}
                 />

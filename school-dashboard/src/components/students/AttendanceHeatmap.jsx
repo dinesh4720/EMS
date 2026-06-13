@@ -46,7 +46,7 @@ export default function AttendanceHeatmap({ monthAttendance }) {
         <div className="heatmap">
           {padded.map((v, i) => (
             <div
-              key={i}
+              key={`hm-cell-${i}`}
               className={`hm-cell hm-cell--${
                 v === 1 ? "ok" : v === 2 ? "absent" : "off"
               }`}

@@ -218,7 +218,7 @@ export default function StaffAssignmentPanel({ staffId, onAssignClassTeacher }) 
     return (
       <div className="col" style={{ gap: 12, paddingTop: 8 }}>
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="card">
+          <div key={`assignment-skeleton-${i}`} className="card">
             <div className="card__head">
               <div style={{ width: 24, height: 24, background: "var(--surface-2)", borderRadius: 6 }} />
               <div className="col" style={{ gap: 6 }}>

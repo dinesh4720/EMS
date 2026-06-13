@@ -1095,7 +1095,7 @@ export default function TimetableWizardModal({
                       </thead>
                       <tbody>
                         {periods.map((period, idx) => (
-                          <tr key={`period-config-${idx}`} className={`border-b ${period.isBreak ? 'bg-surface-2' : ''}`}>
+                          <tr key={period._id || period.id || `period-config-${period.name}-${idx}`} className={`border-b ${period.isBreak ? 'bg-surface-2' : ''}`}>
                             <td className="py-2 px-3">{idx + 1}</td>
                             <td className="py-2 px-3">{period.name}</td>
                             <td className="py-2 px-3">{period.startTime}</td>
@@ -1154,7 +1154,7 @@ export default function TimetableWizardModal({
                   </div>
                   <ul className="space-y-1 text-sm text-red-600 dark:text-red-400">
                     {detectedConflicts.map((c, i) => (
-                      <li key={i} className="flex items-start gap-1.5">
+                      <li key={`conflict-${c.teacherName}-${c.day}-${c.periodIndex}`} className="flex items-start gap-1.5">
                         <span className="mt-0.5">•</span>
                         <span>
                           <strong>{c.teacherName}</strong> {t('classes.isDoubleBookedOn', 'is double-booked on')} <strong>{c.day}</strong>, {t('common.period', 'Period')} {c.periodIndex + 1} ({c.subjects.join(' & ')})
@@ -1176,9 +1176,9 @@ export default function TimetableWizardModal({
                   </div>
                   <div className="bg-surface rounded-lg border border-border-token overflow-hidden">
                     {Array.from({ length: 6 }).map((_, row) => (
-                      <div key={row} className="flex gap-px bg-surface-2">
+                      <div key={`gen-row-${row}`} className="flex gap-px bg-surface-2">
                         {Array.from({ length: 7 }).map((_, col) => (
-                          <div key={col} className="flex-1 bg-surface p-2">
+                          <div key={`gen-cell-${row}-${col}`} className="flex-1 bg-surface p-2">
                             <div className="h-8 animate-shimmer rounded" />
                           </div>
                         ))}

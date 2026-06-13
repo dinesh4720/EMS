@@ -99,8 +99,8 @@ export default function EnrollmentStatsWidget({ students = [], classes = [], loa
           />
           <Tooltip content={<EnrollmentTooltip />} />
           <Bar dataKey="count" name="Students" radius={[4, 4, 0, 0]} barSize={22}>
-            {data.map((_, i) => (
-              <Cell key={`cell-${i}`} fill={colors[i % colors.length]} />
+            {data.map((d, i) => (
+              <Cell key={`cell-${d.name || i}`} fill={colors[i % colors.length]} />
             ))}
           </Bar>
         </BarChart>

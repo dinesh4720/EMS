@@ -105,7 +105,7 @@ function ActivityFeedSkeleton({ rows = 4 }) {
           className="absolute left-[11px] top-2 bottom-2 w-px bg-surface-2"
         />
         {Array.from({ length: rows }).map((_, idx) => (
-          <li key={idx} className="relative">
+          <li key={`activity-skeleton-${idx}`} className="relative">
             <Skeleton
               variant="circle"
               className="absolute -left-9 top-0.5 h-6 w-6"
@@ -335,7 +335,7 @@ function ActivityFeed({
             <ol className="relative space-y-5">
               {group.items.map((event, idx) => (
                 <ActivityItem
-                  key={event.id ?? event._id ?? `${group.key}-${idx}`}
+                  key={event.id ?? event._id ?? `${group.key}-event-${idx}`}
                   event={event}
                 />
               ))}
@@ -355,7 +355,7 @@ function ActivityFeed({
       <ol className="relative space-y-5">
         {safeEvents.map((event, idx) => (
           <ActivityItem
-            key={event.id ?? event._id ?? idx}
+            key={event.id ?? event._id ?? `event-${idx}`}
             event={event}
           />
         ))}

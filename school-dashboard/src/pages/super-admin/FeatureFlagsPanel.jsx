@@ -227,7 +227,7 @@ export default function FeatureFlagsPanel() {
         {loading ? (
           <div className="space-y-3" aria-busy="true" aria-live="polite">
             {Array.from({ length: 4 }).map((_, i) => (
-              <SkeletonRow key={i} showAvatar={false} />
+              <SkeletonRow key={`flag-skel-${i}`} showAvatar={false} />
             ))}
           </div>
         ) : flags.length === 0 ? (

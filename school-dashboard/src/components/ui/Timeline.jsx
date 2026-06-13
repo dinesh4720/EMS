@@ -30,7 +30,7 @@ function TimelineSkeleton({ rows = 3 }) {
         className="absolute left-[11px] top-2 bottom-2 w-px bg-surface-2"
       />
       {Array.from({ length: rows }).map((_, idx) => (
-        <li key={idx} className="relative pl-9">
+        <li key={`timeline-skeleton-${idx}`} className="relative pl-9">
           <Skeleton variant="circle" className="absolute left-0 top-0.5 h-6 w-6" />
           <Skeleton variant="text" className="h-3 w-2/5 mb-2" />
           <Skeleton variant="text" className="h-3 w-4/5" />
@@ -115,7 +115,7 @@ function Timeline({
     <ol className={cn("relative space-y-6", className)} {...props}>
       {items.map((item, idx) => (
         <TimelineItem
-          key={item.id ?? idx}
+          key={item.id ?? `timeline-item-${idx}`}
           item={item}
           isLast={idx === items.length - 1}
         />
