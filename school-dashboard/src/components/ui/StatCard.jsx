@@ -44,8 +44,8 @@ function StatCard({ label, value, subtext, icon: Icon, color = 'gray', trend, hr
     >
       <div className="flex items-start justify-between mb-3">
         {/* Icon */}
-        <div className={`${colors.bg} w-9 h-9 rounded-lg flex items-center justify-center`}>
-          <Icon size={16} className={colors.text} strokeWidth={2} />
+        <div className={`${colors.bg} w-9 h-9 rounded-lg flex items-center justify-center`} aria-hidden="true">
+          <Icon size={16} className={colors.text} strokeWidth={2} aria-hidden="true" />
         </div>
 
         {/* Trend Badge */}
