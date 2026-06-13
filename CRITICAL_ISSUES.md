@@ -88,6 +88,7 @@ In `backend/server.js` alone, the following sensitive routes have **zero auth mi
   1. Remove `node_modules` from tracking: `git rm -r --cached node_modules`
   2. Ensure `.gitignore` entries are correct
   3. Commit the removal
+- **Status (2026-06-09):** No `node_modules` files are tracked in the current HEAD of `main` or any remote branch. `.gitignore` correctly excludes `node_modules/` in the root and all subdirectories (`owlin/`, `parent-app/`, `school-dashboard/`, `staff-app/`). Commit `044cd82d` previously removed tracked `node_modules` from the repository.
 
 ---
 
@@ -154,7 +155,7 @@ In `backend/server.js` alone, the following sensitive routes have **zero auth mi
 3. [ ] Add `authenticate` to all unprotected mutation routes in `server.js`
 4. [ ] Add `authenticate` to `studentFees.js`, `staffAttendance.js`, `feeHeads.js`, `feeSettings.js`
 5. [ ] Remove JWT secret fallback string — throw on missing env var
-6. [ ] Remove `node_modules` from git tracking
+6. [x] Remove `node_modules` from git tracking
 7. [ ] Delete `backend/school.db` and add `*.db` to `.gitignore`
 8. [ ] Fix rate limiting — remove dev/localhost skip, restore sane limits
 9. [ ] Replace all hardcoded `'2024-25'` with `CURRENT_ACADEMIC_YEAR` constant
