@@ -200,7 +200,15 @@ function ActivePill({ filterKey, config, onClick, onRemove }) {
                     e.stopPropagation();
                     onRemove(filterKey);
                 }}
+                onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onRemove(filterKey);
+                    }
+                }}
                 role="button"
+                tabIndex={0}
                 aria-label={`Remove ${config.label} filter`}
             >
                 <X size={11} />

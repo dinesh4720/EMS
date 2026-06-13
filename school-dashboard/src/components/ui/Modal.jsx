@@ -67,7 +67,6 @@ const Modal = memo(function Modal({
     >
       <div
         className={`ds-modal ${sizeClass} ${className}`.trim()}
-        onClick={(e) => e.stopPropagation()}
         role="document"
         aria-label={!title && ariaLabel ? ariaLabel : undefined}
       >

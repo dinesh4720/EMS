@@ -11,6 +11,7 @@ import {
 import { Users } from "lucide-react";
 import { useChartTheme, CHART_COLORS } from "../../../utils/chartTheme";
 import ChartCard from "../../ui/ChartCard";
+import { useChartAnimation } from "../../../hooks/useChartAnimation";
 
 const percentFormatter = new Intl.NumberFormat("en-IN", {
   maximumFractionDigits: 0,
@@ -36,6 +37,7 @@ export default function AttendanceTrendWidget({
   loading = false,
 }) {
   const chart = useChartTheme();
+  const animation = useChartAnimation();
 
   const data = useMemo(() => {
     if (historicalData.length > 0) return historicalData;
@@ -109,6 +111,7 @@ export default function AttendanceTrendWidget({
             strokeWidth={2.5}
             fillOpacity={1}
             fill="url(#studentGradient)"
+            {...animation}
           />
           <Area
             type="monotone"
@@ -118,6 +121,7 @@ export default function AttendanceTrendWidget({
             strokeWidth={2.5}
             fillOpacity={1}
             fill="url(#staffGradient)"
+            {...animation}
           />
         </AreaChart>
       </ResponsiveContainer>

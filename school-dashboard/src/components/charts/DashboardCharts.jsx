@@ -8,6 +8,7 @@ import { Card, CardBody, CardHeader } from "@heroui/react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
 import { useChartTheme, CHART_COLORS } from '../../utils/chartTheme';
 import { useTranslation } from 'react-i18next';
+import { useChartAnimation } from '../../hooks/useChartAnimation';
 
 const attendanceData = [
     { name: 'Mon', staff: 95, students: 88 },
@@ -27,6 +28,7 @@ const financeData = [
 export default function DashboardCharts() {
   const { t } = useTranslation();
     const chart = useChartTheme();
+    const animation = useChartAnimation();
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Chart 1: Attendance Trends */}
@@ -58,8 +60,8 @@ export default function DashboardCharts() {
                                     contentStyle={chart.tooltipStyle}
                                     itemStyle={chart.tooltipItemStyle}
                                 />
-                                <Area type="monotone" dataKey="students" stroke={CHART_COLORS.chart1} strokeWidth={3} fillOpacity={1} fill="url(#colorStudents)" />
-                                <Area type="monotone" dataKey="staff" stroke={CHART_COLORS.chart2} strokeWidth={3} fillOpacity={1} fill="url(#colorStaff)" />
+                                <Area type="monotone" dataKey="students" stroke={CHART_COLORS.chart1} strokeWidth={3} fillOpacity={1} fill="url(#colorStudents)" {...animation} />
+                                <Area type="monotone" dataKey="staff" stroke={CHART_COLORS.chart2} strokeWidth={3} fillOpacity={1} fill="url(#colorStaff)" {...animation} />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
@@ -87,8 +89,8 @@ export default function DashboardCharts() {
                                     itemStyle={chart.tooltipItemStyle}
                                 />
                                 <Legend iconType="circle" wrapperStyle={{ color: chart.legendColor }} />
-                                <Bar dataKey="collected" name="Collected (Lakhs)" fill={CHART_COLORS.chart3} radius={[4, 4, 0, 0]} />
-                                <Bar dataKey="pending" name="Pending (Lakhs)" fill={CHART_COLORS.chart4} radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="collected" name="Collected (Lakhs)" fill={CHART_COLORS.chart3} radius={[4, 4, 0, 0]} {...animation} />
+                                <Bar dataKey="pending" name="Pending (Lakhs)" fill={CHART_COLORS.chart4} radius={[4, 4, 0, 0]} {...animation} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>

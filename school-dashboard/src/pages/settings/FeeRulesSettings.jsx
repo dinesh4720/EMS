@@ -125,7 +125,7 @@ export function ConcessionsTab() {
     <div className="flex flex-col items-center py-12 gap-4">
       <p className="text-sm font-medium text-fg">Failed to load concessions</p>
       <p className="text-xs text-fg-muted">{fetchError}</p>
-      <button onClick={fetchConcessions} className="px-3 py-1.5 text-sm font-medium text-white bg-surface rounded-lg hover:bg-surface-2">Retry</button>
+      <button onClick={fetchConcessions} className="px-3 py-1.5 text-sm font-medium text-fg bg-surface rounded-lg hover:bg-surface-2">Retry</button>
     </div>
   );
 
@@ -133,7 +133,7 @@ export function ConcessionsTab() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-sm font-semibold text-fg uppercase tracking-wider">{t('pages.concessionsDiscounts')}</h3>
-        <button onClick={() => handleOpen()} className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-surface rounded-lg hover:bg-surface-2">
+        <button onClick={() => handleOpen()} className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-fg bg-surface rounded-lg hover:bg-surface-2">
           <Plus size={14} /> Add
         </button>
       </div>
@@ -217,7 +217,7 @@ export function ConcessionsTab() {
           </ModalBody>
           <ModalFooter className="border-t border-border-token px-6 py-4 gap-3">
             <button onClick={onClose} disabled={saving} className="px-4 py-2 text-sm text-fg bg-surface border border-border-token rounded-lg hover:bg-surface-2 disabled:opacity-50">{t('pages.cancel2')}</button>
-            <button onClick={handleSave} disabled={saving} className="px-4 py-2 text-sm text-white bg-surface rounded-lg hover:bg-surface-2 disabled:opacity-50">{saving ? 'Saving...' : t('pages.save')}</button>
+            <button onClick={handleSave} disabled={saving} className="px-4 py-2 text-sm text-fg bg-surface rounded-lg hover:bg-surface-2 disabled:opacity-50">{saving ? 'Saving...' : t('pages.save')}</button>
           </ModalFooter>
         </ModalContent>
       </Modal>
@@ -277,7 +277,7 @@ export function LateFeeTab() {
     <div className="flex flex-col items-center py-12 gap-4">
       <p className="text-sm font-medium text-fg">Failed to load late fee rules</p>
       <p className="text-xs text-fg-muted">{fetchError}</p>
-      <button onClick={fetchConfig} className="px-3 py-1.5 text-sm font-medium text-white bg-surface rounded-lg hover:bg-surface-2">Retry</button>
+      <button onClick={fetchConfig} className="px-3 py-1.5 text-sm font-medium text-fg bg-surface rounded-lg hover:bg-surface-2">Retry</button>
     </div>
   );
 
@@ -285,7 +285,7 @@ export function LateFeeTab() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-sm font-semibold text-fg uppercase tracking-wider">{t('pages.lateFeeRules')}</h3>
-        <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-surface rounded-lg hover:bg-surface-2 disabled:opacity-50">
+        <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-fg bg-surface rounded-lg hover:bg-surface-2 disabled:opacity-50">
           <Save size={14} /> Save
         </button>
       </div>
@@ -313,7 +313,7 @@ export function LateFeeTab() {
                   { key: 'flat', label: 'Flat Amount' },
                   { key: 'per_day', label: 'Per Day' }
                 ].map(type => (
-                  <button key={type.key} onClick={() => setFormData({ ...formData, fineType: type.key })} className={`px-4 py-2 text-sm rounded-lg border ${formData.fineType === type.key ? 'bg-surface text-white border-border-token' : 'bg-surface text-fg-muted border-border-token hover:border-border-strong'}`}>
+                  <button key={type.key} onClick={() => setFormData({ ...formData, fineType: type.key })} className={`px-4 py-2 text-sm rounded-lg border ${formData.fineType === type.key ? 'bg-surface text-fg border-border-token' : 'bg-surface text-fg-muted border-border-token hover:border-border-strong'}`}>
                     {type.label}
                   </button>
                 ))}
@@ -420,7 +420,7 @@ export function PaymentMethodsTab() {
     <div className="flex flex-col items-center py-12 gap-4">
       <p className="text-sm font-medium text-fg">Failed to load payment methods</p>
       <p className="text-xs text-fg-muted">{fetchError}</p>
-      <button onClick={fetchConfig} className="px-3 py-1.5 text-sm font-medium text-white bg-surface rounded-lg hover:bg-surface-2">Retry</button>
+      <button onClick={fetchConfig} className="px-3 py-1.5 text-sm font-medium text-fg bg-surface rounded-lg hover:bg-surface-2">Retry</button>
     </div>
   );
 
@@ -430,7 +430,7 @@ export function PaymentMethodsTab() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-sm font-semibold text-fg uppercase tracking-wider">{t('pages.paymentMethods')}</h3>
-        <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-surface rounded-lg hover:bg-surface-2 disabled:opacity-50">
+        <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-fg bg-surface rounded-lg hover:bg-surface-2 disabled:opacity-50">
           <Save size={14} /> Save
         </button>
       </div>
@@ -523,7 +523,7 @@ export function CollectionPeriodTab() {
     <div className="flex flex-col items-center py-12 gap-4">
       <p className="text-sm font-medium text-fg">Failed to load collection settings</p>
       <p className="text-xs text-fg-muted">{fetchError}</p>
-      <button onClick={fetchConfig} className="px-3 py-1.5 text-sm font-medium text-white bg-surface rounded-lg hover:bg-surface-2">Retry</button>
+      <button onClick={fetchConfig} className="px-3 py-1.5 text-sm font-medium text-fg bg-surface rounded-lg hover:bg-surface-2">Retry</button>
     </div>
   );
 
@@ -531,7 +531,7 @@ export function CollectionPeriodTab() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-sm font-semibold text-fg uppercase tracking-wider">{t('pages.collectionSettings')}</h3>
-        <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-surface rounded-lg hover:bg-surface-2 disabled:opacity-50">
+        <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-fg bg-surface rounded-lg hover:bg-surface-2 disabled:opacity-50">
           <Save size={14} /> Save
         </button>
       </div>
@@ -622,7 +622,7 @@ export function GeneralRulesTab() {
     <div className="flex flex-col items-center py-12 gap-4">
       <p className="text-sm font-medium text-fg">Failed to load fee rules</p>
       <p className="text-xs text-fg-muted">{fetchError}</p>
-      <button onClick={fetchConfig} className="px-3 py-1.5 text-sm font-medium text-white bg-surface rounded-lg hover:bg-surface-2">Retry</button>
+      <button onClick={fetchConfig} className="px-3 py-1.5 text-sm font-medium text-fg bg-surface rounded-lg hover:bg-surface-2">Retry</button>
     </div>
   );
 
@@ -630,7 +630,7 @@ export function GeneralRulesTab() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-sm font-semibold text-fg uppercase tracking-wider">{t('pages.feeRules')}</h3>
-        <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-surface rounded-lg hover:bg-surface-2 disabled:opacity-50">
+        <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-fg bg-surface rounded-lg hover:bg-surface-2 disabled:opacity-50">
           <Save size={14} /> Save
         </button>
       </div>
