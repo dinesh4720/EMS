@@ -4,7 +4,9 @@
 # Dependencies
 node_modules
 test-results
+test-results-master
 playwright-report
+playwright-report-master
 blob-report
 .pnp
 .pnp.js

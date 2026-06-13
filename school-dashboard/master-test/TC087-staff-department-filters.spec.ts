@@ -69,7 +69,7 @@ async function installDeptFilterMockApi(page: import('@playwright/test').Page, s
     let filtered = [...state.staff];
 
     if (deptFilter) {
-      filtered = filtered.filter((s) => s.department.toLowerCase() === deptFilter.toLowerCase());
+      filtered = filtered.filter((s) => (s.department || '').toLowerCase() === deptFilter.toLowerCase());
     }
     if (roleFilter) {
       filtered = filtered.filter((s) => s.role.toLowerCase() === roleFilter.toLowerCase());
@@ -81,7 +81,7 @@ async function installDeptFilterMockApi(page: import('@playwright/test').Page, s
       const q = search.toLowerCase();
       filtered = filtered.filter((s) =>
         s.name.toLowerCase().includes(q) ||
-        s.department.toLowerCase().includes(q) ||
+        (s.department || '').toLowerCase().includes(q) ||
         s.email.toLowerCase().includes(q),
       );
     }
