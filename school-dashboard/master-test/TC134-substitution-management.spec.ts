@@ -49,7 +49,7 @@ async function installSubstitutionRoutes(
     state.requestLog.add(`${method} ${path}`);
 
     // POST - Create substitution
-    if (method === 'POST' && !path.includes('/approve') && !path.includes('/reject')) {
+    if (method === 'POST') {
       const body = JSON.parse(route.request().postData() || '{}');
       subCounter++;
 
@@ -101,14 +101,14 @@ async function installSubstitutionRoutes(
       });
     }
 
-    // PUT - Approve/Reject
+    // PUT/PATCH - Update substitution
     if (method === 'PUT' || method === 'PATCH') {
       const subId = path.split('/').pop();
       const body = JSON.parse(route.request().postData() || '{}');
       const idx = substitutions.findIndex((s) => s._id === subId);
 
       if (idx >= 0) {
-        if (body.status) substitutions[idx].status = body.status;
+        Object.assign(substitutions[idx], body);
         return route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -116,34 +116,6 @@ async function installSubstitutionRoutes(
         });
       }
       return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ error: 'Not found' }) });
-    }
-
-    // Approve endpoint
-    if (path.includes('/approve')) {
-      const subId = path.split('/')[3];
-      const idx = substitutions.findIndex((s) => s._id === subId);
-      if (idx >= 0) {
-        substitutions[idx].status = 'approved';
-        return route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(substitutions[idx]),
-        });
-      }
-    }
-
-    // Reject endpoint
-    if (path.includes('/reject')) {
-      const subId = path.split('/')[3];
-      const idx = substitutions.findIndex((s) => s._id === subId);
-      if (idx >= 0) {
-        substitutions[idx].status = 'rejected';
-        return route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(substitutions[idx]),
-        });
-      }
     }
 
     // GET - List or filter by date
