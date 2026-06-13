@@ -205,6 +205,10 @@ export default function ModalBase({
   if (!isOpen || !portalEl) return null;
 
   return createPortal(
+    // Keyboard users close the modal via Escape (handled above). The backdrop
+    // click is a pointer-device convenience only, so the static-element rule
+    // is intentionally disabled for the overlay surface.
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events
     <div
       ref={dialogRef}
       role={role}

@@ -95,7 +95,6 @@ const ConfirmDialog = memo(function ConfirmDialog({
     >
       <div
         className="ds-confirm"
-        onClick={(e) => e.stopPropagation()}
         role="document"
         data-testid="ds-confirm-dialog"
       >

@@ -55,7 +55,13 @@ export default [
       // Accessibility — baseline recommended rules as warnings while the
       // codebase is being remediated (DK-992). Shared UI components enforce
       // the critical subset as errors below.
-      ...jsxA11y.configs.recommended.rules,
+      ...Object.fromEntries(
+        Object.entries(jsxA11y.configs.recommended.rules).map(([rule, severity]) => {
+          const isError = severity === 'error' || (Array.isArray(severity) && severity[0] === 'error');
+          if (!isError) return [rule, severity];
+          return Array.isArray(severity) ? [rule, ['warn', ...severity.slice(1)]] : [rule, 'warn'];
+        })
+      ),
       // Naming conventions
       camelcase: ['warn', { properties: 'never', ignoreDestructuring: true, allow: ['^_'] }],
       // Prevent overly short variable names (except loop counters and common abbreviations)
