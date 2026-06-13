@@ -444,9 +444,10 @@ test.describe('Students — Bulk Promotion', () => {
     // Wait for class mappings to load
     await expect(page.getByText(/Class Mappings/i).first()).toBeVisible({ timeout: 10_000 });
 
-    // The suggested target class (11-A) should be pre-selected in the select trigger
-    // HeroUI Select renders the selected value inside a span within the trigger button
-    await expect(page.locator('button[data-slot="trigger"]').filter({ hasText: '11-A' }).first()).toBeVisible();
+    // The suggested target class (11-A) should be pre-selected in the native select
+    const targetClassSelect = page.getByRole('combobox', { name: 'Target class' });
+    const selectedOption = targetClassSelect.locator('option:checked');
+    await expect(selectedOption).toHaveText('11-A');
 
     // The "Next: Review Students" button should be enabled since we have a valid mapping
     const nextBtn = page.getByRole('button', { name: /Next.*Review Students/i });
