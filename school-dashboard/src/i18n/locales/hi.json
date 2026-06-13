@@ -396,41 +396,6 @@
       }
     }
   },
-  "formSubmissions": {
-    "title": "फॉर्म सबमिशन",
-    "subtitle": "कर्मचारी ऑनबोर्डिंग सबमिशन की समीक्षा और स्वीकृति करें",
-    "loadFailed": "सबमिशन लोड करने में विफल",
-    "loadDetailsFailed": "सबमिशन विवरण लोड करने में विफल",
-    "rejectionReasonRequired": "कृपया अस्वीकृति का कारण बताएं",
-    "approvedSuccess": "सबमिशन स्वीकृत! कर्मचारी रिकॉर्ड बनाया गया।",
-    "rejectedSuccess": "सबमिशन अस्वीकृत",
-    "reviewFailed": "सबमिशन की समीक्षा करने में विफल",
-    "notProvided": "प्रदान नहीं किया गया",
-    "noSubmissions": "कोई सबमिशन नहीं मिला",
-    "colFormName": "फॉर्म का नाम",
-    "colSubmittedBy": "द्वारा जमा",
-    "colSubmittedDate": "जमा करने की तारीख",
-    "colStatus": "स्थिति",
-    "colReviewedBy": "द्वारा समीक्षित",
-    "reviewSubmission": "सबमिशन की समीक्षा करें",
-    "viewStaffRecord": "कर्मचारी रिकॉर्ड देखें",
-    "modalTitle": "सबमिशन की समीक्षा करें",
-    "submittedInfo": "जमा की गई जानकारी",
-    "reviewDecision": "समीक्षा निर्णय",
-    "reviewNotesLabel": "समीक्षा नोट्स",
-    "reviewNotesPlaceholder": "इस सबमिशन के बारे में नोट्स जोड़ें (अस्वीकृति के लिए आवश्यक)",
-    "reviewInfo": "समीक्षा जानकारी",
-    "reviewedAt": "समीक्षा की तारीख",
-    "reject": "अस्वीकार करें",
-    "approveAndCreate": "स्वीकृत करें और कर्मचारी बनाएं",
-    "status": {
-      "pending": "लंबित",
-      "approved": "स्वीकृत",
-      "rejected": "अस्वीकृत",
-      "needsRevision": "संशोधन आवश्यक",
-      "all": "सभी"
-    }
-  },
   "privacyPolicy": {
     "title": "गोपनीयता नीति",
     "subtitle": "SchoolSync परिनियोजन के लिए आधारभूत गोपनीयता सूचना। इस दस्तावेज़ की समीक्षा और अनुमोदन विद्यालय के कानूनी या अनुपालन प्रभारी द्वारा उत्पादन रोलआउट से पहले किया जाना चाहिए।",
@@ -3905,5 +3870,121 @@
     "feeHeadNum": "शुल्क मद #{{num}}",
     "templateUsedByStudents": "यह टेम्पलेट {{structureCount}} कक्षा शुल्क संरचनाओं में {{studentCount}} छात्रों पर लागू है। उनकी शुल्क संरचनाएं टेम्पलेट लिंक खो देंगी।",
     "templateUsedByStructures": "यह टेम्पलेट {{structureCount}} कक्षा शुल्क संरचनाओं द्वारा उपयोग किया जाता है जिनमें अभी तक कोई छात्र नहीं है।"
+  },
+  "intakeForms": {
+    "enrollmentFunnel": {
+      "title": "नामांकन फनल",
+      "description": "प्रत्येक चरण के माध्यम से फॉर्म असाइनमेंट की प्रगति को ट्रैक करें",
+      "conversionFunnel": "रूपांतरण फनल",
+      "stages": {
+        "assigned": "असाइन किया गया",
+        "submitted": "जमा किया गया",
+        "approved": "स्वीकृत",
+        "rejected": "अस्वीकृत",
+        "inProgress": "प्रगति में"
+      },
+      "barAriaLabel": "{{label}}: {{count}} में से {{max}}"
+    },
+    "assignments": {
+      "title": "फॉर्म असाइनमेंट",
+      "description": "शिक्षकों को भेजे गए फॉर्म असाइनमेंट को प्रबंधित और ट्रैक करें",
+      "assignForm": "फॉर्म असाइन करें",
+      "unknownForm": "अज्ञात फॉर्म",
+      "toast": {
+        "assigned": "{{count}} प्राप्तकर्ता(ओं) को फॉर्म असाइन किया गया",
+        "assignFailed": "फॉर्म असाइन करने में विफल"
+      },
+      "status": {
+        "all": "सभी",
+        "pending": "लंबित",
+        "submitted": "जमा किया गया",
+        "approved": "स्वीकृत",
+        "rejected": "अस्वीकृत"
+      },
+      "empty": {
+        "title": "कोई असाइनमेंट नहीं मिला",
+        "description": "यहां रिकॉर्ड देखने के लिए एक फॉर्म असाइन करें।",
+        "filteredTitle": "कोई असाइनमेंट मेल नहीं खाता",
+        "filteredDescription": "स्थिति फ़िल्टर समायोजित करने का प्रयास करें।"
+      },
+      "columns": {
+        "formName": "फॉर्म का नाम",
+        "assignedTo": "को असाइन किया",
+        "assignedBy": "द्वारा असाइन किया",
+        "status": "स्थिति",
+        "assignedDate": "असाइनमेंट की तारीख",
+        "expires": "समाप्त होता है"
+      },
+      "actions": {
+        "viewDetails": "विवरण देखें",
+        "copyLink": "लिंक कॉपी करें",
+        "resendNotification": "सूचना पुनः भेजें",
+        "cancelAssignment": "असाइनमेंट रद्द करें"
+      },
+      "modal": {
+        "sectionTitle": "असाइनमेंट प्राप्तकर्ता",
+        "sectionDescription": "एक फॉर्म चुनें और प्राप्तकर्ता जोड़ें। प्रत्येक प्राप्तकर्ता को एक अद्वितीय एक्सेस लिंक प्राप्त होता है।",
+        "selectFormLabel": "फॉर्म चुनें",
+        "selectFormPlaceholder": "एक फॉर्म चुनें...",
+        "emailAddressesLabel": "ईमेल पते",
+        "emailAddressesHint": "उदाहरण: teacher1@school.com, teacher2@school.com",
+        "emailAddressesPlaceholder": "ईमेल पते दर्ज करें (प्रति पंक्ति एक या अल्पविराम से अलग)",
+        "phoneNumbersLabel": "फोन नंबर",
+        "phoneNumbersHint": "उदाहरण: +919876543210, +919876543211",
+        "phoneNumbersPlaceholder": "फोन नंबर दर्ज करें (प्रति पंक्ति एक या अल्पविराम से अलग)",
+        "expiresInDaysLabel": "दिनों में समाप्त होता है",
+        "assignmentDetailsTitle": "असाइनमेंट विवरण",
+        "formNameLabel": "फॉर्म का नाम",
+        "assignedToLabel": "को असाइन किया",
+        "accessLinkLabel": "एक्सेस लिंक",
+        "copyAccessLink": "एक्सेस लिंक कॉपी करें",
+        "statusLabel": "स्थिति",
+        "assignedDateLabel": "असाइनमेंट की तारीख",
+        "expiresOnLabel": "समाप्ति तिथि"
+      }
+    },
+    "submissions": {
+      "title": "फॉर्म सबमिशन",
+      "description": "स्टाफ ऑनबोर्डिंग सबमिशन की समीक्षा और स्वीकृति करें",
+      "loadFailed": "सबमिशन लोड करने में विफल",
+      "loadDetailsFailed": "सबमिशन विवरण लोड करने में विफल",
+      "rejectionReasonRequired": "अस्वीकृति का कारण बताएं",
+      "approvedSuccess": "सबमिशन स्वीकृत। स्टाफ रिकॉर्ड बनाया गया।",
+      "rejectedSuccess": "सबमिशन अस्वीकृत",
+      "reviewFailed": "सबमिशन की समीक्षा करने में विफल",
+      "notProvided": "प्रदान नहीं किया गया",
+      "reviewSubmission": "सबमिशन की समीक्षा करें",
+      "viewStaffRecord": "स्टाफ रिकॉर्ड देखें",
+      "modalTitle": "सबमिशन की समीक्षा करें",
+      "submittedBy": "द्वारा सबमिट किया गया",
+      "submittedInfo": "सबमिट की गई जानकारी",
+      "reviewDecision": "समीक्षा निर्णय",
+      "reviewNotesLabel": "समीक्षा नोट्स",
+      "reviewNotesPlaceholder": "इस सबमिशन के बारे में नोट्स जोड़ें (अस्वीकृति के लिए आवश्यक)",
+      "reviewInfo": "समीक्षा जानकारी",
+      "reviewedAt": "समीक्षा की तारीख",
+      "reject": "अस्वीकार करें",
+      "approveAndCreate": "स्वीकार करें और स्टाफ बनाएं",
+      "status": {
+        "pending": "लंबित",
+        "approved": "स्वीकृत",
+        "rejected": "अस्वीकृत",
+        "needsRevision": "संशोधन की आवश्यकता",
+        "all": "सभी"
+      },
+      "columns": {
+        "formName": "फॉर्म का नाम",
+        "submittedBy": "सबमिट करने वाला",
+        "submittedDate": "सबमिशन तिथि",
+        "status": "स्थिति",
+        "reviewedBy": "समीक्षक"
+      },
+      "empty": {
+        "title": "कोई सबमिशन नहीं मिला",
+        "description": "सबमिशन यहां दिखाई देंगे।",
+        "filteredTitle": "कोई सबमिशन मेल नहीं खाता",
+        "filteredDescription": "स्थिति फ़िल्टर समायोजित करने का प्रयास करें।"
+      }
+    }
   }
 }

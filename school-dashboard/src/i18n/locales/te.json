@@ -419,41 +419,6 @@
       }
     }
   },
-  "formSubmissions": {
-    "title": "ఫారం సమర్పణలు",
-    "subtitle": "సిబ్బంది ఆన్‌బోర్డింగ్ సమర్పణలను సమీక్షించి ఆమోదించండి",
-    "loadFailed": "సమర్పణలు లోడ్ చేయడంలో విఫలమైంది",
-    "loadDetailsFailed": "సమర్పణ వివరాలు లోడ్ చేయడంలో విఫలమైంది",
-    "rejectionReasonRequired": "దయచేసి తిరస్కరణకు కారణం అందించండి",
-    "approvedSuccess": "సమర్పణ ఆమోదించబడింది! సిబ్బంది రికార్డు సృష్టించబడింది.",
-    "rejectedSuccess": "సమర్పణ తిరస్కరించబడింది",
-    "reviewFailed": "సమర్పణ సమీక్ష విఫలమైంది",
-    "notProvided": "అందించబడలేదు",
-    "noSubmissions": "సమర్పణలు కనుగొనబడలేదు",
-    "colFormName": "ఫారం పేరు",
-    "colSubmittedBy": "సమర్పించినది",
-    "colSubmittedDate": "సమర్పించిన తేదీ",
-    "colStatus": "స్థితి",
-    "colReviewedBy": "సమీక్షించినది",
-    "reviewSubmission": "సమర్పణ సమీక్షించు",
-    "viewStaffRecord": "సిబ్బంది రికార్డు చూడండి",
-    "modalTitle": "సమర్పణ సమీక్ష",
-    "submittedInfo": "సమర్పించిన సమాచారం",
-    "reviewDecision": "సమీక్ష నిర్ణయం",
-    "reviewNotesLabel": "సమీక్ష గమనికలు",
-    "reviewNotesPlaceholder": "ఈ సమర్పణ గురించి గమనికలు జోడించండి (తిరస్కరణకు అవసరం)",
-    "reviewInfo": "సమీక్ష సమాచారం",
-    "reviewedAt": "సమీక్షించిన సమయం",
-    "reject": "తిరస్కరించు",
-    "approveAndCreate": "ఆమోదించి సిబ్బంది సృష్టించు",
-    "status": {
-      "pending": "పెండింగ్",
-      "approved": "ఆమోదించబడింది",
-      "rejected": "తిరస్కరించబడింది",
-      "needsRevision": "సవరణ అవసరం",
-      "all": "అన్నీ"
-    }
-  },
   "privacyPolicy": {
     "title": "గోప్యతా విధానం",
     "subtitle": "SchoolSync విస్తరణల కోసం ప్రాథమిక గోప్యతా నోటీసు. ఈ పత్రాన్ని ప్రొడక్షన్ రోల్‌అవుట్‌కు ముందు పాఠశాల న్యాయ లేదా సమ్మతి యజమాని సమీక్షించి ఆమోదించాలి.",
@@ -3960,5 +3925,121 @@
     "feeHeadNum": "ఫీ హెడ్ #{{num}}",
     "templateUsedByStudents": "ఈ టెంప్లేట్ {{structureCount}} క్లాస్ ఫీ స్ట్రక్చర్లలో {{studentCount}} విద్యార్థులకు వర్తింపబడింది.",
     "templateUsedByStructures": "ఈ టెంప్లేట్ {{structureCount}} క్లాస్ ఫీ స్ట్రక్చర్లు ఉపయోగిస్తున్నాయి."
+  },
+  "intakeForms": {
+    "enrollmentFunnel": {
+      "title": "నమోదు ఫన్నెల్",
+      "description": "ప్రతి దశలో ఫార্ম్ అసైన్‌మెంట్ పురోగతిని ట్రాక్ చేయండి",
+      "conversionFunnel": "మార్పిడి ఫన్నెల్",
+      "stages": {
+        "assigned": "కేటాయించబడింది",
+        "submitted": "సమర్పించబడింది",
+        "approved": "ఆమోదించబడింది",
+        "rejected": "తిరస్కరించబడింది",
+        "inProgress": "పురోగతిలో ఉంది"
+      },
+      "barAriaLabel": "{{label}}: {{count}} లో {{max}}"
+    },
+    "assignments": {
+      "title": "ఫార्म్ అసైన్‌మెంట్స్",
+      "description": "ఉపాధ్యాయులకు పంపిన ఫార్మ్ అసైన్‌మెంట్స్ నిర్వహించండి మరియు ట్రాక్ చేయండి",
+      "assignForm": "ఫార్మ్ అసైన్ చేయండి",
+      "unknownForm": "తెలియని ఫార్మ్",
+      "toast": {
+        "assigned": "{{count}} స్వీకర్త(ల)కు ఫార్మ్ అసైన్ చేయబడింది",
+        "assignFailed": "ఫార్మ్ అసైన్ చేయడం విఫలమైంది"
+      },
+      "status": {
+        "all": "అన్నీ",
+        "pending": "పెండింగ్",
+        "submitted": "సమర్పించబడింది",
+        "approved": "ఆమోదించబడింది",
+        "rejected": "తిరస్కరించబడింది"
+      },
+      "empty": {
+        "title": "అసైన్‌మెంట్స్ కనుగొనబడలేదు",
+        "description": "ఇక్కడ రికార్డ్‌లను చూడటానికి ఒక ఫార్మ్ అసైన్ చేయండి.",
+        "filteredTitle": "సరిపోలిన అసైన్‌మెంట్స్ లేవు",
+        "filteredDescription": "స్థితి ఫిల్టర్‌ను సర్దుబాటు చేయడానికి ప్రయత్నించండి."
+      },
+      "columns": {
+        "formName": "ఫార్మ్ పేరు",
+        "assignedTo": "కేటాయించబడింది",
+        "assignedBy": "కేటాయించినది",
+        "status": "స్థితి",
+        "assignedDate": "కేటాయించిన తేదీ",
+        "expires": "కాలపరిమితి ముగుస్తుంది"
+      },
+      "actions": {
+        "viewDetails": "వివరాలు చూడండి",
+        "copyLink": "లింక్ కాపీ చేయండి",
+        "resendNotification": "నోటిఫికేషన్ మళ్లీ పంపండి",
+        "cancelAssignment": "అసైన్‌మెంట్ రద్దు చేయండి"
+      },
+      "modal": {
+        "sectionTitle": "అసైన్‌మెంట్ స్వీకర్తలు",
+        "sectionDescription": "ఒక ఫార్మ్ ఎంచుకోండి మరియు స్వీకర్తలను జోడించండి. ప్రతి స్వీకర్తకు ప్రత్యేకమైన యాక్సెస్ లింక్ లభిస్తుంది.",
+        "selectFormLabel": "ఫార్మ్ ఎంచుకోండి",
+        "selectFormPlaceholder": "ఒక ఫార్మ్ ఎంచుకోండి...",
+        "emailAddressesLabel": "ఇమెయిల్ చిరునామాలు",
+        "emailAddressesHint": "ఉదా: teacher1@school.com, teacher2@school.com",
+        "emailAddressesPlaceholder": "ఇమెయిల్ చిరునామాలను నమోదు చేయండి (ఒక్కొక్క లైనుకు ఒకటి లేదా కామాతో వేరు చేయబడినవి)",
+        "phoneNumbersLabel": "ఫోన్ నంబర్లు",
+        "phoneNumbersHint": "ఉదా: +919876543210, +919876543211",
+        "phoneNumbersPlaceholder": "ఫోన్ నంబర్లను నమోదు చేయండి (ఒక్కొక్క లైనుకు ఒకటి లేదా కామాతో వేరు చేయబడినవి)",
+        "expiresInDaysLabel": "రోజులలో కాలపరిమితి ముగుస్తుంది",
+        "assignmentDetailsTitle": "అసైన్‌మెంట్ వివరాలు",
+        "formNameLabel": "ఫార్మ్ పేరు",
+        "assignedToLabel": "కేటాయించబడింది",
+        "accessLinkLabel": "యాక్సెస్ లింక్",
+        "copyAccessLink": "యాక్సెస్ లింక్ కాపీ చేయండి",
+        "statusLabel": "స్థితి",
+        "assignedDateLabel": "కేటాయించిన తేదీ",
+        "expiresOnLabel": "కాలపరిమితి ముగిసే తేదీ"
+      }
+    },
+    "submissions": {
+      "title": "ఫార్మ్ సమర్పణలు",
+      "description": "సిబ్బంది ఆన్‌బోర్డింగ్ సమర్పణలను సమీక్షించండి మరియు ఆమోదించండి",
+      "loadFailed": "సమర్పణలను లోడ్ చేయడం విఫలమైంది",
+      "loadDetailsFailed": "సమర్పణ వివరాలను లోడ్ చేయడం విఫలమైంది",
+      "rejectionReasonRequired": "తిరస్కరణ కోసం కారణం ఇవ్వండి",
+      "approvedSuccess": "సమర్పణ ఆమోదించబడింది. సిబ్బంది రికార్డ్ సృష్టించబడింది.",
+      "rejectedSuccess": "సమర్పణ తిరస్కరించబడింది",
+      "reviewFailed": "సమర్పణను సమీక్షించడం విఫలమైంది",
+      "notProvided": "అందించబడలేదు",
+      "reviewSubmission": "సమర్పణను సమీక్షించండి",
+      "viewStaffRecord": "సిబ్బంది రికార్డ్ చూడండి",
+      "modalTitle": "సమర్పణను సమీక్షించండి",
+      "submittedBy": "సమర్పించినది",
+      "submittedInfo": "సమర్పించిన సమాచారం",
+      "reviewDecision": "సమీక్షా నిర్ణయం",
+      "reviewNotesLabel": "సమీక్షా గమనికలు",
+      "reviewNotesPlaceholder": "ఈ సమర్పణ గురించి గమనికలు చేర్చండి (తిరస్కరణ కోసం అవసరం)",
+      "reviewInfo": "సమీక్షా సమాచారం",
+      "reviewedAt": "సమీక్షించిన తేదీ",
+      "reject": "తిరస్కరించండి",
+      "approveAndCreate": "ఆమోదించండి & సిబ్బందిని సృష్టించండి",
+      "status": {
+        "pending": "పెండింగ్",
+        "approved": "ఆమోదించబడింది",
+        "rejected": "తిరస్కరించబడింది",
+        "needsRevision": "సవరణ అవసరం",
+        "all": "అన్నీ"
+      },
+      "columns": {
+        "formName": "ఫార్మ్ పేరు",
+        "submittedBy": "సమర్పించినది",
+        "submittedDate": "సమర్పణ తేదీ",
+        "status": "స్థితి",
+        "reviewedBy": "సమీక్షించినది"
+      },
+      "empty": {
+        "title": "సమర్పణలు కనుగొనబడలేదు",
+        "description": "సమర్పణలు ఇక్కడ కనిపిస్తాయి.",
+        "filteredTitle": "సరిపోలిన సమర్పణలు లేవు",
+        "filteredDescription": "స్థితి ఫిల్టర్‌ను సర్దుబాటు చేయడానికి ప్రయత్నించండి."
+      }
+    }
   }
 }

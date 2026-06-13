@@ -6,14 +6,12 @@ import {
   Card,
   CardBody,
   Button,
-  Textarea,
   Modal,
   ModalContent,
   ModalHeader,
   ModalBody,
   ModalFooter,
   useDisclosure,
-  Spinner,
   Chip,
 } from "@heroui/react";
 import {
@@ -23,14 +21,21 @@ import {
   MoreVertical,
   Download,
   User,
+  FileCheck,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { intakeFormsApi } from "../../services/api";
 import { format } from "date-fns";
 import PageHeader from '../../components/ui/PageHeader';
 import DataTable from '../../components/ui/DataTable';
+import Textarea from '../../components/ui/Textarea';
 import IconButton from '../../components/ui/IconButton';
 import DropdownMenu from '../../components/ui/DropdownMenu';
+import EmptyState from '../../components/ui/EmptyState';
+import FormField from '../../components/ui/FormField';
+import FormSection from '../../components/ui/FormSection';
+
+const STATUS_FILTERS = ["pending", "approved", "rejected", "needs_revision", "all"];
 
 export default function FormSubmissions() {
   const { t } = useTranslation();
@@ -59,7 +64,7 @@ export default function FormSubmissions() {
       const data = await intakeFormsApi.getSubmissions(null, status);
       setSubmissions(Array.isArray(data) ? data : []);
     } catch (error) {
-      toast.error(t('formSubmissions.loadFailed'));
+      toast.error(t('intakeForms.submissions.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -72,7 +77,7 @@ export default function FormSubmissions() {
       setReviewNotes(data.reviewNotes || "");
       onReviewOpen();
     } catch (error) {
-      toast.error(t('formSubmissions.loadDetailsFailed'));
+      toast.error(t('intakeForms.submissions.loadDetailsFailed'));
     }
   };
 
@@ -80,7 +85,7 @@ export default function FormSubmissions() {
     if (!selectedSubmission) return;
 
     if (status === "rejected" && !reviewNotes.trim()) {
-      toast.error(t('formSubmissions.rejectionReasonRequired'));
+      toast.error(t('intakeForms.submissions.rejectionReasonRequired'));
       return;
     }
 
@@ -94,8 +99,8 @@ export default function FormSubmissions() {
 
       toast.success(
         status === "approved"
-          ? t('formSubmissions.approvedSuccess')
-          : t('formSubmissions.rejectedSuccess')
+          ? t('intakeForms.submissions.approvedSuccess')
+          : t('intakeForms.submissions.rejectedSuccess')
       );
 
       onReviewClose();
@@ -103,7 +108,7 @@ export default function FormSubmissions() {
       setSelectedSubmission(null);
       setReviewNotes("");
     } catch (error) {
-      toast.error(error.message || t('formSubmissions.reviewFailed'));
+      toast.error(error.message || t('intakeForms.submissions.reviewFailed'));
     } finally {
       setLoading(false);
     }
@@ -120,7 +125,7 @@ export default function FormSubmissions() {
   };
 
   const renderFieldValue = (field, value) => {
-    if (!value) return <span className="text-fg-faint">{t('formSubmissions.notProvided')}</span>;
+    if (!value) return <span className="text-fg-faint">{t('intakeForms.submissions.notProvided')}</span>;
 
     if (field.type === "file") {
       return (
@@ -148,7 +153,7 @@ export default function FormSubmissions() {
   const columns = useMemo(() => [
     {
       key: 'formName',
-      label: t('formSubmissions.colFormName'),
+      label: t('intakeForms.submissions.columns.formName'),
       render: (row) => (
         <div>
           <div className="font-medium text-fg">
@@ -162,14 +167,14 @@ export default function FormSubmissions() {
     },
     {
       key: 'submittedBy',
-      label: t('formSubmissions.colSubmittedBy'),
+      label: t('intakeForms.submissions.columns.submittedBy'),
       render: (row) => (
         <div className="text-sm">{row.submittedByEmail || row.submittedByPhone || row.submittedBy || '-'}</div>
       ),
     },
     {
       key: 'submittedDate',
-      label: t('formSubmissions.colSubmittedDate'),
+      label: t('intakeForms.submissions.columns.submittedDate'),
       render: (row) => (
         <div className="text-sm">
           {format(
@@ -181,7 +186,7 @@ export default function FormSubmissions() {
     },
     {
       key: 'status',
-      label: t('formSubmissions.colStatus'),
+      label: t('intakeForms.submissions.columns.status'),
       render: (row) => (
         <Chip
           size="sm"
@@ -194,7 +199,7 @@ export default function FormSubmissions() {
     },
     {
       key: 'reviewedBy',
-      label: t('formSubmissions.colReviewedBy'),
+      label: t('intakeForms.submissions.columns.reviewedBy'),
       render: (row) => (
         <div className="text-sm">
           {row.reviewedBy || "-"}
@@ -215,13 +220,13 @@ export default function FormSubmissions() {
       items={[
         {
           key: 'view',
-          label: t('formSubmissions.reviewSubmission'),
+          label: t('intakeForms.submissions.reviewSubmission'),
           icon: <Eye size={16} />,
           onClick: () => handleViewSubmission(row._id || row.id),
         },
         ...(row.staffId ? [{
           key: 'staff',
-          label: t('formSubmissions.viewStaffRecord'),
+          label: t('intakeForms.submissions.viewStaffRecord'),
           icon: <User size={16} />,
           onClick: () => navigate(`/staff/${row.staffId}`),
         }] : []),
@@ -230,18 +235,21 @@ export default function FormSubmissions() {
     />
   );
 
+  const isFiltered = filterStatus !== "pending";
+  const showEmptyState = !loading && submissions.length === 0;
+
   return (
     <div className="space-y-6">
       <PageHeader
-        title={t('formSubmissions.title')}
-        description={t('formSubmissions.subtitle')}
+        title={t('intakeForms.submissions.title')}
+        description={t('intakeForms.submissions.description')}
         bordered={false}
         size="lg"
       />
 
       {/* Filters */}
       <div className="flex gap-2">
-        {["pending", "approved", "rejected", "needs_revision", "all"].map((status) => (
+        {STATUS_FILTERS.map((status) => (
           <Button
             key={status}
             size="sm"
@@ -250,26 +258,35 @@ export default function FormSubmissions() {
             onPress={() => setFilterStatus(status)}
             aria-pressed={filterStatus === status}
           >
-            {t(`formSubmissions.status.${status.replace(/_(.)/g, (_, c) => c.toUpperCase())}`)}
+            {t(`intakeForms.submissions.status.${status.replace(/_(.)/g, (_, c) => c.toUpperCase())}`)}
           </Button>
         ))}
       </div>
 
-      {/* Submissions Table */}
-      <DataTable
-        ariaLabel={t('aria.tables.formSubmissions') || 'Form submissions table'}
-        columns={columns}
-        data={submissions}
-        keyField="_id"
-        loading={loading}
-        emptyState={{
-          title: t('formSubmissions.noSubmissions'),
-          description: 'Submissions will appear here.',
-        }}
-        rowActions={rowActions}
-        pagination
-        defaultPageSize={10}
-      />
+      {/* Submissions Table / Empty State */}
+      {showEmptyState ? (
+        <Card className="bg-surface border border-divider">
+          <CardBody>
+            <EmptyState
+              icon={FileCheck}
+              title={isFiltered ? t('intakeForms.submissions.empty.filteredTitle') : t('intakeForms.submissions.empty.title')}
+              description={isFiltered ? t('intakeForms.submissions.empty.filteredDescription') : t('intakeForms.submissions.empty.description')}
+              size="md"
+            />
+          </CardBody>
+        </Card>
+      ) : (
+        <DataTable
+          ariaLabel={t('aria.tables.formSubmissions') || 'Form submissions table'}
+          columns={columns}
+          data={submissions}
+          keyField="_id"
+          loading={loading}
+          rowActions={rowActions}
+          pagination
+          defaultPageSize={10}
+        />
+      )}
 
       {/* Review Submission Modal */}
       <Modal
@@ -281,10 +298,10 @@ export default function FormSubmissions() {
         <ModalContent>
           <ModalHeader>
             <div>
-              <h3 className="text-xl font-semibold">{t('formSubmissions.modalTitle')}</h3>
+              <h3 className="text-xl font-semibold">{t('intakeForms.submissions.modalTitle')}</h3>
               {selectedSubmission && (
                 <p className="text-sm text-fg-muted font-normal mt-1">
-                  {selectedSubmission.formId?.formName || '-'} - Submitted by{" "}
+                  {selectedSubmission.formId?.formName || '-'} - {t('intakeForms.submissions.submittedBy')}{" "}
                   {selectedSubmission.submittedByEmail || selectedSubmission.submittedByPhone || '-'}
                 </p>
               )}
@@ -294,10 +311,7 @@ export default function FormSubmissions() {
             {selectedSubmission && (
               <div className="space-y-6">
                 {/* Submission Data */}
-                <div>
-                  <h4 className="text-lg font-semibold mb-4">
-                    {t('formSubmissions.submittedInfo')}
-                  </h4>
+                <FormSection title={t('intakeForms.submissions.submittedInfo')}>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {selectedSubmission.formId?.fields?.map((field) => (
                       <dl
@@ -323,34 +337,32 @@ export default function FormSubmissions() {
                       </dl>
                     ))}
                   </div>
-                </div>
+                </FormSection>
 
                 {/* Review Section */}
                 {selectedSubmission.reviewStatus === "pending" && (
-                  <div className="border-t pt-6">
-                    <h4 className="text-lg font-semibold mb-4">
-                      {t('formSubmissions.reviewDecision')}
-                    </h4>
-                    <Textarea
-                      label={t('formSubmissions.reviewNotesLabel')}
-                      placeholder={t('formSubmissions.reviewNotesPlaceholder')}
-                      value={reviewNotes}
-                      onChange={(e) => setReviewNotes(e.target.value)}
-                      minRows={3}
-                    />
-                  </div>
+                  <FormSection title={t('intakeForms.submissions.reviewDecision')}>
+                    <FormField
+                      label={t('intakeForms.submissions.reviewNotesLabel')}
+                      className="sm:col-span-2"
+                    >
+                      <Textarea
+                        placeholder={t('intakeForms.submissions.reviewNotesPlaceholder')}
+                        value={reviewNotes}
+                        onChange={(e) => setReviewNotes(e.target.value)}
+                        rows={3}
+                      />
+                    </FormField>
+                  </FormSection>
                 )}
 
                 {/* Existing Review */}
                 {selectedSubmission.reviewStatus !== "pending" && (
-                  <div className="border-t pt-6">
-                    <h4 className="text-lg font-semibold mb-4">
-                      {t('formSubmissions.reviewInfo')}
-                    </h4>
+                  <FormSection title={t('intakeForms.submissions.reviewInfo')}>
                     <dl className="space-y-3">
                       <div>
                         <dt className="text-sm font-medium text-fg-muted">
-                          {t('formSubmissions.colStatus')}
+                          {t('intakeForms.submissions.columns.status')}
                         </dt>
                         <dd className="mt-1">
                           <Chip
@@ -366,7 +378,7 @@ export default function FormSubmissions() {
                       </div>
                       <div>
                         <dt className="text-sm font-medium text-fg-muted">
-                          {t('formSubmissions.colReviewedBy')}
+                          {t('intakeForms.submissions.columns.reviewedBy')}
                         </dt>
                         <dd className="text-sm">
                           {selectedSubmission.reviewedBy}
@@ -374,7 +386,7 @@ export default function FormSubmissions() {
                       </div>
                       <div>
                         <dt className="text-sm font-medium text-fg-muted">
-                          {t('formSubmissions.reviewedAt')}
+                          {t('intakeForms.submissions.reviewedAt')}
                         </dt>
                         <dd className="text-sm">
                           {format(
@@ -386,7 +398,7 @@ export default function FormSubmissions() {
                       {selectedSubmission.reviewNotes && (
                         <div>
                           <dt className="text-sm font-medium text-fg-muted">
-                            {t('formSubmissions.reviewNotesLabel')}
+                            {t('intakeForms.submissions.reviewNotesLabel')}
                           </dt>
                           <dd className="text-sm">
                             {selectedSubmission.reviewNotes}
@@ -394,7 +406,7 @@ export default function FormSubmissions() {
                         </div>
                       )}
                     </dl>
-                  </div>
+                  </FormSection>
                 )}
               </div>
             )}
@@ -412,7 +424,7 @@ export default function FormSubmissions() {
                   onPress={() => handleReview("rejected")}
                   isLoading={loading}
                 >
-                  {t('formSubmissions.reject')}
+                  {t('intakeForms.submissions.reject')}
                 </Button>
                 <Button
                   color="success"
@@ -420,7 +432,7 @@ export default function FormSubmissions() {
                   onPress={() => handleReview("approved")}
                   isLoading={loading}
                 >
-                  {t('formSubmissions.approveAndCreate')}
+                  {t('intakeForms.submissions.approveAndCreate')}
                 </Button>
               </>
             ) : (
