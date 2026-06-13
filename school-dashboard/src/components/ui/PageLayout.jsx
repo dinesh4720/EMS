@@ -25,14 +25,14 @@ export default function PageLayout({
     >
       {/* Tabs */}
       {hasTabs && (
-        <div className="px-6 py-3 border-b border-border-token shrink-0">
-          <nav className="flex gap-1">
+        <div className="px-4 sm:px-6 py-3 border-b border-border-token shrink-0 overflow-x-auto scrollbar-none">
+          <nav className="flex gap-1 min-w-max">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => onTabChange?.(tab.key)}
                 className={cn(
-                  "px-5 py-2 text-sm font-medium rounded-md transition-colors",
+                  "px-3 sm:px-5 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap",
                   activeTab === tab.key
                     ? "bg-fg text-bg"
                     : "text-fg-muted hover:text-fg hover:bg-surface-hover"
