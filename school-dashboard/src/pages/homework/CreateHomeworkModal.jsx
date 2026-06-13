@@ -236,6 +236,7 @@ const CreateHomeworkModal = ({ onClose, onSuccess, editingHomework, defaultClass
               size="sm"
               wrapperClassName="flex-1"
               placeholder={t('homework.fileNamePlaceholder')}
+              aria-label={t('homework.fileNamePlaceholder')}
               value={attachment.name || ''}
               onChange={(e) => handleAttachmentChange(index, 'name', e.target.value)}
             />
@@ -243,6 +244,7 @@ const CreateHomeworkModal = ({ onClose, onSuccess, editingHomework, defaultClass
               size="sm"
               wrapperClassName="flex-[2]"
               placeholder={t('homework.urlPlaceholder')}
+              aria-label={t('homework.urlPlaceholder')}
               value={attachment.url || ''}
               onChange={(e) => handleAttachmentChange(index, 'url', e.target.value)}
             />
