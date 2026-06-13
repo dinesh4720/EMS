@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { BookOpen, Eye, EyeOff, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -14,7 +14,6 @@ import {
   Input,
   Select,
   Skeleton,
-  Textarea,
 } from '../../components/ui';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
 import { changelogAdminApi } from '../../services/api';
@@ -59,6 +58,7 @@ export default function ChangelogPanel() {
   const [form, setForm] = useState(EMPTY_ENTRY);
   const [submitting, setSubmitting] = useState(false);
   const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
+  const titleInputRef = useRef(null);
 
   const load = async () => {
     setLoading(true);
@@ -67,13 +67,19 @@ export default function ChangelogPanel() {
       const data = await changelogAdminApi.getAll();
       setEntries(data.entries || []);
     } catch (err) {
-      setError(err.message || 'Failed to load changelog');
+      setError(err.message || t('pages.failedToLoadChangelog'));
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    if (showForm && titleInputRef.current) {
+      titleInputRef.current.focus();
+    }
+  }, [showForm, editingId]);
 
   const closeForm = () => {
     setShowForm(false);
@@ -112,7 +118,7 @@ export default function ChangelogPanel() {
       closeForm();
       await load();
     } catch (err) {
-      setError(err.message || 'Save failed');
+      setError(err.message || t('pages.saveFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -120,16 +126,16 @@ export default function ChangelogPanel() {
 
   const handleDelete = (id) => {
     showConfirm({
-      title: 'Delete Changelog Entry',
-      message: 'Are you sure you want to delete this changelog entry? This action cannot be undone.',
+      title: t('pages.deleteChangelogEntry'),
+      message: t('pages.deleteChangelogEntryMessage'),
       variant: 'danger',
-      confirmText: 'Delete',
+      confirmText: t('common.delete') || 'Delete',
       onConfirm: async () => {
         try {
           await changelogAdminApi.delete(id);
           await load();
         } catch (err) {
-          setError(err.message || 'Delete failed');
+          setError(err.message || t('pages.deleteFailed'));
         }
       },
     });
@@ -140,7 +146,7 @@ export default function ChangelogPanel() {
       await changelogAdminApi.update(entry._id, { isPublished: !entry.isPublished });
       await load();
     } catch (err) {
-      setError(err.message || 'Update failed');
+      setError(err.message || t('pages.updateFailed'));
     }
   };
 
@@ -153,7 +159,7 @@ export default function ChangelogPanel() {
             {t('pages.changelog')}
           </h2>
           <p className="mt-1 text-xs text-fg-muted">
-            Manage release notes and platform announcements.
+            {t('pages.manageReleaseNotesAndPlatformAnnouncements')}
           </p>
         </div>
         <Button
@@ -162,7 +168,7 @@ export default function ChangelogPanel() {
           icon={<Plus size={14} aria-hidden="true" />}
           onClick={openCreate}
         >
-          New Entry
+          {t('pages.newEntry')}
         </Button>
       </div>
 
@@ -181,9 +187,10 @@ export default function ChangelogPanel() {
                 required
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
+                ref={titleInputRef}
               />
               <Input
-                label="Version"
+                label={t('pages.version')}
                 required
                 value={form.version}
                 onChange={(e) => setForm({ ...form, version: e.target.value })}
@@ -191,7 +198,7 @@ export default function ChangelogPanel() {
               />
             </div>
             <Textarea
-              label="Body"
+              label={t('pages.body')}
               required
               rows={3}
               value={form.body}
@@ -201,24 +208,24 @@ export default function ChangelogPanel() {
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div className="flex flex-wrap items-center gap-4">
                 <Select
-                  label="Category"
+                  label={t('pages.category')}
                   value={form.category}
                   onChange={(e) => setForm({ ...form, category: e.target.value })}
                   options={categoryOptions}
                   wrapperClassName="min-w-[180px]"
                 />
                 <Checkbox
-                  label="Published"
+                  label={t('pages.published')}
                   checked={form.isPublished}
                   onChange={(e) => setForm({ ...form, isPublished: e.target.checked })}
                 />
               </div>
               <div className="flex gap-2">
                 <Button type="button" variant="ghost" size="sm" onClick={closeForm}>
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
                 <Button type="submit" variant="primary" size="sm" loading={submitting}>
-                  {editingId ? 'Update' : 'Create'}
+                  {editingId ? (t('common.update') || 'Update') : (t('common.create') || 'Create')}
                 </Button>
               </div>
             </div>
@@ -245,7 +252,7 @@ export default function ChangelogPanel() {
         <EmptyState
           icon={BookOpen}
           title={t('pages.noChangelogEntriesYet')}
-          description="Publish your first release note using the New Entry button above."
+          description={t('pages.changelogEmptyDescription')}
         />
       ) : (
         <div className="space-y-3">
@@ -272,8 +279,8 @@ export default function ChangelogPanel() {
                 </div>
                 <div className="flex shrink-0 gap-1">
                   <IconButton
-                    aria-label={entry.isPublished ? 'Unpublish' : 'Publish'}
-                    title={entry.isPublished ? 'Unpublish' : 'Publish'}
+                    aria-label={entry.isPublished ? t('pages.unpublish') || 'Unpublish' : t('pages.publish') || 'Publish'}
+                    title={entry.isPublished ? t('pages.unpublish') || 'Unpublish' : t('pages.publish') || 'Publish'}
                     size="sm"
                     variant="ghost"
                     onClick={() => togglePublish(entry)}

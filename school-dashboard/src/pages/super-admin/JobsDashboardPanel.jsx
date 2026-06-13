@@ -106,7 +106,7 @@ export default function JobsDashboardPanel() {
             <Wrench size={16} aria-hidden="true" className="text-fg-muted" />
             {t('pages.backgroundJobs')}
           </h2>
-          <div className="flex flex-wrap items-center gap-2" role="tablist" aria-label="Filter jobs by status">
+          <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t('pages.filterJobsByStatus') || 'Filter jobs by status'}>
             {STATUS_FILTERS.map((status) => (
               <Chip
                 key={status}

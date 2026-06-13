@@ -1,4 +1,4 @@
-import { RotateCcw, Trash2, Wrench } from 'lucide-react';
+import { Ban, RotateCcw, Wrench } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Chip, EmptyState, IconButton } from '../../../components/ui';
 import { STATUS_CHIP_COLOR, formatDate } from './jobsUtils';
@@ -10,8 +10,8 @@ export default function JobsTable({ jobs, onRetry, onCancel, retrying, cancellin
     return (
       <EmptyState
         icon={Wrench}
-        title="No jobs found"
-        description="Background jobs will appear here once scheduled."
+        title={t('pages.noJobsFound')}
+        description={t('pages.jobsEmptyDescription')}
       />
     );
   }
@@ -73,7 +73,7 @@ export default function JobsTable({ jobs, onRetry, onCancel, retrying, cancellin
                     variant="danger"
                     onClick={() => onCancel(job._id)}
                     disabled={cancelling[job._id]}
-                    icon={<Trash2 size={14} aria-hidden="true" />}
+                    icon={<Ban size={14} aria-hidden="true" />}
                   />
                 </div>
               </td>

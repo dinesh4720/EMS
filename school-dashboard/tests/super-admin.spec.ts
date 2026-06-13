@@ -390,6 +390,11 @@ test.describe('Super Admin Dashboard', () => {
     await expect(provisionButtons.first()).toBeVisible();
     await provisionButtons.first().click();
 
+    // Confirm the provision dialog
+    const confirmButton = page.getByRole('button', { name: 'Provision' }).last();
+    await expect(confirmButton).toBeVisible({ timeout: 5_000 });
+    await confirmButton.click();
+
     await expect(page.getByText(/Provisioned|Temporary admin password/i)).toBeVisible({ timeout: 10_000 });
     expect(requestLog.has('POST /api/super-admin/schools/sch-001/provision')).toBe(true);
   });
