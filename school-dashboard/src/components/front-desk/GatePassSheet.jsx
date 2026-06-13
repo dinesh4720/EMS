@@ -100,8 +100,9 @@ export default function GatePassSheet({ isOpen, onClose, onIssued }) {
 
         <div className="fd-overlay__form">
           <div className="fd-overlay__field">
-            <label className="fd-overlay__label">Student</label>
+            <label htmlFor="gatepass-student" className="fd-overlay__label">Student</label>
             <select
+              id="gatepass-student"
               value={studentId}
               onChange={(e) => setStudentId(e.target.value)}
               required
@@ -116,8 +117,9 @@ export default function GatePassSheet({ isOpen, onClose, onIssued }) {
           </div>
 
           <div className="fd-overlay__field">
-            <label className="fd-overlay__label">Reason</label>
+            <label htmlFor="gatepass-reason" className="fd-overlay__label">Reason</label>
             <input
+              id="gatepass-reason"
               type="text"
               placeholder="Doctor appointment, family emergency, etc."
               value={reason}
@@ -128,16 +130,18 @@ export default function GatePassSheet({ isOpen, onClose, onIssued }) {
 
           <div className="fd-overlay__field-row">
             <div className="fd-overlay__field">
-              <label className="fd-overlay__label">Leaving at</label>
+              <label htmlFor="gatepass-leaving" className="fd-overlay__label">Leaving at</label>
               <input
+                id="gatepass-leaving"
                 type="datetime-local"
                 value={leaving}
                 onChange={(e) => setLeaving(e.target.value)}
               />
             </div>
             <div className="fd-overlay__field">
-              <label className="fd-overlay__label">Escort phone</label>
+              <label htmlFor="gatepass-phone" className="fd-overlay__label">Escort phone</label>
               <input
+                id="gatepass-phone"
                 type="tel"
                 placeholder="98xxxxxxxx"
                 value={escortPhone}
@@ -147,8 +151,9 @@ export default function GatePassSheet({ isOpen, onClose, onIssued }) {
           </div>
 
           <div className="fd-overlay__field">
-            <label className="fd-overlay__label">Escort name</label>
+            <label htmlFor="gatepass-escort" className="fd-overlay__label">Escort name</label>
             <input
+              id="gatepass-escort"
               type="text"
               placeholder="Parent/guardian name"
               value={escortName}

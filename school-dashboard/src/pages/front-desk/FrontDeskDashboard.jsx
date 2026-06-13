@@ -236,9 +236,14 @@ export default function FrontDeskDashboard() {
       {/* Tabs Row with Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
         {/* Enclosed Tabs */}
-        <div className="flex items-center gap-1 p-1 bg-surface-2 rounded-lg overflow-x-auto">
+        <div className="flex items-center gap-1 p-1 bg-surface-2 rounded-lg overflow-x-auto" role="tablist" aria-label="Front desk tabs">
           {tabs.map(tab => (
-            <button key={tab.key} onClick={() => handleTabChange(tab.key)}
+            <button
+              key={tab.key}
+              type="button"
+              role="tab"
+              aria-selected={selectedTab === tab.key}
+              onClick={() => handleTabChange(tab.key)}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-all whitespace-nowrap ${
                 selectedTab === tab.key
                   ? 'bg-surface text-fg shadow-sm'

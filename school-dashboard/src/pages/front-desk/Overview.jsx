@@ -69,7 +69,7 @@ export default function Overview({ stats, onTabChange }) {
           <div className="p-5 border-b border-border-token">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-surface-2 flex items-center justify-center">
-                <AlertCircle size={16} className="text-fg-muted" />
+                <AlertCircle size={16} className="text-fg-muted" aria-hidden="true" />
               </div>
               <div>
                 <h3 className="font-medium text-fg text-sm">{t('pages.attentionRequired1')}</h3>
@@ -78,15 +78,13 @@ export default function Overview({ stats, onTabChange }) {
             </div>
           </div>
           <div className="p-4">
-            <div
-              className="flex items-center gap-3 p-3 rounded-lg bg-surface-2 hover:bg-surface-hover cursor-pointer transition-colors"
-              role="button"
-              tabIndex={0}
+            <button
+              type="button"
+              className="flex items-center gap-3 p-3 rounded-lg bg-surface-2 hover:bg-surface-hover cursor-pointer transition-colors text-left w-full"
               onClick={() => onTabChange && onTabChange('feedbacks')}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onTabChange && onTabChange('feedbacks'); } }}
             >
               <div className="w-8 h-8 rounded-lg bg-surface-2 flex items-center justify-center">
-                <MessageSquare size={16} className="text-fg-muted" />
+                <MessageSquare size={16} className="text-fg-muted" aria-hidden="true" />
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-fg">{t('pages.openFeedbacks')}</p>
@@ -95,7 +93,7 @@ export default function Overview({ stats, onTabChange }) {
               <div className="text-xs px-2 py-1 rounded-md bg-surface-2 text-fg font-medium">
                 {STRINGS.actionNeeded}
               </div>
-            </div>
+            </button>
           </div>
         </div>
       )}
@@ -103,23 +101,22 @@ export default function Overview({ stats, onTabChange }) {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {statCards.map((stat) => (
-          <div
+          <button
             key={stat.tab}
-            className="bg-surface rounded-lg p-4 border border-divider hover:border-border-token transition-colors cursor-pointer"
-            role="button"
-            tabIndex={0}
+            type="button"
+            className="bg-surface rounded-lg p-4 border border-divider hover:border-border-token transition-colors cursor-pointer text-left"
             onClick={() => onTabChange && onTabChange(stat.tab)}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onTabChange && onTabChange(stat.tab); } }}
+            aria-label={`${stat.title}: ${stat.value}. ${stat.description}`}
           >
             <div className="flex items-start justify-between mb-3">
               <div className="w-9 h-9 rounded-lg bg-surface-2 flex items-center justify-center">
-                <stat.icon size={16} className="text-fg-muted" />
+                <stat.icon size={16} className="text-fg-muted" aria-hidden="true" />
               </div>
             </div>
             <h3 className="text-xl font-semibold text-fg">{stat.value}</h3>
             <p className="text-xs font-medium text-fg-muted mt-0.5">{stat.title}</p>
             <p className="text-xs text-fg-faint mt-2">{stat.description}</p>
-          </div>
+          </button>
         ))}
       </div>
 
@@ -128,7 +125,7 @@ export default function Overview({ stats, onTabChange }) {
         <div className="p-5 border-b border-border-token">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-surface-2 flex items-center justify-center">
-              <TrendingUp size={16} className="text-fg-muted" />
+              <TrendingUp size={16} className="text-fg-muted" aria-hidden="true" />
             </div>
             <div>
               <h3 className="font-medium text-fg text-sm">{t('pages.quickAccess')}</h3>
@@ -147,10 +144,11 @@ export default function Overview({ stats, onTabChange }) {
             ].map((action) => (
               <button
                 key={action.tab}
+                type="button"
                 className="flex flex-col items-center justify-center p-4 bg-surface-2 rounded-lg hover:bg-surface-hover transition-colors"
                 onClick={() => onTabChange && onTabChange(action.tab)}
               >
-                <action.icon size={20} className="text-fg-muted mb-2" />
+                <action.icon size={20} className="text-fg-muted mb-2" aria-hidden="true" />
                 <span className="text-xs text-fg-muted font-medium">{action.label}</span>
               </button>
             ))}

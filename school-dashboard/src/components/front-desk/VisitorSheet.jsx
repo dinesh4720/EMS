@@ -94,8 +94,9 @@ export default function VisitorSheet({ isOpen, onClose, onCheckedIn }) {
         <div className="fd-overlay__form">
           <div className="fd-overlay__field-row">
             <div className="fd-overlay__field">
-              <label className="fd-overlay__label">Visitor name</label>
+              <label htmlFor="visitor-name" className="fd-overlay__label">Visitor name</label>
               <input
+                id="visitor-name"
                 type="text"
                 placeholder="Full name"
                 value={name}
@@ -104,8 +105,9 @@ export default function VisitorSheet({ isOpen, onClose, onCheckedIn }) {
               />
             </div>
             <div className="fd-overlay__field">
-              <label className="fd-overlay__label">Phone (optional)</label>
+              <label htmlFor="visitor-phone" className="fd-overlay__label">Phone (optional)</label>
               <input
+                id="visitor-phone"
                 type="tel"
                 placeholder="98xxxxxxxx"
                 value={phone}
@@ -116,8 +118,8 @@ export default function VisitorSheet({ isOpen, onClose, onCheckedIn }) {
 
           <div className="fd-overlay__field-row">
             <div className="fd-overlay__field">
-              <label className="fd-overlay__label">Purpose</label>
-              <select value={purpose} onChange={(e) => setPurpose(e.target.value)}>
+              <label htmlFor="visitor-purpose" className="fd-overlay__label">Purpose</label>
+              <select id="visitor-purpose" value={purpose} onChange={(e) => setPurpose(e.target.value)}>
                 <option value="parent-visit">Parent visit</option>
                 <option value="meeting">Meeting</option>
                 <option value="delivery">Delivery</option>
@@ -127,8 +129,9 @@ export default function VisitorSheet({ isOpen, onClose, onCheckedIn }) {
               </select>
             </div>
             <div className="fd-overlay__field">
-              <label className="fd-overlay__label">Whom to meet</label>
+              <label htmlFor="visitor-whom" className="fd-overlay__label">Whom to meet</label>
               <input
+                id="visitor-whom"
                 type="text"
                 placeholder="Staff name or department"
                 value={whomToMeet}
@@ -139,8 +142,9 @@ export default function VisitorSheet({ isOpen, onClose, onCheckedIn }) {
           </div>
 
           <div className="fd-overlay__field">
-            <label className="fd-overlay__label">Note (optional)</label>
+            <label htmlFor="visitor-note" className="fd-overlay__label">Note (optional)</label>
             <input
+              id="visitor-note"
               type="text"
               placeholder="Any extra detail"
               value={note}
