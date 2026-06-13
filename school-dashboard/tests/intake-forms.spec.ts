@@ -5,6 +5,9 @@ import { createMockState, installMockApi, type MockState } from './test-utils';
 test.use({ viewport: { width: 1280, height: 720 } });
 
 test.describe('Intake Forms — Enrollment Funnel & Analytics', () => {
+  // The EnrollmentFunnel lazy chunk can take a while to compile on a cold Vite dev server
+  test.setTimeout(45_000);
+
   let state: MockState;
 
   test.beforeEach(async ({ page }) => {
@@ -24,7 +27,10 @@ test.describe('Intake Forms — Enrollment Funnel & Analytics', () => {
 
     // Wait for actual content to render (not just networkidle)
     const heading = page.getByText('Enrollment Funnel');
-    await expect(heading).toBeVisible({ timeout: 15_000 });
+    await expect(heading).toBeVisible({ timeout: 30_000 });
+
+    // Wait for stage data to load before asserting on body text
+    await expect(page.getByText('Assigned').first()).toBeVisible({ timeout: 30_000 });
 
     const bodyText = await page.textContent('body');
 
@@ -39,7 +45,10 @@ test.describe('Intake Forms — Enrollment Funnel & Analytics', () => {
     await page.goto('/intake-forms/funnel');
 
     // Wait for content to render
-    await expect(page.getByText('Enrollment Funnel')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('Enrollment Funnel')).toBeVisible({ timeout: 30_000 });
+
+    // Wait for the assigned count (3) to appear
+    await expect(page.getByText('3').first()).toBeVisible({ timeout: 30_000 });
 
     const bodyText = await page.textContent('body');
 
@@ -52,7 +61,10 @@ test.describe('Intake Forms — Enrollment Funnel & Analytics', () => {
     await page.goto('/intake-forms/funnel');
 
     // Wait for content to render
-    await expect(page.getByText('Enrollment Funnel')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('Enrollment Funnel')).toBeVisible({ timeout: 30_000 });
+
+    // Wait for the funnel visualization heading to render after data loads
+    await expect(page.getByText('Conversion Funnel')).toBeVisible({ timeout: 30_000 });
 
     const bodyText = await page.textContent('body');
     // The actual component heading is "Conversion Funnel" (not "Funnel Visualization")
@@ -73,7 +85,7 @@ test.describe('Intake Forms — Enrollment Funnel & Analytics', () => {
     }
 
     // Wait for data to load and verify final state
-    await expect(heading).toBeVisible({ timeout: 15_000 });
+    await expect(heading).toBeVisible({ timeout: 30_000 });
   });
 
   test('empty state when no assignments or submissions', async ({ page }) => {
@@ -84,7 +96,10 @@ test.describe('Intake Forms — Enrollment Funnel & Analytics', () => {
     await page.goto('/intake-forms/funnel');
 
     // Wait for content to render
-    await expect(page.getByText('Enrollment Funnel')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('Enrollment Funnel')).toBeVisible({ timeout: 30_000 });
+
+    // Wait for the empty state counts to render
+    await expect(page.getByText('0').first()).toBeVisible({ timeout: 30_000 });
 
     const bodyText = await page.textContent('body');
     // Stage labels should still be visible
