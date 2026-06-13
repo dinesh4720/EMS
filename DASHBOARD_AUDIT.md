@@ -141,6 +141,8 @@ flag after spending an afternoon reading the code.
 - **Fix:** Delete `Chat.jsx`, `ChatRealtime.jsx`, `ChatSimple.jsx`,
   `ChatWithPermissions.jsx`, `ChatWithFileUpload.jsx`. Keep only `ChatFull.jsx`
   and break it into smaller components.
+- **Status:** Resolved. The five unused variants were removed and `ChatFull.jsx`
+  was refactored into `components/`, `hooks/`, and `utils/` subdirectories.
 
 ---
 
@@ -519,7 +521,7 @@ flag after spending an afternoon reading the code.
 
 ### Do in first development sprint
 7. [ ] Add error boundaries around the main layout and each major page
-8. [ ] Delete 5 of 6 chat components — keep only `ChatFull.jsx`
+8. [x] Delete 5 of 6 chat components — keep only `ChatFull.jsx`
 9. [ ] Delete 6 of 7 AI components — keep one
 10. [ ] Delete StaffListRefactored.jsx and StudentOverviewRefactored.jsx
 11. [ ] Delete all `.example.jsx`, `.DESIGN.md`, `.README.md`, `.quickstart.md`
