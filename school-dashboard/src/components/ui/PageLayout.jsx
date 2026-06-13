@@ -33,6 +33,7 @@ export default function PageLayout({
                   key={tab.key}
                   role="tab"
                   aria-selected={activeTab === tab.key}
+                  aria-current={activeTab === tab.key ? "page" : undefined}
                   id={`tab-${tab.key}`}
                   onClick={() => onTabChange?.(tab.key)}
                   className={cn(

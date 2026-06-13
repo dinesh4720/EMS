@@ -37,7 +37,7 @@ function BreakdownChart({ data, colorMap, title }) {
                   <span className="text-fg">{(d._id || "Unknown").replace(/_/g, " ")}</span>
                   <span className="text-fg-muted">{d.count} ({pct}%)</span>
                 </div>
-                <Progress value={d.count} max={total} size="sm" color={colorMap[d._id] || 'primary'} />
+                <Progress value={d.count} max={total} size="sm" color={colorMap[d._id] || 'primary'} aria-label={`${(d._id || "Unknown").replace(/_/g, " ")} proportion`} />
               </div>
             );
           })
@@ -109,7 +109,7 @@ export default function Reports() {
                     <span className="text-fg">{(cat._id || "Unknown").replace(/_/g, " ")}</span>
                     <span className="text-fg-muted">{cat.count} items &middot; ₹{(cat.totalValue || 0).toLocaleString()}</span>
                   </div>
-                  <Progress value={cat.count} max={maxCategoryCount} size="sm" color="info" />
+                  <Progress value={cat.count} max={maxCategoryCount} size="sm" color="info" aria-label={`${(cat._id || "Unknown").replace(/_/g, " ")} category share`} />
                 </div>
               ))
             )}
@@ -145,7 +145,7 @@ export default function Reports() {
                   <p className="text-lg font-semibold text-fg">₹{(totals.totalCurrentValue || 0).toLocaleString()}</p>
                 </div>
               </div>
-              <Progress value={retentionPct} max={100} size="lg" color="success" />
+              <Progress value={retentionPct} max={100} size="lg" color="success" aria-label="Value retention" />
               <p className="text-xs text-fg-muted text-center">
                 {retentionPct}% of original value retained
               </p>

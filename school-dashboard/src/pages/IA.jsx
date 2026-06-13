@@ -110,7 +110,7 @@ const MODULES = [
       "Reports",
       "InventoryTransaction",
     ],
-    status: ["✅", "⬜", "✅", "⬜"],
+    status: ["✅", "✅", "✅", "⬜"],
     auditDate: "2026-05-21",
     issue: "DK-461",
   },
