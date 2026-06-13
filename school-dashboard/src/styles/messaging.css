@@ -695,3 +695,38 @@
   .msg-metrics { grid-template-columns: repeat(2, 1fr); }
   .msg-toolbar__count { margin-left: 0; }
 }
+
+/* ── Accessibility: respect reduced-motion preference ───────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .chat-list__row,
+  .chat-bubble,
+  .chat-input__shell,
+  .announce-form__input,
+  .announce-form__textarea,
+  .announce-form__editor,
+  .msg-list__row,
+  .msg-toolbar__search input,
+  .msg-toolbar select,
+  .msg-toolbar__select,
+  .msg-channel,
+  .msg-panel,
+  .chat-back {
+    transition: none;
+  }
+  .chat-bubble:hover,
+  .chat-list__row:hover,
+  .msg-list__row:hover {
+    transform: none;
+  }
+  .chat-input__shell:focus-within {
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+  .announce-form__input:focus,
+  .announce-form__textarea:focus,
+  .announce-form__editor:focus-within,
+  .msg-toolbar__search input:focus,
+  .msg-toolbar select:focus,
+  .msg-toolbar__select:focus {
+    box-shadow: 0 0 0 2px var(--accent-bg);
+  }
+}

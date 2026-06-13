@@ -23,6 +23,7 @@ import { useChatMessageInteractions } from "./hooks/useChatMessageInteractions";
 import { useChatVideoCall } from "./hooks/useChatVideoCall";
 import { useChatSend } from "./hooks/useChatSend";
 import { useTranslation } from 'react-i18next';
+import { useReducedMotion } from "../../hooks/useReducedMotion";
 import videoCallService from "../../services/videoCallService";
 
 // Below this viewport the two-pane shell collapses to a single pane with a
@@ -66,8 +67,10 @@ export default function ChatFull() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
+  const prefersReducedMotion = useReducedMotion();
+
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth" });
   };
 
   // ── Message interaction state (reply/forward/edit/pin/emoji) ──────────────

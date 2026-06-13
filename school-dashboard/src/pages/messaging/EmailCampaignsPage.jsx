@@ -256,36 +256,44 @@ export default function EmailCampaignsPage() {
                         <div className="flex items-center gap-1 shrink-0">
                           {/* Preview button */}
                           <button
+                            type="button"
                             onClick={() => handlePreview(c._id)}
-                            className="p-1.5 rounded-lg hover:bg-surface-2 transition-colors"
+                            className="p-1.5 rounded-lg hover:bg-surface-2 transition-colors min-w-[32px] min-h-[32px] inline-flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                            aria-label="Preview email"
                             title="Preview email"
                           >
-                            <Eye size={15} className="text-fg-muted" />
+                            <Eye size={15} className="text-fg-muted" aria-hidden="true" />
                           </button>
                           {/* Test send button */}
                           <button
+                            type="button"
                             onClick={() => setTestModal({ open: true, id: c._id, email: '', sending: false })}
-                            className="p-1.5 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-950 transition-colors"
+                            className="p-1.5 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-950 transition-colors min-w-[32px] min-h-[32px] inline-flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                            aria-label="Send test email"
                             title="Send test email"
                           >
-                            <FlaskConical size={15} className="text-purple-500" />
+                            <FlaskConical size={15} className="text-purple-500" aria-hidden="true" />
                           </button>
                           {(c.status === 'draft' || c.status === 'scheduled') && (
                             <button
+                              type="button"
                               onClick={() => handleSend(c._id)}
                               disabled={sending === c._id}
-                              className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors disabled:opacity-50"
+                              className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors disabled:opacity-50 min-w-[32px] min-h-[32px] inline-flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                              aria-label="Send now"
                               title="Send now"
                             >
-                              <Send size={15} className={sending === c._id ? 'text-fg-faint animate-pulse' : 'text-blue-500'} />
+                              <Send size={15} className={sending === c._id ? 'text-fg-faint animate-pulse motion-reduce:animate-none' : 'text-blue-500'} aria-hidden="true" />
                             </button>
                           )}
                           <button
+                            type="button"
                             onClick={() => setDeleteModal({ open: true, id: c._id })}
-                            className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
+                            className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950 transition-colors min-w-[32px] min-h-[32px] inline-flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                            aria-label="Delete campaign"
                             title="Delete"
                           >
-                            <Trash2 size={15} className="text-red-400" />
+                            <Trash2 size={15} className="text-red-400" aria-hidden="true" />
                           </button>
                         </div>
                       </div>

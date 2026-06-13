@@ -148,10 +148,10 @@ export default function Reminders() {
         {statsData.map((stat) => (
           <div
             key={stat.label}
-            className="group relative bg-surface rounded-xl border border-divider p-4 overflow-hidden transition-all duration-200 hover:scale-[1.02] hover:shadow-lg"
+            className="group relative bg-surface rounded-xl border border-divider p-4 overflow-hidden transition-all duration-200 hover:scale-[1.02] hover:shadow-lg motion-reduce:transition-none motion-reduce:hover:scale-100"
           >
             <div className="flex items-center gap-3">
-              <div className={`w-11 h-11 rounded-xl ${stat.gradient} ${stat.shadowColor} shadow-lg flex items-center justify-center transition-transform duration-200 group-hover:scale-110`}>
+              <div className={`w-11 h-11 rounded-xl ${stat.gradient} ${stat.shadowColor} shadow-lg flex items-center justify-center transition-transform duration-200 group-hover:scale-110 motion-reduce:transition-none motion-reduce:group-hover:scale-100`}>
                 <stat.icon size={20} className={stat.textColor} strokeWidth={2} />
               </div>
               <div className="min-w-0">
@@ -175,7 +175,7 @@ export default function Reminders() {
               <button
                 key={tab.id}
                 onClick={() => setSelectedType(tab.id)}
-                className={`relative flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap ${
+                className={`relative flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap motion-reduce:transition-none ${
                   isActive
                     ? "text-accent"
                     : "text-fg-muted hover:text-fg hover:bg-surface-2"
@@ -207,7 +207,7 @@ export default function Reminders() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowTemplatesModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 text-fg-muted hover:text-fg hover:bg-surface-2 rounded-lg transition-all duration-200 text-sm font-medium border border-border-token"
+            className="flex items-center gap-2 px-4 py-2.5 text-fg-muted hover:text-fg hover:bg-surface-2 rounded-lg transition-all duration-200 text-sm font-medium border border-border-token motion-reduce:transition-none"
           >
             <BookOpen size={16} />
             <span>{t('pages.templates1')}</span>
@@ -217,7 +217,7 @@ export default function Reminders() {
               setEditReminder(null);
               setShowCreateModal(true);
             }}
-            className="flex items-center gap-2 px-4 py-2.5 bg-accent hover:bg-accent-hover text-accent-fg rounded-lg transition-all duration-200 text-sm font-medium shadow-lg"
+            className="flex items-center gap-2 px-4 py-2.5 bg-accent hover:bg-accent-hover text-accent-fg rounded-lg transition-all duration-200 text-sm font-medium shadow-lg motion-reduce:transition-none"
           >
             <Plus size={16} />
             <span>{t('pages.newReminder')}</span>
