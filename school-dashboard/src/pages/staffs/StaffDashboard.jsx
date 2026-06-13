@@ -1,6 +1,6 @@
 /**
  * StaffDashboard - Refactored to match StudentDashboard minimal UI design
- * Clean, minimal gray palette with white cards
+ * Design-system token palette with surface cards
  */
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import logger from "../../utils/logger";
@@ -371,7 +371,7 @@ export default function StaffDashboard() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4">
         <div className="text-fg-faint text-sm">{t('pages.staffMemberNotFound1')}</div>
-        <button onClick={() => navigate('/staffs')} className="text-sm text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300 underline">
+        <button onClick={() => navigate('/staffs')} className="text-sm text-accent hover:text-accent-hover underline">
           {t('pages.backToStaff')}
         </button>
       </div>

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useId, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Activity,
   BookOpen,
@@ -9,7 +10,7 @@ import {
   Wrench,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Button, Chip, MinimalTabs } from '../../components/ui';
+import { Button, Chip, PageShell } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
 import SchoolsPanel from './SchoolsPanel';
 import SchoolHealthPanel from './SchoolHealthPanel';
@@ -18,80 +19,119 @@ import FeatureFlagsPanel from './FeatureFlagsPanel';
 import GrowthAnalyticsPanel from './GrowthAnalyticsPanel';
 import ChangelogPanel from './ChangelogPanel';
 
-const TABS = [
-  { key: 'schools', title: 'Schools', icon: <Building2 size={14} aria-hidden="true" /> },
-  { key: 'health', title: 'Health', icon: <Activity size={14} aria-hidden="true" /> },
-  { key: 'jobs', title: 'Jobs', icon: <Wrench size={14} aria-hidden="true" /> },
-  { key: 'flags', title: 'Flags', icon: <Flag size={14} aria-hidden="true" /> },
-  { key: 'growth', title: 'Growth', icon: <TrendingUp size={14} aria-hidden="true" /> },
-  { key: 'changelog', title: 'Changelog', icon: <BookOpen size={14} aria-hidden="true" /> },
-];
+const TAB_KEYS = ['schools', 'health', 'jobs', 'flags', 'growth', 'changelog'];
 
 export default function SuperAdminDashboard() {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState('schools');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const baseId = useId();
+
+  const activeTab = useMemo(() => {
+    const raw = searchParams.get('tab');
+    return TAB_KEYS.includes(raw) ? raw : 'schools';
+  }, [searchParams]);
+
+  const setActiveTab = (key) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (key === 'schools') {
+          next.delete('tab');
+        } else {
+          next.set('tab', key);
+        }
+        return next;
+      },
+      { replace: true }
+    );
+  };
+
+  const tabs = useMemo(
+    () => [
+      { key: 'schools', title: t('pages.schools') || 'Schools', icon: <Building2 size={14} aria-hidden="true" /> },
+      { key: 'health', title: t('pages.health') || 'Health', icon: <Activity size={14} aria-hidden="true" /> },
+      { key: 'jobs', title: t('pages.jobs') || 'Jobs', icon: <Wrench size={14} aria-hidden="true" /> },
+      { key: 'flags', title: t('pages.flags') || 'Flags', icon: <Flag size={14} aria-hidden="true" /> },
+      { key: 'growth', title: t('pages.growth') || 'Growth', icon: <TrendingUp size={14} aria-hidden="true" /> },
+      { key: 'changelog', title: t('pages.changelog') || 'Changelog', icon: <BookOpen size={14} aria-hidden="true" /> },
+    ],
+    [t]
+  );
+
+  const panelId = (key) => `${baseId}-tabpanel-${key}`;
+  const tabId = (key) => `${baseId}-tab-${key}`;
 
   const renderPanel = () => {
-    switch (activeTab) {
-      case 'health':
-        return <SchoolHealthPanel />;
-      case 'jobs':
-        return <JobsDashboardPanel />;
-      case 'flags':
-        return <FeatureFlagsPanel />;
-      case 'growth':
-        return <GrowthAnalyticsPanel />;
-      case 'changelog':
-        return <ChangelogPanel />;
-      case 'schools':
-      default:
-        return <SchoolsPanel />;
-    }
+    const panels = {
+      health: <SchoolHealthPanel />,
+      jobs: <JobsDashboardPanel />,
+      flags: <FeatureFlagsPanel />,
+      growth: <GrowthAnalyticsPanel />,
+      changelog: <ChangelogPanel />,
+      schools: <SchoolsPanel />,
+    };
+
+    return (
+      <div
+        id={panelId(activeTab)}
+        role="tabpanel"
+        aria-labelledby={tabId(activeTab)}
+        className="outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 rounded-md"
+        tabIndex={0}
+      >
+        {panels[activeTab]}
+      </div>
+    );
   };
+
+  const metaCard = (
+    <div className="rounded-lg border border-divider bg-surface-2 px-4 py-3 text-right">
+      <div className="text-xs uppercase tracking-wider text-fg-faint">
+        {t('pages.signedInAs1')}
+      </div>
+      <div className="mt-1 text-sm font-medium text-fg">
+        {user?.name || t('pages.superAdmin')}
+      </div>
+      <div className="text-xs text-fg-muted">{user?.email}</div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-surface-2 text-fg">
       <div className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-8">
-        <div className="mb-6 flex flex-col gap-4 rounded-xl border border-divider bg-surface p-6 shadow-sm md:flex-row md:items-end md:justify-between">
-          <div className="min-w-0">
-            <Chip color="primary" size="sm" startContent={<ShieldCheck size={12} aria-hidden="true" />}>
-              Super Admin
-            </Chip>
-            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-fg md:text-3xl">
+        <PageShell
+          title={
+            <span className="flex items-center gap-2">
+              <Chip
+                color="primary"
+                size="sm"
+                startContent={<ShieldCheck size={12} aria-hidden="true" />}
+              >
+                {t('pages.superAdmin')}
+              </Chip>
               {t('pages.schoolOnboardingAndTenantControl')}
-            </h1>
-            <p className="mt-2 max-w-3xl text-sm text-fg-muted">
-              Provision schools, assign plans, and re-run setup from one place instead of handling each launch manually.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg border border-divider bg-surface-2 px-4 py-3 text-right">
-              <div className="text-xs uppercase tracking-wider text-fg-faint">
-                {t('pages.signedInAs1')}
-              </div>
-              <div className="mt-1 text-sm font-medium text-fg">
-                {user?.name || 'Super Admin'}
-              </div>
-              <div className="text-xs text-fg-muted">{user?.email}</div>
+            </span>
+          }
+          description={t('pages.superAdminSubtitle')}
+          actions={
+            <div className="flex items-center gap-3">
+              {metaCard}
+              <Button variant="outline" onClick={logout}>
+                {t('pages.signOut')}
+              </Button>
             </div>
-            <Button variant="outline" onClick={logout}>
-              Sign out
-            </Button>
-          </div>
-        </div>
-
-        <div className="mb-6 overflow-x-auto">
-          <MinimalTabs
-            tabs={TABS}
-            activeKey={activeTab}
-            onChange={setActiveTab}
-            variant="pills"
-          />
-        </div>
-
-        {renderPanel()}
+          }
+          tabs={tabs}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          tabsVariant="pills"
+          tabsBaseId={baseId}
+          bodyPadding="md"
+          className="min-h-[calc(100vh-96px)]"
+        >
+          {renderPanel()}
+        </PageShell>
       </div>
     </div>
   );

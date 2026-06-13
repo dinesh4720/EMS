@@ -10,6 +10,28 @@ import {
   safeSessionClear,
 } from './safeStorage';
 
+// jsdom + Node 23+ experimental localStorage can leave `localStorage` undefined
+// in test environments that do not provide --localstorage-file. Provide a minimal
+// in-memory mock so the safeStorage wrappers can be exercised.
+if (typeof localStorage === 'undefined') {
+  const store = new Map();
+  const mockStorage = {
+    getItem: (key) => (store.has(key) ? store.get(key) : null),
+    setItem: (key, value) => store.set(String(key), String(value)),
+    removeItem: (key) => store.delete(String(key)),
+    clear: () => store.clear(),
+    get length() {
+      return store.size;
+    },
+    key: (index) => Array.from(store.keys())[index] ?? null,
+  };
+  Object.defineProperty(globalThis, 'localStorage', {
+    value: mockStorage,
+    writable: true,
+    configurable: true,
+  });
+}
+
 describe('safeGetItem', () => {
   beforeEach(() => {
     localStorage.clear();

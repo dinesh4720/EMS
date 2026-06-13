@@ -24,8 +24,8 @@ const ClassSubjectManagementModal = ({ isOpen, onClose, staffId, staffName }) =>
     <Modal isOpen={isOpen} onClose={onClose} size="md">
       <ModalContent>
         <ModalHeader className="flex gap-3 items-start pb-2">
-          <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
-            <CheckCircle2 size={20} className="text-green-600 dark:text-green-400" />
+          <div className="w-10 h-10 rounded-full bg-ok-bg flex items-center justify-center flex-shrink-0">
+            <CheckCircle2 size={20} className="text-ok" />
           </div>
           <div>
             <span className="text-lg font-semibold text-fg">

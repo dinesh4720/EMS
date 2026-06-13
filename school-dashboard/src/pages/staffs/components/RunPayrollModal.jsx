@@ -20,22 +20,22 @@ export default function RunPayrollModal({
     <Modal isOpen={isOpen} onOpenChange={onClose} size="md" isDismissable={!preparingRecords}>
       <ModalContent>
         <ModalHeader className="flex gap-3">
-          <div className="p-2 bg-warning-100 rounded-lg">
-            <AlertCircle className="text-warning-600" size={24} />
+          <div className="p-2 bg-warn-bg rounded-lg">
+            <AlertCircle className="text-warn" size={24} />
           </div>
           <div>
             <h3 className="text-lg font-semibold">{t('staff.payroll.prepareSalaryRecords')}</h3>
-            <p className="text-sm text-default-500">{t('staff.payroll.prepareSalaryDesc')}</p>
+            <p className="text-sm text-fg-muted">{t('staff.payroll.prepareSalaryDesc')}</p>
           </div>
         </ModalHeader>
         <ModalBody>
           <div className="space-y-4">
-            <div className="bg-default-50 rounded-lg p-4">
-              <p className="text-sm text-default-600 mb-2">{t('staff.payroll.aboutToGenerateFor')}</p>
-              <p className="text-lg font-semibold text-default-900">{months[selectedMonth - 1]} {selectedYear}</p>
+            <div className="bg-surface-2 rounded-lg p-4">
+              <p className="text-sm text-fg mb-2">{t('staff.payroll.aboutToGenerateFor')}</p>
+              <p className="text-lg font-semibold text-fg">{months[selectedMonth - 1]} {selectedYear}</p>
             </div>
-            <div className="bg-warning-50 rounded-lg p-4 border border-warning-200">
-              <p className="text-sm text-warning-800">
+            <div className="bg-warn-bg rounded-lg p-4 border border-warn/20">
+              <p className="text-sm text-warn">
                 <strong>{t('staff.payroll.noteLabel')}</strong> {t('staff.payroll.generateNote')}
               </p>
             </div>

@@ -310,7 +310,7 @@ const TimetableWizardPage = () => {
                     const classIdStr = String(cls.classId || cls._id || cls.id);
                     return (
                       <div
-                        key={classIdStr || index}
+                        key={classIdStr || `missing-class-${index}`}
                         className="flex flex-col md:flex-row md:items-center gap-4 p-5 bg-surface-2 border border-border-token rounded-xl hover:border-orange-300 dark:hover:border-orange-700 transition-colors"
                       >
                         <div className="flex-shrink-0 w-48">
@@ -504,7 +504,7 @@ const TimetableWizardPage = () => {
                   { value: classes.length - timetables.length, label: t('components.missingTimetables'), color: 'text-orange-600' },
                   { value: classes.filter(c => !c.subjects || c.subjects.length === 0).length, label: t('components.missingSubjects'), color: 'text-red-500' },
                 ].map((stat, i) => (
-                  <div key={i} className="bg-surface rounded-2xl shadow-sm border border-border-token p-6 flex flex-col items-center justify-center text-center">
+                  <div key={`stat-${stat.label}`} className="bg-surface rounded-2xl shadow-sm border border-border-token p-6 flex flex-col items-center justify-center text-center">
                     <span className={`text-3xl font-bold mb-1 ${stat.color}`}>{stat.value}</span>
                     <span className="text-sm text-fg-muted font-medium">{stat.label}</span>
                   </div>

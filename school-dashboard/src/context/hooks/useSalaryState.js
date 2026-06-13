@@ -5,17 +5,8 @@ import toast from "react-hot-toast";
 
 const DEFAULT_SALARY_SETTINGS = {
   disburseDate: "",
-  earnings: [
-    { id: "basic", name: "Basic Salary" },
-    { id: "hra", name: "HRA" },
-    { id: "transport", name: "Transport Allowance" },
-    { id: "special", name: "Special Allowance" },
-  ],
-  deductions: [
-    { id: "pf", name: "Provident Fund" },
-    { id: "pt", name: "Professional Tax" },
-    { id: "tds", name: "TDS" },
-  ],
+  earnings: [],
+  deductions: [],
 };
 
 export function useSalaryState() {
@@ -44,7 +35,7 @@ export function useSalaryState() {
         }
       } catch (err) {
         logger.error("Failed to fetch salary components:", err);
-        // Fallback: keep local defaults
+        // Keep empty defaults until the API succeeds; no hardcoded fallback data.
       } finally {
         if (!cancelled) setLoadingSalarySettings(false);
       }

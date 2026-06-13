@@ -139,16 +139,16 @@ export default function StaffAttendanceTab({ staffId }) {
     if (record) {
       switch (record.status) {
         case 'present':
-          bgClass = "bg-green-100 text-green-700 hover:bg-green-200 border-green-200";
+          bgClass = "bg-ok-bg text-ok hover:bg-ok-bg/80 border-ok/20";
           break;
         case 'absent':
-          bgClass = "bg-red-100 text-red-700 hover:bg-red-200 border-red-200";
+          bgClass = "bg-danger-bg text-danger-token hover:bg-danger-bg/80 border-danger-token/20";
           break;
         case 'leave':
-          bgClass = "bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-yellow-200";
+          bgClass = "bg-warn-bg text-warn hover:bg-warn-bg/80 border-warn/20";
           break;
         case 'halfday':
-          bgClass = "bg-orange-100 text-orange-700 hover:bg-orange-200 border-orange-200";
+          bgClass = "bg-info-bg text-info hover:bg-info-bg/80 border-info";
           break;
       }
       statusText = record.status;
@@ -162,13 +162,13 @@ export default function StaffAttendanceTab({ staffId }) {
           <div
             className={`
               relative h-20 rounded-xl border p-2 cursor-pointer transition-all hover:scale-[1.02]
-              ${bgClass} ${isTodayClient ? 'ring-2 ring-offset-2 ring-gray-400' : 'border-transparent'}
+              ${bgClass} ${isTodayClient ? 'ring-2 ring-offset-2 ring-fg-subtle' : 'border-transparent'}
             `}
           >
             <div className="flex justify-between items-start">
               <span className="text-sm font-semibold">{format(day, 'd')}</span>
               {record?.regularization?.requested && (
-                <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" title={t('pages.regularizationRequested')} />
+                <div className="w-2 h-2 rounded-full bg-accent animate-pulse" title={t('pages.regularizationRequested')} />
               )}
             </div>
 
@@ -183,7 +183,7 @@ export default function StaffAttendanceTab({ staffId }) {
             )}
           </div>
         </PopoverTrigger>
-        <PopoverContent className="w-64 p-3 ring-1 ring-gray-100 dark:ring-zinc-700">
+        <PopoverContent className="w-64 p-3 ring-1 ring-border-token">
           <div className="space-y-3">
             <div className="flex items-center justify-between border-b pb-2">
               <span className="font-semibold text-fg">{format(day, 'EEE, MMM d')}</span>
@@ -203,7 +203,7 @@ export default function StaffAttendanceTab({ staffId }) {
             )}
 
             {record?.regularization && (
-              <div className="text-xs bg-blue-50 text-blue-700 p-2 rounded border border-blue-100">
+              <div className="text-xs bg-info-bg text-info p-2 rounded border border-info">
                 <p className="font-semibold">Regularization {record.regularization.approvalStatus}</p>
                 <p>Req: {record.regularization.requestedStatus}</p>
                 <p>Note: {record.regularization.requestReason}</p>
@@ -212,7 +212,7 @@ export default function StaffAttendanceTab({ staffId }) {
 
             <Button
               size="sm"
-              className="w-full bg-gray-900 text-white"
+              className="w-full bg-fg text-surface"
               startContent={<Send size={14} />}
               onPress={() => handleRegularizeClick(day)}
             >
@@ -250,9 +250,9 @@ export default function StaffAttendanceTab({ staffId }) {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-xs text-fg-muted uppercase tracking-wider font-semibold">{t('pages.present2')}</p>
-              <h3 className="text-2xl font-bold text-green-600 mt-1">{monthlyStats.present}</h3>
+              <h3 className="text-2xl font-bold text-ok mt-1">{monthlyStats.present}</h3>
             </div>
-            <div className="p-2 bg-green-50 rounded-lg"><CheckCircle2 size={18} className="text-green-600" /></div>
+            <div className="p-2 bg-ok-bg rounded-lg"><CheckCircle2 size={18} className="text-ok" /></div>
           </div>
         </div>
 
@@ -260,9 +260,9 @@ export default function StaffAttendanceTab({ staffId }) {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-xs text-fg-muted uppercase tracking-wider font-semibold">{t('pages.absent2')}</p>
-              <h3 className="text-2xl font-bold text-red-600 mt-1">{monthlyStats.absent}</h3>
+              <h3 className="text-2xl font-bold text-danger-token mt-1">{monthlyStats.absent}</h3>
             </div>
-            <div className="p-2 bg-red-50 rounded-lg"><XCircle size={18} className="text-red-600" /></div>
+            <div className="p-2 bg-danger-bg rounded-lg"><XCircle size={18} className="text-danger-token" /></div>
           </div>
         </div>
 
@@ -270,9 +270,9 @@ export default function StaffAttendanceTab({ staffId }) {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-xs text-fg-muted uppercase tracking-wider font-semibold">Leaves/Half</p>
-              <h3 className="text-2xl font-bold text-yellow-600 mt-1">{monthlyStats.leave + monthlyStats.halfday}</h3>
+              <h3 className="text-2xl font-bold text-warn mt-1">{monthlyStats.leave + monthlyStats.halfday}</h3>
             </div>
-            <div className="p-2 bg-yellow-50 rounded-lg"><AlertCircle size={18} className="text-yellow-600" /></div>
+            <div className="p-2 bg-warn-bg rounded-lg"><AlertCircle size={18} className="text-warn" /></div>
           </div>
         </div>
       </div>
@@ -326,21 +326,21 @@ export default function StaffAttendanceTab({ staffId }) {
           </div>
 
           {/* Legend */}
-          <div className="flex flex-wrap justify-center gap-6 mt-8 pt-4 border-t border-gray-50 dark:border-zinc-800">
+          <div className="flex flex-wrap justify-center gap-6 mt-8 pt-4 border-t border-divider">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded bg-green-100 border border-green-200" />
+              <div className="w-3 h-3 rounded bg-ok-bg border border-ok/20" />
               <span className="text-xs text-fg-muted">{t('pages.present2')}</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded bg-red-100 border border-red-200" />
+              <div className="w-3 h-3 rounded bg-danger-bg border border-danger-token/20" />
               <span className="text-xs text-fg-muted">{t('pages.absent2')}</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded bg-yellow-100 border border-yellow-200" />
+              <div className="w-3 h-3 rounded bg-warn-bg border border-warn/20" />
               <span className="text-xs text-fg-muted">{t('pages.leave')}</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded bg-orange-100 border border-orange-200" />
+              <div className="w-3 h-3 rounded bg-info-bg border border-info/20" />
               <span className="text-xs text-fg-muted">{t('pages.halfDay')}</span>
             </div>
           </div>
@@ -352,7 +352,7 @@ export default function StaffAttendanceTab({ staffId }) {
         <div className="bg-surface rounded-xl border border-border-token p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-50 rounded-lg"><Clock size={16} className="text-blue-600" /></div>
+              <div className="p-2 bg-info-bg rounded-lg"><Clock size={16} className="text-info" /></div>
               <h3 className="font-semibold text-fg">{t('pages.quickMarkToday')}</h3>
             </div>
             <Chip size="sm" variant="flat">{format(new Date(), 'dd MMMM yyyy')}</Chip>
@@ -362,8 +362,8 @@ export default function StaffAttendanceTab({ staffId }) {
             <Button
               className={`${
                 todayStatus === 'present'
-                  ? 'bg-green-500 text-white hover:bg-green-600 border-green-600 ring-2 ring-green-200 ring-offset-2 shadow-md'
-                  : 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-100'
+                  ? 'bg-ok text-surface hover:bg-ok/90 border-ok ring-2 ring-ok/30 ring-offset-2 shadow-md'
+                  : 'bg-ok-bg text-ok hover:bg-ok-bg/80 border border-ok/20'
               }`}
               startContent={<CheckCircle2 size={16} />}
               onPress={() => handleQuickMark('present')}
@@ -373,8 +373,8 @@ export default function StaffAttendanceTab({ staffId }) {
             <Button
               className={`${
                 todayStatus === 'absent'
-                  ? 'bg-red-500 text-white hover:bg-red-600 border-red-600 ring-2 ring-red-200 ring-offset-2 shadow-md'
-                  : 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-100'
+                  ? 'bg-danger-token text-surface hover:bg-danger-token/90 border-danger-token ring-2 ring-danger-token/30 ring-offset-2 shadow-md'
+                  : 'bg-danger-bg text-danger-token hover:bg-danger-bg/80 border border-danger-token/20'
               }`}
               startContent={<XCircle size={16} />}
               onPress={() => handleQuickMark('absent')}
@@ -384,8 +384,8 @@ export default function StaffAttendanceTab({ staffId }) {
             <Button
               className={`${
                 todayStatus === 'halfday'
-                  ? 'bg-orange-500 text-white hover:bg-orange-600 border-orange-600 ring-2 ring-orange-200 ring-offset-2 shadow-md'
-                  : 'bg-orange-50 text-orange-700 hover:bg-orange-100 border border-orange-100'
+                  ? 'bg-info text-surface hover:bg-info/90 border-info ring-2 ring-info/30 ring-offset-2 shadow-md'
+                  : 'bg-info-bg text-info hover:bg-info-bg/80 border border-info/20'
               }`}
               startContent={<Clock size={16} />}
               onPress={() => handleQuickMark('halfday')}
@@ -395,8 +395,8 @@ export default function StaffAttendanceTab({ staffId }) {
             <Button
               className={`${
                 todayStatus === 'leave'
-                  ? 'bg-yellow-500 text-white hover:bg-yellow-600 border-yellow-600 ring-2 ring-yellow-200 ring-offset-2 shadow-md'
-                  : 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border border-yellow-100'
+                  ? 'bg-warn text-surface hover:bg-warn/90 border-warn ring-2 ring-warn/30 ring-offset-2 shadow-md'
+                  : 'bg-warn-bg text-warn hover:bg-warn-bg/80 border border-warn/20'
               }`}
               startContent={<FileCheck size={16} />}
               onPress={() => handleQuickMark('leave')}
@@ -423,7 +423,7 @@ export default function StaffAttendanceTab({ staffId }) {
               </ModalHeader>
               <ModalBody>
                 <div className="space-y-4">
-                  <div className="p-3 bg-blue-50 rounded-lg text-xs text-blue-700 border border-blue-100">
+                  <div className="p-3 bg-info-bg rounded-lg text-xs text-info border border-info/20">
                     <p className="font-semibold mb-1">{t('pages.currentStatus')}</p>
                     {(() => {
                       const dateStr = selectedDateForReg?.toISOString().split('T')[0];
@@ -460,7 +460,7 @@ export default function StaffAttendanceTab({ staffId }) {
               </ModalBody>
               <ModalFooter>
                 <Button variant="light" onPress={onClose}>{t('pages.cancel2')}</Button>
-                <Button className="bg-gray-900 text-white" onPress={submitRegularization} isDisabled={isSubmittingReg || !regularizationReason.trim()}>
+                <Button className="bg-fg text-surface" onPress={submitRegularization} isDisabled={isSubmittingReg || !regularizationReason.trim()}>
                   {isSubmittingReg ? 'Submitting...' : 'Submit Request'}
                 </Button>
               </ModalFooter>

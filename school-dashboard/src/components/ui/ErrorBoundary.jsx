@@ -6,7 +6,7 @@ import logger from '../../utils/logger';
 function ChunkErrorFallback({ onReload }) {
   const { t } = useTranslation();
   return (
-    <div role="alert" className="flex flex-col items-center justify-center min-h-[200px] p-8 text-center">
+    <div role="alert" data-testid="error-boundary" className="error-boundary flex flex-col items-center justify-center min-h-[200px] p-8 text-center">
       <div className="text-4xl mb-4" aria-hidden="true">📡</div>
       <h2 className="text-lg font-semibold text-fg mb-2">
         {t('common.pageFailedToLoad', 'Page failed to load')}
@@ -27,7 +27,7 @@ function ChunkErrorFallback({ onReload }) {
 function GenericErrorFallback({ message, onReset }) {
   const { t } = useTranslation();
   return (
-    <div role="alert" className="flex flex-col items-center justify-center min-h-[200px] p-8 text-center">
+    <div role="alert" data-testid="error-boundary" className="error-boundary flex flex-col items-center justify-center min-h-[200px] p-8 text-center">
       <div className="text-4xl mb-4" aria-hidden="true">⚠️</div>
       <h2 className="text-lg font-semibold text-fg mb-2">
         {t('common.somethingWentWrong', 'Something went wrong')}

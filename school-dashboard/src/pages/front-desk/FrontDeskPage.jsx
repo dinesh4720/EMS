@@ -236,7 +236,7 @@ export default function FrontDeskPage() {
               <span className="fd-table__action"><Skeleton variant="text" className="h-3 w-4" /></span>
             </div>
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="fd-table__row" role="row">
+              <div key={`activity-skeleton-${i}`} className="fd-table__row" role="row">
                 <span className="row gap-2" style={{ alignItems: "center" }}>
                   <Skeleton variant="circle" className="h-4 w-4" />
                   <Skeleton variant="text" className="h-3 w-14" />

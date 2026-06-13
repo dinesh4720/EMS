@@ -85,7 +85,7 @@ function ChartSection({ attendanceRows = [], feeCollectionData = [], loading = f
           {loading && !hasAttendanceData ? (
             <div className="space-y-4" role="status" aria-busy="true" aria-label="Loading attendance data">
               {[70, 50, 85].map((w, i) => (
-                <div key={i} className="space-y-2">
+                <div key={`attendance-skeleton-${i}`} className="space-y-2">
                   <div className="flex items-center justify-between gap-3">
                     <div className="space-y-1">
                       <div className="h-3 w-24 animate-shimmer rounded" />
@@ -149,7 +149,7 @@ function ChartSection({ attendanceRows = [], feeCollectionData = [], loading = f
             <div className="h-[200px] flex flex-col justify-end gap-1 pt-4" role="status" aria-busy="true" aria-label="Loading fee collection data">
               <div className="flex items-end justify-around h-full gap-2">
                 {[45, 70, 55, 80, 60, 75].map((h, i) => (
-                  <div key={i} className="flex-1 flex flex-col justify-end">
+                  <div key={`fee-bar-skeleton-${i}`} className="flex-1 flex flex-col justify-end">
                     <div
                       className="w-full animate-shimmer rounded-t"
                       style={{ height: `${h}%` }}
@@ -160,7 +160,7 @@ function ChartSection({ attendanceRows = [], feeCollectionData = [], loading = f
               <div className="h-px w-full bg-surface-2 mt-1" />
               <div className="flex justify-around mt-2">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <div key={i} className="h-2.5 w-6 animate-shimmer rounded" />
+                  <div key={`fee-label-skeleton-${i}`} className="h-2.5 w-6 animate-shimmer rounded" />
                 ))}
               </div>
             </div>

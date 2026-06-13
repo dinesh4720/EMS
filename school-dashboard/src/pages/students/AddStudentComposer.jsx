@@ -2017,7 +2017,7 @@ const AddStudentComposer = forwardRef(function AddStudentComposer(
                   {form.otherDocuments?.length > 0 && (
                     <ul style={{ marginTop: 6, fontSize: 12, color: "var(--fg-muted)" }}>
                       {form.otherDocuments.map((f, i) => (
-                        <li key={i} className="row gap-2" style={{ alignItems: "center" }}>
+                        <li key={`${f.name}-${f.size}-${i}`} className="row gap-2" style={{ alignItems: "center" }}>
                           <FileText size={11} />
                           <span style={{ flex: 1 }}>{f.name}</span>
                           <button

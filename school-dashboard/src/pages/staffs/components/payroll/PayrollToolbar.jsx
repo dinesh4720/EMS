@@ -89,7 +89,7 @@ export default function PayrollToolbar({
             {availableMonths.map((month) => {
               const idx = months.indexOf(month) + 1;
               return (
-                <option key={idx} value={idx}>{month}</option>
+                <option key={`month-${idx}`} value={idx}>{month}</option>
               );
             })}
           </select>
