@@ -21,9 +21,16 @@ export default function BulkImport() {
         activeKey={activeTab}
         onChange={setActiveTab}
         variant="underline"
+        ariaLabel="Bulk import sections"
       />
 
-      {activeTab === 'import' ? <BulkImportForm /> : <BulkImportHistory />}
+      <div
+        role="tabpanel"
+        id={`tabpanel-${activeTab}`}
+        aria-labelledby={`tab-${activeTab}`}
+      >
+        {activeTab === 'import' ? <BulkImportForm /> : <BulkImportHistory />}
+      </div>
     </div>
   );
 }
