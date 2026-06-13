@@ -19,7 +19,7 @@ const PreviewModal = ({ isOpen, onClose, previewForm, renderFieldPreview }) => {
       scrollBehavior="inside"
     >
       <ModalContent>
-        <ModalHeader>Form Preview: {previewForm?.name}</ModalHeader>
+        <ModalHeader><h2 className="text-xl font-semibold">Form Preview: {previewForm?.name}</h2></ModalHeader>
         <ModalBody>
           <div className="space-y-4">
             {previewForm?.fieldData?.map((field) => (

@@ -96,7 +96,9 @@ const MODULES = [
   {
     name: "Intake Forms",
     pages: ["EnrollmentFunnel", "FormAssignments", "FormSubmissions"],
-    status: ["⬜", "⬜", "✅", "⬜"],
+    status: ["⬜", "✅", "✅", "⬜"],
+    auditDate: "2026-06-14",
+    issue: "DK-1004",
   },
   {
     name: "Inventory",

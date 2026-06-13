@@ -69,7 +69,7 @@ const FormBuilderModal = ({
               color="primary"
               onPress={() => handlePreview({ ...editingForm, fieldData: builderFields })}
             >
-              <Eye size={16} className="mr-2" />
+              <Eye size={16} className="mr-2" aria-hidden="true" />
               Preview
             </Button>
           </div>
@@ -122,9 +122,11 @@ const FormBuilderModal = ({
                 <div className="grid grid-cols-2 gap-2">
                   {FIELD_TYPES.map((fieldType) => (
                     <button
+                      type="button"
                       key={fieldType.key}
-                      className="flex flex-col items-center justify-center p-3 rounded-xl border border-border-token bg-surface hover:border-[var(--accent-border)] hover:bg-[var(--accent-bg)] dark:hover:bg-[var(--accent-bg)] transition-all duration-200 group"
+                      className="flex flex-col items-center justify-center p-3 rounded-xl border border-border-token bg-surface hover:border-[var(--accent-border)] hover:bg-[var(--accent-bg)] dark:hover:bg-[var(--accent-bg)] motion-safe:transition-all motion-safe:duration-200 group min-h-[44px]"
                       onClick={() => handleAddField(fieldType.key)}
+                      aria-label={fieldType.label}
                     >
                       <span className="text-2xl mb-2 text-fg-muted group-hover:text-[var(--accent)] dark:group-hover:text-[var(--accent)]">
                         {fieldType.icon}
@@ -263,12 +265,14 @@ const FormBuilderModal = ({
                     </div>
 
                     <div className="pt-2">
-                      <label className="text-xs font-semibold text-fg-muted uppercase mb-2 block">
+                      <span className="text-xs font-semibold text-fg-muted uppercase mb-2 block">
                         Layout
-                      </label>
-                      <div className="flex bg-surface-2 p-1 rounded-lg">
+                      </span>
+                      <div className="flex bg-surface-2 p-1 rounded-lg" role="group" aria-label="Field width">
                         <button
-                          className={`flex-1 text-xs py-1.5 rounded-md transition-colors ${fieldConfig.width !== "half"
+                          type="button"
+                          aria-pressed={fieldConfig.width !== "half"}
+                          className={`flex-1 text-xs py-1.5 rounded-md motion-safe:transition-colors min-h-[44px] ${fieldConfig.width !== "half"
                             ? "bg-surface shadow-sm font-medium"
                             : "text-fg-muted hover:text-fg"
                             }`}
@@ -277,7 +281,9 @@ const FormBuilderModal = ({
                           Full Width
                         </button>
                         <button
-                          className={`flex-1 text-xs py-1.5 rounded-md transition-colors ${fieldConfig.width === "half"
+                          type="button"
+                          aria-pressed={fieldConfig.width === "half"}
+                          className={`flex-1 text-xs py-1.5 rounded-md motion-safe:transition-colors min-h-[44px] ${fieldConfig.width === "half"
                             ? "bg-surface shadow-sm font-medium"
                             : "text-fg-muted hover:text-fg"
                             }`}
@@ -382,9 +388,9 @@ const FormBuilderModal = ({
                       fieldConfig.type === "radio" ||
                       fieldConfig.type === "checkbox") && (
                         <div className="pt-4 border-t border-border-token">
-                          <label className="text-xs font-semibold text-fg-muted uppercase mb-2 block">
+                          <span className="text-xs font-semibold text-fg-muted uppercase mb-2 block">
                             Options
-                          </label>
+                          </span>
                           {fieldConfig.options.map((opt, idx) => (
                             <div key={`option-${idx}`} className="flex gap-2 mb-2">
                               <Input
@@ -406,6 +412,7 @@ const FormBuilderModal = ({
                                 size="sm"
                                 variant="light"
                                 color="danger"
+                                aria-label={t('pages.removeOption')}
                                 onPress={() => {
                                   const newOptions = fieldConfig.options.filter(
                                     (_, i) => i !== idx
@@ -467,7 +474,7 @@ const FormBuilderModal = ({
             color="primary"
             onPress={handleSaveForm}
             isLoading={loading}
-            className="transition-all duration-200"
+            className="motion-safe:transition-all motion-safe:duration-200"
           >
             Save Form
           </Button>
