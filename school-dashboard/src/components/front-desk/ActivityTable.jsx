@@ -50,51 +50,69 @@ function fmtTime(t) {
 export default function ActivityTable({ rows = [], onRowClick }) {
   if (rows.length === 0) {
     return (
-      <div className="fd-table">
+      <div className="fd-table" role="status" aria-live="polite" aria-label="Activity filter result">
         <div className="fd-table__empty">No activity matches this filter.</div>
       </div>
     );
   }
   return (
-    <div className="fd-table" role="table">
-      <div className="fd-table__head" role="row">
-        <span>Type</span>
-        <span>Person</span>
-        <span>Detail</span>
-        <span>Time</span>
-        <span>Status</span>
-        <span className="fd-table__action">Action</span>
+    <div className="fd-table" role="table" aria-label="Front desk activity">
+      <div className="fd-table__head" role="rowgroup">
+        <div role="row">
+          <span role="columnheader">Type</span>
+          <span role="columnheader">Person</span>
+          <span role="columnheader">Detail</span>
+          <span role="columnheader">Time</span>
+          <span role="columnheader">Status</span>
+          <span role="columnheader" className="fd-table__action">Action</span>
+        </div>
       </div>
-      {rows.map((r) => {
-        const Icon = ICON_BY_TYPE[r.type] || Users;
-        return (
-          <div
-            key={`${r.type}:${r.id}`}
-            role="row"
-            className="fd-table__row"
-            onClick={() => onRowClick?.(r)}
-            style={{ cursor: onRowClick ? "pointer" : "default" }}
-          >
-            <span className="row gap-2" style={{ alignItems: "center" }}>
-              <Icon size={13} style={{ color: "var(--fg-subtle)" }} aria-hidden />
-              <span className="text-xs" style={{ color: "var(--fg-muted)" }}>
-                {LABEL_BY_TYPE[r.type] || r.type}
+      <div role="rowgroup">
+        {rows.map((r) => {
+          const Icon = ICON_BY_TYPE[r.type] || Users;
+          const label = `${LABEL_BY_TYPE[r.type] || r.type}: ${r.name}${r.sub ? `, ${r.sub}` : ""}`;
+          const isClickable = Boolean(onRowClick);
+          return (
+            <div
+              key={`${r.type}:${r.id}`}
+              role="row"
+              className={`fd-table__row${isClickable ? " is-clickable" : ""}`}
+              onClick={isClickable ? () => onRowClick(r) : undefined}
+              onKeyDown={
+                isClickable
+                  ? (e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onRowClick(r);
+                      }
+                    }
+                  : undefined
+              }
+              tabIndex={isClickable ? 0 : undefined}
+              aria-label={isClickable ? `Open ${label}` : undefined}
+              style={{ cursor: isClickable ? "pointer" : "default" }}
+            >
+              <span role="cell" className="row gap-2" style={{ alignItems: "center" }}>
+                <Icon size={13} style={{ color: "var(--fg-subtle)" }} aria-hidden />
+                <span className="text-xs" style={{ color: "var(--fg-muted)" }}>
+                  {LABEL_BY_TYPE[r.type] || r.type}
+                </span>
               </span>
-            </span>
-            <span>
-              <div className="fd-table__name">{r.name}</div>
-            </span>
-            <span className="fd-table__sub">{r.sub || "—"}</span>
-            <span className="mono tnum" style={{ fontSize: 12, color: "var(--fg-muted)" }}>
-              {fmtTime(r.time)}
-            </span>
-            <span><StatusPill status={r.status} /></span>
-            <span className="fd-table__action">
-              <ChevronRight size={14} style={{ color: "var(--fg-faint)" }} aria-hidden />
-            </span>
-          </div>
-        );
-      })}
+              <span role="cell">
+                <div className="fd-table__name">{r.name}</div>
+              </span>
+              <span role="cell" className="fd-table__sub">{r.sub || "—"}</span>
+              <span role="cell" className="mono tnum" style={{ fontSize: 12, color: "var(--fg-muted)" }}>
+                {fmtTime(r.time)}
+              </span>
+              <span role="cell"><StatusPill status={r.status} /></span>
+              <span role="cell" className="fd-table__action" aria-label={isClickable ? "Open details" : undefined}>
+                <ChevronRight size={14} style={{ color: "var(--fg-faint)" }} aria-hidden />
+              </span>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
