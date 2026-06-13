@@ -28,7 +28,7 @@ export default function FeesTab({ metrics, academicYear }) {
     } catch (err) {
       console.error('Failed to load fee reports:', err);
       setError(err);
-      toast.error('Failed to load fee reports');
+      toast.error('Failed to load fee reports. Refresh to try again.');
     } finally {
       setLoading(false);
     }
@@ -90,7 +90,7 @@ export default function FeesTab({ metrics, academicYear }) {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" aria-live="polite" aria-busy={loading ? 'true' : undefined}>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatCard
           label="Monthly Collected"
@@ -126,8 +126,8 @@ export default function FeesTab({ metrics, academicYear }) {
         <EmptyState
           icon={Wallet}
           size="md"
-          title="No fee data yet"
-          description="No collection or outstanding dues recorded for this academic year."
+          title="No fee data for this academic year"
+          description="No fee collection or outstanding dues have been recorded."
         />
       ) : (
         <div className="space-y-8">
@@ -138,6 +138,7 @@ export default function FeesTab({ metrics, academicYear }) {
                 columns={collectionColumns}
                 rows={feeCollection}
                 getRowKey={(row, idx) => `${row._id}-${idx}`}
+                aria-label="Monthly fee collection"
               />
             </section>
           )}
@@ -148,6 +149,7 @@ export default function FeesTab({ metrics, academicYear }) {
                 columns={duesColumns}
                 rows={outstandingDues}
                 getRowKey={(row, idx) => `${row.studentId?._id || idx}`}
+                aria-label="Outstanding dues"
               />
             </section>
           )}

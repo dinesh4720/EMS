@@ -48,7 +48,7 @@ export default function MarksTab({ academicYear }) {
     } catch (err) {
       console.error('Failed to load marks report:', err);
       setError(err);
-      toast.error('Failed to load marks report');
+      toast.error('Failed to load marks report. Refresh to try again.');
     } finally {
       setLoading(false);
     }
@@ -113,7 +113,7 @@ export default function MarksTab({ academicYear }) {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" aria-live="polite" aria-busy={loading ? 'true' : undefined}>
       <div className="flex flex-wrap items-end gap-3">
         <Select
           label="Select exam"
@@ -155,6 +155,7 @@ export default function MarksTab({ academicYear }) {
                 columns={classColumns}
                 rows={classResults}
                 getRowKey={(row, idx) => `${row.className}-${idx}`}
+                aria-label="Class results"
               />
             </section>
           )}
@@ -166,6 +167,7 @@ export default function MarksTab({ academicYear }) {
                 columns={subjectColumns}
                 rows={subjectAnalysis}
                 getRowKey={(row, idx) => `${row._id}-${idx}`}
+                aria-label="Subject analysis"
               />
             </section>
           )}
@@ -191,6 +193,7 @@ export default function MarksTab({ academicYear }) {
                 columns={rankColumns}
                 rows={rankList}
                 getRowKey={(row, idx) => `${row.studentId?._id || idx}`}
+                aria-label="Rank list"
               />
             </section>
           )}
@@ -202,8 +205,8 @@ export default function MarksTab({ academicYear }) {
               <EmptyState
                 icon={AlertTriangle}
                 size="md"
-                title="No results yet"
-                description="No marks data has been published for this exam."
+                title="No marks data for this exam"
+                description="Results have not been published yet."
               />
             )}
         </div>

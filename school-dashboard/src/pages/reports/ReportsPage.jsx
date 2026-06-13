@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useId } from 'react';
 import { reportsApi } from '../../services/api/extensions';
 import { useApp } from '../../context/AppContext';
 import { getAcademicYearOptions } from '../../utils/constants';
@@ -16,6 +16,8 @@ const TABS = [
 ];
 
 export default function ReportsPage() {
+  const baseId = useId();
+  const tabpanelId = `${baseId}-tabpanel`;
   const { currentAcademicYear, selectedAcademicYear, setSelectedAcademicYear } = useApp();
   const [activeTab, setActiveTab] = useState('attendance');
   const [metrics, setMetrics] = useState(null);
@@ -64,7 +66,7 @@ export default function ReportsPage() {
   );
 
   return (
-    <div className="p-6 space-y-6 animate-fade-in">
+    <main className="p-6 space-y-6 animate-fade-in">
       <PageHeader
         title="Reports"
         description="View and analyze school data"
@@ -78,13 +80,19 @@ export default function ReportsPage() {
         activeKey={activeTab}
         onChange={setActiveTab}
         variant="underline"
+        ariaLabel="Report sections"
       />
 
-      <div>
+      <div
+        id={tabpanelId}
+        role="tabpanel"
+        aria-label="Report content"
+        aria-live="polite"
+      >
         {activeTab === 'attendance' && <AttendanceTab metrics={metrics} />}
         {activeTab === 'marks' && <MarksTab academicYear={academicYear} />}
         {activeTab === 'fees' && <FeesTab metrics={metrics} academicYear={academicYear} />}
       </div>
-    </div>
+    </main>
   );
 }

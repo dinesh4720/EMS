@@ -189,7 +189,7 @@ function ExportCard({ module }) {
       toast.success(`${module.name} exported successfully`);
     } catch (error) {
       console.error(`Failed to export ${module.name}:`, error);
-      toast.error(`Failed to export ${module.name}`);
+      toast.error(`Failed to export ${module.name}. Check your connection and try again.`);
     } finally {
       setExporting(false);
     }
@@ -252,7 +252,7 @@ function ExportCard({ module }) {
         <Button
           onClick={handleDownload}
           loading={exporting}
-          icon={<Download size={14} />}
+          icon={<Download size={14} aria-hidden="true" />}
           size="sm"
           className="ml-auto"
         >
