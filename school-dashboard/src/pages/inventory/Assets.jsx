@@ -234,9 +234,10 @@ export default function Assets() {
             value={search}
             onValueChange={setSearch}
             placeholder={t('pages.searchAssets')}
-            startContent={<Search size={16} className="text-fg-faint" />}
+            startContent={<Search size={16} className="text-fg-faint" aria-hidden />}
             size="sm"
             className="w-56"
+            aria-label={t('pages.searchAssets')}
           />
           <Select
             selectedKeys={[filterCategory]}
@@ -316,7 +317,7 @@ export default function Assets() {
       ) : (
         <Card padding="none" elevation="raised" className="overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm" aria-label={t('pages.assetManagement') || 'Asset management'}>
               <thead>
                 <tr className="bg-surface-2 border-b border-divider">
                   {[t('pages.name1'), t('pages.category1'), t('pages.location'), t('pages.assignedTo'), t('pages.qty'), t('pages.currentValue'), t('pages.condition'), t('pages.status2'), t('pages.vendor'), t('pages.actions1')].map((h) => (
@@ -391,6 +392,7 @@ export default function Assets() {
                 size="sm"
                 onClick={() => setPage((p) => Math.max(p - 1, 1))}
                 disabled={page <= 1 || loading}
+                aria-label={t('pages.previous')}
               >
                 {t('pages.previous')}
               </MinimalButton>
@@ -402,6 +404,7 @@ export default function Assets() {
                 size="sm"
                 onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
                 disabled={page >= totalPages || loading}
+                aria-label={t('pages.next')}
               >
                 {t('pages.next')}
               </MinimalButton>

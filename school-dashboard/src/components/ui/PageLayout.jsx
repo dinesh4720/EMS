@@ -26,10 +26,13 @@ export default function PageLayout({
       {/* Tabs */}
       {hasTabs && (
         <div className="px-4 sm:px-6 py-3 border-b border-border-token shrink-0 overflow-x-auto scrollbar-none">
-          <nav className="flex gap-1 min-w-max">
+          <nav className="flex gap-1 min-w-max" role="tablist" aria-label="Module navigation">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
+                role="tab"
+                aria-selected={activeTab === tab.key}
+                aria-current={activeTab === tab.key ? "page" : undefined}
                 onClick={() => onTabChange?.(tab.key)}
                 className={cn(
                   "px-3 sm:px-5 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap",

@@ -33,6 +33,7 @@ const LinearProgress = forwardRef(function LinearProgress(
     valueFormat,
     className,
     trackClassName,
+    "aria-label": ariaLabel,
     ...props
   },
   ref
@@ -57,7 +58,7 @@ const LinearProgress = forwardRef(function LinearProgress(
         aria-valuemin={0}
         aria-valuemax={max}
         aria-valuenow={indeterminate ? undefined : value}
-        aria-label={typeof label === "string" ? label : undefined}
+        aria-label={ariaLabel || (typeof label === "string" ? label : undefined)}
         className={cn(
           "w-full overflow-hidden rounded-full bg-surface-2",
           TRACK_SIZE[size],
@@ -88,6 +89,7 @@ LinearProgress.propTypes = {
   valueFormat: PropTypes.func,
   className: PropTypes.string,
   trackClassName: PropTypes.string,
+  "aria-label": PropTypes.string,
 };
 
 const CIRCULAR_SIZE = {

@@ -147,7 +147,7 @@ export default function Maintenance() {
       ) : (
         <Card padding="none" elevation="raised" className="overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm" aria-label="Maintenance logs">
               <thead>
                 <tr className="bg-surface-2 border-b border-divider">
                   {["Asset", "Type", "Description", "Scheduled", "Status", "Cost", "Actions"].map((h) => (

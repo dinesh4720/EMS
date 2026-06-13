@@ -191,7 +191,7 @@ export default function Vendors() {
             <Card key={v._id} padding="md" elevation="raised">
               <div className="flex justify-between items-start mb-3">
                 <div className="min-w-0">
-                  <h4 className="font-medium text-fg truncate">{v.name}</h4>
+                  <h2 className="font-medium text-fg truncate">{v.name}</h2>
                   {v.contactPerson && <p className="text-xs text-fg-muted">{v.contactPerson}</p>}
                 </div>
                 <div className="flex gap-1 shrink-0">
@@ -250,8 +250,8 @@ export default function Vendors() {
             <Textarea label={t('pages.address2')} value={form.address} onValueChange={(v) => set("address", v)} className="mt-2" />
             <Textarea label={t('pages.notes1')} value={form.notes} onValueChange={(v) => set("notes", v)} />
             <div className="flex items-center justify-between mt-2 px-1">
-              <span className="text-sm text-fg">Active Vendor</span>
-              <Switch isSelected={form.isActive} onValueChange={(v) => set("isActive", v)} size="sm" />
+              <label htmlFor="vendor-active-switch" className="text-sm text-fg">Active Vendor</label>
+              <Switch id="vendor-active-switch" isSelected={form.isActive} onValueChange={(v) => set("isActive", v)} size="sm" aria-label="Active vendor" />
             </div>
           </ModalBody>
           <ModalFooter>
@@ -278,7 +278,7 @@ export default function Vendors() {
       >
         <div className="p-6">
           <h1 className="text-lg font-semibold mb-4">Vendors</h1>
-          <table className="w-full text-sm border-collapse">
+          <table className="w-full text-sm border-collapse" aria-label="Vendors list">
             <thead>
               <tr className="border-b">
                 <th className="text-left py-2 px-3">Name</th>

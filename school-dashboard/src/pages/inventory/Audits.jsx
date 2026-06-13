@@ -182,7 +182,7 @@ export default function Audits() {
               <div className="px-5 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-4 min-w-0 flex-1">
                   <div className="min-w-0">
-                    <h4 className="font-medium text-fg truncate">{audit.title}</h4>
+                    <h2 className="font-medium text-fg truncate">{audit.title}</h2>
                     <div className="flex items-center gap-3 mt-1">
                       <Badge color={statusBadgeColor[audit.status] || 'neutral'} size="sm">
                         {audit.status?.replace(/_/g, " ")}
@@ -212,7 +212,7 @@ export default function Audits() {
               {/* Expanded Audit Items */}
               {expanded === audit._id && audit.auditItems?.length > 0 && (
                 <div className="border-t border-divider px-5 py-3">
-                  <table className="w-full text-sm">
+                  <table className="w-full text-sm" aria-label={`Audit items for ${audit.title}`}>
                     <thead>
                       <tr>
                         {["Asset", "Expected Qty", "Actual Qty", "Condition", "Notes"].map((h) => (
