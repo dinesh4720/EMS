@@ -256,7 +256,7 @@ export default function HomeworkDetailModal({ homeworkId, onClose, onDataChanged
         )}
 
         <div>
-          <p className="text-sm font-semibold text-fg mb-3">Submissions</p>
+          <h3 className="text-sm font-semibold text-fg mb-3">Submissions</h3>
           {!hw?.submissions?.length ? (
             <EmptyState icon={Clock} size="sm" title="No submissions yet" />
           ) : (

@@ -84,7 +84,9 @@ const MODULES = [
   {
     name: "Homework",
     pages: ["HomeworkList", "CreateHomeworkModal"],
-    status: ["⬜", "⬜", "✅", "⬜"],
+    status: ["⬜", "✅", "✅", "✅"],
+    auditDate: "2026-06-14",
+    issue: "DK-1002",
   },
   {
     name: "Hostel",
