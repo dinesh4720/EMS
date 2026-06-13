@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
 import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   Button, Select, SelectItem, Textarea, Chip, Switch,
@@ -21,6 +21,7 @@ const CONDITIONS = [
 
 export default function ReturnBookModal({ isOpen, onClose, issue, onSaved }) {
   const { t } = useTranslation();
+  const finePaidLabelId = useId();
   const [form, setForm] = useState({ returnCondition: "good", finePaid: false, notes: "" });
   const [saving, setSaving] = useState(false);
 
@@ -91,8 +92,9 @@ export default function ReturnBookModal({ isOpen, onClose, issue, onSaved }) {
 
           {accruedFine > 0 && (
             <div className="flex items-center justify-between">
-              <span className="text-sm text-fg">Fine paid (₹{accruedFine})?</span>
+              <span id={finePaidLabelId} className="text-sm text-fg">Fine paid (₹{accruedFine})?</span>
               <Switch
+                aria-labelledby={finePaidLabelId}
                 isSelected={form.finePaid}
                 onValueChange={(v) => setForm((f) => ({ ...f, finePaid: v }))}
                 size="sm"

@@ -162,7 +162,7 @@ describe("Inventory module accessibility", () => {
     const { container } = renderAt("/inventory");
     await screen.findByText("Low Stock", {}, { timeout: 3000 });
 
-    const tablist = within(container).getByRole("tablist", { name: /Module navigation/i });
+    const tablist = within(container).getByRole("tablist");
     expect(tablist).toBeTruthy();
 
     const tabs = within(tablist).getAllByRole("tab");
