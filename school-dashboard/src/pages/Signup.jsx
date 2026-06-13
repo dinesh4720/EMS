@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Trans, useTranslation } from "react-i18next";
 import { Building2, Eye, EyeOff, Lock, Mail, ShieldCheck, User } from "lucide-react";
 
 import { API_URL } from "../config/api.js";
-import { signupSchema, parseFormSchema } from "../validators/formSchemas";
+import { signupSchema } from "../validators/formSchemas";
+import useZodForm from "../hooks/useZodForm";
 
 import AuthVisual from "../components/auth/AuthVisual";
 import AuthBrand from "../components/auth/AuthBrand";
@@ -40,9 +41,18 @@ export default function Signup() {
   const [searchParams] = useSearchParams();
   const inviteToken = searchParams.get("inviteToken") || "";
 
-  const [formData, setFormData] = useState(INITIAL_FORM);
-  const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    errors,
+    isSubmitting,
+    onInvalid,
+  } = useZodForm(signupSchema, {
+    defaultValues: INITIAL_FORM,
+  });
+
   const [inviteLoading, setInviteLoading] = useState(Boolean(inviteToken));
   const [inviteError, setInviteError] = useState(
     inviteToken ? "" : t("signup.errors.inviteRequired")
@@ -50,6 +60,9 @@ export default function Signup() {
   const [inviteDetails, setInviteDetails] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+
+  const passwordValue = watch("password");
 
   useEffect(() => {
     let cancelled = false;
@@ -74,11 +87,8 @@ export default function Signup() {
         const data = await response.json();
         if (cancelled) return;
         setInviteDetails(data?.invite || null);
-        setFormData((prev) => ({
-          ...prev,
-          email: data?.invite?.email || "",
-          schoolName: data?.invite?.schoolName || "",
-        }));
+        setValue("email", data?.invite?.email || "", { shouldValidate: false });
+        setValue("schoolName", data?.invite?.schoolName || "", { shouldValidate: false });
       } catch (error) {
         if (!cancelled) {
           setInviteDetails(null);
@@ -93,61 +103,41 @@ export default function Signup() {
     return () => {
       cancelled = true;
     };
-  }, [inviteToken]);
+  }, [inviteToken, setValue, t]);
 
-  const handleChange = useCallback((field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    setErrors((prev) => ({ ...prev, [field]: "", submit: "" }));
-  }, []);
+  const onSubmit = async (data) => {
+    setSubmitError("");
+    if (!inviteToken || !inviteDetails) {
+      setSubmitError(t("signup.errors.inviteRequired"));
+      return;
+    }
 
-  const handleSubmit = useCallback(
-    async (e) => {
-      e.preventDefault();
-      if (!inviteToken || !inviteDetails) {
-        setErrors({ submit: t("signup.errors.inviteRequired") });
-        return;
+    try {
+      const response = await fetch(`${API_URL}/auth/signup`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: data.fullName,
+          email: data.email,
+          schoolName: data.schoolName,
+          password: data.password,
+          inviteToken,
+        }),
+      });
+      if (!response.ok) {
+        const resData = await response.json().catch(() => ({}));
+        throw new Error(resData.error || "Signup failed");
       }
-
-      const parsed = parseFormSchema(signupSchema, formData);
-      if (!parsed.success) {
-        setErrors(parsed.errors);
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const response = await fetch(`${API_URL}/auth/signup`, {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: formData.fullName,
-            email: formData.email,
-            schoolName: formData.schoolName,
-            password: formData.password,
-            inviteToken,
-          }),
-        });
-        if (!response.ok) {
-          const data = await response.json().catch(() => ({}));
-          throw new Error(data.error || "Signup failed");
-        }
-        navigate("/login", {
-          state: {
-            message: "Invite accepted. Please sign in with your new admin account.",
-          },
-        });
-      } catch (error) {
-        setErrors((prev) => ({
-          ...prev,
-          submit: error.message || "Failed to create account. Please try again.",
-        }));
-      } finally {
-        setLoading(false);
-      }
-    },
-    [formData, inviteToken, inviteDetails, navigate, t]
-  );
+      navigate("/login", {
+        state: {
+          message: "Invite accepted. Please sign in with your new admin account.",
+        },
+      });
+    } catch (error) {
+      setSubmitError(error.message || "Failed to create account. Please try again.");
+    }
+  };
 
   const accessBlocked = !inviteToken || Boolean(inviteError);
 
@@ -186,7 +176,7 @@ export default function Signup() {
             </>
           ) : (
             <form
-              onSubmit={handleSubmit}
+              onSubmit={handleSubmit(onSubmit, onInvalid)}
               className="auth-form__form"
               autoComplete="off"
               noValidate
@@ -213,17 +203,16 @@ export default function Signup() {
                     className={`input input--with-icon ${errors.fullName ? "input--err" : ""}`}
                     type="text"
                     placeholder={t("signup.fullNamePlaceholder")}
-                    value={formData.fullName}
-                    onChange={(e) => handleChange("fullName", e.target.value)}
                     autoComplete="name"
                     required
                     aria-invalid={Boolean(errors.fullName) || undefined}
                     aria-describedby={errors.fullName ? "signup-fullname-err" : undefined}
+                    {...register("fullName")}
                   />
                 </div>
                 {errors.fullName && (
                   <span id="signup-fullname-err" className="field__hint field__hint--danger">
-                    {errors.fullName}
+                    {errors.fullName.message}
                   </span>
                 )}
               </div>
@@ -240,10 +229,10 @@ export default function Signup() {
                       id="signup-email"
                       className="input input--with-icon"
                       type="email"
-                      value={formData.email}
                       disabled
                       readOnly
                       autoComplete="email"
+                      {...register("email")}
                     />
                   </div>
                 </div>
@@ -259,9 +248,9 @@ export default function Signup() {
                       id="signup-school"
                       className="input input--with-icon"
                       type="text"
-                      value={formData.schoolName}
                       disabled
                       readOnly
+                      {...register("schoolName")}
                     />
                   </div>
                 </div>
@@ -281,12 +270,11 @@ export default function Signup() {
                     }`}
                     type={showPassword ? "text" : "password"}
                     placeholder={t("signup.passwordPlaceholder")}
-                    value={formData.password}
-                    onChange={(e) => handleChange("password", e.target.value)}
                     autoComplete="new-password"
                     required
                     aria-invalid={Boolean(errors.password) || undefined}
                     aria-describedby={errors.password ? "signup-password-err" : undefined}
+                    {...register("password")}
                   />
                   <button
                     type="button"
@@ -301,10 +289,10 @@ export default function Signup() {
                 </div>
                 {errors.password && (
                   <span id="signup-password-err" className="field__hint field__hint--danger">
-                    {errors.password}
+                    {errors.password.message}
                   </span>
                 )}
-                <PasswordStrengthMeter password={formData.password} />
+                <PasswordStrengthMeter password={passwordValue} />
               </div>
 
               <div className="field">
@@ -321,12 +309,11 @@ export default function Signup() {
                     }`}
                     type={showConfirmPassword ? "text" : "password"}
                     placeholder={t("signup.confirmPasswordPlaceholder")}
-                    value={formData.confirmPassword}
-                    onChange={(e) => handleChange("confirmPassword", e.target.value)}
                     autoComplete="new-password"
                     required
                     aria-invalid={Boolean(errors.confirmPassword) || undefined}
                     aria-describedby={errors.confirmPassword ? "signup-confirm-err" : undefined}
+                    {...register("confirmPassword")}
                   />
                   <button
                     type="button"
@@ -341,7 +328,7 @@ export default function Signup() {
                 </div>
                 {errors.confirmPassword && (
                   <span id="signup-confirm-err" className="field__hint field__hint--danger">
-                    {errors.confirmPassword}
+                    {errors.confirmPassword.message}
                   </span>
                 )}
               </div>
@@ -351,10 +338,9 @@ export default function Signup() {
                   id="signup-terms"
                   type="checkbox"
                   className="signup-terms__input"
-                  checked={formData.agreeToTerms}
-                  onChange={(e) => handleChange("agreeToTerms", e.target.checked)}
                   aria-invalid={Boolean(errors.agreeToTerms) || undefined}
                   aria-describedby={errors.agreeToTerms ? "signup-terms-err" : undefined}
+                  {...register("agreeToTerms")}
                 />
                 <span className="signup-terms__text">
                   <Trans
@@ -367,13 +353,13 @@ export default function Signup() {
               </label>
               {errors.agreeToTerms && (
                 <span id="signup-terms-err" className="field__hint field__hint--danger">
-                  {errors.agreeToTerms}
+                  {errors.agreeToTerms.message}
                 </span>
               )}
 
-              {errors.submit && (
+              {submitError && (
                 <div className="auth-form__alert auth-form__alert--danger" role="alert">
-                  <span>{errors.submit}</span>
+                  <span>{submitError}</span>
                 </div>
               )}
 
@@ -387,10 +373,10 @@ export default function Signup() {
               <button
                 type="submit"
                 className="btn btn--accent btn--block"
-                disabled={loading}
-                aria-busy={loading || undefined}
+                disabled={isSubmitting}
+                aria-busy={isSubmitting || undefined}
               >
-                {loading ? t("signup.creating") : t("signup.createAccount")}
+                {isSubmitting ? t("signup.creating") : t("signup.createAccount")}
               </button>
 
               <p className="auth-form__notice">

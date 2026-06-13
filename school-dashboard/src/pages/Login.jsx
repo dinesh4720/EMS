@@ -6,7 +6,8 @@ import toast from "react-hot-toast";
 
 import { useAuth } from "../context/AuthContext";
 import { APP_CONFIG } from "../utils/constants";
-import { loginSchema, parseFormSchema } from "../validators/formSchemas";
+import { loginSchema } from "../validators/formSchemas";
+import useZodForm from "../hooks/useZodForm";
 
 import AuthVisual from "../components/auth/AuthVisual";
 import AuthBrand from "../components/auth/AuthBrand";
@@ -86,11 +87,14 @@ export default function Login() {
   const { login } = useAuth();
   const [visualVariant, setVisualVariant] = useVisualVariant();
 
-  const [emailOrPhone, setEmailOrPhone] = useState("");
-  const [password, setPassword] = useState("");
-  const [fieldErrors, setFieldErrors] = useState({});
+  const { register, handleSubmit, errors, isSubmitting, onInvalid } = useZodForm(
+    loginSchema,
+    {
+      defaultValues: { emailOrPhone: "", password: "" },
+    }
+  );
+
   const [submitError, setSubmitError] = useState("");
-  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [lockoutRemaining, setLockoutRemaining] = useState(0);
 
@@ -125,11 +129,9 @@ export default function Login() {
     };
   }, []);
 
-  const handleSubmit = useCallback(
-    async (e) => {
-      e.preventDefault();
+  const onSubmit = useCallback(
+    async (data) => {
       setSubmitError("");
-      setFieldErrors({});
 
       // Lockout gate
       const lockout = getLockoutState();
@@ -145,16 +147,8 @@ export default function Login() {
         return;
       }
 
-      // Client-side validation (mirrors backend Zod loginSchema)
-      const parsed = parseFormSchema(loginSchema, { emailOrPhone, password });
-      if (!parsed.success) {
-        setFieldErrors(parsed.errors);
-        return;
-      }
-
-      setLoading(true);
       try {
-        await login(emailOrPhone, password);
+        await login(data.emailOrPhone, data.password);
         clearLockoutState();
       } catch (err) {
         const state = getLockoutState();
@@ -177,15 +171,13 @@ export default function Login() {
             })
           );
         }
-      } finally {
-        setLoading(false);
       }
     },
-    [emailOrPhone, password, login, t]
+    [login, t]
   );
 
   const isLocked = lockoutRemaining > 0;
-  const submitDisabled = loading || isLocked;
+  const submitDisabled = isSubmitting || isLocked;
   const countdownLabel = useMemo(() => formatCountdown(lockoutRemaining), [lockoutRemaining]);
 
   return (
@@ -208,7 +200,7 @@ export default function Login() {
           )}
 
           <form
-            onSubmit={handleSubmit}
+            onSubmit={handleSubmit(onSubmit, onInvalid)}
             className="auth-form__form"
             autoComplete="on"
             noValidate
@@ -223,24 +215,23 @@ export default function Login() {
                 <input
                   id="login-email"
                   className={`input input--with-icon ${
-                    fieldErrors.emailOrPhone ? "input--err" : ""
+                    errors.emailOrPhone ? "input--err" : ""
                   }`}
                   type="text"
                   inputMode="email"
                   placeholder={t("login.emailPlaceholder")}
-                  value={emailOrPhone}
-                  onChange={(e) => setEmailOrPhone(e.target.value)}
                   autoComplete="username"
                   autoCapitalize="none"
                   spellCheck={false}
                   required
-                  aria-invalid={Boolean(fieldErrors.emailOrPhone) || undefined}
-                  aria-describedby={fieldErrors.emailOrPhone ? "login-email-err" : undefined}
+                  aria-invalid={Boolean(errors.emailOrPhone) || undefined}
+                  aria-describedby={errors.emailOrPhone ? "login-email-err" : undefined}
+                  {...register("emailOrPhone")}
                 />
               </div>
-              {fieldErrors.emailOrPhone && (
+              {errors.emailOrPhone && (
                 <span id="login-email-err" className="field__hint field__hint--danger">
-                  {fieldErrors.emailOrPhone}
+                  {errors.emailOrPhone.message}
                 </span>
               )}
             </div>
@@ -255,16 +246,15 @@ export default function Login() {
                 <input
                   id="login-password"
                   className={`input input--with-icon input--with-action ${
-                    fieldErrors.password ? "input--err" : ""
+                    errors.password ? "input--err" : ""
                   }`}
                   type={showPassword ? "text" : "password"}
                   placeholder={t("login.passwordPlaceholder")}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
                   autoComplete="current-password"
                   required
-                  aria-invalid={Boolean(fieldErrors.password) || undefined}
-                  aria-describedby={fieldErrors.password ? "login-password-err" : undefined}
+                  aria-invalid={Boolean(errors.password) || undefined}
+                  aria-describedby={errors.password ? "login-password-err" : undefined}
+                  {...register("password")}
                 />
                 <button
                   type="button"
@@ -278,9 +268,9 @@ export default function Login() {
                   {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
               </div>
-              {fieldErrors.password && (
+              {errors.password && (
                 <span id="login-password-err" className="field__hint field__hint--danger">
-                  {fieldErrors.password}
+                  {errors.password.message}
                 </span>
               )}
             </div>
@@ -328,11 +318,11 @@ export default function Login() {
               type="submit"
               className="btn btn--accent btn--block"
               disabled={submitDisabled}
-              aria-busy={loading || undefined}
+              aria-busy={isSubmitting || undefined}
             >
               {isLocked
                 ? t("login.locked", { seconds: lockoutRemaining })
-                : loading
+                : isSubmitting
                 ? t("login.signingIn")
                 : t("login.signIn")}
             </button>

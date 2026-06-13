@@ -4,7 +4,8 @@ import { Eye, EyeOff, Lock, ShieldAlert } from "lucide-react";
 import toast from "react-hot-toast";
 
 import { API_URL } from "../config/api.js";
-import { resetPasswordSchema, parseFormSchema } from "../validators/formSchemas";
+import { resetPasswordSchema } from "../validators/formSchemas";
+import useZodForm from "../hooks/useZodForm";
 
 import AuthVisual from "../components/auth/AuthVisual";
 import AuthBrand from "../components/auth/AuthBrand";
@@ -23,13 +24,22 @@ export default function ResetPassword() {
   const navigate = useNavigate();
   const [token, setToken] = useState("");
   const [tokenMissing, setTokenMissing] = useState(false);
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState("");
   const [tokenExpired, setTokenExpired] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    errors,
+    isSubmitting,
+    onInvalid,
+  } = useZodForm(resetPasswordSchema, {
+    defaultValues: { newPassword: "", confirmPassword: "" },
+  });
+
+  const newPasswordValue = watch("newPassword");
 
   useEffect(() => {
     const hash = window.location.hash.slice(1);
@@ -43,28 +53,19 @@ export default function ResetPassword() {
     }
   }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const onSubmit = async (data) => {
     setSubmitError("");
-    setErrors({});
 
-    const parsed = parseFormSchema(resetPasswordSchema, { newPassword, confirmPassword });
-    if (!parsed.success) {
-      setErrors(parsed.errors);
-      return;
-    }
-
-    setLoading(true);
     try {
       const res = await fetch(`${API_URL}/auth/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ token, newPassword }),
+        body: JSON.stringify({ token, newPassword: data.newPassword }),
       });
-      const data = await res.json().catch(() => ({}));
+      const resData = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const message = data.error || "Failed to reset password. Please try again.";
+        const message = resData.error || "Failed to reset password. Please try again.";
         if (res.status === 400 || res.status === 401 || res.status === 410) {
           setTokenExpired(true);
         }
@@ -78,8 +79,6 @@ export default function ResetPassword() {
       });
     } catch {
       setSubmitError("Network error. Please check your connection and try again.");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -152,7 +151,7 @@ export default function ResetPassword() {
           </header>
 
           <form
-            onSubmit={handleSubmit}
+            onSubmit={handleSubmit(onSubmit, onInvalid)}
             className="auth-form__form"
             autoComplete="on"
             noValidate
@@ -171,12 +170,11 @@ export default function ResetPassword() {
                   }`}
                   type={showPassword ? "text" : "password"}
                   placeholder="Min 8 chars, upper, lower, number"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
                   autoComplete="new-password"
                   required
                   aria-invalid={Boolean(errors.newPassword) || undefined}
                   aria-describedby={errors.newPassword ? "reset-new-err" : undefined}
+                  {...register("newPassword")}
                 />
                 <button
                   type="button"
@@ -190,10 +188,10 @@ export default function ResetPassword() {
               </div>
               {errors.newPassword && (
                 <span id="reset-new-err" className="field__hint field__hint--danger">
-                  {errors.newPassword}
+                  {errors.newPassword.message}
                 </span>
               )}
-              <PasswordStrengthMeter password={newPassword} />
+              <PasswordStrengthMeter password={newPasswordValue} />
             </div>
 
             <div className="field">
@@ -210,19 +208,18 @@ export default function ResetPassword() {
                   }`}
                   type={showPassword ? "text" : "password"}
                   placeholder="Re-enter your password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
                   autoComplete="new-password"
                   required
                   aria-invalid={Boolean(errors.confirmPassword) || undefined}
                   aria-describedby={
                     errors.confirmPassword ? "reset-confirm-err" : undefined
                   }
+                  {...register("confirmPassword")}
                 />
               </div>
               {errors.confirmPassword && (
                 <span id="reset-confirm-err" className="field__hint field__hint--danger">
-                  {errors.confirmPassword}
+                  {errors.confirmPassword.message}
                 </span>
               )}
             </div>
@@ -236,10 +233,10 @@ export default function ResetPassword() {
             <button
               type="submit"
               className="btn btn--accent btn--block"
-              disabled={loading}
-              aria-busy={loading || undefined}
+              disabled={isSubmitting}
+              aria-busy={isSubmitting || undefined}
             >
-              {loading ? "Resetting…" : "Reset password"}
+              {isSubmitting ? "Resetting…" : "Reset password"}
             </button>
 
             <Link to="/login" className="auth-form__link" style={{ textAlign: "center" }}>
