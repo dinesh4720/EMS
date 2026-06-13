@@ -20,12 +20,12 @@ export default function ValidationModal({
     <Modal isOpen={isOpen} onOpenChange={onClose} size="2xl" scrollBehavior="inside">
       <ModalContent>
         <ModalHeader className="flex gap-3">
-          <div className="p-2 bg-info-100 rounded-lg">
-            <ShieldCheck className="text-info-600" size={24} />
+          <div className="p-2 bg-info-bg rounded-lg">
+            <ShieldCheck className="text-info" size={24} />
           </div>
           <div>
             <h3 className="text-lg font-semibold">{t('staff.payroll.validationResults')}</h3>
-            <p className="text-sm text-default-500">{t('staff.payroll.reviewBeforeGenerating')}</p>
+            <p className="text-sm text-fg-muted">{t('staff.payroll.reviewBeforeGenerating')}</p>
           </div>
         </ModalHeader>
         <ModalBody>
@@ -42,8 +42,8 @@ export default function ValidationModal({
           ) : validationResults && (
             <div className="space-y-4">
               {/* Valid Employees */}
-              <div className="bg-success-50 rounded-lg p-4 border border-success-200">
-                <h4 className="font-semibold text-success-900 mb-2 flex items-center gap-2">
+              <div className="bg-ok-bg rounded-lg p-4 border border-ok/20">
+                <h4 className="font-semibold text-ok mb-2 flex items-center gap-2">
                   <CheckCircle2 size={18} />
                   {t('staff.payroll.readyToProcess', { count: validationResults.valid?.length || 0 })}
                 </h4>
@@ -53,7 +53,7 @@ export default function ValidationModal({
                       <div key={emp.employeeId} className="py-1">{emp.name} - {formatCurrency(emp.salary)}</div>
                     ))}
                     {validationResults.valid.length > 5 && (
-                      <div className="text-success-700 italic">...and {validationResults.valid.length - 5} more</div>
+                      <div className="text-ok italic">...and {validationResults.valid.length - 5} more</div>
                     )}
                   </div>
                 )}
@@ -61,14 +61,14 @@ export default function ValidationModal({
 
               {/* Invalid Employees */}
               {validationResults.invalid?.length > 0 && (
-                <div className="bg-danger-50 rounded-lg p-4 border border-danger-200">
-                  <h4 className="font-semibold text-danger-900 mb-2 flex items-center gap-2">
+                <div className="bg-danger-bg rounded-lg p-4 border border-danger-token/20">
+                  <h4 className="font-semibold text-danger-token mb-2 flex items-center gap-2">
                     <AlertTriangle size={18} />
                     {t('staff.payroll.willBeExcluded', { count: validationResults.invalid.length })}
                   </h4>
                   <div className="max-h-40 overflow-y-auto text-sm space-y-1">
                     {validationResults.invalid.map(emp => (
-                      <div key={emp.employeeId} className="text-danger-700">
+                      <div key={emp.employeeId} className="text-danger-token">
                         {emp.name}: {emp.reason}
                       </div>
                     ))}
@@ -78,14 +78,14 @@ export default function ValidationModal({
 
               {/* Warnings */}
               {validationResults.warnings?.length > 0 && (
-                <div className="bg-warning-50 rounded-lg p-4 border border-warning-200">
-                  <h4 className="font-semibold text-warning-900 mb-2 flex items-center gap-2">
+                <div className="bg-warn-bg rounded-lg p-4 border border-warn/20">
+                  <h4 className="font-semibold text-warn mb-2 flex items-center gap-2">
                     <AlertCircle size={18} />
                     {t('staff.payroll.warnings', { count: validationResults.warnings.length })}
                   </h4>
                   <div className="max-h-40 overflow-y-auto text-sm space-y-1">
                     {validationResults.warnings.map((warning, idx) => (
-                      <div key={warning.message || `error-${idx}`} className="text-warning-700">
+                      <div key={warning.message || `error-${idx}`} className="text-warn">
                         {warning.name || warning.message || `Warning: ${warning.reason}`}
                       </div>
                     ))}

@@ -77,13 +77,13 @@ export default function StaffLeaveBalance({ staffId }) {
             Used: <span className="font-semibold text-fg">{leaveDaysUsedThisYear}</span> day{leaveDaysUsedThisYear !== 1 ? "s" : ""}
           </span>
           <span className="text-fg-muted">
-            Remaining: <span className="font-semibold text-green-700 dark:text-green-400">{remaining}</span> / {totalQuota}
+            Remaining: <span className="font-semibold text-ok">{remaining}</span> / {totalQuota}
           </span>
         </div>
         <div className="h-2 bg-surface-2 rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all ${
-              usedPercent >= 90 ? "bg-red-400" : usedPercent >= 70 ? "bg-yellow-400" : "bg-green-500"
+              usedPercent >= 90 ? "bg-danger-token" : usedPercent >= 70 ? "bg-warn" : "bg-ok"
             }`}
             style={{ width: `${usedPercent}%` }}
           />

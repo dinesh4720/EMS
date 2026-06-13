@@ -22,17 +22,17 @@ export default function BulkPayModal({
         {(onCloseInner) => (
           <>
             <ModalHeader className="flex gap-3">
-              <div className="p-2 bg-success-100 rounded-lg">
-                <CreditCard className="text-success-600" size={24} />
+              <div className="p-2 bg-ok-bg rounded-lg">
+                <CreditCard className="text-ok" size={24} />
               </div>
               <div>
                 <h3 className="text-lg font-semibold">{t('staff.payroll.logBulkPayments')}</h3>
-                <p className="text-sm text-default-500">{t('staff.payroll.processingRecords', { count: pendingBulkPay?.count || 0 })}</p>
+                <p className="text-sm text-fg-muted">{t('staff.payroll.processingRecords', { count: pendingBulkPay?.count || 0 })}</p>
               </div>
             </ModalHeader>
             <ModalBody className="gap-4">
-               <div className="bg-default-50 rounded-lg p-3 mb-2">
-                  <p className="text-sm text-default-600">
+               <div className="bg-surface-2 rounded-lg p-3 mb-2">
+                  <p className="text-sm text-fg">
                     {t('staff.payroll.aboutToRecordPayments', { count: pendingBulkPay?.count || 0 })}
                   </p>
                </div>
@@ -71,7 +71,7 @@ export default function BulkPayModal({
               <Button variant="light" onPress={onCloseInner}>
                 {t('common.cancel')}
               </Button>
-              <Button color="success" onPress={onConfirm}>
+              <Button className="bg-ok text-surface hover:bg-ok/90" onPress={onConfirm}>
                 {t('staff.payroll.logPayments')}
               </Button>
             </ModalFooter>

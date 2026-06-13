@@ -8,7 +8,7 @@ import { staffAttendanceApi } from "../../services/api/classes";
 import toast from "react-hot-toast";
 import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import { TablePageSkeleton } from "../../components/skeletons/PageSkeletons";
-import { PageHeader, Breadcrumbs } from "../../components/ui";
+import { PageHeader, Breadcrumbs, EmptyState } from "../../components/ui";
 
 function safeFormat(dateStr) {
   if (!dateStr) return "—";
@@ -176,19 +176,13 @@ export default function LeaveManagement() {
       />
 
       {leaves.length === 0 ? (
-        <div className="card" style={{ textAlign: "center", padding: 48 }}>
-          <Check
-            size={36}
-            className="text-success-500"
-            style={{ margin: "0 auto 12px", display: "block", color: "var(--ok)" }}
-          />
-          <div className="card__title" style={{ marginBottom: 4 }}>
-            No pending requests
-          </div>
-          <div className="subtle" style={{ fontSize: 13 }}>
-            All leave applications have been reviewed.
-          </div>
-        </div>
+        <EmptyState
+          icon={Check}
+          kind="ok"
+          size="md"
+          title="No pending requests"
+          description="All leave applications have been reviewed."
+        />
       ) : (
         <div className="twopane">
           {/* Left list */}

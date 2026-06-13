@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  Button, Input, Spinner, Badge
+  Input, Spinner, Badge
 } from "@heroui/react";
 import { Search, Users, User, GraduationCap, AlertCircle } from "lucide-react";
 import toast from "react-hot-toast";
@@ -131,16 +131,16 @@ export default function AssignClassToStaffModal({
         size="3xl"
         scrollBehavior="inside"
         classNames={{
-          backdrop: "bg-black/50 backdrop-blur-sm",
-          base: "bg-white dark:bg-gray-900"
+          backdrop: "bg-overlay-bg backdrop-blur-sm",
+          base: "bg-surface"
         }}
       >
         <ModalContent>
-          <ModalHeader className="flex flex-col gap-1 border-b border-default-200">
+          <ModalHeader className="flex flex-col gap-1 border-b border-border-token">
             <div>
               <h3 className="text-xl font-semibold">{t('pages.assignAsClassTeacher')}</h3>
-              <p className="text-sm text-default-500 font-normal">
-                Staff: <span className="font-medium text-primary">{staffName}</span>
+              <p className="text-sm text-fg-muted font-normal">
+                Staff: <span className="font-medium text-accent">{staffName}</span>
               </p>
             </div>
           </ModalHeader>
@@ -152,7 +152,7 @@ export default function AssignClassToStaffModal({
                 placeholder={t('pages.searchClassesByNameOrTeacher')}
                 value={searchQuery}
                 onValueChange={setSearchQuery}
-                startContent={<Search size={16} className="text-default-400" />}
+                startContent={<Search size={16} className="text-fg-subtle" />}
                 isClearable
                 onClear={() => setSearchQuery("")}
                 variant="bordered"
@@ -260,7 +260,7 @@ export default function AssignClassToStaffModal({
 
             {/* Stats footer */}
             {filteredClasses.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-default-200 flex items-center justify-between text-xs text-default-500">
+              <div className="mt-4 pt-4 border-t border-border-token flex items-center justify-between text-xs text-fg-muted">
                 <span>
                   Showing {filteredClasses.length} class{filteredClasses.length !== 1 ? 'es' : ''}
                 </span>
@@ -271,14 +271,15 @@ export default function AssignClassToStaffModal({
             )}
           </ModalBody>
 
-          <ModalFooter className="border-t border-default-200">
-            <Button
-              variant="flat"
-              onPress={handleClose}
-              isDisabled={isProcessing}
+          <ModalFooter className="border-t border-border-token">
+            <button
+              type="button"
+              className="btn"
+              onClick={handleClose}
+              disabled={isProcessing}
             >
               Close
-            </Button>
+            </button>
           </ModalFooter>
         </ModalContent>
       </Modal>

@@ -126,11 +126,11 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:
   return (
     <div className="space-y-5">
       {/* Salary Summary Cards */}
-      <div className="bg-white rounded-lg border border-gray-200 p-5 dark:bg-zinc-950 dark:border-zinc-800">
+      <div className="bg-surface rounded-lg border border-border-token p-5">
         <div className="flex items-center justify-between mb-5">
           <div>
             <h3 className="text-sm font-semibold text-fg">{t('pages.salaryOverview')}</h3>
-            <p className="text-xs text-gray-500 mt-0.5 dark:text-zinc-400">{currentMonth}</p>
+            <p className="text-xs text-fg-muted mt-0.5">{currentMonth}</p>
           </div>
           <div className="text-right">
             <p className="text-3xl font-bold text-fg">{fmt(netSalary)}</p>
@@ -141,25 +141,25 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:
           {summaryCards.map((card) => (
             <div key={card.label} className="p-4 text-center first:pt-0 sm:first:pt-4 last:pb-0 sm:last:pb-4">
               <p className="text-xs text-fg-muted">{card.label}</p>
-              <p className="text-lg font-bold text-gray-900 mt-1 dark:text-zinc-100">{card.value}</p>
+              <p className="text-lg font-bold text-fg mt-1">{card.value}</p>
             </div>
           ))}
         </div>
       </div>
 
       {/* Payroll History */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden dark:bg-zinc-950 dark:border-zinc-800">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between dark:border-zinc-800">
+      <div className="bg-surface rounded-lg border border-border-token overflow-hidden">
+        <div className="px-5 py-4 border-b border-divider flex items-center justify-between">
           <div>
             <h3 className="text-sm font-semibold text-fg">{t('pages.payrollHistory')}</h3>
-            <p className="text-xs text-gray-500 mt-0.5 dark:text-zinc-400">{payrollHistory?.length || 0} transactions</p>
+            <p className="text-xs text-fg-muted mt-0.5">{payrollHistory?.length || 0} transactions</p>
           </div>
-          <Button size="sm" variant="bordered" className="border-gray-200 text-gray-700 dark:border-zinc-700 dark:text-zinc-300" startContent={<Download size={14} />} onPress={() => generatePayslipPDF(payrollHistory?.[0] || {})}>
+          <Button size="sm" variant="bordered" className="border-border-token text-fg" startContent={<Download size={14} />} onPress={() => generatePayslipPDF(payrollHistory?.[0] || {})}>
             Download Payslip
           </Button>
         </div>
         {payrollHistory && payrollHistory.length > 0 ? (
-          <div className="divide-y divide-gray-50 max-h-64 overflow-y-auto dark:divide-zinc-800">
+          <div className="divide-y divide-divider max-h-64 overflow-y-auto">
             {payrollHistory.map((record, i) => {
               // Support both backend shape (month/year numbers, netPay) and legacy local shape
               const monthLabel = record.year
@@ -171,9 +171,9 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:
               const net = record.netPay ?? record.netSalary ?? netSalary;
 
               return (
-                <div key={record._id || record.id || i} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 transition-colors dark:hover:bg-zinc-800/50">
+                <div key={record._id || record.id || i} className="px-5 py-3 flex items-center justify-between hover:bg-surface-hover/50 transition-colors">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center dark:bg-zinc-800">
+                    <div className="w-8 h-8 rounded-md bg-surface-2 flex items-center justify-center">
                       <CheckCircle2 size={14} className="text-fg-muted" />
                     </div>
                     <div>
@@ -184,10 +184,10 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:
                   <div className="flex items-center gap-4">
                     <div className="text-right">
                       <p className="text-sm font-bold text-fg">{fmt(net)}</p>
-                      <span className="text-xs px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400">{record.status || 'Paid'}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-md bg-surface-2 text-fg-muted">{record.status || 'Paid'}</span>
                     </div>
                     <button
-                      className="p-2 hover:bg-gray-100 rounded-lg dark:hover:bg-zinc-700"
+                      className="p-2 hover:bg-surface-hover rounded-lg"
                       onClick={() => generatePayslipPDF({ ...record, month: monthLabel, netSalary: net })}
                     >
                       <Download size={14} className="text-fg-faint" />
@@ -199,7 +199,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:
           </div>
         ) : (
           <div className="px-5 py-8 text-center">
-            <IndianRupee size={24} className="mx-auto text-gray-200 mb-2 dark:text-zinc-600" />
+            <IndianRupee size={24} className="mx-auto text-fg-faint mb-2" />
             <p className="text-sm text-fg-muted">{t('pages.noPayrollRecordsFound')}</p>
           </div>
         )}
@@ -207,7 +207,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:
 
       {/* No salary structure notice */}
       {!hasSalaryStructure && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg px-5 py-4 text-sm text-amber-800 dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-300">
+        <div className="bg-warn-bg border border-warn rounded-lg px-5 py-4 text-sm text-warn">
           No salary structure has been assigned to this staff member. Payslip values will show as zero until a salary is configured.
         </div>
       )}
@@ -216,11 +216,11 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:
       {hasSalaryStructure && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Earnings */}
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden dark:bg-zinc-950 dark:border-zinc-800">
+          <div className="bg-surface rounded-lg border border-border-token overflow-hidden">
             <div className="p-5 border-b border-border-token">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center dark:bg-zinc-800"><TrendingUp size={16} className="text-fg-muted" /></div>
-                <h3 className="font-medium text-gray-900 text-sm dark:text-zinc-100">{t('pages.earnings')}</h3>
+                <div className="w-9 h-9 rounded-lg bg-surface-2 flex items-center justify-center"><TrendingUp size={16} className="text-fg-muted" /></div>
+                <h3 className="font-medium text-fg text-sm">{t('pages.earnings')}</h3>
               </div>
             </div>
             <div className="p-5 space-y-3">
@@ -248,11 +248,11 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:
           </div>
 
           {/* Deductions */}
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden dark:bg-zinc-950 dark:border-zinc-800">
+          <div className="bg-surface rounded-lg border border-border-token overflow-hidden">
             <div className="p-5 border-b border-border-token">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center dark:bg-zinc-800"><IndianRupee size={16} className="text-fg-muted" /></div>
-                <h3 className="font-medium text-gray-900 text-sm dark:text-zinc-100">{t('pages.deductions')}</h3>
+                <div className="w-9 h-9 rounded-lg bg-surface-2 flex items-center justify-center"><IndianRupee size={16} className="text-fg-muted" /></div>
+                <h3 className="font-medium text-fg text-sm">{t('pages.deductions')}</h3>
               </div>
             </div>
             <div className="p-5 space-y-3">

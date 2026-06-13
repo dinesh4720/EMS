@@ -43,7 +43,7 @@ function IdentityDocumentsStep({
                   </button>
                 ) : (
                   <div className="relative">
-                    <button className="text-xs font-medium text-primary hover:text-primary-600 transition-colors px-2 py-1">{t('pages.upload')}</button>
+                    <button className="text-xs font-medium text-accent hover:text-accent-hover transition-colors px-2 py-1">{t('pages.upload')}</button>
                     <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleIDProofUpload(type, e.target.files)} />
                   </div>
                 )}

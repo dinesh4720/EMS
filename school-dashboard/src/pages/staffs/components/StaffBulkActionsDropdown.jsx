@@ -32,20 +32,20 @@ export default function StaffBulkActionsDropdown({
         <div className="relative">
             <Dropdown isOpen={isOpen} onOpenChange={onOpenChange}>
                 <DropdownTrigger>
-                    <button className="flex items-center gap-2 px-3 py-2 bg-transparent rounded-lg border border-default-300 hover:border-primary transition-all duration-200 text-sm cursor-pointer whitespace-nowrap text-default-900">
-                        <Users size={16} className="text-default-400" />
+                    <button className="flex items-center gap-2 px-3 py-2 bg-transparent rounded-lg border border-border-token hover:border-accent transition-all duration-200 text-sm cursor-pointer whitespace-nowrap text-fg">
+                        <Users size={16} className="text-fg-faint" />
                         <span>{t("pages.bulkActions1")}</span>
-                        <span className="text-default-500">({selectedCount})</span>
-                        <ChevronDown size={14} className="text-default-400" />
+                        <span className="text-fg-muted">({selectedCount})</span>
+                        <ChevronDown size={14} className="text-fg-faint" />
                     </button>
                 </DropdownTrigger>
                 <DropdownMenu aria-label={t("aria.menus.bulkActions")} className="max-h-[400px] overflow-y-auto relative">
                     <DropdownSection title={t("pages.changeStatus1")} showDivider>
-                        <DropdownItem key="status-active" onPress={() => onBulkStatusChange("active")} startContent={<span className="w-2 h-2 rounded-full bg-success-500"></span>}>Set as Active</DropdownItem>
-                        <DropdownItem key="status-inactive" onPress={() => onBulkStatusChange("inactive")} startContent={<span className="w-2 h-2 rounded-full bg-danger-500"></span>}>Set as Inactive</DropdownItem>
-                        <DropdownItem key="status-on-leave" onPress={() => onBulkStatusChange("on-leave")} startContent={<span className="w-2 h-2 rounded-full bg-warning-500"></span>}>Set as On Leave</DropdownItem>
-                        <DropdownItem key="status-suspended" onPress={() => onBulkStatusChange("suspended")} startContent={<span className="w-2 h-2 rounded-full bg-orange-500"></span>}>Set as Suspended</DropdownItem>
-                        <DropdownItem key="status-terminated" onPress={() => onBulkStatusChange("terminated")} startContent={<span className="w-2 h-2 rounded-full bg-gray-500"></span>}>Set as Terminated</DropdownItem>
+                        <DropdownItem key="status-active" onPress={() => onBulkStatusChange("active")} startContent={<span className="w-2 h-2 rounded-full bg-ok"></span>}>Set as Active</DropdownItem>
+                        <DropdownItem key="status-inactive" onPress={() => onBulkStatusChange("inactive")} startContent={<span className="w-2 h-2 rounded-full bg-danger-token"></span>}>Set as Inactive</DropdownItem>
+                        <DropdownItem key="status-on-leave" onPress={() => onBulkStatusChange("on-leave")} startContent={<span className="w-2 h-2 rounded-full bg-warn"></span>}>Set as On Leave</DropdownItem>
+                        <DropdownItem key="status-suspended" onPress={() => onBulkStatusChange("suspended")} startContent={<span className="w-2 h-2 rounded-full bg-info"></span>}>Set as Suspended</DropdownItem>
+                        <DropdownItem key="status-terminated" onPress={() => onBulkStatusChange("terminated")} startContent={<span className="w-2 h-2 rounded-full bg-fg-subtle"></span>}>Set as Terminated</DropdownItem>
                     </DropdownSection>
                     <DropdownSection title={t("pages.changeRole")} showDivider>
                         {roles.map((role) => (
@@ -55,7 +55,7 @@ export default function StaffBulkActionsDropdown({
                         ))}
                     </DropdownSection>
                     <DropdownSection title={t("pages.actions1")}>
-                        <DropdownItem key="delete" className="text-danger" color="danger" onPress={onBulkDelete} startContent={<Trash2 size={14} />}>
+                        <DropdownItem key="delete" className="text-danger-token" onPress={onBulkDelete} startContent={<Trash2 size={14} />}>
                             Delete Selected
                         </DropdownItem>
                     </DropdownSection>

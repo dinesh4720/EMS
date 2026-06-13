@@ -20,18 +20,18 @@ export default function ReversePaymentModal({
     <Modal isOpen={isOpen} onOpenChange={onClose} size="md" isDismissable={!reversing}>
       <ModalContent>
         <ModalHeader className="flex gap-3">
-          <div className="p-2 bg-warning-100 rounded-lg">
-            <RotateCcw className="text-warning-600" size={24} />
+          <div className="p-2 bg-warn-bg rounded-lg">
+            <RotateCcw className="text-warn" size={24} />
           </div>
           <div>
             <h3 className="text-lg font-semibold">{t('staff.payroll.reversePayment')}</h3>
-            <p className="text-sm text-default-500">{t('staff.payroll.reversePaymentDesc')}</p>
+            <p className="text-sm text-fg-muted">{t('staff.payroll.reversePaymentDesc')}</p>
           </div>
         </ModalHeader>
         <ModalBody>
           <div className="space-y-4">
-            <div className="bg-warning-50 rounded-lg p-4 border border-warning-200">
-              <p className="text-sm text-warning-800">
+            <div className="bg-warn-bg rounded-lg p-4 border border-warn/20">
+              <p className="text-sm text-warn">
                 <strong>{t('staff.payroll.warningLabel')}</strong> {t('staff.payroll.reverseWarning')}
               </p>
             </div>
@@ -50,7 +50,7 @@ export default function ReversePaymentModal({
           <Button variant="light" onPress={() => onClose(false)}>
             {t('common.cancel')}
           </Button>
-          <Button color="warning" onPress={onConfirm} isDisabled={reversing || !reverseReason.trim()}>
+          <Button className="bg-warn text-surface hover:bg-warn/90" onPress={onConfirm} isDisabled={reversing || !reverseReason.trim()}>
             {reversing ? <Spinner size="sm" color="white" /> : t('staff.payroll.confirmReversal')}
           </Button>
         </ModalFooter>
