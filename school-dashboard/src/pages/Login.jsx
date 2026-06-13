@@ -16,7 +16,6 @@ const LOCKOUT_MS = APP_CONFIG.LOCKOUT_DURATION_MS;
 const LOCKOUT_KEY = "login_lockout";
 
 const VISUAL_OPTIONS = [
-  { key: "3d", label: "3D" },
   { key: "enhanced3d", label: "Enhanced" },
   { key: "pixel", label: "Pixel" },
   { key: "cards", label: "Cards" },
@@ -60,7 +59,7 @@ function useVisualVariant() {
   const [variant, setVariant] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     const v = params.get("visual");
-    return VISUAL_OPTIONS.some((o) => o.key === v) ? v : "3d";
+    return VISUAL_OPTIONS.some((o) => o.key === v) ? v : "enhanced3d";
   });
 
   useEffect(() => {

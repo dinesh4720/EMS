@@ -492,7 +492,7 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
                     ['Reason', formData.reasonForLeaving],
                     ['Issue date', formData.issueDate],
                   ].map(([label, value], idx) => (
-                    <div className="tcrow" key={idx}>
+                    <div className="tcrow" key={`tc-row-${idx}`}>
                       <b>{idx + 1}.</b>
                       <span>{label}</span>
                       <span>:</span>

@@ -1857,3 +1857,86 @@
 .spark { display: flex; align-items: flex-end; gap: 2px; height: 22px; }
 .spark__bar { flex: 1; min-width: 2px; background: var(--fg-faint); border-radius: 1px; opacity: 0.5; }
 .spark__bar.is-now { background: var(--accent); opacity: 1; }
+
+/* ============================================================
+   Responsive overrides — mobile / tablet / desktop
+   ============================================================ */
+
+/* Mobile (up to 767px) */
+@media (max-width: 767px) {
+  .page__head {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px 16px 12px;
+    gap: 12px;
+  }
+
+  .page__title {
+    font-size: 20px;
+  }
+
+  .metric-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .metric {
+    padding: 10px 12px;
+  }
+
+  .metric__value {
+    font-size: 18px;
+  }
+
+  .toolbar {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 12px;
+  }
+
+  .toolbar__search {
+    width: 100%;
+    max-width: none;
+    flex: 1 1 100%;
+  }
+
+  .seg {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+}
+
+/* Small mobile (up to 480px) */
+@media (max-width: 480px) {
+  .metric-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .metric {
+    border-right: none;
+    border-bottom: 1px solid var(--divider);
+  }
+
+  .metric:last-child {
+    border-bottom: none;
+  }
+}
+
+/* Tablet (768px – 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .metric-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .metric {
+    border-right: none;
+  }
+
+  .metric:nth-child(odd) {
+    border-right: 1px solid var(--divider);
+  }
+
+  .metric:nth-child(2),
+  .metric:nth-child(4) {
+    border-right: none;
+  }
+}

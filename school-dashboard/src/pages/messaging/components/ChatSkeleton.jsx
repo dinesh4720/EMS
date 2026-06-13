@@ -25,7 +25,7 @@ export default function ChatSkeleton() {
         </div>
         <div className="p-2 space-y-1">
           {Array.from({ length: 6 }).map((_, i) => (
-            <ConversationRowSkeleton key={i} />
+            <ConversationRowSkeleton key={`chat-skel-${i}`} />
           ))}
         </div>
       </aside>

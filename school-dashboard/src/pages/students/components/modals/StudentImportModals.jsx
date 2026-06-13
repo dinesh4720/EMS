@@ -496,7 +496,7 @@ export function StudentCsvPreviewModal({
                                                     <div style={{ background: "var(--warn-bg)", borderRadius: 6, padding: 8, marginBottom: 6 }}>
                                                         <ul className="col" style={{ gap: 2, paddingLeft: 14 }}>
                                                             {student.warnings.slice(0, 2).map((w, i) => (
-                                                                <li key={i} style={{ fontSize: 11, color: "var(--warn)" }}>{w}</li>
+                                                                <li key={`warn-${i}`} style={{ fontSize: 11, color: "var(--warn)" }}>{w}</li>
                                                             ))}
                                                             {student.warnings.length > 2 && <li style={{ fontSize: 11, color: "var(--warn)", fontStyle: "italic" }}>+{student.warnings.length - 2} more warning{student.warnings.length - 2 > 1 ? 's' : ''}</li>}
                                                         </ul>

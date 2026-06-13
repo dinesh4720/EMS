@@ -38,7 +38,7 @@ export default function PixelArtVisual() {
             {/* Windows */}
             {Array.from({ length: 8 }).map((_, i) => (
               <div
-                key={i}
+                key={`pixel-window-${i}`}
                 className="pixel-window"
                 style={{ animationDelay: `${i * 0.3}s` }}
               />

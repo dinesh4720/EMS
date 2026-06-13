@@ -21,7 +21,6 @@ import ExportMenu from "../../components/ui/ExportMenu";
 import PrintPreviewModal from "../../components/ui/PrintPreviewModal";
 import { staffAttendanceApi } from "../../services/api";
 import toast from "react-hot-toast";
-import { PageShell } from "../../components/ui";
 import { isActiveStaff } from "./utils/staffHelpers";
 
 // Mobile breakpoint — below this the right pane collapses to a Drawer
@@ -126,6 +125,13 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
     const onResize = () => setIsMobileViewport(window.innerWidth <= MOBILE_MAX);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  // PageShell previously set the document title; preserve that behavior.
+  useEffect(() => {
+    const prev = document.title;
+    document.title = "Staff · EMS";
+    return () => { document.title = prev; };
   }, []);
 
   // ── Pills-based filter state ──
@@ -502,10 +508,14 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
   const showClearButton = filter !== "all" || q || activeFiltersCount > 0;
 
   return (
-    <PageShell
-      title="Staff"
-      description={loading ? "Loading…" : `${visible.length} of ${staff.length}`}
-      actions={
+    <div className="page" style={{ minHeight: 0, flex: 1, overflow: "hidden" }}>
+      <header className="page__head">
+        <div>
+          <h1 className="page__title">Staff</h1>
+          <p className="page__sub">
+            {loading ? "Loading…" : `${visible.length} of ${staff.length}`}
+          </p>
+        </div>
         <button
           type="button"
           className="btn btn--accent"
@@ -514,11 +524,10 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
           <Plus size={13} aria-hidden />
           Add staff
         </button>
-      }
-      toolbar={
-        <>
-          <div className="toolbar">
-            <div className="seg" role="tablist" aria-label="Filter staff">
+      </header>
+
+      <div className="toolbar">
+        <div className="seg" role="tablist" aria-label="Filter staff">
               {FILTERS.map((f) => {
                 const count = statusCounts?.[f.key] ?? 0;
                 return (
@@ -625,12 +634,6 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
             onClearAll={clearAllFilters}
             activeFiltersCount={activeFiltersCount}
           />
-        </>
-      }
-      breadcrumbs={[{ label: "Home", href: "/" }, { label: "Staff" }]}
-      bodyPadding="none"
-      scrollable={false}
-    >
       <div
         style={
           isMobileViewport
@@ -854,6 +857,6 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
           </table>
         </div>
       </PrintPreviewModal>
-    </PageShell>
+    </div>
   );
 }

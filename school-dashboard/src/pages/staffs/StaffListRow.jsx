@@ -90,7 +90,7 @@ const StaffListRow = forwardRef(function StaffListRow(
             <svg width="10" height="10" viewBox="0 0 16 16" fill="none" aria-hidden>
               <path
                 d="M3 8.5l3.5 3.5 7-8"
-                stroke="white"
+                stroke="var(--accent-fg)"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"

@@ -28,7 +28,7 @@ const CustomTooltip = ({ active, payload, label }) => {
         <p className="text-xs font-medium text-fg-muted mb-1">{label}</p>
         {payload.map((entry) => (
           <div key={entry.name} className="flex items-center gap-2 text-sm">
-            <div className="w-2 h-2 rounded-full bg-gray-500" />
+            <div className="w-2 h-2 rounded-full bg-fg-subtle" />
             <span className="text-fg-muted">{entry.name}:</span>
             <span className="font-medium text-fg">{entry.value}%</span>
           </div>
@@ -120,9 +120,9 @@ export default function StaffOverviewTab({
                   type="monotone"
                   dataKey="attendance"
                   name="Attendance"
-                  stroke="#6b7280"
+                  stroke={CHART_COLORS.accent}
                   strokeWidth={2}
-                  dot={{ fill: '#6b7280', r: 4 }}
+                  dot={{ fill: CHART_COLORS.accent, r: 4 }}
                   activeDot={{ r: 6 }}
                 />
               </RechartsLineChart>
@@ -175,7 +175,7 @@ export default function StaffOverviewTab({
             {classTeacherAssignments.map((cls) => {
               const classAttendance = cls.averageAttendance || cls.attendance || 0;
               return (
-                <div key={cls.id || cls._id} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-zinc-800/50 transition-colors">
+                <div key={cls.id || cls._id} className="px-5 py-3 flex items-center justify-between hover:bg-surface-2/50 transition-colors">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-surface-2 flex items-center justify-center text-sm font-semibold text-fg">
                       {cls.name}-{cls.section}
@@ -188,8 +188,8 @@ export default function StaffOverviewTab({
                   <div className="flex items-center gap-4">
                     <div className="w-20 h-1.5 bg-surface-2 rounded-full overflow-hidden">
                       <div
-                        className={`h-full rounded-full transition-all ${classAttendance >= 90 ? 'bg-gray-800' :
-                            classAttendance >= 75 ? 'bg-gray-600' : 'bg-gray-400'
+                        className={`h-full rounded-full transition-all ${classAttendance >= 90 ? 'bg-ok' :
+                            classAttendance >= 75 ? 'bg-warn' : 'bg-danger-token'
                           }`}
                         style={{ width: `${classAttendance}%` }}
                       />
@@ -237,7 +237,7 @@ export default function StaffOverviewTab({
               const isToday = date === todayStr;
               const timeLabel = isToday ? 'Today' : dateObj.toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric' });
               return (
-                <div key={date} className="px-5 py-3 flex items-center gap-4 hover:bg-gray-50/50 dark:hover:bg-zinc-800/50 transition-colors">
+                <div key={date} className="px-5 py-3 flex items-center gap-4 hover:bg-surface-2/50 transition-colors">
                   <div className="w-8 h-8 rounded-lg bg-surface-2 flex items-center justify-center">
                     <IconComponent size={14} className="text-fg-muted" />
                   </div>

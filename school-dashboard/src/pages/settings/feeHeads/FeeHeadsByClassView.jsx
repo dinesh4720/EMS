@@ -92,7 +92,7 @@ export default function FeeHeadsByClassView({
             </button>
 
             {isExpanded && (
-              <div className="border-t border-divider">
+              <div className="border-t border-divider overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-surface-2">

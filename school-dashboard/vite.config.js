@@ -102,6 +102,10 @@ export default defineConfig({
   test: {
     include: ['src/**/*.test.{js,jsx,ts,tsx}'],
     exclude: ['tests/**', 'node_modules/**'],
+    // jsdom 29+ does not provision localStorage for some origins, and Node's
+    // experimental localStorage global is undefined. Polyfill storage in a
+    // shared setup file so safeStorage / pinnedPages / theme tests are stable.
+    setupFiles: ['./src/test/setup.js'],
     coverage: {
       provider: 'v8',
       // Include all .js source files that are exercised by the unit test suite.

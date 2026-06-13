@@ -75,7 +75,7 @@ const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
         </div>
         <div className="grid grid-cols-2 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="space-y-2 p-3 bg-surface-2 rounded-lg">
+            <div key={`exam-stat-skeleton-${i}`} className="space-y-2 p-3 bg-surface-2 rounded-lg">
               <div className="h-3 w-16 animate-shimmer rounded" />
               <div className="h-5 w-24 animate-shimmer rounded" />
             </div>
@@ -83,7 +83,7 @@ const ExamDetailModal = ({ examId, onClose, onEnterResults }) => {
         </div>
         <div className="space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-10 animate-shimmer rounded" />
+            <div key={`exam-row-skeleton-${i}`} className="h-10 animate-shimmer rounded" />
           ))}
         </div>
       </div>

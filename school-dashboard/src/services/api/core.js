@@ -3,6 +3,12 @@ import { requestQueue } from '../../utils/requestQueue.js';
 import { clearStoredUser, getAuthHeaders } from '../../utils/authSession';
 import { API_URL } from '../../config/api.js';
 import logger from '../../utils/logger';
+import { ApiError, ApiErrorCode, buildHttpError, normalizeApiError, notifySessionExpired } from './errors.js';
+
+// [DK-847] Re-export the central error layer so call sites and React Query can
+// `import { ApiError, normalizeApiError } from '.../services/api'` for one
+// consistent error shape (see errors.js).
+export { ApiError, ApiErrorCode, normalizeApiError, SESSION_EXPIRED_EVENT } from './errors.js';
 
 // [AUDIT-572] Fail fast with a clear message if API_URL is misconfigured.
 // Without this, undefined/empty API_URL causes confusing JSON parse errors
@@ -51,24 +57,6 @@ export async function attemptTokenRefresh() {
 // Prevents duplicate network requests when the same endpoint is called concurrently
 // (e.g., React StrictMode double-mounts or multiple components requesting the same data).
 const _inflightRequests = new Map();
-
-function parseRetryAfterMs(retryAfterHeader) {
-  if (!retryAfterHeader) {
-    return null;
-  }
-
-  const numericValue = Number(retryAfterHeader);
-  if (Number.isFinite(numericValue) && numericValue >= 0) {
-    return numericValue * 1000;
-  }
-
-  const retryAt = Date.parse(retryAfterHeader);
-  if (Number.isNaN(retryAt)) {
-    return null;
-  }
-
-  return Math.max(retryAt - Date.now(), 0);
-}
 
 export function request(endpoint, options = {}) {
   const url = `${API_URL}${endpoint}`;
@@ -159,10 +147,8 @@ export function request(endpoint, options = {}) {
               // Non-401 errors (500, 403, etc.) should be thrown normally,
               // not cause a session clear.
               if (retryResponse.status !== 401) {
-                const retryError = await retryResponse.json().catch(() => ({ error: 'Request failed' }));
-                const err = new Error(retryError.error || retryError.message || `Request failed with status ${retryResponse.status}`);
-                err.status = retryResponse.status;
-                throw err;
+                const retryBody = await retryResponse.json().catch(() => ({ error: 'Request failed' }));
+                throw buildHttpError(retryResponse.status, retryBody, { headers: retryResponse.headers });
               }
             } catch (retryErr) {
               clearTimeout(retryTimeoutId);
@@ -174,50 +160,23 @@ export function request(endpoint, options = {}) {
               // Network error during retry — fall through to logout
             }
           }
-          // Refresh failed or retried request still 401 — log out
+          // Refresh failed or retried request still 401 — log out and let the
+          // app surface a "session expired" message (DK-847). clearStoredUser()
+          // fires `auth-session-cleared` which drives the redirect to /login;
+          // notifySessionExpired() additionally distinguishes an expiry from a
+          // deliberate logout so the reason can be shown to the user.
           logger.warn('⚠️ 401 Unauthorized - token refresh failed, clearing session');
           clearStoredUser();
           queryClient.clear();
+          notifySessionExpired();
         }
 
-        // If rate limited, throw specific error
-        if (response.status === 429) {
-          const rateLimitError = new Error('Too many requests - rate limit exceeded');
-          rateLimitError.status = 429;
-          rateLimitError.retryAfterMs = parseRetryAfterMs(response.headers.get('retry-after'));
-          throw rateLimitError;
-        }
-
-        // If conflict error (409 or 422 with ConflictError body), throw with detailed information
-        if (response.status === 409 || (response.status === 422 && error.type === 'ConflictError')) {
-          const conflictError = new Error(error.message || error.error || 'Conflict detected');
-          conflictError.type = 'ConflictError';
-          conflictError.details = error.details || error;
-          conflictError.status = response.status;
-          throw conflictError;
-        }
-
-        // Log validation details if available
+        // [DK-847] All non-OK responses now produce one normalized ApiError
+        // (status + machine code + message + details) via the central layer.
         if (error.details) {
           logger.error('Validation details:', JSON.stringify(error.details, null, 2));
         }
-
-        // For validation errors (400), include the first field-level message so the
-        // user sees something actionable (e.g. "Must be a valid email address")
-        // rather than the generic "Validation failed" wrapper.
-        let errorMessage = error.error || error.message || `Request failed with status ${response.status}`;
-        if (
-          response.status === 400 &&
-          Array.isArray(error.details) &&
-          error.details.length > 0 &&
-          error.details[0].message
-        ) {
-          errorMessage = error.details[0].message;
-        }
-        const finalError = new Error(errorMessage);
-        finalError.status = response.status;
-        finalError.details = error.details;
-        throw finalError;
+        throw buildHttpError(response.status, error, { headers: response.headers });
       }
 
       // 204 No Content has no body — return null instead of parsing
@@ -230,17 +189,20 @@ export function request(endpoint, options = {}) {
       return data;
     } catch (error) {
       if (error.name === 'AbortError') {
-        // Distinguish between external cancellation and internal timeout
+        // Distinguish between external cancellation and internal timeout.
+        // Cancellation stays a native AbortError — dozens of call sites ignore
+        // requests by checking `err.name === 'AbortError'`.
         if (options.signal?.aborted) {
-          // Re-throw as AbortError so callers can detect cancellation
           const abortErr = new Error('Request aborted');
           abortErr.name = 'AbortError';
           throw abortErr;
         }
         logger.error(`⏱️ API Timeout: ${url}`);
-        throw new Error('Request timed out');
+        throw new ApiError('Request timed out', { code: ApiErrorCode.TIMEOUT });
       }
-      throw error;
+      // [DK-847] Normalize everything else (transport TypeErrors, offline, and
+      // ApiErrors thrown above pass through unchanged) into one shape.
+      throw normalizeApiError(error);
     } finally {
       clearTimeout(timeoutId);
     }
@@ -318,19 +280,19 @@ export async function requestUpload(endpoint, formData) {
             // Either refresh failed, or retry still got 401 — clear session
             clearStoredUser();
             queryClient.clear();
+            notifySessionExpired();
           }
 
-          const err = new Error(errorData.error || `Upload failed with status ${response.status}`);
-          err.status = response.status;
-          throw err;
+          // [DK-847] Normalized error shape, same as request().
+          throw buildHttpError(response.status, errorData, { headers: response.headers });
         }
 
         return response.json();
       } catch (error) {
         if (error.name === 'AbortError') {
-          throw new Error('Upload timed out');
+          throw new ApiError('Upload timed out', { code: ApiErrorCode.TIMEOUT });
         }
-        throw error;
+        throw normalizeApiError(error);
       } finally {
         clearTimeout(timeoutId);
       }
@@ -372,19 +334,21 @@ export async function requestBlob(endpoint) {
             // Either refresh failed, or retry still got 401 — clear session
             clearStoredUser();
             queryClient.clear();
+            notifySessionExpired();
           }
 
-          const err = new Error(`Export failed with status ${response.status}`);
-          err.status = response.status;
-          throw err;
+          // [DK-847] A blob endpoint may still return a JSON error body; try to
+          // surface it, then fall back to a normalized status error.
+          const errorData = await response.json().catch(() => ({}));
+          throw buildHttpError(response.status, errorData, { headers: response.headers });
         }
 
         return response;
       } catch (error) {
         if (error.name === 'AbortError') {
-          throw new Error('Export timed out');
+          throw new ApiError('Export timed out', { code: ApiErrorCode.TIMEOUT });
         }
-        throw error;
+        throw normalizeApiError(error);
       } finally {
         clearTimeout(timeoutId);
       }

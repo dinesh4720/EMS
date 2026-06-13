@@ -73,9 +73,9 @@
   --info-token: var(--info);
 
   --fg: oklch(18% 0.01 280);
-  --fg-muted: oklch(45% 0.008 280);
-  --fg-subtle: oklch(60% 0.006 280);
-  --fg-faint: oklch(72% 0.004 280);
+  --fg-muted: oklch(42% 0.008 280);
+  --fg-subtle: oklch(40% 0.006 280);
+  --fg-faint: oklch(50% 0.004 280);
 
   /* Accent — indigo */
   --accent: oklch(56% 0.19 270);
@@ -93,7 +93,7 @@
   --ok-bg: oklch(58% 0.14 150 / 0.1);
   --ok-border: oklch(58% 0.14 150 / 0.25);
   --ok-hover: oklch(50% 0.14 150);
-  --warn: oklch(60% 0.15 75);
+  --warn: oklch(50% 0.15 75);
   --warn-bg: oklch(60% 0.15 75 / 0.12);
   --warn-border: oklch(60% 0.15 75 / 0.25);
   --warn-hover: oklch(55% 0.15 75);
@@ -148,8 +148,8 @@
 
   --fg: oklch(96% 0.005 280);
   --fg-muted: oklch(72% 0.006 280);
-  --fg-subtle: oklch(58% 0.005 280);
-  --fg-faint: oklch(40% 0.005 280);
+  --fg-subtle: oklch(68% 0.005 280);
+  --fg-faint: oklch(58% 0.005 280);
 
   --glass-bg: rgba(20, 20, 24, 0.6);
   --glass-border: rgba(255, 255, 255, 0.08);
@@ -159,6 +159,7 @@
    * 10–12% reads faint here). Hues are unchanged — only opacity is bumped. */
   --accent-bg: oklch(56% 0.19 270 / 0.18);
   --ok-bg: oklch(58% 0.14 150 / 0.16);
+  --warn: oklch(68% 0.15 75);
   --warn-bg: oklch(60% 0.15 75 / 0.16);
   --danger-bg: oklch(58% 0.2 25 / 0.16);
   --info-bg: oklch(60% 0.14 240 / 0.16);

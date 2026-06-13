@@ -216,7 +216,7 @@ export default function ParentManagement() {
       </div>
 
       {/* Table */}
-      <div className="bg-surface border border-border-token rounded-lg overflow-hidden">
+      <div className="bg-surface border border-border-token rounded-lg overflow-hidden overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="border-b border-divider bg-surface-2">

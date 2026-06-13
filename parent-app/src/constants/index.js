@@ -1,5 +1,18 @@
 // Constants for parent-app
 
+// Academic year helpers — single source of truth for the parent app.
+// The computed default follows the April-March cycle used across the platform.
+export function getDefaultAcademicYear(referenceDate = new Date()) {
+  const startYear = referenceDate.getMonth() >= 3
+    ? referenceDate.getFullYear()
+    : referenceDate.getFullYear() - 1;
+
+  return `${startYear}-${String((startYear + 1) % 100).padStart(2, '0')}`;
+}
+
+export const CURRENT_ACADEMIC_YEAR =
+  process.env.EXPO_PUBLIC_CURRENT_ACADEMIC_YEAR || getDefaultAcademicYear();
+
 // User roles
 export const USER_ROLES = {
   PARENT: 'parent',

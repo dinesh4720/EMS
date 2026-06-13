@@ -144,7 +144,7 @@ export default function CommunicationLogs() {
       <div className="space-y-6 animate-in fade-in duration-300">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+            <div key={`log-skel-${i}`} className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
               <div className="flex items-start gap-4">
                 <div className="w-10 h-10 rounded-lg animate-shimmer" />
                 <div className="flex-1 space-y-2">

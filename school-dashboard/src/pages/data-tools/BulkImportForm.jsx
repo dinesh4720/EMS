@@ -78,7 +78,7 @@ function ResultPanel({ result }) {
           <div className="max-h-48 overflow-y-auto space-y-1">
             {result.failed.map((row, i) => (
               <div
-                key={i}
+                key={row.row != null ? `failed-row-${row.row}` : `failed-${i}`}
                 className="flex items-start gap-2 text-xs p-2 bg-red-50 dark:bg-red-950/40 rounded"
               >
                 <span className="text-red-600 dark:text-red-400 font-mono shrink-0">

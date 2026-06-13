@@ -2,7 +2,9 @@
  * MinimalButton - Clean button component
  */
 import { memo } from "react";
+import PropTypes from "prop-types";
 import { cn } from "../../utils/cn";
+import { useIconButtonA11yWarning } from "../../utils/a11y";
 
 const MinimalButton = memo(function MinimalButton({
   children,
@@ -12,13 +14,15 @@ const MinimalButton = memo(function MinimalButton({
   iconPosition = "left",
   loading = false,
   disabled = false,
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
   className,
   ...props
 }) {
   const sizeStyles = {
-    sm: "px-3 py-1.5 text-xs gap-1.5",
-    md: "px-4 py-2 text-sm gap-2",
-    lg: "px-5 py-2.5 text-base gap-2",
+    sm: "px-3 py-1.5 text-xs gap-1.5 min-h-8",
+    md: "px-4 py-2 text-sm gap-2 min-h-9",
+    lg: "px-5 py-2.5 text-base gap-2 min-h-11",
   };
 
   /*
@@ -46,10 +50,21 @@ const MinimalButton = memo(function MinimalButton({
     danger: "bg-[var(--color-error)] text-white hover:opacity-90",
   };
 
+  const isIconOnly = !children && Boolean(icon);
+
+  useIconButtonA11yWarning("MinimalButton", {
+    isIconOnly,
+    ariaLabel,
+    ariaLabelledBy,
+  });
+
   return (
     <button
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
       className={cn(
         "inline-flex items-center justify-center font-medium rounded-lg transition-colors",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,var(--color-primary))] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]",
         sizeStyles[size],
         variantStyles[variant],
         (disabled || loading) && "opacity-50 cursor-not-allowed",
@@ -59,7 +74,7 @@ const MinimalButton = memo(function MinimalButton({
       {...props}
     >
       {loading && (
-        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
           <circle
             className="opacity-25"
             cx="12"
@@ -84,5 +99,18 @@ const MinimalButton = memo(function MinimalButton({
 });
 
 MinimalButton.displayName = 'MinimalButton';
+
+MinimalButton.propTypes = {
+  children: PropTypes.node,
+  variant: PropTypes.oneOf(["primary", "secondary", "ghost", "danger"]),
+  size: PropTypes.oneOf(["sm", "md", "lg"]),
+  icon: PropTypes.node,
+  iconPosition: PropTypes.oneOf(["left", "right"]),
+  loading: PropTypes.bool,
+  disabled: PropTypes.bool,
+  "aria-label": PropTypes.string,
+  "aria-labelledby": PropTypes.string,
+  className: PropTypes.string,
+};
 
 export default MinimalButton;

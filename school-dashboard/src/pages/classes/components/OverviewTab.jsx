@@ -110,7 +110,7 @@ export function OverviewTab({ id, cls, classesEnhancedApi, todayStatus, classRat
           <div className="p-4">
             {academicLoading ? (
               <div className="space-y-3">
-                {[1, 2, 3].map(i => <Bone key={i} className="h-8 w-full" />)}
+                {[1, 2, 3].map(i => <Bone key={`academic-skeleton-${i}`} className="h-8 w-full" />)}
               </div>
             ) : (
               <div className="space-y-4">
@@ -157,7 +157,7 @@ export function OverviewTab({ id, cls, classesEnhancedApi, todayStatus, classRat
           <div className="p-4">
             {!classRating ? (
               <div className="space-y-3">
-                {[1, 2, 3, 4].map(i => <Bone key={i} className="h-6 w-full" />)}
+                {[1, 2, 3, 4].map(i => <Bone key={`rating-skeleton-${i}`} className="h-6 w-full" />)}
               </div>
             ) : classRating?.breakdown && Object.keys(classRating.breakdown).length > 0 ? (
               <div className="space-y-3">

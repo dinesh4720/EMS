@@ -5,7 +5,7 @@ import { useCurrency } from "../../../context/hooks/useCurrency";
 import SectionHeader from "./SectionHeader";
 
 const inputStyles = {
-  inputWrapper: "bg-background border-1 border-default-200 hover:border-default-300 h-10",
+  inputWrapper: "bg-background border-1 border-border-token hover:border-fg-subtle h-10",
 };
 
 const salaryTemplates = [
@@ -68,10 +68,10 @@ function SalaryStructureStep({
             <div key={`salary-${i}`} className="flex items-center gap-2 p-2 border-b border-divider last:border-0 hover:bg-surface-2">
               <Input size="sm" value={item.component} onValueChange={v => updateBreakdownItem(i, "component", v)} variant="flat" placeholder={t('staff.form.componentNamePlaceholder')} classNames={{ inputWrapper: "bg-transparent shadow-none" }} />
               <Input size="sm" type="number" value={item.amount} onValueChange={v => updateBreakdownItem(i, "amount", v)} variant="flat" placeholder={t('staff.form.amountPlaceholder')} startContent="₹" classNames={{ inputWrapper: "bg-transparent shadow-none w-24" }} />
-              <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => updateField("salaryBreakdown", formData.salaryBreakdown.filter((_, idx) => idx !== i))}><X size={14} /></Button>
+              <Button isIconOnly size="sm" variant="light" className="text-danger-token" onPress={() => updateField("salaryBreakdown", formData.salaryBreakdown.filter((_, idx) => idx !== i))}><X size={14} /></Button>
             </div>
           ))}
-          <button className="w-full py-2.5 text-xs font-medium text-fg-muted hover:text-gray-700 dark:hover:text-zinc-200 hover:bg-surface-2 transition-colors flex items-center justify-center gap-1.5" onClick={() => updateField("salaryBreakdown", [...formData.salaryBreakdown, { component: "", amount: 0 }])}>
+          <button className="w-full py-2.5 text-xs font-medium text-fg-muted hover:text-fg hover:bg-surface-2 transition-colors flex items-center justify-center gap-1.5" onClick={() => updateField("salaryBreakdown", [...formData.salaryBreakdown, { component: "", amount: 0 }])}>
             <Plus size={13} /> {t('staff.form.addComponent')}
           </button>
         </div>

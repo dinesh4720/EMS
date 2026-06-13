@@ -32,7 +32,7 @@ export default function ClassesTab({
       </div>
 
       {/* List View */}
-      <div className="rounded-xl border border-border-token bg-surface overflow-hidden">
+      <div className="rounded-xl border border-border-token bg-surface overflow-hidden overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="border-b border-border-token bg-surface-2">

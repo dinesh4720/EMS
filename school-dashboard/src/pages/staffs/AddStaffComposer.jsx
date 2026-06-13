@@ -1175,7 +1175,7 @@ function ComposerAvatar({ previewUrl, initials, name }) {
         border: showGradient ? "none" : "1px solid var(--border)",
         display: "grid",
         placeItems: "center",
-        color: showGradient ? "white" : "var(--fg-muted)",
+        color: showGradient ? "var(--surface)" : "var(--fg-muted)",
         fontWeight: 600,
         fontSize: 18,
         letterSpacing: "-0.02em",

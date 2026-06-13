@@ -194,7 +194,7 @@ export default function LayoutSection() {
           >
             <div className="h-full flex items-end gap-2 px-2">
               {[40, 65, 50, 80, 55, 90].map((height, idx) => (
-                <div key={idx} className="flex-1 bg-accent-bg rounded-t" style={{ height: `${height}%` }} aria-hidden />
+                <div key={`bar-${idx}`} className="flex-1 bg-accent-bg rounded-t" style={{ height: `${height}%` }} aria-hidden />
               ))}
             </div>
           </ChartCard>

@@ -118,12 +118,17 @@ describe('classesApi — class settings', () => {
     });
   });
 
-  it('updateTag re-throws 400 errors as ValidationError', async () => {
-    const apiError = { status: 400, message: 'Invalid tag' };
+  it('updateTag propagates the normalized error from request() (status preserved)', async () => {
+    // [DK-847] request() now throws a normalized ApiError that already carries
+    // status + code + message + details, so the api method no longer re-wraps
+    // (and no longer drops error.status as the old wrapper did).
+    const apiError = { status: 400, code: 'VALIDATION', message: 'Invalid tag' };
     request.mockRejectedValueOnce(apiError);
 
     await expect(classesApi.updateTag('cls010', 'bad-tag')).rejects.toMatchObject({
-      type: 'ValidationError',
+      status: 400,
+      code: 'VALIDATION',
+      message: 'Invalid tag',
     });
   });
 });
@@ -377,10 +382,14 @@ describe('teacherAssignmentsApi', () => {
     );
   });
 
-  it('create re-throws 400 errors as ValidationError', async () => {
-    request.mockRejectedValueOnce({ status: 400, message: 'Bad input' });
+  it('create propagates the normalized error from request() (status preserved)', async () => {
+    // [DK-847] No more manual re-wrap — the normalized ApiError flows straight
+    // through with its status intact.
+    request.mockRejectedValueOnce({ status: 400, code: 'VALIDATION', message: 'Bad input' });
     await expect(teacherAssignmentsApi.create({})).rejects.toMatchObject({
-      type: 'ValidationError',
+      status: 400,
+      code: 'VALIDATION',
+      message: 'Bad input',
     });
   });
 });

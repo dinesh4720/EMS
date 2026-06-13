@@ -62,7 +62,7 @@ function ActivitySkeleton() {
   return (
     <div className="space-y-2 p-2" aria-busy="true" aria-live="polite">
       {[1, 2, 3, 4].map((i) => (
-        <div key={i} className="flex items-center gap-3 py-2">
+        <div key={`activity-skeleton-${i}`} className="flex items-center gap-3 py-2">
           <Skeleton variant="circle" className="h-6 w-6" />
           <div className="flex-1 space-y-1">
             <Skeleton variant="text" className="h-3 w-32" />
@@ -167,7 +167,7 @@ export default function RecentActivityWidget({
         <div className="activity-list" style={{ borderRadius: 0, border: "none" }}>
           {activities.map((a, i) => (
             <ActivityRow
-              key={`${a.type}-${i}`}
+              key={`${a.type}-${a.title}-${i}`}
               type={a.type}
               title={a.title}
               meta={a.meta}

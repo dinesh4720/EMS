@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { clearStoredUser, getAuthHeaders, getStoredUser, saveStoredUser } from "../utils/authSession";
+import { clearLegacyCredentials, clearStoredUser, getAuthHeaders, getStoredUser, saveStoredUser } from "../utils/authSession";
 import { isSuperAdminRole } from "../utils/roleUtils";
 import { clearApiCache } from "../services/api";
 import socketService from "../services/socketServiceEnhanced";
@@ -22,6 +22,11 @@ export const AuthProvider = ({ children }) => {
   const location = useLocation();
 
   useEffect(() => {
+    // SECURITY: Clean up legacy mock credentials left by an earlier version
+    // of AuthContext (DASHBOARD_AUDIT.md #2). This is a one-time migration
+    // that removes plaintext passwords from localStorage.
+    clearLegacyCredentials();
+
     let isMounted = true;
 
     const restoreSession = async () => {

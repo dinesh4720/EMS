@@ -18,8 +18,10 @@ const MinimalTabs = memo(function MinimalTabs({
   variant = "pills", // pills, underline, plain
   className,
   ariaLabel = "Tabs",
+  baseId: baseIdProp,
 }) {
-  const baseId = useId();
+  const generatedId = useId();
+  const baseId = baseIdProp ?? generatedId;
   const tablistRef = useRef(null);
 
   const sizeStyles = {

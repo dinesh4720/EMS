@@ -246,7 +246,7 @@ export default function CCEGradingPage() {
                     <tbody>
                       {editingScale
                         ? draftScale.map((row, i) => (
-                          <tr key={i} className="border-b border-divider">
+                          <tr key={row.grade || `draft-grade-${i}`} className="border-b border-divider">
                             <td className="py-2">
                               <span className={gradePillClass(row.grade)}>
                                 {row.grade}
@@ -273,7 +273,7 @@ export default function CCEGradingPage() {
                           </tr>
                         ))
                         : (config.gradingScale || []).map((row, i) => (
-                          <tr key={i} className="border-b border-divider">
+                          <tr key={row.grade || `grade-${i}`} className="border-b border-divider">
                             <td className="py-2.5">
                               <span className={gradePillClass(row.grade)}>
                                 {row.grade}
@@ -309,7 +309,7 @@ export default function CCEGradingPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {(config.assessmentTypes || []).map((at, i) => (
                     <div
-                      key={i}
+                      key={at.name || `assessment-${i}`}
                       className="flex items-center justify-between p-3 rounded-lg bg-surface-2 border border-divider"
                     >
                       <div>
@@ -337,7 +337,7 @@ export default function CCEGradingPage() {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                   {(config.coScholasticAreas || []).map((area, i) => (
                     <button
-                      key={i}
+                      key={area.name || `coscholastic-${i}`}
                       type="button"
                       onClick={() => handleCoScholasticToggle(i, !area.isActive)}
                       className={`flex items-center justify-between p-2.5 rounded-lg border text-left transition-colors cursor-pointer hover:bg-surface-hover ${

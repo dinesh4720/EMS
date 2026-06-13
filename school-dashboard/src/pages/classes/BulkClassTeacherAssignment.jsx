@@ -199,7 +199,8 @@ export default function BulkClassTeacherAssignment() {
         />
       </div>
 
-      <table className="table" aria-label={t('aria.tables.classTeachers')}>
+      <div className="overflow-x-auto">
+        <table className="table" aria-label={t('aria.tables.classTeachers')}>
         <thead>
           <tr>
             <th scope="col">{t('pages.cLASS')}</th>
@@ -285,7 +286,8 @@ export default function BulkClassTeacherAssignment() {
             ))
           )}
         </tbody>
-      </table>
+        </table>
+      </div>
 
       <Modal
         isOpen={modal.isOpen}

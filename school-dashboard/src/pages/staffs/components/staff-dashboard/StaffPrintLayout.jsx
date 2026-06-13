@@ -39,7 +39,7 @@ export default function StaffPrintLayout({ staff, monthlyStats, attendanceRate, 
           <div className="staff-print-section" style={{ marginBottom: '20px' }}>
             <p style={{ fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '8px', borderBottom: '1px solid #e5e7eb', paddingBottom: '4px' }}>Class Teacher Assignments</p>
             {classTeacherAssignments.map((cls, i) => (
-              <p key={i} style={{ fontSize: '13px', margin: '0 0 4px 0', color: '#4b5563' }}>
+              <p key={cls._id || cls.id || `class-${i}`} style={{ fontSize: '13px', margin: '0 0 4px 0', color: '#4b5563' }}>
                 {cls.name}{cls.section ? ` ${cls.section}` : ''}{cls.studentCount ? ` — ${cls.studentCount} students` : ''}
               </p>
             ))}

@@ -2,43 +2,49 @@ import { forwardRef } from "react";
 import PropTypes from "prop-types";
 import { cn } from "../../utils/cn";
 
+/**
+ * Token-compliant badge palettes. All colours resolve through the design-token
+ * system so light/dark mode and contrast fixes are managed in one place
+ * (tokens.css). Solid variants use status tints; the primary variant uses the
+ * accent colour to avoid hardcoded greys.
+ */
 const COLOR_STYLES = {
   neutral:
-    "bg-gray-100 text-gray-700 dark:bg-zinc-800 dark:text-zinc-300",
+    "bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)]",
   primary:
-    "bg-gray-900 text-white dark:bg-zinc-100 dark:text-zinc-900",
+    "bg-[var(--color-accent)] text-[var(--color-accent-fg)]",
   success:
-    "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+    "bg-[var(--color-ok-bg)] text-[var(--color-ok)]",
   warning:
-    "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+    "bg-[var(--color-warn-bg)] text-[var(--color-warn)]",
   danger:
-    "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+    "bg-[var(--color-danger-bg)] text-[var(--color-danger)]",
   info:
-    "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+    "bg-[var(--color-info-bg)] text-[var(--color-info)]",
 };
 
 const OUTLINE_STYLES = {
   neutral:
-    "bg-transparent text-gray-700 border border-gray-200 dark:text-zinc-300 dark:border-zinc-700",
+    "bg-transparent text-[var(--color-text-secondary)] border border-[var(--border-strong)]",
   primary:
-    "bg-transparent text-gray-900 border border-gray-900 dark:text-zinc-100 dark:border-zinc-100",
+    "bg-transparent text-[var(--color-accent)] border border-[var(--accent-border)]",
   success:
-    "bg-transparent text-green-700 border border-green-200 dark:text-green-400 dark:border-green-900/50",
+    "bg-transparent text-[var(--color-ok)] border border-[var(--ok-border)]",
   warning:
-    "bg-transparent text-amber-700 border border-amber-200 dark:text-amber-400 dark:border-amber-900/50",
+    "bg-transparent text-[var(--color-warn)] border border-[var(--warn-border)]",
   danger:
-    "bg-transparent text-red-700 border border-red-200 dark:text-red-400 dark:border-red-900/50",
+    "bg-transparent text-[var(--color-danger-token)] border border-[var(--danger-border)]",
   info:
-    "bg-transparent text-blue-700 border border-blue-200 dark:text-blue-400 dark:border-blue-900/50",
+    "bg-transparent text-[var(--color-info-token)] border border-[var(--info-border)]",
 };
 
 const DOT_STYLES = {
-  neutral: "bg-gray-500",
-  primary: "bg-gray-900 dark:bg-zinc-100",
-  success: "bg-green-500",
-  warning: "bg-amber-500",
-  danger: "bg-red-500",
-  info: "bg-blue-500",
+  neutral: "bg-[var(--color-text-muted)]",
+  primary: "bg-[var(--color-accent-fg)]",
+  success: "bg-[var(--color-ok)]",
+  warning: "bg-[var(--color-warn)]",
+  danger: "bg-[var(--color-danger)]",
+  info: "bg-[var(--color-info)]",
 };
 
 const SIZE_STYLES = {

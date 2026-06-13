@@ -4,20 +4,20 @@ import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 
 const STATUS_DOT_COLORS = {
-    active: "bg-success-500",
-    inactive: "bg-danger-500",
-    "on-leave": "bg-warning-500",
-    suspended: "bg-orange-500",
-    terminated: "bg-gray-500",
+    active: "bg-ok",
+    inactive: "bg-danger-token",
+    "on-leave": "bg-warn",
+    suspended: "bg-info",
+    terminated: "bg-fg-subtle",
 };
 
 const STATUS_ITEMS = [
     { key: "all",        label: "All Status",  dot: null },
-    { key: "active",     label: "Active",      dot: "bg-success-500" },
-    { key: "inactive",   label: "Inactive",    dot: "bg-danger-500" },
-    { key: "on-leave",   label: "On Leave",    dot: "bg-warning-500" },
-    { key: "suspended",  label: "Suspended",   dot: "bg-orange-500" },
-    { key: "terminated", label: "Terminated",  dot: "bg-gray-500" },
+    { key: "active",     label: "Active",      dot: "bg-ok" },
+    { key: "inactive",   label: "Inactive",    dot: "bg-danger-token" },
+    { key: "on-leave",   label: "On Leave",    dot: "bg-warn" },
+    { key: "suspended",  label: "Suspended",   dot: "bg-info" },
+    { key: "terminated", label: "Terminated",  dot: "bg-fg-subtle" },
 ];
 
 /**
@@ -38,12 +38,12 @@ export default function StaffStatusFilter({
 }) {
     const { t } = useTranslation();
 
-    const dotColor = STATUS_DOT_COLORS[statusFilter] ?? "bg-default-400";
+    const dotColor = STATUS_DOT_COLORS[statusFilter] ?? "bg-fg-faint";
 
     return (
         <Dropdown placement="bottom-start" isOpen={isOpen} onOpenChange={onOpenChange}>
             <DropdownTrigger>
-                <button className="flex items-center gap-2 px-3 py-2.5 bg-surface rounded-lg border border-border-token hover:border-teal-500 focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500 transition-all duration-200 text-sm cursor-pointer whitespace-nowrap capitalize">
+                <button className="flex items-center gap-2 px-3 py-2.5 bg-surface rounded-lg border border-border-token hover:border-accent focus-within:border-accent focus-within:ring-1 focus-within:ring-accent transition-all duration-200 text-sm cursor-pointer whitespace-nowrap capitalize">
                     <span className={`w-2 h-2 rounded-full ${dotColor}`}></span>
                     <span className="text-fg">{statusFilter}</span>
                     <span className="text-fg-muted">{statusCounts[statusFilter]}</span>
@@ -65,13 +65,13 @@ export default function StaffStatusFilter({
                         key={key}
                         startContent={
                             statusFilter === key ? (
-                                <Check size={14} className="text-primary" />
+                                <Check size={14} className="text-accent" />
                             ) : (
                                 <span className="w-3.5"></span>
                             )
                         }
                         endContent={
-                            <span className="text-default-400 text-xs">{statusCounts[key]}</span>
+                            <span className="text-fg-faint text-xs">{statusCounts[key]}</span>
                         }
                         className={key !== "all" ? "capitalize" : ""}
                     >

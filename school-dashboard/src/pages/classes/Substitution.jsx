@@ -363,7 +363,8 @@ export default function Substitution() {
           </button>
         </div>
       ) : (
-        <table className="table" aria-label={t('aria.tables.substitutions')}>
+        <div className="overflow-x-auto">
+          <table className="table" aria-label={t('aria.tables.substitutions')}>
           <thead>
             <tr>
               <th scope="col">{t('pages.cLASS')}</th>
@@ -448,7 +449,8 @@ export default function Substitution() {
               </tr>
             ))}
           </tbody>
-        </table>
+          </table>
+        </div>
       )}
 
       <Modal

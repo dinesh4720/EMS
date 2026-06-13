@@ -5,6 +5,12 @@
  */
 
 export { clearApiCache, request, requestUpload, requestBlob } from './core.js';
+// [DK-847] Central API error layer — one normalized error shape for all call sites.
+export {
+  ApiError, ApiErrorCode, normalizeApiError, codeForStatus,
+  buildHttpError, extractServerMessage, parseRetryAfterMs,
+  notifySessionExpired, isAbortError, SESSION_EXPIRED_EVENT,
+} from './errors.js';
 export { staffApi, studentsApi, trashApi } from './staff.js';
 export { examsApi, homeworkApi, resultsApi, academicPerformanceApi, subjectsApi, examScheduleApi } from './academics.js';
 export {
