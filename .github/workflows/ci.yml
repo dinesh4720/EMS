@@ -125,6 +125,9 @@ jobs:
   dependency-review:
     name: Dependency Review
     runs-on: ubuntu-latest
+    # This job requires GitHub Advanced Security / Dependency graph. Keep it
+    # informational until GHAS is enabled for the repository.
+    continue-on-error: true
     if: github.event_name == 'pull_request'
     steps:
       - name: Checkout
