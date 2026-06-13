@@ -73,7 +73,7 @@ const FieldPreviewRenderer = ({ field }) => {
           }}
         >
           {field.options?.map((opt, idx) => (
-            <SelectItem key={`option-${opt}`} value={opt} textValue={opt}>
+            <SelectItem key={`option-${field.id}-${idx}`} value={opt} textValue={opt}>
               {opt}
             </SelectItem>
           ))}
@@ -82,22 +82,32 @@ const FieldPreviewRenderer = ({ field }) => {
       break;
     case "radio":
       component = (
-        <div className="space-y-2">
+        <div className="space-y-2" role="radiogroup" aria-label={field.label}>
           <label className={labelClass}>
             {field.label}
-            {field.required && <span className="text-danger ml-1">*</span>}
+            {field.required && <span className="text-danger ml-1" aria-hidden="true">*</span>}
           </label>
-          <div className="flex gap-4">
-            {field.options?.map((opt, idx) => (
-              <div
-                key={`radio-${opt}`}
-                className="cursor-pointer rounded-xl border border-border-token p-3 flex items-center gap-3 bg-surface hover:bg-surface-2 transition-all min-w-[120px]"
-              >
-                <div className="w-4 h-4 rounded-full border border-border-token flex items-center justify-center">
-                </div>
-                <span className="text-sm font-medium text-fg-muted">{opt}</span>
-              </div>
-            ))}
+          <div className="flex flex-wrap gap-4">
+            {field.options?.map((opt, idx) => {
+              const radioId = `radio-${field.id}-${idx}`;
+              return (
+                <label
+                  key={radioId}
+                  htmlFor={radioId}
+                  className="cursor-pointer rounded-xl border border-border-token p-3 flex items-center gap-3 bg-surface hover:bg-surface-2 transition-all min-w-[120px] min-h-[44px]"
+                >
+                  <input
+                    type="radio"
+                    id={radioId}
+                    name={`radio-${field.id}`}
+                    value={opt}
+                    disabled
+                    className="w-4 h-4 accent-primary"
+                  />
+                  <span className="text-sm font-medium text-fg-muted">{opt}</span>
+                </label>
+              );
+            })}
           </div>
           {field.description && (
             <p className="text-xs text-fg-faint">{field.description}</p>
@@ -110,11 +120,11 @@ const FieldPreviewRenderer = ({ field }) => {
         <div className="space-y-2">
           <label className={labelClass}>
             {field.label}
-            {field.required && <span className="text-danger ml-1">*</span>}
+            {field.required && <span className="text-danger ml-1" aria-hidden="true">*</span>}
           </label>
           <div className="space-y-2">
             {field.options?.map((opt, idx) => (
-              <Checkbox key={`checkbox-${opt}`} size="sm" isDisabled classNames={{ label: "text-fg" }}>
+              <Checkbox key={`checkbox-${field.id}-${idx}`} size="sm" isDisabled classNames={{ label: "text-fg" }}>
                 {opt}
               </Checkbox>
             ))}
@@ -130,15 +140,23 @@ const FieldPreviewRenderer = ({ field }) => {
         <div className="space-y-2">
           <label className={labelClass}>
             {field.label}
-            {field.required && <span className="text-danger ml-1">*</span>}
+            {field.required && <span className="text-danger ml-1" aria-hidden="true">*</span>}
           </label>
-          <div className="border border-dashed border-border-token rounded-lg p-4 flex items-center justify-center gap-3 bg-surface-2/50 /50">
-            <Upload size={16} className="text-fg-faint" />
+          <label
+            className="border border-dashed border-border-token rounded-lg p-4 flex items-center justify-center gap-3 bg-surface-2/50 cursor-pointer min-h-[44px]"
+          >
+            <Upload size={16} className="text-fg-faint" aria-hidden="true" />
             <div className="text-center">
               <p className="text-xs text-fg-muted font-medium">{t('pages.clickToUploadOrDragAndDrop')}</p>
               {field.description && <p className="text-[10px] text-fg-faint mt-1">{field.description}</p>}
             </div>
-          </div>
+            <input
+              type="file"
+              disabled
+              className="sr-only"
+              aria-label={t('pages.uploadFileFor', { label: field.label })}
+            />
+          </label>
         </div>
       );
       break;

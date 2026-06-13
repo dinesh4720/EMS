@@ -76,7 +76,7 @@ export default function EnrollmentFunnel() {
                 <Card key={stage.key} className="bg-surface border border-divider">
                   <CardBody className="p-4 text-center">
                     <div className={`w-10 h-10 rounded-lg ${stage.iconBgColor} flex items-center justify-center mx-auto mb-2`}>
-                      <Icon size={20} className={stage.iconTextColor} />
+                      <Icon size={20} className={stage.iconTextColor} aria-hidden="true" />
                     </div>
                     <p className="text-2xl font-bold text-fg">
                       {stats[stage.key]}
@@ -114,8 +114,13 @@ export default function EnrollmentFunnel() {
                       <div className="flex-1 relative">
                         <div className="h-10 bg-surface-2 rounded-lg overflow-hidden">
                           <div
-                            className={`h-full ${stage.barColor} rounded-lg flex items-center justify-end pr-3 transition-all duration-500`}
+                            className={`h-full ${stage.barColor} rounded-lg flex items-center justify-end pr-3 motion-safe:transition-all motion-safe:duration-500`}
                             style={{ width: `${width}%` }}
+                            role="progressbar"
+                            aria-valuemin={0}
+                            aria-valuemax={maxCount}
+                            aria-valuenow={stats[stage.key]}
+                            aria-label={`${stage.label}: ${stats[stage.key]} of ${maxCount}`}
                           >
                             <span className="text-sm font-semibold text-accent-fg">
                               {stats[stage.key]}
@@ -147,10 +152,15 @@ export default function EnrollmentFunnel() {
                     <div className="flex-1 relative">
                       <div className="h-10 bg-surface-2 rounded-lg overflow-hidden">
                         <div
-                          className="h-full bg-danger-token rounded-lg flex items-center justify-end pr-3 transition-all duration-500"
+                          className="h-full bg-danger-token rounded-lg flex items-center justify-end pr-3 motion-safe:transition-all motion-safe:duration-500"
                           style={{
                             width: `${Math.max((stats.rejected / maxCount) * 100, 8)}%`,
                           }}
+                          role="progressbar"
+                          aria-valuemin={0}
+                          aria-valuemax={maxCount}
+                          aria-valuenow={stats.rejected}
+                          aria-label={`Rejected: ${stats.rejected} of ${maxCount}`}
                         >
                           <span className="text-sm font-semibold text-accent-fg">
                             {stats.rejected}

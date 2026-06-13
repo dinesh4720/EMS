@@ -316,6 +316,7 @@ export default function FormAssignments() {
               variant={filterStatus === status ? "solid" : "flat"}
               color={filterStatus === status ? "primary" : "default"}
               onPress={() => setFilterStatus(status)}
+              aria-pressed={filterStatus === status}
             >
               {status.charAt(0).toUpperCase() + status.slice(1)}
             </Button>
@@ -325,7 +326,7 @@ export default function FormAssignments() {
 
       {/* Assignments Table */}
       <DataTable
-        ariaLabel={t('aria.tables.formAssignments')}
+        ariaLabel={t('aria.tables.formAssignments') || 'Form assignments table'}
         columns={columns}
         data={assignments}
         keyField="_id"
@@ -429,28 +430,28 @@ export default function FormAssignments() {
           <ModalHeader>{t('pages.assignmentDetails')}</ModalHeader>
           <ModalBody>
             {selectedAssignment && (
-              <div className="space-y-4">
+              <dl className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium text-fg-muted">
+                  <dt className="text-sm font-medium text-fg-muted">
                     Form Name
-                  </label>
-                  <p className="text-base font-semibold">
+                  </dt>
+                  <dd className="text-base font-semibold">
                     {selectedAssignment.formId?.formName || 'Unknown Form'}
-                  </p>
+                  </dd>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-fg-muted">
+                  <dt className="text-sm font-medium text-fg-muted">
                     Assigned To
-                  </label>
-                  <p className="text-base">{selectedAssignment.assignedToEmail || selectedAssignment.assignedToPhone || '—'}</p>
+                  </dt>
+                  <dd className="text-base">{selectedAssignment.assignedToEmail || selectedAssignment.assignedToPhone || '—'}</dd>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-fg-muted">
+                  <dt className="text-sm font-medium text-fg-muted">
                     Access Link
-                  </label>
-                  <div className="flex gap-2 mt-1">
+                  </dt>
+                  <dd className="flex gap-2 mt-1">
                     <Input
                       value={`${window.location.origin}/form/${selectedAssignment.accessToken}`}
                       readOnly
@@ -459,20 +460,21 @@ export default function FormAssignments() {
                     <Button
                       isIconOnly
                       size="sm"
+                      aria-label={t('pages.copyAccessLink')}
                       onPress={() =>
                         copyAccessLink(selectedAssignment.accessToken)
                       }
                     >
                       <Copy size={16} />
                     </Button>
-                  </div>
+                  </dd>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-fg-muted">
+                  <dt className="text-sm font-medium text-fg-muted">
                     Status
-                  </label>
-                  <div className="mt-1">
+                  </dt>
+                  <dd className="mt-1">
                     <Chip
                       size="sm"
                       variant="dot"
@@ -480,34 +482,34 @@ export default function FormAssignments() {
                     >
                       {selectedAssignment.status}
                     </Chip>
-                  </div>
+                  </dd>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-fg-muted">
+                    <dt className="text-sm font-medium text-fg-muted">
                       Assigned Date
-                    </label>
-                    <p className="text-sm">
+                    </dt>
+                    <dd className="text-sm">
                       {format(
                         new Date(selectedAssignment.assignedAt),
                         "MMM dd, yyyy"
                       )}
-                    </p>
+                    </dd>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-fg-muted">
+                    <dt className="text-sm font-medium text-fg-muted">
                       Expires On
-                    </label>
-                    <p className="text-sm">
+                    </dt>
+                    <dd className="text-sm">
                       {format(
                         new Date(selectedAssignment.expiresAt),
                         "MMM dd, yyyy"
                       )}
-                    </p>
+                    </dd>
                   </div>
                 </div>
-              </div>
+              </dl>
             )}
           </ModalBody>
           <ModalFooter>

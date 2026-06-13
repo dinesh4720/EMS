@@ -23,7 +23,7 @@ const TemplateSelectionModal = ({ isOpen, onClose, formTemplates, onSelectTempla
                 key={template.id}
                 isPressable
                 onPress={() => onSelectTemplate(template)}
-                className="hover:border-primary transition-all"
+                className="hover:border-primary motion-safe:transition-all"
               >
                 <CardBody className="p-6">
                   <div className="flex items-start gap-4">

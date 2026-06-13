@@ -131,8 +131,9 @@ export default function FormSubmissions() {
           as="a"
           href={value}
           target="_blank"
+          aria-label={t('pages.downloadFileOpensInNewTab')}
         >
-          Download File
+          {t('pages.downloadFile')}
         </Button>
       );
     }
@@ -247,6 +248,7 @@ export default function FormSubmissions() {
             variant={filterStatus === status ? "solid" : "flat"}
             color={filterStatus === status ? "primary" : "default"}
             onPress={() => setFilterStatus(status)}
+            aria-pressed={filterStatus === status}
           >
             {t(`formSubmissions.status.${status.replace(/_(.)/g, (_, c) => c.toUpperCase())}`)}
           </Button>
@@ -255,7 +257,7 @@ export default function FormSubmissions() {
 
       {/* Submissions Table */}
       <DataTable
-        ariaLabel={t('aria.tables.formSubmissions')}
+        ariaLabel={t('aria.tables.formSubmissions') || 'Form submissions table'}
         columns={columns}
         data={submissions}
         keyField="_id"
@@ -298,7 +300,7 @@ export default function FormSubmissions() {
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {selectedSubmission.formId?.fields?.map((field) => (
-                      <div
+                      <dl
                         key={field.id}
                         className={
                           field.type === "textarea" || field.type === "file"
@@ -306,19 +308,19 @@ export default function FormSubmissions() {
                             : ""
                         }
                       >
-                        <label className="text-sm font-medium text-fg-muted block mb-1">
+                        <dt className="text-sm font-medium text-fg-muted block mb-1">
                           {field.label}
                           {field.required && (
-                            <span className="text-danger ml-1">*</span>
+                            <span className="text-danger ml-1" aria-hidden="true">*</span>
                           )}
-                        </label>
-                        <div className="text-sm text-fg">
+                        </dt>
+                        <dd className="text-sm text-fg">
                           {renderFieldValue(
                             field,
                             selectedSubmission.submissionData[field.mapTo || field.label]
                           )}
-                        </div>
-                      </div>
+                        </dd>
+                      </dl>
                     ))}
                   </div>
                 </div>
@@ -345,12 +347,12 @@ export default function FormSubmissions() {
                     <h4 className="text-lg font-semibold mb-4">
                       {t('formSubmissions.reviewInfo')}
                     </h4>
-                    <div className="space-y-3">
+                    <dl className="space-y-3">
                       <div>
-                        <label className="text-sm font-medium text-fg-muted">
+                        <dt className="text-sm font-medium text-fg-muted">
                           {t('formSubmissions.colStatus')}
-                        </label>
-                        <div className="mt-1">
+                        </dt>
+                        <dd className="mt-1">
                           <Chip
                             size="sm"
                             variant="dot"
@@ -360,38 +362,38 @@ export default function FormSubmissions() {
                           >
                             {selectedSubmission.reviewStatus}
                           </Chip>
-                        </div>
+                        </dd>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-fg-muted">
+                        <dt className="text-sm font-medium text-fg-muted">
                           {t('formSubmissions.colReviewedBy')}
-                        </label>
-                        <p className="text-sm">
+                        </dt>
+                        <dd className="text-sm">
                           {selectedSubmission.reviewedBy}
-                        </p>
+                        </dd>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-fg-muted">
+                        <dt className="text-sm font-medium text-fg-muted">
                           {t('formSubmissions.reviewedAt')}
-                        </label>
-                        <p className="text-sm">
+                        </dt>
+                        <dd className="text-sm">
                           {format(
                             new Date(selectedSubmission.reviewedAt),
                             "MMM dd, yyyy HH:mm"
                           )}
-                        </p>
+                        </dd>
                       </div>
                       {selectedSubmission.reviewNotes && (
                         <div>
-                          <label className="text-sm font-medium text-fg-muted">
+                          <dt className="text-sm font-medium text-fg-muted">
                             {t('formSubmissions.reviewNotesLabel')}
-                          </label>
-                          <p className="text-sm">
+                          </dt>
+                          <dd className="text-sm">
                             {selectedSubmission.reviewNotes}
-                          </p>
+                          </dd>
                         </div>
                       )}
-                    </div>
+                    </dl>
                   </div>
                 )}
               </div>
