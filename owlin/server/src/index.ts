@@ -24,21 +24,12 @@ async function main(): Promise<void> {
   setupSocket(httpServer);
 
   // 6. Start listening
-  httpServer.listen(env.PORT, () => {
-    console.log(`
-🦉 Owlin Analytics Server v2.0.0
-   Port:     ${env.PORT}
-   Database: Turso (${env.TURSO_URL.replace(/\/\/.*@/, '//***@')})
-   Env:      ${env.NODE_ENV}
-   CORS:     ${env.CORS_ORIGINS}
-    `);
-  });
+  httpServer.listen(env.PORT);
 
   // 7. Schedule daily cleanup (runs at startup + every 24h)
   const runCleanup = async () => {
     try {
-      const result = await cleanupExpiredData();
-      console.log(`🧹 Cleanup: ${result.events} events, ${result.accessLogs} logs, ${result.errorIncidents} error incidents removed`);
+      await cleanupExpiredData();
     } catch (err) {
       console.error('Cleanup failed:', (err as Error).message);
     }
@@ -49,9 +40,7 @@ async function main(): Promise<void> {
 
   // 8. Graceful shutdown
   const shutdown = () => {
-    console.log('\n🛑 Shutting down...');
     httpServer.close(() => {
-      console.log('Server closed');
       process.exit(0);
     });
     setTimeout(() => process.exit(1), 5000);

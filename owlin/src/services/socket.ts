@@ -19,15 +19,10 @@ class SocketService {
     })
 
     this.socket.on('connect', () => {
-      console.log('[Socket] Connected:', this.socket?.id)
       // Re-register all stored listeners after (re)connect so none are missed
       this.listeners.forEach((callbacks, eventName) => {
         callbacks.forEach(cb => this.socket?.on(eventName, cb))
       })
-    })
-
-    this.socket.on('disconnect', () => {
-      console.log('[Socket] Disconnected')
     })
 
     this.socket.on('connect_error', (error) => {
