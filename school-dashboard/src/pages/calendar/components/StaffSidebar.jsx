@@ -265,7 +265,7 @@ export default function StaffSidebar({
                             };
                             handleAppointmentKeyDown(e, event);
                           }}
-                          className="p-2 rounded-lg border border-[color:var(--ok)]/30 bg-ok-bg hover:opacity-90 cursor-pointer"
+                          className="p-2 rounded-lg border border-ok/30 bg-ok-bg hover:opacity-90 cursor-pointer"
                         >
                           <div className="flex items-center justify-between">
                             <div className="text-xs font-medium text-ok">{apt.visitorName}</div>
