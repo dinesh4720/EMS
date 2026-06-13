@@ -141,6 +141,8 @@ flag after spending an afternoon reading the code.
 - **Fix:** Delete `Chat.jsx`, `ChatRealtime.jsx`, `ChatSimple.jsx`,
   `ChatWithPermissions.jsx`, `ChatWithFileUpload.jsx`. Keep only `ChatFull.jsx`
   and break it into smaller components.
+- **Status:** Resolved. The five unused variants were removed and `ChatFull.jsx`
+  was refactored into `components/`, `hooks/`, and `utils/` subdirectories.
 
 ---
 
@@ -181,39 +183,36 @@ flag after spending an afternoon reading the code.
 
 ### 7. Three.js + @react-three/fiber shipped but only used for decorations
 
-- **The imports:**
-  - `AiBlob3D.jsx` — imports `three`, `@react-three/fiber`, `@react-three/drei`
-    for an animated AI blob
-  - `SchoolBuilding3D.jsx` — same libraries for a 3D school building on the
-    login page
-- **The bundle cost:** Three.js is ~600KB minified. `@react-three/drei` adds
-  more on top. These libraries are being shipped to every user, on every page
-  load, for two decorative animations.
-- **Neither of these is a functional feature.** They exist because they look
-  impressive during development.
-- **Fix:** Delete `AiBlob3D.jsx` and `SchoolBuilding3D.jsx`. Remove `three`,
-  `@react-three/fiber`, and `@react-three/drei` from `package.json`. The login
-  page and AI assistant don't need 3D graphics.
+- **Status:** Resolved — decorative 3D components and dependencies removed.
+- **Files removed:**
+  - `AiBlob3D.jsx`
+  - `SchoolBuilding3D.jsx`
+- **Dependencies removed from `package.json`:**
+  - `three`
+  - `@react-three/fiber`
+  - `@react-three/drei`
+- **Resolution:** Both decorative 3D components were deleted and the associated
+  libraries were removed from production dependencies, reducing bundle size by
+  ~600KB+.
 
 ---
 
 ### 8. The AI assistant has 7 duplicate components + wrong vendor branding
 
-- **Files:**
+- **Status:** Resolved — duplicate components removed; branding fixed.
+- **Files (removed):**
   - `AiAssistant.jsx`
-  - `AiAssistant/AiAssistantPanel.jsx` (folder with same name as file above)
   - `AiBlob3D.jsx`
   - `AiDockablePanel.jsx`
   - `AiModal.jsx`
   - `AiOrb.jsx`
   - `AiPanelLayout.jsx`
-- **Which one is actually used:** `AiAssistant/AiAssistantPanel.jsx` (mounted
-  in `App.jsx` alongside a separate `AiAssistantPage` route)
-- **The branding problem:** `aiService.js` contains the copy
-  *"ChatGPT can make mistakes"* — copy-pasted from OpenAI's interface. The app
-  uses Groq/Gemini. This is wrong vendor branding in a product you're trying to
-  sell to schools.
-- **Fix:** Pick one AI component. Delete the other six. Fix the branding copy.
+- **Files (retained):**
+  - `AiAssistant/AiAssistantPanel.jsx` — overlay panel shell (mounted in `App.jsx`)
+  - `pages/AiAssistantPage.jsx` — full chat page route
+- **Resolution:**
+  - Removed the six duplicate/experimental AI components.
+  - Updated footer copy from "ChatGPT can make mistakes" to "School AI assistant can make mistakes. Verify important information." across all i18n locales.
 
 ---
 
@@ -522,7 +521,7 @@ flag after spending an afternoon reading the code.
 
 ### Do in first development sprint
 7. [ ] Add error boundaries around the main layout and each major page
-8. [ ] Delete 5 of 6 chat components — keep only `ChatFull.jsx`
+8. [x] Delete 5 of 6 chat components — keep only `ChatFull.jsx`
 9. [ ] Delete 6 of 7 AI components — keep one
 10. [ ] Delete StaffListRefactored.jsx and StudentOverviewRefactored.jsx
 11. [ ] Delete all `.example.jsx`, `.DESIGN.md`, `.README.md`, `.quickstart.md`

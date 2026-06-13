@@ -171,6 +171,7 @@
   min-width: 0;
 }
 .opt:hover { border-color: var(--border-strong); color: var(--fg); }
+.opt:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); border-color: var(--accent); }
 .opt.is-active {
   background: var(--accent-bg);
   border-color: var(--accent-border);
@@ -244,6 +245,16 @@
      suppresses the child .composer's `backdrop-filter` blur. The
      entrance fade lives on the .composer card instead. */
 }
+.composer-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+}
 [data-theme="dark"] .composer-overlay,
 .dark .composer-overlay {
   background: rgba(0, 0, 0, 0.5);
@@ -256,7 +267,8 @@
    too with a crisp 1px border (no backdrop-filter on the card, only on
    the nav child). Box-shadow does the lift over the scrim. */
 .composer-overlay > .composer {
-  position: static;
+  position: relative;
+  z-index: 1;
   transform: none;
   inset: auto;
   margin: 0;

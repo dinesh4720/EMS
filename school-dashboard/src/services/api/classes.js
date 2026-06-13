@@ -13,40 +13,11 @@ export const classesApi = {
 
   // Class Settings — uses properly scoped /classes/:id routes instead of separate /class-settings
   getSettings: (id) => request(`/classes/${id}/settings`),
-  updateTag: async (id, tag) => {
-    try {
-      return await request(`/classes/${id}/tag`, {
-        method: 'PUT',
-        body: JSON.stringify({ classTag: tag })
-      });
-    } catch (error) {
-      // Re-throw validation errors with enhanced information
-      if (error.status === 400) {
-        const validationError = new Error(error.message || 'Validation failed');
-        validationError.type = 'ValidationError';
-        validationError.details = error.details || error;
-        throw validationError;
-      }
-      throw error;
-    }
-  },
-  updateSubjects: async (id, subjects) => {
-    try {
-      return await request(`/classes/${id}/subjects`, {
-        method: 'PUT',
-        body: JSON.stringify({ assignedSubjects: subjects })
-      });
-    } catch (error) {
-      // Re-throw validation errors with enhanced information
-      if (error.status === 400) {
-        const validationError = new Error(error.message || 'Validation failed');
-        validationError.type = 'ValidationError';
-        validationError.details = error.details || error;
-        throw validationError;
-      }
-      throw error;
-    }
-  },
+  // [DK-847] request() now throws a normalized ApiError that already carries
+  // status + code (VALIDATION) + message + details, so the old manual re-wrap
+  // (which silently dropped error.status) is gone.
+  updateTag: (id, tag) => request(`/classes/${id}/tag`, { method: 'PUT', body: JSON.stringify({ classTag: tag }) }),
+  updateSubjects: (id, subjects) => request(`/classes/${id}/subjects`, { method: 'PUT', body: JSON.stringify({ assignedSubjects: subjects }) }),
   updateClassTeacher: (id, teacherId, { force } = {}) => request(`/classes/${id}/class-teacher`, { method: 'PUT', body: JSON.stringify({ classTeacherId: teacherId, ...(force ? { force: true } : {}) }) }),
 };
 
@@ -174,34 +145,9 @@ export const timetableApi = {
 // Teacher Assignments API
 export const teacherAssignmentsApi = {
   getAll: (teacherId) => request(`/teacher-assignments/${teacherId}`),
-  create: async (data) => {
-    try {
-      return await request('/teacher-assignments', { method: 'POST', body: JSON.stringify(data) });
-    } catch (error) {
-      // Re-throw validation errors with enhanced information
-      if (error.status === 400) {
-        const validationError = new Error(error.message || 'Validation failed');
-        validationError.type = 'ValidationError';
-        validationError.details = error.details || error;
-        throw validationError;
-      }
-      throw error;
-    }
-  },
-  update: async (id, data) => {
-    try {
-      return await request(`/teacher-assignments/${id}`, { method: 'PUT', body: JSON.stringify(data) });
-    } catch (error) {
-      // Re-throw validation errors with enhanced information
-      if (error.status === 400) {
-        const validationError = new Error(error.message || 'Validation failed');
-        validationError.type = 'ValidationError';
-        validationError.details = error.details || error;
-        throw validationError;
-      }
-      throw error;
-    }
-  },
+  // [DK-847] Normalized ApiError from request() replaces the manual 400 re-wrap.
+  create: (data) => request('/teacher-assignments', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => request(`/teacher-assignments/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id, teacherId) => request(`/teacher-assignments/${id}?teacherId=${teacherId}`, { method: 'DELETE' }),
   getAvailableTeachers: (params) => {
     const query = new URLSearchParams(params).toString();

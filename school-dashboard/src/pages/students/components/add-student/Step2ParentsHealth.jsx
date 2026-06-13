@@ -39,7 +39,7 @@ function Step2ParentsHealth({
                 </span>
                 {parents.length > 1 && (
                   <Button size="sm" variant="danger" onClick={() => removeParent(index)}>
-                    <X size={14} /> Remove
+                    <X size={14} aria-hidden /> Remove
                   </Button>
                 )}
               </div>
@@ -125,7 +125,7 @@ function Step2ParentsHealth({
                   Guardian {idx + 1}
                 </span>
                 <Button size="sm" variant="danger" onClick={() => removeParent(index)}>
-                  <X size={14} /> Remove
+                  <X size={14} aria-hidden /> Remove
                 </Button>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -202,7 +202,7 @@ function Step2ParentsHealth({
                 Sibling {idx + 1}
               </span>
               <Button size="sm" variant="danger" onClick={() => removeSibling(idx)}>
-                <X size={14} /> Remove
+                <X size={14} aria-hidden /> Remove
               </Button>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -268,7 +268,7 @@ function Step2ParentsHealth({
               "w-10 h-10 rounded-full flex items-center justify-center",
               formData.transportRequired ? "bg-primary text-white" : "bg-surface-2 text-fg-faint"
             )}>
-              <Bus size={20} />
+              <Bus size={20} aria-hidden />
             </div>
             <div>
               <span className={cn("text-sm font-medium", formData.transportRequired ? "text-[var(--accent)]" : "text-fg-muted")}>
@@ -285,7 +285,7 @@ function Step2ParentsHealth({
               "w-10 h-10 rounded-full flex items-center justify-center",
               formData.hostelRequired ? "bg-primary text-white" : "bg-surface-2 text-fg-faint"
             )}>
-              <Heart size={20} />
+              <Heart size={20} aria-hidden />
             </div>
             <div>
               <span className={cn("text-sm font-medium", formData.hostelRequired ? "text-[var(--accent)]" : "text-fg-muted")}>

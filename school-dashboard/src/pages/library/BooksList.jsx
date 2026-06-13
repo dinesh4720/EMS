@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 import AddBookModal, { BOOK_CATEGORIES } from "./AddBookModal";
 import IssueBookModal from "./IssueBookModal";
 import { useTranslation } from 'react-i18next';
-import { ConfirmDialog, EmptyState, ErrorState, SkeletonTable } from '../../components/ui';
+import { ConfirmDialog, EmptyState, ErrorState, SkeletonTable, Button as UIButton } from '../../components/ui';
 import ExportMenu from '../../components/ui/ExportMenu';
 import PrintPreviewModal from '../../components/ui/PrintPreviewModal';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
@@ -186,14 +186,13 @@ export default function BooksList() {
             filename="books-catalog"
             title="Books Catalog"
           />
-          <button
-            type="button"
-            className="btn btn--sm"
+          <UIButton
+            variant="outline"
+            size="sm"
+            icon={<Printer size={14} aria-hidden="true" />}
             onClick={() => setPrintOpen(true)}
             aria-label="Print preview"
-          >
-            <Printer size={14} aria-hidden />
-          </button>
+          />
           <Button size="sm" color="primary" startContent={<Plus size={16} />} onPress={handleAdd}>
             {t('pages.addBook')}
           </Button>
@@ -218,7 +217,7 @@ export default function BooksList() {
       ) : (
         <div className="bg-surface border border-divider rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm" role="listbox" aria-label={t('pages.books')}>
+            <table className="w-full text-sm" aria-label={t('pages.books')}>
               <thead>
                 <tr className="bg-surface-2 border-b border-divider">
                   <th scope="col" className="text-left px-4 py-3 font-medium text-fg-muted">{t('pages.title1')}</th>

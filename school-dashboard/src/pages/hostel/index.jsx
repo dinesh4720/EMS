@@ -52,7 +52,7 @@ export default function HostelPage() {
         <Breadcrumbs
           size="sm"
           items={[
-            { label: <span className="flex items-center gap-1"><Home size={14} />{t('pages.home')}</span>, href: "/" },
+            { label: <span className="flex items-center gap-1"><Home size={14} aria-hidden="true" />{t('pages.home')}</span>, href: "/" },
             { label: t('pages.hostel1'), href: "/hostel" },
             ...(tabLabel[activeTab] ? [{ label: tabLabel[activeTab] }] : []),
           ]}

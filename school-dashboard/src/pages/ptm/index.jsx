@@ -9,9 +9,8 @@ import toast from 'react-hot-toast';
 import { ptmApi, classesApi, staffApi } from '../../services/api';
 import {
   PageLayout, MinimalButton, Breadcrumbs, Card, Chip, Button, IconButton,
-  StatCard, EmptyState, ErrorState, ConfirmDialog, Modal,
+  StatCard, EmptyState, ErrorState, ConfirmDialog, Modal, Bone, SkeletonCard,
 } from '../../components/ui';
-import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { formatShortDate } from '../../utils/dateFormatter';
 import CreatePTMSessionModal from './CreatePTMSessionModal';
 import PTMSessionDetailModal from './PTMSessionDetailModal';
@@ -133,22 +132,22 @@ const PTMPage = () => {
 
             <div className="space-y-1.5 text-sm text-fg-muted">
               <div className="flex items-center gap-2">
-                <Calendar size={14} className="text-fg-faint" aria-hidden="true" />
+                <Calendar size={14} className="text-fg-muted" aria-hidden="true" />
                 {formatShortDate(session.sessionDate)}
               </div>
               <div className="flex items-center gap-2">
-                <Clock size={14} className="text-fg-faint" aria-hidden="true" />
+                <Clock size={14} className="text-fg-muted" aria-hidden="true" />
                 {session.startTime} – {session.endTime}
-                <span className="text-xs text-fg-faint">({session.slotDuration} min slots)</span>
+                <span className="text-xs text-fg-muted">({session.slotDuration} min slots)</span>
               </div>
               {session.venue && (
                 <div className="flex items-center gap-2">
-                  <MapPin size={14} className="text-fg-faint" aria-hidden="true" />
+                  <MapPin size={14} className="text-fg-muted" aria-hidden="true" />
                   {session.venue}
                 </div>
               )}
               <div className="flex items-center gap-2">
-                <Users size={14} className="text-fg-faint" aria-hidden="true" />
+                <Users size={14} className="text-fg-muted" aria-hidden="true" />
                 {slotsCount} slot{slotsCount === 1 ? '' : 's'} booked
               </div>
             </div>
@@ -161,7 +160,7 @@ const PTMPage = () => {
                     {cls.section ? ` (${cls.section})` : ''}
                   </div>
                 )}
-                {teacher && <div className="text-fg-faint truncate">{teacher.name}</div>}
+                {teacher && <div className="text-fg-muted truncate">{teacher.name}</div>}
               </div>
               <div className="flex items-center gap-1 shrink-0">
                 <IconButton
@@ -190,7 +189,24 @@ const PTMPage = () => {
 
   const renderBody = () => {
     if (loading) {
-      return <CardGridPageSkeleton title={false} cards={6} />;
+      return (
+        <div role="status" aria-busy="true" aria-label="Loading PTM sessions" className="space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={`stat-${i}`} className="bg-surface rounded-lg border border-border-token p-4 space-y-2">
+                <Bone className="h-9 w-9 rounded-lg" />
+                <Bone className="h-6 w-16" />
+              </div>
+            ))}
+          </div>
+          <div className="h-7 w-64 rounded bg-surface-2 animate-shimmer" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <SkeletonCard key={`card-${i}`} bodyLines={2} />
+            ))}
+          </div>
+        </div>
+      );
     }
     if (error) {
       return (
@@ -204,29 +220,24 @@ const PTMPage = () => {
     return (
       <div className="space-y-4">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard label="Total" value={stats.total} icon={Users} color="gray" />
-          <StatCard label="Scheduled" value={stats.scheduled} icon={Activity} color="blue" />
-          <StatCard label="Completed" value={stats.completed} icon={CheckCircle} color="green" />
-          <StatCard label="Cancelled" value={stats.cancelled} icon={XCircle} color="red" />
+          <StatCard label="Total" value={stats.total} icon={Users} color="gray" headingLevel="h2" />
+          <StatCard label="Scheduled" value={stats.scheduled} icon={Activity} color="blue" headingLevel="h2" />
+          <StatCard label="Completed" value={stats.completed} icon={CheckCircle} color="green" headingLevel="h2" />
+          <StatCard label="Cancelled" value={stats.cancelled} icon={XCircle} color="red" headingLevel="h2" />
         </div>
 
-        <div
-          role="tablist"
-          aria-label="Filter by status"
-          className="flex gap-2 flex-wrap"
-        >
+        <div className="seg" role="tablist" aria-label="Filter by status">
           {STATUS_FILTERS.map((status) => (
-            <Chip
+            <button
               key={status}
-              size="md"
-              color="neutral"
-              selected={statusFilter === status}
-              onClick={() => setStatusFilter(status)}
+              type="button"
               role="tab"
               aria-selected={statusFilter === status}
+              className={`seg__btn focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]/40 focus-visible:ring-offset-2${statusFilter === status ? ' is-active' : ''}`}
+              onClick={() => setStatusFilter(status)}
             >
               {status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
-            </Chip>
+            </button>
           ))}
         </div>
 

@@ -297,7 +297,7 @@ export default function StaffsPage() {
       )}
 
       {/* Method Selection Modal */}
-      <Modal isOpen={isMethodModalOpen} onClose={() => setIsMethodModalOpen(false)} size="2xl" classNames={{ backdrop: "bg-black/30", base: "bg-surface" }}>
+      <Modal isOpen={isMethodModalOpen} onClose={() => setIsMethodModalOpen(false)} size="2xl" classNames={{ backdrop: "bg-overlay-bg", base: "bg-surface" }}>
         <ModalContent>
           <ModalHeader className="border-b border-border-token py-4">
             <h3 className="text-lg font-medium">{t('pages.chooseRegistrationMethod')}</h3>
@@ -336,7 +336,7 @@ export default function StaffsPage() {
       </Modal>
 
       {/* Form Selection Modal */}
-      <Modal isOpen={isFormSelectModalOpen} onClose={() => { setIsFormSelectModalOpen(false); setSelectedForm(null); setRecipientEmail(''); setRecipientPhone(''); }} size="2xl" classNames={{ backdrop: "bg-black/30", base: "bg-surface" }}>
+      <Modal isOpen={isFormSelectModalOpen} onClose={() => { setIsFormSelectModalOpen(false); setSelectedForm(null); setRecipientEmail(''); setRecipientPhone(''); }} size="2xl" classNames={{ backdrop: "bg-overlay-bg", base: "bg-surface" }}>
         <ModalContent>
           <ModalHeader className="border-b border-border-token py-4">
             <h3 className="text-lg font-medium">{t('pages.sendIntakeForm')}</h3>

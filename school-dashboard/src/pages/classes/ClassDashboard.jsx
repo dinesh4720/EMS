@@ -15,7 +15,7 @@ import ClassTeacherAssignmentModal from "./components/ClassTeacherAssignmentModa
 import { toTodayDateString } from '../../utils/dateFormatter';
 import { useTranslation } from 'react-i18next';
 import { DetailPageSkeleton } from '../../components/skeletons/PageSkeletons';
-import SkeletonTable from '../../components/skeletons/SkeletonTable';
+import { SkeletonTable } from '../../components/ui/Skeleton';
 import ErrorBoundary from '../../components/ui/ErrorBoundary';
 import Alert from '../../components/ui/Alert';
 import ErrorState from '../../components/ui/ErrorState';

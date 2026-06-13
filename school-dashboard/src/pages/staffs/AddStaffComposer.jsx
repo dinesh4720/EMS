@@ -460,15 +460,25 @@ const AddStaffComposer = forwardRef(function AddStaffComposer(
   const initials = `${form.firstName?.[0] || ""}${form.lastName?.[0] || ""}`.toUpperCase();
 
   return createPortal(
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <div
       className="composer-overlay"
       role="dialog"
       aria-modal="true"
       aria-label={isCreate ? "Add a staff member" : "Edit staff"}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) handleClose();
+      onKeyDown={(e) => {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          handleClose();
+        }
       }}
     >
+      <button
+        type="button"
+        className="composer-backdrop"
+        aria-label="Close"
+        onClick={handleClose}
+      />
       <div className="composer">
           {/* Head */}
           <div className="composer__head">
@@ -717,6 +727,7 @@ const AddStaffComposer = forwardRef(function AddStaffComposer(
                       key={r.value}
                       type="button"
                       className={`opt ${form.role === r.value ? "is-active" : ""}`}
+                      aria-pressed={form.role === r.value}
                       onClick={() => set("role", r.value)}
                     >
                       <span className="opt__icon">
@@ -962,7 +973,7 @@ const AddStaffComposer = forwardRef(function AddStaffComposer(
                       )
                     }
                   >
-                    <Plus size={11} />
+                    <Plus size={11} aria-hidden />
                     Add bank, PAN, and PF details
                   </button>
                 </div>
@@ -1017,21 +1028,46 @@ const AddStaffComposer = forwardRef(function AddStaffComposer(
 
       {/* Discard-confirm */}
       {showConfirmClose && (
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Discard unsaved changes"
           style={{
             position: "fixed",
             inset: 0,
             zIndex: 10000,
-            background: "rgba(15,15,20,0.42)",
             display: "grid",
             placeItems: "center",
           }}
-          onClick={cancelClose}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") {
+              e.preventDefault();
+              cancelClose();
+            }
+          }}
         >
+          <button
+            type="button"
+            aria-label="Cancel close"
+            onClick={cancelClose}
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 0,
+              background: "rgba(15,15,20,0.42)",
+              border: "none",
+              padding: 0,
+              margin: 0,
+              cursor: "pointer",
+            }}
+          />
           <div
             role="alertdialog"
             aria-label="Discard unsaved changes"
             style={{
+              position: "relative",
+              zIndex: 1,
               width: "min(380px, calc(100% - 32px))",
               background: "var(--surface)",
               border: "1px solid var(--border)",
@@ -1039,7 +1075,6 @@ const AddStaffComposer = forwardRef(function AddStaffComposer(
               boxShadow: "var(--shadow-lg)",
               padding: 18,
             }}
-            onClick={(e) => e.stopPropagation()}
           >
             <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6 }}>
               {t("pages.unsavedChanges", "Unsaved changes")}
@@ -1175,7 +1210,7 @@ function ComposerAvatar({ previewUrl, initials, name }) {
         border: showGradient ? "none" : "1px solid var(--border)",
         display: "grid",
         placeItems: "center",
-        color: showGradient ? "white" : "var(--fg-muted)",
+        color: showGradient ? "var(--surface)" : "var(--fg-muted)",
         fontWeight: 600,
         fontSize: 18,
         letterSpacing: "-0.02em",

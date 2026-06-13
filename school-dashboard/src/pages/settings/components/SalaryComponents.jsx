@@ -146,11 +146,12 @@ export default function SalaryComponents() {
                       size="sm"
                       color="danger"
                       variant="light"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
                       onPress={() => handleRemove("earnings", item.id)}
+                      aria-label={t("pages.removeComponent")}
                       title={t("pages.removeComponent")}
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={14} aria-hidden="true" />
                     </Button>
                   </div>
                 ))}
@@ -209,11 +210,12 @@ export default function SalaryComponents() {
                       size="sm"
                       color="danger"
                       variant="light"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
                       onPress={() => handleRemove("deductions", item.id)}
+                      aria-label={t("pages.removeComponent")}
                       title={t("pages.removeComponent")}
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={14} aria-hidden="true" />
                     </Button>
                   </div>
                 ))}

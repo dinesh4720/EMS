@@ -135,7 +135,7 @@ export default function HomeworkDetailModal({ homeworkId, onClose, onDataChanged
     <div role="status" aria-busy="true" aria-live="polite" className="space-y-4">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[...Array(4)].map((_, i) => (
-          <Skeleton key={i} variant="rect" className="h-20 w-full" />
+          <Skeleton key={`hw-skel-${i}`} variant="rect" className="h-20 w-full" />
         ))}
       </div>
       <Skeleton variant="text" className="h-4 w-1/3" />
@@ -185,7 +185,7 @@ export default function HomeworkDetailModal({ homeworkId, onClose, onDataChanged
             <div className="space-y-1.5">
               {hw.attachments.map((att, i) => (
                 <a
-                  key={i}
+                  key={att.url || `attachment-${i}`}
                   href={att.url}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -256,7 +256,7 @@ export default function HomeworkDetailModal({ homeworkId, onClose, onDataChanged
         )}
 
         <div>
-          <p className="text-sm font-semibold text-fg mb-3">Submissions</p>
+          <h3 className="text-sm font-semibold text-fg mb-3">Submissions</h3>
           {!hw?.submissions?.length ? (
             <EmptyState icon={Clock} size="sm" title="No submissions yet" />
           ) : (
@@ -268,7 +268,7 @@ export default function HomeworkDetailModal({ homeworkId, onClose, onDataChanged
                 const isEditingThis = grading?.studentId === (student?._id || student);
 
                 return (
-                  <Card key={i} padding="sm" className="bg-surface-2">
+                  <Card key={sub._id || student?._id || `submission-${i}`} padding="sm" className="bg-surface-2">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-fg truncate">

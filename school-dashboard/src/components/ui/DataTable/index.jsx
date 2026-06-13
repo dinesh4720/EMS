@@ -4,7 +4,7 @@ import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, Inbox, RefreshCw } from
 import { cn } from "../../../utils/cn";
 import Checkbox from "../Checkbox";
 import Button from "../Button";
-import SkeletonTable from "../../skeletons/SkeletonTable";
+import { SkeletonTable } from "../Skeleton";
 import Pagination from "../../common/Pagination";
 import useDataTable from "./useDataTable";
 import { BulkActionBar, DataTableToolbar } from "./DataTableToolbar";

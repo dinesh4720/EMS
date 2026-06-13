@@ -15,6 +15,7 @@ import { ThemeProvider as NextThemesProvider } from 'next-themes';
 import { BrowserRouter } from 'react-router-dom';
 import toast, { Toaster, useToasterStore } from 'react-hot-toast';
 import { useEffect } from 'react';
+import { MotionConfig } from 'framer-motion';
 import { queryClient } from './lib/queryClient';
 
 const TOAST_LIMIT = 3;
@@ -35,13 +36,21 @@ export default function Providers({ children }) {
     <HelmetProvider>
       <QueryClientProvider client={queryClient}>
         <HeroUIProvider>
-          {/* TODO: Phase 4d · Dark mode pass — once every screen is audited
-           * for contrast/legibility in dark mode, restore enableSystem and
-           * ship a real toggle in the topbar. Until then we force light so
-           * the new design lands consistently regardless of OS preference. */}
-          <NextThemesProvider attribute="class" defaultTheme="light" enableSystem={false}>
+          {/* Dark mode (Phase 4d, shipped): next-themes is the single source of
+           * truth — it toggles `.dark` on <html>, which flips every design token
+           * in tokens.css. `defaultTheme="system"` respects the OS preference on
+           * first load; the topbar Sun/Moon toggle still wins and persists.
+           * `disableTransitionOnChange` avoids a token-transition flash on switch. */}
+          <NextThemesProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
             <BrowserRouter>
-              {children}
+              <MotionConfig reducedMotion="user">
+                {children}
+              </MotionConfig>
               <ToastLimiter />
               <Toaster
                 position="top-center"
@@ -54,19 +63,23 @@ export default function Providers({ children }) {
                    * and role="alert" (error) — both announce via the ARIA live region. */
                   duration: 3000,
                   className: 'ds-toast',
-                  ariaProps: { role: 'status', 'aria-live': 'polite' },
+                  ariaProps: { role: 'status', 'aria-live': 'polite', 'aria-atomic': 'true' },
                   success: {
                     duration: 3000,
                     className: 'ds-toast ds-toast--success',
                     iconTheme: { primary: 'var(--ok)', secondary: 'var(--bg)' },
+                    ariaProps: { role: 'status', 'aria-live': 'polite', 'aria-atomic': 'true' },
                   },
                   error: {
                     duration: 4500,
                     className: 'ds-toast ds-toast--error',
-                    ariaProps: { role: 'alert', 'aria-live': 'assertive' },
+                    ariaProps: { role: 'alert', 'aria-live': 'assertive', 'aria-atomic': 'true' },
                     iconTheme: { primary: 'var(--danger)', secondary: 'var(--bg)' },
                   },
-                  loading: { className: 'ds-toast ds-toast--info' },
+                  loading: {
+                    className: 'ds-toast ds-toast--info',
+                    ariaProps: { role: 'status', 'aria-live': 'polite', 'aria-atomic': 'true' },
+                  },
                 }}
               />
             </BrowserRouter>

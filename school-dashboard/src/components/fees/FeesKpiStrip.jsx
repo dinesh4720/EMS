@@ -25,6 +25,7 @@ export default function FeesKpiStrip({
         className={`fees-kpi__cell${
           activeFilter === "paid" ? " is-active" : ""
         }`}
+        aria-pressed={activeFilter === "paid"}
         onClick={() => onFilterChange?.(activeFilter === "paid" ? "all" : "paid")}
       >
         <span className="fees-kpi__label">Collected today</span>
@@ -39,6 +40,7 @@ export default function FeesKpiStrip({
         className={`fees-kpi__cell${
           activeFilter === "pending" ? " is-active" : ""
         }`}
+        aria-pressed={activeFilter === "pending"}
         onClick={() =>
           onFilterChange?.(activeFilter === "pending" ? "all" : "pending")
         }
@@ -55,6 +57,7 @@ export default function FeesKpiStrip({
         className={`fees-kpi__cell${
           activeFilter === "overdue" ? " is-active" : ""
         }`}
+        aria-pressed={activeFilter === "overdue"}
         onClick={() =>
           onFilterChange?.(activeFilter === "overdue" ? "all" : "overdue")
         }

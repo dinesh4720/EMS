@@ -275,6 +275,7 @@ export default function DataCleanupSettings() {
                       isSelected={isSelected}
                       onChange={() => toggleCategory(cat.key)}
                       size="sm"
+                      aria-label={`Select ${cat.label} (${count} records)`}
                     />
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
@@ -347,6 +348,7 @@ export default function DataCleanupSettings() {
                 </p>
                 <Input
                   placeholder="REMOVE ALL DATA"
+                  aria-label="Type REMOVE ALL DATA to confirm"
                   value={confirmText}
                   onValueChange={setConfirmText}
                   variant="bordered"

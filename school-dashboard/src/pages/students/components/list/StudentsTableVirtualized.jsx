@@ -102,7 +102,7 @@ function StudentsTableVirtualized({
                 <thead className="sticky top-0 z-30">
                     <tr>
                         {/* Select-all checkbox */}
-                        <th className="bg-surface border-b border-border-token text-center w-12 min-w-12">
+                        <th scope="col" className="bg-surface border-b border-border-token text-center w-12 min-w-12">
                             <Checkbox
                                 size="md"
                                 checked={allSelected}
@@ -122,6 +122,7 @@ function StudentsTableVirtualized({
 
                         {/* Student name (sticky left) */}
                         <th
+                            scope="col"
                             className="bg-surface text-fg-muted font-medium text-xs uppercase tracking-wider h-12 border-b border-border-token select-none pl-3 pr-3 sticky left-0 z-20 cursor-pointer hover:bg-surface-2/50 w-[40%] lg:w-[220px]"
                             onClick={() =>
                                 setSortDescriptor((prev) => ({
@@ -137,8 +138,8 @@ function StudentsTableVirtualized({
                                 STUDENT
                                 {sortDescriptor.column === "name" && (
                                     sortDescriptor.direction === "ascending"
-                                        ? <ChevronUp size={12} className="text-fg-faint" />
-                                        : <ChevronDown size={12} className="text-fg-faint" />
+                                        ? <ChevronUp size={12} className="text-fg-faint" aria-hidden />
+                                        : <ChevronDown size={12} className="text-fg-faint" aria-hidden />
                                 )}
                             </div>
                         </th>
@@ -148,6 +149,7 @@ function StudentsTableVirtualized({
                             .filter((col) => col.key !== "name" && col.key !== "actions")
                             .map((column) => (
                                 <th
+                                    scope="col"
                                     key={column.key}
                                     className={`bg-surface text-fg-muted font-medium text-xs uppercase tracking-wider h-12 border-b border-border-token select-none px-3 text-left ${
                                         column.key === "class"
@@ -173,8 +175,8 @@ function StudentsTableVirtualized({
                                         {column.key === "class" &&
                                             sortDescriptor.column === "class" && (
                                                 sortDescriptor.direction === "ascending"
-                                                    ? <ChevronUp size={12} className="text-fg-faint" />
-                                                    : <ChevronDown size={12} className="text-fg-faint" />
+                                                    ? <ChevronUp size={12} className="text-fg-faint" aria-hidden />
+                                                    : <ChevronDown size={12} className="text-fg-faint" aria-hidden />
                                             )}
                                     </div>
                                 </th>
@@ -182,7 +184,7 @@ function StudentsTableVirtualized({
 
                         {/* Actions column header */}
                         {visibleColumnsArray.some((col) => col.key === "actions") && (
-                            <th className="bg-surface text-fg-muted font-medium text-xs uppercase tracking-wider h-12 border-b border-border-token select-none pr-6 text-right w-[60px]">
+                            <th scope="col" className="bg-surface text-fg-muted font-medium text-xs uppercase tracking-wider h-12 border-b border-border-token select-none pr-6 text-right w-[60px]">
                                 ACTIONS
                             </th>
                         )}

@@ -12,6 +12,7 @@ import {
 import { GraduationCap } from "lucide-react";
 import { useChartTheme, CHART_COLORS } from "../../../utils/chartTheme";
 import ChartCard from "../../ui/ChartCard";
+import { useChartAnimation } from "../../../hooks/useChartAnimation";
 
 const compactNumber = new Intl.NumberFormat("en-IN", {
   notation: "compact",
@@ -32,6 +33,7 @@ function EnrollmentTooltip({ active, payload, label }) {
 
 export default function EnrollmentStatsWidget({ students = [], classes = [], loading = false }) {
   const chart = useChartTheme();
+  const animation = useChartAnimation();
 
   const data = useMemo(() => {
     const activeStudents = (students || []).filter((s) => (s.status || "active") === "active");
@@ -98,9 +100,9 @@ export default function EnrollmentStatsWidget({ students = [], classes = [], loa
             tickFormatter={(value) => compactNumber.format(value)}
           />
           <Tooltip content={<EnrollmentTooltip />} />
-          <Bar dataKey="count" name="Students" radius={[4, 4, 0, 0]} barSize={22}>
-            {data.map((_, i) => (
-              <Cell key={`cell-${i}`} fill={colors[i % colors.length]} />
+          <Bar dataKey="count" name="Students" radius={[4, 4, 0, 0]} barSize={22} {...animation}>
+            {data.map((d, i) => (
+              <Cell key={`cell-${d.name || i}`} fill={colors[i % colors.length]} />
             ))}
           </Bar>
         </BarChart>

@@ -122,9 +122,9 @@ function DocumentUploadField({ label, file, onUpload, onRemove, inputRef, accept
       >
         <div className="flex items-center gap-3 min-w-0 flex-1">
           {file ? (
-            <CheckCircle size={20} className="text-ok flex-shrink-0" />
+            <CheckCircle size={20} className="text-ok flex-shrink-0" aria-hidden />
           ) : (
-            <FileText size={20} className="text-fg-faint flex-shrink-0" />
+            <FileText size={20} className="text-fg-faint flex-shrink-0" aria-hidden />
           )}
           <div className="min-w-0 flex-1">
             {isProcessing ? (
@@ -148,14 +148,14 @@ function DocumentUploadField({ label, file, onUpload, onRemove, inputRef, accept
           <Button
             size="sm"
             variant="ghost"
-            icon={<X size={14} />}
+            icon={<X size={14} aria-hidden />}
             onClick={(e) => {
               e.stopPropagation();
               onRemove();
             }}
           />
         ) : (
-          <Upload size={16} className="text-fg-faint flex-shrink-0" />
+          <Upload size={16} className="text-fg-faint flex-shrink-0" aria-hidden />
         )}
       </div>
       <input ref={inputRef} type="file" accept={accept} className="hidden" onChange={handleFileChange} />
@@ -190,7 +190,7 @@ function MultiDocumentUploadField({ label, description, files, onUpload, onRemov
           className="border border-solid border-border-token rounded-lg p-4 flex items-center justify-center gap-2 cursor-pointer hover:bg-surface-2 transition-colors"
           onClick={() => inputRef.current?.click()}
         >
-          <Upload size={14} className="text-fg-muted" />
+          <Upload size={14} className="text-fg-muted" aria-hidden />
           <span className="text-sm text-fg-muted">{t('pages.uploadAdditionalDocuments')}</span>
         </div>
       )}

@@ -445,8 +445,8 @@ export default function CommunicationSettings() {
                 <p className="text-xs text-fg-muted">{t('pages.manageSmsAndEmailTemplates')}</p>
               </div>
             </div>
-            <button onClick={() => toast('Template creation coming soon')} className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-xs font-medium hover:bg-[var(--accent-hover)] transition-colors shadow-sm">
-              <Plus size={16} />
+            <button onClick={() => toast('Template creation coming soon')} className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-xs font-medium hover:bg-[var(--accent-hover)] transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,var(--color-primary))] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]">
+              <Plus size={16} aria-hidden="true" />
               <span>{t('pages.addTemplate')}</span>
             </button>
           </div>
@@ -466,8 +466,8 @@ export default function CommunicationSettings() {
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                   {searchQuery && (
-                    <button type="button" aria-label="Clear search" onClick={() => setSearchQuery("")} className="p-0.5 hover:bg-surface-2 rounded cursor-pointer">
-                      <X size={14} className="text-fg-faint" />
+                    <button type="button" aria-label="Clear search" onClick={() => setSearchQuery("")} className="inline-flex items-center justify-center min-h-[28px] min-w-[28px] hover:bg-surface-2 rounded cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,var(--color-primary))]">
+                      <X size={14} className="text-fg-faint" aria-hidden="true" />
                     </button>
                   )}
                 </div>
@@ -536,8 +536,8 @@ export default function CommunicationSettings() {
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">
-                        <button type="button" aria-label="Edit template" onClick={() => toast('Template editing coming soon')} className="p-2 bg-transparent rounded-lg border border-transparent hover:border-primary hover:bg-[var(--accent-bg)] dark:hover:bg-[var(--accent-bg)] transition-all duration-200 cursor-pointer text-fg-faint hover:text-primary">
-                          <Edit size={16} />
+                        <button type="button" aria-label="Edit template" onClick={() => toast('Template editing coming soon')} className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] bg-transparent rounded-lg border border-transparent hover:border-primary hover:bg-[var(--accent-bg)] dark:hover:bg-[var(--accent-bg)] transition-all duration-200 cursor-pointer text-fg-faint hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,var(--color-primary))]">
+                          <Edit size={16} aria-hidden="true" />
                         </button>
                       </div>
                     </TableCell>

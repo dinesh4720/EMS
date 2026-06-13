@@ -122,7 +122,7 @@ function NpsSurveyModal() {
                   <div className="flex flex-wrap gap-2 justify-center" data-testid="nps-score-buttons">
                     {Array.from({ length: 11 }, (_, i) => (
                       <button
-                        key={i}
+                        key={`nps-score-${i}`}
                         type="button"
                         onClick={() => setScore(i)}
                         aria-label={`Score ${i}`}

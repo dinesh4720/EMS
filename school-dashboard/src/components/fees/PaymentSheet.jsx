@@ -191,11 +191,13 @@ export default function PaymentSheet({
 
         <div className="fees-sheet__body">
           <div className="fees-sheet__field">
-            <label className="fees-sheet__label">Student</label>
+            <label className="fees-sheet__label" htmlFor="payment-student">Student</label>
             <select
+              id="payment-student"
               value={studentId}
               onChange={(e) => setStudentId(e.target.value)}
               aria-invalid={errors.studentId ? "true" : undefined}
+              aria-describedby={errors.studentId ? "payment-student-error" : undefined}
               required
             >
               <option value="">— Select a student —</option>
@@ -206,14 +208,15 @@ export default function PaymentSheet({
               ))}
             </select>
             {errors.studentId && (
-              <span className="fees-sheet__error">{errors.studentId}</span>
+              <span id="payment-student-error" className="fees-sheet__error">{errors.studentId}</span>
             )}
           </div>
 
           <div className="fees-sheet__field-row">
             <div className="fees-sheet__field">
-              <label className="fees-sheet__label">Fee head (optional)</label>
+              <label className="fees-sheet__label" htmlFor="payment-fee-head">Fee head (optional)</label>
               <input
+                id="payment-fee-head"
                 type="text"
                 placeholder="Tuition · Transport · …"
                 value={feeHead}
@@ -221,8 +224,9 @@ export default function PaymentSheet({
               />
             </div>
             <div className="fees-sheet__field">
-              <label className="fees-sheet__label">Amount (₹)</label>
+              <label className="fees-sheet__label" htmlFor="payment-amount">Amount (₹)</label>
               <input
+                id="payment-amount"
                 type="number"
                 min="1"
                 step="1"
@@ -231,21 +235,24 @@ export default function PaymentSheet({
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 aria-invalid={errors.amount ? "true" : undefined}
+                aria-describedby={errors.amount ? "payment-amount-error" : undefined}
                 required
               />
               {errors.amount && (
-                <span className="fees-sheet__error">{errors.amount}</span>
+                <span id="payment-amount-error" className="fees-sheet__error">{errors.amount}</span>
               )}
             </div>
           </div>
 
           <div className="fees-sheet__field-row">
             <div className="fees-sheet__field">
-              <label className="fees-sheet__label">Mode</label>
+              <label className="fees-sheet__label" htmlFor="payment-mode">Mode</label>
               <select
+                id="payment-mode"
                 value={mode}
                 onChange={(e) => setMode(e.target.value)}
                 aria-invalid={errors.paymentMode ? "true" : undefined}
+                aria-describedby={errors.paymentMode ? "payment-mode-error" : undefined}
               >
                 {PAYMENT_MODE_VALUES.map((m) => (
                   <option key={m} value={m}>
@@ -255,8 +262,9 @@ export default function PaymentSheet({
               </select>
             </div>
             <div className="fees-sheet__field">
-              <label className="fees-sheet__label">Payment date</label>
+              <label className="fees-sheet__label" htmlFor="payment-date">Payment date</label>
               <input
+                id="payment-date"
                 type="date"
                 value={paymentDate}
                 onChange={(e) => setPaymentDate(e.target.value)}
@@ -267,23 +275,26 @@ export default function PaymentSheet({
 
           {["online", "card", "upi", "bank_transfer"].includes(mode) && (
             <div className="fees-sheet__field">
-              <label className="fees-sheet__label">Transaction ID</label>
+              <label className="fees-sheet__label" htmlFor="payment-transaction-id">Transaction ID</label>
               <input
+                id="payment-transaction-id"
                 type="text"
                 placeholder="Required for online / card / UPI / bank transfer"
                 value={transactionId}
                 onChange={(e) => setTransactionId(e.target.value)}
                 aria-invalid={errors.transactionId ? "true" : undefined}
+                aria-describedby={errors.transactionId ? "payment-transaction-id-error" : undefined}
               />
               {errors.transactionId && (
-                <span className="fees-sheet__error">{errors.transactionId}</span>
+                <span id="payment-transaction-id-error" className="fees-sheet__error">{errors.transactionId}</span>
               )}
             </div>
           )}
 
           <div className="fees-sheet__field">
-            <label className="fees-sheet__label">Note (optional)</label>
+            <label className="fees-sheet__label" htmlFor="payment-note">Note (optional)</label>
             <input
+              id="payment-note"
               type="text"
               placeholder="Receipt remark"
               value={note}

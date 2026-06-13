@@ -5,7 +5,7 @@
  */
 
 .frosted-overlay--side {
-  width: min(480px, calc(100vw - 16px));
+  width: min(480px, calc(100vw - var(--sp-4)));
   max-height: 100vh;
   height: 100vh;
   border-radius: 0;
@@ -26,26 +26,26 @@
   gap: 1px;
   background: var(--divider);
   border: 1px solid var(--border-token);
-  border-radius: 12px;
+  border-radius: var(--r-xl);
   overflow: hidden;
 }
 .calendar-month__header {
   background: var(--surface-2);
-  padding: 8px 12px;
-  font-size: 11px;
+  padding: var(--sp-2) var(--sp-3);
+  font-size: var(--fs-11);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--fg-subtle);
-  font-weight: 520;
+  font-weight: var(--fw-medium);
 }
 .calendar-month__cell {
   background: var(--surface);
   min-height: 96px;
-  padding: 6px 8px;
+  padding: 6px var(--sp-2);
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--sp-1);
   transition: background 100ms ease;
 }
 .calendar-month__cell:hover {
@@ -58,27 +58,27 @@
   opacity: 0.45;
 }
 .calendar-month__date {
-  font-size: 12px;
+  font-size: var(--fs-12);
   color: var(--fg-muted);
   font-variant-numeric: tabular-nums;
-  font-weight: 520;
+  font-weight: var(--fw-medium);
 }
 .calendar-month__cell.is-today .calendar-month__date {
   color: var(--accent);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
 }
 
 /* ── Event pills inside grid ──────────────────────────────────────────────── */
 .calendar-event {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--sp-1);
   padding: 2px 6px;
-  border-radius: 6px;
-  font-size: 11px;
+  border-radius: var(--r-md);
+  font-size: var(--fs-11);
   background: var(--accent-bg);
   color: var(--accent);
-  font-weight: 520;
+  font-weight: var(--fw-medium);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -92,10 +92,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 12px 0;
+  gap: var(--sp-3);
+  padding: var(--sp-3) 0;
   border-bottom: 1px solid var(--divider);
-  margin-bottom: 16px;
+  margin-bottom: var(--sp-4);
 }
 
 @media (max-width: 767px) {

@@ -116,7 +116,7 @@ const RefundListRow = forwardRef(function RefundListRow(
       </div>
       <div className="col gap-1" style={{ alignItems: "flex-end", flexShrink: 0 }}>
         <span className={`status status--${tone}`}>
-          <span className="dot" />
+          <span className="dot" aria-hidden="true" />
           {status}
         </span>
         {refund.refundDate && (

@@ -241,7 +241,7 @@ export default function StudentForm({
               variant="outline"
               onClick={handlePrev}
               className="border-border-token text-fg font-medium"
-              icon={<ArrowLeft size={12} />}
+              icon={<ArrowLeft size={12} aria-hidden />}
             >
               {t('common.back', 'Back')}
             </Button>
@@ -252,7 +252,7 @@ export default function StudentForm({
             onClick={step === 3 ? handleSubmit : handleNext}
             loading={isSubmitting}
             className="font-medium whitespace-nowrap"
-            icon={step === 3 ? null : <ArrowRight size={12} />}
+            icon={step === 3 ? null : <ArrowRight size={12} aria-hidden />}
             iconPosition="right"
           >
             {step === 3

@@ -89,11 +89,11 @@ export default function StudentsBulkModals({
     return (
         <>
             {/* ── Bulk Action Confirm Modal ─────────────────────────────────── */}
-            <Modal isOpen={isBulkActionOpen} onClose={onBulkActionClose}>
-                <Modal.Header className="flex flex-col gap-1">
+            <Modal isOpen={isBulkActionOpen} onClose={onBulkActionClose} aria-labelledby="bulk-action-title">
+                <Modal.Header id="bulk-action-title" className="flex flex-col gap-1">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-[var(--accent-bg)] rounded-lg">
-                            <AlertTriangle size={24} className="text-[var(--accent)]" />
+                            <AlertTriangle size={24} className="text-[var(--accent)]" aria-hidden />
                         </div>
                         <span>{t("pages.confirmAction1")}</span>
                     </div>
@@ -125,8 +125,8 @@ export default function StudentsBulkModals({
                         </p>
                     )}
                     {isBulkSubmitting && (
-                        <div className="mt-3 flex items-center gap-2 text-sm text-fg-muted">
-                            <div className="w-4 h-4 border-2 border-border-token border-t-[var(--accent)] rounded-full animate-spin shrink-0" />
+                        <div className="mt-3 flex items-center gap-2 text-sm text-fg-muted" aria-live="polite">
+                            <div className="w-4 h-4 border-2 border-border-token border-t-[var(--accent)] rounded-full animate-spin shrink-0" aria-hidden />
                             Processing {selectedCount} student{selectedCount !== 1 ? "s" : ""}…
                         </div>
                     )}
@@ -159,8 +159,8 @@ export default function StudentsBulkModals({
             </Modal>
 
             {/* ── Promote Modal ─────────────────────────────────────────────── */}
-            <Modal isOpen={isPromoteOpen} onClose={onPromoteClose}>
-                <Modal.Header>{t("pages.promoteStudents")}</Modal.Header>
+            <Modal isOpen={isPromoteOpen} onClose={onPromoteClose} aria-labelledby="promote-title">
+                <Modal.Header id="promote-title">{t("pages.promoteStudents")}</Modal.Header>
                 <Modal.Body>
                     <p className="mb-4">
                         Review the promotion details for{" "}
@@ -182,7 +182,7 @@ export default function StudentsBulkModals({
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <ArrowRight size={16} className="text-fg-faint" />
+                                    <ArrowRight size={16} className="text-fg-faint" aria-hidden />
                                     <div className="text-right">
                                         <p className="font-semibold text-[var(--ok)]">
                                             {student.nextClass || "Unable to calculate"}
@@ -196,7 +196,7 @@ export default function StudentsBulkModals({
                     {promotionPreview.some((s) => !s.nextClass) && (
                         <div className="mt-4 p-3 bg-[var(--warn-bg)] border border-[var(--warn)]/20 rounded-lg">
                             <p className="text-sm text-[var(--warn)]">
-                                <AlertTriangle size={14} className="inline mr-1" />
+                                <AlertTriangle size={14} className="inline mr-1" aria-hidden />
                                 Some students cannot be promoted automatically. Please check
                                 the list above.
                             </p>
@@ -235,8 +235,8 @@ export default function StudentsBulkModals({
             </Modal>
 
             {/* ── Bulk Message Modal ────────────────────────────────────────── */}
-            <Modal isOpen={isReminderOpen} onClose={onReminderClose}>
-                <Modal.Header>{t("pages.sendBulkMessageToParents")}</Modal.Header>
+            <Modal isOpen={isReminderOpen} onClose={onReminderClose} aria-labelledby="reminder-title">
+                <Modal.Header id="reminder-title">{t("pages.sendBulkMessageToParents")}</Modal.Header>
                 <Modal.Body>
                     <p className="text-fg-muted text-sm mb-2">
                         This will send a notification to the parents of{" "}
@@ -296,11 +296,11 @@ export default function StudentsBulkModals({
             />
 
             {/* ── Bulk Delete Confirmation Modal ────────────────────────────── */}
-            <Modal isOpen={isBulkDeleteOpen} onClose={onBulkDeleteClose} size="md">
-                <Modal.Header className="flex flex-col gap-1">
+            <Modal isOpen={isBulkDeleteOpen} onClose={onBulkDeleteClose} size="md" aria-labelledby="bulk-delete-title">
+                <Modal.Header id="bulk-delete-title" className="flex flex-col gap-1">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-[var(--danger-bg)] rounded-lg">
-                            <AlertTriangle size={24} className="text-[var(--danger)]" />
+                            <AlertTriangle size={24} className="text-[var(--danger)]" aria-hidden />
                         </div>
                         <span>Delete {bulkDeleteStudents.length} Student{bulkDeleteStudents.length !== 1 ? "s" : ""}?</span>
                     </div>
@@ -315,7 +315,7 @@ export default function StudentsBulkModals({
                     <div className="max-h-52 overflow-y-auto rounded-lg border border-[var(--danger)]/20 bg-[var(--danger-bg)]/40 divide-y divide-[var(--danger)]/10">
                         {bulkDeleteStudents.map((student) => (
                             <div key={student.id} className="flex items-center gap-2 px-3 py-2">
-                                <Trash2 size={12} className="text-[var(--danger)] shrink-0" />
+                                <Trash2 size={12} className="text-[var(--danger)] shrink-0" aria-hidden />
                                 <span className="text-sm font-medium text-fg">{student.name}</span>
                                 {student.class && (
                                     <span className="text-xs text-fg-muted ml-auto">{student.class}</span>
@@ -333,7 +333,7 @@ export default function StudentsBulkModals({
                         size="sm"
                         loading={isBulkDeleting}
                         disabled={isBulkDeleting}
-                        icon={!isBulkDeleting && <Trash2 size={16} />}
+                        icon={!isBulkDeleting && <Trash2 size={16} aria-hidden />}
                         onClick={async () => {
                             setIsBulkDeleting(true);
                             try {
@@ -352,11 +352,11 @@ export default function StudentsBulkModals({
             </Modal>
 
             {/* ── Delete Confirmation Modal ─────────────────────────────────── */}
-            <Modal isOpen={isDeleteOpen} onClose={onDeleteClose}>
-                <Modal.Header className="flex flex-col gap-1">
+            <Modal isOpen={isDeleteOpen} onClose={onDeleteClose} aria-labelledby="delete-title">
+                <Modal.Header id="delete-title" className="flex flex-col gap-1">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-[var(--danger-bg)] rounded-lg">
-                            <AlertTriangle size={24} className="text-[var(--danger)]" />
+                            <AlertTriangle size={24} className="text-[var(--danger)]" aria-hidden />
                         </div>
                         <span>{t("pages.deleteStudent1")}</span>
                     </div>
@@ -426,7 +426,7 @@ export default function StudentsBulkModals({
                                 setIsDeleting(false);
                             }
                         }}
-                        icon={<Trash2 size={16} />}
+                        icon={<Trash2 size={16} aria-hidden />}
                     >
                         Delete Student
                     </Button>
@@ -434,11 +434,11 @@ export default function StudentsBulkModals({
             </Modal>
 
             {/* ── Individual Status-Change Confirmation Modal ───────────────── */}
-            <Modal isOpen={isStatusChangeOpen} onClose={onStatusChangeClose}>
-                <Modal.Header className="flex flex-col gap-1">
+            <Modal isOpen={isStatusChangeOpen} onClose={onStatusChangeClose} aria-labelledby="status-change-title">
+                <Modal.Header id="status-change-title" className="flex flex-col gap-1">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-[var(--accent-bg)] rounded-lg">
-                            <AlertTriangle size={24} className="text-[var(--accent)]" />
+                            <AlertTriangle size={24} className="text-[var(--accent)]" aria-hidden />
                         </div>
                         <span>{statusChangeData.action}</span>
                     </div>

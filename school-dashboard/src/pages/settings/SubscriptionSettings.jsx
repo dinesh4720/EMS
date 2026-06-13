@@ -209,7 +209,7 @@ export default function SubscriptionSettings() {
           <Skeleton variant="text" className="h-5 w-32" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
             {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} variant="rect" className="h-48" />
+              <Skeleton key={`plan-skel-${i}`} variant="rect" className="h-48" />
             ))}
           </div>
         </Card>
@@ -217,7 +217,7 @@ export default function SubscriptionSettings() {
           <Skeleton variant="text" className="h-5 w-36 mb-4" />
           <div className="space-y-3">
             {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} variant="rect" className="h-10" />
+              <Skeleton key={`detail-skel-${i}`} variant="rect" className="h-10" />
             ))}
           </div>
         </Card>

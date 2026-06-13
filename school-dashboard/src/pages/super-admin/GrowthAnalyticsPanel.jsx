@@ -19,8 +19,8 @@ const RISK_CHIP_COLOR = {
 };
 
 const TREND_ICON = {
-  improving: <TrendingUp size={14} className="text-emerald-500" aria-hidden="true" />,
-  declining: <TrendingDown size={14} className="text-red-500" aria-hidden="true" />,
+  improving: <TrendingUp size={14} className="text-[var(--ok)]" aria-hidden="true" />,
+  declining: <TrendingDown size={14} className="text-[var(--danger)]" aria-hidden="true" />,
   stable: <Minus size={14} className="text-fg-faint" aria-hidden="true" />,
 };
 
@@ -40,7 +40,7 @@ function FunnelBar({ label, value, max }) {
         aria-valuemax={max}
       >
         <div
-          className="h-2 rounded-full bg-blue-500 transition-all dark:bg-blue-400"
+          className="h-2 rounded-full bg-[var(--accent)] transition-all"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -66,7 +66,7 @@ export default function GrowthAnalyticsPanel() {
       setReport(growthData);
       setFunnel(funnelData);
     } catch (err) {
-      setError(err.message || 'Failed to load growth analytics');
+      setError(err.message || t('pages.failedToLoadGrowthAnalytics'));
     } finally {
       setLoading(false);
     }
@@ -97,7 +97,7 @@ export default function GrowthAnalyticsPanel() {
             icon={BarChart3}
             size="sm"
             title={t('pages.noFunnelDataAvailable')}
-            description="Activation data will appear once schools start adopting features."
+            description={t('pages.funnelEmptyDescription')}
           />
         ) : (
           <div className="space-y-3">
@@ -114,7 +114,7 @@ export default function GrowthAnalyticsPanel() {
             {t('pages.schoolGrowthScores')}
           </h2>
           <Button variant="outline" size="sm" onClick={load} loading={loading}>
-            Refresh
+            {t('common.refresh') || 'Refresh'}
           </Button>
         </div>
 
@@ -126,7 +126,7 @@ export default function GrowthAnalyticsPanel() {
           <EmptyState
             icon={BarChart3}
             title={t('pages.noGrowthDataAvailable')}
-            description="School-level growth metrics will appear here once usage is tracked."
+            description={t('pages.growthEmptyDescription')}
           />
         ) : (
           <div className="overflow-x-auto">
@@ -179,7 +179,7 @@ export default function GrowthAnalyticsPanel() {
                       {school.isFullyActivated ? (
                         <Chip size="sm" color="success">{t('pages.yes1')}</Chip>
                       ) : (
-                        <span className="text-xs text-fg-faint">No</span>
+                        <span className="text-xs text-fg-faint">{t('pages.no')}</span>
                       )}
                     </td>
                   </tr>

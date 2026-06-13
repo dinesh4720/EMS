@@ -1,6 +1,7 @@
 import { forwardRef } from "react";
 import PropTypes from "prop-types";
 import { cn } from "../../utils/cn";
+import { useIconButtonA11yWarning } from "../../utils/a11y";
 
 const SIZE_STYLES = {
   sm: "h-7 w-7 rounded-md",
@@ -26,6 +27,7 @@ const IconButton = forwardRef(function IconButton(
     icon,
     children,
     "aria-label": ariaLabel,
+    "aria-labelledby": ariaLabelledBy,
     variant = "ghost",
     size = "md",
     disabled = false,
@@ -36,15 +38,25 @@ const IconButton = forwardRef(function IconButton(
   ref
 ) {
   const content = icon ?? children;
+  const isIconOnly = !children && Boolean(icon);
+
+  useIconButtonA11yWarning("IconButton", {
+    isIconOnly,
+    ariaLabel,
+    ariaLabelledBy,
+  });
+
   return (
     <button
       ref={ref}
       type={type}
       disabled={disabled}
       aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
       className={cn(
         "inline-flex items-center justify-center transition-colors",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,var(--color-primary))] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]",
+        "min-h-[44px] min-w-[44px]",
         SIZE_STYLES[size],
         VARIANT_STYLES[variant],
         disabled && "opacity-50 cursor-not-allowed",
@@ -60,7 +72,8 @@ const IconButton = forwardRef(function IconButton(
 IconButton.propTypes = {
   icon: PropTypes.node,
   children: PropTypes.node,
-  "aria-label": PropTypes.string.isRequired,
+  "aria-label": PropTypes.string,
+  "aria-labelledby": PropTypes.string,
   variant: PropTypes.oneOf(["primary", "secondary", "ghost", "outline", "danger"]),
   size: PropTypes.oneOf(["sm", "md", "lg"]),
   disabled: PropTypes.bool,

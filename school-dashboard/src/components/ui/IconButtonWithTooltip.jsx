@@ -1,4 +1,5 @@
-import { memo } from "react";
+import { memo, useEffect } from "react";
+import PropTypes from "prop-types";
 import { Tooltip, Button } from "@heroui/react";
 
 /**
@@ -15,8 +16,26 @@ const IconButtonWithTooltip = memo(function IconButtonWithTooltip({
   tooltipPlacement = "top",
   children,
   className,
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
   ...props
 }) {
+  const inferredLabel = typeof tooltip === "string" ? tooltip : undefined;
+
+  useEffect(() => {
+    if (
+      import.meta.env?.DEV &&
+      typeof tooltip !== "string" &&
+      !ariaLabel &&
+      !ariaLabelledBy
+    ) {
+      // eslint-disable-next-line no-console
+      console.error(
+        "[IconButtonWithTooltip] Icon-only buttons must have an accessible name via a string tooltip, aria-label, or aria-labelledby."
+      );
+    }
+  }, [tooltip, ariaLabel, ariaLabelledBy]);
+
   return (
     <Tooltip
       content={tooltip}
@@ -32,7 +51,8 @@ const IconButtonWithTooltip = memo(function IconButtonWithTooltip({
         variant="light"
         size="sm"
         className={className}
-        aria-label={typeof tooltip === "string" ? tooltip : undefined}
+        aria-label={ariaLabel || inferredLabel}
+        aria-labelledby={ariaLabelledBy}
         {...props}
       >
         {children}
@@ -42,5 +62,14 @@ const IconButtonWithTooltip = memo(function IconButtonWithTooltip({
 });
 
 IconButtonWithTooltip.displayName = 'IconButtonWithTooltip';
+
+IconButtonWithTooltip.propTypes = {
+  tooltip: PropTypes.node.isRequired,
+  tooltipPlacement: PropTypes.string,
+  children: PropTypes.node,
+  className: PropTypes.string,
+  "aria-label": PropTypes.string,
+  "aria-labelledby": PropTypes.string,
+};
 
 export default IconButtonWithTooltip;

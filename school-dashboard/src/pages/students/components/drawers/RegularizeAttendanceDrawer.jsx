@@ -117,7 +117,7 @@ export default function RegularizeAttendanceDrawer({ isOpen, onOpenChange, stude
         <>
           <div className="p-6 bg-[var(--warn-bg)]/50 border-b border-[var(--warn)]/20">
             <div className="flex items-center gap-3">
-              <AlertTriangle className="text-[var(--warn)]" size={24} />
+              <AlertTriangle className="text-[var(--warn)]" size={24} aria-hidden />
               <div>
                 <h4 className="font-semibold text-fg">
                   {t('students.profile.overview.unaccountedAbsences', 'Unaccounted Absences')}
@@ -146,7 +146,7 @@ export default function RegularizeAttendanceDrawer({ isOpen, onOpenChange, stude
               </div>
             ) : absentDates.length === 0 ? (
               <div className="text-center py-8">
-                <CalendarCheck size={40} className="mx-auto mb-3 text-fg-faint" />
+                <CalendarCheck size={40} className="mx-auto mb-3 text-fg-faint" aria-hidden />
                 <p className="text-sm text-fg-muted">
                   No unaccounted absences found in the last 30 days.
                 </p>
@@ -162,7 +162,7 @@ export default function RegularizeAttendanceDrawer({ isOpen, onOpenChange, stude
                     />
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-surface-2 rounded-lg text-fg-muted">
-                        <CalendarCheck size={20} />
+                        <CalendarCheck size={20} aria-hidden />
                       </div>
                       <div>
                         <span className="font-medium text-fg">{formatShortDate(item.date)}</span>

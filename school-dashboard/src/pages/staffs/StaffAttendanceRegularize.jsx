@@ -329,7 +329,7 @@ export default function StaffAttendanceRegularize() {
             <>
               <ModalHeader className="flex flex-col gap-1">
                 <h3 className="text-lg font-semibold">Regularize attendance</h3>
-                <p className="text-sm text-default-500 font-normal mono tnum">
+                <p className="text-sm text-fg-muted font-normal mono tnum">
                   {selectedStaff?.name} · {selectedDate?.dateStr}
                 </p>
               </ModalHeader>

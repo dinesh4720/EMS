@@ -89,7 +89,7 @@ export default function InventoryTransaction() {
       ) : (
         <Card padding="none" elevation="raised" className="overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm" aria-label="Purchase transactions">
               <thead>
                 <tr className="bg-surface-2 border-b border-divider">
                   {["Item", "Category", "Qty", "Rate (₹)", "Total (₹)", "Vendor", "Status", "Date"].map((h) => (

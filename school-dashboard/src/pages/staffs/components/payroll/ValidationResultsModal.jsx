@@ -118,7 +118,7 @@ export default function ValidationResultsModal({
                   </div>
                   <div className="payroll-modal__list">
                     {warnings.map((w, idx) => (
-                      <div key={`warning-${idx}`} className="payroll-modal__list-item">
+                      <div key={w.message || `warning-${idx}`} className="payroll-modal__list-item">
                         <span>{w.name || w.message || 'Warning'}</span>
                         {w.reason && (
                           <span

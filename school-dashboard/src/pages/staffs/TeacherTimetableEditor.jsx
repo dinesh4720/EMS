@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import {
-  Button, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
+  Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   useDisclosure, Spinner,
 } from "@heroui/react";
 import { Plus, X, AlertTriangle, CheckCircle2, RefreshCw } from "lucide-react";
@@ -761,9 +761,9 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
             </div>
           </ModalBody>
           <ModalFooter>
-            <Button color="primary" onPress={onAssignmentsClose}>
+            <button type="button" className="btn btn--accent" onClick={onAssignmentsClose}>
               Done
-            </Button>
+            </button>
           </ModalFooter>
         </ModalContent>
       </Modal>

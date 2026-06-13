@@ -255,11 +255,11 @@ const StudentAttendance = memo(function StudentAttendance() {
 
     const getStatusIcon = (status) => {
         switch (status) {
-            case "present": return <Check size={14} className="text-[var(--ok)]" />;
-            case "absent": return <X size={14} className="text-[var(--danger)]" />;
-            case "leave": return <Clock size={14} className="text-[var(--warn)]" />;
-            case "halfday": return <AlertCircle size={14} className="text-[var(--info)]" />;
-            default: return <Clock size={14} className="text-fg-muted" />;
+            case "present": return <Check size={14} className="text-[var(--ok)]" aria-hidden />;
+            case "absent": return <X size={14} className="text-[var(--danger)]" aria-hidden />;
+            case "leave": return <Clock size={14} className="text-[var(--warn)]" aria-hidden />;
+            case "halfday": return <AlertCircle size={14} className="text-[var(--info)]" aria-hidden />;
+            default: return <Clock size={14} className="text-fg-muted" aria-hidden />;
         }
     };
 
@@ -281,10 +281,10 @@ const StudentAttendance = memo(function StudentAttendance() {
     ];
 
     const bulkItems = [
-        { key: "present", label: t('attendance.markSelectedPresent', 'Mark Selected Present'), icon: <Check size={14} className="text-ok" />, onClick: () => handleBulkAction("present") },
-        { key: "halfday", label: t('attendance.markSelectedHalfDay', 'Mark Selected Half Day'), icon: <AlertCircle size={14} className="text-info" />, onClick: () => handleBulkAction("halfday") },
-        { key: "absent", label: t('attendance.markSelectedAbsent', 'Mark Selected Absent'), icon: <X size={14} className="text-danger" />, onClick: () => handleBulkAction("absent") },
-        { key: "leave", label: t('attendance.markSelectedOnLeave', 'Mark Selected On Leave'), icon: <Clock size={14} className="text-warn" />, onClick: () => handleBulkAction("leave") },
+        { key: "present", label: t('attendance.markSelectedPresent', 'Mark Selected Present'), icon: <Check size={14} className="text-ok" aria-hidden />, onClick: () => handleBulkAction("present") },
+        { key: "halfday", label: t('attendance.markSelectedHalfDay', 'Mark Selected Half Day'), icon: <AlertCircle size={14} className="text-info" aria-hidden />, onClick: () => handleBulkAction("halfday") },
+        { key: "absent", label: t('attendance.markSelectedAbsent', 'Mark Selected Absent'), icon: <X size={14} className="text-danger" aria-hidden />, onClick: () => handleBulkAction("absent") },
+        { key: "leave", label: t('attendance.markSelectedOnLeave', 'Mark Selected On Leave'), icon: <Clock size={14} className="text-warn" aria-hidden />, onClick: () => handleBulkAction("leave") },
     ];
 
     const hasSelection = selectedKeys === "all" || selectedKeys.size > 0;
@@ -580,14 +580,14 @@ const StudentAttendance = memo(function StudentAttendance() {
                                                     >
                                                         {getStatusIcon(att.status)}
                                                         <span className="capitalize">{att.status}</span>
-                                                        <ChevronDown size={12} className="opacity-50" />
+                                                        <ChevronDown size={12} className="opacity-50" aria-hidden />
                                                     </button>
                                                 }
                                                 items={[
-                                                    { key: "present", label: t('pages.present2'), icon: <Check size={14} className="text-ok" />, onClick: () => handleStatusChange(student.id, "present") },
-                                                    { key: "halfday", label: t('pages.halfDay'), icon: <AlertCircle size={14} className="text-info" />, onClick: () => handleStatusChange(student.id, "halfday") },
-                                                    { key: "absent", label: t('pages.absent2'), icon: <X size={14} className="text-danger" />, onClick: () => handleStatusChange(student.id, "absent") },
-                                                    { key: "leave", label: t('pages.onLeave1'), icon: <Clock size={14} className="text-warn" />, onClick: () => handleStatusChange(student.id, "leave") },
+                                                    { key: "present", label: t('pages.present2'), icon: <Check size={14} className="text-ok" aria-hidden />, onClick: () => handleStatusChange(student.id, "present") },
+                                                    { key: "halfday", label: t('pages.halfDay'), icon: <AlertCircle size={14} className="text-info" aria-hidden />, onClick: () => handleStatusChange(student.id, "halfday") },
+                                                    { key: "absent", label: t('pages.absent2'), icon: <X size={14} className="text-danger" aria-hidden />, onClick: () => handleStatusChange(student.id, "absent") },
+                                                    { key: "leave", label: t('pages.onLeave1'), icon: <Clock size={14} className="text-warn" aria-hidden />, onClick: () => handleStatusChange(student.id, "leave") },
                                                 ]}
                                             />
                                         </td>

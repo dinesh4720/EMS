@@ -416,7 +416,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
 
         <div className="fgrid">
           <div className="field span-2">
-            <label className="field__label">
+            <label className="field__label" id="select-class-label">
               {t("pages.selectClass1", "Select Class")}
               <span className="req">*</span>
             </label>
@@ -427,17 +427,19 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
                 title={t("pages.noClassesAvailable", "No classes available")}
               />
             ) : (
-              <div className="optgrid">
+              <div className="optgrid" role="radiogroup" aria-labelledby="select-class-label">
                 {gradeGroups.map((g) => {
                   const isActive = g.name === selectedGrade;
                   return (
                     <button
                       key={g.name}
                       type="button"
+                      role="radio"
+                      aria-checked={isActive}
                       className={`opt ${isActive ? "is-active" : ""}`}
                       onClick={() => setSelectedGrade(g.name)}
                     >
-                      <span className="opt__icon">
+                      <span className="opt__icon" aria-hidden>
                         <Users size={12} strokeWidth={2} />
                       </span>
                       <span className="col" style={{ gap: 1, minWidth: 0, alignItems: "flex-start" }}>
@@ -446,7 +448,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
                           {g.sections.length} {g.sections.length === 1 ? "section" : "sections"}
                         </span>
                       </span>
-                      <span className="opt__check">
+                      <span className="opt__check" aria-hidden>
                         <Check size={8} strokeWidth={3} />
                       </span>
                     </button>
@@ -458,11 +460,11 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
 
           {selectedGrade && (
             <div className="field span-2">
-              <label className="field__label">
+              <label className="field__label" id="section-label">
                 {t("pages.section", "Section")}
                 <span className="req">*</span>
               </label>
-              <div className="taginput" role="radiogroup" aria-label="Sections">
+              <div className="taginput" role="radiogroup" aria-labelledby="section-label">
                 {sectionsForSelectedGrade.map((s) => {
                   const isActive = s._id === selectedClass;
                   return (
@@ -490,10 +492,11 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
           )}
 
           <div className="field">
-            <label className="field__label">
+            <label className="field__label" htmlFor="academic-year">
               {t("pages.academicYear1", "Academic Year")}
             </label>
             <select
+              id="academic-year"
               className="select mono tnum"
               value={academicYear}
               onChange={(e) => {
@@ -570,7 +573,11 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
                   </div>
                 </div>
               </div>
+              <label className="field__label" htmlFor="fee-template" style={{ marginBottom: 8, display: 'block' }}>
+                {t("pages.feeTemplate", "Fee Template")}
+              </label>
               <select
+                id="fee-template"
                 className="select"
                 value={selectedTemplate}
                 onChange={(e) => handleTemplateChange(e.target.value)}
@@ -623,7 +630,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
                           type="number"
                           inputMode="decimal"
                           min={0}
-                          aria-label={t("pages.amount1", "Amount")}
+                          aria-label={`${head.name} ${t("pages.amount1", "Amount")}`}
                           className="input mono tnum"
                           value={head.amount ?? 0}
                           onChange={(e) => updateFeeHeadAmount(index, e.target.value)}
@@ -636,7 +643,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
                           onClick={() => removeFeeHead(index)}
                           style={{ color: "var(--danger)" }}
                         >
-                          <Trash2 size={13} />
+                          <Trash2 size={13} aria-hidden />
                         </button>
                       </div>
                     </li>
@@ -723,7 +730,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
                       : undefined
                   }
                 >
-                  <Users size={11} />
+                  <Users size={11} aria-hidden />
                   {t("pages.previewStudents", "Preview Students")}
                 </button>
                 <button
@@ -732,7 +739,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
                   onClick={handleSaveStructure}
                   disabled={saving}
                 >
-                  <Save size={11} />
+                  <Save size={11} aria-hidden />
                   {saving
                     ? t("common.saving", "Saving…")
                     : t("pages.saveStructure", "Save Structure")}
@@ -744,7 +751,7 @@ export default function FeeStructureAssignment({ classes, onAssignmentComplete }
                     onClick={handleApplyToStudents}
                     disabled={applying}
                   >
-                    <CheckCircle size={11} />
+                    <CheckCircle size={11} aria-hidden />
                     {applying
                       ? t("common.applying", "Applying…")
                       : t("pages.applyToStudents1", "Apply to Students")}

@@ -189,7 +189,7 @@ export default function AnnouncementAnalyticsModal({
                 <div className="row gap-2">
                   {[0, 1, 2, 3].map((i) => (
                     <div
-                      key={i}
+                      key={`stat-skel-${i}`}
                       style={{
                         flex: 1,
                         height: 76,
@@ -375,7 +375,7 @@ export default function AnnouncementAnalyticsModal({
                           <div className="col" style={{ flex: 1, minWidth: 0 }}>
                             <span style={{ fontSize: 12, fontWeight: 520 }}>{r.userType || 'Recipient'}</span>
                             {r.errors?.slice(0, 1).map((e, i) => (
-                              <span key={i} className="subtle" style={{ fontSize: 11, color: 'var(--danger)' }}>
+                              <span key={`err-${e.channel}-${i}`} className="subtle" style={{ fontSize: 11, color: 'var(--danger)' }}>
                                 {e.channel}: {e.error || 'Failed to deliver'}
                               </span>
                             ))}

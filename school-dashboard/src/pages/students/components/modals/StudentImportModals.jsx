@@ -126,6 +126,7 @@ export function StudentCsvUploadModal({
                         type="file"
                         accept=".csv"
                         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0, cursor: "pointer" }}
+                        aria-label="Choose a CSV file to upload"
                         onChange={(e) => handleCsvFileSelect(e.target.files[0])}
                     />
                     <div className="col" style={{ gap: 10, alignItems: "center" }}>
@@ -139,7 +140,7 @@ export function StudentCsvUploadModal({
                                 color: csvFile ? "white" : "var(--fg-faint)",
                             }}
                         >
-                            {csvFile ? <Check size={22} /> : <Upload size={22} />}
+                            {csvFile ? <Check size={22} aria-hidden /> : <Upload size={22} aria-hidden />}
                         </span>
                         {csvFile ? (
                             <>
@@ -374,6 +375,7 @@ export function StudentCsvPreviewModal({
                             </span>
                         </div>
                         <Progress
+                            aria-label="Import progress"
                             value={(importProgress.current / importProgress.total) * 100}
                             color="primary"
                             size="sm"
@@ -426,7 +428,7 @@ export function StudentCsvPreviewModal({
                                             color: hasInvalid ? "var(--danger)" : classData.duplicateCount > 0 ? "var(--warn)" : "var(--ok)",
                                         }}
                                     >
-                                        <GraduationCap size={14} />
+                                        <GraduationCap size={14} aria-hidden />
                                     </span>
                                     <div className="col" style={{ gap: 1, flex: 1, minWidth: 0 }}>
                                         <p style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>{classKey}</p>
@@ -439,7 +441,7 @@ export function StudentCsvPreviewModal({
                                         </div>
                                     </div>
                                     <span className="import-chevron" style={{ color: "var(--fg-faint)", transition: "transform 200ms", display: "inline-flex", flexShrink: 0 }}>
-                                        <ChevronRight size={16} />
+                                        <ChevronRight size={16} aria-hidden />
                                     </span>
                                 </summary>
                                 <div className="col gap-2" style={{ padding: "0 16px 12px" }}>
@@ -497,7 +499,7 @@ export function StudentCsvPreviewModal({
                                                     <div style={{ background: "var(--warn-bg)", borderRadius: 6, padding: 8, marginBottom: 6 }}>
                                                         <ul className="col" style={{ gap: 2, paddingLeft: 14 }}>
                                                             {student.warnings.slice(0, 2).map((w, i) => (
-                                                                <li key={i} style={{ fontSize: 11, color: "var(--warn)" }}>{w}</li>
+                                                                <li key={`warn-${i}`} style={{ fontSize: 11, color: "var(--warn)" }}>{w}</li>
                                                             ))}
                                                             {student.warnings.length > 2 && <li style={{ fontSize: 11, color: "var(--warn)", fontStyle: "italic" }}>+{student.warnings.length - 2} more warning{student.warnings.length - 2 > 1 ? 's' : ''}</li>}
                                                         </ul>

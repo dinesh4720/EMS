@@ -367,10 +367,12 @@ export default function StaffPayroll() {
     />
   );
 
+  // Visible title/description come from the staffs section shell (PageLayout in
+  // pages/staffs/index.jsx). documentTitle keeps the browser tab label without
+  // rendering a second on-page heading (this used to show "Payroll" twice).
   return (
     <PageShell
-      title="Payroll"
-      description={`${months[selectedMonth - 1]} ${selectedYear} · ${filteredRecords.length} of ${payrollRecords.length} records`}
+      documentTitle="Payroll"
       actions={
         <ExportMenu
           filename={`payroll-${selectedYear}-${String(selectedMonth).padStart(2, '0')}`}

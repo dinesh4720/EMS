@@ -8,7 +8,7 @@ const ALIGN = {
   right: 'text-right',
 };
 
-function ReportTable({ columns, rows, getRowKey, emptyState, className }) {
+function ReportTable({ columns, rows, getRowKey, emptyState, className, 'aria-label': ariaLabel }) {
   if (!rows || rows.length === 0) {
     return emptyState ?? null;
   }
@@ -20,7 +20,7 @@ function ReportTable({ columns, rows, getRowKey, emptyState, className }) {
         className
       )}
     >
-      <table className="w-full text-sm">
+      <table className="w-full text-sm" aria-label={ariaLabel}>
         <thead className="bg-[var(--color-bg-secondary)]">
           <tr>
             {columns.map((col) => (
@@ -77,6 +77,7 @@ ReportTable.propTypes = {
   getRowKey: PropTypes.func,
   emptyState: PropTypes.node,
   className: PropTypes.string,
+  'aria-label': PropTypes.string,
 };
 
 export default memo(ReportTable);

@@ -72,6 +72,7 @@ const PageShell = memo(function PageShell({
   activeTab,
   onTabChange,
   tabsVariant = "pills",
+  tabsBaseId,
   size = "md",
   bodyPadding = "md",
   scrollable = true,
@@ -152,6 +153,7 @@ const PageShell = memo(function PageShell({
             activeKey={activeTab}
             onChange={onTabChange}
             variant={tabsVariant}
+            baseId={tabsBaseId}
           />
         </div>
       )}
@@ -174,7 +176,7 @@ const PageShell = memo(function PageShell({
           {children}
         </div>
         {aside && (
-          <aside className="w-72 shrink-0 border-l border-divider overflow-auto">
+          <aside className="w-72 shrink-0 border-l border-divider overflow-auto hidden lg:block">
             {aside}
           </aside>
         )}

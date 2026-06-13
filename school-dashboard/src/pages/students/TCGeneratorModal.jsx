@@ -492,7 +492,7 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
                     ['Reason', formData.reasonForLeaving],
                     ['Issue date', formData.issueDate],
                   ].map(([label, value], idx) => (
-                    <div className="tcrow" key={idx}>
+                    <div className="tcrow" key={`tc-row-${idx}`}>
                       <b>{idx + 1}.</b>
                       <span>{label}</span>
                       <span>:</span>
@@ -505,7 +505,7 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
           ) : (
             <div className="flex flex-col items-center justify-center py-12">
               <div className="animate-pulse mb-4">
-                <Printer size={48} className="text-primary" />
+                <Printer size={48} className="text-primary" aria-hidden />
               </div>
               <p className="text-base font-semibold mb-2">{t('pages.generatingTransferCertificates')}</p>
               <p className="text-sm text-fg-muted">{t('pages.pleaseWaitWhileAllTcsAreBeingPrinted')}</p>
@@ -539,7 +539,7 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
                     variant="ghost" size="sm"
                     onClick={handlePrevious}
                     disabled={!canGoBack}
-                    icon={<ArrowLeft size={14} />}
+                    icon={<ArrowLeft size={14} aria-hidden />}
                   >
                     Previous
                   </Button>
@@ -556,7 +556,7 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
                 <Button
                   variant="primary"
                   onClick={handleNext}
-                  endContent={isLastStudent ? <Printer size={14} /> : <ArrowRight size={14} />}
+                  endContent={isLastStudent ? <Printer size={14} aria-hidden /> : <ArrowRight size={14} aria-hidden />}
                   disabled={dup}
                 >
                   {isLastStudent ? "Generate all TCs" : "Next"}

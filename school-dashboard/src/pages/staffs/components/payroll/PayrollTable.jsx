@@ -163,12 +163,13 @@ export default function PayrollTable({
                           size="sm"
                         />
                         <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                          <span
+                          <button
+                            type="button"
                             className="payroll-table__employee-name"
                             onClick={() => navigate(`/staffs/${employee.id}`)}
                           >
                             {employee.name}
-                          </span>
+                          </button>
                           <span className="payroll-table__employee-code">{employee.code}</span>
                         </div>
                       </div>

@@ -178,7 +178,7 @@ export default function ParentManagement() {
         <button
           onClick={handleBulkCreate}
           disabled={bulkLoading}
-          className="flex items-center gap-2 px-4 py-2 bg-surface dark:bg-surface-2 text-white rounded-lg text-sm font-medium hover:bg-surface-2 dark:hover:bg-surface-2 disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-[var(--color-primary-hover)] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,var(--color-primary))] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
         >
           <Users size={16} />
           {bulkLoading ? "Creating..." : "Bulk Create Accounts"}
@@ -194,13 +194,15 @@ export default function ParentManagement() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t('pages.searchByNamePhoneOrEmail')}
-            className="w-full pl-9 pr-4 py-2 border border-border-token rounded-lg text-sm bg-surface text-fg focus:outline-none focus:ring-1 focus:ring-border-strong"
+            aria-label={t('pages.searchByNamePhoneOrEmail')}
+            className="w-full pl-9 pr-4 py-2 border border-border-token rounded-lg text-sm bg-surface text-fg focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring,var(--color-primary))]"
           />
         </form>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3 py-2 border border-border-token rounded-lg text-sm bg-surface text-fg focus:outline-none focus:ring-1 focus:ring-border-strong"
+          aria-label={t('pages.status2')}
+          className="px-3 py-2 border border-border-token rounded-lg text-sm bg-surface text-fg focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring,var(--color-primary))]"
         >
           <option value="">{t('pages.allStatus1')}</option>
           <option value="active">{t('pages.active')}</option>
@@ -209,14 +211,16 @@ export default function ParentManagement() {
         </select>
         <button
           onClick={() => fetchParents(pagination.page)}
-          className="p-2 border border-border-token rounded-lg hover:bg-surface-2-2"
+          aria-label={t('pages.refresh1')}
+          title={t('pages.refresh1')}
+          className="p-2 border border-border-token rounded-lg hover:bg-surface-2-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,var(--color-primary))] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
         >
-          <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+          <RefreshCw size={16} className={loading ? "animate-spin" : ""} aria-hidden="true" />
         </button>
       </div>
 
       {/* Table */}
-      <div className="bg-surface border border-border-token rounded-lg overflow-hidden">
+      <div className="bg-surface border border-border-token rounded-lg overflow-hidden overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="border-b border-divider bg-surface-2">
@@ -262,31 +266,31 @@ export default function ParentManagement() {
                       <button
                         type="button"
                         onClick={() => handleViewDetails(parent)}
-                        className="p-1.5 rounded hover:bg-surface-2 text-fg-muted"
+                        className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded hover:bg-surface-2 text-fg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,var(--color-primary))] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
                         aria-label={t('pages.viewDetails2')}
                         title={t('pages.viewDetails2')}
                       >
-                        <Eye size={15} />
+                        <Eye size={15} aria-hidden="true" />
                       </button>
                       <button
                         type="button"
                         onClick={() => handleResetPassword(parent._id)}
                         disabled={actionLoading === parent._id}
-                        className="p-1.5 rounded hover:bg-surface-2 text-fg-muted"
+                        className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded hover:bg-surface-2 text-fg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,var(--color-primary))] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)] disabled:opacity-50"
                         aria-label={t('pages.resetPassword1')}
                         title={t('pages.resetPassword1')}
                       >
-                        <KeyRound size={15} />
+                        <KeyRound size={15} aria-hidden="true" />
                       </button>
                       <button
                         type="button"
                         onClick={() => handleToggleStatus(parent._id, parent.status)}
                         disabled={actionLoading === parent._id}
-                        className="p-1.5 rounded hover:bg-surface-2 text-fg-muted"
-                        aria-label={parent.status === "active" ? "Deactivate" : "Activate"}
+                        className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded hover:bg-surface-2 text-fg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,var(--color-primary))] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)] disabled:opacity-50"
+                        aria-label={parent.status === "active" ? "Deactivate account" : "Activate account"}
                         title={parent.status === "active" ? "Deactivate" : "Activate"}
                       >
-                        {parent.status === "active" ? <PowerOff size={15} /> : <Power size={15} />}
+                        {parent.status === "active" ? <PowerOff size={15} aria-hidden="true" /> : <Power size={15} aria-hidden="true" />}
                       </button>
                     </div>
                   </td>
@@ -306,14 +310,14 @@ export default function ParentManagement() {
               <button
                 onClick={() => fetchParents(pagination.page - 1)}
                 disabled={pagination.page <= 1}
-                className="px-3 py-1.5 text-sm border border-border-token rounded hover:bg-surface-2-2 disabled:opacity-50 text-fg"
+                className="px-3 py-1.5 text-sm border border-border-token rounded hover:bg-surface-2-2 disabled:opacity-50 text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,var(--color-primary))] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
               >
                 Previous
               </button>
               <button
                 onClick={() => fetchParents(pagination.page + 1)}
                 disabled={pagination.page >= pagination.pages}
-                className="px-3 py-1.5 text-sm border border-border-token rounded hover:bg-surface-2-2 disabled:opacity-50 text-fg"
+                className="px-3 py-1.5 text-sm border border-border-token rounded hover:bg-surface-2-2 disabled:opacity-50 text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,var(--color-primary))] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
               >
                 Next
               </button>
@@ -328,8 +332,8 @@ export default function ParentManagement() {
           <div className="bg-surface rounded-xl p-6 w-full max-w-[400px] shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-fg">{t('pages.passwordReset')}</h3>
-              <button onClick={() => setGeneratedPassword(null)} className="text-fg-faint hover:text-fg">
-                <X size={18} />
+              <button onClick={() => setGeneratedPassword(null)} aria-label={t('pages.close')} title={t('pages.close')} className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded text-fg-faint hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,var(--color-primary))]">
+                <X size={18} aria-hidden="true" />
               </button>
             </div>
             <div className="bg-[var(--warn-bg)] border border-[var(--warn-border)] rounded-lg p-3 mb-4 flex items-start gap-2">
@@ -340,9 +344,11 @@ export default function ParentManagement() {
               <code className="flex-1 text-sm font-mono font-medium text-fg">{generatedPassword}</code>
               <button
                 onClick={() => copyToClipboard(generatedPassword)}
-                className="p-1.5 rounded hover:bg-surface-2"
+                aria-label={copiedPassword ? "Password copied" : "Copy password"}
+                title={copiedPassword ? "Copied" : "Copy"}
+                className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,var(--color-primary))]"
               >
-                {copiedPassword ? <Check size={16} className="text-[var(--ok)]" /> : <Copy size={16} className="text-fg-muted" />}
+                {copiedPassword ? <Check size={16} className="text-[var(--ok)]" aria-hidden="true" /> : <Copy size={16} className="text-fg-muted" aria-hidden="true" />}
               </button>
             </div>
           </div>
@@ -356,8 +362,8 @@ export default function ParentManagement() {
           <div className="relative bg-surface w-full sm:w-[480px] sm:max-w-[100vw] h-full shadow-xl overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="sticky top-0 bg-surface border-b border-divider px-6 py-4 flex items-center justify-between z-10">
               <h3 className="font-semibold text-fg">{t('pages.parentDetails')}</h3>
-              <button onClick={() => { setDrawerOpen(false); setGeneratedPassword(null); }} className="text-fg-faint hover:text-fg">
-                <X size={18} />
+              <button onClick={() => { setDrawerOpen(false); setGeneratedPassword(null); }} aria-label={t('pages.close')} title={t('pages.close')} className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded text-fg-faint hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,var(--color-primary))]">
+                <X size={18} aria-hidden="true" />
               </button>
             </div>
 

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useApp } from "../../context/AppContext";
 import { frontDeskApi, teacherTimetableApi } from "../../services/api";
 import logger from "../../utils/logger";
-import ConfirmDialog from "../../components/ConfirmDialog";
+import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import { PageShell } from "../../components/ui";
 import Drawer from "../../components/ui/Drawer";
 
@@ -25,7 +25,12 @@ import {
 } from "./constants";
 
 // Mobile breakpoint — below this the sidebar collapses to a Drawer
-const MOBILE_MAX = 1099;
+// Reads from design-system token --breakpoint-two-pane (DESIGN_SYSTEM.md § Responsive)
+const MOBILE_MAX = (() => {
+  if (typeof window === 'undefined') return 1099;
+  const bp = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--breakpoint-two-pane')) || 1100;
+  return bp - 1;
+})();
 
 const isReadOnlyEventId = (id) =>
   typeof id === "string" && (id.startsWith("apt-") || id.startsWith("tt-"));
@@ -46,6 +51,8 @@ export default function CalendarPage() {
   const [staffTimetable, setStaffTimetable] = useState(null);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
   const [loadingTimetable, setLoadingTimetable] = useState(false);
+  const [appointmentsError, setAppointmentsError] = useState(null);
+  const [timetableError, setTimetableError] = useState(null);
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
@@ -96,6 +103,8 @@ export default function CalendarPage() {
 
     setLoadingAppointments(true);
     setLoadingTimetable(true);
+    setAppointmentsError(null);
+    setTimetableError(null);
 
     frontDeskApi.getAppointments()
       .then((response) => {
@@ -107,7 +116,10 @@ export default function CalendarPage() {
       })
       .catch((error) => {
         logger.error("Failed to load appointments:", error);
-        if (!cancelled) setStaffAppointments([]);
+        if (!cancelled) {
+          setStaffAppointments([]);
+          setAppointmentsError(error);
+        }
       })
       .finally(() => { if (!cancelled) setLoadingAppointments(false); });
 
@@ -118,7 +130,10 @@ export default function CalendarPage() {
       })
       .catch((error) => {
         logger.error("Failed to load timetable:", error);
-        if (!cancelled) setStaffTimetable(null);
+        if (!cancelled) {
+          setStaffTimetable(null);
+          setTimetableError(error);
+        }
       })
       .finally(() => { if (!cancelled) setLoadingTimetable(false); });
 
@@ -308,6 +323,8 @@ export default function CalendarPage() {
       upcomingAppointments={upcomingAppointments}
       loadingTimetable={loadingTimetable}
       loadingAppointments={loadingAppointments}
+      timetableError={timetableError}
+      appointmentsError={appointmentsError}
       onStaffChange={setSelectedStaff}
       onEventClick={openEventFromSidebar}
       defaultPeriods={defaultPeriods}
@@ -326,6 +343,8 @@ export default function CalendarPage() {
       upcomingAppointments={upcomingAppointments}
       loadingTimetable={loadingTimetable}
       loadingAppointments={loadingAppointments}
+      timetableError={timetableError}
+      appointmentsError={appointmentsError}
       onStaffChange={setSelectedStaff}
       onEventClick={openEventFromSidebar}
       defaultPeriods={defaultPeriods}
@@ -337,19 +356,13 @@ export default function CalendarPage() {
   );
 
   return (
-    <div className="page">
-      <div className="page__head">
-        <div>
-          <h1 className="page__title">{t('calendar.title', 'Calendar')}</h1>
-          <p className="page__sub">{t('calendar.subtitle', 'Manage events, schedules, and appointments')}</p>
-        </div>
-      </div>
-
-      <PageShell
-        scrollable={false}
-        bodyPadding="none"
-        className="flex-1 min-h-0"
-      >
+    <PageShell
+      title={t('calendar.title', 'Calendar')}
+      description={t('calendar.subtitle', 'Manage events, schedules, and appointments')}
+      scrollable={false}
+      bodyPadding="none"
+      className="flex-1 min-h-0"
+    >
         <div className="flex flex-1 min-h-0">
         {/* Main Calendar Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
@@ -438,6 +451,5 @@ export default function CalendarPage() {
         />
         </div>
       </PageShell>
-    </div>
   );
 }

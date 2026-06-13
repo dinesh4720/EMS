@@ -61,7 +61,7 @@ export default function AttendanceTab({ metrics }) {
         if (!cancelled) {
           setRows([]);
           setError(err);
-          toast.error('Failed to load attendance report');
+          toast.error('Failed to load attendance report. Refresh to try again.');
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -130,7 +130,7 @@ export default function AttendanceTab({ metrics }) {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" aria-live="polite" aria-busy={loading ? 'true' : undefined}>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatCard
           label="Active Students"
@@ -200,7 +200,7 @@ export default function AttendanceTab({ metrics }) {
         <Alert
           variant="danger"
           title={`Chronic Absentees (${chronicAbsentees.length})`}
-          description="Students below attendance threshold"
+          description={`Students with attendance below ${chronicThreshold}% threshold`}
         >
           <div className="mt-3 space-y-3">
             <div className="flex items-center gap-2 justify-end">
@@ -220,6 +220,7 @@ export default function AttendanceTab({ metrics }) {
               columns={studentColumns}
               rows={chronicAbsentees}
               getRowKey={(row, i) => `${row.studentName}-${i}`}
+              aria-label="Chronic absentees"
             />
           </div>
         </Alert>
@@ -241,12 +242,13 @@ export default function AttendanceTab({ metrics }) {
             columns={studentColumns}
             rows={rows}
             getRowKey={(row, i) => `${row.studentName}-${i}`}
+            aria-label="All students attendance"
             emptyState={
               <EmptyState
                 icon={Users}
                 size="sm"
-                title="No attendance records found"
-                description="No data available for the selected filters."
+                title="No attendance records match the selected filters"
+                description="Try selecting a different date range or class."
               />
             }
           />

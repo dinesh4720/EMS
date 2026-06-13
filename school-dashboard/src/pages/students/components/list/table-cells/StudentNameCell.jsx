@@ -30,7 +30,7 @@ function StudentNameCell({ student, className, searchQuery }) {
                             {student.name}
                         </Link>
                         {student.isPinned && (
-                            <Pin size={14} className="text-primary flex-shrink-0" />
+                            <Pin size={14} className="text-primary flex-shrink-0" aria-label="Pinned" />
                         )}
                     </div>
                     <span className="text-fg-muted text-xs">

@@ -4,7 +4,7 @@ import { ArrowUpCircle, Save } from 'lucide-react';
 import { request } from '../../services/api';
 import toast from 'react-hot-toast';
 import HelpIcon from '../../components/ui/HelpIcon';
-import SkeletonForm from '../../components/skeletons/SkeletonForm';
+import { SkeletonForm } from '../../components/ui/Skeleton';
 
 
 const FEE_OPTIONS = [
@@ -116,6 +116,7 @@ export default function PromotionRulesSettings() {
             step={5}
             value={minAttendance}
             onChange={e => setMinAttendance(Number(e.target.value))}
+            aria-label="Minimum attendance percentage"
             className="flex-1 accent-[var(--info)]"
           />
           <div className="w-16 text-center px-3 py-1.5 rounded-lg border border-border-token bg-surface-2 text-sm font-semibold text-fg tabular-nums">
@@ -167,8 +168,8 @@ export default function PromotionRulesSettings() {
 
       <div className="flex justify-end">
         <Button
-          className="bg-surface dark:bg-surface-2 text-white"
-          startContent={<Save size={15} />}
+          color="primary"
+          startContent={<Save size={15} aria-hidden="true" />}
           onPress={handleSave}
           isLoading={saving}
         >

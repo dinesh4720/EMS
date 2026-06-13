@@ -491,7 +491,7 @@ function StickyHeadFootDemo() {
       <div style={{ flex: 1, overflow: "auto", padding: "14px", minHeight: 0 }}>
         {Array.from({ length: 24 }).map((_, i) => (
           <p
-            key={i}
+            key={`scroll-row-${i}`}
             style={{
               fontSize: 12.5,
               color: "var(--fg-muted)",
@@ -906,7 +906,7 @@ export default function PatternsSection() {
                 <div className="class-tile__chart spark">
                   {[40, 60, 75, 80, 85, 90, 94].map((h, i, arr) => (
                     <span
-                      key={i}
+                      key={`spark-bar-${i}`}
                       className={`spark__bar${i === arr.length - 1 ? " is-now" : ""}`}
                       style={{ height: `${h}%` }}
                     />
@@ -921,7 +921,7 @@ export default function PatternsSection() {
                 <div className="class-tile__chart spark">
                   {[80, 75, 70, 72, 68, 65, 68].map((h, i, arr) => (
                     <span
-                      key={i}
+                      key={`spark-bar-${i}`}
                       className={`spark__bar${i === arr.length - 1 ? " is-now" : ""}`}
                       style={{ height: `${h}%` }}
                     />
@@ -936,7 +936,7 @@ export default function PatternsSection() {
                 <div className="class-tile__chart spark">
                   {[55, 50, 48, 45, 44, 43, 42].map((h, i, arr) => (
                     <span
-                      key={i}
+                      key={`spark-bar-${i}`}
                       className={`spark__bar${i === arr.length - 1 ? " is-now" : ""}`}
                       style={{ height: `${h}%` }}
                     />
@@ -1033,12 +1033,12 @@ export default function PatternsSection() {
                   day === 18 ? [{ kind: "holiday", text: "Holiday" }] : [];
                 return (
                   <div
-                    key={i}
+                    key={`cal-day-${day}`}
                     className={`calendar-month__cell${isToday ? " is-today" : ""}`}
                   >
                     <div className="calendar-month__date">{day}</div>
                     {events.map((e, j) => (
-                      <div key={j} className={`calendar-event calendar-event--${e.kind}`}>
+                      <div key={`cal-event-${day}-${e.kind}`} className={`calendar-event calendar-event--${e.kind}`}>
                         {e.text}
                       </div>
                     ))}

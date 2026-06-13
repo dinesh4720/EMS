@@ -248,7 +248,7 @@ export default function TimetableCleanup() {
 
             {/* Cleanup Options */}
             <div className="space-y-2">
-              <p className="text-sm font-medium text-gray-700">{t('components.selectWhatToClear')}</p>
+              <p className="text-sm font-medium text-fg-muted">{t('components.selectWhatToClear')}</p>
 
               {cleanupOptions.map((option) => (
                 <div
@@ -256,7 +256,7 @@ export default function TimetableCleanup() {
                   className={`p-3 rounded-lg border transition-colors cursor-pointer ${
                     options[option.key]
                       ? 'border-danger-300 bg-danger-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      : 'border-border-token hover:border-border-strong'
                   }`}
                   onClick={() => toggleOption(option.key)}
                 >
@@ -267,10 +267,10 @@ export default function TimetableCleanup() {
                         onValueChange={() => toggleOption(option.key)}
                         color="danger"
                       />
-                      <option.icon className="w-4 h-4 text-gray-500" />
+                      <option.icon className="w-4 h-4 text-fg-subtle" />
                       <div>
                         <p className="text-sm font-medium">{option.label}</p>
-                        <p className="text-xs text-gray-500">{option.description}</p>
+                        <p className="text-xs text-fg-subtle">{option.description}</p>
                       </div>
                     </div>
                     <Chip size="sm" color={option.color} variant="flat">
@@ -282,13 +282,13 @@ export default function TimetableCleanup() {
             </div>
 
             {/* Summary */}
-            <div className="bg-gray-50 rounded-lg p-3">
+            <div className="bg-surface-2 rounded-lg p-3">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">{t('components.itemsToDelete')}</span>
+                <span className="text-fg-muted">{t('components.itemsToDelete')}</span>
                 <span className="font-semibold text-danger-600">{getTotalItems()}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">{t('components.recordsToUpdate')}</span>
+                <span className="text-fg-muted">{t('components.recordsToUpdate')}</span>
                 <span className="font-semibold text-warning-600">{getTotalUpdates()}</span>
               </div>
             </div>
@@ -308,7 +308,7 @@ export default function TimetableCleanup() {
             </div>
           </div>
         ) : (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-fg-subtle">
             <Database className="w-8 h-8 mx-auto mb-2 opacity-50" />
             <p>{t('components.unableToLoadPreviewData')}</p>
             <Button size="sm" variant="light" onPress={fetchPreview} className="mt-2">
@@ -326,7 +326,7 @@ export default function TimetableCleanup() {
             Confirm Cleanup
           </ModalHeader>
           <ModalBody>
-            <p className="text-gray-600">
+            <p className="text-fg-muted">
               You are about to permanently delete:
             </p>
 
@@ -363,7 +363,7 @@ export default function TimetableCleanup() {
               )}
               {options.substitutions && previewData?.counts?.substitutions > 0 && (
                 <li className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-gray-500" />
+                  <span className="w-2 h-2 rounded-full bg-fg-subtle" />
                   {previewData.counts.substitutions} substitution records
                 </li>
               )}

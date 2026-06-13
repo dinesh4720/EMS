@@ -173,7 +173,7 @@ export default function Procurement() {
       ) : (
         <Card padding="none" elevation="raised" className="overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm" aria-label="Procurement requests">
               <thead>
                 <tr className="bg-surface-2 border-b border-divider">
                   {["Item", "Category", "Qty", "Est. Cost", "Requested By", "Status", "Actions"].map((h) => (

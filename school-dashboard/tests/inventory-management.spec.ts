@@ -190,6 +190,7 @@ async function gotoAndWait(page: import('@playwright/test').Page, path: string, 
 /* ───────────────── Tests ───────────────── */
 
 test.describe('Inventory — Maintenance, Procurement, Audits & Reports', () => {
+  test.describe.configure({ mode: 'serial' });
   let state: MockState;
 
   test.beforeEach(async ({ page }) => {
@@ -457,6 +458,7 @@ test.describe('Inventory — Maintenance, Procurement, Audits & Reports', () => 
 /* ───────────────── Assets & Vendors (12 tests) ───────────────── */
 
 test.describe('Inventory — Assets & Vendors', () => {
+  test.describe.configure({ mode: 'serial' });
   let state: MockState;
 
   test.beforeEach(async ({ page }) => {
@@ -695,13 +697,13 @@ test.describe('Inventory — Assets & Vendors', () => {
     expect(body?.includes('Wooden Desk')).toBeTruthy();
 
     // Switch to Vendors via tab button click
-    await page.getByRole('button', { name: /Vendors/i }).first().click();
+    await page.getByRole('tab', { name: /Vendors/i }).first().click();
     await page.locator('text=ABC Suppliers').first().waitFor({ timeout: 15000 });
     body = await page.textContent('body');
     expect(body?.includes('ABC Suppliers')).toBeTruthy();
 
     // Switch back to Assets
-    await page.getByRole('button', { name: /Assets/i }).first().click();
+    await page.getByRole('tab', { name: /Assets/i }).first().click();
     await page.locator('text=Wooden Desk').first().waitFor({ timeout: 15000 });
     body = await page.textContent('body');
     expect(body?.includes('Wooden Desk')).toBeTruthy();
@@ -719,7 +721,7 @@ test.describe('Inventory — Assets & Vendors', () => {
     expect(body?.toLowerCase().includes('no assets found')).toBeTruthy();
 
     // Switch to Vendors tab
-    await page.getByRole('button', { name: /Vendors/i }).first().click();
+    await page.getByRole('tab', { name: /Vendors/i }).first().click();
     await page.locator('text=No vendors found').first().waitFor({ timeout: 15000 });
     body = await page.textContent('body');
     expect(body?.toLowerCase().includes('no vendors found')).toBeTruthy();

@@ -93,7 +93,7 @@ function MarkEntryModal({ isOpen, onClose, student, classId, academicYear, term,
               <span className="col-span-1" />
             </div>
             {subjects.map((s, i) => (
-              <div key={i} className="grid grid-cols-12 gap-2 items-center">
+              <div key={`subject-row-${i}`} className="grid grid-cols-12 gap-2 items-center">
                 <Input
                   size="sm"
                   placeholder={t('academics.subjectNamePlaceholder')}
@@ -287,7 +287,7 @@ function BulkMarkEntryModal({ isOpen, onClose, term, academicYear }) {
               <p className="text-xs font-medium text-fg-muted mb-2">Subjects (edit to customize)</p>
               <div className="flex flex-wrap gap-2 items-center">
                 {subjects.map((s, i) => (
-                  <div key={i} className="flex items-center gap-1">
+                  <div key={`subject-edit-${i}`} className="flex items-center gap-1">
                     <DSInput
                       size="sm"
                       value={s}
@@ -638,7 +638,7 @@ export default function CBSEReportCardPage() {
                         </thead>
                         <tbody>
                           {reportCard.scholasticGrades.map((subj, i) => (
-                            <tr key={i}>
+                            <tr key={subj.subjectName || `scholastic-${i}`}>
                               <td>{subj.subjectName}</td>
                               <td className="num">{subj.theoryMarks ?? '—'}</td>
                               <td className="num">{subj.practicalMarks ?? '—'}</td>
@@ -692,7 +692,7 @@ export default function CBSEReportCardPage() {
                         </thead>
                         <tbody>
                           {reportCard.coScholasticGrades.map((item, i) => (
-                            <tr key={i}>
+                            <tr key={item.area || `coscholastic-${i}`}>
                               <td>{item.area}</td>
                               <td>{item.activity || '—'}</td>
                               <td className="num">

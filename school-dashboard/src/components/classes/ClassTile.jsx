@@ -72,7 +72,7 @@ export default function ClassTile({
       <div className="class-tile__chart spark">
         {spark.map((v, i) => (
           <span
-            key={i}
+            key={`spark-bar-${i}`}
             className={`spark__bar${i === spark.length - 1 ? " is-now" : ""}`}
             style={{ flex: 1, height: `${Math.max(8, (v - 60) * 2.4)}%` }}
           />

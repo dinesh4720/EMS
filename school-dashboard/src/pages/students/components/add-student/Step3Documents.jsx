@@ -48,7 +48,7 @@ function Step3Documents({
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); birthCertRef.current?.click(); } }}
         >
           <div className="flex items-center gap-3">
-            <FileText size={20} className="text-fg-faint" />
+            <FileText size={20} className="text-fg-faint" aria-hidden />
             {formData.birthCertificate ? (
               <span className="text-sm text-fg">{formData.birthCertificate.name}</span>
             ) : (
@@ -56,9 +56,9 @@ function Step3Documents({
             )}
           </div>
           {formData.birthCertificate ? (
-            <Button size="sm" variant="ghost" icon={<X size={14} />} onClick={(e) => { e.stopPropagation(); updateField("birthCertificate", null); }} />
+            <Button size="sm" variant="ghost" icon={<X size={14} aria-hidden />} onClick={(e) => { e.stopPropagation(); updateField("birthCertificate", null); }} />
           ) : (
-            <Upload size={16} className="text-fg-faint" />
+            <Upload size={16} className="text-fg-faint" aria-hidden />
           )}
         </div>
         {errors.birthCertificate && <p id="birthCertificate-error" role="alert" aria-live="polite" className="text-xs text-danger">{errors.birthCertificate}</p>}
@@ -83,7 +83,7 @@ function Step3Documents({
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tcRef.current?.click(); } }}
         >
           <div className="flex items-center gap-3">
-            <FileText size={20} className="text-fg-faint" />
+            <FileText size={20} className="text-fg-faint" aria-hidden />
             {formData.transferCertificate ? (
               <span className="text-sm text-fg">{formData.transferCertificate.name}</span>
             ) : (
@@ -91,9 +91,9 @@ function Step3Documents({
             )}
           </div>
           {formData.transferCertificate ? (
-            <Button size="sm" variant="ghost" icon={<X size={14} />} onClick={(e) => { e.stopPropagation(); updateField("transferCertificate", null); }} />
+            <Button size="sm" variant="ghost" icon={<X size={14} aria-hidden />} onClick={(e) => { e.stopPropagation(); updateField("transferCertificate", null); }} />
           ) : (
-            <Upload size={16} className="text-fg-faint" />
+            <Upload size={16} className="text-fg-faint" aria-hidden />
           )}
         </div>
         {errors.transferCertificate && <p id="transferCertificate-error" role="alert" aria-live="polite" className="text-xs text-danger">{errors.transferCertificate}</p>}
@@ -122,7 +122,7 @@ function Step3Documents({
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); aadhaarFrontRef.current?.click(); } }}
         >
           <div className="flex items-center gap-3">
-            <FileText size={20} className="text-fg-faint" />
+            <FileText size={20} className="text-fg-faint" aria-hidden />
             {formData.aadhaarFront ? (
               <span className="text-sm text-fg">Front: {formData.aadhaarFront.name}</span>
             ) : (
@@ -130,9 +130,9 @@ function Step3Documents({
             )}
           </div>
           {formData.aadhaarFront ? (
-            <Button size="sm" variant="ghost" icon={<X size={14} />} onClick={(e) => { e.stopPropagation(); updateField("aadhaarFront", null); }} />
+            <Button size="sm" variant="ghost" icon={<X size={14} aria-hidden />} onClick={(e) => { e.stopPropagation(); updateField("aadhaarFront", null); }} />
           ) : (
-            <Upload size={16} className="text-fg-faint" />
+            <Upload size={16} className="text-fg-faint" aria-hidden />
           )}
         </div>
         {errors.aadhaarFront && <p id="aadhaarFront-error" role="alert" aria-live="polite" className="text-xs text-danger">{errors.aadhaarFront}</p>}
@@ -152,7 +152,7 @@ function Step3Documents({
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); aadhaarBackRef.current?.click(); } }}
         >
           <div className="flex items-center gap-3">
-            <FileText size={20} className="text-fg-faint" />
+            <FileText size={20} className="text-fg-faint" aria-hidden />
             {formData.aadhaarBack ? (
               <span className="text-sm text-fg">Back: {formData.aadhaarBack.name}</span>
             ) : (
@@ -160,9 +160,9 @@ function Step3Documents({
             )}
           </div>
           {formData.aadhaarBack ? (
-            <Button size="sm" variant="ghost" icon={<X size={14} />} onClick={(e) => { e.stopPropagation(); updateField("aadhaarBack", null); }} />
+            <Button size="sm" variant="ghost" icon={<X size={14} aria-hidden />} onClick={(e) => { e.stopPropagation(); updateField("aadhaarBack", null); }} />
           ) : (
-            <Upload size={16} className="text-fg-faint" />
+            <Upload size={16} className="text-fg-faint" aria-hidden />
           )}
         </div>
         {errors.aadhaarBack && <p id="aadhaarBack-error" role="alert" aria-live="polite" className="text-xs text-danger">{errors.aadhaarBack}</p>}
@@ -181,7 +181,7 @@ function Step3Documents({
           onClick={() => otherDocsRef.current?.click()}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); otherDocsRef.current?.click(); } }}
         >
-          <Upload size={14} className="text-fg-muted" />
+          <Upload size={14} className="text-fg-muted" aria-hidden />
           <span className="text-sm text-fg-muted">{t('pages.uploadAdditionalDocuments')}</span>
         </div>
         <input ref={otherDocsRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png" className="hidden"

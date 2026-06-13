@@ -19,13 +19,8 @@ import {
 import useConfirmDialog from '../../hooks/useConfirmDialog';
 
 const EMPTY_FLAG = { key: '', description: '', defaultEnabled: false, plan: 'starter' };
-const PLAN_OPTIONS = [
-  { value: 'starter', label: 'Starter' },
-  { value: 'growth', label: 'Growth' },
-  { value: 'enterprise', label: 'Enterprise' },
-];
 
-function FlagRow({ flag, onToggle, onDelete, saving }) {
+function FlagRow({ flag, onToggle, onDelete, saving, t }) {
   const isSaving = Boolean(saving[flag.key]);
   return (
     <Card padding="sm">
@@ -58,10 +53,10 @@ function FlagRow({ flag, onToggle, onDelete, saving }) {
             onChange={() => onToggle(flag)}
             disabled={isSaving}
             size="sm"
-            aria-label={`Toggle ${flag.key}`}
+            aria-label={t('pages.toggleEntity', { entity: flag.key }) || `Toggle ${flag.key}`}
           />
           <IconButton
-            aria-label={`Delete flag ${flag.key}`}
+            aria-label={t('pages.deleteEntity', { entity: flag.key }) || `Delete flag ${flag.key}`}
             onClick={() => onDelete(flag.key)}
             disabled={isSaving}
             variant="danger"
@@ -76,6 +71,11 @@ function FlagRow({ flag, onToggle, onDelete, saving }) {
 
 export default function FeatureFlagsPanel() {
   const { t } = useTranslation();
+  const PLAN_OPTIONS = [
+    { value: 'starter', label: t('plans.starter') || 'Starter' },
+    { value: 'growth', label: t('plans.growth') || 'Growth' },
+    { value: 'enterprise', label: t('plans.enterprise') || 'Enterprise' },
+  ];
   const [flags, setFlags] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -92,7 +92,7 @@ export default function FeatureFlagsPanel() {
       const data = await featureFlagsAdminApi.getAll();
       setFlags(data.flags || []);
     } catch (err) {
-      setError(err.message || 'Failed to load flags');
+      setError(err.message || t('pages.failedToLoadFlags'));
     } finally {
       setLoading(false);
     }
@@ -106,7 +106,7 @@ export default function FeatureFlagsPanel() {
       await featureFlagsAdminApi.update(flag.key, { defaultEnabled: !flag.defaultEnabled });
       await load();
     } catch (err) {
-      setError(err.message || 'Toggle failed');
+      setError(err.message || t('pages.toggleFailed'));
     } finally {
       setSaving((prev) => ({ ...prev, [flag.key]: false }));
     }
@@ -114,17 +114,17 @@ export default function FeatureFlagsPanel() {
 
   const handleDelete = (key) => {
     showConfirm({
-      title: 'Delete Feature Flag',
-      message: `Are you sure you want to delete the feature flag "${key}"? This action cannot be undone.`,
+      title: t('pages.deleteFeatureFlag'),
+      message: t('pages.deleteFeatureFlagMessage', { key }),
       variant: 'danger',
-      confirmText: 'Delete',
+      confirmText: t('common.delete') || 'Delete',
       onConfirm: async () => {
         setSaving((prev) => ({ ...prev, [key]: true }));
         try {
           await featureFlagsAdminApi.delete(key);
           await load();
         } catch (err) {
-          setError(err.message || 'Delete failed');
+          setError(err.message || t('pages.deleteFailed'));
         } finally {
           setSaving((prev) => ({ ...prev, [key]: false }));
         }
@@ -142,7 +142,7 @@ export default function FeatureFlagsPanel() {
       setShowCreate(false);
       await load();
     } catch (err) {
-      setError(err.message || 'Create failed');
+      setError(err.message || t('pages.createFailed'));
     } finally {
       setCreating(false);
     }
@@ -156,7 +156,7 @@ export default function FeatureFlagsPanel() {
   return (
     <Card padding="md">
       <SectionHeading
-        description="Control feature rollout globally and per school."
+        description={t('pages.controlFeatureRolloutGloballyAndPerSchool')}
         actions={
           <Button
             variant={showCreate ? 'ghost' : 'outline'}
@@ -165,7 +165,7 @@ export default function FeatureFlagsPanel() {
             onClick={() => setShowCreate((prev) => !prev)}
             aria-expanded={showCreate}
           >
-            New Flag
+            {t('pages.newFlag')}
           </Button>
         }
       >
@@ -179,62 +179,61 @@ export default function FeatureFlagsPanel() {
       )}
 
       {showCreate && (
-        <form
-          onSubmit={handleCreate}
-          className="mt-5 rounded-xl border border-border-token bg-surface-2 p-4 space-y-3"
-        >
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Input
-              label="Flag key"
-              required
-              value={form.key}
-              onChange={(e) => setForm({ ...form, key: e.target.value })}
-              placeholder={t('pages.featureFlagKeyPlaceholder')}
-            />
-            <Select
-              label="Plan"
-              value={form.plan}
-              onChange={(e) => setForm({ ...form, plan: e.target.value })}
-              options={PLAN_OPTIONS}
-            />
-          </div>
-          <Input
-            label="Description"
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-            placeholder={t('pages.descriptionOptional1')}
-          />
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <Switch
-              checked={form.defaultEnabled}
-              onChange={(e) => setForm({ ...form, defaultEnabled: e.target.checked })}
-              size="sm"
-              label="Enabled by default"
-            />
-            <div className="flex gap-2">
-              <Button type="button" variant="ghost" size="sm" onClick={closeCreate}>
-                Cancel
-              </Button>
-              <Button type="submit" variant="primary" size="sm" loading={creating}>
-                Create
-              </Button>
+        <Card padding="md" radius="lg" className="mt-5 bg-surface-2">
+          <form onSubmit={handleCreate} className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Input
+                label={t('pages.flagKey')}
+                required
+                value={form.key}
+                onChange={(e) => setForm({ ...form, key: e.target.value })}
+                placeholder={t('pages.featureFlagKeyPlaceholder')}
+              />
+              <Select
+                label={t('pages.flagPlan')}
+                value={form.plan}
+                onChange={(e) => setForm({ ...form, plan: e.target.value })}
+                options={PLAN_OPTIONS}
+              />
             </div>
-          </div>
-        </form>
+            <Input
+              label={t('pages.flagDescription')}
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              placeholder={t('pages.descriptionOptional1')}
+            />
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <Switch
+                checked={form.defaultEnabled}
+                onChange={(e) => setForm({ ...form, defaultEnabled: e.target.checked })}
+                size="sm"
+                label={t('pages.enabledByDefault')}
+              />
+              <div className="flex gap-2">
+                <Button type="button" variant="ghost" size="sm" onClick={closeCreate}>
+                  {t('common.cancel')}
+                </Button>
+                <Button type="submit" variant="primary" size="sm" loading={creating}>
+                  {t('common.create') || 'Create'}
+                </Button>
+              </div>
+            </div>
+          </form>
+        </Card>
       )}
 
       <div className="mt-5">
         {loading ? (
           <div className="space-y-3" aria-busy="true" aria-live="polite">
             {Array.from({ length: 4 }).map((_, i) => (
-              <SkeletonRow key={i} showAvatar={false} />
+              <SkeletonRow key={`flag-skel-${i}`} showAvatar={false} />
             ))}
           </div>
         ) : flags.length === 0 ? (
           <EmptyState
             icon={Flag}
             title={t('pages.noFeatureFlagsDefined')}
-            description="Create a flag above to start rolling out features incrementally."
+            description={t('pages.featureFlagsEmptyDescription')}
           />
         ) : (
           <div className="space-y-3">
@@ -245,6 +244,7 @@ export default function FeatureFlagsPanel() {
                 onToggle={handleToggle}
                 onDelete={handleDelete}
                 saving={saving}
+                t={t}
               />
             ))}
           </div>

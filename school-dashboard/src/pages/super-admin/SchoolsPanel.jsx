@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Building2, RefreshCcw, Sparkles, UserPlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Alert, StatCard } from '../../components/ui';
+import { Alert, ConfirmDialog, StatCard } from '../../components/ui';
 import { superAdminApi } from '../../services/api';
+import useConfirmDialog from '../../hooks/useConfirmDialog';
 import CreateSchoolForm from './components/CreateSchoolForm';
 import SchoolRegistryTable from './components/SchoolRegistryTable';
 
@@ -35,9 +36,11 @@ export default function SchoolsPanel() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
+  const [createError, setCreateError] = useState('');
+  const [tableError, setTableError] = useState('');
   const [rowSaving, setRowSaving] = useState({});
   const [provisioning, setProvisioning] = useState({});
+  const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
 
   const tableRows = useMemo(
     () =>
@@ -50,9 +53,21 @@ export default function SchoolsPanel() {
     [schools]
   );
 
+  const dirtySchoolIds = useMemo(() => {
+    return schools
+      .filter(
+        (school) =>
+          (school.draftPlan !== undefined && school.draftPlan !== school.plan) ||
+          (school.draftStatus !== undefined && school.draftStatus !== school.status) ||
+          (school.draftPlanStatus !== undefined && school.draftPlanStatus !== school.planStatus)
+      )
+      .map((school) => school.id);
+  }, [schools]);
+
   const loadData = async () => {
     setLoading(true);
-    setError('');
+    setCreateError('');
+    setTableError('');
     try {
       const [overviewData, schoolData] = await Promise.all([
         superAdminApi.getOverview(),
@@ -61,7 +76,7 @@ export default function SchoolsPanel() {
       setOverview(overviewData);
       setSchools(schoolData);
     } catch (err) {
-      setError(err.message || 'Failed to load super admin dashboard');
+      setTableError(err.message || t('pages.failedToLoadSuperAdminDashboard'));
     } finally {
       setLoading(false);
     }
@@ -86,11 +101,11 @@ export default function SchoolsPanel() {
   const handleCreateSchool = async (event) => {
     event.preventDefault();
     if (form.adminPassword && form.adminPassword.length < 8) {
-      setError('Admin password must be at least 8 characters');
+      setCreateError(t('pages.adminPasswordMinLength'));
       return;
     }
     setSubmitting(true);
-    setError('');
+    setCreateError('');
     setMessage('');
     try {
       const response = await superAdminApi.createSchool({
@@ -105,14 +120,14 @@ export default function SchoolsPanel() {
       setForm(INITIAL_FORM);
       if (response.temporaryPassword) {
         setMessage(
-          `School created and provisioned successfully. Temporary admin password: ${response.temporaryPassword}`
+          `${t('pages.schoolCreated')} ${t('pages.temporaryPassword', { password: response.temporaryPassword })}`
         );
       } else {
-        setMessage('School created and provisioned successfully.');
+        setMessage(t('pages.schoolCreated'));
       }
       await loadData();
     } catch (err) {
-      setError(err.message || 'Failed to create school');
+      setCreateError(err.message || t('pages.failedToCreateSchool'));
     } finally {
       setSubmitting(false);
     }
@@ -120,7 +135,8 @@ export default function SchoolsPanel() {
 
   const handleSaveSchool = async (school) => {
     setRowSaving((current) => ({ ...current, [school.id]: true }));
-    setError('');
+    setCreateError('');
+    setTableError('');
     setMessage('');
     try {
       const response = await superAdminApi.updateSchool(school.id, {
@@ -141,36 +157,45 @@ export default function SchoolsPanel() {
             : item
         )
       );
-      setMessage(`Updated ${response.school.name}.`);
+      setMessage(t('pages.updatedSchool', { name: response.school.name }));
       const overviewData = await superAdminApi.getOverview();
       setOverview(overviewData);
     } catch (err) {
-      setError(err.message || 'Failed to update school');
+      setTableError(err.message || t('pages.failedToUpdateSchool'));
     } finally {
       setRowSaving((current) => ({ ...current, [school.id]: false }));
     }
   };
 
-  const handleProvisionSchool = async (school) => {
-    setProvisioning((current) => ({ ...current, [school.id]: true }));
-    setError('');
-    setMessage('');
-    try {
-      const response = await superAdminApi.provisionSchool(school.id, {
-        adminName: school.admin?.name || `${school.name} Admin`,
-        adminEmail: school.admin?.email || school.contactEmail,
-      });
-      setMessage(
-        response.temporaryPassword
-          ? `Provisioned ${school.name}. Temporary admin password: ${response.temporaryPassword}`
-          : `Provisioned ${school.name}.`
-      );
-      await loadData();
-    } catch (err) {
-      setError(err.message || 'Failed to provision school');
-    } finally {
-      setProvisioning((current) => ({ ...current, [school.id]: false }));
-    }
+  const handleProvisionSchool = (school) => {
+    showConfirm({
+      title: t('pages.confirmProvisionSchool'),
+      message: t('pages.confirmProvisionSchoolMessage', { name: school.name }),
+      variant: 'primary',
+      confirmText: t('pages.provision'),
+      onConfirm: async () => {
+        setProvisioning((current) => ({ ...current, [school.id]: true }));
+        setCreateError('');
+        setTableError('');
+        setMessage('');
+        try {
+          const response = await superAdminApi.provisionSchool(school.id, {
+            adminName: school.admin?.name || `${school.name} Admin`,
+            adminEmail: school.admin?.email || school.contactEmail,
+          });
+          setMessage(
+            response.temporaryPassword
+              ? `${t('pages.provisionedSchool', { name: school.name })} ${t('pages.temporaryPassword', { password: response.temporaryPassword })}`
+              : t('pages.provisionedSchool', { name: school.name })
+          );
+          await loadData();
+        } catch (err) {
+          setTableError(err.message || t('pages.failedToProvisionSchool'));
+        } finally {
+          setProvisioning((current) => ({ ...current, [school.id]: false }));
+        }
+      },
+    });
   };
 
   return (
@@ -211,9 +236,14 @@ export default function SchoolsPanel() {
           {message}
         </Alert>
       )}
-      {error && (
-        <Alert variant="danger" onClose={() => setError('')}>
-          {error}
+      {createError && (
+        <Alert variant="danger" onClose={() => setCreateError('')}>
+          {createError}
+        </Alert>
+      )}
+      {tableError && (
+        <Alert variant="danger" onClose={() => setTableError('')}>
+          {tableError}
         </Alert>
       )}
 
@@ -223,19 +253,23 @@ export default function SchoolsPanel() {
           updateForm={updateForm}
           onSubmit={handleCreateSchool}
           submitting={submitting}
+          disabled={loading}
         />
         <SchoolRegistryTable
           rows={tableRows}
           loading={loading}
-          error={error && tableRows.length === 0 ? error : null}
+          error={tableError && tableRows.length === 0 ? tableError : null}
           onRefresh={loadData}
           onUpdateDraft={updateSchoolDraft}
           onSave={handleSaveSchool}
           onProvision={handleProvisionSchool}
           rowSaving={rowSaving}
           provisioning={provisioning}
+          dirtySchoolIds={dirtySchoolIds}
         />
       </div>
+
+      <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </div>
   );
 }

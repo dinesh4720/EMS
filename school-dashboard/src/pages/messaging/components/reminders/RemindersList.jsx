@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import SkeletonList from '../../../../components/skeletons/SkeletonList';
+import { SkeletonList } from '../../../../components/ui/Skeleton';
 import {
   Table,
   TableHeader,
@@ -181,12 +181,12 @@ export default function RemindersList({
                 variant="flat"
                 className="bg-surface-2 border border-border-token rounded-xl px-4 py-2.5 h-auto font-medium text-fg-muted hover:bg-surface-hover transition-all duration-200"
               >
-                <Filter size={14} className="text-gray-400" />
+                <Filter size={14} className="text-fg-faint" />
                 <span>Type: </span>
                 <span className="text-fg">
                   {typeFilter === 'all' ? t('constants.reminders.types.all') : REMINDER_TYPES[typeFilter]?.label}
                 </span>
-                <ChevronDown size={14} className="text-gray-400 ml-1" />
+                <ChevronDown size={14} className="text-fg-faint ml-1" />
               </Button>
             </DropdownTrigger>
             <DropdownMenu
@@ -213,12 +213,12 @@ export default function RemindersList({
                 variant="flat"
                 className="bg-surface-2 border border-border-token rounded-xl px-4 py-2.5 h-auto font-medium text-fg-muted hover:bg-surface-hover transition-all duration-200"
               >
-                <Power size={14} className={statusFilter === 'active' ? 'text-emerald-500' : statusFilter === 'inactive' ? 'text-gray-400' : 'text-gray-400'} />
+                <Power size={14} className={statusFilter === 'active' ? 'text-emerald-500' : statusFilter === 'inactive' ? 'text-fg-faint' : 'text-fg-faint'} />
                 <span>Status: </span>
                 <span className="text-fg">
                   {statusFilter === 'all' ? 'All' : statusFilter === 'active' ? 'Active' : 'Inactive'}
                 </span>
-                <ChevronDown size={14} className="text-gray-400 ml-1" />
+                <ChevronDown size={14} className="text-fg-faint ml-1" />
               </Button>
             </DropdownTrigger>
             <DropdownMenu
@@ -231,7 +231,7 @@ export default function RemindersList({
             >
               <DropdownItem key="all">{t('pages.allStatus1')}</DropdownItem>
               <DropdownItem key="active" startContent={<Power size={14} className="text-emerald-500" />}>{t('pages.active')}</DropdownItem>
-              <DropdownItem key="inactive" startContent={<PowerOff size={14} className="text-gray-400" />}>{t('pages.inactive')}</DropdownItem>
+              <DropdownItem key="inactive" startContent={<PowerOff size={14} className="text-fg-faint" />}>{t('pages.inactive')}</DropdownItem>
             </DropdownMenu>
           </Dropdown>
         </div>
@@ -347,7 +347,7 @@ export default function RemindersList({
                         isSelected ? (
                           <Power className={`${className} text-white`} size={12} />
                         ) : (
-                          <PowerOff className={`${className} text-gray-400`} size={12} />
+                          <PowerOff className={`${className} text-fg-faint`} size={12} />
                         )
                       }
                     />
@@ -364,7 +364,7 @@ export default function RemindersList({
                       size="sm"
                       variant="light"
                       onPress={() => onEdit(reminder)}
-                      className="rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-500/10 text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400"
+                      className="rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-500/10 text-fg-subtle hover:text-indigo-600 dark:hover:text-indigo-400"
                     >
                       <Edit size={15} />
                     </Button>
@@ -375,7 +375,7 @@ export default function RemindersList({
                           isIconOnly
                           size="sm"
                           variant="light"
-                          className="rounded-lg hover:bg-surface-2 text-gray-500"
+                          className="rounded-lg hover:bg-surface-2 text-fg-subtle"
                         >
                           <MoreVertical size={15} />
                         </Button>
@@ -388,7 +388,7 @@ export default function RemindersList({
                       >
                         <DropdownItem
                           key="edit"
-                          startContent={<Edit size={15} className="text-gray-500" />}
+                          startContent={<Edit size={15} className="text-fg-subtle" />}
                           onPress={() => onEdit(reminder)}
                           className="text-gray-700 dark:text-gray-300"
                         >

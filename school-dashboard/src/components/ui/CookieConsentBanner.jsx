@@ -78,7 +78,7 @@ export default function CookieConsentBanner() {
 
             <button
               onClick={handleAccept}
-              className="p-1 hover:bg-surface-2 rounded transition-colors text-gray-400"
+              className="p-1 hover:bg-surface-2 rounded transition-colors text-fg-faint"
               aria-label={t('aria.buttons.dismiss')}
             >
               <X size={14} />

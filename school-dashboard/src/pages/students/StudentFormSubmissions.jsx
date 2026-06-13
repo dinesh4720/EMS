@@ -193,7 +193,7 @@ export default function StudentFormSubmissions() {
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 px-3 h-8 text-xs font-medium rounded-md bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] hover:bg-[var(--color-border-strong)] transition-colors"
         >
-          <Download size={14} />
+          <Download size={14} aria-hidden />
           Download File
         </a>
       );
@@ -241,7 +241,7 @@ export default function StudentFormSubmissions() {
       render: (s) => (
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-[var(--accent-bg)] flex items-center justify-center">
-            <User size={16} className="text-[var(--accent)]" />
+            <User size={16} className="text-[var(--accent)]" aria-hidden />
           </div>
           <div className="text-sm font-medium">{getStudentName(s)}</div>
         </div>
@@ -278,13 +278,13 @@ export default function StudentFormSubmissions() {
     <DropdownMenu
       ariaLabel={t('aria.menus.submissionActions')}
       trigger={
-        <Button size="sm" variant="ghost" aria-label="More actions" icon={<MoreVertical size={16} />} />
+        <Button size="sm" variant="ghost" aria-label="More actions" icon={<MoreVertical size={16} aria-hidden />} />
       }
       items={[
         {
           key: "view",
           label: "Review Submission",
-          icon: <Eye size={16} />,
+          icon: <Eye size={16} aria-hidden />,
           onClick: () => handleViewSubmission(submission._id),
         },
         ...(submission.studentId
@@ -292,7 +292,7 @@ export default function StudentFormSubmissions() {
               {
                 key: "student",
                 label: "View Student Record",
-                icon: <User size={16} />,
+                icon: <User size={16} aria-hidden />,
                 onClick: () => navigate(`/students/${submission.studentId}`),
               },
             ]
@@ -516,7 +516,7 @@ export default function StudentFormSubmissions() {
               <Button
                 variant="secondary"
                 size="sm"
-                icon={<Edit size={16} />}
+                icon={<Edit size={16} aria-hidden />}
                 onClick={() => {
                   onReviewClose();
                   onEditRequestOpen();
@@ -527,7 +527,7 @@ export default function StudentFormSubmissions() {
               <Button
                 variant="danger"
                 size="sm"
-                icon={<XCircle size={16} />}
+                icon={<XCircle size={16} aria-hidden />}
                 onClick={() => handleReview("rejected")}
                 loading={loading}
               >
@@ -536,7 +536,7 @@ export default function StudentFormSubmissions() {
               <Button
                 variant="primary"
                 size="sm"
-                icon={<CheckCircle size={16} />}
+                icon={<CheckCircle size={16} aria-hidden />}
                 onClick={() => handleReview("approved")}
                 loading={loading}
               >
@@ -558,7 +558,7 @@ export default function StudentFormSubmissions() {
         <Modal.Header>
           <div className="flex items-center gap-3">
             <div className="p-2 bg-[var(--info-bg)] rounded-xl">
-              <Send size={20} className="text-[var(--info)]" />
+              <Send size={20} className="text-[var(--info)]" aria-hidden />
             </div>
             <div>
               <h3 className="text-xl font-semibold">{t('pages.requestEditReSubmit')}</h3>
@@ -605,7 +605,7 @@ export default function StudentFormSubmissions() {
             onClick={handleRequestEdit}
             loading={loading}
             disabled={!editRequestNotes.trim()}
-            icon={!loading && <Send size={16} />}
+            icon={!loading && <Send size={16} aria-hidden />}
           >
             Send Edit Request
           </Button>

@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import os from 'os';
 
 /**
  * Playwright Configuration for EMS School Dashboard
@@ -11,7 +12,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? 1 : Math.min(4, os.cpus().length),
   reporter: [
     ['html', { outputFolder: 'playwright-report' }],
     ['json', { outputFile: 'test-results/results.json' }],
@@ -57,7 +58,14 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev',
     url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
+    // Always start a dedicated test server so we never accidentally reuse a
+    // stale dev server from another worktree/session.
+    reuseExistingServer: false,
     timeout: 120000,
+    env: {
+      // Force API calls to the test origin so Playwright can intercept them
+      // with the mock API harness in tests/test-utils.ts.
+      VITE_API_URL: '/api',
+    },
   },
 });

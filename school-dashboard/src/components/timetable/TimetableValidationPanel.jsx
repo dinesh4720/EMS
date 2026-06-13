@@ -68,19 +68,19 @@ const TimetableValidationPanel = ({ type = 'class', id, academicYear }) => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-blue-600">{report.totalSlots}</div>
-                    <div className="text-sm text-gray-600">{t('components.totalSlots')}</div>
+                    <div className="text-sm text-fg-muted">{t('components.totalSlots')}</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-green-600">{report.filledSlots}</div>
-                    <div className="text-sm text-gray-600">{t('components.filledSlots')}</div>
+                    <div className="text-sm text-fg-muted">{t('components.filledSlots')}</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-red-600">{report.emptySlots}</div>
-                    <div className="text-sm text-gray-600">{t('components.emptySlots')}</div>
+                    <div className="text-sm text-fg-muted">{t('components.emptySlots')}</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-purple-600">{report.completenessPercentage}%</div>
-                    <div className="text-sm text-gray-600">{t('components.completeness')}</div>
+                    <div className="text-sm text-fg-muted">{t('components.completeness')}</div>
                   </div>
                 </div>
 
@@ -103,7 +103,7 @@ const TimetableValidationPanel = ({ type = 'class', id, academicYear }) => {
             <Card>
               <CardBody>
                 {report.emptySlotDetails.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-fg-subtle">
                     <div className="text-4xl mb-2">✓</div>
                     <div>{t('components.noEmptySlotsTimetableIsComplete')}</div>
                   </div>
@@ -112,18 +112,18 @@ const TimetableValidationPanel = ({ type = 'class', id, academicYear }) => {
                     {report.emptySlotDetails.map((slot) => (
                       <div
                         key={`${slot.day}-${slot.periodName}`}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                        className="flex items-center justify-between p-3 bg-surface-2 rounded-lg hover:bg-surface-hover transition-colors"
                       >
                         <div className="flex items-center gap-3">
                           <Badge color="danger" variant="flat">{t('components.empty')}</Badge>
                           <div>
                             <div className="font-medium">{slot.day}</div>
-                            <div className="text-sm text-gray-600">
+                            <div className="text-sm text-fg-muted">
                               {slot.periodName} ({slot.startTime} - {slot.endTime})
                             </div>
                           </div>
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-fg-subtle">
                           Period {slot.periodIndex + 1}
                         </div>
                       </div>
@@ -150,19 +150,19 @@ const TimetableValidationPanel = ({ type = 'class', id, academicYear }) => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-blue-600">{report.totalPeriods}</div>
-                    <div className="text-sm text-gray-600">{t('components.totalPeriods')}</div>
+                    <div className="text-sm text-fg-muted">{t('components.totalPeriods')}</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-green-600">{report.assignedPeriods}</div>
-                    <div className="text-sm text-gray-600">{t('components.assigned')}</div>
+                    <div className="text-sm text-fg-muted">{t('components.assigned')}</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-red-600">{report.unassignedPeriods}</div>
-                    <div className="text-sm text-gray-600">{t('components.unassigned')}</div>
+                    <div className="text-sm text-fg-muted">{t('components.unassigned')}</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-purple-600">{report.utilizationPercentage}%</div>
-                    <div className="text-sm text-gray-600">{t('components.utilization')}</div>
+                    <div className="text-sm text-fg-muted">{t('components.utilization')}</div>
                   </div>
                 </div>
 
@@ -185,7 +185,7 @@ const TimetableValidationPanel = ({ type = 'class', id, academicYear }) => {
             <Card>
               <CardBody>
                 {report.gapDetails.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-fg-subtle">
                     <div className="text-4xl mb-2">✓</div>
                     <div>{t('components.noFreePeriodsTeacherIsFullyScheduled')}</div>
                   </div>
@@ -194,18 +194,18 @@ const TimetableValidationPanel = ({ type = 'class', id, academicYear }) => {
                     {report.gapDetails.map((gap) => (
                       <div
                         key={`${gap.day}-${gap.periodName}`}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                        className="flex items-center justify-between p-3 bg-surface-2 rounded-lg hover:bg-surface-hover transition-colors"
                       >
                         <div className="flex items-center gap-3">
                           <Badge color="warning" variant="flat">{t('components.free1')}</Badge>
                           <div>
                             <div className="font-medium">{gap.day}</div>
-                            <div className="text-sm text-gray-600">
+                            <div className="text-sm text-fg-muted">
                               {gap.periodName} ({gap.startTime} - {gap.endTime})
                             </div>
                           </div>
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-fg-subtle">
                           Period {gap.periodIndex + 1}
                         </div>
                       </div>
@@ -226,7 +226,7 @@ const TimetableValidationPanel = ({ type = 'class', id, academicYear }) => {
         <CardBody>
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <div className="text-gray-600">{t('components.loadingValidationReport')}</div>
+            <div className="text-fg-muted">{t('components.loadingValidationReport')}</div>
           </div>
         </CardBody>
       </Card>
@@ -240,7 +240,7 @@ const TimetableValidationPanel = ({ type = 'class', id, academicYear }) => {
           <div className="text-center py-8">
             <div className="text-red-600 text-4xl mb-2">⚠</div>
             <div className="text-red-600 font-medium mb-2">{t('components.error')}</div>
-            <div className="text-gray-600">{error}</div>
+            <div className="text-fg-muted">{error}</div>
             <Button
               color="primary"
               variant="flat"

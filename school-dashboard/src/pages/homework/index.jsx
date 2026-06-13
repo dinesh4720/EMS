@@ -6,7 +6,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { homeworkApi } from '../../services/api';
 import {
-  PageLayout, MinimalButton, Breadcrumbs, Card, Chip, Button, IconButton,
+  PageLayout, MinimalButton, Breadcrumbs, Card, Chip, IconButton,
   StatCard, EmptyState, ErrorState, ConfirmDialog, Modal,
 } from '../../components/ui';
 import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
@@ -219,10 +219,10 @@ const HomeworkPage = () => {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard label={t('pages.total2')} value={stats.total} icon={ClipboardList} color="gray" />
-          <StatCard label={t('pages.active')} value={stats.active} icon={Activity} color="blue" />
-          <StatCard label={t('pages.completed')} value={stats.completed} icon={CheckCircle2} color="green" />
-          <StatCard label={t('pages.overdue1')} value={stats.overdue} icon={AlertCircle} color="red" />
+          <StatCard label={t('pages.total2')} value={stats.total} icon={ClipboardList} color="gray" headingLevel="h2" />
+          <StatCard label={t('pages.active')} value={stats.active} icon={Activity} color="blue" headingLevel="h2" />
+          <StatCard label={t('pages.completed')} value={stats.completed} icon={CheckCircle2} color="green" headingLevel="h2" />
+          <StatCard label={t('pages.overdue1')} value={stats.overdue} icon={AlertCircle} color="red" headingLevel="h2" />
         </div>
 
         {filteredHomework.length === 0 ? (
@@ -234,17 +234,8 @@ const HomeworkPage = () => {
                 ? 'Try adjusting your filters to see more results.'
                 : 'Create your first homework assignment to get started.'
             }
-            action={
-              activeFiltersCount > 0 ? (
-                <Button variant="secondary" size="sm" onClick={handleClearFilters}>
-                  Clear Filters
-                </Button>
-              ) : (
-                <Button variant="primary" size="sm" icon={<Plus size={14} />} onClick={openCreateModal}>
-                  Create First Homework
-                </Button>
-              )
-            }
+            actionLabel={activeFiltersCount > 0 ? 'Clear Filters' : 'Create First Homework'}
+            onAction={activeFiltersCount > 0 ? handleClearFilters : openCreateModal}
           />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

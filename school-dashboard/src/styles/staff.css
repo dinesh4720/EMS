@@ -62,6 +62,42 @@
   box-shadow: inset 2px 0 0 var(--accent);
 }
 
+.stafflist__row-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.stafflist__checkbox {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+}
+.stafflist__checkbox[aria-pressed="true"] {
+  background: var(--accent);
+}
+.stafflist__checkbox:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent-bg);
+}
+
 /* Detail pane — frosted glass */
 .detail-pane {
   background: var(--glass-bg);
@@ -187,6 +223,13 @@
   background: rgba(0, 0, 0, 0.32);
   z-index: 200;
   animation: fadeIn 140ms ease-out both;
+  /* Reset native button styles so the overlay looks like a backdrop. */
+  padding: 0;
+  margin: 0;
+  border: none;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
 }
 
 .stafflist__drawer {
@@ -195,6 +238,7 @@
   right: 0;
   bottom: 0;
   width: min(420px, 100vw);
+  z-index: 201;
   display: flex;
   flex-direction: column;
   background: var(--glass-bg);
@@ -553,6 +597,12 @@
   letter-spacing: -0.01em;
   color: var(--fg);
   cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  text-align: left;
 }
 .payroll-table__employee-name:hover { color: var(--accent); }
 .payroll-table__employee-code {
@@ -1144,4 +1194,51 @@
   color: var(--fg-subtle);
   max-width: 280px;
   line-height: 1.5;
+}
+/* Append to staff.css */
+
+/* ============================================================
+   Accessibility — focus indicators and motion preferences
+   ============================================================ */
+
+/* Visible focus rings for keyboard navigation */
+.stafflist__row:focus-visible,
+.leaverow:focus-visible,
+.regcal__day:focus-visible:not(:disabled),
+.ttgrid-cell:focus-visible:not(:disabled),
+.subjrow button:focus-visible,
+.pendingstrip button:focus-visible,
+.assign-empty button:focus-visible,
+.payroll-table button:focus-visible,
+.opt:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Larger touch targets for small icon buttons inside staff modules */
+.detail-pane__head .iconbtn,
+.leavedetail__foot .btn,
+.staff-dashboard__hero-actions .btn {
+  min-height: 28px;
+  min-width: 28px;
+}
+
+/* Respect user motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .stafflist__row,
+  .leaverow,
+  .regcal__day,
+  .ttgrid-cell,
+  .payroll-table tbody tr,
+  .subjrow,
+  .opt {
+    transition: none !important;
+  }
+
+  .stafflist__drawer-overlay,
+  .stafflist__drawer,
+  .fade-in,
+  .staff-dashboard__tabs {
+    animation: none !important;
+  }
 }

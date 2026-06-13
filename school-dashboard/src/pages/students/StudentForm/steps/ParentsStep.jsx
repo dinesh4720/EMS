@@ -118,7 +118,7 @@ function ParentCard({
         </span>
         {canRemove && (
           <Button size="sm" variant="danger" onClick={() => removeParent(index)}>
-            <X size={14} /> Remove
+            <X size={14} aria-hidden /> Remove
           </Button>
         )}
       </div>
@@ -196,7 +196,7 @@ function GuardiansSection({ guardians, formData, updateParent, removeParent, add
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium text-fg">Guardian {idx + 1}</span>
               <Button size="sm" variant="danger" onClick={() => removeParent(index)}>
-                <X size={14} /> Remove
+                <X size={14} aria-hidden /> Remove
               </Button>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -248,7 +248,7 @@ function SiblingsSection({ siblings, updateSibling, addSibling, removeSibling, c
           <div className="flex justify-between items-center">
             <span className="text-sm font-medium text-fg">Sibling {idx + 1}</span>
             <Button size="sm" variant="danger" onClick={() => removeSibling(idx)}>
-              <X size={14} /> Remove
+              <X size={14} aria-hidden /> Remove
             </Button>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -313,7 +313,7 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
             <div className="flex justify-between items-center">
               <span className="text-xs font-medium text-fg-muted">Allergy {idx + 1}</span>
               <Button size="sm" variant="danger" onClick={() => removeHealthInfoItem("allergies", idx)}>
-                <X size={14} /> Remove
+                <X size={14} aria-hidden /> Remove
               </Button>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -372,7 +372,7 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
             <div className="flex justify-between items-center">
               <span className="text-xs font-medium text-fg-muted">Medication {idx + 1}</span>
               <Button size="sm" variant="danger" onClick={() => removeHealthInfoItem("medications", idx)}>
-                <X size={14} /> Remove
+                <X size={14} aria-hidden /> Remove
               </Button>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -441,7 +441,7 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
             <div className="flex justify-between items-center">
               <span className="text-xs font-medium text-fg-muted">Emergency Contact {idx + 1}</span>
               <Button size="sm" variant="danger" onClick={() => removeHealthInfoItem("emergencyContacts", idx)}>
-                <X size={14} /> Remove
+                <X size={14} aria-hidden /> Remove
               </Button>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -528,7 +528,7 @@ function TransportSection({ formData, updateField }) {
               formData.transportRequired ? "bg-primary text-white" : "bg-surface-2 text-fg-faint"
             }`}
           >
-            <Users size={20} />
+            <Users size={20} aria-hidden />
           </div>
           <div>
             <span className={`text-sm font-medium ${formData.transportRequired ? "text-[var(--accent)] dark:text-primary-300" : "text-fg-muted"}`}>
@@ -548,7 +548,7 @@ function TransportSection({ formData, updateField }) {
               formData.hostelRequired ? "bg-primary text-white" : "bg-surface-2 text-fg-faint"
             }`}
           >
-            <Users size={20} />
+            <Users size={20} aria-hidden />
           </div>
           <div>
             <span className={`text-sm font-medium ${formData.hostelRequired ? "text-[var(--accent)] dark:text-primary-300" : "text-fg-muted"}`}>

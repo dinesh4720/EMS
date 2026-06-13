@@ -59,7 +59,6 @@ export default function StaffDetailPane({
   return (
     <aside
       className="detail-pane"
-      role="complementary"
       aria-label={`Profile: ${staff.name}`}
     >
       {/* Head bar */}

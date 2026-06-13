@@ -7,6 +7,13 @@ import { TablePageSkeleton } from "../../../components/skeletons/PageSkeletons";
 import VirtualizedTable from "../../../components/common/VirtualizedTable";
 import PhotoAvatar from "../../../components/PhotoAvatar";
 
+const STATUS_CHIP_CLASS = {
+  paid: "bg-ok-bg text-ok border-ok/20",
+  generated: "bg-info-bg text-info border-info/20",
+  reversed: "bg-danger-bg text-danger-token border-danger-token/20",
+  default: "bg-surface-2 text-fg-muted border-border-token",
+};
+
 export default function PayrollTable({
   loading,
   filteredRecords,
@@ -33,7 +40,16 @@ export default function PayrollTable({
   }
 
   return (
-    <div className="-mx-6" onClick={() => setIsFilterDropdownOpen(false)}>
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
+    <div
+      className="-mx-6"
+      role="region"
+      tabIndex={-1}
+      onClick={() => setIsFilterDropdownOpen(false)}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") setIsFilterDropdownOpen(false);
+      }}
+    >
       <VirtualizedTable
         ariaLabel="Payroll records table"
         data={filteredRecords}
@@ -66,15 +82,15 @@ export default function PayrollTable({
         ]}
         getRowClassName={(record) => {
           const isSelected = selectedKeys.has(record._id);
-          return isSelected ? "bg-primary-50" : "";
+          return isSelected ? "bg-accent-bg-subtle" : "";
         }}
         emptyContent={
           <div className="flex flex-col items-center justify-center py-12">
-            <div className="w-14 h-14 rounded-full bg-default-100 flex items-center justify-center mb-3">
-              <Wallet size={24} className="text-default-400" />
+            <div className="w-14 h-14 rounded-full bg-surface-2 flex items-center justify-center mb-3">
+              <Wallet size={24} className="text-fg-faint" />
             </div>
-            <p className="text-base font-semibold text-default-700 mb-1">{t('staff.payroll.noPayrollRecords', 'No Payroll Records')}</p>
-            <p className="text-sm text-default-500 text-center max-w-sm">
+            <p className="text-base font-semibold text-fg mb-1">{t('staff.payroll.noPayrollRecords', 'No Payroll Records')}</p>
+            <p className="text-sm text-fg-muted text-center max-w-sm">
               {t('staff.payroll.noPayrollRecordsDesc', 'No payroll records found for this period. Run payroll to generate salary records for active staff.')}
             </p>
           </div>
@@ -83,10 +99,10 @@ export default function PayrollTable({
           const employee = staff.find(s => String(s._id || s.id) === String(record.employeeId));
           if (!employee) return null;
           const isSelected = selectedKeys.has(record._id);
-          const cellClass = `py-5 border-b border-default-200 px-3 transition-colors ${isSelected ? "bg-primary-50" : "group-hover:bg-gray-50"}`;
+          const cellClass = `py-5 border-b border-divider px-3 transition-colors ${isSelected ? "bg-accent-bg-subtle" : "group-hover:bg-surface-hover"}`;
           return (
             <>
-              <td className={`py-5 border-b border-default-200 pl-6 pr-3 transition-colors w-12 ${isSelected ? "bg-primary-50" : "group-hover:bg-gray-50"}`} onClick={(e) => e.stopPropagation()}>
+              <td className={`py-5 border-b border-divider pl-6 pr-3 transition-colors w-12 ${isSelected ? "bg-accent-bg-subtle" : "group-hover:bg-surface-hover"}`} onClick={(e) => e.stopPropagation()}>
                 <Checkbox
                   size="md"
                   classNames={{ base: "p-0 m-0", wrapper: "m-0" }}
@@ -102,10 +118,14 @@ export default function PayrollTable({
                 <div className="flex items-center gap-3">
                   <PhotoAvatar src={employee.photo || employee.picture} alt={employee.name} name={employee.name} size="md" type="staff" />
                   <div className="flex flex-col">
-                    <span className="text-default-900 font-medium text-base hover:text-primary transition-colors cursor-pointer" onClick={() => navigate(`/staffs/${employee.id}`)}>
+                    <button
+                      type="button"
+                      className="text-fg font-medium text-base hover:text-accent transition-colors cursor-pointer bg-transparent border-none p-0 m-0 font-inherit text-left"
+                      onClick={() => navigate(`/staffs/${employee.id}`)}
+                    >
                       {employee.name}
-                    </span>
-                    <span className="text-default-500 text-xs">{employee.code}</span>
+                    </button>
+                    <span className="text-fg-muted text-xs">{employee.code}</span>
                   </div>
                 </div>
               </td>
@@ -113,39 +133,39 @@ export default function PayrollTable({
                 <Chip size="sm" variant="flat" className="capitalize">{record.employmentType.replace(/_/g, ' ')}</Chip>
               </td>
               <td className={cellClass}>
-                <span className="font-mono text-sm text-default-600">{formatCurrency(record.baseSalary)}</span>
+                <span className="font-mono text-sm text-fg-muted">{formatCurrency(record.baseSalary)}</span>
               </td>
               <td className={cellClass}>
-                <span className="font-mono text-sm text-success-600">+{formatCurrency(record.totalAllowances)}</span>
+                <span className="font-mono text-sm text-ok">+{formatCurrency(record.totalAllowances)}</span>
               </td>
               <td className={cellClass}>
-                <span className="font-mono text-sm text-danger-600">-{formatCurrency(record.totalDeductions)}</span>
+                <span className="font-mono text-sm text-danger-token">-{formatCurrency(record.totalDeductions)}</span>
               </td>
               <td className={cellClass}>
-                <span className="font-mono text-sm font-semibold text-default-900">{formatCurrency(record.netPay)}</span>
+                <span className="font-mono text-sm font-semibold text-fg">{formatCurrency(record.netPay)}</span>
               </td>
               <td className={cellClass}>
-                <Chip color={getStatusColor(record.status)} size="sm" variant="flat">{getStatusLabel(record.status)}</Chip>
+                <Chip className={STATUS_CHIP_CLASS[record.status] || STATUS_CHIP_CLASS.default} size="sm" variant="flat">{getStatusLabel(record.status)}</Chip>
               </td>
-              <td className={`py-5 border-b border-default-200 pr-6 transition-colors ${isSelected ? "bg-primary-50" : "group-hover:bg-gray-50"}`}>
+              <td className={`py-5 border-b border-divider pr-6 transition-colors ${isSelected ? "bg-accent-bg-subtle" : "group-hover:bg-surface-hover"}`}>
                 <div className="flex justify-end gap-1 items-center">
                   {record.isLocked && (
-                    <div className="flex items-center gap-1 text-xs text-warning-600 bg-warning-50 px-2 py-1 rounded-full border border-warning-200">
+                    <div className="flex items-center gap-1 text-xs text-warn bg-warn-bg px-2 py-1 rounded-full border border-warn/20">
                       <Lock size={12} /><span>{t('staff.payroll.locked')}</span>
                     </div>
                   )}
                   {record.status === 'generated' && (
-                    <Button size="sm" color="success" variant="flat" onPress={() => handleMarkAsPaid(record._id)}>{t('staff.payroll.logPayment')}</Button>
+                    <Button size="sm" variant="flat" className="bg-ok-bg text-ok" onPress={() => handleMarkAsPaid(record._id)}>{t('staff.payroll.logPayment')}</Button>
                   )}
                   {record.status === 'paid' && record.isLocked && (
-                    <Button size="sm" color="warning" variant="flat" onPress={() => handleReversePayment(record)} startContent={<RotateCcw size={14} />}>{t('staff.payroll.reverse')}</Button>
+                    <Button size="sm" variant="flat" className="bg-warn-bg text-warn" onPress={() => handleReversePayment(record)} startContent={<RotateCcw size={14} />}>{t('staff.payroll.reverse')}</Button>
                   )}
-                  <Button size="sm" variant="flat" color="primary" onPress={() => {
+                  <Button size="sm" variant="flat" className="bg-accent-bg text-accent" onPress={() => {
                     setEditingRecord(record);
                     setPaymentForm({ paymentMethod: 'bank_transfer', paymentReference: '', notes: '' });
                     setPaymentModalOpen(true);
                   }}>{t('common.edit')}</Button>
-                  <Button size="sm" variant="light" isIconOnly className="text-default-400"><FileText size={16} /></Button>
+                  <Button size="sm" variant="light" isIconOnly className="text-fg-faint"><FileText size={16} /></Button>
                 </div>
               </td>
             </>

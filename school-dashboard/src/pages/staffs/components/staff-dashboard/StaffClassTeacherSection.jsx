@@ -16,8 +16,17 @@ export default function StaffClassTeacherSection({ classTeacherAssignments, onUn
             return (
               <div
                 key={cls.id}
-                className="px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer"
+                role="button"
+                tabIndex={0}
+                aria-label={`Open class ${cls.name} ${cls.section}`}
+                className="px-5 py-3 flex items-center justify-between hover:bg-surface-2/50 transition-colors cursor-pointer"
                 onClick={() => navigate(`/classes/${cls.id}`)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    navigate(`/classes/${cls.id}`);
+                  }
+                }}
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-surface-2 flex items-center justify-center text-sm font-semibold text-fg">
@@ -30,7 +39,7 @@ export default function StaffClassTeacherSection({ classTeacherAssignments, onUn
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="w-20 h-1.5 bg-surface-2 rounded-full overflow-hidden">
-                    <div className={`h-full rounded-full transition-all ${clsAttendance >= 90 ? 'bg-gray-800 dark:bg-zinc-200' : clsAttendance >= 75 ? 'bg-gray-600 dark:bg-zinc-400' : 'bg-gray-400 dark:bg-zinc-500'}`} style={{ width: `${clsAttendance}%` }} />
+                    <div className={`h-full rounded-full transition-all ${clsAttendance >= 90 ? 'bg-ok' : clsAttendance >= 75 ? 'bg-warn' : 'bg-danger-token'}`} style={{ width: `${clsAttendance}%` }} />
                   </div>
                   <span className="text-sm font-semibold text-fg w-12 text-right">{clsAttendance}%</span>
                   <button
@@ -38,7 +47,7 @@ export default function StaffClassTeacherSection({ classTeacherAssignments, onUn
                       e.stopPropagation();
                       onUnassignClass(cls);
                     }}
-                    className="p-1.5 text-fg-faint hover:text-red-500 dark:hover:text-red-400 hover:bg-surface-2 rounded transition-all"
+                    className="p-1.5 text-fg-faint hover:text-danger-token hover:bg-surface-2 rounded transition-all"
                     title={t('classes.unassign', 'Unassign')}
                   >
                     <X size={14} />
@@ -58,7 +67,7 @@ export default function StaffClassTeacherSection({ classTeacherAssignments, onUn
           <p className="text-xs text-fg-faint mb-4">{t('pages.thisStaffMemberIsNotAClassTeacherForAnyClass')}</p>
           <button
             onClick={onAssignClass}
-            className="text-xs font-medium text-fg-muted hover:text-gray-900 dark:hover:text-zinc-100 bg-surface-2 hover:bg-gray-200 dark:hover:bg-zinc-700 px-4 py-2 rounded-lg transition-colors"
+            className="text-xs font-medium text-fg-muted hover:text-fg bg-surface-2 hover:bg-surface-hover px-4 py-2 rounded-lg transition-colors"
           >
             Assign a Class →
           </button>

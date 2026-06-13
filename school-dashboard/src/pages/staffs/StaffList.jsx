@@ -1,7 +1,6 @@
 import {
   useEffect,
   useMemo,
-  useRef,
   useState,
   useCallback,
 } from "react";
@@ -9,7 +8,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { Plus, MessageSquare, CheckCircle2, Users, Printer, Download } from "lucide-react";
 import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/common/Pagination";
-import SkeletonTable from "../../components/skeletons/SkeletonTable";
+import { SkeletonTable } from "../../components/ui/Skeleton";
 import { useApp } from "../../context/AppContext";
 import ToolbarSearch from "../../components/ui/ToolbarSearch";
 import BulkActionBar from "../../components/ui/BulkActionBar";
@@ -21,7 +20,6 @@ import ExportMenu from "../../components/ui/ExportMenu";
 import PrintPreviewModal from "../../components/ui/PrintPreviewModal";
 import { staffAttendanceApi } from "../../services/api";
 import toast from "react-hot-toast";
-import { PageShell } from "../../components/ui";
 import { isActiveStaff } from "./utils/staffHelpers";
 
 // Mobile breakpoint — below this the right pane collapses to a Drawer
@@ -126,6 +124,13 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
     const onResize = () => setIsMobileViewport(window.innerWidth <= MOBILE_MAX);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  // PageShell previously set the document title; preserve that behavior.
+  useEffect(() => {
+    const prev = document.title;
+    document.title = "Staff · EMS";
+    return () => { document.title = prev; };
   }, []);
 
   // ── Pills-based filter state ──
@@ -359,62 +364,32 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMobileViewport, selectedId, visible.length]);
 
-  // ============ Keyboard nav (Step 3) — scoped to list focus ============
-  const listRef = useRef(null);
-  const rowRefs = useRef(new Map());
+  // ============ Pagination ============
+  // Declared before the keyboard-nav section because moveSelection() reads
+  // `paginatedVisible` in its body and dependency array — referencing it after
+  // this point would hit the temporal dead zone and throw on every render.
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
-  const moveSelection = useCallback(
-    (delta) => {
-      if (paginatedVisible.length === 0) return;
-      const currentIdx = paginatedVisible.findIndex(
-        (s) => (s._id || s.id) === selectedId
-      );
-      const nextIdx =
-        currentIdx === -1
-          ? delta > 0
-            ? 0
-            : paginatedVisible.length - 1
-          : Math.min(paginatedVisible.length - 1, Math.max(0, currentIdx + delta));
-      const nextStaff = paginatedVisible[nextIdx];
-      if (!nextStaff) return;
-      const nextId = nextStaff._id || nextStaff.id;
-      setSelectedId(nextId);
-      // Scroll the row into view next tick (after render)
-      requestAnimationFrame(() => {
-        rowRefs.current.get(nextId)?.scrollIntoView({
-          block: "nearest",
-        });
-        rowRefs.current.get(nextId)?.focus({ preventScroll: true });
-      });
-    },
-    [paginatedVisible, selectedId, setSelectedId]
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(visible.length / pageSize)),
+    [visible.length, pageSize]
   );
 
-  const handleListKeyDown = useCallback(
-    (e) => {
-      // Ignore typing inside the search input — we only act on row buttons
-      const tag = e.target?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA") return;
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        moveSelection(1);
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        moveSelection(-1);
-      } else if (e.key === "Enter") {
-        // Enter on a row keeps selection — for now we just confirm by no-op.
-        // (Could open profile in future; spec says "keeps it".)
-        e.preventDefault();
-      } else if (e.key === "Escape") {
-        // If a selection exists, useBulkSelection handles Esc → clear.
-        // Otherwise fall through and clear the row focus.
-        if (selection.count > 0) return;
-        e.preventDefault();
-        setSelectedId(null);
-      }
-    },
-    [moveSelection, setSelectedId, selection.count]
+  const paginatedVisible = useMemo(
+    () => visible.slice((page - 1) * pageSize, page * pageSize),
+    [visible, page, pageSize]
   );
+
+  useEffect(() => {
+    setPage(1);
+  }, [q, filter, activeFiltersCount]);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   // ============ Bulk action handlers ============
   const toggleCheck = useCallback(
@@ -469,40 +444,20 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
 
   const closeDetail = () => setSelectedId(null);
 
-  // ============ Pagination ============
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
-
-  const totalPages = useMemo(
-    () => Math.max(1, Math.ceil(visible.length / pageSize)),
-    [visible.length, pageSize]
-  );
-
-  const paginatedVisible = useMemo(
-    () => visible.slice((page - 1) * pageSize, page * pageSize),
-    [visible, page, pageSize]
-  );
-
-  useEffect(() => {
-    setPage(1);
-  }, [q, filter, activeFiltersCount]);
-
-  useEffect(() => {
-    if (page > totalPages) {
-      setPage(totalPages);
-    }
-  }, [page, totalPages]);
-
   // The detail pane in mobile mode is a slide-over Drawer
   const detailVisible = !!selectedStaff;
 
   const showClearButton = filter !== "all" || q || activeFiltersCount > 0;
 
   return (
-    <PageShell
-      title="Staff"
-      description={loading ? "Loading…" : `${visible.length} of ${staff.length}`}
-      actions={
+    <div className="page" style={{ minHeight: 0, flex: 1, overflow: "hidden" }}>
+      <header className="page__head">
+        <div>
+          <h1 className="page__title">Staff</h1>
+          <p className="page__sub">
+            {loading ? "Loading…" : `${visible.length} of ${staff.length}`}
+          </p>
+        </div>
         <button
           type="button"
           className="btn btn--accent"
@@ -511,11 +466,10 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
           <Plus size={13} aria-hidden />
           Add staff
         </button>
-      }
-      toolbar={
-        <>
-          <div className="toolbar">
-            <div className="seg" role="tablist" aria-label="Filter staff">
+      </header>
+
+      <div className="toolbar">
+        <div className="seg" role="tablist" aria-label="Filter staff">
               {FILTERS.map((f) => {
                 const count = statusCounts?.[f.key] ?? 0;
                 return (
@@ -622,12 +576,6 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
             onClearAll={clearAllFilters}
             activeFiltersCount={activeFiltersCount}
           />
-        </>
-      }
-      breadcrumbs={[{ label: "Home", href: "/" }, { label: "Staff" }]}
-      bodyPadding="none"
-      scrollable={false}
-    >
       <div
         style={
           isMobileViewport
@@ -652,12 +600,8 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
         >
 
         {/* List rows */}
-        <div
-          ref={listRef}
-          role="listbox"
+        <ul
           aria-label="Staff list"
-          tabIndex={0}
-          onKeyDown={handleListKeyDown}
           style={{
             flex: 1,
             overflow: "auto",
@@ -680,17 +624,11 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
                   ? "Try adjusting your filters or search query."
                   : "No staff found for the current view."
               }
-              action={
-                staff.length === 0 ? (
-                  <button type="button" className="btn btn--accent" onClick={onAddStaff}>
-                    <Plus size={13} aria-hidden /> Add staff
-                  </button>
-                ) : (
-                  <button type="button" className="btn btn--ghost" onClick={clearAllFilters}>
-                    Clear filters
-                  </button>
-                )
-              }
+              actionLabel={staff.length === 0 ? "Add staff" : "Clear filters"}
+              onAction={() => {
+                if (staff.length === 0) onAddStaff?.();
+                else clearAllFilters();
+              }}
               size="md"
             />
           ) : (
@@ -699,10 +637,6 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
               return (
                 <StaffListRow
                   key={id}
-                  ref={(el) => {
-                    if (el) rowRefs.current.set(id, el);
-                    else rowRefs.current.delete(id);
-                  }}
                   staff={s}
                   isActive={selectedId === id}
                   isChecked={selection.isSelected(id)}
@@ -714,7 +648,7 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
               );
             })
           )}
-        </div>
+        </ul>
 
         {/* Pagination footer */}
         {!loading && visible.length > 0 && (
@@ -748,45 +682,46 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
         )}
         </div>
 
-      </div>
+        {/* Right detail pane — desktop only (second grid column) */}
+        {!isMobileViewport && (
+          <StaffDetailPane
+            staff={selectedStaff}
+            todayStatus={selectedStaff ? todayStatusOf(selectedStaff) : null}
+            attendancePct={selectedStaff?.attendancePct}
+            checkInTime={
+              selectedStaff
+                ? staffAttendance?.[selectedStaff._id || selectedStaff.id]?.[
+                    todayKey
+                  ]?.checkIn || null
+                : null
+            }
+            recentActivity={[]}
+            onClose={closeDetail}
+            onViewProfile={() =>
+              selectedStaff && handleViewProfile(selectedStaff)
+            }
+            onMarkAttendance={() =>
+              selectedStaff && handleMarkAttendanceFor(selectedStaff)
+            }
+          />
+        )}
 
-      {/* Right detail pane — desktop only inline; mobile renders below */}
-      {!isMobileViewport && (
-        <StaffDetailPane
-          staff={selectedStaff}
-          todayStatus={selectedStaff ? todayStatusOf(selectedStaff) : null}
-          attendancePct={selectedStaff?.attendancePct}
-          checkInTime={
-            selectedStaff
-              ? staffAttendance?.[selectedStaff._id || selectedStaff.id]?.[
-                  todayKey
-                ]?.checkIn || null
-              : null
-          }
-          recentActivity={[]}
-          onClose={closeDetail}
-          onViewProfile={() =>
-            selectedStaff && handleViewProfile(selectedStaff)
-          }
-          onMarkAttendance={() =>
-            selectedStaff && handleMarkAttendanceFor(selectedStaff)
-          }
-        />
-      )}
+      </div>
 
       {/* Mobile: slide-over drawer for detail */}
       {isMobileViewport && detailVisible && (
-        <div
-          className="stafflist__drawer-overlay"
-          role="presentation"
-          onClick={closeDetail}
-        >
+        <>
+          <button
+            type="button"
+            className="stafflist__drawer-overlay"
+            aria-label="Close profile"
+            onClick={closeDetail}
+          />
           <div
             className="stafflist__drawer"
             role="dialog"
             aria-modal="true"
             aria-label={`Profile: ${selectedStaff?.name}`}
-            onClick={(e) => e.stopPropagation()}
           >
             <StaffDetailPane
               staff={selectedStaff}
@@ -810,7 +745,7 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
               }
             />
           </div>
-        </div>
+        </>
       )}
 
       {/* Print Preview */}
@@ -851,6 +786,6 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
           </table>
         </div>
       </PrintPreviewModal>
-    </PageShell>
+    </div>
   );
 }

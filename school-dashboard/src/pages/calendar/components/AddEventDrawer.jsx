@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import Button from "../../../components/ui/Button";
 import IconButton from "../../../components/ui/IconButton";
-import { Input, Textarea } from "../../../components/ui";
+import { Input, Textarea, Switch } from "../../../components/ui";
 import {
   Plus, Clock, Calendar as CalendarIcon, X, Edit3, Repeat
 } from "lucide-react";
@@ -159,26 +159,28 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                 {/* Event Type Selection */}
                 <div>
                   <label className="text-xs font-medium text-fg-muted mb-2 block">{t('calendar.addEvent.eventTypeLabel', 'Event Type')}</label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="optgrid">
                     {Object.entries(types)
                       .map(([key, { label, icon: Icon }]) => (
                         <button
                           key={key}
+                          type="button"
                           onClick={() => setNewEvent({ ...newEvent, type: key })}
-                          className={`flex items-center gap-2.5 p-3 rounded-lg border transition-all text-left ${
-                            newEvent.type === key
-                              ? 'border-foreground bg-foreground/[0.03]'
-                              : 'border-border-token hover:border-border-strong bg-background'
-                          }`}
+                          className={`opt ${newEvent.type === key ? 'is-active' : ''}`}
                         >
-                          <div className={`w-8 h-8 rounded-md flex items-center justify-center ${
-                            newEvent.type === key ? 'bg-foreground text-background' : 'bg-surface-2 text-fg-muted'
-                          }`}>
-                            {Icon && <Icon size={14} />}
-                          </div>
-                          <span className={`text-sm font-medium ${newEvent.type === key ? 'text-foreground' : 'text-fg-muted'}`}>
-                            {label}
-                          </span>
+                          {Icon && (
+                            <span className="opt__icon">
+                              <Icon size={14} />
+                            </span>
+                          )}
+                          <span className="truncate">{label}</span>
+                          {newEvent.type === key && (
+                            <span className="opt__check" aria-hidden="true">
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            </span>
+                          )}
                         </button>
                       ))}
                   </div>
@@ -200,18 +202,22 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                 {newEvent.type === 'holiday' && (
                   <div>
                     <label className="text-xs font-medium text-fg-muted mb-2 block">{t('calendar.addEvent.holidayTypeLabel', 'Holiday Type')}</label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="optgrid">
                       {['National', 'Regional', 'School'].map((ht) => (
                         <button
                           key={ht}
+                          type="button"
                           onClick={() => setNewEvent({ ...newEvent, holidayType: ht })}
-                          className={`p-2.5 rounded-lg border transition-all text-center text-sm font-medium ${
-                            newEvent.holidayType === ht
-                              ? 'border-foreground bg-foreground/[0.03] text-foreground'
-                              : 'border-border-token hover:border-border-strong bg-background text-fg-muted'
-                          }`}
+                          className={`opt ${newEvent.holidayType === ht ? 'is-active' : ''}`}
                         >
-                          {ht}
+                          <span className="truncate">{ht}</span>
+                          {newEvent.holidayType === ht && (
+                            <span className="opt__check" aria-hidden="true">
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            </span>
+                          )}
                         </button>
                       ))}
                     </div>
@@ -226,7 +232,7 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                       {t('calendar.addEvent.recurrenceLabel', 'Recurrence')}
                     </span>
                   </label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="optgrid">
                     {[
                       { key: '', label: t('calendar.addEvent.noRepeat', 'No Repeat') },
                       { key: 'daily', label: t('calendar.addEvent.daily', 'Daily') },
@@ -235,14 +241,18 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                     ].map(({ key, label }) => (
                       <button
                         key={key}
+                        type="button"
                         onClick={() => setNewEvent({ ...newEvent, recurrence: key })}
-                        className={`p-2.5 rounded-lg border transition-all text-center text-sm font-medium ${
-                          newEvent.recurrence === key
-                            ? 'border-foreground bg-foreground/[0.03] text-foreground'
-                            : 'border-border-token hover:border-border-strong bg-background text-fg-muted'
-                        }`}
+                        className={`opt ${newEvent.recurrence === key ? 'is-active' : ''}`}
                       >
-                        {label}
+                        <span className="truncate">{label}</span>
+                        {newEvent.recurrence === key && (
+                          <span className="opt__check" aria-hidden="true">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          </span>
+                        )}
                       </button>
                     ))}
                   </div>
@@ -254,20 +264,11 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                     <Clock size={16} className="text-fg-faint" />
                     <span className="text-sm text-fg-muted">{t('calendar.addEvent.allDayEvent', 'All Day Event')}</span>
                   </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={newEvent.allDay}
+                  <Switch
+                    checked={newEvent.allDay}
+                    onChange={(e) => setNewEvent({ ...newEvent, allDay: e.target.checked })}
                     aria-label={t('calendar.addEvent.allDayEvent', 'All Day Event')}
-                    onClick={() => setNewEvent({ ...newEvent, allDay: !newEvent.allDay })}
-                    className={`w-10 h-6 rounded-full transition-colors relative ${
-                      newEvent.allDay ? 'bg-foreground' : 'bg-surface-2'
-                    }`}
-                  >
-                    <div className={`w-4 h-4 rounded-full bg-background absolute top-1 transition-transform shadow-sm ${
-                      newEvent.allDay ? 'translate-x-5' : 'translate-x-1'
-                    }`} />
-                  </button>
+                  />
                 </div>
 
                 {/* Time Selection */}
@@ -301,7 +302,7 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                   <label className="text-xs font-medium text-fg-muted mb-2 block">{t('calendar.addEvent.preview', 'Preview')}</label>
                   <div className="border border-border-token rounded-lg p-4 bg-surface">
                     {/* Event Preview Card */}
-                    <div className="bg-background rounded-lg border border-border-token p-4">
+                    <div className="bg-surface rounded-lg border border-border-token p-4">
                       <div className="flex items-start gap-3">
                         <div className={`w-3 h-3 rounded-full mt-0.5 ${
                           newEvent.type === 'holiday' ? 'bg-danger-token' :
@@ -310,7 +311,7 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
                           'bg-accent'
                         }`} />
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-foreground">
+                          <div className="text-sm font-medium text-fg">
                             {newEvent.title || t('calendar.addEvent.eventTitleFallback', 'Event Title')}
                           </div>
                           <div className="flex items-center gap-2 mt-1.5 text-xs text-fg-muted">

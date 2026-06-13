@@ -12,14 +12,14 @@ import {
 import { superAdminApi } from '../../services/api';
 
 const RISK_COLORS = {
-  low: 'text-emerald-600 dark:text-emerald-400',
-  medium: 'text-amber-600 dark:text-amber-400',
-  high: 'text-red-600 dark:text-red-400',
+  low: 'text-[var(--ok)]',
+  medium: 'text-[var(--warn)]',
+  high: 'text-[var(--danger)]',
 };
 
 const TREND_ICON = {
-  improving: <TrendingUp size={14} className="text-emerald-500" aria-hidden="true" />,
-  declining: <TrendingDown size={14} className="text-red-500" aria-hidden="true" />,
+  improving: <TrendingUp size={14} className="text-[var(--ok)]" aria-hidden="true" />,
+  declining: <TrendingDown size={14} className="text-[var(--danger)]" aria-hidden="true" />,
   stable: <Minus size={14} className="text-fg-faint" aria-hidden="true" />,
 };
 
@@ -28,7 +28,7 @@ function HealthBar({ score }) {
     return <span className="text-xs text-fg-faint">—</span>;
   }
   const pct = Math.max(0, Math.min(100, score));
-  const color = pct >= 70 ? 'bg-emerald-500' : pct >= 40 ? 'bg-amber-500' : 'bg-red-500';
+  const color = pct >= 70 ? 'bg-[var(--ok)]' : pct >= 40 ? 'bg-[var(--warn)]' : 'bg-[var(--danger)]';
   return (
     <div className="flex items-center gap-2">
       <div
@@ -58,7 +58,7 @@ export default function SchoolHealthPanel() {
       const data = await superAdminApi.getSchoolHealth();
       setSchools(data.schools || []);
     } catch (err) {
-      setError(err.message || 'Failed to load school health');
+      setError(err.message || t('pages.failedToLoadSchoolHealth'));
     } finally {
       setLoading(false);
     }
@@ -75,11 +75,11 @@ export default function SchoolHealthPanel() {
             {t('pages.schoolHealthMonitor')}
           </h2>
           <p className="mt-1 text-xs text-fg-muted">
-            Health scores, churn risk, and activity across all schools.
+            {t('pages.healthScoresChurnRiskAndActivityAcrossAllSchools')}
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={load} loading={loading}>
-          Refresh
+          {t('common.refresh') || 'Refresh'}
         </Button>
       </div>
 
@@ -91,7 +91,7 @@ export default function SchoolHealthPanel() {
         <EmptyState
           icon={Activity}
           title={t('pages.noSchoolsFound')}
-          description="Health data will appear here once schools are provisioned."
+          description={t('pages.healthDataEmpty')}
         />
       ) : (
         <div className="overflow-x-auto">

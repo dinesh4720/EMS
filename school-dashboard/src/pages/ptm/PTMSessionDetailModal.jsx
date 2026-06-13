@@ -166,7 +166,7 @@ const PTMSessionDetailModal = ({ sessionId, onClose, onDataChanged }) => {
               <div>
                 <p className="text-xs text-fg-muted mb-1">Class</p>
                 <p className="text-fg flex items-center gap-1.5">
-                  <Users size={14} className="text-fg-faint" aria-hidden="true" />
+                  <Users size={14} className="text-fg-muted" aria-hidden="true" />
                   {session.classId?.name}
                   {session.classId?.section ? ` (${session.classId.section})` : ''}
                 </p>
@@ -178,14 +178,14 @@ const PTMSessionDetailModal = ({ sessionId, onClose, onDataChanged }) => {
               <div>
                 <p className="text-xs text-fg-muted mb-1">Slot Duration</p>
                 <p className="text-fg flex items-center gap-1.5">
-                  <Clock size={14} className="text-fg-faint" aria-hidden="true" />
+                  <Clock size={14} className="text-fg-muted" aria-hidden="true" />
                   {session.slotDuration} minutes
                 </p>
               </div>
               <div>
                 <p className="text-xs text-fg-muted mb-1">Venue</p>
                 <p className="text-fg flex items-center gap-1.5">
-                  <MapPin size={14} className="text-fg-faint" aria-hidden="true" />
+                  <MapPin size={14} className="text-fg-muted" aria-hidden="true" />
                   {session.venue || '—'}
                 </p>
               </div>
@@ -201,7 +201,7 @@ const PTMSessionDetailModal = ({ sessionId, onClose, onDataChanged }) => {
           {allowBooking && (
             <div>
               <h4 className="text-sm font-medium text-fg mb-3 flex items-center gap-2">
-                <UserPlus size={16} className="text-fg-faint" aria-hidden="true" />
+                <UserPlus size={16} className="text-fg-muted" aria-hidden="true" />
                 Book Slot (Admin)
               </h4>
               <form onSubmit={handleBookSlot} className="space-y-3">
@@ -318,6 +318,7 @@ const PTMSessionDetailModal = ({ sessionId, onClose, onDataChanged }) => {
                   loading={changingStatus === status}
                   disabled={changingStatus !== null && changingStatus !== status}
                   onClick={() => handleStatusChange(status)}
+                  aria-label={`Change session status to ${status}`}
                 >
                   → {status.charAt(0).toUpperCase() + status.slice(1)}
                 </Button>

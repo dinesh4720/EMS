@@ -12,7 +12,6 @@ import { usePermissions } from "../../context/PermissionContext";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import { useTranslation } from "react-i18next";
 import logger from "../../utils/logger";
-import { PageHeader, Breadcrumbs } from "../../components/ui";
 
 /**
  * BulkSubjectAssignment — Page for assigning subjects and classes to teachers in bulk.
@@ -343,20 +342,9 @@ export default function BulkSubjectAssignment() {
 
   return (
     <div className="page">
-      <PageHeader
-        title="Bulk subject assignment"
-        description={`${teachers.length} teachers · ${availableSubjects.length} subjects`}
-        breadcrumb={
-          <Breadcrumbs
-            size="sm"
-            items={[
-              { label: "Staff", href: "/staffs" },
-              { label: "Bulk subject assignment" },
-            ]}
-          />
-        }
-      />
-
+      {/* Header (title + description) is owned by the staffs section shell
+          (PageLayout in pages/staffs/index.jsx) — no page-level header here,
+          or it renders twice. */}
       <div className="col" style={{ gap: 12 }}>
         {/* Info banner */}
         <div className="staff-banner">
@@ -448,7 +436,7 @@ export default function BulkSubjectAssignment() {
           {loading ? (
             <div className="col" style={{ gap: 6, padding: 12 }}>
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="row" style={{ gap: 10, alignItems: "center", padding: 12 }}>
+                <div key={`teacher-skeleton-${i}`} className="row" style={{ gap: 10, alignItems: "center", padding: 12 }}>
                   <div style={{ width: 28, height: 28, borderRadius: 999, background: "var(--surface-2)" }} />
                   <div className="col" style={{ flex: 1, gap: 4 }}>
                     <div style={{ height: 12, width: "30%", background: "var(--surface-2)", borderRadius: 4 }} />
@@ -634,10 +622,9 @@ export default function BulkSubjectAssignment() {
           <ModalBody className="py-6 px-6">
             <div className="col" style={{ gap: 16 }}>
               <div className="col" style={{ gap: 6 }}>
-                <label className="text-sm font-medium text-fg">
-                  Subject <span style={{ color: "var(--danger)" }}>*</span>
-                </label>
                 <Select
+                  label="Subject"
+                  isRequired
                   placeholder="Select a subject"
                   selectedKeys={newAssignment.subject ? new Set([newAssignment.subject]) : new Set()}
                   onSelectionChange={(keys) =>
@@ -645,7 +632,6 @@ export default function BulkSubjectAssignment() {
                   }
                   variant="bordered"
                   size="md"
-                  aria-label="Select subject"
                 >
                   {availableSubjects.map((subject) => (
                     <SelectItem key={subject} value={subject}>{subject}</SelectItem>
@@ -654,10 +640,10 @@ export default function BulkSubjectAssignment() {
               </div>
 
               <div className="col" style={{ gap: 6 }}>
-                <label className="text-sm font-medium text-fg">
+                <span id="bulk-classes-label" className="text-sm font-medium text-fg">
                   Classes <span style={{ color: "var(--danger)" }}>*</span>
-                </label>
-                <div className="optgrid" role="group" aria-label="Select classes">
+                </span>
+                <div className="optgrid" role="group" aria-labelledby="bulk-classes-label">
                   {classesWithTeachers.map((cls) => {
                     const id = cls.id;
                     const isActive = newAssignment.classIds.has(id);

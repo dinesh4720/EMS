@@ -74,7 +74,7 @@ const StudentsFiltersBar = forwardRef(function StudentsFiltersBar({
                     key: "sort-name-asc",
                     label: t("pages.nameAZ"),
                     icon: sortDescriptor.column === "name" && sortDescriptor.direction === "ascending"
-                        ? <Check size={14} className="text-teal-600" /> : <span className="w-3.5" />,
+                        ? <Check size={14} className="text-teal-600" aria-hidden /> : <span className="w-3.5" />,
                     onClick: () => {
                         setSortDescriptor({ column: "name", direction: "ascending" });
                         setSortOpen(false);
@@ -84,7 +84,7 @@ const StudentsFiltersBar = forwardRef(function StudentsFiltersBar({
                     key: "sort-name-desc",
                     label: t("pages.nameZA"),
                     icon: sortDescriptor.column === "name" && sortDescriptor.direction === "descending"
-                        ? <Check size={14} className="text-teal-600" /> : <span className="w-3.5" />,
+                        ? <Check size={14} className="text-teal-600" aria-hidden /> : <span className="w-3.5" />,
                     onClick: () => {
                         setSortDescriptor({ column: "name", direction: "descending" });
                         setSortOpen(false);
@@ -94,7 +94,7 @@ const StudentsFiltersBar = forwardRef(function StudentsFiltersBar({
                     key: "sort-class-asc",
                     label: t("pages.classAscending"),
                     icon: sortDescriptor.column === "class" && sortDescriptor.direction === "ascending"
-                        ? <Check size={14} className="text-teal-600" /> : <span className="w-3.5" />,
+                        ? <Check size={14} className="text-teal-600" aria-hidden /> : <span className="w-3.5" />,
                     onClick: () => {
                         setSortDescriptor({ column: "class", direction: "ascending" });
                         setSortOpen(false);
@@ -104,7 +104,7 @@ const StudentsFiltersBar = forwardRef(function StudentsFiltersBar({
                     key: "sort-class-desc",
                     label: t("pages.classDescending"),
                     icon: sortDescriptor.column === "class" && sortDescriptor.direction === "descending"
-                        ? <Check size={14} className="text-teal-600" /> : <span className="w-3.5" />,
+                        ? <Check size={14} className="text-teal-600" aria-hidden /> : <span className="w-3.5" />,
                     onClick: () => {
                         setSortDescriptor({ column: "class", direction: "descending" });
                         setSortOpen(false);
@@ -119,7 +119,7 @@ const StudentsFiltersBar = forwardRef(function StudentsFiltersBar({
         label: (
             <div className="flex items-center gap-2 w-full">
                 {visibleColumns.has(column.key) ? (
-                    <Check size={14} className="text-accent" />
+                    <Check size={14} className="text-accent" aria-hidden />
                 ) : (
                     <span className="w-3.5" />
                 )}
@@ -136,7 +136,7 @@ const StudentsFiltersBar = forwardRef(function StudentsFiltersBar({
                 {
                     key: "tc",
                     label: "Transfer Certificate",
-                    icon: <FileText size={14} />,
+                    icon: <FileText size={14} aria-hidden />,
                     onClick: () => { onNavigateToTC(); setMoreDropdownOpen(false); },
                 },
             ],
@@ -147,13 +147,13 @@ const StudentsFiltersBar = forwardRef(function StudentsFiltersBar({
                 {
                     key: "upload",
                     label: "Bulk Upload CSV",
-                    icon: <FileSpreadsheet size={14} />,
+                    icon: <FileSpreadsheet size={14} aria-hidden />,
                     onClick: () => { setCsvFile(null); onCsvUploadOpen(); setMoreDropdownOpen(false); },
                 },
                 {
                     key: "download",
                     label: "Download List CSV",
-                    icon: <Download size={14} />,
+                    icon: <Download size={14} aria-hidden />,
                     onClick: () => { downloadStudentList(); setMoreDropdownOpen(false); },
                 },
             ],
@@ -164,33 +164,33 @@ const StudentsFiltersBar = forwardRef(function StudentsFiltersBar({
         {
             title: t("pages.academicActions"),
             items: [
-                { key: "promote", label: "Promote / Mark Passed Out", icon: <ArrowUpCircle size={14} />, onClick: () => handleBulkAction("promote") },
-                { key: "tc", label: "Generate TC", icon: <FileText size={14} />, onClick: () => handleBulkAction("tc") },
+                { key: "promote", label: "Promote / Mark Passed Out", icon: <ArrowUpCircle size={14} aria-hidden />, onClick: () => handleBulkAction("promote") },
+                { key: "tc", label: "Generate TC", icon: <FileText size={14} aria-hidden />, onClick: () => handleBulkAction("tc") },
             ],
         },
         {
             title: t("pages.statusUpdates"),
             items: [
-                { key: "deactivate", label: "Mark Inactive", icon: <UserX size={14} />, onClick: () => handleBulkAction("deactivate") },
-                { key: "alumni", label: "Mark as Alumni", icon: <GraduationCap size={14} />, onClick: () => handleBulkAction("alumni") },
+                { key: "deactivate", label: "Mark Inactive", icon: <UserX size={14} aria-hidden />, onClick: () => handleBulkAction("deactivate") },
+                { key: "alumni", label: "Mark as Alumni", icon: <GraduationCap size={14} aria-hidden />, onClick: () => handleBulkAction("alumni") },
             ],
         },
         {
             title: t("pages.communication1"),
             items: [
-                { key: "message", label: "Send Message to Parent", icon: <MessageSquare size={14} />, onClick: () => handleBulkAction("message") },
+                { key: "message", label: "Send Message to Parent", icon: <MessageSquare size={14} aria-hidden />, onClick: () => handleBulkAction("message") },
             ],
         },
         {
             title: t("pages.export1"),
             items: [
-                { key: "download-selected", label: "Download Selected as CSV", icon: <Download size={14} />, onClick: downloadSelectedStudents },
+                { key: "download-selected", label: "Download Selected as CSV", icon: <Download size={14} aria-hidden />, onClick: downloadSelectedStudents },
             ],
         },
         {
             title: "Danger Zone",
             items: [
-                { key: "delete", label: "Delete Selected", icon: <Trash2 size={14} />, isDestructive: true, onClick: () => handleBulkAction("delete") },
+                { key: "delete", label: "Delete Selected", icon: <Trash2 size={14} aria-hidden />, isDestructive: true, onClick: () => handleBulkAction("delete") },
             ],
         },
     ];
@@ -295,6 +295,7 @@ const StudentsFiltersBar = forwardRef(function StudentsFiltersBar({
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     aria-label="Search students"
+                    role="searchbox"
                     autoComplete="off"
                 />
                 {searchQuery ? (

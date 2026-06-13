@@ -325,7 +325,7 @@ export default function AiAssistantPage() {
 
               {messages.map((msg, idx) => (
                 <div
-                  key={`msg-${idx}`}
+                  key={`msg-${idx}-${msg.role}`}
                   className={cn('flex gap-4', msg.role === 'user' ? 'justify-end' : 'justify-start')}
                 >
                   {msg.role === 'assistant' && (

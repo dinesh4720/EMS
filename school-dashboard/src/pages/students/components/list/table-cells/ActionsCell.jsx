@@ -133,7 +133,7 @@ function ActionsCell({
                                 handlePinStudent(student.id);
                             }
                         }}
-                        icon={student.isPinned ? <PinOff size={16} /> : <Pin size={16} />}
+                        icon={student.isPinned ? <PinOff size={16} aria-hidden /> : <Pin size={16} aria-hidden />}
                     />
                 </Tooltip>
 
@@ -149,7 +149,7 @@ function ActionsCell({
                             setSelectedStudent(student);
                             setIsEditDrawerOpen(true);
                         }}
-                        icon={<Edit size={16} />}
+                        icon={<Edit size={16} aria-hidden />}
                     />
                 </Tooltip>
 
@@ -164,7 +164,7 @@ function ActionsCell({
                             className="text-fg-faint"
                             aria-label="More actions"
                             onMouseDown={(e) => e.preventDefault()}
-                            icon={<MoreVertical size={18} />}
+                            icon={<MoreVertical size={18} aria-hidden />}
                         />
                     }
                     sections={dropdownSections}

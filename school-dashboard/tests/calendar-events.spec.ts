@@ -51,11 +51,11 @@ test.describe('Calendar — Events & Navigation', () => {
     await expect(page.locator('#root')).toContainText('Sun', { timeout: 3000 });
     await expect(page.locator('#root')).toContainText('Mon', { timeout: 3000 });
 
-    // Month view button should be active (has shadow-sm class indicating selection)
+    // Month view button should be active (design-system .seg__btn.is-active)
     const monthBtn = page.locator('button').filter({ hasText: 'Month' }).first();
     if (await monthBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
       const className = await monthBtn.getAttribute('class');
-      expect(className).toContain('shadow');
+      expect(className).toContain('is-active');
     }
   });
 
@@ -103,7 +103,7 @@ test.describe('Calendar — Events & Navigation', () => {
 
     // Week view should show 7 day columns with date numbers
     const weekClass = await weekBtn.getAttribute('class');
-    expect(weekClass).toContain('shadow');
+    expect(weekClass).toContain('is-active');
 
     // Switch to day view
     const dayBtn = page.locator('button').filter({ hasText: /^Day$/ }).first();
@@ -111,7 +111,7 @@ test.describe('Calendar — Events & Navigation', () => {
     await page.waitForTimeout(300);
 
     const dayClass = await dayBtn.getAttribute('class');
-    expect(dayClass).toContain('shadow');
+    expect(dayClass).toContain('is-active');
 
     // Day view shows the current date number prominently
     const dayViewText = await page.locator('#root').textContent();
@@ -122,7 +122,7 @@ test.describe('Calendar — Events & Navigation', () => {
     await monthBtn.click();
     await page.waitForTimeout(300);
     const monthClass = await monthBtn.getAttribute('class');
-    expect(monthClass).toContain('shadow');
+    expect(monthClass).toContain('is-active');
   });
 
   test('4 — events appear on correct date cells with type-based color coding', async ({ page }) => {

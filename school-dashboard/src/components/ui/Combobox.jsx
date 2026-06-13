@@ -20,12 +20,16 @@ function defaultFilter(option, query) {
   );
 }
 
+function optionId(triggerId, value) {
+  return `${triggerId}-option-${value}`;
+}
+
 /**
  * Combobox — searchable single-select dropdown.
  *
  * Options are `{ value, label, description?, disabled?, icon? }`. The trigger
  * shows the current selection, pressing it opens a popover with a search input
- * and the filtered list. Keyboard navigation: ArrowUp/Down, Enter, Escape.
+ * and the filtered list. Keyboard navigation: ArrowUp/Down, Home, End, Enter, Escape.
  */
 export default function Combobox({
   options = [],
@@ -47,6 +51,7 @@ export default function Combobox({
 }) {
   const generatedId = useId();
   const triggerId = id || generatedId;
+  const listboxId = `${triggerId}-listbox`;
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [highlight, setHighlight] = useState(0);
@@ -73,6 +78,15 @@ export default function Combobox({
     setHighlight(0);
   }, [query]);
 
+  // Keep the active option scrolled into view.
+  useEffect(() => {
+    if (!open || !filtered.length) return;
+    const active = document.getElementById(optionId(triggerId, filtered[highlight]?.value));
+    if (active) {
+      active.scrollIntoView({ block: "nearest" });
+    }
+  }, [highlight, open, filtered, triggerId]);
+
   const selected = options.find((opt) => opt.value === value);
 
   const commit = (opt) => {
@@ -82,13 +96,22 @@ export default function Combobox({
   };
 
   const handleKeyDown = (e) => {
-    if (!filtered.length) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setHighlight((prev) => Math.min(prev + 1, filtered.length - 1));
+      if (filtered.length) {
+        setHighlight((prev) => Math.min(prev + 1, filtered.length - 1));
+      }
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setHighlight((prev) => Math.max(prev - 1, 0));
+      if (filtered.length) {
+        setHighlight((prev) => Math.max(prev - 1, 0));
+      }
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      if (filtered.length) setHighlight(0);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      if (filtered.length) setHighlight(filtered.length - 1);
     } else if (e.key === "Enter") {
       e.preventDefault();
       const opt = filtered[highlight];
@@ -98,6 +121,9 @@ export default function Combobox({
       setOpen(false);
     }
   };
+
+  const activeDescendant =
+    open && filtered[highlight] ? optionId(triggerId, filtered[highlight].value) : undefined;
 
   const triggerLabel = selected ? selected.label : placeholder;
   const ariaLabel = ariaLabelProp || (typeof label === "string" ? label : undefined);
@@ -125,14 +151,15 @@ export default function Combobox({
             role="combobox"
             aria-label={ariaLabel}
             aria-expanded={open}
-            aria-controls={`${triggerId}-listbox`}
+            aria-controls={listboxId}
+            aria-activedescendant={activeDescendant}
             disabled={disabled}
             className={cn(
               "inline-flex items-center gap-2 w-full rounded-lg border",
               "border-[var(--color-border-strong)] bg-[var(--color-bg)]",
               "text-[var(--color-text-primary)] transition-colors",
               "hover:border-[var(--color-primary)]",
-              "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
+              "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring,var(--color-primary))]",
               "disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[var(--color-bg-secondary)]",
               TRIGGER_SIZE[size],
               triggerClassName
@@ -150,18 +177,18 @@ export default function Combobox({
               {triggerLabel}
             </span>
             {clearable && selected ? (
-              <span
-                role="button"
+              <button
+                type="button"
                 tabIndex={-1}
                 aria-label="Clear selection"
                 onClick={(e) => {
                   e.stopPropagation();
                   onChange?.(undefined);
                 }}
-                className="p-0.5 rounded hover:bg-[var(--color-bg-secondary)] flex-shrink-0"
+                className="p-0.5 rounded hover:bg-[var(--color-bg-secondary)] flex-shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring,var(--color-primary))]"
               >
                 <X size={14} className="text-[var(--color-text-muted)]" aria-hidden="true" />
-              </span>
+              </button>
             ) : null}
             <ChevronDown
               size={16}
@@ -192,7 +219,7 @@ export default function Combobox({
           </div>
           <ul
             ref={listRef}
-            id={`${triggerId}-listbox`}
+            id={listboxId}
             role="listbox"
             aria-label={ariaLabel}
             className="max-h-64 overflow-y-auto py-1"
@@ -211,6 +238,7 @@ export default function Combobox({
                 return (
                   <li
                     key={opt.value}
+                    id={optionId(triggerId, opt.value)}
                     role="option"
                     aria-selected={isSelected}
                     aria-disabled={opt.disabled || undefined}

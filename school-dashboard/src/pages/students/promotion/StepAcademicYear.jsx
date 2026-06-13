@@ -165,7 +165,7 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
       {checking && (
         <Card elevation="raised" className="bg-surface-2 border border-border-token">
           <Card.Content className="p-4 flex items-center gap-3">
-            <Loader2 size={16} className="animate-spin text-fg-faint" />
+            <Loader2 size={16} className="animate-spin text-fg-faint" aria-hidden />
             <p className="text-sm text-fg-muted">Checking target year classes…</p>
           </Card.Content>
         </Card>
@@ -184,9 +184,9 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3">
                 {targetYearStatus.exists ? (
-                  <CheckCircle size={18} className="text-ok mt-0.5" />
+                  <CheckCircle size={18} className="text-ok mt-0.5" aria-hidden />
                 ) : (
-                  <AlertTriangle size={18} className="text-warn mt-0.5" />
+                  <AlertTriangle size={18} className="text-warn mt-0.5" aria-hidden />
                 )}
                 <div>
                   <p className="text-sm font-medium text-fg">

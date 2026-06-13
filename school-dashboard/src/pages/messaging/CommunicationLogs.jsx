@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { announcementsApi } from "../../services/api";
 import toast from "react-hot-toast";
-import SkeletonList from "../../components/skeletons/SkeletonList";
+import { SkeletonList } from "../../components/ui/Skeleton";
 
 const CHANNEL_CONFIG = {
   email: { label: "Email", icon: Mail, color: "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300", dot: "bg-blue-500" },
@@ -141,10 +141,10 @@ export default function CommunicationLogs() {
 
   if (loading) {
     return (
-      <div className="space-y-6 animate-in fade-in duration-300">
+      <div className="space-y-6 animate-in fade-in duration-300 motion-reduce:animate-none">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+            <div key={`log-skel-${i}`} className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
               <div className="flex items-start gap-4">
                 <div className="w-10 h-10 rounded-lg animate-shimmer" />
                 <div className="flex-1 space-y-2">
@@ -164,7 +164,7 @@ export default function CommunicationLogs() {
 
   if (error) {
     return (
-      <div className="animate-in fade-in duration-300">
+      <div className="animate-in fade-in duration-300 motion-reduce:animate-none">
         <div className="rounded-2xl border border-red-100 bg-white p-8 shadow-sm dark:border-red-500/20 dark:bg-zinc-900">
           <div className="mx-auto flex max-w-md flex-col items-center text-center gap-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400">
@@ -187,7 +187,7 @@ export default function CommunicationLogs() {
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="space-y-6 animate-in fade-in duration-300 motion-reduce:animate-none">
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard
@@ -218,7 +218,7 @@ export default function CommunicationLogs() {
         <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 p-4 dark:border-zinc-800">
           {/* Search */}
           <div className="relative flex-1 min-w-[200px]">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-faint" />
             <input
               type="text"
               placeholder="Search by title or content…"
@@ -352,18 +352,22 @@ export default function CommunicationLogs() {
             </p>
             <div className="flex items-center gap-2">
               <button
+                type="button"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                aria-label="Previous page"
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
               >
-                <ChevronLeft size={14} />
+                <ChevronLeft size={14} aria-hidden="true" />
               </button>
               <button
+                type="button"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                aria-label="Next page"
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
               >
-                <ChevronRight size={14} />
+                <ChevronRight size={14} aria-hidden="true" />
               </button>
             </div>
           </div>

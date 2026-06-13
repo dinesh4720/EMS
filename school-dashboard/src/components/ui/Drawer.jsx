@@ -71,7 +71,6 @@ const Drawer = memo(function Drawer({
     >
       <div
         className={`ds-drawer ${sizeClass} ${placementClass} ${className}`.trim()}
-        onClick={(e) => e.stopPropagation()}
         role="document"
         aria-label={!title && ariaLabel ? ariaLabel : undefined}
       >

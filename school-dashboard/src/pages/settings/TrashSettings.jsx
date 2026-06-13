@@ -63,7 +63,7 @@ export const trashApi = {
 import { request } from "../../services/api";
 import { getDateLocale } from '../../i18n/index';
 import { useTranslation } from 'react-i18next';
-import SkeletonTable from '../../components/skeletons/SkeletonTable';
+import { SkeletonTable } from '../../components/ui/Skeleton';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
 
@@ -652,10 +652,11 @@ export default function TrashSettings() {
                           color="primary"
                           onPress={() => handleRestore(itemId)}
                           isLoading={actionInProgress}
+                          aria-label={t('pages.restoreItem')}
                           title={t('pages.restoreItem')}
                           className="transition-all duration-200"
                         >
-                          <RotateCcw size={16} />
+                          <RotateCcw size={16} aria-hidden="true" />
                         </Button>
                         <Button
                           isIconOnly
@@ -664,10 +665,11 @@ export default function TrashSettings() {
                           color="danger"
                           onPress={() => handlePermanentDelete(itemId)}
                           isLoading={actionInProgress}
+                          aria-label={t('pages.deletePermanently2')}
                           title={t('pages.deletePermanently2')}
                           className="transition-all duration-200"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={16} aria-hidden="true" />
                         </Button>
                       </div>
                     </TableCell>

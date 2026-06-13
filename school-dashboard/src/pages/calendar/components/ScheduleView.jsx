@@ -82,11 +82,11 @@ export default function ScheduleView({ scheduleViewData = [], eventTypes, onEven
 
                   {/* Indicator */}
                   <div className={`w-1 h-8 rounded-full ${
-                    event.type === 'appointment' ? 'bg-[color:var(--ok)]' :
+                    event.type === 'appointment' ? 'bg-ok' :
                     event.type === 'class' ? 'bg-fg-faint' :
-                    event.type === 'meeting' ? 'bg-[color:var(--warn)]' :
-                    event.type === 'exam' ? 'bg-[color:var(--danger)]' :
-                    event.type === 'holiday' ? 'bg-[color:var(--danger)]' :
+                    event.type === 'meeting' ? 'bg-warn' :
+                    event.type === 'exam' ? 'bg-danger' :
+                    event.type === 'holiday' ? 'bg-danger' :
                     'bg-accent'
                   }`} />
 

@@ -56,6 +56,7 @@ const TransferCertificatePage = lazyWithRetry(() => import("./pages/students/Tra
 const ReportsPage = lazyWithRetry(() => import("./pages/reports"));
 const DataToolsPage = lazyWithRetry(() => import("./pages/data-tools"));
 const StyleGuidePage = lazyWithRetry(() => import("./pages/StyleGuide"));
+const IAPage = lazyWithRetry(() => import("./pages/IA"));
 const AuditLogsPage = lazyWithRetry(() => import("./pages/audit-logs"));
 
 // Lazy load components that aren't needed on initial render
@@ -244,7 +245,9 @@ function AuthenticatedApp() {
         )}
         <AiAssistantLayout>
           <div className={`flex-1 flex flex-col ${(isStaffListPage || isStudentListPage) ? 'h-screen overflow-hidden' : 'min-h-screen'} transition-all duration-300 ${isSidebarOpen ? 'ml-[var(--sidebar-width)]' : 'ml-0 lg:ml-[var(--sidebar-width-collapsed)]'} relative z-10 bg-bg max-md:pb-[var(--bottom-bar-h)]`}>
-            <Topbar isSidebarOpen={isSidebarOpen} />
+            <ErrorBoundary message="The top bar encountered an error.">
+              <Topbar isSidebarOpen={isSidebarOpen} />
+            </ErrorBoundary>
             <div className="mt-11 flex-1 flex flex-col min-h-0">
               <Suspense fallback={null}>
                 <TrialBanner />
@@ -488,6 +491,11 @@ function AuthenticatedApp() {
                     <Route path="/style-guide" element={
                       <RouteEB>
                         <StyleGuidePage />
+                      </RouteEB>
+                    } />
+                    <Route path="/ia" element={
+                      <RouteEB>
+                        <IAPage />
                       </RouteEB>
                     } />
                     {/* 404 catch-all for authenticated users */}

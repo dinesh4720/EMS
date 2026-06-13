@@ -25,7 +25,7 @@ function LowStockItem({ asset }) {
         <p className="text-xs text-fg-muted">{asset.category} &middot; {asset.location || "No location"}</p>
       </div>
       <div className="flex items-center gap-3 ml-4">
-        <Progress value={asset.quantity} max={Math.max(asset.minimumQuantity, asset.quantity, 1)} size="sm" color={tone} className="w-24" />
+        <Progress value={asset.quantity} max={Math.max(asset.minimumQuantity, asset.quantity, 1)} size="sm" color={tone} className="w-24" aria-label={`${asset.name} stock level`} />
         <Badge color={tone} size="sm">{asset.quantity}/{asset.minimumQuantity}</Badge>
       </div>
     </div>
@@ -69,12 +69,12 @@ export default function InventoryDashboard() {
     <div className="space-y-6">
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <StatCard icon={Package} label={t('pages.totalAssets')} value={stats?.totalAssets ?? 0} color="blue" href="/inventory/assets" />
-        <StatCard icon={CheckCircle} label={t('pages.active')} value={stats?.activeAssets ?? 0} color="green" href="/inventory/assets" />
-        <StatCard icon={Wrench} label={t('pages.underMaintenance')} value={stats?.underMaintenance ?? 0} color="amber" href="/inventory/maintenance" />
-        <StatCard icon={ShoppingCart} label={t('pages.pendingProcurement')} value={stats?.pendingProcurements ?? 0} color="purple" href="/inventory/procurement" />
-        <StatCard icon={Truck} label={t('pages.activeVendors')} value={stats?.totalVendors ?? 0} color="gray" href="/inventory/vendors" />
-        <StatCard icon={AlertTriangle} label={t('pages.lowStock')} value={stats?.lowStockAssets ?? 0} color="red" href="/inventory/assets?filter=lowStock" />
+        <StatCard icon={Package} label={t('pages.totalAssets')} value={stats?.totalAssets ?? 0} color="blue" href="/inventory/assets" headingLevel="h2" />
+        <StatCard icon={CheckCircle} label={t('pages.active')} value={stats?.activeAssets ?? 0} color="green" href="/inventory/assets" headingLevel="h2" />
+        <StatCard icon={Wrench} label={t('pages.underMaintenance')} value={stats?.underMaintenance ?? 0} color="amber" href="/inventory/maintenance" headingLevel="h2" />
+        <StatCard icon={ShoppingCart} label={t('pages.pendingProcurement')} value={stats?.pendingProcurements ?? 0} color="purple" href="/inventory/procurement" headingLevel="h2" />
+        <StatCard icon={Truck} label={t('pages.activeVendors')} value={stats?.totalVendors ?? 0} color="gray" href="/inventory/vendors" headingLevel="h2" />
+        <StatCard icon={AlertTriangle} label={t('pages.lowStock')} value={stats?.lowStockAssets ?? 0} color="red" href="/inventory/assets?filter=lowStock" headingLevel="h2" />
       </div>
 
       {/* Bottom Panels */}
@@ -118,8 +118,9 @@ export default function InventoryDashboard() {
             {recentMaintenance.length === 0 ? (
               <EmptyState size="sm" icon={Calendar} title={t('pages.noScheduledMaintenance')} />
             ) : (
-              recentMaintenance.map((log) => (
-                <div key={log._id} className="flex items-center justify-between py-3 border-b border-gray-50 dark:border-zinc-800 last:border-0">
+              <ul className="divide-y divide-divider">
+              {recentMaintenance.map((log) => (
+                <li key={log._id} className="flex items-center justify-between py-3">
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-fg truncate">
                       {log.assetId?.name || "Unknown Asset"}
@@ -131,8 +132,9 @@ export default function InventoryDashboard() {
                   <Badge color={statusBadgeColor[log.status] || 'neutral'} size="sm">
                     {log.status?.replace(/_/g, ' ')}
                   </Badge>
-                </div>
-              ))
+                </li>
+              ))}
+              </ul>
             )}
           </div>
         </Card>

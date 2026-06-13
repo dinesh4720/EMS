@@ -85,7 +85,7 @@ export default function StepConfirm({ onNext, onBack, wizardState, setWizardStat
       <Card className="bg-[var(--warn-bg)] border border-[var(--warn)]/20">
         <Card.Content className="p-4">
           <div className="flex items-start gap-3">
-            <AlertTriangle size={18} className="text-[var(--warn)] mt-0.5 shrink-0" />
+            <AlertTriangle size={18} className="text-[var(--warn)] mt-0.5 shrink-0" aria-hidden />
             <div>
               <p className="text-sm font-medium text-[var(--warn)]">
                 Confirm Year-End Promotion
@@ -139,7 +139,7 @@ export default function StepConfirm({ onNext, onBack, wizardState, setWizardStat
                       {m.fromClassName}{m.fromSection ? ` (${m.fromSection})` : ''}
                     </span>
                   </div>
-                  <ArrowRight size={13} className="cmap-row__arrow" />
+                  <ArrowRight size={13} className="cmap-row__arrow" aria-hidden />
                   <span className="cmap-row__class-name flex-1">
                     {m.graduate ? 'Graduate' : m.toClassName}
                   </span>
@@ -183,7 +183,7 @@ export default function StepConfirm({ onNext, onBack, wizardState, setWizardStat
           size="sm"
           onClick={openConfirmModal}
           loading={executing}
-          icon={!executing && <ArrowUpCircle size={16} />}
+          icon={!executing && <ArrowUpCircle size={16} aria-hidden />}
         >
           Execute Year-End Promotion
         </Button>
@@ -198,7 +198,7 @@ export default function StepConfirm({ onNext, onBack, wizardState, setWizardStat
         <Modal.Header className="border-b border-divider py-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-[var(--danger-bg)] rounded-lg">
-              <AlertTriangle size={18} className="text-[var(--danger)]" />
+              <AlertTriangle size={18} className="text-[var(--danger)]" aria-hidden />
             </div>
             <h3 className="text-base font-medium text-fg">
               Confirm Year-End Promotion
@@ -233,7 +233,7 @@ export default function StepConfirm({ onNext, onBack, wizardState, setWizardStat
             size="sm"
             onClick={handleExecute}
             disabled={confirmText !== CONFIRM_PHRASE}
-            icon={<ArrowUpCircle size={15} />}
+            icon={<ArrowUpCircle size={15} aria-hidden />}
           >
             Execute Promotion
           </Button>

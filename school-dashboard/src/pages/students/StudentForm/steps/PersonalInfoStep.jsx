@@ -182,7 +182,7 @@ function ProfileSection({ formData, updateField }) {
         />
       ) : (
         <div className="w-20 h-20 rounded-full border-2 border-divider bg-surface-2 flex items-center justify-center">
-          <User size={32} className="text-fg-faint" />
+          <User size={32} className="text-fg-faint" aria-hidden />
         </div>
       )}
       <div className="flex flex-col gap-1 text-left">

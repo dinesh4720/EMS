@@ -37,7 +37,7 @@ function StudentsListSkeleton() {
       <div className="flex-1 min-h-0 overflow-hidden">
         {Array.from({ length: 12 }).map((_, i) => (
           <div
-            key={i}
+            key={`student-skeleton-${i}`}
             className="flex items-center gap-3 px-4"
             style={{
               padding: "10px 16px",
@@ -532,17 +532,17 @@ export default function StudentsList({ onAddStudent }) {
         )}
         </div>
 
-      </div>
+        {/* Right detail pane — desktop only (second grid column) */}
+        {!isMobileViewport && (
+          <StudentDetailPane
+            student={selectedStudentRecord}
+            onClose={closeDetail}
+            onViewProfile={() => selectedStudentRecord && handleViewProfile(selectedStudentRecord)}
+            onMessageParent={handleMessageParent}
+          />
+        )}
 
-      {/* Right detail pane — desktop only */}
-      {!isMobileViewport && (
-        <StudentDetailPane
-          student={selectedStudentRecord}
-          onClose={closeDetail}
-          onViewProfile={() => selectedStudentRecord && handleViewProfile(selectedStudentRecord)}
-          onMessageParent={handleMessageParent}
-        />
-      )}
+      </div>
 
       {/* Mobile: slide-over drawer for detail */}
       {isMobileViewport && detailVisible && (

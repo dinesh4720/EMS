@@ -51,6 +51,7 @@ export default function WeekView({
               onKeyDown={(e) => { if (e.key === "Enter") onDateClick(dateKey); }}
               role="button"
               tabIndex={0}
+              aria-label={`${daysOfWeek[i]} ${date.getDate()}, open add event`}
             >
               {selectedStaff && timetableClasses.map((cls) => (
                 <div

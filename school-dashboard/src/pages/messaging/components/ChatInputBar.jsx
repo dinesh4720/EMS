@@ -109,7 +109,7 @@ export default function ChatInputBar({
       {isRecording && (
         <div className="mb-3 p-3 bg-danger-bg rounded-lg border border-danger-token">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-danger-token flex items-center justify-center flex-shrink-0 animate-pulse">
+            <div className="w-10 h-10 rounded-full bg-danger-token flex items-center justify-center flex-shrink-0 animate-pulse motion-reduce:animate-none">
               <Mic size={18} className="text-white" />
             </div>
             <div className="flex-1">
@@ -128,7 +128,7 @@ export default function ChatInputBar({
         </div>
       )}
 
-      <div className="chat-input__shell glass">
+      <div className="chat-input__shell glass" role="toolbar" aria-label={t('messaging.chat.messageComposer', 'Message composer')}>
         <input
           ref={fileInputRef}
           type="file"

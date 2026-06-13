@@ -154,7 +154,7 @@ export default function StudentDetailPane({
           aria-label={isMobile ? "Close profile" : "Clear selection"}
           title={isMobile ? "Close" : "Clear selection"}
         >
-          {isMobile ? <X size={13} /> : <ChevronLeft size={13} />}
+          {isMobile ? <X size={13} aria-hidden /> : <ChevronLeft size={13} aria-hidden />}
         </button>
         {code && (
           <span className="subtle mono tnum" style={{ fontSize: 11 }}>
@@ -170,7 +170,7 @@ export default function StudentDetailPane({
             aria-label="Email parent"
             title={parent.email}
           >
-            <Mail size={13} />
+            <Mail size={13} aria-hidden />
           </a>
         )}
         {parent?.phone && (
@@ -181,7 +181,7 @@ export default function StudentDetailPane({
             aria-label="Call parent"
             title={parent.phone}
           >
-            <Phone size={13} />
+            <Phone size={13} aria-hidden />
           </a>
         )}
       </div>
@@ -237,7 +237,7 @@ export default function StudentDetailPane({
             <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {student.name}
             </span>
-            <ArrowUpRight size={16} style={{ flexShrink: 0, opacity: 0.5 }} />
+            <ArrowUpRight size={16} style={{ flexShrink: 0, opacity: 0.5 }} aria-hidden />
           </button>
           <span className="subtle" style={{ fontSize: 13 }}>
             {className || "Student"}

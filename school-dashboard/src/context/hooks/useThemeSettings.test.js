@@ -15,8 +15,9 @@ import { safeGetItem, safeSetItem } from "../../utils/safeStorage";
 
 describe("sanitizeThemeSettings", () => {
   it("returns default theme for null/undefined/non-object input", () => {
+    // `mode` (light/dark) is intentionally NOT part of this shape — next-themes
+    // owns the colour scheme. This hook only owns typography/shape prefs.
     expect(sanitizeThemeSettings(null)).toEqual({
-      mode: "light",
       fontFamily: "Inter",
       fontSizeScale: 1,
       borderRadius: 12,
@@ -28,7 +29,6 @@ describe("sanitizeThemeSettings", () => {
 
   it("allows valid theme settings through", () => {
     const input = {
-      mode: "dark",
       fontFamily: "Roboto",
       fontSizeScale: 1.5,
       borderRadius: 20,
@@ -37,9 +37,10 @@ describe("sanitizeThemeSettings", () => {
     expect(sanitizeThemeSettings(input)).toEqual(input);
   });
 
-  it("coerces invalid mode to light", () => {
-    expect(sanitizeThemeSettings({ mode: "hacked" }).mode).toBe("light");
-    expect(sanitizeThemeSettings({ mode: "dark" }).mode).toBe("dark");
+  it("strips any persisted `mode` field (next-themes owns light/dark)", () => {
+    const result = sanitizeThemeSettings({ mode: "dark", fontFamily: "Roboto" });
+    expect(result).not.toHaveProperty("mode");
+    expect(result.fontFamily).toBe("Roboto");
   });
 
   it("rejects unknown font families and falls back to Inter", () => {
@@ -97,7 +98,6 @@ describe("useThemeSettings", () => {
   it("initializes with defaults when localStorage is empty", () => {
     const { result } = renderHook(() => useThemeSettings());
     expect(result.current.themeSettings).toEqual({
-      mode: "light",
       fontFamily: "Inter",
       fontSizeScale: 1,
       borderRadius: 12,
@@ -108,7 +108,6 @@ describe("useThemeSettings", () => {
   it("sanitizes malformed stored settings on init", () => {
     safeGetItem.mockReturnValue(
       JSON.stringify({
-        mode: "dark",
         fontFamily: '"}; body { background: red } /*',
         fontSizeScale: 99,
         borderRadius: -999,
@@ -128,7 +127,6 @@ describe("useThemeSettings", () => {
 
     act(() => {
       result.current.updateThemeSettings({
-        mode: "dark",
         fontFamily: "Roboto",
         fontSizeScale: 1.25,
         borderRadius: 16,
@@ -169,18 +167,17 @@ describe("useThemeSettings", () => {
 
   it("resetThemeSettings restores defaults", () => {
     safeGetItem.mockReturnValue(
-      JSON.stringify({ mode: "dark", fontFamily: "Roboto", fontSizeScale: 1.5, borderRadius: 20, reduceMotion: true })
+      JSON.stringify({ fontFamily: "Roboto", fontSizeScale: 1.5, borderRadius: 20, reduceMotion: true })
     );
 
     const { result } = renderHook(() => useThemeSettings());
-    expect(result.current.themeSettings.mode).toBe("dark");
+    expect(result.current.themeSettings.fontFamily).toBe("Roboto");
 
     act(() => {
       result.current.resetThemeSettings();
     });
 
     expect(result.current.themeSettings).toEqual({
-      mode: "light",
       fontFamily: "Inter",
       fontSizeScale: 1,
       borderRadius: 12,
@@ -189,7 +186,6 @@ describe("useThemeSettings", () => {
     expect(safeSetItem).toHaveBeenCalledWith(
       "themeSettings",
       JSON.stringify({
-        mode: "light",
         fontFamily: "Inter",
         fontSizeScale: 1,
         borderRadius: 12,

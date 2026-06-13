@@ -82,7 +82,7 @@ export function ParentAppDrawer({ isOpen, onOpenChange, parentAppInfo }) {
         {isConnected ? (
           <>
             <div className="flex items-center gap-4 mb-6">
-              <div className="p-3 bg-[var(--ok-bg)] rounded-full text-ok"><Phone size={24} /></div>
+              <div className="p-3 bg-[var(--ok-bg)] rounded-full text-ok"><Phone size={24} aria-hidden /></div>
               <div>
                 <h4 className="font-bold">{t('students.profile.overview.connected', 'Connected')}</h4>
                 {parentAppInfo?.activeSince && <p className="text-sm text-fg-muted">{t('students.profile.overview.activeSince', 'Active since')} {parentAppInfo.activeSince}</p>}

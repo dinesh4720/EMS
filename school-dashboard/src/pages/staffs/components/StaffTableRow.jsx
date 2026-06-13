@@ -9,19 +9,19 @@ import { useTranslation } from "react-i18next";
 import PhotoAvatar from "../../../components/PhotoAvatar";
 
 const STATUS_STYLES = {
-    active:     "bg-success-50 border-success-200 text-success-700",
-    inactive:   "bg-danger-50 border-danger-200 text-danger-700",
-    "on-leave": "bg-warning-50 border-warning-200 text-warning-700",
-    suspended:  "bg-orange-50 border-orange-200 text-orange-700",
-    terminated: "bg-gray-50 border-gray-200 text-gray-700",
+    active:     "bg-ok-bg border-ok/20 text-ok",
+    inactive:   "bg-danger-bg border-danger-token/20 text-danger-token",
+    "on-leave": "bg-warn-bg border-warn/20 text-warn",
+    suspended:  "bg-info-bg border-info/20 text-info",
+    terminated: "bg-surface-2 border-border-token text-fg-muted",
 };
 
 const STATUS_MENU_ITEMS = [
-    { key: "active",     label: "Active",     dot: "bg-teal-500" },
-    { key: "inactive",   label: "Inactive",   dot: "bg-red-500" },
-    { key: "on-leave",   label: "On Leave",   dot: "bg-warning-500" },
-    { key: "suspended",  label: "Suspended",  dot: "bg-orange-500" },
-    { key: "terminated", label: "Terminated", dot: "bg-gray-500" },
+    { key: "active",     label: "Active",     dot: "bg-ok" },
+    { key: "inactive",   label: "Inactive",   dot: "bg-danger-token" },
+    { key: "on-leave",   label: "On Leave",   dot: "bg-warn" },
+    { key: "suspended",  label: "Suspended",  dot: "bg-info" },
+    { key: "terminated", label: "Terminated", dot: "bg-fg-subtle" },
 ];
 
 /**
@@ -43,7 +43,7 @@ export default function StaffTableRow({
     getAttendancePercentage,
 }) {
     const { t } = useTranslation();
-    const statusStyle = STATUS_STYLES[s.status] ?? "bg-default-100 border-default-200 text-default-600";
+    const statusStyle = STATUS_STYLES[s.status] ?? "bg-surface-2 border-border-token text-fg-muted";
     const attendance = getAttendancePercentage(s.id);
 
     return (
@@ -64,14 +64,12 @@ export default function StaffTableRow({
             {/* Name */}
             <TableCell key="name">
                 <div className="flex items-center gap-3">
-                    <div onClick={(e) => e.stopPropagation()}>
-                        <PhotoAvatar src={s.picture || s.photo} alt={s.name} name={s.name} size="md" type="staff" />
-                    </div>
+                    <PhotoAvatar src={s.picture || s.photo} alt={s.name} name={s.name} size="md" type="staff" />
                     <div className="flex flex-col">
                         <Link
                             to={`/staffs/${s.id}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="text-fg font-medium text-base hover:text-teal-600 transition-colors cursor-pointer"
+                            className="text-fg font-medium text-base hover:text-accent transition-colors cursor-pointer"
                         >
                             {s.name}
                         </Link>
@@ -107,7 +105,7 @@ export default function StaffTableRow({
             <TableCell key="attendance">
                 <div className="flex items-center gap-2">
                     <div className="flex-1 bg-surface-2 rounded-full h-1.5 w-16">
-                        <div className="bg-teal-500 h-1.5 rounded-full transition-all" style={{ width: `${attendance}%` }} />
+                        <div className="bg-ok h-1.5 rounded-full transition-all" style={{ width: `${attendance}%` }} />
                     </div>
                     <span className="text-fg text-xs font-medium min-w-[35px]">{attendance}%</span>
                 </div>
@@ -115,8 +113,7 @@ export default function StaffTableRow({
 
             {/* Status */}
             <TableCell key="status">
-                <div onClick={(e) => e.stopPropagation()}>
-                    <Dropdown>
+                <Dropdown>
                         <DropdownTrigger>
                             <button className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs font-medium cursor-pointer ${statusStyle}`}>
                                 <span className="capitalize">{s.status}</span>
@@ -134,16 +131,15 @@ export default function StaffTableRow({
                             ))}
                         </DropdownMenu>
                     </Dropdown>
-                </div>
             </TableCell>
 
             {/* Actions */}
             <TableCell key="actions">
-                <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                <div className="flex justify-end gap-1">
                     <Button
                         isIconOnly size="sm" variant="light"
                         aria-label="Edit staff member"
-                        className="text-fg-faint hover:text-teal-600"
+                        className="text-fg-faint hover:text-accent"
                         onPress={() => onStaffEdit ? onStaffEdit(s.id) : onStaffClick(s.id)}
                     >
                         <Edit size={16} />
@@ -151,7 +147,7 @@ export default function StaffTableRow({
                     <Button
                         isIconOnly size="sm" variant="light"
                         aria-label="Delete staff member"
-                        className="text-fg-faint hover:text-red-600"
+                        className="text-fg-faint hover:text-danger-token"
                         onPress={() => onDelete(s)}
                     >
                         <Trash2 size={16} />

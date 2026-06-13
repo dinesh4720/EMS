@@ -11,7 +11,7 @@ function AnnouncementsSkeleton() {
       </div>
       <div className="space-y-2">
         {[1, 2, 3].map(i => (
-          <div key={i} className="p-2.5 rounded-lg bg-surface-2">
+          <div key={`announcement-skeleton-${i}`} className="p-2.5 rounded-lg bg-surface-2">
             <div className="h-3.5 w-3/4 animate-shimmer rounded" />
             <div className="h-2.5 w-16 animate-shimmer rounded mt-1.5" />
           </div>

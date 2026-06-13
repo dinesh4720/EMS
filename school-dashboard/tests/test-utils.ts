@@ -2129,6 +2129,41 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
     }
     if (path === '/communication-settings') return json({ emailEnabled: true, smsEnabled: true, pushEnabled: true, whatsappEnabled: false });
 
+    /* ── Promotion Rules ── */
+    if (path === '/promotions/rules') {
+      if (method === 'GET') return json({ minAttendancePercent: 75, feeRequirement: 'none' });
+      if (method === 'PUT') return json({ success: true, minAttendancePercent: (body as any)?.minAttendancePercent ?? 75, feeRequirement: (body as any)?.feeRequirement ?? 'none' });
+    }
+
+    /* ── Parents ── */
+    if (path === '/parents') {
+      const parents = (state as any).parents || [];
+      const q = (url.searchParams.get('search') || '').toLowerCase();
+      const status = url.searchParams.get('status') || '';
+      let filtered = parents;
+      if (q) filtered = filtered.filter((p: any) => (p.name || '').toLowerCase().includes(q) || (p.email || '').toLowerCase().includes(q) || (p.phone || '').includes(q));
+      if (status) filtered = filtered.filter((p: any) => p.status === status);
+      return json({ success: true, data: { parents: filtered, pagination: { page: 1, limit: 20, total: filtered.length, pages: 1 } } });
+    }
+    if (path.match(/^\/parents\/[^/]+$/)) {
+      const id = path.split('/')[2];
+      const parent = ((state as any).parents || []).find((p: any) => p._id === id);
+      if (parent) return json({ success: true, data: parent });
+    }
+    if (path.match(/^\/parents\/[^/]+\/reset-password$/) && method === 'POST') {
+      return json({ success: true, data: { generatedPassword: 'TempPass123!' } });
+    }
+    if (path.match(/^\/parents\/[^/]+\/status$/) && method === 'PUT') {
+      const id = path.split('/')[2];
+      const parents = (state as any).parents || [];
+      const parent = parents.find((p: any) => p._id === id);
+      if (parent) parent.status = (body as any)?.status || parent.status;
+      return json({ success: true, data: parent });
+    }
+    if (path === '/parents/bulk-create' && method === 'POST') {
+      return json({ success: true, data: { created: 5, skipped: 0, errors: 0 } });
+    }
+
     /* ── Trash ── */
     if (path === '/trash') {
       if (method === 'GET') return json({ success: true, data: state.trashItems || [], total: (state.trashItems || []).length });

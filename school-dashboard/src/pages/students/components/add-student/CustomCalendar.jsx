@@ -133,7 +133,7 @@ function CustomCalendar({ selectedDate, onSelect }) {
           className="p-1 hover:bg-surface-2 rounded transition-colors"
           aria-label="Previous month"
         >
-          <ChevronLeft size={20} className="text-fg-subtle" />
+          <ChevronLeft size={20} className="text-fg-subtle" aria-hidden />
         </button>
 
         <div className="flex items-center gap-2">
@@ -209,7 +209,7 @@ function CustomCalendar({ selectedDate, onSelect }) {
           className="p-1 hover:bg-surface-2 rounded transition-colors"
           aria-label="Next month"
         >
-          <ChevronRight size={20} className="text-fg-subtle" />
+          <ChevronRight size={20} className="text-fg-subtle" aria-hidden />
         </button>
       </div>
 

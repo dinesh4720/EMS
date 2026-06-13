@@ -502,11 +502,11 @@ function DashboardSkeleton() {
 
       <div className="dash-grid">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="dash-section">
+          <div key={`dash-skeleton-section-${i}`} className="dash-section">
             <Skeleton variant="text" className="h-5 w-24 mb-3" />
             <div className="dash-section-card space-y-3">
               {Array.from({ length: 4 }).map((_, j) => (
-                <div key={j} className="flex items-center gap-3">
+                <div key={`dash-skeleton-row-${i}-${j}`} className="flex items-center gap-3">
                   <Skeleton variant="circle" className="h-9 w-9 shrink-0" />
                   <div className="flex-1 space-y-1">
                     <Skeleton variant="text" className="h-3 w-1/2" />

@@ -251,7 +251,7 @@ export default function StudentsPage() {
             >
               <div className="flex flex-col items-center text-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-surface-2 flex items-center justify-center">
-                  <Send size={24} className="text-fg-muted" />
+                  <Send size={24} className="text-fg-muted" aria-hidden />
                 </div>
                 <div>
                   <h4 className="text-base font-medium text-fg mb-2">{t('pages.sendAdmissionForm')}</h4>
@@ -265,7 +265,7 @@ export default function StudentsPage() {
             >
               <div className="flex flex-col items-center text-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-surface-2 flex items-center justify-center">
-                  <UserPlus size={24} className="text-fg-muted" />
+                  <UserPlus size={24} className="text-fg-muted" aria-hidden />
                 </div>
                 <div>
                   <h4 className="text-base font-medium text-fg mb-2">{t('pages.manualRegistration')}</h4>
@@ -308,7 +308,7 @@ export default function StudentsPage() {
               >
                 {selectedForm ? (
                   <div className="flex items-center gap-3">
-                    <FileText size={18} className="text-fg-muted" />
+                    <FileText size={18} className="text-fg-muted" aria-hidden />
                     <span className="text-sm">{availableForms.find(f => f.id === selectedForm)?.formName}</span>
                   </div>
                 ) : (
@@ -327,12 +327,12 @@ export default function StudentsPage() {
                           onClick={() => { setSelectedForm(form.id); setIsFormDropdownOpen(false); }}
                           className={`w-full p-3 rounded-lg text-left flex items-center gap-3 ${selectedForm === form.id ? 'bg-surface-2' : 'hover:bg-surface-2'}`}
                         >
-                          <FileText size={18} className="text-fg-muted" />
+                          <FileText size={18} className="text-fg-muted" aria-hidden />
                           <div className="flex-1">
                             <p className="text-sm font-medium">{form.formName}</p>
                             <p className="text-xs text-fg-muted">{form.fields?.length || 0} fields</p>
                           </div>
-                          {selectedForm === form.id && <CheckCircle2 size={16} className="text-fg-muted" />}
+                          {selectedForm === form.id && <CheckCircle2 size={16} className="text-fg-muted" aria-hidden />}
                         </button>
                       ))
                     ) : (
@@ -357,7 +357,7 @@ export default function StudentsPage() {
                   onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddEmail(); }}}
                   className="flex-1 px-4 py-2.5 bg-surface-2 rounded-lg border border-border-token text-sm focus:outline-none focus:border-border-strong text-fg placeholder:text-fg-faint"
                 />
-                <Button variant="secondary" size="sm" onClick={handleAddEmail} disabled={!newEmail} icon={<Mail size={14} />}>{t('pages.add1')}</Button>
+                <Button variant="secondary" size="sm" onClick={handleAddEmail} disabled={!newEmail} icon={<Mail size={14} aria-hidden />}>{t('pages.add1')}</Button>
               </div>
               {recipientEmails.length > 0 && (
                 <div className="flex flex-wrap gap-2">
@@ -379,7 +379,7 @@ export default function StudentsPage() {
                   onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddPhone(); }}}
                   className="flex-1 px-4 py-2.5 bg-surface-2 rounded-lg border border-border-token text-sm focus:outline-none focus:border-border-strong text-fg placeholder:text-fg-faint"
                 />
-                <Button variant="secondary" size="sm" onClick={handleAddPhone} disabled={!newPhone || newPhone.length !== 10} icon={<Phone size={14} />}>{t('pages.add1')}</Button>
+                <Button variant="secondary" size="sm" onClick={handleAddPhone} disabled={!newPhone || newPhone.length !== 10} icon={<Phone size={14} aria-hidden />}>{t('pages.add1')}</Button>
               </div>
               {recipientPhones.length > 0 && (
                 <div className="flex flex-wrap gap-2">
@@ -397,7 +397,7 @@ export default function StudentsPage() {
         </Modal.Body>
         <Modal.Footer className="border-t border-divider">
           <Button variant="ghost" size="sm" onClick={() => { setIsFormSelectModalOpen(false); setSelectedForm(null); setRecipientEmails([]); setRecipientPhones([]); }}>{t('pages.cancel2')}</Button>
-          <Button variant="primary" onClick={handleSendForm} loading={isSendingForm} disabled={!selectedForm || (recipientEmails.length === 0 && recipientPhones.length === 0)} icon={!isSendingForm && <Send size={16} />}>{t('pages.sendForm')}</Button>
+          <Button variant="primary" onClick={handleSendForm} loading={isSendingForm} disabled={!selectedForm || (recipientEmails.length === 0 && recipientPhones.length === 0)} icon={!isSendingForm && <Send size={16} aria-hidden />}>{t('pages.sendForm')}</Button>
         </Modal.Footer>
       </Modal>
 
@@ -406,7 +406,7 @@ export default function StudentsPage() {
         <Modal.Header className="border-b border-divider py-4">
           <div className="flex flex-col items-center text-center gap-3">
             <div className="w-12 h-12 rounded-full bg-fg flex items-center justify-center">
-              <Check size={24} className="text-bg" />
+              <Check size={24} className="text-bg" aria-hidden />
             </div>
             <h3 className="text-lg font-medium">{t('pages.formSentSuccessfully1')}</h3>
           </div>
@@ -416,7 +416,7 @@ export default function StudentsPage() {
         </Modal.Body>
         <Modal.Footer className="border-t border-divider gap-3">
           <Button variant="secondary" onClick={() => { setShowSuccessModal(false); setIsFormSelectModalOpen(true); }} className="flex-1">{t('pages.sendAnother')}</Button>
-          <Button variant="primary" onClick={() => { setShowSuccessModal(false); setIsMethodModalOpen(true); }} className="flex-1" icon={<UserPlus size={16} />}>{t('pages.manualRegistration')}</Button>
+          <Button variant="primary" onClick={() => { setShowSuccessModal(false); setIsMethodModalOpen(true); }} className="flex-1" icon={<UserPlus size={16} aria-hidden />}>{t('pages.manualRegistration')}</Button>
         </Modal.Footer>
       </Modal>
     </div>
