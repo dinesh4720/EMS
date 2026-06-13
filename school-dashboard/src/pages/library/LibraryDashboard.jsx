@@ -87,6 +87,11 @@ export default function LibraryDashboard() {
                   <div className="mt-1 h-2 rounded-full bg-surface-2 overflow-hidden">
                     <div
                       className="h-full rounded-full bg-info-token"
+                      role="progressbar"
+                      aria-label={`${book.bookTitle} borrow frequency`}
+                      aria-valuemin={0}
+                      aria-valuemax={maxBorrowed}
+                      aria-valuenow={book.count}
                       style={{ width: `${(book.count / maxBorrowed) * 100}%` }}
                     />
                   </div>

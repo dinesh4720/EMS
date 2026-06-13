@@ -26,21 +26,27 @@ export default function PageLayout({
       {/* Tabs */}
       {hasTabs && (
         <div className="px-4 sm:px-6 py-3 border-b border-border-token shrink-0 overflow-x-auto scrollbar-none">
-          <nav className="flex gap-1 min-w-max">
-            {tabs.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => onTabChange?.(tab.key)}
-                className={cn(
-                  "px-3 sm:px-5 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap",
-                  activeTab === tab.key
-                    ? "bg-fg text-bg"
-                    : "text-fg-muted hover:text-fg hover:bg-surface-hover"
-                )}
-              >
-                {tab.title}
-              </button>
-            ))}
+          <nav className="flex gap-1 min-w-max" aria-label={header?.title || "Page tabs"}>
+            <div className="flex gap-1 min-w-max" role="tablist" aria-label={header?.title || "Page tabs"}>
+              {tabs.map((tab) => (
+                <button
+                  key={tab.key}
+                  role="tab"
+                  aria-selected={activeTab === tab.key}
+                  id={`tab-${tab.key}`}
+                  onClick={() => onTabChange?.(tab.key)}
+                  className={cn(
+                    "px-3 sm:px-5 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]",
+                    activeTab === tab.key
+                      ? "bg-fg text-bg"
+                      : "text-fg-muted hover:text-fg hover:bg-surface-hover"
+                  )}
+                >
+                  {tab.title}
+                </button>
+              ))}
+            </div>
           </nav>
         </div>
       )}

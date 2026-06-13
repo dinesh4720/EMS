@@ -27,20 +27,21 @@ const colorMap = {
   info: { text: 'text-info-token', bg: 'bg-info-bg' },
 };
 
-function StatCard({ label, value, subtext, icon: Icon, color = 'gray', trend, href, isLoading, headingLevel: Heading = 'h3' }) {
+function StatCard({ label, value, subtext, icon: Icon, color = 'gray', trend, href, isLoading, headingLevel: Heading = 'h3', 'aria-label': ariaLabelProp }) {
   const navigate = useNavigate();
   const colors = colorMap[color] || colorMap.gray;
   const isClickable = !!href && !isLoading;
 
   return (
     <div
-      className={`bg-surface rounded-lg p-4 border border-divider hover:border-border-strong transition-colors ${
+      className={`bg-surface rounded-lg p-4 border border-divider hover:border-border-strong transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)] ${
         isClickable ? 'cursor-pointer hover:shadow-sm active:scale-[0.98] transition-all' : ''
       }`}
       onClick={isClickable ? () => navigate(href) : undefined}
       role={isClickable ? 'link' : undefined}
       tabIndex={isClickable ? 0 : undefined}
       onKeyDown={isClickable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(href); } } : undefined}
+      aria-label={isClickable ? (ariaLabelProp || `${label}: ${value}`) : undefined}
     >
       <div className="flex items-start justify-between mb-3">
         {/* Icon */}
@@ -103,6 +104,7 @@ StatCard.propTypes = {
   href: PropTypes.string,
   isLoading: PropTypes.bool,
   headingLevel: PropTypes.elementType,
+  'aria-label': PropTypes.string,
 };
 
 export default React.memo(StatCard);

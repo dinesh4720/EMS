@@ -51,7 +51,7 @@ test.describe('Library — Issue/Return, Overdue & Reports Deep', () => {
     await page.goto('/library');
     await page.waitForLoadState('networkidle');
 
-    const issuedTab = page.getByRole('button', { name: /issued/i }).first();
+    const issuedTab = page.getByRole('tab', { name: /issued/i }).first();
     await issuedTab.click();
     await page.waitForLoadState('networkidle');
 

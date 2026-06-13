@@ -62,6 +62,11 @@ export default function LibraryReports() {
                   <div className="mt-1 h-2 rounded-full bg-surface-2 overflow-hidden">
                     <div
                       className="h-full rounded-full bg-info-token"
+                      role="progressbar"
+                      aria-label={`${item.bookTitle || t('pages.unknown')} borrow frequency`}
+                      aria-valuemin={0}
+                      aria-valuemax={maxBorrowed}
+                      aria-valuenow={item.count}
                       style={{ width: `${(item.count / maxBorrowed) * 100}%` }}
                     />
                   </div>
@@ -79,7 +84,7 @@ export default function LibraryReports() {
         <h3 className="text-sm font-semibold text-fg mb-4">{t('pages.booksByCategory')}</h3>
         {report.categoryStats?.length ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm" aria-label={t('pages.booksByCategory')}>
               <thead>
                 <tr className="border-b border-divider">
                   <th className="text-left py-2 font-medium text-fg-muted">{t('pages.category1')}</th>
