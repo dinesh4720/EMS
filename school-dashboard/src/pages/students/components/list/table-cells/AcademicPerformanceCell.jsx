@@ -1,5 +1,5 @@
 import React from "react";
-import { Chip, Tooltip } from "@heroui/react";
+import { Chip, Tooltip } from "../../../../components/ui";
 import {
     getGradeFromPercentage as getAcademicGrade,
     getGradeColor,
@@ -11,21 +11,26 @@ function AcademicPerformanceCell({ student, className }) {
         ? `Performance: ${grade}${student.latestResultPercentage != null ? ` (${student.latestResultPercentage}%)` : ""}`
         : null;
 
+    const chipColor = (() => {
+        const c = getGradeColor(grade);
+        if (c === 'default') return 'neutral';
+        return c;
+    })();
+
     return (
         <td className={className}>
             {grade ? (
                 <Tooltip content={gradeTooltip}>
                     <Chip
                         size="sm"
-                        variant="flat"
-                        color={getGradeColor(grade)}
+                        color={chipColor}
                         className="font-semibold"
                     >
                         {grade}
                     </Chip>
                 </Tooltip>
             ) : (
-                <span className="text-xs text-default-600">No data</span>
+                <span className="text-xs text-fg-faint">No data</span>
             )}
         </td>
     );

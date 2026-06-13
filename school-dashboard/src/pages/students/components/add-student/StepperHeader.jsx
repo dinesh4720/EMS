@@ -1,4 +1,4 @@
-import { cn } from "@heroui/react";
+import { cn } from "../../../../utils/cn";
 import { User, FileText, Users, Check } from "lucide-react";
 
 const STEPS = [

@@ -1,7 +1,5 @@
 import React from "react";
-import {
-    Button, Checkbox,
-} from "@heroui/react";
+import { Checkbox, Button } from "../../../../components/ui";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -91,6 +89,9 @@ function StudentsTableVirtualized({
         onClearFilters,
     } = useStudentsTableActions();
 
+    const allSelected = filteredItems.length > 0 && selectedKeys.size === filteredItems.length;
+    const someSelected = selectedKeys.size > 0 && selectedKeys.size < filteredItems.length;
+
     return (
         <div
             ref={tableContainerRef}
@@ -104,22 +105,15 @@ function StudentsTableVirtualized({
                         <th scope="col" className="bg-surface border-b border-border-token text-center w-12 min-w-12">
                             <Checkbox
                                 size="md"
-                                classNames={{ base: "p-0 m-0", wrapper: "m-0" }}
-                                isSelected={
-                                    filteredItems.length > 0 &&
-                                    selectedKeys.size === filteredItems.length
-                                }
-                                isIndeterminate={
-                                    selectedKeys.size > 0 &&
-                                    selectedKeys.size < filteredItems.length
-                                }
-                                onValueChange={(checked) => {
-                                    if (checked) {
+                                checked={allSelected}
+                                indeterminate={someSelected}
+                                onChange={() => {
+                                    if (allSelected) {
+                                        setSelectedKeys(new Set([]));
+                                    } else {
                                         setSelectedKeys(
                                             new Set(filteredItems.map((s) => s.id.toString()))
                                         );
-                                    } else {
-                                        setSelectedKeys(new Set([]));
                                     }
                                 }}
                                 aria-label={t("aria.buttons.selectAllStudents")}
@@ -206,7 +200,7 @@ function StudentsTableVirtualized({
                                 className="text-center py-16"
                             >
                                 <div className="flex flex-col items-center gap-2">
-                                    <p className="text-default-500 text-sm">
+                                    <p className="text-fg-muted text-sm">
                                         {hasActiveFilters
                                             ? t('students.list.noMatchingStudents', 'No students match your current filters')
                                             : t('students.list.noStudentsYet', 'No students found')}
@@ -214,8 +208,8 @@ function StudentsTableVirtualized({
                                     {hasActiveFilters && onClearFilters && (
                                         <Button
                                             size="sm"
-                                            variant="bordered"
-                                            onPress={onClearFilters}
+                                            variant="outline"
+                                            onClick={onClearFilters}
                                             className="mt-1"
                                         >
                                             {t('common.clearFilters', 'Clear Filters')}
@@ -246,7 +240,7 @@ function StudentsTableVirtualized({
                                     selectedKeys === "all" ||
                                     selectedKeys.has(student.id?.toString());
 
-                                const selectedBg = "bg-primary-50";
+                                const selectedBg = "bg-[var(--accent-bg)]";
                                 const defaultBg = "bg-surface group-hover:bg-surface-2";
                                 const bgClass = isSelected ? selectedBg : defaultBg;
 
@@ -256,7 +250,7 @@ function StudentsTableVirtualized({
                                         data-index={virtualRow.index}
                                         ref={rowVirtualizer.measureElement}
                                         className={`group cursor-pointer transition-colors hover:bg-surface-2/50 ${
-                                            isSelected ? "bg-primary-50" : ""
+                                            isSelected ? "bg-[var(--accent-bg)]" : ""
                                         }`}
                                         onClick={(e) => {
                                             closeAllDropdowns();
@@ -281,26 +275,25 @@ function StudentsTableVirtualized({
                                         <td
                                             className={`py-4 border-b border-border-token text-center transition-colors w-12 min-w-12 ${
                                                 isSelected
-                                                    ? "bg-primary-50"
+                                                    ? "bg-[var(--accent-bg)]"
                                                     : "group-hover:bg-surface-2"
                                             }`}
                                             onClick={(e) => e.stopPropagation()}
                                         >
                                             <Checkbox
                                                 size="md"
-                                                classNames={{ base: "p-0 m-0", wrapper: "m-0" }}
-                                                isSelected={isSelected}
-                                                onValueChange={(checked) => {
+                                                checked={isSelected}
+                                                onChange={() => {
                                                     const id = student.id.toString();
                                                     const newKeys = new Set(
                                                         selectedKeys === "all"
                                                             ? filteredItems.map((s) => s.id.toString())
                                                             : selectedKeys
                                                     );
-                                                    if (checked) {
-                                                        newKeys.add(id);
-                                                    } else {
+                                                    if (newKeys.has(id)) {
                                                         newKeys.delete(id);
+                                                    } else {
+                                                        newKeys.add(id);
                                                     }
                                                     setSelectedKeys(newKeys);
                                                 }}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Card, CardBody, Button, Input } from '@heroui/react';
+import { Card, Button, Input } from '../../../components/ui';
 import { Calendar, CheckCircle, AlertTriangle, Settings, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../../../context/SettingsContext';
@@ -122,8 +122,8 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
   return (
     <div className="space-y-4">
       {/* Academic Year Selection */}
-      <Card shadow="sm" className="bg-surface border border-border-token">
-        <CardBody className="p-5 space-y-4">
+      <Card elevation="raised" className="bg-surface border border-border-token">
+        <Card.Content className="p-5 space-y-4">
           <div className="flex items-center gap-2">
             <Calendar size={16} className="text-fg-muted" />
             <h3 className="text-sm font-semibold text-fg">Academic Year</h3>
@@ -134,8 +134,7 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
               placeholder="e.g. 2025-26"
               value={fromYear}
               onChange={(e) => handleFromYearChange(e.target.value)}
-              variant="bordered"
-              classNames={{ input: 'font-mono' }}
+              className="font-mono"
               description={isValidFormat(fromYear) ? '' : 'Format: YYYY-YY'}
             />
             <div className="flex gap-2 items-start">
@@ -144,46 +143,44 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
                 placeholder="e.g. 2026-27"
                 value={toYear}
                 onChange={(e) => handleToYearChange(e.target.value)}
-                variant="bordered"
-                className="flex-1"
-                classNames={{ input: 'font-mono' }}
+                className="flex-1 font-mono"
                 description={isValidFormat(toYear) ? '' : 'Format: YYYY-YY'}
               />
               <Button
                 size="sm"
-                variant="bordered"
-                onPress={() => checkTargetYear(toYear, false)}
+                variant="outline"
+                onClick={() => checkTargetYear(toYear, false)}
                 className="mt-6 shrink-0"
-                isDisabled={!isValidFormat(toYear) || checking}
-                isLoading={checking}
+                disabled={!isValidFormat(toYear) || checking}
+                loading={checking}
               >
                 {targetYearStatus ? 'Re-check' : 'Check'}
               </Button>
             </div>
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
 
       {/* Target Year Status */}
       {checking && (
-        <Card shadow="sm" className="bg-surface-2 border border-border-token">
-          <CardBody className="p-4 flex items-center gap-3">
+        <Card elevation="raised" className="bg-surface-2 border border-border-token">
+          <Card.Content className="p-4 flex items-center gap-3">
             <Loader2 size={16} className="animate-spin text-fg-faint" aria-hidden />
             <p className="text-sm text-fg-muted">Checking target year classes…</p>
-          </CardBody>
+          </Card.Content>
         </Card>
       )}
 
       {targetYearStatus && !checking && (
         <Card
-          shadow="sm"
+          elevation="raised"
           className={`border ${
             targetYearStatus.exists
               ? 'bg-ok-bg border-ok'
               : 'bg-warn-bg border-warn'
           }`}
         >
-          <CardBody className="p-4">
+          <Card.Content className="p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3">
                 {targetYearStatus.exists ? (
@@ -207,23 +204,23 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
               {!targetYearStatus.exists && (
                 <Button
                   size="sm"
-                  color="primary"
+                  variant="primary"
                   className="shrink-0"
-                  onPress={handlePrepareYear}
-                  isLoading={preparing}
+                  onClick={handlePrepareYear}
+                  loading={preparing}
                 >
                   Prepare {toYear}
                 </Button>
               )}
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
       )}
 
       {/* Promotion Rules Summary */}
       {rules && (
-        <Card shadow="sm" className="bg-surface border border-border-token">
-          <CardBody className="p-4">
+        <Card elevation="raised" className="bg-surface border border-border-token">
+          <Card.Content className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Settings size={14} className="text-fg-muted" />
@@ -231,9 +228,9 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
               </div>
               <Button
                 size="sm"
-                variant="light"
+                variant="ghost"
                 className="text-xs text-info-token"
-                onPress={() => navigate('/settings/promotion-rules')}
+                onClick={() => navigate('/settings/promotion-rules')}
               >
                 Edit rules
               </Button>
@@ -246,7 +243,7 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
                 Fee: {rules.feeRequirement === 'none' ? 'Not required' : rules.feeRequirement === 'partial' ? 'Partial' : 'Full'}
               </span>
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
       )}
 
@@ -254,9 +251,9 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
       <div className="promo-foot">
         <div style={{ flex: 1 }} />
         <Button
-          color="primary"
-          onPress={handleNext}
-          isDisabled={!targetYearStatus?.exists || !isValidFormat(fromYear) || !isValidFormat(toYear)}
+          variant="primary"
+          onClick={handleNext}
+          disabled={!targetYearStatus?.exists || !isValidFormat(fromYear) || !isValidFormat(toYear)}
         >
           Next: Map classes
         </Button>

@@ -1,38 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Card,
-  CardBody,
-  Button,
-  Textarea,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  useDisclosure,
-  Spinner,
-  Chip,
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-} from "@heroui/react";
-import {
-  Eye,
-  CheckCircle,
-  XCircle,
-  MoreVertical,
-  Download,
-  User,
-  Edit,
-  Send,
+  Eye, CheckCircle, XCircle, MoreVertical,
+  Download, User, Edit, Send,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { intakeFormsApi } from "../../services/api";
@@ -40,23 +10,24 @@ import { format } from "date-fns";
 import { useTranslation } from 'react-i18next';
 import { useAuth } from "../../context/AuthContext";
 import logger from "../../utils/logger";
+import {
+  Button, Chip, Modal, Textarea, ErrorState,
+  DataTable, DropdownMenu,
+} from "../../components/ui";
 import "../../styles/student.css";
 
 export default function StudentFormSubmissions() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const {
-    isOpen: isReviewOpen,
-    onOpen: onReviewOpen,
-    onClose: onReviewClose,
-  } = useDisclosure();
 
-  const {
-    isOpen: isEditRequestOpen,
-    onOpen: onEditRequestOpen,
-    onClose: onEditRequestClose,
-  } = useDisclosure();
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const onReviewOpen = () => setIsReviewOpen(true);
+  const onReviewClose = () => setIsReviewOpen(false);
+
+  const [isEditRequestOpen, setIsEditRequestOpen] = useState(false);
+  const onEditRequestOpen = () => setIsEditRequestOpen(true);
+  const onEditRequestClose = () => setIsEditRequestOpen(false);
 
   const [fetchLoading, setFetchLoading] = useState(false);
   const [reviewLoading, setReviewLoading] = useState(false);
@@ -67,6 +38,7 @@ export default function StudentFormSubmissions() {
   const [filterStatus, setFilterStatus] = useState("pending");
   const [reviewNotes, setReviewNotes] = useState("");
   const [editRequestNotes, setEditRequestNotes] = useState("");
+  const [fetchError, setFetchError] = useState(null);
 
   useEffect(() => {
     fetchSubmissions();
@@ -75,6 +47,7 @@ export default function StudentFormSubmissions() {
   const fetchSubmissions = async () => {
     try {
       setFetchLoading(true);
+      setFetchError(null);
       const status = filterStatus === "all" ? null : filterStatus;
 
       // Get all submissions and filter for student forms
@@ -98,6 +71,7 @@ export default function StudentFormSubmissions() {
         }
       }
     } catch (error) {
+      setFetchError(error);
       toast.error(t('toast.error.failedToLoadSubmissions'));
       logger.error("Failed to load student form submissions", error);
     } finally {
@@ -193,9 +167,9 @@ export default function StudentFormSubmissions() {
       pending: "warning",
       approved: "success",
       rejected: "danger",
-      needs_revision: "secondary",
+      needs_revision: "info",
     };
-    return colors[status] || "default";
+    return colors[status] || "neutral";
   };
 
   const getStatusLabel = (status) => {
@@ -213,16 +187,15 @@ export default function StudentFormSubmissions() {
 
     if (field.type === "file") {
       return (
-        <Button
-          size="sm"
-          variant="flat"
-          startContent={<Download size={14} aria-hidden />}
-          as="a"
+        <a
           href={value}
           target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 px-3 h-8 text-xs font-medium rounded-md bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] hover:bg-[var(--color-border-strong)] transition-colors"
         >
+          <Download size={14} aria-hidden />
           Download File
-        </Button>
+        </a>
       );
     }
 
@@ -250,6 +223,106 @@ export default function StudentFormSubmissions() {
       "N/A"
     );
   };
+
+  const columns = [
+    {
+      key: "formName",
+      label: t('pages.fORMName'),
+      render: (s) => (
+        <div>
+          <div className="font-medium text-fg">{s.formName || s.form?.formName}</div>
+          <div className="text-xs text-fg-muted">{s.formType || s.form?.formType}</div>
+        </div>
+      ),
+    },
+    {
+      key: "studentName",
+      label: t('pages.sTUDENTName'),
+      render: (s) => (
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-[var(--accent-bg)] flex items-center justify-center">
+            <User size={16} className="text-[var(--accent)]" aria-hidden />
+          </div>
+          <div className="text-sm font-medium">{getStudentName(s)}</div>
+        </div>
+      ),
+    },
+    {
+      key: "parentContact",
+      label: t('pages.pARENTContact'),
+      render: (s) => <div className="text-sm">{getParentContact(s)}</div>,
+    },
+    {
+      key: "submittedAt",
+      label: t('pages.sUBMITTEDDate'),
+      render: (s) => (
+        <div className="text-sm">
+          {s.submittedAt
+            ? format(new Date(s.submittedAt), "MMM dd, yyyy HH:mm")
+            : '—'}
+        </div>
+      ),
+    },
+    {
+      key: "status",
+      label: t('pages.sTATUS'),
+      render: (s) => (
+        <Chip size="sm" color={getStatusColor(s.reviewStatus)}>
+          {getStatusLabel(s.reviewStatus)}
+        </Chip>
+      ),
+    },
+  ];
+
+  const rowActions = (submission) => (
+    <DropdownMenu
+      ariaLabel={t('aria.menus.submissionActions')}
+      trigger={
+        <Button size="sm" variant="ghost" aria-label="More actions" icon={<MoreVertical size={16} aria-hidden />} />
+      }
+      items={[
+        {
+          key: "view",
+          label: "Review Submission",
+          icon: <Eye size={16} aria-hidden />,
+          onClick: () => handleViewSubmission(submission._id),
+        },
+        ...(submission.studentId
+          ? [
+              {
+                key: "student",
+                label: "View Student Record",
+                icon: <User size={16} aria-hidden />,
+                onClick: () => navigate(`/students/${submission.studentId}`),
+              },
+            ]
+          : []),
+      ]}
+    />
+  );
+
+  if (fetchError) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-semibold text-fg">
+              Student Admission Submissions
+            </h2>
+            <p className="text-sm text-fg-muted mt-1">
+              Review and approve student admission form submissions
+            </p>
+          </div>
+        </div>
+        <ErrorState
+          title="Failed to load submissions"
+          description={fetchError.message || "Something went wrong while fetching submissions."}
+          onRetry={fetchSubmissions}
+          size="md"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -295,342 +368,248 @@ export default function StudentFormSubmissions() {
       </p>
 
       {/* Submissions Table */}
-      <Card>
-        <CardBody className="p-0">
-          <div className="overflow-x-auto">
-          <Table
-            aria-label={t('aria.tables.studentFormSubmissions')}
-            removeWrapper
-            classNames={{
-              th: "bg-surface-2 text-fg font-semibold",
-              td: "py-4",
-            }}
-          >
-            <TableHeader>
-              <TableColumn scope="col">{t('pages.fORMName')}</TableColumn>
-              <TableColumn scope="col">{t('pages.sTUDENTName')}</TableColumn>
-              <TableColumn scope="col">{t('pages.pARENTContact')}</TableColumn>
-              <TableColumn scope="col">{t('pages.sUBMITTEDDate')}</TableColumn>
-              <TableColumn scope="col">{t('pages.sTATUS')}</TableColumn>
-              <TableColumn scope="col">{t('pages.aCTIONS')}</TableColumn>
-            </TableHeader>
-            <TableBody
-              items={submissions}
-              emptyContent="No submissions found"
-              loadingContent={<Spinner />}
-              isLoading={loading}
-            >
-              {(submission) => (
-                <TableRow key={submission._id}>
-                  <TableCell>
-                    <div className="font-medium text-fg">
-                      {submission.formName || submission.form?.formName}
-                    </div>
-                    <div className="text-xs text-fg-muted">
-                      {submission.formType || submission.form?.formType}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center">
-                        <User size={16} className="text-primary-600" aria-hidden />
-                      </div>
-                      <div className="text-sm font-medium">
-                        {getStudentName(submission)}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">{getParentContact(submission)}</div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      {submission.submittedAt
-                        ? format(new Date(submission.submittedAt), "MMM dd, yyyy HH:mm")
-                        : '—'}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      size="sm"
-                      variant="dot"
-                      color={getStatusColor(submission.reviewStatus)}
-                    >
-                      {getStatusLabel(submission.reviewStatus)}
-                    </Chip>
-                  </TableCell>
-                  <TableCell>
-                    <Dropdown>
-                      <DropdownTrigger>
-                        <Button isIconOnly size="sm" variant="light" aria-label="More actions">
-                          <MoreVertical size={16} aria-hidden />
-                        </Button>
-                      </DropdownTrigger>
-                      <DropdownMenu aria-label={t('aria.menus.submissionActions')}>
-                        <DropdownItem
-                          key="view"
-                          startContent={<Eye size={16} aria-hidden />}
-                          onPress={() => handleViewSubmission(submission._id)}
-                        >
-                          Review Submission
-                        </DropdownItem>
-                        {submission.studentId && (
-                          <DropdownItem
-                            key="student"
-                            startContent={<User size={16} aria-hidden />}
-                            onPress={() =>
-                              navigate(`/students/${submission.studentId}`)
-                            }
-                          >
-                            View Student Record
-                          </DropdownItem>
-                        )}
-                      </DropdownMenu>
-                    </Dropdown>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-          </div>
-        </CardBody>
-      </Card>
+      <DataTable
+        columns={columns}
+        data={submissions}
+        keyField="_id"
+        loading={loading}
+        emptyState={{ title: "No submissions found" }}
+        rowActions={rowActions}
+        ariaLabel={t('aria.tables.studentFormSubmissions')}
+      />
 
       {/* Review Submission Modal */}
       <Modal
         isOpen={isReviewOpen}
         onClose={onReviewClose}
-        size="4xl"
-        scrollBehavior="inside"
+        size="xl"
       >
-        <ModalContent>
-          <ModalHeader>
-            <div>
-              <h3 className="text-xl font-semibold">{t('pages.reviewAdmissionSubmission')}</h3>
-              {selectedSubmission && (
-                <p className="text-sm text-fg-muted font-normal mt-1">
-                  {selectedSubmission.formId?.formName || selectedSubmission.formName} -{" "}
-                  {getStudentName(selectedSubmission)}
-                </p>
-              )}
-            </div>
-          </ModalHeader>
-          <ModalBody>
+        <Modal.Header>
+          <div>
+            <h3 className="text-xl font-semibold">{t('pages.reviewAdmissionSubmission')}</h3>
             {selectedSubmission && (
-              <div className="space-y-6">
-                {/* Submission Data */}
-                <div>
-                  <h4 className="text-lg font-semibold mb-4">
-                    Submitted Information
-                  </h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    {selectedSubmission.formId?.fields?.map((field) => (
-                      <div
-                        key={field.id}
-                        className={`${
-                          field.type === "textarea" || field.type === "file"
-                            ? "col-span-2"
-                            : "col-span-1"
-                        }`}
-                      >
-                        <label className="text-sm font-medium text-fg-muted block mb-1">
-                          {field.label}
-                          {field.required && (
-                            <span className="text-danger ml-1">*</span>
-                          )}
-                        </label>
-                        <div className="text-sm text-fg">
-                          {renderFieldValue(
-                            field,
-                            selectedSubmission.submissionData[
-                              field.mapTo || field.label
-                            ]
-                          )}
-                        </div>
+              <p className="text-sm text-fg-muted font-normal mt-1">
+                {selectedSubmission.formId?.formName || selectedSubmission.formName} -{" "}
+                {getStudentName(selectedSubmission)}
+              </p>
+            )}
+          </div>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedSubmission && (
+            <div className="space-y-6">
+              {/* Submission Data */}
+              <div>
+                <h4 className="text-lg font-semibold mb-4">
+                  Submitted Information
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  {selectedSubmission.formId?.fields?.map((field) => (
+                    <div
+                      key={field.id}
+                      className={`${
+                        field.type === "textarea" || field.type === "file"
+                          ? "col-span-2"
+                          : "col-span-1"
+                      }`}
+                    >
+                      <label className="text-sm font-medium text-fg-muted block mb-1">
+                        {field.label}
+                        {field.required && (
+                          <span className="text-danger ml-1">*</span>
+                        )}
+                      </label>
+                      <div className="text-sm text-fg">
+                        {renderFieldValue(
+                          field,
+                          selectedSubmission.submissionData[
+                            field.mapTo || field.label
+                          ]
+                        )}
                       </div>
-                    ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Review Section - Only for pending submissions */}
+              {selectedSubmission.reviewStatus === "pending" && (
+                <div className="border-t pt-6">
+                  <h4 className="text-lg font-semibold mb-4">
+                    Review Decision
+                  </h4>
+                  <Textarea
+                    label={t('pages.reviewNotes')}
+                    placeholder={t('pages.addNotesAboutThisSubmissionRequiredForRejection')}
+                    value={reviewNotes}
+                    onChange={(e) => setReviewNotes(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+              )}
+
+              {/* Existing Review - For reviewed submissions */}
+              {selectedSubmission.reviewStatus !== "pending" && (
+                <div className="border-t pt-6">
+                  <h4 className="text-lg font-semibold mb-4">
+                    Review Information
+                  </h4>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium text-fg-muted">
+                        Status
+                      </label>
+                      <div className="mt-1">
+                        <Chip
+                          size="sm"
+                          color={getStatusColor(
+                            selectedSubmission.reviewStatus
+                          )}
+                        >
+                          {getStatusLabel(selectedSubmission.reviewStatus)}
+                        </Chip>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-fg-muted">
+                        Reviewed By
+                      </label>
+                      <p className="text-sm">
+                        {selectedSubmission.reviewedBy || "N/A"}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-fg-muted">
+                        Reviewed At
+                      </label>
+                      <p className="text-sm">
+                        {selectedSubmission.reviewedAt
+                          ? format(
+                              new Date(selectedSubmission.reviewedAt),
+                              "MMM dd, yyyy HH:mm"
+                            )
+                          : "N/A"}
+                      </p>
+                    </div>
+                    {selectedSubmission.reviewNotes && (
+                      <div>
+                        <label className="text-sm font-medium text-fg-muted">
+                          Notes
+                        </label>
+                        <p className="text-sm">
+                          {selectedSubmission.reviewNotes}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
-
-                {/* Review Section - Only for pending submissions */}
-                {selectedSubmission.reviewStatus === "pending" && (
-                  <div className="border-t pt-6">
-                    <h4 className="text-lg font-semibold mb-4">
-                      Review Decision
-                    </h4>
-                    <Textarea
-                      label={t('pages.reviewNotes')}
-                      placeholder={t('pages.addNotesAboutThisSubmissionRequiredForRejection')}
-                      value={reviewNotes}
-                      onChange={(e) => setReviewNotes(e.target.value)}
-                      minRows={3}
-                    />
-                  </div>
-                )}
-
-                {/* Existing Review - For reviewed submissions */}
-                {selectedSubmission.reviewStatus !== "pending" && (
-                  <div className="border-t pt-6">
-                    <h4 className="text-lg font-semibold mb-4">
-                      Review Information
-                    </h4>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="text-sm font-medium text-fg-muted">
-                          Status
-                        </label>
-                        <div className="mt-1">
-                          <Chip
-                            size="sm"
-                            variant="dot"
-                            color={getStatusColor(
-                              selectedSubmission.reviewStatus
-                            )}
-                          >
-                            {getStatusLabel(selectedSubmission.reviewStatus)}
-                          </Chip>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-fg-muted">
-                          Reviewed By
-                        </label>
-                        <p className="text-sm">
-                          {selectedSubmission.reviewedBy || "N/A"}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-fg-muted">
-                          Reviewed At
-                        </label>
-                        <p className="text-sm">
-                          {selectedSubmission.reviewedAt
-                            ? format(
-                                new Date(selectedSubmission.reviewedAt),
-                                "MMM dd, yyyy HH:mm"
-                              )
-                            : "N/A"}
-                        </p>
-                      </div>
-                      {selectedSubmission.reviewNotes && (
-                        <div>
-                          <label className="text-sm font-medium text-fg-muted">
-                            Notes
-                          </label>
-                          <p className="text-sm">
-                            {selectedSubmission.reviewNotes}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </ModalBody>
-          <ModalFooter>
-            {selectedSubmission?.reviewStatus === "pending" ? (
-              <>
-                <Button variant="light" onPress={onReviewClose}>
-                  Cancel
-                </Button>
-                <Button
-                  color="secondary"
-                  variant="flat"
-                  startContent={<Edit size={16} aria-hidden />}
-                  onPress={() => {
-                    onReviewClose();
-                    onEditRequestOpen();
-                  }}
-                >
-                  Request Edit
-                </Button>
-                <Button
-                  color="danger"
-                  variant="flat"
-                  startContent={<XCircle size={16} aria-hidden />}
-                  onPress={() => handleReview("rejected")}
-                  isLoading={loading}
-                >
-                  Reject
-                </Button>
-                <Button
-                  color="success"
-                  startContent={<CheckCircle size={16} aria-hidden />}
-                  onPress={() => handleReview("approved")}
-                  isLoading={loading}
-                >
-                  Approve & Create Student
-                </Button>
-              </>
-            ) : (
-              <Button onPress={onReviewClose}>{t('pages.close2')}</Button>
-            )}
-          </ModalFooter>
-        </ModalContent>
+              )}
+            </div>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          {selectedSubmission?.reviewStatus === "pending" ? (
+            <>
+              <Button variant="ghost" size="sm" onClick={onReviewClose}>
+                Cancel
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={<Edit size={16} aria-hidden />}
+                onClick={() => {
+                  onReviewClose();
+                  onEditRequestOpen();
+                }}
+              >
+                Request Edit
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                icon={<XCircle size={16} aria-hidden />}
+                onClick={() => handleReview("rejected")}
+                loading={loading}
+              >
+                Reject
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                icon={<CheckCircle size={16} aria-hidden />}
+                onClick={() => handleReview("approved")}
+                loading={loading}
+              >
+                Approve & Create Student
+              </Button>
+            </>
+          ) : (
+            <Button variant="primary" size="sm" onClick={onReviewClose}>{t('pages.close2')}</Button>
+          )}
+        </Modal.Footer>
       </Modal>
 
       {/* Request Edit Modal */}
       <Modal
         isOpen={isEditRequestOpen}
         onClose={onEditRequestClose}
-        size="2xl"
+        size="xl"
       >
-        <ModalContent>
-          <ModalHeader>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-secondary-100 rounded-xl">
-                <Send size={20} className="text-secondary-600" aria-hidden />
-              </div>
-              <div>
-                <h3 className="text-xl font-semibold">{t('pages.requestEditReSubmit')}</h3>
-                <p className="text-sm text-fg-muted font-normal mt-1">
-                  Send the form back to parent for corrections
-                </p>
-              </div>
+        <Modal.Header>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-[var(--info-bg)] rounded-xl">
+              <Send size={20} className="text-[var(--info)]" aria-hidden />
             </div>
-          </ModalHeader>
-          <ModalBody>
-            <div className="space-y-4">
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                <p className="text-sm text-blue-800 dark:text-blue-200">
-                  <strong>{t('pages.note1')}</strong> The parent will receive a notification
-                  with your notes. They can use the same link to edit and
-                  re-submit the form.
-                </p>
-              </div>
+            <div>
+              <h3 className="text-xl font-semibold">{t('pages.requestEditReSubmit')}</h3>
+              <p className="text-sm text-fg-muted font-normal mt-1">
+                Send the form back to parent for corrections
+              </p>
+            </div>
+          </div>
+        </Modal.Header>
+        <Modal.Body>
+          <div className="space-y-4">
+            <div className="bg-[var(--info-bg)] border border-[var(--info)]/20 rounded-lg p-4">
+              <p className="text-sm text-[var(--info)]">
+                <strong>{t('pages.note1')}</strong> The parent will receive a notification
+                with your notes. They can use the same link to edit and
+                re-submit the form.
+              </p>
+            </div>
 
-              <Textarea
-                label={t('pages.requiredChanges')}
-                placeholder={t('pages.describeWhatNeedsToBeCorrectedOrUpdated')}
-                value={editRequestNotes}
-                onChange={(e) => setEditRequestNotes(e.target.value)}
-                minRows={5}
-                isRequired
-              />
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button
-              variant="light"
-              onPress={() => {
-                onEditRequestClose();
-                setEditRequestNotes("");
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              color="primary"
-              onPress={handleRequestEdit}
-              isLoading={loading}
-              isDisabled={!editRequestNotes.trim()}
-              startContent={!loading && <Send size={16} aria-hidden />}
-            >
-              Send Edit Request
-            </Button>
-          </ModalFooter>
-        </ModalContent>
+            <Textarea
+              label={t('pages.requiredChanges')}
+              placeholder={t('pages.describeWhatNeedsToBeCorrectedOrUpdated')}
+              value={editRequestNotes}
+              onChange={(e) => setEditRequestNotes(e.target.value)}
+              rows={5}
+              required
+            />
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              onEditRequestClose();
+              setEditRequestNotes("");
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={handleRequestEdit}
+            loading={loading}
+            disabled={!editRequestNotes.trim()}
+            icon={!loading && <Send size={16} aria-hidden />}
+          >
+            Send Edit Request
+          </Button>
+        </Modal.Footer>
       </Modal>
     </div>
   );

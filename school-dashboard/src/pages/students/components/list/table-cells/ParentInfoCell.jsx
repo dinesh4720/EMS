@@ -1,5 +1,5 @@
 import React from "react";
-import { Button } from "@heroui/react";
+import { Button } from "../../../../components/ui";
 import { useTranslation } from "react-i18next";
 
 function isValidPhone(phone) {
@@ -40,7 +40,7 @@ function ParentInfoCell({
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={(e) => e.stopPropagation()}
             >
-                <span className="text-default-900 text-sm font-medium truncate">
+                <span className="text-fg text-sm font-medium truncate">
                     {student.parentName || "Parent"}
                 </span>
                 {editingPhoneId === student.id ? (
@@ -60,24 +60,24 @@ function ParentInfoCell({
                                 }
                             }}
                             placeholder={t("pages.enterPhone")}
-                            className="text-xs px-2 py-1 border border-default-300 rounded w-28 focus:outline-none focus:border-primary"
+                            className="text-xs px-2 py-1 border border-border-token rounded w-28 focus:outline-none focus:border-primary"
                             onClick={(e) => e.stopPropagation()}
                             aria-label={t("pages.enterPhone")}
                             autoFocus
                         />
                         <Button
                             size="sm"
-                            color="primary"
+                            variant="primary"
                             className="h-6 min-w-12 text-xs"
-                            onPress={() => handleSavePhone(student.id)}
+                            onClick={() => handleSavePhone(student.id)}
                         >
                             Save
                         </Button>
                         <Button
                             size="sm"
-                            variant="light"
+                            variant="ghost"
                             className="h-6 min-w-12 text-xs"
-                            onPress={() => {
+                            onClick={() => {
                                 setEditingPhoneId(null);
                                 setPhoneInput("");
                             }}
@@ -86,7 +86,7 @@ function ParentInfoCell({
                         </Button>
                     </div>
                 ) : student.parentPhone && isValidPhone(student.parentPhone) ? (
-                    <span className="text-default-500 text-sm">
+                    <span className="text-fg-muted text-sm">
                         {formatPhoneNumber(student.parentPhone)}
                     </span>
                 ) : (
@@ -96,7 +96,7 @@ function ParentInfoCell({
                             setEditingPhoneId(student.id);
                             setPhoneInput("");
                         }}
-                        className="text-primary text-xs hover:underline text-left"
+                        className="text-accent text-xs hover:underline text-left"
                     >
                         + Add phone number
                     </button>

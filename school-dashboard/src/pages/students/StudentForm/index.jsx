@@ -1,5 +1,5 @@
 import { useRef, useMemo, useState } from "react";
-import { Button } from "@heroui/react";
+import { Button } from "../../../components/ui";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import toast from "react-hot-toast";
 import { useStudentForm } from "../hooks/useStudentForm";
@@ -205,7 +205,7 @@ export default function StudentForm({
   };
 
   return (
-    <div className="h-full flex flex-col bg-background">
+    <div className="h-full flex flex-col bg-surface">
       {/* Stepper — design-system primitive */}
       <div className="px-4 pt-4 pb-3">
         <Stepper steps={steps} current={step} />
@@ -238,21 +238,22 @@ export default function StudentForm({
           {step > 1 && (
             <Button
               size="sm"
-              variant="bordered"
-              onPress={handlePrev}
+              variant="outline"
+              onClick={handlePrev}
               className="border-border-token text-fg font-medium"
-              startContent={<ArrowLeft size={12} aria-hidden />}
+              icon={<ArrowLeft size={12} aria-hidden />}
             >
               {t('common.back', 'Back')}
             </Button>
           )}
           <Button
             size="sm"
-            color="primary"
-            onPress={step === 3 ? handleSubmit : handleNext}
-            isLoading={isSubmitting}
+            variant="primary"
+            onClick={step === 3 ? handleSubmit : handleNext}
+            loading={isSubmitting}
             className="font-medium whitespace-nowrap"
-            endContent={step === 3 ? null : <ArrowRight size={12} aria-hidden />}
+            icon={step === 3 ? null : <ArrowRight size={12} aria-hidden />}
+            iconPosition="right"
           >
             {step === 3
               ? (initialData ? "Update student" : "Add student")

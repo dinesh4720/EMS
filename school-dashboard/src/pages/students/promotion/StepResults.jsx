@@ -1,4 +1,4 @@
-import { Card, CardBody, Button } from '@heroui/react';
+import { Card, Button } from '../../../components/ui';
 import {
   CheckCircle, XCircle, ArrowUpCircle, GraduationCap, Minus, RotateCcw,
 } from 'lucide-react';
@@ -14,14 +14,14 @@ export default function StepResults({ wizardState, onReset, onGoToHistory }) {
     <div className="space-y-4">
       {/* Banner */}
       <Card
-        shadow="sm"
+        elevation="raised"
         className={`border ${
           hasErrors
             ? 'bg-warn-bg border-warn'
             : 'bg-ok-bg border-ok'
         }`}
       >
-        <CardBody className="p-4">
+        <Card.Content className="p-4">
           <div className="flex items-start gap-3">
             {hasErrors ? (
               <XCircle size={22} className="text-warn mt-0.5" aria-hidden />
@@ -40,7 +40,7 @@ export default function StepResults({ wizardState, onReset, onGoToHistory }) {
               </p>
             </div>
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
 
       {/* Metrics */}
@@ -69,8 +69,8 @@ export default function StepResults({ wizardState, onReset, onGoToHistory }) {
 
       {/* Class-wise results */}
       {classMappings.length > 0 && (
-        <Card shadow="sm" className="bg-surface border border-border-token">
-          <CardBody className="p-4">
+        <Card elevation="raised" className="bg-surface border border-border-token">
+          <Card.Content className="p-4">
             <p className="text-sm font-semibold text-fg mb-3">Class-wise results</p>
             <div className="space-y-1.5">
               {classMappings.map((cm, idx) => (
@@ -109,14 +109,14 @@ export default function StepResults({ wizardState, onReset, onGoToHistory }) {
                 </div>
               ))}
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
       )}
 
       {/* Errors detail */}
       {errors.length > 0 && (
-        <Card shadow="sm" className="bg-danger-bg border-danger-token">
-          <CardBody className="p-4">
+        <Card elevation="raised" className="bg-danger-bg border-danger-token">
+          <Card.Content className="p-4">
             <p className="text-sm font-semibold text-danger-token mb-2">
               Errors (<span className="mono tnum">{errors.length}</span>)
             </p>
@@ -127,7 +127,7 @@ export default function StepResults({ wizardState, onReset, onGoToHistory }) {
                 </p>
               ))}
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
       )}
 
@@ -135,15 +135,15 @@ export default function StepResults({ wizardState, onReset, onGoToHistory }) {
       <div className="promo-foot">
         <div style={{ flex: 1 }} />
         <Button
-          variant="flat"
-          startContent={<RotateCcw size={14} aria-hidden />}
-          onPress={onGoToHistory}
+          variant="ghost"
+          icon={<RotateCcw size={14} aria-hidden />}
+          onClick={onGoToHistory}
         >
           View history & rollback
         </Button>
         <Button
-          color="primary"
-          onPress={onReset}
+          variant="primary"
+          onClick={onReset}
         >
           Start new promotion
         </Button>

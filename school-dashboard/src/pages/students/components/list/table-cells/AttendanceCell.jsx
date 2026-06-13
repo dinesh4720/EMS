@@ -1,5 +1,5 @@
 import React from "react";
-import { Progress } from "@heroui/react";
+import { Progress } from "../../../../components/ui";
 import { useTranslation } from "react-i18next";
 import { getAttendanceColor as getAttendanceColorUtil } from "../../../../../utils/grading";
 
@@ -9,20 +9,19 @@ function AttendanceCell({ attendance, className }) {
     const { t } = useTranslation();
     const isInvalid = attendance === null || attendance === undefined || isNaN(attendance);
 
+    const textColor = (() => {
+        if (isInvalid) return "text-fg-faint";
+        const c = getAttendanceColor(attendance);
+        if (c === "success") return "text-ok";
+        if (c === "warning") return "text-warn";
+        if (c === "danger") return "text-danger";
+        return "text-fg";
+    })();
+
     return (
         <td className={className}>
             <div className="flex flex-col gap-1">
-                <span
-                    className={`text-xs font-semibold ${
-                        isInvalid
-                            ? "text-default-600"
-                            : getAttendanceColor(attendance) === "success"
-                              ? "text-success"
-                              : getAttendanceColor(attendance) === "warning"
-                                ? "text-warning"
-                                : "text-danger"
-                    }`}
-                >
+                <span className={`text-xs font-semibold ${textColor}`}>
                     {isInvalid ? "No data" : `${attendance}%`}
                 </span>
                 {!isInvalid && (

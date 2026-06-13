@@ -2,7 +2,7 @@ import { useRef, useEffect, useState, Suspense, useTransition } from "react";
 import logger from "../../utils/logger";
 import lazyWithRetry from "../../utils/lazyWithRetry";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
-import { Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter as ModalFooterUI, Chip } from "@heroui/react";
+import { Button, Modal, Chip } from "../../components/ui";
 import { UserPlus, Send, FileText, CheckCircle2, ChevronDown, Mail, Phone, Check } from "lucide-react";
 import StudentsList from "./StudentsList";
 import StudentDashboard from "./StudentDashboard";
@@ -17,7 +17,6 @@ import { PageLayout } from "../../components/ui";
 import ErrorBoundary from "../../components/ui/ErrorBoundary";
 import { useTranslation } from 'react-i18next';
 
-const ModalFooter = ModalFooterUI;
 
 export default function StudentsPage() {
   const { t } = useTranslation();
@@ -179,22 +178,10 @@ export default function StudentsPage() {
     pathParts[0] === 'students' &&
     pathParts[1] !== 'attendance' &&
     pathParts[1] !== 'submissions' &&
-    pathParts[1] !== 'dashboard' &&
     pathParts[1] !== '';
 
   const isAttendance = location.pathname === "/students/attendance";
   const isSubmissions = location.pathname === "/students/submissions";
-  const isDashboard = location.pathname === "/students/dashboard";
-
-  if (isDashboard) {
-    return (
-      <ErrorBoundary>
-        <Routes>
-          <Route path="dashboard" element={<StudentDashboard />} />
-        </Routes>
-      </ErrorBoundary>
-    );
-  }
 
   if (isProfileView) {
     return (
@@ -250,51 +237,47 @@ export default function StudentsPage() {
       <Modal
         isOpen={isMethodModalOpen}
         onClose={() => setIsMethodModalOpen(false)}
-        size="2xl"
-        backdrop="opaque"
-        classNames={{ backdrop: "bg-black/50", base: "bg-surface" }}
+        size="xl"
       >
-        <ModalContent>
-          <ModalHeader className="border-b border-divider py-4">
-            <h3 className="text-lg font-medium">{t('pages.chooseAdmissionMethod')}</h3>
-            <p className="text-sm text-fg-muted font-normal mt-1">{t('pages.selectHowYouWantToAddTheNewStudent')}</p>
-          </ModalHeader>
-          <ModalBody className="py-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button
-                onClick={() => handleSelectMethod('form')}
-                className="group p-6 rounded-lg border border-border-token hover:border-border-strong transition-colors text-left"
-              >
-                <div className="flex flex-col items-center text-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-surface-2 flex items-center justify-center">
-                    <Send size={24} className="text-fg-muted" aria-hidden />
-                  </div>
-                  <div>
-                    <h4 className="text-base font-medium text-fg mb-2">{t('pages.sendAdmissionForm')}</h4>
-                    <p className="text-sm text-fg-muted">{t('pages.shareAFormLinkWithParentsViaEmailOrSms')}</p>
-                  </div>
+        <Modal.Header className="border-b border-divider py-4">
+          <h3 className="text-lg font-medium">{t('pages.chooseAdmissionMethod')}</h3>
+          <p className="text-sm text-fg-muted font-normal mt-1">{t('pages.selectHowYouWantToAddTheNewStudent')}</p>
+        </Modal.Header>
+        <Modal.Body className="py-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button
+              onClick={() => handleSelectMethod('form')}
+              className="group p-6 rounded-lg border border-border-token hover:border-border-strong transition-colors text-left"
+            >
+              <div className="flex flex-col items-center text-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-surface-2 flex items-center justify-center">
+                  <Send size={24} className="text-fg-muted" aria-hidden />
                 </div>
-              </button>
-              <button
-                onClick={() => handleSelectMethod('full')}
-                className="group p-6 rounded-lg border border-border-token hover:border-border-strong transition-colors text-left"
-              >
-                <div className="flex flex-col items-center text-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-surface-2 flex items-center justify-center">
-                    <UserPlus size={24} className="text-fg-muted" aria-hidden />
-                  </div>
-                  <div>
-                    <h4 className="text-base font-medium text-fg mb-2">{t('pages.manualRegistration')}</h4>
-                    <p className="text-sm text-fg-muted">{t('pages.addStudentDetailsDirectlyInTheAdminPanel')}</p>
-                  </div>
+                <div>
+                  <h4 className="text-base font-medium text-fg mb-2">{t('pages.sendAdmissionForm')}</h4>
+                  <p className="text-sm text-fg-muted">{t('pages.shareAFormLinkWithParentsViaEmailOrSms')}</p>
                 </div>
-              </button>
-            </div>
-          </ModalBody>
-          <ModalFooter className="border-t border-divider">
-            <Button variant="light" onPress={() => setIsMethodModalOpen(false)}>{t('pages.cancel2')}</Button>
-          </ModalFooter>
-        </ModalContent>
+              </div>
+            </button>
+            <button
+              onClick={() => handleSelectMethod('full')}
+              className="group p-6 rounded-lg border border-border-token hover:border-border-strong transition-colors text-left"
+            >
+              <div className="flex flex-col items-center text-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-surface-2 flex items-center justify-center">
+                  <UserPlus size={24} className="text-fg-muted" aria-hidden />
+                </div>
+                <div>
+                  <h4 className="text-base font-medium text-fg mb-2">{t('pages.manualRegistration')}</h4>
+                  <p className="text-sm text-fg-muted">{t('pages.addStudentDetailsDirectlyInTheAdminPanel')}</p>
+                </div>
+              </div>
+            </button>
+          </div>
+        </Modal.Body>
+        <Modal.Footer className="border-t border-divider">
+          <Button variant="ghost" size="sm" onClick={() => setIsMethodModalOpen(false)}>{t('pages.cancel2')}</Button>
+        </Modal.Footer>
       </Modal>
 
       {/* Form Selection Modal */}
@@ -308,139 +291,133 @@ export default function StudentsPage() {
           setRecipientPhones([]);
           setFormModalKey(prev => prev + 1);
         }}
-        size="2xl"
-        backdrop="opaque"
-        classNames={{ backdrop: "bg-black/50", base: "bg-surface" }}
+        size="xl"
       >
-        <ModalContent>
-          <ModalHeader className="border-b border-divider py-4">
-            <h3 className="text-lg font-medium">{t('pages.sendAdmissionForm')}</h3>
-            <p className="text-sm text-fg-muted font-normal mt-1">{t('pages.chooseAFormAndShareIt')}</p>
-          </ModalHeader>
-          <ModalBody className="py-6">
-            <div className="space-y-4">
-              <div className="relative" ref={formDropdownRef}>
-                <label className="text-sm font-medium text-fg mb-2 block">{t('pages.selectForm')}</label>
-                <button
-                  type="button"
-                  onClick={() => setIsFormDropdownOpen(!isFormDropdownOpen)}
-                  className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-surface-2 rounded-lg border border-border-token hover:border-border-strong transition-colors"
-                >
-                  {selectedForm ? (
-                    <div className="flex items-center gap-3">
-                      <FileText size={18} className="text-fg-muted" aria-hidden />
-                      <span className="text-sm">{availableForms.find(f => f.id === selectedForm)?.formName}</span>
-                    </div>
-                  ) : (
-                    <span className="text-sm text-fg-muted">{t('pages.chooseAnAdmissionForm')}</span>
-                  )}
-                  <ChevronDown size={18} className={`text-fg-faint transition-transform ${isFormDropdownOpen ? 'rotate-180' : ''}`} aria-hidden />
-                </button>
-                {isFormDropdownOpen && (
-                  <div className="absolute z-50 w-full mt-2 bg-surface border border-border-token rounded-lg max-h-[320px] overflow-y-auto">
-                    <div className="p-2">
-                      {availableForms.length > 0 ? (
-                        availableForms.map((form) => (
-                          <button
-                            key={form.id}
-                            type="button"
-                            onClick={() => { setSelectedForm(form.id); setIsFormDropdownOpen(false); }}
-                            className={`w-full p-3 rounded-lg text-left flex items-center gap-3 ${selectedForm === form.id ? 'bg-surface-2' : 'hover:bg-surface-2'}`}
-                          >
-                            <FileText size={18} className="text-fg-muted" aria-hidden />
-                            <div className="flex-1">
-                              <p className="text-sm font-medium">{form.formName}</p>
-                              <p className="text-xs text-fg-muted">{form.fields?.length || 0} fields</p>
-                            </div>
-                            {selectedForm === form.id && <CheckCircle2 size={16} className="text-fg-muted" />}
-                          </button>
-                        ))
-                      ) : (
-                        <div className="text-center py-8 text-fg-muted">
-                          <p>{t('pages.noActiveAdmissionFormsAvailable')}</p>
-                          <Button size="sm" variant="flat" className="mt-2" onPress={() => { setIsFormDropdownOpen(false); setIsFormSelectModalOpen(false); navigate('/settings/intake-forms'); }}>{t('pages.createAForm')}</Button>
-                        </div>
-                      )}
-                    </div>
+        <Modal.Header className="border-b border-divider py-4">
+          <h3 className="text-lg font-medium">{t('pages.sendAdmissionForm')}</h3>
+          <p className="text-sm text-fg-muted font-normal mt-1">{t('pages.chooseAFormAndShareIt')}</p>
+        </Modal.Header>
+        <Modal.Body className="py-6">
+          <div className="space-y-4">
+            <div className="relative" ref={formDropdownRef}>
+              <label className="text-sm font-medium text-fg mb-2 block">{t('pages.selectForm')}</label>
+              <button
+                type="button"
+                onClick={() => setIsFormDropdownOpen(!isFormDropdownOpen)}
+                className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-surface-2 rounded-lg border border-border-token hover:border-border-strong transition-colors"
+              >
+                {selectedForm ? (
+                  <div className="flex items-center gap-3">
+                    <FileText size={18} className="text-fg-muted" aria-hidden />
+                    <span className="text-sm">{availableForms.find(f => f.id === selectedForm)?.formName}</span>
                   </div>
+                ) : (
+                  <span className="text-sm text-fg-muted">{t('pages.chooseAnAdmissionForm')}</span>
                 )}
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-fg mb-2 block">{t('pages.parentEmail1')}</label>
-                <div className="flex gap-2 mb-3">
-                  <input
-                    type="email"
-                    placeholder={t('pages.enterEmailAddress')}
-                    value={newEmail}
-                    onChange={(e) => setNewEmail(e.target.value)}
-                    onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddEmail(); }}}
-                    className="flex-1 px-4 py-2.5 bg-surface-2 rounded-lg border border-border-token text-sm focus:outline-none focus:border-border-strong text-fg placeholder:text-fg-faint"
-                  />
-                  <Button variant="flat" size="sm" onPress={handleAddEmail} isDisabled={!newEmail} startContent={<Mail size={14} aria-hidden />}>{t('pages.add1')}</Button>
+                <ChevronDown size={18} className={`text-fg-faint transition-transform ${isFormDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {isFormDropdownOpen && (
+                <div className="absolute z-50 w-full mt-2 bg-surface border border-border-token rounded-lg max-h-[320px] overflow-y-auto">
+                  <div className="p-2">
+                    {availableForms.length > 0 ? (
+                      availableForms.map((form) => (
+                        <button
+                          key={form.id}
+                          type="button"
+                          onClick={() => { setSelectedForm(form.id); setIsFormDropdownOpen(false); }}
+                          className={`w-full p-3 rounded-lg text-left flex items-center gap-3 ${selectedForm === form.id ? 'bg-surface-2' : 'hover:bg-surface-2'}`}
+                        >
+                          <FileText size={18} className="text-fg-muted" aria-hidden />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{form.formName}</p>
+                            <p className="text-xs text-fg-muted">{form.fields?.length || 0} fields</p>
+                          </div>
+                          {selectedForm === form.id && <CheckCircle2 size={16} className="text-fg-muted" aria-hidden />}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-fg-muted">
+                        <p>{t('pages.noActiveAdmissionFormsAvailable')}</p>
+                        <Button size="sm" variant="secondary" className="mt-2" onClick={() => { setIsFormDropdownOpen(false); setIsFormSelectModalOpen(false); navigate('/settings/intake-forms'); }}>{t('pages.createAForm')}</Button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                {recipientEmails.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {recipientEmails.map((email) => (
-                      <Chip key={email} onClose={() => handleRemoveEmail(email)} variant="flat" size="md">{email}</Chip>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-fg mb-2 block">{t('pages.parentMobileNumber')}</label>
-                <div className="flex gap-2 mb-3">
-                  <input
-                    type="tel"
-                    placeholder={t('pages.enter10DigitMobileNumber')}
-                    value={newPhone}
-                    onChange={(e) => setNewPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                    onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddPhone(); }}}
-                    className="flex-1 px-4 py-2.5 bg-surface-2 rounded-lg border border-border-token text-sm focus:outline-none focus:border-border-strong text-fg placeholder:text-fg-faint"
-                  />
-                  <Button variant="flat" size="sm" onPress={handleAddPhone} isDisabled={!newPhone || newPhone.length !== 10} startContent={<Phone size={14} aria-hidden />}>{t('pages.add1')}</Button>
-                </div>
-                {recipientPhones.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {recipientPhones.map((phone) => (
-                      <Chip key={phone} onClose={() => handleRemovePhone(phone)} variant="flat" size="md">{phone}</Chip>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="bg-surface-2 border border-border-token rounded-lg p-4">
-                <p className="text-sm text-fg-muted">A form link will be sent to the parent. Review submissions in the Submissions tab.</p>
-              </div>
+              )}
             </div>
-          </ModalBody>
-          <ModalFooter className="border-t border-divider">
-            <Button variant="light" onPress={() => { setIsFormSelectModalOpen(false); setSelectedForm(null); setRecipientEmails([]); setRecipientPhones([]); }}>{t('pages.cancel2')}</Button>
-            <Button color="primary" onPress={handleSendForm} isLoading={isSendingForm} isDisabled={!selectedForm || (recipientEmails.length === 0 && recipientPhones.length === 0)} startContent={!isSendingForm && <Send size={16} aria-hidden />}>{t('pages.sendForm')}</Button>
-          </ModalFooter>
-        </ModalContent>
+
+            <div>
+              <label className="text-sm font-medium text-fg mb-2 block">{t('pages.parentEmail1')}</label>
+              <div className="flex gap-2 mb-3">
+                <input
+                  type="email"
+                  placeholder={t('pages.enterEmailAddress')}
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddEmail(); }}}
+                  className="flex-1 px-4 py-2.5 bg-surface-2 rounded-lg border border-border-token text-sm focus:outline-none focus:border-border-strong text-fg placeholder:text-fg-faint"
+                />
+                <Button variant="secondary" size="sm" onClick={handleAddEmail} disabled={!newEmail} icon={<Mail size={14} aria-hidden />}>{t('pages.add1')}</Button>
+              </div>
+              {recipientEmails.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {recipientEmails.map((email) => (
+                    <Chip key={email} onRemove={() => handleRemoveEmail(email)} size="md">{email}</Chip>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-fg mb-2 block">{t('pages.parentMobileNumber')}</label>
+              <div className="flex gap-2 mb-3">
+                <input
+                  type="tel"
+                  placeholder={t('pages.enter10DigitMobileNumber')}
+                  value={newPhone}
+                  onChange={(e) => setNewPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                  onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddPhone(); }}}
+                  className="flex-1 px-4 py-2.5 bg-surface-2 rounded-lg border border-border-token text-sm focus:outline-none focus:border-border-strong text-fg placeholder:text-fg-faint"
+                />
+                <Button variant="secondary" size="sm" onClick={handleAddPhone} disabled={!newPhone || newPhone.length !== 10} icon={<Phone size={14} aria-hidden />}>{t('pages.add1')}</Button>
+              </div>
+              {recipientPhones.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {recipientPhones.map((phone) => (
+                    <Chip key={phone} onRemove={() => handleRemovePhone(phone)} size="md">{phone}</Chip>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="bg-surface-2 border border-border-token rounded-lg p-4">
+              <p className="text-sm text-fg-muted">A form link will be sent to the parent. Review submissions in the Submissions tab.</p>
+            </div>
+          </div>
+        </Modal.Body>
+        <Modal.Footer className="border-t border-divider">
+          <Button variant="ghost" size="sm" onClick={() => { setIsFormSelectModalOpen(false); setSelectedForm(null); setRecipientEmails([]); setRecipientPhones([]); }}>{t('pages.cancel2')}</Button>
+          <Button variant="primary" onClick={handleSendForm} loading={isSendingForm} disabled={!selectedForm || (recipientEmails.length === 0 && recipientPhones.length === 0)} icon={!isSendingForm && <Send size={16} aria-hidden />}>{t('pages.sendForm')}</Button>
+        </Modal.Footer>
       </Modal>
 
       {/* Success Modal */}
-      <Modal isOpen={showSuccessModal} onClose={() => setShowSuccessModal(false)} size="md" backdrop="opaque" classNames={{ backdrop: "bg-black/50", base: "bg-surface" }}>
-        <ModalContent>
-          <ModalHeader className="border-b border-divider py-4">
-            <div className="flex flex-col items-center text-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-fg flex items-center justify-center">
-                <Check size={24} className="text-bg" aria-hidden />
-              </div>
-              <h3 className="text-lg font-medium">{t('pages.formSentSuccessfully1')}</h3>
+      <Modal isOpen={showSuccessModal} onClose={() => setShowSuccessModal(false)} size="md">
+        <Modal.Header className="border-b border-divider py-4">
+          <div className="flex flex-col items-center text-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-fg flex items-center justify-center">
+              <Check size={24} className="text-bg" aria-hidden />
             </div>
-          </ModalHeader>
-          <ModalBody className="py-6">
-            <p className="text-sm text-fg-muted text-center">The admission form has been sent. You can review the submission in the Form Submissions tab.</p>
-          </ModalBody>
-          <ModalFooter className="border-t border-divider gap-3">
-            <Button variant="flat" onPress={() => { setShowSuccessModal(false); setIsFormSelectModalOpen(true); }} className="flex-1">{t('pages.sendAnother')}</Button>
-            <Button color="primary" onPress={() => { setShowSuccessModal(false); setIsMethodModalOpen(true); }} className="flex-1" startContent={<UserPlus size={16} aria-hidden />}>{t('pages.manualRegistration')}</Button>
-          </ModalFooter>
-        </ModalContent>
+            <h3 className="text-lg font-medium">{t('pages.formSentSuccessfully1')}</h3>
+          </div>
+        </Modal.Header>
+        <Modal.Body className="py-6">
+          <p className="text-sm text-fg-muted text-center">The admission form has been sent. You can review the submission in the Form Submissions tab.</p>
+        </Modal.Body>
+        <Modal.Footer className="border-t border-divider gap-3">
+          <Button variant="secondary" onClick={() => { setShowSuccessModal(false); setIsFormSelectModalOpen(true); }} className="flex-1">{t('pages.sendAnother')}</Button>
+          <Button variant="primary" onClick={() => { setShowSuccessModal(false); setIsMethodModalOpen(true); }} className="flex-1" icon={<UserPlus size={16} aria-hidden />}>{t('pages.manualRegistration')}</Button>
+        </Modal.Footer>
       </Modal>
     </div>
   );

@@ -1,9 +1,7 @@
 import { attendanceApi } from '../../services/api';
 import { useState, useMemo, memo, useRef, useEffect, useCallback } from "react";
 import {
-    Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
-    Dropdown, DropdownTrigger, DropdownMenu, DropdownItem,
-    Popover, PopoverTrigger, PopoverContent, Calendar
+    Calendar
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { Filter, ChevronDown, ChevronLeft, ChevronRight, CalendarDays, Check, X, Clock, UserCheck, UserX, Users, Layers, AlertCircle, Save } from "lucide-react";
@@ -17,9 +15,13 @@ import Button from "../../components/ui/Button";
 import StatCard from "../../components/ui/StatCard";
 import Alert from "../../components/ui/Alert";
 import EmptyState from "../../components/ui/EmptyState";
+import ErrorState from "../../components/ui/ErrorState";
 import SearchInput from "../../components/ui/SearchInput";
 import Chip from "../../components/ui/Chip";
 import IconButton from "../../components/ui/IconButton";
+import Popover from "../../components/ui/Popover";
+import DropdownMenu from "../../components/ui/DropdownMenu";
+import Checkbox from "../../components/ui/Checkbox";
 
 
 
@@ -243,23 +245,50 @@ const StudentAttendance = memo(function StudentAttendance() {
 
     const getStatusStyle = (status) => {
         switch (status) {
-            case "present": return "bg-success-50 border-success-200 text-success-700";
-            case "absent": return "bg-danger-50 border-danger-200 text-danger-700";
-            case "leave": return "bg-warning-50 border-warning-200 text-warning-700";
-            case "halfday": return "bg-secondary-50 border-secondary-200 text-secondary-700";
-            default: return "bg-default-100 border-default-200 text-default-600";
+            case "present": return "bg-[var(--ok-bg)] border-[var(--ok)]/20 text-[var(--ok)]";
+            case "absent": return "bg-[var(--danger-bg)] border-[var(--danger)]/20 text-[var(--danger)]";
+            case "leave": return "bg-[var(--warn-bg)] border-[var(--warn)]/20 text-[var(--warn)]";
+            case "halfday": return "bg-[var(--info-bg)] border-[var(--info)]/20 text-[var(--info)]";
+            default: return "bg-surface-2 border-divider text-fg-muted";
         }
     };
 
     const getStatusIcon = (status) => {
         switch (status) {
-            case "present": return <Check size={14} className="text-success-600" aria-hidden />;
-            case "absent": return <X size={14} className="text-danger-600" aria-hidden />;
-            case "leave": return <Clock size={14} className="text-warning-600" />;
-            case "halfday": return <AlertCircle size={14} className="text-secondary-600" />;
-            default: return <Clock size={14} className="text-default-500" />;
+            case "present": return <Check size={14} className="text-[var(--ok)]" aria-hidden />;
+            case "absent": return <X size={14} className="text-[var(--danger)]" aria-hidden />;
+            case "leave": return <Clock size={14} className="text-[var(--warn)]" aria-hidden />;
+            case "halfday": return <AlertCircle size={14} className="text-[var(--info)]" aria-hidden />;
+            default: return <Clock size={14} className="text-fg-muted" aria-hidden />;
         }
     };
+
+    const classFilterItems = [
+        { key: "all", label: t('pages.allClasses'), onClick: () => setClassFilter("all") },
+        ...uniqueClasses.map((cls) => ({
+            key: cls,
+            label: cls,
+            onClick: () => setClassFilter(cls),
+        })),
+    ];
+
+    const statusFilterItems = [
+        { key: "all", label: t('pages.allStatus1'), onClick: () => setStatusFilter("all") },
+        { key: "present", label: t('pages.present2'), onClick: () => setStatusFilter("present") },
+        { key: "absent", label: t('pages.absent2'), onClick: () => setStatusFilter("absent") },
+        { key: "leave", label: t('pages.onLeave1'), onClick: () => setStatusFilter("leave") },
+        { key: "halfday", label: t('pages.halfDay'), onClick: () => setStatusFilter("halfday") },
+    ];
+
+    const bulkItems = [
+        { key: "present", label: t('attendance.markSelectedPresent', 'Mark Selected Present'), icon: <Check size={14} className="text-ok" aria-hidden />, onClick: () => handleBulkAction("present") },
+        { key: "halfday", label: t('attendance.markSelectedHalfDay', 'Mark Selected Half Day'), icon: <AlertCircle size={14} className="text-info" aria-hidden />, onClick: () => handleBulkAction("halfday") },
+        { key: "absent", label: t('attendance.markSelectedAbsent', 'Mark Selected Absent'), icon: <X size={14} className="text-danger" aria-hidden />, onClick: () => handleBulkAction("absent") },
+        { key: "leave", label: t('attendance.markSelectedOnLeave', 'Mark Selected On Leave'), icon: <Clock size={14} className="text-warn" aria-hidden />, onClick: () => handleBulkAction("leave") },
+    ];
+
+    const hasSelection = selectedKeys === "all" || selectedKeys.size > 0;
+    const bulkDisabled = selectedKeys !== "all" && selectedKeys.size === 0;
 
     return (
         <div className="w-full flex flex-col">
@@ -280,36 +309,37 @@ const StudentAttendance = memo(function StudentAttendance() {
                             variant="outline"
                             size="sm"
                             aria-label={t('common.previous', 'Previous day')}
-                            icon={<ChevronLeft size={14} aria-hidden />}
+                            icon={<ChevronLeft size={14} />}
                             onClick={() => {
                                 const date = new Date(selectedDate);
                                 date.setDate(date.getDate() - 1);
                                 setSelectedDate(date.toISOString().split('T')[0]);
                             }}
                         />
-                        <Popover placement="bottom-start">
-                            <PopoverTrigger>
+                        <Popover
+                            placement="bottom-start"
+                            trigger={
                                 <button
                                     type="button"
                                     className="inline-flex items-center gap-2 h-8 px-3 rounded-md border border-[var(--color-border-strong)] text-sm bg-transparent text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:ring-offset-2 whitespace-nowrap"
                                 >
-                                    <CalendarDays size={16} className="text-[var(--color-text-muted)] flex-shrink-0" aria-hidden />
+                                    <CalendarDays size={16} className="text-[var(--color-text-muted)] flex-shrink-0" />
                                     <span>{formatShortDate(selectedDate)}</span>
                                 </button>
-                            </PopoverTrigger>
-                            <PopoverContent className="p-0">
-                                <Calendar
-                                    value={parseDate(selectedDate)}
-                                    onChange={(date) => setSelectedDate(date.toString())}
-                                    aria-label={t('aria.inputs.selectDate')}
-                                />
-                            </PopoverContent>
+                            }
+                            contentClassName="p-0"
+                        >
+                            <Calendar
+                                value={parseDate(selectedDate)}
+                                onChange={(date) => setSelectedDate(date.toString())}
+                                aria-label={t('aria.inputs.selectDate')}
+                            />
                         </Popover>
                         <IconButton
                             variant="outline"
                             size="sm"
                             aria-label={t('common.next', 'Next day')}
-                            icon={<ChevronRight size={14} aria-hidden />}
+                            icon={<ChevronRight size={14} />}
                             onClick={() => {
                                 const date = new Date(selectedDate);
                                 date.setDate(date.getDate() + 1);
@@ -337,33 +367,28 @@ const StudentAttendance = memo(function StudentAttendance() {
                         name="student-attendance-search"
                     />
 
-                    <Dropdown isOpen={classDropdownOpen} onOpenChange={(open) => { if (open) closeAllDropdowns(); setClassDropdownOpen(open); }}>
-                        <DropdownTrigger>
+                    <DropdownMenu
+                        ariaLabel={t('aria.menus.filterByClass')}
+                        isOpen={classDropdownOpen}
+                        onOpenChange={(open) => { if (open) closeAllDropdowns(); setClassDropdownOpen(open); }}
+                        trigger={
                             <button
                                 type="button"
                                 className="inline-flex items-center gap-2 h-8 px-3 rounded-md border border-[var(--color-border-strong)] text-sm bg-transparent text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:ring-offset-2 whitespace-nowrap"
                             >
                                 <Filter size={16} className="text-[var(--color-text-muted)]" />
                                 <span>{classFilter === "all" ? t('pages.class1', 'Class') : classFilter}</span>
-                                <ChevronDown size={14} className="text-[var(--color-text-muted)]" aria-hidden />
+                                <ChevronDown size={14} className="text-[var(--color-text-muted)]" />
                             </button>
-                        </DropdownTrigger>
-                        <DropdownMenu
-                            aria-label={t('aria.menus.filterByClass')}
-                            disallowEmptySelection
-                            selectionMode="single"
-                            selectedKeys={new Set([classFilter])}
-                            onSelectionChange={(keys) => setClassFilter(Array.from(keys)[0])}
-                        >
-                            <DropdownItem key="all">{t('pages.allClasses')}</DropdownItem>
-                            {uniqueClasses.map((cls) => (
-                                <DropdownItem key={cls}>{cls}</DropdownItem>
-                            ))}
-                        </DropdownMenu>
-                    </Dropdown>
+                        }
+                        items={classFilterItems}
+                    />
 
-                    <Dropdown isOpen={statusDropdownOpen} onOpenChange={(open) => { if (open) closeAllDropdowns(); setStatusDropdownOpen(open); }}>
-                        <DropdownTrigger>
+                    <DropdownMenu
+                        ariaLabel={t('aria.menus.filterByStatus')}
+                        isOpen={statusDropdownOpen}
+                        onOpenChange={(open) => { if (open) closeAllDropdowns(); setStatusDropdownOpen(open); }}
+                        trigger={
                             <button
                                 type="button"
                                 aria-label={t('aria.menus.filterByStatus')}
@@ -371,68 +396,45 @@ const StudentAttendance = memo(function StudentAttendance() {
                             >
                                 <Filter size={16} className="text-[var(--color-text-muted)]" />
                             </button>
-                        </DropdownTrigger>
-                        <DropdownMenu
-                            aria-label={t('aria.menus.filterByStatus')}
-                            disallowEmptySelection
-                            selectionMode="single"
-                            selectedKeys={new Set([statusFilter])}
-                            onSelectionChange={(keys) => setStatusFilter(Array.from(keys)[0])}
-                        >
-                            <DropdownItem key="all">{t('pages.allStatus1')}</DropdownItem>
-                            <DropdownItem key="present">{t('pages.present2')}</DropdownItem>
-                            <DropdownItem key="absent">{t('pages.absent2')}</DropdownItem>
-                            <DropdownItem key="leave">{t('pages.onLeave1')}</DropdownItem>
-                            <DropdownItem key="halfday">{t('pages.halfDay')}</DropdownItem>
-                        </DropdownMenu>
-                    </Dropdown>
+                        }
+                        items={statusFilterItems}
+                    />
 
                     {/* Bulk Actions */}
-                    <Dropdown isOpen={bulkDropdownOpen} onOpenChange={(open) => { if (open) closeAllDropdowns(); setBulkDropdownOpen(open); }}>
-                        <DropdownTrigger>
+                    <DropdownMenu
+                        ariaLabel={t('aria.menus.bulkActionsUpper')}
+                        isOpen={bulkDropdownOpen}
+                        onOpenChange={(open) => { if (open) closeAllDropdowns(); setBulkDropdownOpen(open); }}
+                        trigger={
                             <button
                                 type="button"
                                 className={`inline-flex items-center gap-2 h-8 px-3 rounded-md text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:ring-offset-2 whitespace-nowrap ${
-                                    selectedKeys === "all" || selectedKeys.size > 0
+                                    hasSelection
                                         ? "bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)]"
                                         : "bg-transparent border border-[var(--color-border-strong)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)]"
                                 }`}
                             >
-                                <Layers size={16} className={selectedKeys === "all" || selectedKeys.size > 0 ? "text-white" : "text-[var(--color-text-muted)]"} />
+                                <Layers size={16} className={hasSelection ? "text-white" : "text-[var(--color-text-muted)]"} />
                                 <span>{t('pages.bulkActions1')}</span>
-                                {(selectedKeys === "all" || selectedKeys.size > 0) && (
+                                {hasSelection && (
                                     <span className="bg-white/20 px-1.5 py-0.5 rounded text-xs">
                                         {selectedKeys === "all" ? filteredStudents.length : selectedKeys.size}
                                     </span>
                                 )}
-                                <ChevronDown size={14} className={selectedKeys === "all" || selectedKeys.size > 0 ? "text-white" : "text-[var(--color-text-muted)]"} />
+                                <ChevronDown size={14} className={hasSelection ? "text-white" : "text-[var(--color-text-muted)]"} />
                             </button>
-                        </DropdownTrigger>
-                        <DropdownMenu
-                            aria-label={t('aria.menus.bulkActionsUpper')}
-                            onAction={handleBulkAction}
-                            disabledKeys={selectedKeys !== "all" && selectedKeys.size === 0 ? ["present", "absent", "leave", "halfday"] : []}
-                        >
-                            <DropdownItem key="present" startContent={<Check size={14} className="text-success" aria-hidden />} className="text-success">
-                                {t('attendance.markSelectedPresent', 'Mark Selected Present')}
-                            </DropdownItem>
-                            <DropdownItem key="halfday" startContent={<AlertCircle size={14} className="text-secondary" />} className="text-secondary">
-                                {t('attendance.markSelectedHalfDay', 'Mark Selected Half Day')}
-                            </DropdownItem>
-                            <DropdownItem key="absent" startContent={<X size={14} className="text-danger" aria-hidden />} className="text-danger">
-                                {t('attendance.markSelectedAbsent', 'Mark Selected Absent')}
-                            </DropdownItem>
-                            <DropdownItem key="leave" startContent={<Clock size={14} className="text-warning" />} className="text-warning">
-                                {t('attendance.markSelectedOnLeave', 'Mark Selected On Leave')}
-                            </DropdownItem>
-                        </DropdownMenu>
-                    </Dropdown>
+                        }
+                        items={bulkItems.map(item => ({
+                            ...item,
+                            isDisabled: bulkDisabled,
+                        }))}
+                    />
 
                     {/* Save Button */}
                     <Button
                         variant="primary"
                         size="sm"
-                        icon={<Save size={16} aria-hidden />}
+                        icon={<Save size={16} />}
                         onClick={handleSaveAttendance}
                         loading={isSaving}
                         disabled={isSaving}
@@ -456,9 +458,14 @@ const StudentAttendance = memo(function StudentAttendance() {
                 </Alert>
             )}
             {fetchError && !attendanceLoading && (
-                <Alert variant="danger" className="mt-3 sm:mx-1">
-                    {fetchError}
-                </Alert>
+                <div className="mt-3 sm:mx-1">
+                    <ErrorState
+                        title="Failed to load attendance"
+                        description={fetchError}
+                        onRetry={() => { setFetchError(null); setAttendanceLoading(true); }}
+                        size="sm"
+                    />
+                </div>
             )}
 
             {/* Class selection hint */}
@@ -473,102 +480,131 @@ const StudentAttendance = memo(function StudentAttendance() {
                 <div className="py-4 -mx-6 px-6">
                     <TablePageSkeleton title={false} searchBar={false} kpiCards={0} columns={6} rows={8} hasAvatar />
                 </div>
-            ) :
-            <Table
-                aria-label={t('aria.tables.studentAttendance')}
-                selectionMode="multiple"
-                selectedKeys={selectedKeys}
-                onSelectionChange={setSelectedKeys}
-                removeWrapper
-                radius="none"
-                classNames={{
-                    base: "-mx-6 overflow-visible [&_table]:w-[calc(100%+3rem)] [&_table]:border-spacing-0",
-                    thead: "[&>tr]:first:shadow-none [&>tr>th:first-child]:pl-6 [&>tr>th:first-child]:pr-3 [&>tr>th:first-child]:w-12",
-                    th: "bg-transparent text-default-400 font-medium text-xs uppercase tracking-wider h-12 border-b border-default-200 last:pr-6 first:hover:bg-transparent first:cursor-default",
-                    td: "py-5 border-b border-default-200 group-data-[last=true]:border-none last:pr-6 transition-colors",
-                    tbody: "[&>tr>td:first-child]:pl-6 [&>tr>td:first-child]:pr-3 [&>tr>td:first-child]:w-12 [&>tr:first-child>td]:pt-5 [&>tr[data-selected=true]>td]:bg-primary-50",
-                    tr: "transition-colors hover:bg-surface-2/50 data-[selected=true]:bg-primary-50",
-                }}
-            >
-                <TableHeader>
-                    <TableColumn className="w-[250px]" scope="col">{t('pages.sTUDENT')}</TableColumn>
-                    <TableColumn className="w-[100px]" scope="col">{t('pages.cLASS')}</TableColumn>
-                    <TableColumn className="w-[100px]" scope="col">{t('pages.rOLLNo')}</TableColumn>
-                    <TableColumn className="w-[140px]" scope="col">{t('pages.sTATUS')}</TableColumn>
-                    <TableColumn className="w-[100px]" scope="col">{t('pages.iNTime')}</TableColumn>
-                    <TableColumn className="w-[100px]" scope="col">{t('pages.oUTTime')}</TableColumn>
-                </TableHeader>
-                <TableBody
-                    items={filteredStudents}
-                    emptyContent={
-                        <EmptyState
-                            icon={Users}
-                            size="sm"
-                            title={t('attendance.noStudentsFound', 'No students found')}
-                            description={t('attendance.adjustFilters', 'Try adjusting the class or search filters.')}
-                        />
-                    }
-                >
-                    {(student) => {
-                        const att = attendance[student.id] || { status: "unmarked", inTime: "-", outTime: "-" };
-                        return (
-                            <TableRow key={student.id}>
-                                <TableCell>
-                                    <div className="flex items-center gap-3">
-                                        <PhotoAvatar
-                                            src={student.photo}
-                                            name={student.name}
-                                            alt={student.name}
-                                            type="student"
-                                            size="md"
-                                        />
-                                        <div className="flex flex-col">
-                                            <span className="text-[var(--color-text-primary)] font-medium text-base">{student.name}</span>
-                                            <span className="text-[var(--color-text-muted)] text-xs">{student.email || t('common.noEmail', 'No email')}</span>
-                                        </div>
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    <Chip size="sm" color="info">{student.class}</Chip>
-                                </TableCell>
-                                <TableCell>
-                                    <span className="text-[var(--color-text-secondary)] text-sm font-mono">#{student.rollNo?.toString().padStart(3, '0')}</span>
-                                </TableCell>
-                                <TableCell>
-                                    <Dropdown>
-                                        <DropdownTrigger>
-                                            <button
-                                                type="button"
-                                                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer border transition-all text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:ring-offset-2 ${getStatusStyle(att.status)}`}
-                                            >
-                                                {getStatusIcon(att.status)}
-                                                <span className="capitalize">{att.status}</span>
-                                                <ChevronDown size={12} className="opacity-50" aria-hidden />
-                                            </button>
-                                        </DropdownTrigger>
-                                        <DropdownMenu
-                                            aria-label={t('aria.misc.changeStatusUpper')}
-                                            onAction={(key) => handleStatusChange(student.id, key)}
-                                        >
-                                            <DropdownItem key="present" startContent={<Check size={14} className="text-success" aria-hidden />}>{t('pages.present2')}</DropdownItem>
-                                            <DropdownItem key="halfday" startContent={<AlertCircle size={14} className="text-secondary" />}>{t('pages.halfDay')}</DropdownItem>
-                                            <DropdownItem key="absent" startContent={<X size={14} className="text-danger" aria-hidden />}>{t('pages.absent2')}</DropdownItem>
-                                            <DropdownItem key="leave" startContent={<Clock size={14} className="text-warning" />}>{t('pages.onLeave1')}</DropdownItem>
-                                        </DropdownMenu>
-                                    </Dropdown>
-                                </TableCell>
-                                <TableCell>
-                                    <span className="text-[var(--color-text-secondary)] text-sm font-mono">{att.inTime || "-"}</span>
-                                </TableCell>
-                                <TableCell>
-                                    <span className="text-[var(--color-text-secondary)] text-sm font-mono">{att.outTime || "-"}</span>
-                                </TableCell>
-                            </TableRow>
-                        );
-                    }}
-                </TableBody>
-            </Table>
-            }
+            ) : (
+            <div className="-mx-6 overflow-visible">
+                <table className="w-[calc(100%+3rem)] border-spacing-0 border-collapse">
+                    <thead>
+                        <tr className="first:shadow-none">
+                            <th className="bg-transparent text-fg-faint font-medium text-xs uppercase tracking-wider h-12 border-b border-divider pl-6 pr-3 w-12 cursor-default hover:bg-transparent">
+                                <Checkbox
+                                    aria-label={selectedKeys === "all" || (filteredStudents.length > 0 && filteredStudents.every(s => selectedKeys.has(s.id.toString()))) ? "Deselect all" : "Select all"}
+                                    checked={filteredStudents.length > 0 && filteredStudents.every(s => selectedKeys.has(s.id.toString()))}
+                                    indeterminate={filteredStudents.some(s => selectedKeys.has(s.id.toString())) && !filteredStudents.every(s => selectedKeys.has(s.id.toString()))}
+                                    onChange={() => {
+                                        if (filteredStudents.length > 0 && filteredStudents.every(s => selectedKeys.has(s.id.toString()))) {
+                                            setSelectedKeys(new Set([]));
+                                        } else {
+                                            setSelectedKeys(new Set(filteredStudents.map(s => s.id.toString())));
+                                        }
+                                    }}
+                                    size="sm"
+                                />
+                            </th>
+                            <th className="bg-transparent text-fg-faint font-medium text-xs uppercase tracking-wider h-12 border-b border-divider last:pr-6 w-[250px]" scope="col">{t('pages.sTUDENT')}</th>
+                            <th className="bg-transparent text-fg-faint font-medium text-xs uppercase tracking-wider h-12 border-b border-divider last:pr-6 w-[100px]" scope="col">{t('pages.cLASS')}</th>
+                            <th className="bg-transparent text-fg-faint font-medium text-xs uppercase tracking-wider h-12 border-b border-divider last:pr-6 w-[100px]" scope="col">{t('pages.rOLLNo')}</th>
+                            <th className="bg-transparent text-fg-faint font-medium text-xs uppercase tracking-wider h-12 border-b border-divider last:pr-6 w-[140px]" scope="col">{t('pages.sTATUS')}</th>
+                            <th className="bg-transparent text-fg-faint font-medium text-xs uppercase tracking-wider h-12 border-b border-divider last:pr-6 w-[100px]" scope="col">{t('pages.iNTime')}</th>
+                            <th className="bg-transparent text-fg-faint font-medium text-xs uppercase tracking-wider h-12 border-b border-divider last:pr-6 w-[100px]" scope="col">{t('pages.oUTTime')}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {filteredStudents.length === 0 ? (
+                            <tr>
+                                <td colSpan={7} className="py-16 text-center">
+                                    <EmptyState
+                                        icon={Users}
+                                        size="sm"
+                                        title={t('attendance.noStudentsFound', 'No students found')}
+                                        description={t('attendance.adjustFilters', 'Try adjusting the class or search filters.')}
+                                    />
+                                </td>
+                            </tr>
+                        ) : (
+                            filteredStudents.map((student, idx) => {
+                                const att = attendance[student.id] || { status: "unmarked", inTime: "-", outTime: "-" };
+                                const isSelected = selectedKeys === "all" || selectedKeys.has(student.id.toString());
+                                const isLast = idx === filteredStudents.length - 1;
+                                return (
+                                    <tr
+                                        key={student.id}
+                                        data-selected={isSelected || undefined}
+                                        data-last={isLast || undefined}
+                                        className="transition-colors hover:bg-surface-2/50 data-[selected=true]:bg-[var(--accent-bg)]"
+                                    >
+                                        <td className="py-5 border-b border-divider data-[last=true]:border-none pl-6 pr-3 w-12 transition-colors">
+                                            <Checkbox
+                                                aria-label={`Select ${student.name}`}
+                                                checked={isSelected}
+                                                onChange={() => {
+                                                    const id = student.id.toString();
+                                                    const newKeys = new Set(selectedKeys === "all" ? filteredStudents.map(s => s.id.toString()) : selectedKeys);
+                                                    if (newKeys.has(id)) {
+                                                        newKeys.delete(id);
+                                                    } else {
+                                                        newKeys.add(id);
+                                                    }
+                                                    setSelectedKeys(newKeys);
+                                                }}
+                                                size="sm"
+                                            />
+                                        </td>
+                                        <td className="py-5 border-b border-divider data-[last=true]:border-none last:pr-6 transition-colors w-[250px]">
+                                            <div className="flex items-center gap-3">
+                                                <PhotoAvatar
+                                                    src={student.photo}
+                                                    name={student.name}
+                                                    alt={student.name}
+                                                    type="student"
+                                                    size="md"
+                                                />
+                                                <div className="flex flex-col">
+                                                    <span className="text-[var(--color-text-primary)] font-medium text-base">{student.name}</span>
+                                                    <span className="text-[var(--color-text-muted)] text-xs">{student.email || t('common.noEmail', 'No email')}</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="py-5 border-b border-divider data-[last=true]:border-none last:pr-6 transition-colors w-[100px]">
+                                            <Chip size="sm" color="info">{student.class}</Chip>
+                                        </td>
+                                        <td className="py-5 border-b border-divider data-[last=true]:border-none last:pr-6 transition-colors w-[100px]">
+                                            <span className="text-[var(--color-text-secondary)] text-sm font-mono">#{student.rollNo?.toString().padStart(3, '0')}</span>
+                                        </td>
+                                        <td className="py-5 border-b border-divider data-[last=true]:border-none last:pr-6 transition-colors w-[140px]">
+                                            <DropdownMenu
+                                                ariaLabel={t('aria.misc.changeStatusUpper')}
+                                                trigger={
+                                                    <button
+                                                        type="button"
+                                                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer border transition-all text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 focus-visible:ring-offset-2 ${getStatusStyle(att.status)}`}
+                                                    >
+                                                        {getStatusIcon(att.status)}
+                                                        <span className="capitalize">{att.status}</span>
+                                                        <ChevronDown size={12} className="opacity-50" aria-hidden />
+                                                    </button>
+                                                }
+                                                items={[
+                                                    { key: "present", label: t('pages.present2'), icon: <Check size={14} className="text-ok" aria-hidden />, onClick: () => handleStatusChange(student.id, "present") },
+                                                    { key: "halfday", label: t('pages.halfDay'), icon: <AlertCircle size={14} className="text-info" aria-hidden />, onClick: () => handleStatusChange(student.id, "halfday") },
+                                                    { key: "absent", label: t('pages.absent2'), icon: <X size={14} className="text-danger" aria-hidden />, onClick: () => handleStatusChange(student.id, "absent") },
+                                                    { key: "leave", label: t('pages.onLeave1'), icon: <Clock size={14} className="text-warn" aria-hidden />, onClick: () => handleStatusChange(student.id, "leave") },
+                                                ]}
+                                            />
+                                        </td>
+                                        <td className="py-5 border-b border-divider data-[last=true]:border-none last:pr-6 transition-colors w-[100px]">
+                                            <span className="text-[var(--color-text-secondary)] text-sm font-mono">{att.inTime || "-"}</span>
+                                        </td>
+                                        <td className="py-5 border-b border-divider data-[last=true]:border-none last:pr-6 transition-colors w-[100px]">
+                                            <span className="text-[var(--color-text-secondary)] text-sm font-mono">{att.outTime || "-"}</span>
+                                        </td>
+                                    </tr>
+                                );
+                            })
+                        )}
+                    </tbody>
+                </table>
+            </div>
+            )}
         </div>
     );
 });

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Button, Select, SelectItem, Accordion, AccordionItem,
-} from '@heroui/react';
+  Button, Select,
+} from '../../../components/ui';
 import {
   ArrowUpCircle, GraduationCap, Minus,
 } from 'lucide-react';
@@ -177,11 +177,8 @@ export default function StepStudentReview({ onNext, onBack, wizardState, setWiza
         </div>
       </div>
 
-      <Accordion variant="splitted" selectionMode="multiple" defaultExpandedKeys={
-        wizardState.classMappings.length <= 5
-          ? wizardState.classMappings.map((m) => m.fromClassId)
-          : []
-      }>
+      {/* Using native details/summary for accordion — no design-system Accordion yet */}
+      <div className="space-y-2">
         {wizardState.classMappings.map((mapping) => {
           const data = classStudents[mapping.fromClassId];
           if (!data) return null;
@@ -194,109 +191,103 @@ export default function StepStudentReview({ onNext, onBack, wizardState, setWiza
           const classGraduating = Object.values(decisions).filter((d) => d === 'graduated').length;
 
           return (
-            <AccordionItem
+            <details
               key={mapping.fromClassId}
-              title={
-                <div className="flex items-center gap-3">
-                  <span className="font-medium">
-                    {mapping.fromClassName}{mapping.fromSection ? ` (${mapping.fromSection})` : ''}
-                  </span>
-                  <span className="text-xs text-fg-faint">→</span>
-                  <span className="text-sm text-fg-muted">
-                    {mapping.graduate ? 'Graduate' : mapping.toClassName}
-                  </span>
-                  <div className="flex gap-1.5 ml-auto">
-                    {classPromoting > 0 && (
-                      <span className="chip chip--ok mono tnum">{classPromoting} promote</span>
-                    )}
-                    {classDetained > 0 && (
-                      <span className="chip chip--warn mono tnum">{classDetained} detain</span>
-                    )}
-                    {classGraduating > 0 && (
-                      <span className="chip chip--accent mono tnum">{classGraduating} graduate</span>
-                    )}
-                  </div>
-                </div>
-              }
-              classNames={{
-                base: 'border border-border-token',
-                content: 'pt-0',
-              }}
+              className="border border-border-token rounded-lg bg-surface overflow-hidden"
+              open={wizardState.classMappings.length <= 5}
             >
-              <div className="flex gap-2 mb-3 px-1">
-                <button
-                  onClick={() => selectAllEligible(mapping.fromClassId, mapping)}
-                  className="text-xs text-info-token hover:underline"
-                >
-                  {mapping.graduate ? 'Graduate all eligible' : 'Promote all eligible'}
-                </button>
-                <span className="text-xs text-fg-faint">|</span>
-                <button
-                  onClick={() => detainAll(mapping.fromClassId)}
-                  className="text-xs text-warn hover:underline"
-                >
-                  Detain all
-                </button>
-              </div>
+              <summary className="px-4 py-3 cursor-pointer list-none flex items-center gap-3 select-none hover:bg-surface-2/50">
+                <span className="font-medium">
+                  {mapping.fromClassName}{mapping.fromSection ? ` (${mapping.fromSection})` : ''}
+                </span>
+                <span className="text-xs text-fg-faint">→</span>
+                <span className="text-sm text-fg-muted">
+                  {mapping.graduate ? 'Graduate' : mapping.toClassName}
+                </span>
+                <div className="flex gap-1.5 ml-auto">
+                  {classPromoting > 0 && (
+                    <span className="chip chip--ok mono tnum">{classPromoting} promote</span>
+                  )}
+                  {classDetained > 0 && (
+                    <span className="chip chip--warn mono tnum">{classDetained} detain</span>
+                  )}
+                  {classGraduating > 0 && (
+                    <span className="chip chip--accent mono tnum">{classGraduating} graduate</span>
+                  )}
+                </div>
+              </summary>
+              <div className="px-4 pb-4">
+                <div className="flex gap-2 mb-3 px-1">
+                  <button
+                    onClick={() => selectAllEligible(mapping.fromClassId, mapping)}
+                    className="text-xs text-info-token hover:underline"
+                  >
+                    {mapping.graduate ? 'Graduate all eligible' : 'Promote all eligible'}
+                  </button>
+                  <span className="text-xs text-fg-faint">|</span>
+                  <button
+                    onClick={() => detainAll(mapping.fromClassId)}
+                    className="text-xs text-warn hover:underline"
+                  >
+                    Detain all
+                  </button>
+                </div>
 
-              <div className="max-h-80 overflow-y-auto pr-1">
-                {students.length === 0 ? (
-                  <p className="text-sm text-fg-faint text-center py-4">No active students</p>
-                ) : (
-                  students.map((s) => {
-                    const sid = String(s.studentId || s._id);
-                    const decision = decisions[sid] || 'promoted';
-                    const isBlocked = s.blocked;
+                <div className="max-h-80 overflow-y-auto pr-1">
+                  {students.length === 0 ? (
+                    <p className="text-sm text-fg-faint text-center py-4">No active students</p>
+                  ) : (
+                    students.map((s) => {
+                      const sid = String(s.studentId || s._id);
+                      const decision = decisions[sid] || 'promoted';
+                      const isBlocked = s.blocked;
 
-                    return (
-                      <div key={sid} className={`sdec-row sdec-row--${decision}`}>
-                        {decision === 'promoted' && <ArrowUpCircle size={14} className="text-ok shrink-0" aria-hidden />}
-                        {decision === 'detained' && <Minus size={14} className="text-warn shrink-0" aria-hidden />}
-                        {decision === 'graduated' && <GraduationCap size={14} className="text-accent shrink-0" aria-hidden />}
-                        {decision === 'transferred' && <ArrowUpCircle size={14} className="text-info-token shrink-0" aria-hidden />}
+                      return (
+                        <div key={sid} className={`sdec-row sdec-row--${decision}`}>
+                          {decision === 'promoted' && <ArrowUpCircle size={14} className="text-ok shrink-0" aria-hidden />}
+                          {decision === 'detained' && <Minus size={14} className="text-warn shrink-0" aria-hidden />}
+                          {decision === 'graduated' && <GraduationCap size={14} className="text-accent shrink-0" aria-hidden />}
+                          {decision === 'transferred' && <ArrowUpCircle size={14} className="text-info-token shrink-0" aria-hidden />}
 
-                        <div className="flex-1 min-w-0">
-                          <p className="sdec-row__name truncate">{s.name}</p>
-                          <p className="sdec-row__meta">
-                            Roll: {s.rollNo || '—'} · Adm: {s.admissionId || '—'}
-                            {s.attendancePercent != null && ` · Att: ${s.attendancePercent}%`}
-                            {s.feeStatus && ` · Fee: ${s.feeStatus}`}
-                          </p>
+                          <div className="flex-1 min-w-0">
+                            <p className="sdec-row__name truncate">{s.name}</p>
+                            <p className="sdec-row__meta">
+                              Roll: {s.rollNo || '—'} · Adm: {s.admissionId || '—'}
+                              {s.attendancePercent != null && ` · Att: ${s.attendancePercent}%`}
+                              {s.feeStatus && ` · Fee: ${s.feeStatus}`}
+                            </p>
+                          </div>
+
+                          {isBlocked && (
+                            <span className="chip chip--danger shrink-0">
+                              {s.blockedReason || 'Blocked'}
+                            </span>
+                          )}
+
+                          <Select
+                            size="sm"
+                            value={decision}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val) setDecision(mapping.fromClassId, sid, val);
+                            }}
+                            className="w-32 shrink-0"
+                            aria-label="Decision"
+                            options={DECISION_OPTIONS.map((opt) => ({
+                              value: opt.key,
+                              label: opt.label,
+                            }))}
+                          />
                         </div>
-
-                        {isBlocked && (
-                          <span className="chip chip--danger shrink-0">
-                            {s.blockedReason || 'Blocked'}
-                          </span>
-                        )}
-
-                        <Select
-                          size="sm"
-                          selectedKeys={[decision]}
-                          onSelectionChange={(keys) => {
-                            const val = [...keys][0];
-                            if (val) setDecision(mapping.fromClassId, sid, val);
-                          }}
-                          variant="bordered"
-                          className="w-32 shrink-0"
-                          classNames={{ trigger: 'h-8 min-h-8' }}
-                          aria-label="Decision"
-                        >
-                          {DECISION_OPTIONS.map((opt) => (
-                            <SelectItem key={opt.key} value={opt.key}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </Select>
-                      </div>
-                    );
-                  })
-                )}
+                      );
+                    })
+                  )}
+                </div>
               </div>
-            </AccordionItem>
+            </details>
           );
         })}
-      </Accordion>
+      </div>
 
       {/* Sticky foot */}
       <div className="promo-foot">
@@ -305,12 +296,12 @@ export default function StepStudentReview({ onNext, onBack, wizardState, setWiza
           <span>students decided</span>
         </div>
         <div style={{ flex: 1 }} />
-        <Button variant="flat" onPress={onBack}>
+        <Button variant="ghost" onClick={onBack}>
           Back
         </Button>
         <Button
-          color="primary"
-          onPress={handleNext}
+          variant="primary"
+          onClick={handleNext}
         >
           Next: Review Summary
         </Button>
@@ -318,4 +309,3 @@ export default function StepStudentReview({ onNext, onBack, wizardState, setWiza
     </div>
   );
 }
-

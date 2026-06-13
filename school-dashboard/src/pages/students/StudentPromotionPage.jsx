@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Card, CardBody, Button, Input,
-  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-} from '@heroui/react';
+  Card, Button, Input, Modal,
+} from '../../components/ui';
 import {
   ArrowUpCircle, Home, CheckCircle, Clock, RotateCcw, History,
   Calendar, GitBranch, Users, ListChecks, Rocket,
@@ -13,7 +12,7 @@ import { PageLayout } from '../../components/ui';
 import toast from 'react-hot-toast';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { formatDateTime } from '../../utils/dateFormatter';
-import { BreadcrumbItem, Breadcrumbs } from '@heroui/react';
+import Breadcrumbs from '../../components/ui/Breadcrumbs';
 
 // Wizard steps
 import StepAcademicYear from './promotion/StepAcademicYear';
@@ -128,11 +127,14 @@ export default function StudentPromotionPage() {
 
   return (
     <div className="animate-fade-in promo-page">
-      <Breadcrumbs size="sm">
-        <BreadcrumbItem startContent={<Home size={14} aria-hidden />} onPress={() => navigate('/')}>Home</BreadcrumbItem>
-        <BreadcrumbItem onPress={() => navigate('/students')}>Students</BreadcrumbItem>
-        <BreadcrumbItem>Year-End Promotion</BreadcrumbItem>
-      </Breadcrumbs>
+      <Breadcrumbs
+        size="sm"
+        items={[
+          { label: 'Home', href: '/', icon: <Home size={14} aria-hidden /> },
+          { label: 'Students', href: '/students' },
+          { label: 'Year-End Promotion' },
+        ]}
+      />
 
       <PageLayout
         header={{
@@ -261,8 +263,8 @@ export default function StudentPromotionPage() {
                 history.map((rec) => {
                   const isRolledback = rec.status === 'rolledback';
                   return (
-                    <Card key={rec._id} shadow="sm" className="bg-surface border border-border-token">
-                      <CardBody className="p-4">
+                    <Card key={rec._id} className="bg-surface border border-border-token">
+                      <Card.Content className="p-4">
                         <div className="flex items-start justify-between gap-4">
                           <div className="space-y-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
@@ -281,7 +283,7 @@ export default function StudentPromotionPage() {
                               <span className="mono tnum">{rec.summary?.errors ?? 0}</span> failed
                             </p>
                             {isRolledback && rec.rollbackReason && (
-                              <p className="text-xs text-danger-token mt-0.5">
+                              <p className="text-xs text-[var(--danger)] mt-0.5">
                                 Reason: {rec.rollbackReason}
                               </p>
                             )}
@@ -289,17 +291,16 @@ export default function StudentPromotionPage() {
                           {!isRolledback && (
                             <Button
                               size="sm"
-                              variant="flat"
-                              color="danger"
-                              startContent={<RotateCcw size={13} aria-hidden />}
-                              onPress={() => openRollback(rec)}
+                              variant="danger"
+                              icon={<RotateCcw size={13} aria-hidden />}
+                              onClick={() => openRollback(rec)}
                               className="shrink-0"
                             >
                               Rollback
                             </Button>
                           )}
                         </div>
-                      </CardBody>
+                      </Card.Content>
                     </Card>
                   );
                 })
@@ -314,43 +315,39 @@ export default function StudentPromotionPage() {
         isOpen={rollbackOpen}
         onClose={() => setRollbackOpen(false)}
         size="sm"
-        classNames={{ backdrop: 'bg-black/30', base: 'bg-surface' }}
       >
-        <ModalContent>
-          <ModalHeader className="border-b border-divider py-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-danger-bg rounded-lg">
-                <RotateCcw size={18} className="text-danger-token" aria-hidden />
-              </div>
-              <h3 className="text-base font-medium text-fg">Rollback Promotion</h3>
+        <Modal.Header className="border-b border-divider py-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-[var(--danger-bg)] rounded-lg">
+              <RotateCcw size={18} className="text-[var(--danger)]" aria-hidden />
             </div>
-          </ModalHeader>
-          <ModalBody className="py-4 space-y-3">
-            {rollbackRecord && (
-              <p className="text-sm text-fg-muted">
-                Roll back <strong className="mono tnum">{rollbackRecord.fromAcademicYear} &rarr; {rollbackRecord.toAcademicYear}</strong>?{' '}
-                This will restore <strong className="mono tnum">{rollbackRecord.summary?.promoted ?? 0}</strong> students to their previous classes.
-              </p>
-            )}
-            <Input
-              label="Reason (optional)"
-              placeholder="Why are you rolling back?"
-              value={rollbackReason}
-              onChange={(e) => setRollbackReason(e.target.value)}
-              variant="bordered"
-              size="sm"
-            />
-            <p className="text-xs text-danger-token">
-              Students will be moved back to their original classes and fee structures will be reset.
+            <h3 className="text-base font-medium text-fg">Rollback Promotion</h3>
+          </div>
+        </Modal.Header>
+        <Modal.Body className="py-4 space-y-3">
+          {rollbackRecord && (
+            <p className="text-sm text-fg-muted">
+              Roll back <strong className="mono tnum">{rollbackRecord.fromAcademicYear} &rarr; {rollbackRecord.toAcademicYear}</strong>?{' '}
+              This will restore <strong className="mono tnum">{rollbackRecord.summary?.promoted ?? 0}</strong> students to their previous classes.
             </p>
-          </ModalBody>
-          <ModalFooter className="border-t border-divider">
-            <Button variant="light" onPress={() => setRollbackOpen(false)}>Cancel</Button>
-            <Button color="danger" onPress={handleRollback} isLoading={rollingBack}>
-              Confirm Rollback
-            </Button>
-          </ModalFooter>
-        </ModalContent>
+          )}
+          <Input
+            label="Reason (optional)"
+            placeholder="Why are you rolling back?"
+            value={rollbackReason}
+            onChange={(e) => setRollbackReason(e.target.value)}
+            size="sm"
+          />
+          <p className="text-xs text-[var(--danger)]">
+            Students will be moved back to their original classes and fee structures will be reset.
+          </p>
+        </Modal.Body>
+        <Modal.Footer className="border-t border-divider">
+          <Button variant="ghost" size="sm" onClick={() => setRollbackOpen(false)}>Cancel</Button>
+          <Button variant="danger" size="sm" onClick={handleRollback} loading={rollingBack}>
+            Confirm Rollback
+          </Button>
+        </Modal.Footer>
       </Modal>
     </div>
   );

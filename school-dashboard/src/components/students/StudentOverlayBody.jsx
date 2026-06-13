@@ -1,12 +1,7 @@
 import { lazy, Suspense, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, Phone, MoreHorizontal, MessageSquare } from "lucide-react";
-import {
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-} from "@heroui/react";
+import { DropdownMenu } from "../../components/ui";
 
 import { useApp } from "../../context/AppContext";
 import {
@@ -236,8 +231,10 @@ export default function StudentOverlayBody({ studentId, onClose }) {
               <Phone size={14} aria-hidden />
             </a>
           )}
-          <Dropdown placement="bottom-end">
-            <DropdownTrigger>
+          <DropdownMenu
+            ariaLabel="Student actions"
+            placement="bottom-end"
+            trigger={
               <button
                 type="button"
                 className="iconbtn"
@@ -245,34 +242,14 @@ export default function StudentOverlayBody({ studentId, onClose }) {
               >
                 <MoreHorizontal size={14} aria-hidden />
               </button>
-            </DropdownTrigger>
-            <DropdownMenu aria-label="Student actions">
-              <DropdownItem key="edit" onPress={() => setOpenModal("edit")}>
-                Edit profile
-              </DropdownItem>
-              <DropdownItem key="move" onPress={() => setOpenModal("move")}>
-                Move class
-              </DropdownItem>
-              <DropdownItem
-                key="tc"
-                onPress={() => {
-                  navigate(`/students/${studentId}/transfer-certificate`);
-                  onClose?.();
-                }}
-              >
-                Transfer certificate →
-              </DropdownItem>
-              <DropdownItem
-                key="promote"
-                onPress={() => {
-                  navigate(`/students/promotion?student=${studentId}`);
-                  onClose?.();
-                }}
-              >
-                Promote student →
-              </DropdownItem>
-            </DropdownMenu>
-          </Dropdown>
+            }
+            items={[
+              { key: "edit", label: "Edit profile", onClick: () => setOpenModal("edit") },
+              { key: "move", label: "Move class", onClick: () => setOpenModal("move") },
+              { key: "tc", label: "Transfer certificate →", onClick: () => { navigate(`/students/${studentId}/transfer-certificate`); onClose?.(); } },
+              { key: "promote", label: "Promote student →", onClick: () => { navigate(`/students/promotion?student=${studentId}`); onClose?.(); } },
+            ]}
+          />
         </div>
       </div>
 

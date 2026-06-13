@@ -6,7 +6,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback, useDeferredValue } from "react";
 import { useQuery, keepPreviousData, useQueryClient } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useDisclosure } from "@heroui/react";
+// useDisclosure replaced with local useState per design-system compliance
 
 import { useApp } from "../../../context/AppContext";
 import { studentsApi } from "../../../services/api";
@@ -142,15 +142,33 @@ export function useStudentsListData() {
   );
 
   // ── Modal disclosures ─────────────────────────────────────────────────────
-  const { isOpen: isBulkActionOpen, onOpen: onBulkActionOpen, onClose: onBulkActionClose } = useDisclosure();
-  const { isOpen: isPromoteOpen, onOpen: onPromoteOpen, onClose: onPromoteClose } = useDisclosure();
-  const { isOpen: isReminderOpen, onOpen: onReminderOpen, onClose: onReminderClose } = useDisclosure();
-  const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
-  const { isOpen: isStatusChangeOpen, onOpen: onStatusChangeOpen, onClose: onStatusChangeClose } = useDisclosure();
-  const { isOpen: isCsvUploadOpen, onOpen: onCsvUploadOpen, onClose: onCsvUploadClose } = useDisclosure();
-  const { isOpen: isPreviewOpen, onOpen: onPreviewOpen, onClose: onPreviewClose } = useDisclosure();
-  const { isOpen: isTcModalOpen, onOpen: onTcModalOpen, onClose: onTcModalClose } = useDisclosure();
-  const { isOpen: isBulkDeleteOpen, onOpen: onBulkDeleteOpen, onClose: onBulkDeleteClose } = useDisclosure();
+  const [isBulkActionOpen, setIsBulkActionOpen] = useState(false);
+  const onBulkActionOpen = () => setIsBulkActionOpen(true);
+  const onBulkActionClose = () => setIsBulkActionOpen(false);
+  const [isPromoteOpen, setIsPromoteOpen] = useState(false);
+  const onPromoteOpen = () => setIsPromoteOpen(true);
+  const onPromoteClose = () => setIsPromoteOpen(false);
+  const [isReminderOpen, setIsReminderOpen] = useState(false);
+  const onReminderOpen = () => setIsReminderOpen(true);
+  const onReminderClose = () => setIsReminderOpen(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const onDeleteOpen = () => setIsDeleteOpen(true);
+  const onDeleteClose = () => setIsDeleteOpen(false);
+  const [isStatusChangeOpen, setIsStatusChangeOpen] = useState(false);
+  const onStatusChangeOpen = () => setIsStatusChangeOpen(true);
+  const onStatusChangeClose = () => setIsStatusChangeOpen(false);
+  const [isCsvUploadOpen, setIsCsvUploadOpen] = useState(false);
+  const onCsvUploadOpen = () => setIsCsvUploadOpen(true);
+  const onCsvUploadClose = () => setIsCsvUploadOpen(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const onPreviewOpen = () => setIsPreviewOpen(true);
+  const onPreviewClose = () => setIsPreviewOpen(false);
+  const [isTcModalOpen, setIsTcModalOpen] = useState(false);
+  const onTcModalOpen = () => setIsTcModalOpen(true);
+  const onTcModalClose = () => setIsTcModalOpen(false);
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
+  const onBulkDeleteOpen = () => setIsBulkDeleteOpen(true);
+  const onBulkDeleteClose = () => setIsBulkDeleteOpen(false);
 
   // ── Bulk action state ─────────────────────────────────────────────────────
   const [bulkAction, setBulkAction] = useState("");
@@ -230,6 +248,7 @@ export function useStudentsListData() {
 
   const students = useMemo(() => localStudents ?? studentsQuery.data?.data ?? [], [localStudents, studentsQuery.data]);
   const listLoading = studentsQuery.isLoading;
+  const listError = studentsQuery.error;
 
   const uniqueAcademicYears = useMemo(
     () =>
@@ -636,7 +655,7 @@ export function useStudentsListData() {
 
   return {
     // loading
-    contextLoading, listLoading,
+    contextLoading, listLoading, listError,
     // students data
     students, filteredItems, visibleItems, selectedCount,
     currentAcademicYear, classes,

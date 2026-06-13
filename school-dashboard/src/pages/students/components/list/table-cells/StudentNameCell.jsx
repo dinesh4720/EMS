@@ -33,7 +33,7 @@ function StudentNameCell({ student, className, searchQuery }) {
                             <Pin size={14} className="text-primary flex-shrink-0" aria-label="Pinned" />
                         )}
                     </div>
-                    <span className="text-default-500 text-xs">
+                    <span className="text-fg-muted text-xs">
                         {student.admissionId || `ADM${String(student.id).padStart(4, "0")}`}
                     </span>
                     {searchQuery &&

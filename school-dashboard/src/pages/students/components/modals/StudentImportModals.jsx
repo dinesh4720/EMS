@@ -1,5 +1,4 @@
-import { Chip, Spinner, Progress } from "@heroui/react";
-import { Accordion, AccordionItem } from "@heroui/accordion";
+import { Chip, CircularProgress, Progress } from "../../../../components/ui";
 import {
     Check, Download, Upload, FileSpreadsheet, FileText, AlertTriangle, Info,
     CheckCircle, XCircle, Users, ChevronRight, GraduationCap,
@@ -57,7 +56,7 @@ export function StudentCsvUploadModal({
                     >
                         {csvProcessing ? (
                             <>
-                                <Spinner size="sm" />
+                                <CircularProgress size="sm" indeterminate />
                                 Processing…
                             </>
                         ) : (
@@ -304,7 +303,7 @@ export function StudentCsvPreviewModal({
                     >
                         {csvProcessing ? (
                             <>
-                                <Spinner size="sm" />
+                                <CircularProgress size="sm" indeterminate />
                                 Importing {importProgress.current}/{importProgress.total}…
                             </>
                         ) : (
@@ -403,46 +402,50 @@ export function StudentCsvPreviewModal({
                 )}
 
                 {/* Class-based Accordion */}
-                <div style={{ maxHeight: 480, overflowY: "auto" }} className="col gap-3">
+                <div style={{ maxHeight: 480, overflowY: "auto" }} className="col gap-3 import-accordion">
+                    <style>{`
+                        .import-accordion details[open] .import-chevron { transform: rotate(90deg); }
+                        .import-accordion summary::-webkit-details-marker { display: none; }
+                    `}</style>
                     {Object.entries(grouped).map(([classKey, classData]) => {
                         const hasInvalid = classData.invalidCount > 0;
 
                         return (
-                            <Accordion
+                            <details
                                 key={classKey}
-                                variant="splitted"
-                                defaultExpanded={hasInvalid || Object.keys(grouped).length <= 2}
-                                className="px-0"
+                                className="rounded-lg overflow-hidden"
+                                style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}
+                                open={hasInvalid || Object.keys(grouped).length <= 2}
                             >
-                                <AccordionItem
-                                    aria-label={classKey}
-                                    title={
-                                        <div className="row gap-3" style={{ paddingRight: 12, width: "100%" }}>
-                                            <span
-                                                className="opt__icon"
-                                                style={{
-                                                    background: hasInvalid ? "var(--danger-bg)" : classData.duplicateCount > 0 ? "var(--warn-bg)" : "var(--ok-bg)",
-                                                    color: hasInvalid ? "var(--danger)" : classData.duplicateCount > 0 ? "var(--warn)" : "var(--ok)",
-                                                }}
-                                            >
-                                                <GraduationCap size={14} aria-hidden />
-                                            </span>
-                                            <div className="col" style={{ gap: 1 }}>
-                                                <p style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>{classKey}</p>
-                                                <div className="row gap-2 subtle" style={{ fontSize: 11 }}>
-                                                    <span>{classData.students.length} student{classData.students.length !== 1 ? 's' : ''}</span>
-                                                    <span>•</span>
-                                                    <span style={{ color: "var(--ok)" }}>{classData.validCount} valid</span>
-                                                    {classData.invalidCount > 0 && (<><span>•</span><span style={{ color: "var(--danger)" }}>{classData.invalidCount} invalid</span></>)}
-                                                    {classData.duplicateCount > 0 && (<><span>•</span><span style={{ color: "var(--warn)" }}>{classData.duplicateCount} duplicate</span></>)}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    }
-                                    indicator={<ChevronRight size={16} className="text-default-400 transition-transform duration-200" aria-hidden />}
+                                <summary
+                                    className="row gap-3"
+                                    style={{ padding: "12px 16px", cursor: "pointer", listStyle: "none", alignItems: "center" }}
                                 >
-                                    <div className="col gap-2" style={{ paddingTop: 4, paddingBottom: 4 }}>
-                                        {classData.students.map((student, idx) => (
+                                    <span
+                                        className="opt__icon"
+                                        style={{
+                                            background: hasInvalid ? "var(--danger-bg)" : classData.duplicateCount > 0 ? "var(--warn-bg)" : "var(--ok-bg)",
+                                            color: hasInvalid ? "var(--danger)" : classData.duplicateCount > 0 ? "var(--warn)" : "var(--ok)",
+                                        }}
+                                    >
+                                        <GraduationCap size={14} aria-hidden />
+                                    </span>
+                                    <div className="col" style={{ gap: 1, flex: 1, minWidth: 0 }}>
+                                        <p style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>{classKey}</p>
+                                        <div className="row gap-2 subtle" style={{ fontSize: 11 }}>
+                                            <span>{classData.students.length} student{classData.students.length !== 1 ? 's' : ''}</span>
+                                            <span>•</span>
+                                            <span style={{ color: "var(--ok)" }}>{classData.validCount} valid</span>
+                                            {classData.invalidCount > 0 && (<><span>•</span><span style={{ color: "var(--danger)" }}>{classData.invalidCount} invalid</span></>)}
+                                            {classData.duplicateCount > 0 && (<><span>•</span><span style={{ color: "var(--warn)" }}>{classData.duplicateCount} duplicate</span></>)}
+                                        </div>
+                                    </div>
+                                    <span className="import-chevron" style={{ color: "var(--fg-faint)", transition: "transform 200ms", display: "inline-flex", flexShrink: 0 }}>
+                                        <ChevronRight size={16} aria-hidden />
+                                    </span>
+                                </summary>
+                                <div className="col gap-2" style={{ padding: "0 16px 12px" }}>
+                                    {classData.students.map((student, idx) => (
                                             <div
                                                 key={student.data?.admissionId || student.data?.name || `import-student-${idx}`}
                                                 style={{
@@ -468,9 +471,9 @@ export function StudentCsvPreviewModal({
                                                         </div>
                                                     </div>
                                                     <div className="row gap-1" style={{ flexShrink: 0 }}>
-                                                        {student.isDuplicate && <Chip size="sm" color="warning" variant="flat" className="h-5 text-xs">{t('pages.duplicate1')}</Chip>}
-                                                        {!student.isDuplicate && student.warnings.length > 0 && <Chip size="sm" color="warning" variant="flat" className="h-5 text-xs">{student.warnings.length} {student.warnings.length === 1 ? 'Warn' : 'Warns'}</Chip>}
-                                                        {!student.isDuplicate && !student.valid && <Chip size="sm" color="danger" variant="flat" className="h-5 text-xs">{t('pages.invalid')}</Chip>}
+                                                        {student.isDuplicate && <Chip size="sm" color="warning" className="h-5 text-xs">{t('pages.duplicate1')}</Chip>}
+                                                        {!student.isDuplicate && student.warnings.length > 0 && <Chip size="sm" color="warning" className="h-5 text-xs">{student.warnings.length} {student.warnings.length === 1 ? 'Warn' : 'Warns'}</Chip>}
+                                                        {!student.isDuplicate && !student.valid && <Chip size="sm" color="danger" className="h-5 text-xs">{t('pages.invalid')}</Chip>}
                                                     </div>
                                                 </div>
 
@@ -514,8 +517,7 @@ export function StudentCsvPreviewModal({
                                             </div>
                                         ))}
                                     </div>
-                                </AccordionItem>
-                            </Accordion>
+                            </details>
                         );
                     })}
 

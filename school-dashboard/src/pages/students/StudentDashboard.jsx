@@ -20,12 +20,7 @@ import {
   Folder,
   Star,
 } from "lucide-react";
-import {
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-} from "@heroui/react";
+import { DropdownMenu } from "../../components/ui";
 import toast from "react-hot-toast";
 
 import { useApp } from "../../context/AppContext";
@@ -1012,8 +1007,10 @@ export default function StudentDashboard() {
             <Move size={13} aria-hidden /> Move class
           </button>
 
-          <Dropdown placement="bottom-end">
-            <DropdownTrigger>
+          <DropdownMenu
+            ariaLabel="Student admin actions"
+            placement="bottom-end"
+            trigger={
               <button
                 type="button"
                 className="iconbtn"
@@ -1022,65 +1019,17 @@ export default function StudentDashboard() {
               >
                 <MoreHorizontal size={16} aria-hidden />
               </button>
-            </DropdownTrigger>
-            <DropdownMenu
-              aria-label="Student admin actions"
-              onAction={(key) => {
-                if (key === "print") {
-                  toast(
-                    "Print profile lands with the report-card stylesheet PR.",
-                    { icon: "📄" }
-                  );
-                  return;
-                }
-                setOpenModal(String(key));
-              }}
-            >
-              <DropdownItem
-                key="tc"
-                startContent={<FileText size={14} aria-hidden />}
-              >
-                Generate Transfer Certificate
-              </DropdownItem>
-              <DropdownItem
-                key="bonafide"
-                startContent={<FileText size={14} aria-hidden />}
-              >
-                Generate Bonafide Certificate
-              </DropdownItem>
-              <DropdownItem
-                key="character"
-                startContent={<Award size={14} aria-hidden />}
-              >
-                Generate Character Certificate
-              </DropdownItem>
-              <DropdownItem
-                key="promote"
-                startContent={<GraduationCap size={14} aria-hidden />}
-              >
-                Promote class
-              </DropdownItem>
-              <DropdownItem
-                key="move"
-                startContent={<Move size={14} aria-hidden />}
-                showDivider
-              >
-                Move class
-              </DropdownItem>
-              <DropdownItem
-                key="edit"
-                startContent={<Edit3 size={14} aria-hidden />}
-              >
-                Edit details
-              </DropdownItem>
-              <DropdownItem
-                key="print"
-                startContent={<Printer size={14} aria-hidden />}
-              >
-                Print profile
-              </DropdownItem>
-            </DropdownMenu>
-          </Dropdown>
+            }
+            items={[
+              { key: "tc", label: "Generate Transfer Certificate", icon: <FileText size={14} aria-hidden />, onClick: () => setOpenModal("tc") },
+              { key: "bonafide", label: "Generate Bonafide Certificate", icon: <FileText size={14} aria-hidden />, onClick: () => setOpenModal("bonafide") },
+              { key: "character", label: "Generate Character Certificate", icon: <Award size={14} aria-hidden />, onClick: () => setOpenModal("character") },
+              { key: "promote", label: "Promote class", icon: <GraduationCap size={14} aria-hidden />, onClick: () => setOpenModal("promote") },
+              { key: "move", label: "Move class", icon: <Move size={14} aria-hidden />, onClick: () => setOpenModal("move") },
+              { key: "edit", label: "Edit details", icon: <Edit3 size={14} aria-hidden />, onClick: () => setOpenModal("edit") },
+              { key: "print", label: "Print profile", icon: <Printer size={14} aria-hidden />, onClick: () => { toast("Print profile lands with the report-card stylesheet PR.", { icon: "📄" }); } },
+            ]}
+          />
         </div>
       </div>
 

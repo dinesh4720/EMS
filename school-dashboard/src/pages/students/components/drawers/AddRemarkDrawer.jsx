@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useTranslation } from 'react-i18next';
 import {
-  Drawer, DrawerContent, DrawerHeader, DrawerBody, DrawerFooter,
-  Input, Select, SelectItem, Textarea, Checkbox, Chip, Button
-} from "@heroui/react";
-import { MessageSquare, Mail, Plus } from "lucide-react";
+  Drawer,
+  Input, Select, Textarea, Checkbox, Chip, Button
+} from "../../../../components/ui";
+import { MessageSquare, Mail, Plus, X } from "lucide-react";
 import { request } from "../../../../services/api";
 import toast from "react-hot-toast";
 import logger from '../../../../utils/logger';
@@ -34,7 +34,7 @@ export default function AddRemarkDrawer({
     setErrors({});
   };
 
-  const handleSaveRemark = async () => {
+  const handleSaveRemark = async (onClose) => {
     const e = {};
     if (!remarkForm.title.trim()) e.title = t('students.profile.remarks.enterTitle', 'Please enter a title');
     if (!remarkForm.type && !remarkForm.customType.trim()) e.type = t('students.profile.remarks.enterType', 'Please select or enter a remark type');
@@ -64,7 +64,7 @@ export default function AddRemarkDrawer({
       }
 
       resetForm();
-      onOpenChange(false);
+      onClose();
     } catch (error) {
       logger.error("Error saving remark:", error);
       toast.error(error.message || t('students.profile.remarks.saveFailed', 'Failed to save remark'));
@@ -73,170 +73,168 @@ export default function AddRemarkDrawer({
     }
   };
 
+  const remarkTypeOptions = [
+    { value: "academic", label: t('students.profile.remarks.categories.academic', 'Academic') },
+    { value: "behavioral", label: t('students.profile.remarks.categories.behavioral', 'Behavioral') },
+    { value: "achievement", label: t('students.profile.remarks.categories.achievement', 'Achievement') },
+    { value: "attendance", label: t('students.profile.remarks.categories.attendance', 'Attendance') },
+    { value: "health", label: t('students.profile.remarks.categories.health', 'Health') },
+    { value: "general", label: t('students.profile.remarks.categories.general', 'General') },
+    { value: "custom", label: t('students.profile.overview.customType', 'Custom Type...') },
+  ];
+
   return (
     <Drawer
       isOpen={isOpen}
-      onOpenChange={onOpenChange}
-      placement="right"
+      onClose={() => onOpenChange(false)}
       size="md"
-      classNames={{
-        wrapper: "!z-50",
-        base: "m-2 rounded-xl shadow-xl dark:shadow-zinc-900/50 h-[calc(100%-1rem)]",
-        backdrop: "!z-40"
-      }}
+      hideCloseButton
     >
-      <DrawerContent>
-        {(onClose) => (
-          <>
-            <DrawerHeader className="border-b border-default-100">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-50 rounded-xl">
-                  <MessageSquare size={20} className="text-accent" aria-hidden />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold">{t('students.profile.remarks.drawerTitle', 'Add Remark')}</h3>
-                  <p className="text-xs text-default-500">{t('students.profile.remarks.drawerSubtitle', 'Add a note or observation about the student')}</p>
-                </div>
+      {(onClose) => (
+        <>
+          <div className="ds-drawer__head">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-50 rounded-xl">
+                <MessageSquare size={20} className="text-accent" aria-hidden />
               </div>
-            </DrawerHeader>
-            <DrawerBody className="p-6 space-y-6">
-              {/* Remark Type - Dropdown with Custom Option */}
-              <div className="space-y-2">
-                <Select
-                  aria-label={t('students.profile.remarks.remarkType', 'Remark type')}
-                  label={t('students.profile.remarks.remarkType', 'Remark Type')}
-                  placeholder={t('students.profile.remarks.selectType', 'Select type or enter custom')}
-                  variant="bordered"
-                  isInvalid={!!errors.type}
-                  errorMessage={errors.type}
-                  selectedKeys={remarkForm.type ? [remarkForm.type] : []}
-                  onSelectionChange={(keys) => {
-                    const selected = Array.from(keys)[0];
-                    setRemarkForm({ ...remarkForm, type: selected, customType: "" });
-                    setErrors(prev => ({ ...prev, type: undefined }));
-                  }}
-                >
-                  <SelectItem key="academic">{t('students.profile.remarks.categories.academic', 'Academic')}</SelectItem>
-                  <SelectItem key="behavioral">{t('students.profile.remarks.categories.behavioral', 'Behavioral')}</SelectItem>
-                  <SelectItem key="achievement">{t('students.profile.remarks.categories.achievement', 'Achievement')}</SelectItem>
-                  <SelectItem key="attendance">{t('students.profile.remarks.categories.attendance', 'Attendance')}</SelectItem>
-                  <SelectItem key="health">{t('students.profile.remarks.categories.health', 'Health')}</SelectItem>
-                  <SelectItem key="general">{t('students.profile.remarks.categories.general', 'General')}</SelectItem>
-                  <SelectItem key="custom">{t('students.profile.overview.customType', 'Custom Type...')}</SelectItem>
-                </Select>
-
-                {remarkForm.type === "custom" && (
-                  <Input
-                    label={t('students.profile.overview.customTypeLabel', 'Custom Type')}
-                    placeholder={t('students.profile.overview.enterCustomType', 'Enter custom remark type')}
-                    variant="bordered"
-                    value={remarkForm.customType}
-                    onChange={(e) => setRemarkForm({ ...remarkForm, customType: e.target.value })}
-                    maxLength={30}
-                    description={`${remarkForm.customType.length}/30 characters`}
-                  />
-                )}
+              <div>
+                <h3 className="text-lg font-semibold">{t('students.profile.remarks.drawerTitle', 'Add Remark')}</h3>
+                <p className="text-xs text-fg-muted">{t('students.profile.remarks.drawerSubtitle', 'Add a note or observation about the student')}</p>
               </div>
-
-              {/* Title with Character Limit */}
-              <Input
-                label={t('students.profile.remarks.titleLabel', 'Title')}
-                placeholder={t('students.profile.remarks.titlePlaceholder', 'e.g. Excellent Performance in Mathematics')}
-                variant="bordered"
-                value={remarkForm.title}
+            </div>
+            <button
+              type="button"
+              className="ds-modal__close"
+              onClick={onClose}
+              aria-label={t('common.close', 'Close')}
+            >
+              <X size={13} aria-hidden="true" />
+            </button>
+          </div>
+          <div className="ds-drawer__body space-y-6">
+            {/* Remark Type - Dropdown with Custom Option */}
+            <div className="space-y-2">
+              <Select
+                aria-label={t('students.profile.remarks.remarkType', 'Remark type')}
+                label={t('students.profile.remarks.remarkType', 'Remark Type')}
+                placeholder={t('students.profile.remarks.selectType', 'Select type or enter custom')}
+                error={errors.type}
+                value={remarkForm.type}
                 onChange={(e) => {
-                  setRemarkForm({ ...remarkForm, title: e.target.value });
-                  setErrors(prev => ({ ...prev, title: undefined }));
+                  setRemarkForm({ ...remarkForm, type: e.target.value, customType: "" });
+                  setErrors(prev => ({ ...prev, type: undefined }));
                 }}
-                maxLength={100}
-                description={`${remarkForm.title.length}/100 characters`}
-                isRequired
-                isInvalid={!!errors.title}
-                errorMessage={errors.title}
+                options={remarkTypeOptions}
               />
 
-              {/* Description */}
-              <Textarea
-                label={t('students.profile.remarks.descriptionLabel', 'Description')}
-                placeholder={t('students.profile.remarks.descriptionPlaceholder', 'Enter detailed remark or observation...')}
-                minRows={5}
-                variant="bordered"
-                value={remarkForm.description}
-                onChange={(e) => {
-                  setRemarkForm({ ...remarkForm, description: e.target.value });
-                  setErrors(prev => ({ ...prev, description: undefined }));
-                }}
-                maxLength={500}
-                description={`${remarkForm.description.length}/500 characters`}
-                isRequired
-                isInvalid={!!errors.description}
-                errorMessage={errors.description}
-              />
+              {remarkForm.type === "custom" && (
+                <Input
+                  label={t('students.profile.overview.customTypeLabel', 'Custom Type')}
+                  placeholder={t('students.profile.overview.enterCustomType', 'Enter custom remark type')}
+                  value={remarkForm.customType}
+                  onChange={(e) => setRemarkForm({ ...remarkForm, customType: e.target.value })}
+                  maxLength={30}
+                  description={`${remarkForm.customType.length}/30 characters`}
+                />
+              )}
+            </div>
 
-              {/* Send to Parent */}
-              <div className="p-4 rounded-lg border border-default-200 bg-default-50">
-                <Checkbox size="sm"
-                  isSelected={remarkForm.sendToParent}
-                  onValueChange={(checked) => setRemarkForm({ ...remarkForm, sendToParent: checked })}
-                >
+            {/* Title with Character Limit */}
+            <Input
+              label={t('students.profile.remarks.titleLabel', 'Title')}
+              placeholder={t('students.profile.remarks.titlePlaceholder', 'e.g. Excellent Performance in Mathematics')}
+              value={remarkForm.title}
+              onChange={(e) => {
+                setRemarkForm({ ...remarkForm, title: e.target.value });
+                setErrors(prev => ({ ...prev, title: undefined }));
+              }}
+              maxLength={100}
+              description={`${remarkForm.title.length}/100 characters`}
+              required
+              error={errors.title}
+            />
+
+            {/* Description */}
+            <Textarea
+              label={t('students.profile.remarks.descriptionLabel', 'Description')}
+              placeholder={t('students.profile.remarks.descriptionPlaceholder', 'Enter detailed remark or observation...')}
+              rows={5}
+              value={remarkForm.description}
+              onChange={(e) => {
+                setRemarkForm({ ...remarkForm, description: e.target.value });
+                setErrors(prev => ({ ...prev, description: undefined }));
+              }}
+              maxLength={500}
+              description={`${remarkForm.description.length}/500 characters`}
+              required
+              error={errors.description}
+            />
+
+            {/* Send to Parent */}
+            <div className="p-4 rounded-lg border border-divider bg-surface-2">
+              <Checkbox
+                size="sm"
+                checked={remarkForm.sendToParent}
+                onChange={(e) => setRemarkForm({ ...remarkForm, sendToParent: e.target.checked })}
+                label={
                   <div className="flex flex-col">
-                    <span className="font-medium text-default-900">{t('students.profile.remarks.sendToParent', 'Send to Parent')}</span>
-                    <span className="text-xs text-default-500">
+                    <span className="font-medium text-fg">{t('students.profile.remarks.sendToParent', 'Send to Parent')}</span>
+                    <span className="text-xs text-fg-muted">
                       {remarkForm.sendToParent
                         ? t('students.profile.remarks.visibleToParents', 'Remark will be visible to parents')
                         : t('students.profile.remarks.visibleToStaffOnly', 'Remark will only be visible to staff')
                       }
                     </span>
                   </div>
-                </Checkbox>
-              </div>
+                }
+              />
+            </div>
 
-              {/* Preview */}
-              {(remarkForm.title || remarkForm.description) && (
-                <div className="p-4 rounded-lg border border-primary-200 bg-primary-50/30">
-                  <p className="text-xs font-semibold text-primary-600 uppercase mb-2">{t('students.profile.remarks.preview', 'Preview')}</p>
-                  {remarkForm.title && (
-                    <h4 className="font-semibold text-default-900 mb-1">{remarkForm.title}</h4>
-                  )}
-                  {remarkForm.description && (
-                    <p className="text-sm text-default-600">{remarkForm.description}</p>
-                  )}
-                  <div className="flex items-center gap-2 mt-2">
-                    <Chip size="sm" variant="flat" color="primary" className="capitalize">
-                      {remarkForm.customType || remarkForm.type || t('students.profile.remarks.noType', 'No Type')}
+            {/* Preview */}
+            {(remarkForm.title || remarkForm.description) && (
+              <div className="p-4 rounded-lg border border-[var(--accent)]/20 bg-[var(--accent-bg)]/30">
+                <p className="text-xs font-semibold text-[var(--accent)] uppercase mb-2">{t('students.profile.remarks.preview', 'Preview')}</p>
+                {remarkForm.title && (
+                  <h4 className="font-semibold text-fg mb-1">{remarkForm.title}</h4>
+                )}
+                {remarkForm.description && (
+                  <p className="text-sm text-fg-muted">{remarkForm.description}</p>
+                )}
+                <div className="flex items-center gap-2 mt-2">
+                  <Chip size="sm" color="primary" className="capitalize">
+                    {remarkForm.customType || remarkForm.type || t('students.profile.remarks.noType', 'No Type')}
+                  </Chip>
+                  {remarkForm.sendToParent && (
+                    <Chip size="sm" color="success" startContent={<Mail size={12} aria-hidden />}>
+                      {t('students.profile.remarks.willSend', 'Will Send')}
                     </Chip>
-                    {remarkForm.sendToParent && (
-                      <Chip size="sm" variant="flat" color="success" startContent={<Mail size={12} aria-hidden />}>
-                        {t('students.profile.remarks.willSend', 'Will Send')}
-                      </Chip>
-                    )}
-                  </div>
+                  )}
                 </div>
-              )}
-            </DrawerBody>
-            <DrawerFooter className="border-t border-default-100">
-              <Button
-                variant="flat"
-                onPress={() => {
-                  resetForm();
-                  onClose();
-                }}
-              >
-                {t('common.cancel', 'Cancel')}
-              </Button>
-              <Button
-                color="primary"
-                onPress={handleSaveRemark}
-                startContent={<Plus size={16} aria-hidden />}
-                isDisabled={!remarkForm.title.trim() || !remarkForm.description.trim() || (!remarkForm.type && !remarkForm.customType.trim()) || isSubmitting}
-                isLoading={isSubmitting}
-              >
-                {remarkForm.sendToParent ? t('students.profile.remarks.saveAndSend', 'Save & Send') : t('students.profile.remarks.saveRemark', 'Save Remark')}
-              </Button>
-            </DrawerFooter>
-          </>
-        )}
-      </DrawerContent>
+              </div>
+            )}
+          </div>
+          <div className="ds-drawer__foot">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                resetForm();
+                onClose();
+              }}
+            >
+              {t('common.cancel', 'Cancel')}
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => handleSaveRemark(onClose)}
+              icon={<Plus size={16} aria-hidden />}
+              disabled={!remarkForm.title.trim() || !remarkForm.description.trim() || (!remarkForm.type && !remarkForm.customType.trim()) || isSubmitting}
+              loading={isSubmitting}
+            >
+              {remarkForm.sendToParent ? t('students.profile.remarks.saveAndSend', 'Save & Send') : t('students.profile.remarks.saveRemark', 'Save Remark')}
+            </Button>
+          </div>
+        </>
+      )}
     </Drawer>
   );
 }

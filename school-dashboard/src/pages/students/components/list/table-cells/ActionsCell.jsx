@@ -1,8 +1,7 @@
 import React from "react";
 import {
-    Button, Tooltip,
-    Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, DropdownSection,
-} from "@heroui/react";
+    IconButton, Tooltip, DropdownMenu
+} from "../../../../components/ui";
 import {
     Edit, Trash2, Pin, PinOff,
     ArrowUpCircle, MessageSquare,
@@ -30,146 +29,146 @@ function ActionsCell({
 }) {
     const { t } = useTranslation();
 
+    const dropdownSections = [
+        {
+            title: t("pages.statusActions"),
+            items: [
+                {
+                    key: "inactive",
+                    label: "Mark as Inactive",
+                    icon: <UserX size={14} />,
+                    onClick: () => {
+                        setStatusChangeData({
+                            student,
+                            newStatus: "inactive",
+                            action: "Mark as Inactive",
+                        });
+                        onStatusChangeOpen();
+                    },
+                },
+                {
+                    key: "alumni",
+                    label: "Mark as Alumni",
+                    icon: <GraduationCap size={14} />,
+                    onClick: () => {
+                        setStatusChangeData({
+                            student,
+                            newStatus: "alumni",
+                            action: "Mark as Alumni",
+                        });
+                        onStatusChangeOpen();
+                    },
+                },
+            ],
+        },
+        {
+            title: t("pages.academicActions"),
+            items: [
+                {
+                    key: "promote",
+                    label: "Promote Student",
+                    icon: <ArrowUpCircle size={14} />,
+                    onClick: () => {
+                        setSelectedKeys(new Set([student.id.toString()]));
+                        onPromoteOpen();
+                    },
+                },
+                {
+                    key: "tc",
+                    label: "Generate/Issue TC",
+                    icon: <FileText size={14} />,
+                    onClick: () => {
+                        setTcStudents([student]);
+                        onTcModalOpen();
+                    },
+                },
+            ],
+        },
+        {
+            title: t("pages.communication1"),
+            items: [
+                {
+                    key: "message",
+                    label: "Send Message to Parent",
+                    icon: <MessageSquare size={14} />,
+                    onClick: () => {
+                        setSelectedKeys(new Set([student.id.toString()]));
+                        handleBulkAction("message");
+                    },
+                },
+            ],
+        },
+        {
+            title: t("pages.dangerZone"),
+            items: [
+                {
+                    key: "delete",
+                    label: "Delete Student",
+                    icon: <Trash2 size={14} />,
+                    isDestructive: true,
+                    onClick: () => {
+                        setStudentToDelete(student);
+                        onDeleteOpen();
+                    },
+                },
+            ],
+        },
+    ];
+
     return (
         <td className={className}>
             <div className="flex items-center justify-end gap-1">
                 {/* Pin / Unpin */}
                 <Tooltip content={student.isPinned ? "Unpin student" : "Pin student"}>
-                    <Button
-                        isIconOnly
+                    <IconButton
                         size="sm"
-                        variant="light"
-                        className={student.isPinned ? "text-primary" : "text-default-400"}
+                        variant="ghost"
+                        className={student.isPinned ? "text-primary" : "text-fg-faint"}
                         aria-label={student.isPinned ? "Unpin student" : "Pin student"}
                         onMouseDown={(e) => e.preventDefault()}
-                        onPress={() => {
+                        onClick={() => {
                             if (student.isPinned) {
                                 handleUnpinStudent(student.id);
                             } else {
                                 handlePinStudent(student.id);
                             }
                         }}
-                    >
-                        {student.isPinned ? <PinOff size={16} aria-hidden /> : <Pin size={16} aria-hidden />}
-                    </Button>
+                        icon={student.isPinned ? <PinOff size={16} aria-hidden /> : <Pin size={16} aria-hidden />}
+                    />
                 </Tooltip>
 
                 {/* Edit */}
                 <Tooltip content="Edit Details">
-                    <Button
-                        isIconOnly
+                    <IconButton
                         size="sm"
-                        variant="light"
-                        className="text-default-400"
+                        variant="ghost"
+                        className="text-fg-faint"
                         aria-label="Edit student details"
                         onMouseDown={(e) => e.preventDefault()}
-                        onPress={() => {
+                        onClick={() => {
                             setSelectedStudent(student);
                             setIsEditDrawerOpen(true);
                         }}
-                    >
-                        <Edit size={16} aria-hidden />
-                    </Button>
+                        icon={<Edit size={16} aria-hidden />}
+                    />
                 </Tooltip>
 
                 {/* Per-row more-actions */}
-                <Dropdown>
-                    <DropdownTrigger>
-                        <Button
-                            isIconOnly
+                <DropdownMenu
+                    ariaLabel={t("aria.menus.studentActions")}
+                    menuClassName="max-h-[400px] overflow-y-auto"
+                    trigger={
+                        <IconButton
                             size="sm"
-                            variant="light"
-                            className="text-default-400"
+                            variant="ghost"
+                            className="text-fg-faint"
                             aria-label="More actions"
                             onMouseDown={(e) => e.preventDefault()}
-                        >
-                            <MoreVertical size={18} aria-hidden />
-                        </Button>
-                    </DropdownTrigger>
-                    <DropdownMenu
-                        aria-label={t("aria.menus.studentActions")}
-                        className="max-h-[400px] overflow-y-auto"
-                    >
-                        <DropdownSection title={t("pages.statusActions")}>
-                            <DropdownItem
-                                key="inactive"
-                                startContent={<UserX size={14} aria-hidden />}
-                                onPress={() => {
-                                    setStatusChangeData({
-                                        student,
-                                        newStatus: "inactive",
-                                        action: "Mark as Inactive",
-                                    });
-                                    onStatusChangeOpen();
-                                }}
-                            >
-                                Mark as Inactive
-                            </DropdownItem>
-                            <DropdownItem
-                                key="alumni"
-                                startContent={<GraduationCap size={14} aria-hidden />}
-                                onPress={() => {
-                                    setStatusChangeData({
-                                        student,
-                                        newStatus: "alumni",
-                                        action: "Mark as Alumni",
-                                    });
-                                    onStatusChangeOpen();
-                                }}
-                            >
-                                Mark as Alumni
-                            </DropdownItem>
-                        </DropdownSection>
-                        <DropdownSection title={t("pages.academicActions")}>
-                            <DropdownItem
-                                key="promote"
-                                startContent={<ArrowUpCircle size={14} aria-hidden />}
-                                onPress={() => {
-                                    setSelectedKeys(new Set([student.id.toString()]));
-                                    onPromoteOpen();
-                                }}
-                            >
-                                Promote Student
-                            </DropdownItem>
-                            <DropdownItem
-                                key="tc"
-                                startContent={<FileText size={14} aria-hidden />}
-                                onPress={() => {
-                                    setTcStudents([student]);
-                                    onTcModalOpen();
-                                }}
-                            >
-                                Generate/Issue TC
-                            </DropdownItem>
-                        </DropdownSection>
-                        <DropdownSection title={t("pages.communication1")}>
-                            <DropdownItem
-                                key="message"
-                                startContent={<MessageSquare size={14} aria-hidden />}
-                                onPress={() => {
-                                    setSelectedKeys(new Set([student.id.toString()]));
-                                    handleBulkAction("message");
-                                }}
-                            >
-                                Send Message to Parent
-                            </DropdownItem>
-                        </DropdownSection>
-                        <DropdownSection title={t("pages.dangerZone")}>
-                            <DropdownItem
-                                key="delete"
-                                className="text-danger"
-                                color="danger"
-                                startContent={<Trash2 size={14} aria-hidden />}
-                                onPress={() => {
-                                    setStudentToDelete(student);
-                                    onDeleteOpen();
-                                }}
-                            >
-                                Delete Student
-                            </DropdownItem>
-                        </DropdownSection>
-                    </DropdownMenu>
-                </Dropdown>
+                            icon={<MoreVertical size={18} aria-hidden />}
+                        />
+                    }
+                    sections={dropdownSections}
+                />
             </div>
         </td>
     );
