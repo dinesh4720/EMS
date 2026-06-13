@@ -163,7 +163,8 @@ export default function AllocationsList() {
         <div className="flex gap-3 flex-1 flex-wrap">
           <Input
             placeholder={t('pages.searchStudent')}
-            startContent={<Search size={16} className="text-fg-faint" />}
+            aria-label={t('pages.searchStudent')}
+            startContent={<Search size={16} className="text-fg-faint" aria-hidden="true" />}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             className="max-w-xs"
@@ -171,6 +172,7 @@ export default function AllocationsList() {
           />
           <Select
             placeholder={t('pages.allHostels')}
+            aria-label={t('pages.allHostels')}
             value={hostelFilter}
             onChange={(e) => { setHostelFilter(e.target.value); setPage(1); }}
             className="max-w-[180px]"
@@ -181,6 +183,7 @@ export default function AllocationsList() {
           </Select>
           <Select
             placeholder="Room"
+            aria-label="Filter by room"
             value={roomFilter}
             onChange={(e) => { setRoomFilter(e.target.value); setPage(1); }}
             className="max-w-[180px]"
@@ -191,6 +194,7 @@ export default function AllocationsList() {
           </Select>
           <Select
             placeholder={t('pages.status2')}
+            aria-label={t('pages.status2')}
             value={statusFilter}
             onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
             className="max-w-[140px]"
@@ -216,14 +220,14 @@ export default function AllocationsList() {
             filename="allocations"
             title="Student Allocations"
           />
-          <button
-            type="button"
-            className="btn btn--sm"
-            onClick={() => setPrintOpen(true)}
+          <IconButton
+            size="sm"
+            variant="outline"
             aria-label="Print preview"
+            onClick={() => setPrintOpen(true)}
           >
-            <Printer size={14} aria-hidden />
-          </button>
+            <Printer size={14} aria-hidden="true" />
+          </IconButton>
           <Button variant="primary" icon={<Plus size={16} />} onClick={handleAdd} size="sm">
             Allocate Student
           </Button>
@@ -244,7 +248,7 @@ export default function AllocationsList() {
       ) : (
         <>
           <div className="overflow-x-auto rounded-lg border border-border-token">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm" aria-label="Student allocations">
               <thead>
                 <tr className="bg-surface-2 border-b border-border-token">
                   <th className="text-left px-4 py-3 font-medium text-fg">{t('pages.student')}</th>
@@ -275,7 +279,7 @@ export default function AllocationsList() {
                     <td className="px-4 py-3 text-fg-muted">{alloc.bedNumber || "—"}</td>
                     <td className="px-4 py-3 text-fg-muted">
                       <div className="flex items-center gap-1">
-                        <Calendar size={12} />
+                        <Calendar size={12} aria-hidden="true" />
                         {formatDate(alloc.startDate)}
                       </div>
                     </td>
@@ -360,10 +364,10 @@ export default function AllocationsList() {
             startContent={<Search size={14} className="text-fg-faint" />}
           />
           <Select
-            label={t('pages.student')} isRequired
+            label={t('pages.student')} required
             value={formData.studentId}
             onChange={(e) => setFormData(p => ({ ...p, studentId: e.target.value || "" }))}
-            isInvalid={!!errors.studentId} errorMessage={errors.studentId}
+            error={errors.studentId}
             placeholder={studentSearch.length < 2 ? "Search a student above first" : studentsLoading ? "Searching..." : "Select student"}
           >
             {students.map(s => (
@@ -373,18 +377,18 @@ export default function AllocationsList() {
             ))}
           </Select>
           <Select
-            label={t('pages.hostel1')} isRequired
+            label={t('pages.hostel1')} required
             value={formData.hostelId}
             onChange={(e) => setFormData(p => ({ ...p, hostelId: e.target.value || "", roomId: "" }))}
-            isInvalid={!!errors.hostelId} errorMessage={errors.hostelId}
+            error={errors.hostelId}
           >
             {hostels.map(h => <option key={h._id} value={h._id}>{h.name}</option>)}
           </Select>
           <Select
-            label={t('pages.room')} isRequired
+            label={t('pages.room')} required
             value={formData.roomId}
             onChange={(e) => setFormData(p => ({ ...p, roomId: e.target.value || "" }))}
-            isInvalid={!!errors.roomId} errorMessage={errors.roomId}
+            error={errors.roomId}
             disabled={!formData.hostelId}
             description={!formData.hostelId ? "Select a hostel first" : ""}
           >
@@ -402,10 +406,10 @@ export default function AllocationsList() {
               placeholder={t('hostel.bedNumberPlaceholder')}
             />
             <Input
-              label={t('pages.startDate1')} isRequired type="date"
+              label={t('pages.startDate1')} required type="date"
               value={formData.startDate}
               onChange={(e) => setFormData(p => ({ ...p, startDate: e.target.value }))}
-              isInvalid={!!errors.startDate} errorMessage={errors.startDate}
+              error={errors.startDate}
             />
           </div>
           <Input

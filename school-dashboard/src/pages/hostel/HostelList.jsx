@@ -177,7 +177,8 @@ export default function HostelList() {
         <div className="flex gap-3 flex-1 flex-wrap">
           <Input
             placeholder={t('pages.searchHostels')}
-            startContent={<Search size={16} className="text-fg-faint" />}
+            aria-label={t('pages.searchHostels')}
+            startContent={<Search size={16} className="text-fg-faint" aria-hidden="true" />}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             className="max-w-xs"
@@ -185,6 +186,7 @@ export default function HostelList() {
           />
           <Select
             placeholder={t('pages.allTypes1')}
+            aria-label={t('pages.allTypes1')}
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
             className="max-w-[150px]"
@@ -197,6 +199,7 @@ export default function HostelList() {
           </Select>
           <Select
             placeholder="Occupancy"
+            aria-label="Filter by occupancy"
             value={occupancyFilter}
             onChange={(e) => setOccupancyFilter(e.target.value)}
             className="max-w-[150px]"
@@ -222,14 +225,14 @@ export default function HostelList() {
             filename="hostels"
             title="Hostels"
           />
-          <button
-            type="button"
-            className="btn btn--sm"
-            onClick={() => setPrintOpen(true)}
+          <IconButton
+            size="sm"
+            variant="outline"
             aria-label="Print preview"
+            onClick={() => setPrintOpen(true)}
           >
-            <Printer size={14} aria-hidden />
-          </button>
+            <Printer size={14} aria-hidden="true" />
+          </IconButton>
           <Button variant="primary" icon={<Plus size={16} />} onClick={handleAdd} size="sm">
             Add Hostel
           </Button>
@@ -336,16 +339,16 @@ export default function HostelList() {
         <Modal.Header>{editingId ? "Edit Hostel" : "Add Hostel"}</Modal.Header>
         <Modal.Body className="gap-4">
           <Input
-            label={t('pages.hostelName')} isRequired
+            label={t('pages.hostelName')} required
             value={formData.name}
             onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))}
-            isInvalid={!!errors.name} errorMessage={errors.name}
+            error={errors.name}
           />
           <Select
-            label={t('pages.type1')} isRequired
+            label={t('pages.type1')} required
             value={formData.type}
             onChange={(e) => setFormData(p => ({ ...p, type: e.target.value }))}
-            isInvalid={!!errors.type} errorMessage={errors.type}
+            error={errors.type}
           >
             <option value="boys">{t('pages.boys')}</option>
             <option value="girls">{t('pages.girls')}</option>

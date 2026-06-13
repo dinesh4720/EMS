@@ -191,7 +191,8 @@ export default function RoomsList() {
         <div className="flex gap-3 flex-1 flex-wrap">
           <Input
             placeholder={t('pages.searchRooms')}
-            startContent={<Search size={16} className="text-fg-faint" />}
+            aria-label={t('pages.searchRooms')}
+            startContent={<Search size={16} className="text-fg-faint" aria-hidden="true" />}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             className="max-w-xs"
@@ -199,6 +200,7 @@ export default function RoomsList() {
           />
           <Select
             placeholder={t('pages.allHostels')}
+            aria-label={t('pages.allHostels')}
             value={hostelFilter}
             onChange={(e) => { setHostelFilter(e.target.value); setPage(1); }}
             className="max-w-[180px]"
@@ -209,6 +211,7 @@ export default function RoomsList() {
           </Select>
           <Select
             placeholder={t('pages.allTypes1')}
+            aria-label={t('pages.allTypes1')}
             value={typeFilter}
             onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
             className="max-w-[150px]"
@@ -219,6 +222,7 @@ export default function RoomsList() {
           </Select>
           <Select
             placeholder="Occupancy"
+            aria-label="Filter by occupancy"
             value={occupancyFilter}
             onChange={(e) => setOccupancyFilter(e.target.value)}
             className="max-w-[150px]"
@@ -244,14 +248,14 @@ export default function RoomsList() {
             filename="rooms"
             title="Rooms"
           />
-          <button
-            type="button"
-            className="btn btn--sm"
-            onClick={() => setPrintOpen(true)}
+          <IconButton
+            size="sm"
+            variant="outline"
             aria-label="Print preview"
+            onClick={() => setPrintOpen(true)}
           >
-            <Printer size={14} aria-hidden />
-          </button>
+            <Printer size={14} aria-hidden="true" />
+          </IconButton>
           <Button variant="primary" icon={<Plus size={16} />} onClick={handleAdd} size="sm">
             Add Room
           </Button>
@@ -272,7 +276,7 @@ export default function RoomsList() {
       ) : (
         <>
           <div className="overflow-x-auto rounded-lg border border-border-token">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm" aria-label="Rooms">
               <thead>
                 <tr className="bg-surface-2 border-b border-border-token">
                   <th className="text-left px-4 py-3 font-medium text-fg">{t('pages.room')}</th>
@@ -295,7 +299,7 @@ export default function RoomsList() {
                     </td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${occupancyColor(room)}`}>
-                        <BedDouble size={12} />
+                        <BedDouble size={12} aria-hidden="true" />
                         {room.occupiedBeds}/{room.capacity}
                       </span>
                     </td>
@@ -368,19 +372,19 @@ export default function RoomsList() {
         <Modal.Header>{editingId ? "Edit Room" : "Add Room"}</Modal.Header>
         <Modal.Body className="gap-4">
           <Select
-            label={t('pages.hostel1')} isRequired
+            label={t('pages.hostel1')} required
             value={formData.hostelId}
             onChange={(e) => setFormData(p => ({ ...p, hostelId: e.target.value || "" }))}
-            isInvalid={!!errors.hostelId} errorMessage={errors.hostelId}
+            error={errors.hostelId}
           >
             {hostels.map(h => <option key={h._id} value={h._id}>{h.name}</option>)}
           </Select>
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label={t('pages.roomNumber')} isRequired
+              label={t('pages.roomNumber')} required
               value={formData.roomNumber}
               onChange={(e) => setFormData(p => ({ ...p, roomNumber: e.target.value }))}
-              isInvalid={!!errors.roomNumber} errorMessage={errors.roomNumber}
+              error={errors.roomNumber}
             />
             <Input
               label={t('pages.floor')}
@@ -398,10 +402,10 @@ export default function RoomsList() {
               {ROOM_TYPES.map(rt => <option key={rt.key} value={rt.key}>{rt.label}</option>)}
             </Select>
             <Input
-              label={t('pages.capacity')} isRequired type="number" min={1}
+              label={t('pages.capacity')} required type="number" min={1}
               value={String(formData.capacity)}
               onChange={(e) => setFormData(p => ({ ...p, capacity: e.target.value }))}
-              isInvalid={!!errors.capacity} errorMessage={errors.capacity}
+              error={errors.capacity}
             />
           </div>
           <Input
@@ -416,6 +420,7 @@ export default function RoomsList() {
                 <Chip
                   key={a}
                   color={formData.amenities.includes(a) ? "primary" : "neutral"}
+                  selected={formData.amenities.includes(a)}
                   className="cursor-pointer"
                   onClick={() => toggleAmenity(a)}
                 >
