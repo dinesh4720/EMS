@@ -231,12 +231,12 @@ function RoleQualificationsStep({
         ))}
 
         {(formData.professionalQualifications || []).length === 0 && (
-          <div className="text-center py-10 border-2 border-dashed border-border-token rounded-lg flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-border-strong transition-colors" onClick={addQualification}>
+          <button type="button" className="w-full text-center py-10 border-2 border-dashed border-border-token rounded-lg flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-border-strong transition-colors bg-transparent" onClick={addQualification}>
             <div className="w-10 h-10 rounded-full bg-surface-2 flex items-center justify-center text-fg-faint">
               <GraduationCap size={20} />
             </div>
             <p className="text-xs text-fg-muted">{t('staff.form.noDegreesAdded')}</p>
-          </div>
+          </button>
         )}
         {errors.qualifications && <p id="qualifications-error" role="alert" aria-live="polite" className="text-xs text-danger">{errors.qualifications}</p>}
       </div>

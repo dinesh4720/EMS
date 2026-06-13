@@ -417,14 +417,15 @@ export default function StaffDashboard() {
             variant="underline"
             size="md"
             ariaLabel="Staff detail tabs"
+            baseId="staff-dashboard"
           />
         </div>
 
         {/* Tab panel */}
         <div
-          id={`tabpanel-${activeTab}`}
+          id={`staff-dashboard-tabpanel-${activeTab}`}
           role="tabpanel"
-          aria-labelledby={`tab-${activeTab}`}
+          aria-labelledby={`staff-dashboard-tab-${activeTab}`}
           className="staff-dashboard__panel"
         >
           {activeTab === "overview" && (

@@ -40,7 +40,16 @@ export default function PayrollTable({
   }
 
   return (
-    <div className="-mx-6" onClick={() => setIsFilterDropdownOpen(false)}>
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
+    <div
+      className="-mx-6"
+      role="region"
+      tabIndex={-1}
+      onClick={() => setIsFilterDropdownOpen(false)}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") setIsFilterDropdownOpen(false);
+      }}
+    >
       <VirtualizedTable
         ariaLabel="Payroll records table"
         data={filteredRecords}
@@ -109,9 +118,13 @@ export default function PayrollTable({
                 <div className="flex items-center gap-3">
                   <PhotoAvatar src={employee.photo || employee.picture} alt={employee.name} name={employee.name} size="md" type="staff" />
                   <div className="flex flex-col">
-                    <span className="text-fg font-medium text-base hover:text-accent transition-colors cursor-pointer" onClick={() => navigate(`/staffs/${employee.id}`)}>
+                    <button
+                      type="button"
+                      className="text-fg font-medium text-base hover:text-accent transition-colors cursor-pointer bg-transparent border-none p-0 m-0 font-inherit text-left"
+                      onClick={() => navigate(`/staffs/${employee.id}`)}
+                    >
                       {employee.name}
-                    </span>
+                    </button>
                     <span className="text-fg-muted text-xs">{employee.code}</span>
                   </div>
                 </div>

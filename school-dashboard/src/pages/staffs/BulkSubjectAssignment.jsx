@@ -622,10 +622,9 @@ export default function BulkSubjectAssignment() {
           <ModalBody className="py-6 px-6">
             <div className="col" style={{ gap: 16 }}>
               <div className="col" style={{ gap: 6 }}>
-                <label className="text-sm font-medium text-fg">
-                  Subject <span style={{ color: "var(--danger)" }}>*</span>
-                </label>
                 <Select
+                  label="Subject"
+                  isRequired
                   placeholder="Select a subject"
                   selectedKeys={newAssignment.subject ? new Set([newAssignment.subject]) : new Set()}
                   onSelectionChange={(keys) =>
@@ -633,7 +632,6 @@ export default function BulkSubjectAssignment() {
                   }
                   variant="bordered"
                   size="md"
-                  aria-label="Select subject"
                 >
                   {availableSubjects.map((subject) => (
                     <SelectItem key={subject} value={subject}>{subject}</SelectItem>
@@ -642,10 +640,10 @@ export default function BulkSubjectAssignment() {
               </div>
 
               <div className="col" style={{ gap: 6 }}>
-                <label className="text-sm font-medium text-fg">
+                <span id="bulk-classes-label" className="text-sm font-medium text-fg">
                   Classes <span style={{ color: "var(--danger)" }}>*</span>
-                </label>
-                <div className="optgrid" role="group" aria-label="Select classes">
+                </span>
+                <div className="optgrid" role="group" aria-labelledby="bulk-classes-label">
                   {classesWithTeachers.map((cls) => {
                     const id = cls.id;
                     const isActive = newAssignment.classIds.has(id);

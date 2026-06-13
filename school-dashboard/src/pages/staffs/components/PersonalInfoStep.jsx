@@ -50,12 +50,14 @@ function PersonalInfoStep({
             color="primary"
           />
         ) : (
-          <div
+          <button
+            type="button"
             className="w-16 h-16 rounded-full border-2 border-dashed border-fg-faint bg-surface-2 flex items-center justify-center shrink-0 cursor-pointer hover:border-fg-subtle transition-colors"
             onClick={onOpenCameraCapture}
+            aria-label={t('staff.form.uploadPhoto')}
           >
             <User size={24} className="text-fg-faint" />
-          </div>
+          </button>
         )}
         <div className="flex flex-col gap-1.5">
           <p className="text-sm font-medium text-fg">{t('staff.form.staffPhoto')}</p>
@@ -112,7 +114,7 @@ function PersonalInfoStep({
             isRequired
             classNames={inputStyles}
           />
-          <div onClick={(e) => e.stopPropagation()} onFocus={(e) => e.stopPropagation()}>
+          <div onFocus={(e) => e.stopPropagation()}>
             <DatePicker
               aria-label={t('staff.form.dobLabel')}
               label={t('staff.form.dobLabel')}

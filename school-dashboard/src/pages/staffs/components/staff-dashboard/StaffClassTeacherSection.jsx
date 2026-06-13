@@ -16,8 +16,17 @@ export default function StaffClassTeacherSection({ classTeacherAssignments, onUn
             return (
               <div
                 key={cls.id}
+                role="button"
+                tabIndex={0}
+                aria-label={`Open class ${cls.name} ${cls.section}`}
                 className="px-5 py-3 flex items-center justify-between hover:bg-surface-2/50 transition-colors cursor-pointer"
                 onClick={() => navigate(`/classes/${cls.id}`)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    navigate(`/classes/${cls.id}`);
+                  }
+                }}
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-surface-2 flex items-center justify-center text-sm font-semibold text-fg">

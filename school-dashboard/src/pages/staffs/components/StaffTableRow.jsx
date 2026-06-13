@@ -64,9 +64,7 @@ export default function StaffTableRow({
             {/* Name */}
             <TableCell key="name">
                 <div className="flex items-center gap-3">
-                    <div onClick={(e) => e.stopPropagation()}>
-                        <PhotoAvatar src={s.picture || s.photo} alt={s.name} name={s.name} size="md" type="staff" />
-                    </div>
+                    <PhotoAvatar src={s.picture || s.photo} alt={s.name} name={s.name} size="md" type="staff" />
                     <div className="flex flex-col">
                         <Link
                             to={`/staffs/${s.id}`}
@@ -115,8 +113,7 @@ export default function StaffTableRow({
 
             {/* Status */}
             <TableCell key="status">
-                <div onClick={(e) => e.stopPropagation()}>
-                    <Dropdown>
+                <Dropdown>
                         <DropdownTrigger>
                             <button className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs font-medium cursor-pointer ${statusStyle}`}>
                                 <span className="capitalize">{s.status}</span>
@@ -134,12 +131,11 @@ export default function StaffTableRow({
                             ))}
                         </DropdownMenu>
                     </Dropdown>
-                </div>
             </TableCell>
 
             {/* Actions */}
             <TableCell key="actions">
-                <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                <div className="flex justify-end gap-1">
                     <Button
                         isIconOnly size="sm" variant="light"
                         aria-label="Edit staff member"

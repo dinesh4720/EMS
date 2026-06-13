@@ -1,7 +1,6 @@
 import {
   useEffect,
   useMemo,
-  useRef,
   useState,
   useCallback,
 } from "react";
@@ -392,63 +391,6 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
     }
   }, [page, totalPages]);
 
-  // ============ Keyboard nav (Step 3) — scoped to list focus ============
-  const listRef = useRef(null);
-  const rowRefs = useRef(new Map());
-
-  const moveSelection = useCallback(
-    (delta) => {
-      if (paginatedVisible.length === 0) return;
-      const currentIdx = paginatedVisible.findIndex(
-        (s) => (s._id || s.id) === selectedId
-      );
-      const nextIdx =
-        currentIdx === -1
-          ? delta > 0
-            ? 0
-            : paginatedVisible.length - 1
-          : Math.min(paginatedVisible.length - 1, Math.max(0, currentIdx + delta));
-      const nextStaff = paginatedVisible[nextIdx];
-      if (!nextStaff) return;
-      const nextId = nextStaff._id || nextStaff.id;
-      setSelectedId(nextId);
-      // Scroll the row into view next tick (after render)
-      requestAnimationFrame(() => {
-        rowRefs.current.get(nextId)?.scrollIntoView({
-          block: "nearest",
-        });
-        rowRefs.current.get(nextId)?.focus({ preventScroll: true });
-      });
-    },
-    [paginatedVisible, selectedId, setSelectedId]
-  );
-
-  const handleListKeyDown = useCallback(
-    (e) => {
-      // Ignore typing inside the search input — we only act on row buttons
-      const tag = e.target?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA") return;
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        moveSelection(1);
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        moveSelection(-1);
-      } else if (e.key === "Enter") {
-        // Enter on a row keeps selection — for now we just confirm by no-op.
-        // (Could open profile in future; spec says "keeps it".)
-        e.preventDefault();
-      } else if (e.key === "Escape") {
-        // If a selection exists, useBulkSelection handles Esc → clear.
-        // Otherwise fall through and clear the row focus.
-        if (selection.count > 0) return;
-        e.preventDefault();
-        setSelectedId(null);
-      }
-    },
-    [moveSelection, setSelectedId, selection.count]
-  );
-
   // ============ Bulk action handlers ============
   const toggleCheck = useCallback(
     (s, event) => selection.toggle(s._id || s.id, event),
@@ -658,12 +600,8 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
         >
 
         {/* List rows */}
-        <div
-          ref={listRef}
-          role="listbox"
+        <ul
           aria-label="Staff list"
-          tabIndex={0}
-          onKeyDown={handleListKeyDown}
           style={{
             flex: 1,
             overflow: "auto",
@@ -686,17 +624,11 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
                   ? "Try adjusting your filters or search query."
                   : "No staff found for the current view."
               }
-              action={
-                staff.length === 0 ? (
-                  <button type="button" className="btn btn--accent" onClick={onAddStaff}>
-                    <Plus size={13} aria-hidden /> Add staff
-                  </button>
-                ) : (
-                  <button type="button" className="btn btn--ghost" onClick={clearAllFilters}>
-                    Clear filters
-                  </button>
-                )
-              }
+              actionLabel={staff.length === 0 ? "Add staff" : "Clear filters"}
+              onAction={() => {
+                if (staff.length === 0) onAddStaff?.();
+                else clearAllFilters();
+              }}
               size="md"
             />
           ) : (
@@ -705,10 +637,6 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
               return (
                 <StaffListRow
                   key={id}
-                  ref={(el) => {
-                    if (el) rowRefs.current.set(id, el);
-                    else rowRefs.current.delete(id);
-                  }}
                   staff={s}
                   isActive={selectedId === id}
                   isChecked={selection.isSelected(id)}
@@ -720,7 +648,7 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
               );
             })
           )}
-        </div>
+        </ul>
 
         {/* Pagination footer */}
         {!loading && visible.length > 0 && (
@@ -782,17 +710,18 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
 
       {/* Mobile: slide-over drawer for detail */}
       {isMobileViewport && detailVisible && (
-        <div
-          className="stafflist__drawer-overlay"
-          role="presentation"
-          onClick={closeDetail}
-        >
+        <>
+          <button
+            type="button"
+            className="stafflist__drawer-overlay"
+            aria-label="Close profile"
+            onClick={closeDetail}
+          />
           <div
             className="stafflist__drawer"
             role="dialog"
             aria-modal="true"
             aria-label={`Profile: ${selectedStaff?.name}`}
-            onClick={(e) => e.stopPropagation()}
           >
             <StaffDetailPane
               staff={selectedStaff}
@@ -816,7 +745,7 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
               }
             />
           </div>
-        </div>
+        </>
       )}
 
       {/* Print Preview */}
