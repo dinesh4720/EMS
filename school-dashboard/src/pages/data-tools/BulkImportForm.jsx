@@ -1,4 +1,5 @@
 import { useId, useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Upload, Download, FileText, Users, UserCheck, DollarSign, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../../components/ui/Button';
@@ -17,6 +18,7 @@ const IMPORT_TYPES = [
 const ACCEPTED_EXTENSIONS = ['.csv', '.xlsx', '.xls'];
 
 function ImportTypeCard({ type, isSelected, onSelect }) {
+  const { t } = useTranslation();
   const Icon = type.icon;
   return (
     <button
@@ -32,37 +34,38 @@ function ImportTypeCard({ type, isSelected, onSelect }) {
       }
     >
       <Icon size={20} aria-hidden="true" />
-      <span className="text-sm font-medium">{type.label}</span>
+      <span className="text-sm font-medium">{t('dataTools.bulkImport.types.' + type.key, type.label)}</span>
     </button>
   );
 }
 
 function ResultPanel({ result }) {
+  const { t } = useTranslation();
   if (!result) return null;
 
   const failedCount = Array.isArray(result.failed) ? result.failed.length : result.failed;
 
   return (
     <Card padding="md" radius="lg" className="space-y-4">
-      <h2 className="font-semibold text-fg">Import Result</h2>
+      <h2 className="font-semibold text-fg">{t('dataTools.bulkImport.resultTitle', 'Import Result')}</h2>
       <div className="grid grid-cols-3 gap-3 sm:gap-4 text-center">
         <div className="p-3 bg-green-50 dark:bg-green-950/40 rounded-lg">
           <p className="text-2xl font-bold text-green-600 dark:text-green-400">{result.imported}</p>
-          <p className="text-xs text-green-700 dark:text-green-300">Imported</p>
+          <p className="text-xs text-green-700 dark:text-green-300">{t('dataTools.bulkImport.imported', 'Imported')}</p>
         </div>
         <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-lg">
           <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{result.skipped}</p>
-          <p className="text-xs text-amber-700 dark:text-amber-300">Skipped</p>
+          <p className="text-xs text-amber-700 dark:text-amber-300">{t('dataTools.bulkImport.skipped', 'Skipped')}</p>
         </div>
         <div className="p-3 bg-red-50 dark:bg-red-950/40 rounded-lg">
           <p className="text-2xl font-bold text-red-600 dark:text-red-400">{failedCount}</p>
-          <p className="text-xs text-red-700 dark:text-red-300">Failed</p>
+          <p className="text-xs text-red-700 dark:text-red-300">{t('dataTools.bulkImport.failed', 'Failed')}</p>
         </div>
       </div>
 
       {result.dryRun && (
         <p className="text-sm text-fg-muted">
-          This was a dry run. No data was imported.
+          {t('dataTools.bulkImport.dryRunNotice', 'This was a dry run. No data was imported.')}
         </p>
       )}
 
@@ -73,7 +76,7 @@ function ResultPanel({ result }) {
       {Array.isArray(result.failed) && result.failed.length > 0 && (
         <div className="mt-2">
           <h3 className="text-sm font-medium text-fg mb-2">
-            Error Details
+            {t('dataTools.bulkImport.errorDetails', 'Error Details')}
           </h3>
           <div className="max-h-48 overflow-y-auto space-y-1">
             {result.failed.map((row, i) => (
@@ -82,7 +85,7 @@ function ResultPanel({ result }) {
                 className="flex items-start gap-2 text-xs p-2 bg-red-50 dark:bg-red-950/40 rounded"
               >
                 <span className="text-red-600 dark:text-red-400 font-mono shrink-0">
-                  Row {row.row}
+                  {t('dataTools.bulkImport.rowLabel', { row: row.row, defaultValue: 'Row {{row}}' })}
                 </span>
                 <span className="text-red-700 dark:text-red-300">{row.error}</span>
               </div>
@@ -95,6 +98,7 @@ function ResultPanel({ result }) {
 }
 
 export default function BulkImportForm() {
+  const { t } = useTranslation();
   const [selectedType, setSelectedType] = useState('students');
   const [file, setFile] = useState(null);
   const [dryRun, setDryRun] = useState(false);
@@ -108,7 +112,7 @@ export default function BulkImportForm() {
     if (!picked) return false;
     const ext = picked.name.substring(picked.name.lastIndexOf('.')).toLowerCase();
     if (!ACCEPTED_EXTENSIONS.includes(ext)) {
-      toast.error('Only CSV and Excel files (.csv, .xlsx, .xls) are accepted');
+      toast.error(t('dataTools.bulkImport.invalidFileType', 'Only CSV and Excel files (.csv, .xlsx, .xls) are accepted'));
       return false;
     }
     return true;
@@ -159,13 +163,13 @@ export default function BulkImportForm() {
       document.body.removeChild(anchor);
       setTimeout(() => window.URL.revokeObjectURL(url), 60000);
     } catch {
-      toast.error('Failed to download template');
+      toast.error(t('dataTools.bulkImport.templateDownloadFailed', 'Failed to download template'));
     }
   };
 
   const handleImport = async () => {
     if (!file) {
-      toast.error('Please select a file first');
+      toast.error(t('dataTools.bulkImport.selectFileFirst', 'Please select a file first'));
       return;
     }
 
@@ -188,14 +192,14 @@ export default function BulkImportForm() {
 
       if (response.status === 401) {
         clearStoredUser();
-        throw new Error('Session expired. Please log in again.');
+        throw new Error(t('dataTools.sessionExpired', 'Session expired. Please log in again.'));
       }
       if (!response.ok) {
         const errData = await response.json().catch(() => null);
         const errMsg =
           typeof errData?.error === 'string'
             ? errData.error
-            : errData?.message || 'Import failed';
+            : errData?.message || t('dataTools.bulkImport.importFailed', 'Import failed');
         throw new Error(errMsg);
       }
 
@@ -203,22 +207,32 @@ export default function BulkImportForm() {
       setResult(data);
 
       if (dryRun) {
-        toast.success('Dry run completed');
+        toast.success(t('dataTools.bulkImport.dryRunCompleted', 'Dry run completed'));
       } else {
         const failedCount = Array.isArray(data.failed) ? data.failed.length : data.failed || 0;
         const importedCount = data.imported || 0;
         if (failedCount > 0 && importedCount === 0) {
-          toast.error(`Import failed — ${failedCount} row(s) had errors, nothing was imported`);
+          toast.error(t('dataTools.bulkImport.importFailedNothing', {
+            count: failedCount,
+            defaultValue: 'Import failed — {{count}} row(s) had errors, nothing was imported',
+          }));
         } else if (failedCount > 0) {
-          toast(`${importedCount} imported, ${failedCount} failed — check errors below`, {
+          toast(t('dataTools.bulkImport.importPartial', {
+            imported: importedCount,
+            failed: failedCount,
+            defaultValue: '{{imported}} imported, {{failed}} failed — check errors below',
+          }), {
             icon: '⚠️',
           });
         } else {
-          toast.success(`Import completed — ${importedCount} record(s) imported`);
+          toast.success(t('dataTools.bulkImport.importCompleted', {
+            count: importedCount,
+            defaultValue: 'Import completed — {{count}} record(s) imported',
+          }));
         }
       }
     } catch (err) {
-      toast.error(err.message || 'Import failed');
+      toast.error(err.message || t('dataTools.bulkImport.importFailed', 'Import failed'));
     } finally {
       setImporting(false);
     }
@@ -248,10 +262,10 @@ export default function BulkImportForm() {
           icon={<Download size={14} />}
           onClick={handleDownloadTemplate}
         >
-          Download Template
+          {t('dataTools.bulkImport.downloadTemplate', 'Download Template')}
         </Button>
         <span className="text-xs text-fg-muted">
-          Download a pre-formatted template for {selectedType} import
+          {t('dataTools.bulkImport.templateHint', { type: selectedType, defaultValue: 'Download a pre-formatted template for {{type}} import' })}
         </span>
       </div>
 
@@ -292,10 +306,10 @@ export default function BulkImportForm() {
           <div className="space-y-2">
             <Upload size={32} className="mx-auto text-fg-faint" aria-hidden="true" />
             <p className="text-fg">
-              Drag and drop a file here or click to browse
+              {t('dataTools.bulkImport.dropPrompt', 'Drag and drop a file here or click to browse')}
             </p>
             <p className="text-xs text-fg-muted">
-              Accepted formats: csv, xlsx, xls
+              {t('dataTools.bulkImport.acceptedFormats', 'Accepted formats: csv, xlsx, xls')}
             </p>
           </div>
         )}
@@ -306,8 +320,8 @@ export default function BulkImportForm() {
           checked={dryRun}
           onChange={(e) => setDryRun(e.target.checked)}
           size="sm"
-          label="Dry run"
-          description="Validate without importing"
+          label={t('dataTools.bulkImport.dryRun', 'Dry run')}
+          description={t('dataTools.bulkImport.dryRunDescription', 'Validate without importing')}
         />
 
         <Button
@@ -316,7 +330,7 @@ export default function BulkImportForm() {
           loading={importing}
           onClick={handleImport}
         >
-          {dryRun ? 'Validate File' : 'Import'}
+          {dryRun ? t('dataTools.bulkImport.validateFile', 'Validate File') : t('dataTools.bulkImport.importButton', 'Import')}
         </Button>
       </div>
 

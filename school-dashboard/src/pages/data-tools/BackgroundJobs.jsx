@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { RefreshCw, Eye, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../../components/ui/Button';
@@ -30,11 +31,15 @@ function StatTile({ label, value, tone }) {
 }
 
 function ImportJobsTable({ loading, jobs, onView, onCancel }) {
+  const { t } = useTranslation();
   if (loading) return <SkeletonTable rows={4} columns={6} />;
   if (jobs.length === 0) {
     return (
       <Card padding="none" radius="lg">
-        <EmptyState title="No import jobs" description="Imports you run will appear here." />
+        <EmptyState
+          title={t('dataTools.jobs.importJobsEmptyTitle', 'No import jobs')}
+          description={t('dataTools.jobs.importJobsEmptyDesc', 'Imports you run will appear here.')}
+        />
       </Card>
     );
   }
@@ -42,15 +47,15 @@ function ImportJobsTable({ loading, jobs, onView, onCancel }) {
   return (
     <Card padding="none" radius="lg" className="overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full text-sm" aria-label="Import jobs">
+        <table className="w-full text-sm" aria-label={t('dataTools.jobs.importJobsAria', 'Import jobs')}>
           <thead>
             <tr className="border-b border-divider text-left text-xs text-fg-muted uppercase">
-              <th scope="col" className="px-4 py-3 font-medium">File</th>
-              <th scope="col" className="px-4 py-3 font-medium">Type</th>
-              <th scope="col" className="px-4 py-3 font-medium">Status</th>
-              <th scope="col" className="px-4 py-3 font-medium">Rows</th>
-              <th scope="col" className="px-4 py-3 font-medium">Created</th>
-              <th scope="col" className="px-4 py-3 font-medium">Actions</th>
+              <th scope="col" className="px-4 py-3 font-medium">{t('dataTools.jobs.colFile', 'File')}</th>
+              <th scope="col" className="px-4 py-3 font-medium">{t('dataTools.jobs.colType', 'Type')}</th>
+              <th scope="col" className="px-4 py-3 font-medium">{t('dataTools.jobs.colStatus', 'Status')}</th>
+              <th scope="col" className="px-4 py-3 font-medium">{t('dataTools.jobs.colRows', 'Rows')}</th>
+              <th scope="col" className="px-4 py-3 font-medium">{t('dataTools.jobs.colCreated', 'Created')}</th>
+              <th scope="col" className="px-4 py-3 font-medium">{t('dataTools.jobs.colActions', 'Actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -72,14 +77,14 @@ function ImportJobsTable({ loading, jobs, onView, onCancel }) {
                   <div className="flex items-center gap-1">
                     <IconButton
                       icon={<Eye size={14} />}
-                      aria-label="View details"
+                      aria-label={t('dataTools.jobs.viewDetails', 'View details')}
                       size="sm"
                       onClick={() => onView(job._id)}
                     />
                     {(job.status === 'queued' || job.status === 'running') && (
                       <IconButton
                         icon={<Trash2 size={14} />}
-                        aria-label="Cancel job"
+                        aria-label={t('dataTools.jobs.cancelJob', 'Cancel job')}
                         size="sm"
                         variant="danger"
                         onClick={() => onCancel(job._id)}
@@ -97,11 +102,15 @@ function ImportJobsTable({ loading, jobs, onView, onCancel }) {
 }
 
 function SystemJobsTable({ loading, jobs }) {
+  const { t } = useTranslation();
   if (loading) return <SkeletonTable rows={4} columns={5} />;
   if (jobs.length === 0) {
     return (
       <Card padding="none" radius="lg">
-        <EmptyState title="No system jobs" description="Scheduled background jobs will appear here." />
+        <EmptyState
+          title={t('dataTools.jobs.systemEmptyTitle', 'No system jobs')}
+          description={t('dataTools.jobs.systemEmptyDesc', 'Scheduled background jobs will appear here.')}
+        />
       </Card>
     );
   }
@@ -109,14 +118,14 @@ function SystemJobsTable({ loading, jobs }) {
   return (
     <Card padding="none" radius="lg" className="overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full text-sm" aria-label="System jobs">
+        <table className="w-full text-sm" aria-label={t('dataTools.jobs.systemJobsAria', 'System jobs')}>
           <thead>
             <tr className="border-b border-divider text-left text-xs text-fg-muted uppercase">
-              <th scope="col" className="px-4 py-3 font-medium">Name</th>
-              <th scope="col" className="px-4 py-3 font-medium">Status</th>
-              <th scope="col" className="px-4 py-3 font-medium">Next Run</th>
-              <th scope="col" className="px-4 py-3 font-medium">Last Run</th>
-              <th scope="col" className="px-4 py-3 font-medium">Interval</th>
+              <th scope="col" className="px-4 py-3 font-medium">{t('dataTools.jobs.sysName', 'Name')}</th>
+              <th scope="col" className="px-4 py-3 font-medium">{t('dataTools.jobs.sysStatus', 'Status')}</th>
+              <th scope="col" className="px-4 py-3 font-medium">{t('dataTools.jobs.sysNextRun', 'Next Run')}</th>
+              <th scope="col" className="px-4 py-3 font-medium">{t('dataTools.jobs.sysLastRun', 'Last Run')}</th>
+              <th scope="col" className="px-4 py-3 font-medium">{t('dataTools.jobs.sysInterval', 'Interval')}</th>
             </tr>
           </thead>
           <tbody>
@@ -142,15 +151,16 @@ function SystemJobsTable({ loading, jobs }) {
 }
 
 function JobDetailModal({ isOpen, onClose, loading, job }) {
+  const { t } = useTranslation();
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Import Job Details"
+      title={t('dataTools.jobs.detailTitle', 'Import Job Details')}
       size="lg"
       footer={(close) => (
         <Button variant="ghost" onClick={close}>
-          Close
+          {t('common.close', 'Close')}
         </Button>
       )}
     >
@@ -164,32 +174,32 @@ function JobDetailModal({ isOpen, onClose, loading, job }) {
       ) : job ? (
         <div className="space-y-3 text-sm">
           <div>
-            <span className="font-medium text-fg-muted">Type: </span>
+            <span className="font-medium text-fg-muted">{t('dataTools.jobs.detailType', 'Type: ')}</span>
             <span className="capitalize text-fg">{job.type}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-medium text-fg-muted">Status: </span>
+            <span className="font-medium text-fg-muted">{t('dataTools.jobs.detailStatus', 'Status: ')}</span>
             <JobStatusBadge status={job.status} />
           </div>
           <div>
-            <span className="font-medium text-fg-muted">File: </span>
+            <span className="font-medium text-fg-muted">{t('dataTools.jobs.detailFile', 'File: ')}</span>
             <span className="text-fg">{job.fileName}</span>
           </div>
           <div>
-            <span className="font-medium text-fg-muted">Initiated by: </span>
+            <span className="font-medium text-fg-muted">{t('dataTools.jobs.detailInitiatedBy', 'Initiated by: ')}</span>
             <span className="text-fg">{job.initiatedBy?.name || '-'}</span>
           </div>
           <div className="grid grid-cols-3 gap-3 pt-2 border-t border-divider">
             <div>
-              <p className="text-xs text-fg-muted">Total Rows</p>
+              <p className="text-xs text-fg-muted">{t('dataTools.jobs.detailTotalRows', 'Total Rows')}</p>
               <p className="font-semibold text-fg">{job.totalRows}</p>
             </div>
             <div>
-              <p className="text-xs text-fg-muted">Processed</p>
+              <p className="text-xs text-fg-muted">{t('dataTools.jobs.detailProcessed', 'Processed')}</p>
               <p className="font-semibold text-fg">{job.processedRows}</p>
             </div>
             <div>
-              <p className="text-xs text-fg-muted">Imported</p>
+              <p className="text-xs text-fg-muted">{t('dataTools.jobs.detailImported', 'Imported')}</p>
               <p className="font-semibold text-green-600 dark:text-green-400">{job.importedCount}</p>
             </div>
           </div>
@@ -200,13 +210,14 @@ function JobDetailModal({ isOpen, onClose, loading, job }) {
           )}
         </div>
       ) : (
-        <EmptyState title="Job not found" />
+        <EmptyState title={t('dataTools.jobs.jobNotFound', 'Job not found')} />
       )}
     </Modal>
   );
 }
 
 export default function BackgroundJobs() {
+  const { t } = useTranslation();
   const [stats, setStats] = useState(null);
   const [importJobs, setImportJobs] = useState([]);
   const [systemJobs, setSystemJobs] = useState([]);
@@ -225,11 +236,11 @@ export default function BackgroundJobs() {
       setImportJobs(jobsRes?.importJobs || []);
       setSystemJobs(jobsRes?.systemJobs || []);
     } catch {
-      toast.error('Failed to load jobs');
+      toast.error(t('dataTools.jobs.loadJobsFailed', 'Failed to load jobs'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchData();
@@ -242,7 +253,7 @@ export default function BackgroundJobs() {
       const res = await jobsApi.getImportJob(jobId);
       setDetailJob(res?.job || null);
     } catch {
-      toast.error('Failed to load job details');
+      toast.error(t('dataTools.jobs.loadDetailsFailed', 'Failed to load job details'));
       setModalOpen(false);
     } finally {
       setDetailLoading(false);
@@ -256,33 +267,33 @@ export default function BackgroundJobs() {
 
   const handleCancel = (jobId) => {
     showConfirm({
-      title: 'Cancel Job',
-      message: 'Are you sure you want to cancel this job?',
+      title: t('dataTools.jobs.cancelTitle', 'Cancel Job'),
+      message: t('dataTools.jobs.cancelMessage', 'Are you sure you want to cancel this job?'),
       variant: 'warning',
-      confirmText: 'Cancel Job',
+      confirmText: t('dataTools.jobs.cancelConfirm', 'Cancel Job'),
       onConfirm: async () => {
         try {
           await jobsApi.cancelJob(jobId);
-          toast.success('Job cancelled');
+          toast.success(t('dataTools.jobs.jobCancelled', 'Job cancelled'));
           fetchData();
         } catch {
-          toast.error('Failed to cancel job');
+          toast.error(t('dataTools.jobs.cancelFailed', 'Failed to cancel job'));
         }
       },
     });
   };
 
   const summary = [
-    { label: 'Running', value: (stats?.importJobs?.running || 0) + (stats?.systemJobs?.running || 0), tone: 'info' },
-    { label: 'Completed', value: (stats?.importJobs?.completed || 0) + (stats?.systemJobs?.completed || 0), tone: 'success' },
-    { label: 'Failed', value: (stats?.importJobs?.failed || 0) + (stats?.systemJobs?.failed || 0), tone: 'danger' },
-    { label: 'Queued', value: (stats?.importJobs?.queued || 0) + (stats?.systemJobs?.queued || 0), tone: 'warning' },
+    { label: t('dataTools.jobs.statRunning', 'Running'), value: (stats?.importJobs?.running || 0) + (stats?.systemJobs?.running || 0), tone: 'info' },
+    { label: t('dataTools.jobs.statCompleted', 'Completed'), value: (stats?.importJobs?.completed || 0) + (stats?.systemJobs?.completed || 0), tone: 'success' },
+    { label: t('dataTools.jobs.statFailed', 'Failed'), value: (stats?.importJobs?.failed || 0) + (stats?.systemJobs?.failed || 0), tone: 'danger' },
+    { label: t('dataTools.jobs.statQueued', 'Queued'), value: (stats?.importJobs?.queued || 0) + (stats?.systemJobs?.queued || 0), tone: 'warning' },
   ];
 
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-fade-in">
       <PageHeader
-        title="Background Jobs"
+        title={t('dataTools.jobs.title', 'Background Jobs')}
         bordered={false}
         actions={
           <Button
@@ -292,7 +303,7 @@ export default function BackgroundJobs() {
             onClick={fetchData}
             loading={loading}
           >
-            Refresh
+            {t('common.refresh', 'Refresh')}
           </Button>
         }
       />
@@ -304,7 +315,7 @@ export default function BackgroundJobs() {
       </div>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-fg">Import Jobs</h2>
+        <h2 className="text-lg font-semibold text-fg">{t('dataTools.jobs.importJobs', 'Import Jobs')}</h2>
         <ImportJobsTable
           loading={loading}
           jobs={importJobs}
@@ -314,7 +325,7 @@ export default function BackgroundJobs() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-fg">System</h2>
+        <h2 className="text-lg font-semibold text-fg">{t('dataTools.jobs.system', 'System')}</h2>
         <SystemJobsTable loading={loading} jobs={systemJobs} />
       </section>
 

@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { RotateCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from '../../components/ui/Button';
@@ -13,6 +14,7 @@ import JobStatusBadge from './JobStatusBadge';
 import { formatDate } from './_helpers';
 
 export default function BulkImportHistory() {
+  const { t } = useTranslation();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [rollingBack, setRollingBack] = useState(null);
@@ -33,11 +35,11 @@ export default function BulkImportHistory() {
       const data = await response.json();
       setHistory(data?.jobs || []);
     } catch {
-      toast.error('Failed to load import history');
+      toast.error(t('dataTools.bulkImport.loadHistoryFailed', 'Failed to load import history'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchHistory();
@@ -45,10 +47,10 @@ export default function BulkImportHistory() {
 
   const handleRollback = (jobId) => {
     showConfirm({
-      title: 'Rollback Import',
-      message: 'Are you sure you want to rollback this import? This will undo all changes.',
+      title: t('dataTools.bulkImport.rollbackTitle', 'Rollback Import'),
+      message: t('dataTools.bulkImport.rollbackMessage', 'Are you sure you want to rollback this import? This will undo all changes.'),
       variant: 'warning',
-      confirmText: 'Rollback',
+      confirmText: t('dataTools.bulkImport.rollback', 'Rollback'),
       onConfirm: async () => {
         setRollingBack(jobId);
         try {
@@ -63,10 +65,10 @@ export default function BulkImportHistory() {
           }
           if (!response.ok) throw new Error('Rollback failed');
 
-          toast.success('Import rolled back successfully');
+          toast.success(t('dataTools.bulkImport.rollbackSuccess', 'Import rolled back successfully'));
           fetchHistory();
         } catch {
-          toast.error('Rollback failed');
+          toast.error(t('dataTools.bulkImport.rollbackFailed', 'Rollback failed'));
         } finally {
           setRollingBack(null);
         }
@@ -80,8 +82,8 @@ export default function BulkImportHistory() {
     return (
       <Card padding="none" radius="lg">
         <EmptyState
-          title="No import history"
-          description="Past imports will appear here once you run them."
+          title={t('dataTools.bulkImport.historyEmptyTitle', 'No import history')}
+          description={t('dataTools.bulkImport.historyEmptyDesc', 'Past imports will appear here once you run them.')}
         />
       </Card>
     );
@@ -91,15 +93,15 @@ export default function BulkImportHistory() {
     <>
       <Card padding="none" radius="lg" className="overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm" aria-label="Import history">
+          <table className="w-full text-sm" aria-label={t('dataTools.bulkImport.historyAria', 'Import history')}>
             <thead>
               <tr className="border-b border-divider text-left text-xs text-fg-muted uppercase">
-                <th scope="col" className="px-4 py-3 font-medium">File</th>
-                <th scope="col" className="px-4 py-3 font-medium">Type</th>
-                <th scope="col" className="px-4 py-3 font-medium">Status</th>
-                <th scope="col" className="px-4 py-3 font-medium">Results</th>
-                <th scope="col" className="px-4 py-3 font-medium">Date</th>
-                <th scope="col" className="px-4 py-3 font-medium">Actions</th>
+                <th scope="col" className="px-4 py-3 font-medium">{t('dataTools.bulkImport.colFile', 'File')}</th>
+                <th scope="col" className="px-4 py-3 font-medium">{t('dataTools.bulkImport.colType', 'Type')}</th>
+                <th scope="col" className="px-4 py-3 font-medium">{t('dataTools.bulkImport.colStatus', 'Status')}</th>
+                <th scope="col" className="px-4 py-3 font-medium">{t('dataTools.bulkImport.colResults', 'Results')}</th>
+                <th scope="col" className="px-4 py-3 font-medium">{t('dataTools.bulkImport.colDate', 'Date')}</th>
+                <th scope="col" className="px-4 py-3 font-medium">{t('dataTools.bulkImport.colActions', 'Actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -120,7 +122,12 @@ export default function BulkImportHistory() {
                   <td className="px-4 py-3 text-fg-muted text-xs">
                     {job.importedCount > 0 || job.skippedCount > 0 || job.failedCount > 0 ? (
                       <span>
-                        {job.importedCount} imported, {job.skippedCount} skipped, {job.failedCount} failed
+                        {t('dataTools.bulkImport.resultsSummary', {
+                          imported: job.importedCount,
+                          skipped: job.skippedCount,
+                          failed: job.failedCount,
+                          defaultValue: '{{imported}} imported, {{skipped}} skipped, {{failed}} failed',
+                        })}
                       </span>
                     ) : (
                       '-'
@@ -138,7 +145,7 @@ export default function BulkImportHistory() {
                         icon={<RotateCcw size={12} />}
                         onClick={() => handleRollback(job._id)}
                       >
-                        Rollback
+                        {t('dataTools.bulkImport.rollback', 'Rollback')}
                       </Button>
                     )}
                   </td>
