@@ -675,6 +675,38 @@
   box-shadow: inset 0 0 0 2px var(--accent-bg);
 }
 
+/* Pin / favorite toggle on row */
+.studentlist__pin-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  color: var(--fg-subtle);
+  background: transparent;
+  border: none;
+  margin-left: 4px;
+  opacity: 0;
+  transition: opacity 120ms, background 120ms, color 120ms;
+}
+.studentlist__row:hover .studentlist__pin-btn,
+.studentlist__row.is-active .studentlist__pin-btn,
+.studentlist__pin-btn.is-pinned {
+  opacity: 1;
+}
+.studentlist__pin-btn:hover {
+  background: var(--surface-3);
+  color: var(--fg);
+}
+.studentlist__pin-btn.is-pinned {
+  color: var(--warn);
+}
+.studentlist__pin-btn.is-pinned:hover {
+  color: var(--fg);
+}
+
 /* Profile arrow icon on row — visible on row hover */
 .studentlist__profile-arrow {
   display: grid;

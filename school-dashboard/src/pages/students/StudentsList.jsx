@@ -86,6 +86,8 @@ export default function StudentsList({ onAddStudent }) {
     setLocalStudents,
     // refresh
     refreshStudentsList,
+    // pin
+    handlePinStudent, handleUnpinStudent,
     // bulk modals
     isBulkActionOpen, onBulkActionClose,
     isPromoteOpen, onPromoteClose, promotionPreview,
@@ -490,9 +492,12 @@ export default function StudentsList({ onAddStudent }) {
                   student={student}
                   isActive={selectedId === id}
                   isChecked={selectedKeys.has(id)}
+                  isPinned={student.isPinned}
                   onSelect={() => setSelectedId(id)}
                   onToggleCheck={toggleCheck}
                   onViewProfile={handleViewProfile}
+                  onPin={handlePinStudent}
+                  onUnpin={handleUnpinStudent}
                   attendancePct={student.attendancePercentage}
                 />
               );
