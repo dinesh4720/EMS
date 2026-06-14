@@ -8,8 +8,8 @@ import {
 /* ───────────────── AI Mock Data ───────────────── */
 
 const MOCK_MODELS = [
-  { id: 'claude', name: 'Claude', description: 'Anthropic Claude model', available: true, default: true },
-  { id: 'gpt4', name: 'GPT-4', description: 'OpenAI GPT-4 model', available: true },
+  { id: 'school-model-a', name: 'School Model A', description: 'Balanced model for everyday school questions', available: true, default: true },
+  { id: 'school-model-b', name: 'School Model B', description: 'Faster model for quick lookups', available: true },
 ];
 
 const MOCK_CHAT_RESPONSE = {
@@ -45,7 +45,7 @@ async function installAiRoutes(page: import('@playwright/test').Page, opts: { fe
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ models: MOCK_MODELS, defaultModelId: 'claude' }),
+      body: JSON.stringify({ models: MOCK_MODELS, defaultModelId: 'school-model-a' }),
     });
   });
 
@@ -169,14 +169,14 @@ test.describe('AI Assistant — Chat Interface & Prompts', () => {
     await page.waitForLoadState('networkidle');
 
     // The model selector button should show the default model name
-    await expect(page.getByText('Claude').first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('School Model A').first()).toBeVisible({ timeout: 10_000 });
 
     // Click to open the model selector dropdown
-    const modelBtn = page.locator('button').filter({ hasText: 'Claude' }).first();
+    const modelBtn = page.locator('button').filter({ hasText: 'School Model A' }).first();
     await modelBtn.click();
 
     // Both models should be visible in the dropdown
-    await expect(page.getByText('GPT-4').first()).toBeVisible();
+    await expect(page.getByText('School Model B').first()).toBeVisible();
   });
 
   // 7. Copy AI response button copies text to clipboard
