@@ -346,6 +346,7 @@ const ResultsEntryModal = ({ examId, onClose }) => {
                             disabled={isAbsent}
                             className={`gradebook__cell-input ${isAbsent ? 'opacity-50 cursor-not-allowed' : ''}`}
                             placeholder={t('academics.marksInputPlaceholder')}
+                            aria-label={`Marks for ${student.name}`}
                           />
                         </td>
                         <td className="px-4 py-3">
@@ -381,6 +382,7 @@ const ResultsEntryModal = ({ examId, onClose }) => {
                             onChange={(e) => handleRemarksChange(studentId, e.target.value)}
                             placeholder={t('pages.addRemarks')}
                             className="gradebook__cell-input w-32"
+                            aria-label={`Remarks for ${student.name}`}
                           />
                         </td>
                       </tr>
