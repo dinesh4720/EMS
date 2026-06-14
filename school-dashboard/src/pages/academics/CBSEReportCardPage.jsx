@@ -128,6 +128,7 @@ function MarkEntryModal({ isOpen, onClose, student, classId, academicYear, term,
                 <button
                   type="button"
                   onClick={() => removeSubject(i)}
+                  aria-label={`Remove subject ${i + 1}`}
                   className="col-span-1 text-fg-faint hover:text-red-500 text-lg leading-none text-center"
                 >×</button>
               </div>

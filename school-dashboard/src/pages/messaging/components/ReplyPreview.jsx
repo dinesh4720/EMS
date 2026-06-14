@@ -44,6 +44,7 @@ export default function ReplyPreview({ message, onCancel }) {
       <button
         onClick={onCancel}
         type="button"
+        aria-label="Cancel reply"
         className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-full hover:bg-white/60 dark:hover:bg-white/10 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-all duration-150"
       >
         <X size={16} />
