@@ -20,7 +20,7 @@
  *   </div>
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 // ── Component ──────────────────────────────────────────────────────────────────
 export default function HelpIcon({
@@ -35,6 +35,7 @@ export default function HelpIcon({
   const containerRef = useRef(null);
   const tooltipRef = useRef(null);
   const hideTimer = useRef(null);
+  const tooltipId = useId();
 
   useEffect(() => {
     return () => clearTimeout(hideTimer.current);
@@ -47,6 +48,12 @@ export default function HelpIcon({
 
   const hideTooltip = () => {
     hideTimer.current = setTimeout(() => setVisible(false), 150);
+  };
+
+  // Keyboard parity: keep the tooltip open while focus stays inside the
+  // widget (button or the "Learn more" link), hide it once focus leaves.
+  const handleBlur = (e) => {
+    if (!e.currentTarget.contains(e.relatedTarget)) hideTooltip();
   };
 
   const toggleTooltip = () => setVisible((v) => !v);
@@ -83,44 +90,26 @@ export default function HelpIcon({
       className={className}
       style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}
       {...(trigger === 'hover'
-        ? { onMouseEnter: showTooltip, onMouseLeave: hideTooltip }
+        ? {
+            onMouseEnter: showTooltip,
+            onMouseLeave: hideTooltip,
+            onFocus: showTooltip,
+            onBlur: handleBlur,
+          }
         : {})}
     >
       {/* ── Help icon button ── */}
       <button
         type="button"
+        className="help-icon__btn"
         aria-label="Help"
         aria-expanded={visible}
+        aria-describedby={visible ? tooltipId : undefined}
         onClick={trigger === 'click' ? toggleTooltip : undefined}
         style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
           width: iconSize + 4,
           height: iconSize + 4,
-          borderRadius: '50%',
-          border: '1.5px solid #9ca3af',
-          background: 'transparent',
-          color: '#6b7280',
           fontSize: iconSize - 2,
-          fontWeight: 700,
-          cursor: 'pointer',
-          lineHeight: 1,
-          padding: 0,
-          transition: 'border-color 0.15s, color 0.15s, background 0.15s',
-          flexShrink: 0,
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = '#4f46e5';
-          e.currentTarget.style.color = '#4f46e5';
-          e.currentTarget.style.background = '#e0e7ff';
-          if (trigger === 'hover') showTooltip();
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = '#9ca3af';
-          e.currentTarget.style.color = '#6b7280';
-          e.currentTarget.style.background = 'transparent';
-          if (trigger === 'hover') hideTooltip();
         }}
       >
         ?
@@ -130,6 +119,7 @@ export default function HelpIcon({
       {visible && (
         <div
           ref={tooltipRef}
+          id={tooltipId}
           role="tooltip"
           style={tooltipStyle}
           onMouseEnter={trigger === 'hover' ? showTooltip : undefined}
