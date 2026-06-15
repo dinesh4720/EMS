@@ -23,6 +23,7 @@ import RevokeRoleModal from "../../components/modals/RevokeRoleModal";
 import ClassSubjectManagementModal from "./components/ClassSubjectManagementModal";
 import FormErrorSummary from "../../components/ui/FormErrorSummary";
 import useFormErrors from "../../hooks/useFormErrors";
+import { addStaffSchema, parseFormSchema } from "../../validators/formSchemas";
 
 import { useApp } from "../../context/AppContext";
 import { usePermissions } from "../../context/PermissionContext";
@@ -236,15 +237,15 @@ const AddStaffComposer = forwardRef(function AddStaffComposer(
   }, []);
 
   // ---- Submit --------------------------------------------------------
+  // Zod schema (validators/formSchemas → addStaffSchema) covers every
+  // required field across all four composer sections plus format checks
+  // (email format, 10-digit phone) — replaces the old presence-only
+  // checks. parseFormSchema maps Zod issues onto the { field: msg }
+  // shape that useFormErrors already understands.
   const validate = () => {
-    const next = {};
-    if (!form.firstName.trim()) next.firstName = "Required";
-    if (!form.lastName.trim()) next.lastName = "Required";
-    if (form.role === "Teaching" && !form.subject) next.subject = "Required";
-    if (!form.email.trim()) next.email = "Required";
-    if (!form.phone.trim()) next.phone = "Required";
-    setErrors(next);
-    return { ok: Object.keys(next).length === 0, errors: next };
+    const { success, errors: zodErrors } = parseFormSchema(addStaffSchema, form);
+    setErrors(zodErrors);
+    return { ok: success, errors: zodErrors };
   };
 
   const focusFirstErrorWithSection = useCallback(
