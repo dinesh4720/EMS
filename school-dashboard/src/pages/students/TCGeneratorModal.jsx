@@ -8,6 +8,7 @@ import { request } from "../../services/api";
 import { DetailPageSkeleton } from "../../components/skeletons/PageSkeletons";
 import { toTodayDateString, formatDate } from '../../utils/dateFormatter';
 import logger from '../../utils/logger';
+import { bg, fg, border as borderColor } from "../../theme/printPalette";
 
 export default function TCGeneratorModal({ isOpen, onClose, students }) {
   const { t } = useTranslation();
@@ -169,7 +170,7 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
               <head>
                 <title>Transfer Certificate - ${escapeHtmlTitle(formData.studentName)}</title>
                 <style>
-                    *, *::before, *::after { box-sizing: border-box; border-width: 0; border-style: solid; border-color: #e5e7eb; }
+                    *, *::before, *::after { box-sizing: border-box; border-width: 0; border-style: solid; border-color: ${borderColor.default}; }
                     body { margin: 0; padding: 0; }
                     .hidden { display: none; }
                     .flex { display: flex; }
@@ -222,15 +223,15 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
                     .underline { text-decoration-line: underline; }
                     .decoration-2 { text-decoration-thickness: 2px; }
                     .underline-offset-2 { text-underline-offset: 2px; }
-                    .bg-white { background-color: #fff; }
-                    .bg-surface-2 { background-color: #e5e7eb; }
-                    .text-black { color: #000; }
+                    .bg-white { background-color: ${bg.paper}; }
+                    .bg-surface-2 { background-color: ${bg.box}; }
+                    .text-black { color: ${fg.black}; }
                     .rounded-full { border-radius: 9999px; }
                     .border-2 { border-width: 2px; }
                     .border-b-2 { border-bottom-width: 2px; }
                     .border-b { border-bottom-width: 1px; }
                     .border-t { border-top-width: 1px; }
-                    .border-black { border-color: #000; }
+                    .border-black { border-color: ${fg.black}; }
                     .border-dotted { border-style: dotted; }
                     .opacity-0 { opacity: 0; }
 
@@ -251,7 +252,7 @@ export default function TCGeneratorModal({ isOpen, onClose, students }) {
                       text-align: center;
                     }
                     .tc-print-signatures > div > div {
-                      border-top: 1px solid #000;
+                      border-top: 1px solid ${fg.black};
                       padding-top: 0.5rem;
                       font-weight: 700;
                       font-size: 0.875rem;

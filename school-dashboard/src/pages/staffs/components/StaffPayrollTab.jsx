@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { escapeHtml } from "../../../utils/sanitize";
 import { useCurrency } from '../../../context/hooks/useCurrency';
 import logger from '../../../utils/logger';
+import { bg, fg, border as borderColor, status as statusColor } from "../../../theme/printPalette";
 
 
 
@@ -36,23 +37,23 @@ export default function StaffPayrollTab({
 <html><head><meta charset="utf-8"/><title>Payslip – ${month}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;padding:40px;max-width:680px;margin:auto}
-.header{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #111;padding-bottom:16px;margin-bottom:24px}
-.header h1{font-size:18px;font-weight:700}.header p{font-size:12px;color:#666;margin-top:2px}
-.badge{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;padding:4px 12px;border-radius:99px;font-size:11px;font-weight:600}
-.employee-row{display:flex;justify-content:space-between;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:24px}
-.employee-row .info p{font-size:12px;color:#888;margin-bottom:2px}.employee-row .info .name{font-size:16px;font-weight:700;color:#111;margin-bottom:4px}
+body{font-family:'Segoe UI',Arial,sans-serif;background:${bg.paper};color:${fg.body};padding:40px;max-width:680px;margin:auto}
+.header{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid ${fg.body};padding-bottom:16px;margin-bottom:24px}
+.header h1{font-size:18px;font-weight:700}.header p{font-size:12px;color:${fg.disabled};margin-top:2px}
+.badge{background:${statusColor.okBg};border:1px solid ${statusColor.okBorder};color:${statusColor.okText};padding:4px 12px;border-radius:99px;font-size:11px;font-weight:600}
+.employee-row{display:flex;justify-content:space-between;background:${bg.base};border:1px solid ${borderColor.default};border-radius:8px;padding:16px;margin-bottom:24px}
+.employee-row .info p{font-size:12px;color:${fg.disabled};margin-bottom:2px}.employee-row .info .name{font-size:16px;font-weight:700;color:${fg.body};margin-bottom:4px}
 .cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
-.box{border:1px solid #e5e7eb;border-radius:8px;overflow:hidden}
-.box-title{background:#f3f4f6;padding:10px 16px;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:.5px}
+.box{border:1px solid ${borderColor.default};border-radius:8px;overflow:hidden}
+.box-title{background:${bg.box};padding:10px 16px;font-size:12px;font-weight:600;color:${fg.label};text-transform:uppercase;letter-spacing:.5px}
 .box-body{padding:12px 16px}
-.row{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid #f5f5f5}
-.row:last-child{border-bottom:none;font-weight:600;padding-top:8px;margin-top:4px;border-top:1px solid #e5e7eb}
-.row .lbl{color:#6b7280}
-.net-block{background:#111;color:#fff;border-radius:8px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center}
+.row{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid ${bg.box}}
+.row:last-child{border-bottom:none;font-weight:600;padding-top:8px;margin-top:4px;border-top:1px solid ${borderColor.default}}
+.row .lbl{color:${fg.muted}}
+.net-block{background:${fg.body};color:${bg.paper};border-radius:8px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center}
 .net-block .lbl{font-size:13px;opacity:.7}
 .net-block .val{font-size:28px;font-weight:800}
-.footer{text-align:center;font-size:11px;color:#aaa;margin-top:28px}
+.footer{text-align:center;font-size:11px;color:${fg.disabled};margin-top:28px}
 @media print{body{padding:20px}}
 </style></head>
 <body>

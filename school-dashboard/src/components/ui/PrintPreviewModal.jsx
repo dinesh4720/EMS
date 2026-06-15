@@ -4,6 +4,7 @@ import PropTypes from "prop-types";
 import { Printer, Download, RotateCw } from "lucide-react";
 import Modal from "./Modal";
 import Button from "./Button";
+import { bg, fg, shadow } from "../../theme/printPalette";
 
 /*
  * PrintPreviewModal — REVAMP-105.
@@ -94,8 +95,8 @@ export default function PrintPreviewModal({
         html, body {
           margin: 0;
           padding: 0;
-          background: #ffffff;
-          color: #1a1a1a;
+          background: ${bg.paper};
+          color: ${fg.body};
           width: ${pageW}mm;
           min-height: ${pageH}mm;
           -webkit-print-color-adjust: exact;
@@ -104,7 +105,7 @@ export default function PrintPreviewModal({
         .ds-print-page {
           width: ${pageW}mm;
           min-height: ${pageH}mm;
-          background: #ffffff;
+          background: ${bg.paper};
           box-sizing: border-box;
         }
         @media print {
@@ -234,7 +235,7 @@ export default function PrintPreviewModal({
     >
       <div
         style={{
-          background: "var(--color-bg-tertiary, #f3f4f6)",
+          background: `var(--color-bg-tertiary, ${bg.box})`,
           padding: 16,
           display: "flex",
           justifyContent: "center",
@@ -249,8 +250,8 @@ export default function PrintPreviewModal({
             width: `${pageW * PREVIEW_SCALE}mm`,
             height: `${pageH * PREVIEW_SCALE}mm`,
             position: "relative",
-            boxShadow: "0 4px 16px rgba(0,0,0,0.18)",
-            background: "white",
+            boxShadow: `0 4px 16px ${shadow.medium}`,
+            background: bg.paper,
             overflow: "hidden",
             flexShrink: 0,
           }}
@@ -268,7 +269,7 @@ export default function PrintPreviewModal({
               border: "0",
               transform: `scale(${PREVIEW_SCALE})`,
               transformOrigin: "top left",
-              background: "white",
+              background: bg.paper,
               display: "block",
             }}
           />

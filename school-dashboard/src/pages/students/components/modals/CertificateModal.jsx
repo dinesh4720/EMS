@@ -5,6 +5,7 @@ import { z } from "zod";
 import Modal from "../../../../components/ui/Modal";
 import { formatDate } from "../../../../utils/dateFormatter";
 import { escapeHtml } from "../../../../utils/sanitize";
+import { bg, fg, border as borderColor } from "../../../../theme/printPalette";
 
 const CONDUCT_OPTIONS = [
   "Excellent",
@@ -34,14 +35,14 @@ const characterSchema = z.object({
 
 const PRINT_CSS = `
   @page { size: A4; margin: 20mm; }
-  body { margin: 0; padding: 20px; font-family: 'Times New Roman', Times, serif; color: #000; }
-  .certificate { max-width: 800px; margin: 0 auto; padding: 40px; border: 3px double #333; }
+  body { margin: 0; padding: 20px; font-family: 'Times New Roman', Times, serif; color: ${fg.black}; }
+  .certificate { max-width: 800px; margin: 0 auto; padding: 40px; border: 3px double ${borderColor.heavy}; }
   .certificate-header { text-align: center; margin-bottom: 30px; }
   .school-name { font-size: 24px; font-weight: bold; text-transform: uppercase; }
   .certificate-title { font-size: 20px; font-weight: bold; text-decoration: underline; margin: 20px 0; text-align: center; }
   .certificate-body { font-size: 16px; line-height: 2; margin: 20px 0; }
   .certificate-footer { margin-top: 40px; display: flex; justify-content: space-between; }
-  .signature-line { border-top: 1px solid #333; width: 200px; text-align: center; padding-top: 5px; }
+  .signature-line { border-top: 1px solid ${borderColor.heavy}; width: 200px; text-align: center; padding-top: 5px; }
   @media print { @page { size: A4; margin: 20mm; } body { padding: 0; } }
 `;
 
@@ -319,10 +320,10 @@ export default function CertificateModal({
             className="certificate"
             data-testid="certificate-preview"
             style={{
-              background: "#fff",
-              color: "#000",
+              background: bg.paper,
+              color: fg.black,
               padding: 32,
-              border: "2px solid #d1d5db",
+              border: `2px solid ${borderColor.default}`,
               borderRadius: 8,
               fontFamily: "'Times New Roman', Times, serif",
             }}
@@ -431,7 +432,7 @@ export default function CertificateModal({
                   className="signature-line"
                   style={{
                     width: 200,
-                    borderTop: "1px solid #9ca3af",
+                    borderTop: `1px solid ${fg.disabled}`,
                     paddingTop: 4,
                   }}
                 >

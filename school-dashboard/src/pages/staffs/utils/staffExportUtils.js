@@ -1,6 +1,7 @@
 import { escapeHtml } from "../../../utils/sanitize";
 import { formatShortDate } from "../../../utils/dateFormatter";
 import toast from "react-hot-toast";
+import { bg, fg, border as borderColor } from "../../../theme/printPalette";
 
 /**
  * Sanitize a CSV cell value to prevent formula injection.
@@ -72,13 +73,13 @@ export const exportToPDF = (filteredItems, successMessage) => {
     const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"/><title>Staff List</title>
 <style>
-body{font-family:'Segoe UI',Arial,sans-serif;margin:40px;color:#111}
+body{font-family:'Segoe UI',Arial,sans-serif;margin:40px;color:${fg.body}}
 h1{font-size:20px;font-weight:700;margin-bottom:4px}
-p{font-size:12px;color:#888;margin-bottom:20px}
+p{font-size:12px;color:${fg.disabled};margin-bottom:20px}
 table{width:100%;border-collapse:collapse;font-size:12px}
-th{background:#f3f4f6;text-align:left;padding:8px 12px;border:1px solid #e5e7eb;font-weight:600;color:#374151}
-td{padding:8px 12px;border:1px solid #e5e7eb}
-tr:nth-child(even) td{background:#f9fafb}
+th{background:${bg.head};text-align:left;padding:8px 12px;border:1px solid ${borderColor.default};font-weight:600;color:${fg.label}}
+td{padding:8px 12px;border:1px solid ${borderColor.default}}
+tr:nth-child(even) td{background:${bg.altRow}}
 @media print{body{margin:20px}}
 </style></head>
 <body>
