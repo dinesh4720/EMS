@@ -995,8 +995,6 @@
       "failedToDeleteForm": "Failed to delete form. Try again in a moment.",
       "failedToDuplicateForm": "Failed to duplicate form",
       "failedToLoadCommunicationSettings": "Failed to load communication settings",
-      "passwordsDoNotMatch": "Passwords do not match",
-      "passwordMustBeAtLeast5Characters": "Password must be at least 5 characters",
       "failedToLoadConfigurations": "Failed to load configurations. Refresh the page and try again.",
       "failedToLoadPermissionRequests": "Failed to load permission requests. Refresh the page and try again.",
       "failedToApproveRequest": "Failed to approve request. Try again in a moment.",

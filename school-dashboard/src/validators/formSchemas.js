@@ -76,6 +76,26 @@ export const createExamScheduleSchema = z
   });
 
 // ────────────────────────────────────────────────────────────
+// CLASSES
+// ────────────────────────────────────────────────────────────
+
+// EditClassModal — capacity is the only required field; section is read-only
+// at the form level. Room and block are free-text labels.
+export const editClassSchema = z.object({
+  section: z.string().optional(),
+  strengthLimit: z
+    .string()
+    .min(1, 'Capacity is required')
+    .refine((val) => {
+      const n = Number(val);
+      return Number.isInteger(n) && n > 0;
+    }, 'Capacity must be a positive whole number')
+    .refine((val) => Number(val) <= 10000, 'Capacity must be 10000 or fewer'),
+  room: z.string().max(100, 'Room must be under 100 characters').optional().or(z.literal('')),
+  block: z.string().max(100, 'Block must be under 100 characters').optional().or(z.literal('')),
+});
+
+// ────────────────────────────────────────────────────────────
 // HOMEWORK
 // ────────────────────────────────────────────────────────────
 
@@ -412,6 +432,71 @@ export const ptmSlotSchema = z.object({
 });
 
 // ────────────────────────────────────────────────────────────
+// MESSAGING
+// ────────────────────────────────────────────────────────────
+
+export const ANNOUNCEMENT_AUDIENCE_VALUES = ['all', 'staff', 'students', 'parents'];
+export const ANNOUNCEMENT_CHANNEL_VALUES = ['inapp', 'email', 'sms', 'whatsapp'];
+
+const announcementAttachmentSchema = z.object({
+  name: z.string().min(1, 'Attachment name is required'),
+  url: z.string().min(1, 'Attachment URL is required'),
+  type: z.string().optional(),
+  size: z.number().optional(),
+});
+
+export const announcementSchema = z
+  .object({
+    title: z
+      .string()
+      .min(1, 'Title is required')
+      .max(200, 'Title must be under 200 characters')
+      .trim(),
+    content: z
+      .string()
+      .min(1, 'Content is required')
+      .max(5000, 'Content must be under 5000 characters')
+      .trim(),
+    recipients: z
+      .array(
+        z.object({
+          type: z.enum(ANNOUNCEMENT_AUDIENCE_VALUES, {
+            errorMap: () => ({ message: 'Invalid audience' }),
+          }),
+        }),
+      )
+      .min(1, 'Select at least one audience'),
+    channels: z
+      .array(
+        z.enum(ANNOUNCEMENT_CHANNEL_VALUES, {
+          errorMap: () => ({ message: 'Invalid channel' }),
+        }),
+      )
+      .min(1, 'Select at least one channel'),
+    scheduledFor: z
+      .union([z.string(), z.date(), z.null()])
+      .optional()
+      .nullable()
+      .refine(
+        (val) => {
+          if (val == null || val === '') return true;
+          const dt = val instanceof Date ? val : new Date(val);
+          return !Number.isNaN(dt.getTime());
+        },
+        { message: 'Invalid date' },
+      )
+      .refine(
+        (val) => {
+          if (val == null || val === '') return true;
+          const dt = val instanceof Date ? val : new Date(val);
+          return dt.getTime() > Date.now();
+        },
+        { message: 'Scheduled time must be in the future' },
+      ),
+    attachments: z.array(announcementAttachmentSchema).optional().default([]),
+  });
+
+// ────────────────────────────────────────────────────────────
 // UTILITY
 // ────────────────────────────────────────────────────────────
 
@@ -470,6 +555,21 @@ export const signupSchema = z
   });
 
 export const resetPasswordSchema = z
+  .object({
+    newPassword: passwordRules,
+    confirmPassword: z.string().min(1, 'Please confirm your password'),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
+
+// Admin-initiated password change for an existing staff member (UserManagement).
+// Raises the bar from the previous ad-hoc 5-char check to the project-standard
+// 8-char policy with uppercase, lowercase, and a number — same rules as
+// resetPasswordSchema. Server-side updateCredentials() enforces its own
+// policy, but the client-side rule was previously 5 chars (audit CODE-05).
+export const userChangePasswordSchema = z
   .object({
     newPassword: passwordRules,
     confirmPassword: z.string().min(1, 'Please confirm your password'),

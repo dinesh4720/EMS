@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { Controller } from "react-hook-form";
 import {
     Card,
     CardBody,
@@ -30,7 +31,122 @@ import HierarchySettings from "./HierarchySettings";
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import logger from '../../utils/logger';
+import { userChangePasswordSchema } from '../../validators/formSchemas';
+import useZodForm from '../../hooks/useZodForm';
 
+
+function ChangePasswordModal({ isOpen, onOpenChange, selectedUser, onSaved }) {
+  const { t } = useTranslation();
+  const { refetch } = useApp();
+  const {
+    control,
+    handleSubmit,
+    reset,
+    errors,
+    isSubmitting,
+    onInvalid,
+  } = useZodForm(userChangePasswordSchema, {
+    defaultValues: { newPassword: "", confirmPassword: "" },
+  });
+
+  useEffect(() => {
+    if (isOpen) reset({ newPassword: "", confirmPassword: "" });
+  }, [isOpen, reset]);
+
+  const onSubmit = async (data) => {
+    try {
+      await staffApi.updateCredentials(selectedUser.id, { password: data.newPassword });
+      await refetch(true); // Skip cache to get fresh data
+      toast.success(`Password updated for ${selectedUser.name}`);
+      onSaved();
+    } catch (err) {
+      toast.error("Failed to update password: " + err.message);
+    }
+  };
+
+  return (
+    <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+      <ModalContent>
+        {(onClose) => (
+          <>
+            <ModalHeader className="flex flex-col gap-1">
+              Change Password
+              <span className="text-sm font-normal text-fg-muted">
+                Update password for <span className="font-semibold text-fg">{selectedUser?.name}</span>
+              </span>
+            </ModalHeader>
+            <ModalBody>
+              <div className="p-4 bg-[var(--accent-bg)] rounded-lg mb-2">
+                <div className="flex gap-3">
+                  <div className="mt-1"><Shield size={18} className="text-primary" /></div>
+                  <div className="text-xs text-[var(--accent)]">
+                    Changes will take effect immediately. The staff member will need to log in with the new password on the Teacher App.
+                    Password must be at least 8 characters and include upper, lower, and a number.
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-4 p-3 bg-surface-2 rounded-lg">
+                <p className="text-xs text-fg-muted mb-1">{t('pages.loginIdPhoneNumber')}</p>
+                <p className="font-mono text-sm">{selectedUser?.phone}</p>
+              </div>
+
+              <Controller
+                control={control}
+                name="newPassword"
+                render={({ field }) => (
+                  <Input
+                    autoFocus
+                    label={t('pages.newPassword')}
+                    placeholder={t('pages.enterNewPassword')}
+                    variant="bordered"
+                    type="password"
+                    value={field.value || ''}
+                    onValueChange={field.onChange}
+                    onBlur={field.onBlur}
+                    isInvalid={!!errors.newPassword}
+                    errorMessage={errors.newPassword?.message}
+                    autoComplete="new-password"
+                  />
+                )}
+              />
+              <Controller
+                control={control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <Input
+                    label={t('pages.confirmPassword')}
+                    placeholder={t('pages.reEnterNewPassword')}
+                    variant="bordered"
+                    type="password"
+                    value={field.value || ''}
+                    onValueChange={field.onChange}
+                    onBlur={field.onBlur}
+                    isInvalid={!!errors.confirmPassword}
+                    errorMessage={errors.confirmPassword?.message}
+                    autoComplete="new-password"
+                  />
+                )}
+              />
+            </ModalBody>
+            <ModalFooter>
+              <Button color="danger" variant="light" onPress={onClose} isDisabled={isSubmitting}>
+                Cancel
+              </Button>
+              <Button
+                color="primary"
+                onPress={handleSubmit(onSubmit, onInvalid)}
+                isLoading={isSubmitting}
+              >
+                Update Password
+              </Button>
+            </ModalFooter>
+          </>
+        )}
+      </ModalContent>
+    </Modal>
+  );
+}
 
 export default function UserManagement() {
   const { t } = useTranslation();
@@ -40,9 +156,6 @@ export default function UserManagement() {
     const { isOpen, onOpen, onOpenChange } = useDisclosure();
     const { isOpen: isResetModalOpen, onOpen: onResetModalOpen, onOpenChange: onResetModalOpenChange } = useDisclosure();
     const [selectedUser, setSelectedUser] = useState(null);
-    const [newPassword, setNewPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
-    const [saving, setSaving] = useState(false);
     const [resetting, setResetting] = useState(false);
     const [generatedPassword, setGeneratedPassword] = useState("");
     const [resetSuccess, setResetSuccess] = useState(false);
@@ -106,33 +219,7 @@ export default function UserManagement() {
 
     const handleEditPassword = (userData) => {
         setSelectedUser(userData);
-        setNewPassword("");
-        setConfirmPassword("");
         onOpen();
-    };
-
-    const handleSavePassword = async (onClose) => {
-        if (newPassword !== confirmPassword) {
-            toast.error(t('toast.error.passwordsDoNotMatch'));
-            return;
-        }
-
-        if (newPassword.length < 5) {
-            toast.error(t('toast.error.passwordMustBeAtLeast5Characters'));
-            return;
-        }
-
-        try {
-            setSaving(true);
-            await staffApi.updateCredentials(selectedUser.id, { password: newPassword });
-            await refetch(true); // Skip cache to get fresh data
-            onClose();
-            toast.success(`Password updated for ${selectedUser.name}`);
-        } catch (err) {
-            toast.error("Failed to update password: " + err.message);
-        } finally {
-            setSaving(false);
-        }
     };
 
     // AUDIT-118: Show confirmation modal first, then reset on explicit confirm
@@ -331,65 +418,12 @@ export default function UserManagement() {
                 </Tab>
             </Tabs>
 
-            <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
-                <ModalContent>
-                    {(onClose) => (
-                        <>
-                            <ModalHeader className="flex flex-col gap-1">
-                                Change Password
-                                <span className="text-sm font-normal text-fg-muted">
-                                    Update password for <span className="font-semibold text-fg">{selectedUser?.name}</span>
-                                </span>
-                            </ModalHeader>
-                            <ModalBody>
-                                <div className="p-4 bg-[var(--accent-bg)] rounded-lg mb-2">
-                                    <div className="flex gap-3">
-                                        <div className="mt-1"><Shield size={18} className="text-primary" /></div>
-                                        <div className="text-xs text-[var(--accent)]">
-                                            Changes will take effect immediately. The staff member will need to log in with the new password on the Teacher App.
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="mb-4 p-3 bg-surface-2 rounded-lg">
-                                    <p className="text-xs text-fg-muted mb-1">{t('pages.loginIdPhoneNumber')}</p>
-                                    <p className="font-mono text-sm">{selectedUser?.phone}</p>
-                                </div>
-
-                                <Input
-                                    autoFocus
-                                    label={t('pages.newPassword')}
-                                    placeholder={t('pages.enterNewPassword')}
-                                    variant="bordered"
-                                    type="password"
-                                    value={newPassword}
-                                    onValueChange={setNewPassword}
-                                    autoComplete="new-password"
-                                />
-                                <Input
-                                    label={t('pages.confirmPassword')}
-                                    placeholder={t('pages.reEnterNewPassword')}
-                                    variant="bordered"
-                                    type="password"
-                                    value={confirmPassword}
-                                    onValueChange={setConfirmPassword}
-                                    errorMessage={confirmPassword && newPassword !== confirmPassword ? "Passwords do not match" : ""}
-                                    isInvalid={confirmPassword && newPassword !== confirmPassword}
-                                    autoComplete="new-password"
-                                />
-                            </ModalBody>
-                            <ModalFooter>
-                                <Button color="danger" variant="light" onPress={onClose} isDisabled={saving}>
-                                    Cancel
-                                </Button>
-                                <Button color="primary" onPress={() => handleSavePassword(onClose)} isLoading={saving}>
-                                    Update Password
-                                </Button>
-                            </ModalFooter>
-                        </>
-                    )}
-                </ModalContent>
-            </Modal>
+            <ChangePasswordModal
+                isOpen={isOpen}
+                onOpenChange={onOpenChange}
+                selectedUser={selectedUser}
+                onSaved={onOpenChange}
+            />
 
             <Modal isOpen={isResetModalOpen} onOpenChange={onResetModalOpenChange} isDismissable={false} isKeyboardDismissDisabled={true}>
                 <ModalContent>

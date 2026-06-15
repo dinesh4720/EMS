@@ -927,8 +927,6 @@
       "failedToDeleteForm": "படிவத்தை நீக்க முடியவில்லை",
       "failedToDuplicateForm": "படிவத்தை நகல் செய்ய முடியவில்லை",
       "failedToLoadCommunicationSettings": "தொடர்பு அமைப்புகளை ஏற்ற முடியவில்லை",
-      "passwordsDoNotMatch": "கடவுச்சொற்கள் பொருந்தவில்லை",
-      "passwordMustBeAtLeast5Characters": "கடவுச்சொல் குறைந்தபட்சம் 5 எழுத்துகளாக இருக்க வேண்டும்",
       "failedToLoadConfigurations": "கட்டமைப்புகளை ஏற்ற முடியவில்லை",
       "failedToLoadPermissionRequests": "அனுமதி கோரிக்கைகளை ஏற்ற முடியவில்லை",
       "failedToApproveRequest": "கோரிக்கையை ஒப்புதல் அளிக்க முடியவில்லை",
