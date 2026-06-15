@@ -1,7 +1,8 @@
 import { useState, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
+import logger from '../../../utils/logger';
 
-export function useSocketListeners({ socketService, user, selectedConversationRef, setMessages, setConversations, setPinnedMessages, onNewMessageReceived, scrollToBottom, pendingSocketMessagesRef }) {
+export function useSocketListeners({ socketService, chatService, user, selectedConversationRef, setMessages, setConversations, setPinnedMessages, onNewMessageReceived, scrollToBottom, pendingSocketMessagesRef }) {
   const [socketConnected, setSocketConnected] = useState(false);
   const [typingUsers, setTypingUsers] = useState(new Set());
   const [onlineUsers, setOnlineUsers] = useState(new Set());
@@ -91,6 +92,34 @@ export function useSocketListeners({ socketService, user, selectedConversationRe
       if (wasDisconnectedRef.current) {
         wasDisconnectedRef.current = false;
         toast.success('Reconnected', { id: 'socket-status', duration: 2000 });
+        backfillMissedMessages();
+      }
+    };
+
+    // PAG-33: messages sent while the socket was down never reached the client
+    // because the chat uses bare useState + socket patching. On reconnect, refetch
+    // the open conversation's history from the server so the user sees what they
+    // missed instead of a stale window.
+    const backfillMissedMessages = async () => {
+      const currentConversation = selectedConversationRef.current;
+      if (!currentConversation) return;
+      if (!chatService || typeof chatService.getMessages !== 'function') return;
+
+      const conversationId = currentConversation.id || currentConversation._id;
+      if (!conversationId) return;
+
+      try {
+        const msgs = await chatService.getMessages(conversationId);
+        if (Array.isArray(msgs)) {
+          setMessages(msgs);
+          if (socketService?.isConnected?.()) {
+            socketService.joinConversation(conversationId);
+            socketService.markAsRead(null, conversationId);
+          }
+          if (scrollToBottom) scrollToBottom();
+        }
+      } catch (error) {
+        logger.error('PAG-33: failed to backfill messages on reconnect:', error);
       }
     };
 
@@ -225,7 +254,7 @@ export function useSocketListeners({ socketService, user, selectedConversationRe
     return () => {
       listeners.forEach(([event, handler]) => socketService.off(event, handler));
     };
-  }, [socketService, user, selectedConversationRef, setMessages, setConversations, setPinnedMessages, onNewMessageReceived, handleNewMessage, pendingSocketMessagesRef]);
+  }, [socketService, chatService, user, selectedConversationRef, setMessages, setConversations, setPinnedMessages, onNewMessageReceived, handleNewMessage, scrollToBottom, pendingSocketMessagesRef]);
 
   return {
     socketConnected,
