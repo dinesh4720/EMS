@@ -88,6 +88,14 @@ export const feesApi = {
     return { payments: res?.payments ?? [], pagination: res?.pagination ?? null };
   },
   getPaymentById: (id) => request(`/fees/payments/${id}`),
+  // Server-side total of all payments for a student — used by refund-cap
+  // validation (PAG-27) so we never silently understate the refundable total
+  // by summing only the first page of payments client-side.
+  getStudentTotalPaid: (studentId) => {
+    if (!studentId) return Promise.resolve({ totalPaid: 0, paymentCount: 0 });
+    const params = new URLSearchParams({ studentId }).toString();
+    return request(`/fees/payments/total-paid?${params}`);
+  },
   createPayment: (data, options) => request('/fees/payments', { method: 'POST', body: JSON.stringify(data), ...(options?.signal ? { signal: options.signal } : {}) }),
   updatePayment: (id, data) => request(`/fees/payments/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deletePayment: (id) => request(`/fees/payments/${id}`, { method: 'DELETE' }),
