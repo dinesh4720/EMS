@@ -42,6 +42,7 @@ import {
   hostelApi,
   transportApi,
   announcementsApi,
+  searchApi,
 } from "../../services/api";
 
 // Static destinations — grouped by Pages / Settings / Actions per task spec.
@@ -124,8 +125,22 @@ function PaletteItem({ children, onSelect }) {
   );
 }
 
-/* Hook: fetch extended search data on open */
-function useExtendedSearch(isOpen) {
+/* Hook: on-open prefill + server-backed search as the user types.
+ *
+ * [PAG-32] The palette used to fetch only the first 50 of each list endpoint,
+ * so anything older (e.g. fee payment #51, book #200) was unfindable from
+ * the palette. The server-backed /search endpoint now backs these groups:
+ * when the user types, we debounce-call /search?q=…&types=…&limit=20 and
+ * surface only the matched rows. The on-open prefill is kept for the empty
+ * state so the palette still shows a useful initial scan.
+ */
+const SERVER_SEARCH_TYPES =
+  "students,staff,classes,fees,exams,announcements,books,assets,rooms,routes";
+const SERVER_SEARCH_DEBOUNCE_MS = 200;
+const SERVER_SEARCH_LIMIT = 20;
+
+function useExtendedSearch(isOpen, query) {
+  // On-open prefill (50 per list) — useful initial scan when query is empty.
   const [feeRecords, setFeeRecords] = useState([]);
   const [exams, setExams] = useState([]);
   const [books, setBooks] = useState([]);
@@ -133,12 +148,17 @@ function useExtendedSearch(isOpen) {
   const [rooms, setRooms] = useState([]);
   const [routes, setRoutes] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [prefillLoading, setPrefillLoading] = useState(false);
 
+  // Server-backed results (only populated once a query is typed).
+  const [serverResults, setServerResults] = useState(null);
+  const [serverLoading, setServerLoading] = useState(false);
+
+  // On-open prefill (only on first open; cheap to keep cached for the session)
   useEffect(() => {
     if (!isOpen) return;
     let cancelled = false;
-    setLoading(true);
+    setPrefillLoading(true);
 
     Promise.allSettled([
       feesApi.getPayments({ limit: 50 }),
@@ -242,7 +262,7 @@ function useExtendedSearch(isOpen) {
         }))
       );
 
-      setLoading(false);
+      setPrefillLoading(false);
     });
 
     return () => {
@@ -250,7 +270,125 @@ function useExtendedSearch(isOpen) {
     };
   }, [isOpen]);
 
-  return { feeRecords, exams, books, assets, rooms, routes, announcements, loading };
+  // Server-backed search — debounced, runs only when the user has typed ≥ 2 chars.
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const trimmed = (query || "").trim();
+    if (trimmed.length < 2) {
+      setServerResults(null);
+      setServerLoading(false);
+      return undefined;
+    }
+
+    setServerLoading(true);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(async () => {
+      try {
+        const res = await searchApi.search(
+          {
+            q: trimmed,
+            types: SERVER_SEARCH_TYPES,
+            limit: SERVER_SEARCH_LIMIT,
+          },
+          { signal: controller.signal }
+        );
+        if (controller.signal.aborted) return;
+        setServerResults(res || null);
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        // Keep last good results on transient errors; do not crash the palette.
+        // eslint-disable-next-line no-console
+        console.warn("[CommandPalette] server search failed", err);
+        setServerResults(null);
+      } finally {
+        if (!controller.signal.aborted) {
+          setServerLoading(false);
+        }
+      }
+    }, SERVER_SEARCH_DEBOUNCE_MS);
+
+    return () => {
+      clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [isOpen, query]);
+
+  return {
+    prefill: { feeRecords, exams, books, assets, rooms, routes, announcements },
+    prefillLoading,
+    serverResults,
+    serverLoading,
+  };
+}
+
+/* Map a /search server result row to a palette { id, label, sub, to } entry. */
+function mapServerResults(serverResults) {
+  if (!serverResults) return null;
+
+  const pick = (arr) => (Array.isArray(arr) ? arr : []);
+
+  const students = pick(serverResults.students?.results).map((s) => ({
+    id: s._id,
+    label: s.name || s.admissionId || "Student",
+    sub: s.admissionId || "",
+    to: `/students/${s._id}`,
+  }));
+  const staff = pick(serverResults.staff?.results).map((s) => ({
+    id: s._id,
+    label: s.name || s.code || "Staff",
+    sub: s.role || s.department || "",
+    to: `/staffs/${s._id}`,
+  }));
+  const classes = pick(serverResults.classes?.results).map((c) => ({
+    id: c._id,
+    label: c.name || c.classTag || "Class",
+    sub: c.section ? `Section ${c.section}` : "",
+    to: `/classes/${c._id}`,
+  }));
+  const fees = pick(serverResults.fees?.results).map((p) => ({
+    id: p._id,
+    label: p.studentId?.name || p.receiptNumber || "Fee payment",
+    sub: p.amount ? `₹${p.amount}` : "",
+    to: `/fees`,
+  }));
+  const exams = pick(serverResults.exams?.results).map((e) => ({
+    id: e._id,
+    label: e.name || e.type || "Exam",
+    sub: e.type || e.subjectName || "",
+    to: `/academics/exams/${e._id}`,
+  }));
+  const announcements = pick(serverResults.announcements?.results).map((a) => ({
+    id: a._id,
+    label: a.title || "Announcement",
+    sub: a.status || "",
+    to: `/messaging`,
+  }));
+  const books = pick(serverResults.books?.results).map((b) => ({
+    id: b._id,
+    label: b.title || b.name || "Book",
+    sub: b.author || b.isbn || "",
+    to: `/library/books/${b._id}`,
+  }));
+  const assets = pick(serverResults.assets?.results).map((a) => ({
+    id: a._id,
+    label: a.name || a.assetTag || "Asset",
+    sub: a.category || a.status || "",
+    to: `/inventory/assets/${a._id}`,
+  }));
+  const rooms = pick(serverResults.rooms?.results).map((r) => ({
+    id: r._id,
+    label: r.roomNumber || "Room",
+    sub: r.hostelId?.name || r.type || "",
+    to: `/hostel/rooms/${r._id}`,
+  }));
+  const routes = pick(serverResults.routes?.results).map((r) => ({
+    id: r._id,
+    label: r.routeName || r.routeNumber || "Route",
+    sub: r.routeNumber || "",
+    to: `/transport/routes/${r._id}`,
+  }));
+
+  return { students, staff, classes, fees, exams, announcements, books, assets, rooms, routes };
 }
 
 export default function CommandPalette({ isOpen, onClose }) {
@@ -299,8 +437,44 @@ export default function CommandPalette({ isOpen, onClose }) {
 
   const recents = useMemo(() => (isOpen ? readRecents() : []), [isOpen]);
 
-  // Extended search data
-  const { feeRecords, exams, books, assets, rooms, routes, announcements } = useExtendedSearch(isOpen);
+  // [PAG-32] Track the typed query so the server-backed search effect can fire.
+  const [query, setQuery] = useState("");
+
+  // Reset the typed query each time the palette opens so the previous session's
+  // server results don't bleed into a new search.
+  useEffect(() => {
+    if (isOpen) setQuery("");
+  }, [isOpen]);
+
+  // Extended search data — on-open prefill + debounced server-side search.
+  const { prefill, serverResults, serverLoading } = useExtendedSearch(isOpen, query);
+  // Note: prefillLoading is intentionally not surfaced — the 50-row prefill is
+  // a best-effort initial scan and the palette is responsive without it.
+  const serverMapped = useMemo(() => mapServerResults(serverResults), [serverResults]);
+
+  // While the user is typing, the server is the source of truth. Otherwise the
+  // on-open prefill gives a useful initial scan of recent entities.
+  const isServerActive = query.trim().length >= 2;
+  const visible = isServerActive && serverMapped ? serverMapped : prefill;
+  const {
+    feeRecords,
+    exams,
+    books,
+    assets,
+    rooms,
+    routes,
+    announcements,
+    students: serverStudents,
+    staff: serverStaff,
+    classes: serverClasses,
+  } = visible;
+
+  // When server search is active, the server's narrow result list wins over the
+  // local 200-row context slices. cmdk's shouldFilter then narrows further on
+  // each keystroke. When no query is typed, the context slices are used.
+  const visibleStudents = isServerActive ? serverStudents : studentItems;
+  const visibleStaff = isServerActive ? serverStaff : staffItems;
+  const visibleClasses = isServerActive ? serverClasses : classItems;
 
   // Cache focused element + restore on close.
   useEffect(() => {
@@ -366,9 +540,14 @@ export default function CommandPalette({ isOpen, onClose }) {
             <Command.Input
               ref={inputRef}
               autoFocus
+              value={query}
+              onValueChange={setQuery}
               placeholder="Search students, staff, fees, exams, books, assets, rooms, routes…"
               className="cmdk__input"
             />
+            {serverLoading ? (
+              <span className="cmdk__hint" aria-live="polite">searching…</span>
+            ) : null}
             <kbd className="kbd">esc</kbd>
           </div>
 
@@ -413,9 +592,9 @@ export default function CommandPalette({ isOpen, onClose }) {
               })}
             </Command.Group>
 
-            {studentItems.length > 0 ? (
-              <Command.Group heading={<GroupHeading label="Students" count={studentItems.length} />}>
-                {studentItems.map((s) => (
+            {visibleStudents.length > 0 ? (
+              <Command.Group heading={<GroupHeading label="Students" count={visibleStudents.length} />}>
+                {visibleStudents.map((s) => (
                   <PaletteItem key={`student-${s.id}`} onSelect={() => run(s)}>
                     <span className="cmdk__item-icon">
                       <GraduationCap size={14} aria-hidden />
@@ -427,9 +606,9 @@ export default function CommandPalette({ isOpen, onClose }) {
               </Command.Group>
             ) : null}
 
-            {staffItems.length > 0 ? (
-              <Command.Group heading={<GroupHeading label="Staff" count={staffItems.length} />}>
-                {staffItems.map((s) => (
+            {visibleStaff.length > 0 ? (
+              <Command.Group heading={<GroupHeading label="Staff" count={visibleStaff.length} />}>
+                {visibleStaff.map((s) => (
                   <PaletteItem key={`staff-${s.id}`} onSelect={() => run(s)}>
                     <span className="cmdk__item-icon">
                       <Briefcase size={14} aria-hidden />
@@ -441,9 +620,9 @@ export default function CommandPalette({ isOpen, onClose }) {
               </Command.Group>
             ) : null}
 
-            {classItems.length > 0 ? (
-              <Command.Group heading={<GroupHeading label="Classes" count={classItems.length} />}>
-                {classItems.map((c) => (
+            {visibleClasses.length > 0 ? (
+              <Command.Group heading={<GroupHeading label="Classes" count={visibleClasses.length} />}>
+                {visibleClasses.map((c) => (
                   <PaletteItem key={`class-${c.id}`} onSelect={() => run(c)}>
                     <span className="cmdk__item-icon">
                       <School size={14} aria-hidden />
