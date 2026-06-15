@@ -62,6 +62,15 @@ export default function StaffPayroll() {
   const [fixSalariesConfirmOpen, setFixSalariesConfirmOpen] = useState(false);
   const [fixingSalaries, setFixingSalaries] = useState(false);
 
+  // PAG-31: payroll records are month-scoped (one record per active staff
+  // member per month), so the set is naturally bounded by the school's
+  // active staff count. We ask the backend for a generous hard cap
+  // (MONTHLY_RECORDS_LIMIT) and rely on the existing useEntityFetch
+  // scroll-to-load hook (see line below) for client-side pagination.
+  // If a school ever grows past this cap, switch to a server-paginated
+  // cursor (see PAG-30 / SCH-128 for the cursor pattern used elsewhere).
+  const MONTHLY_RECORDS_LIMIT = 1000;
+
   const months = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
@@ -112,7 +121,7 @@ export default function StaffPayroll() {
       const response = await payrollApi.getRecords({
         month: selectedMonth,
         year: selectedYear,
-        limit: 1000
+        limit: MONTHLY_RECORDS_LIMIT
       });
       if (response.success) {
         setPayrollRecords(response.data || []);
