@@ -36,6 +36,34 @@ export const initialSchoolSettings = {
   subjects: [],
 };
 
+// [PERF-01] Cap the live, socket-synced fee-payment list. Every school-wide
+// `fee_payment_created` socket event appends one entry; on a busy collection day
+// (hundreds of payments) the array — and the cost of copying it on each append —
+// would otherwise grow without bound, re-rendering every settings consumer with
+// an ever-larger payload. Keep only the most recent N; older payments are never
+// read locally (getStudentFeeHistory has no live consumers) and can be re-fetched
+// from the server.
+export const MAX_LIVE_FEE_PAYMENTS = 200;
+
+/**
+ * Append a payment to the live fee-payment list with a bounded size.
+ * De-dupes by id (socket reconnects can replay the same event, and a locally
+ * recorded payment may also arrive as a socket echo) and keeps only the most
+ * recent MAX_LIVE_FEE_PAYMENTS entries. Pure so it can be unit-tested directly.
+ *
+ * @param {Array} prev - current payments
+ * @param {object} payment - payment to append
+ * @param {number} [max=MAX_LIVE_FEE_PAYMENTS] - retention cap
+ * @returns {Array} bounded next list
+ */
+export function appendCappedFeePayment(prev, payment, max = MAX_LIVE_FEE_PAYMENTS) {
+  const base = Array.isArray(prev) ? prev : [];
+  const deduped =
+    payment?.id != null ? base.filter((p) => p.id !== payment.id) : base;
+  const next = [...deduped, payment];
+  return next.length > max ? next.slice(next.length - max) : next;
+}
+
 export const SettingsContext = createContext();
 
 export function SettingsProvider({ children }) {
@@ -344,9 +372,11 @@ export function SettingsProvider({ children }) {
     }
   }, [t, invalidateSettingsData]);
 
-  // Local-only fee sync for socket events (payment already exists on server)
+  // Local-only fee sync for socket events (payment already exists on server).
+  // [PERF-01] Bounded + de-duped append so a long collection day can't grow the
+  // array without limit. See appendCappedFeePayment / MAX_LIVE_FEE_PAYMENTS.
   const syncFeePaymentLocal = useCallback((payment) => {
-    setFeePayments((prev) => [...prev, payment]);
+    setFeePayments((prev) => appendCappedFeePayment(prev, payment));
   }, []);
 
   const getStudentFeeHistory = useCallback(
