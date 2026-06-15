@@ -269,9 +269,22 @@ describe('superAdminApi', () => {
     expect(request).toHaveBeenCalledWith('/super-admin/overview');
   });
 
-  it('getSchools calls GET /super-admin/schools', () => {
+  it('getSchools calls GET /super-admin/schools with default limit', () => {
     superAdminApi.getSchools();
-    expect(request).toHaveBeenCalledWith('/super-admin/schools');
+    expect(request).toHaveBeenCalledWith('/super-admin/schools?limit=500');
+  });
+
+  it('getSchools forwards an explicit limit', () => {
+    superAdminApi.getSchools({ limit: 50 });
+    expect(request).toHaveBeenCalledWith('/super-admin/schools?limit=50');
+  });
+
+  it('getSchools merges filters with the default limit', () => {
+    superAdminApi.getSchools({ status: 'active' });
+    const url = request.mock.calls[0][0];
+    expect(url).toContain('/super-admin/schools?');
+    expect(url).toContain('status=active');
+    expect(url).toContain('limit=500');
   });
 
   it('createSchool calls POST /super-admin/schools', () => {

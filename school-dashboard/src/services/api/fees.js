@@ -1,7 +1,12 @@
 import { request, requestBlob } from './core.js';
+import { withDefaultLimit } from './fetchDefaults.js';
 
 export const calendarEventsApi = {
-  getAll: (options) => options?.signal ? request('/calendar/events', { signal: options.signal }) : request('/calendar/events'),
+  getAll: (options) => {
+    const qs = new URLSearchParams(withDefaultLimit({})).toString();
+    const url = `/calendar/events${qs ? `?${qs}` : ''}`;
+    return options?.signal ? request(url, { signal: options.signal }) : request(url);
+  },
   create: (data, options) => request('/calendar/events', { method: 'POST', body: JSON.stringify(data), ...(options?.signal ? { signal: options.signal } : {}) }),
   update: (id, data, options) => request(`/calendar/events/${id}`, { method: 'PUT', body: JSON.stringify(data), ...(options?.signal ? { signal: options.signal } : {}) }),
   delete: (id, options) => request(`/calendar/events/${id}`, { method: 'DELETE', ...(options?.signal ? { signal: options.signal } : {}) }),

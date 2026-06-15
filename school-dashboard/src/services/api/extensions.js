@@ -1,6 +1,15 @@
 import { request, requestUpload } from './core.js';
 import { getAuthHeaders, saveStoredUser } from '../../utils/authSession';
 import { API_URL } from '../../config/api.js';
+import { withDefaultLimit } from './fetchDefaults.js';
+
+const buildQuery = (params) => {
+  const q = new URLSearchParams();
+  Object.entries(params || {}).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '') q.set(k, v);
+  });
+  return q.toString();
+};
 
 export const parentApi = {
   getAll: (params = {}, options = {}) => {
@@ -107,9 +116,7 @@ export const libraryApi = {
 export const transportApi = {
   // Vehicles
   getVehicles: (params = {}) => {
-    const q = new URLSearchParams();
-    Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') q.set(k, v); });
-    const qs = q.toString();
+    const qs = buildQuery(withDefaultLimit(params));
     return request(`/transport/vehicles${qs ? `?${qs}` : ''}`);
   },
   getVehicle: (id) => request(`/transport/vehicles/${id}`),
@@ -308,7 +315,7 @@ export const jobsApi = {
 // PTM (Parent-Teacher Meetings) API
 export const ptmApi = {
   getAll: (params = {}) => {
-    const q = new URLSearchParams(params).toString();
+    const q = new URLSearchParams(withDefaultLimit(params)).toString();
     return request(`/ptm${q ? `?${q}` : ''}`);
   },
   getById: (id) => request(`/ptm/${id}`),
