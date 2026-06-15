@@ -11,6 +11,7 @@ import { Button } from "@heroui/react";
 import toast from "react-hot-toast";
 import { auditLogsApi, requestBlob } from "../../services/api";
 import { PageShell } from "../../components/ui";
+import Drawer from "../../components/ui/Drawer";
 import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/common/Pagination";
 import ToolbarSearch from "../../components/ui/ToolbarSearch";
@@ -344,28 +345,20 @@ export default function AuditLogsPage() {
         )}
 
         {/* Mobile: slide-over drawer for detail */}
-        {isMobileViewport && detailVisible && (
-          <div
-            className="fixed inset-0 z-50"
-            style={{ background: "rgba(0,0,0,0.4)" }}
-            role="presentation"
-            onClick={() => setSelectedId(null)}
+        {isMobileViewport && (
+          <Drawer
+            isOpen={detailVisible}
+            onClose={() => setSelectedId(null)}
+            title="Audit log detail"
+            size="md"
+            placement="right"
           >
-            <div
-              className="absolute right-0 top-0 bottom-0 w-full max-w-md bg-surface border-l shadow-lg overflow-auto"
-              style={{ borderColor: "var(--divider)" }}
-              role="dialog"
-              aria-modal="true"
-              aria-label="Audit log detail"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <AuditLogDetail
-                log={selectedLog}
-                isMobile
-                onClose={() => setSelectedId(null)}
-              />
-            </div>
-          </div>
+            <AuditLogDetail
+              log={selectedLog}
+              isMobile
+              onClose={() => setSelectedId(null)}
+            />
+          </Drawer>
         )}
       </div>
     </PageShell>
