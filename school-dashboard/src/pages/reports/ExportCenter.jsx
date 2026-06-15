@@ -9,6 +9,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import SectionHeading from '../../components/ui/SectionHeading';
+import logger from '../../utils/logger';
 
 const MODULES = [
   { key: 'students', name: 'Student List', endpoint: '/export/students', requiredFilters: [] },
@@ -188,7 +189,7 @@ function ExportCard({ module }) {
       URL.revokeObjectURL(downloadUrl);
       toast.success(`${module.name} exported successfully`);
     } catch (error) {
-      console.error(`Failed to export ${module.name}:`, error);
+      logger.error(`Failed to export ${module.name}:`, error);
       toast.error(`Failed to export ${module.name}. Check your connection and try again.`);
     } finally {
       setExporting(false);

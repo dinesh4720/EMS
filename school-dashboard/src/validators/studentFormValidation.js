@@ -4,8 +4,8 @@
  * Mirrors backend createStudentSchema from validators/studentSchema.js
  */
 import { z } from 'zod';
-import { ddmmyyToIso, isoToDdmmyy } from './dateUtils';
-import { VALIDATION_RULES } from '../../../constants/studentConstants';
+import { ddmmyyToIso, isoToDdmmyy } from '../pages/students/utils/dateUtils';
+import { VALIDATION_RULES } from '../constants/studentConstants';
 
 // ── Health Info sub-schemas ──
 const allergySchema = z.object({

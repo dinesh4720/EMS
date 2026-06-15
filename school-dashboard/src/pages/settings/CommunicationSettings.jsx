@@ -156,7 +156,7 @@ export default function CommunicationSettings() {
     setEditingSection(null);
   }, [smsConfig, emailConfig]);
 
-  const SectionHeader = ({ title, description, icon: Icon, section, isEnabled, onToggle }) => (
+  const SectionHeader = ({ title, description, icon: Icon, section, isEnabled, onToggle, editingSection, saving, onCancel, onSave, onStartEdit }) => (
     <div className="flex justify-between items-start mb-6">
       <div className="flex items-center gap-3">
         <div className={`p-2 rounded-lg ${editingSection === section ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}>
@@ -180,7 +180,7 @@ export default function CommunicationSettings() {
             <button
               type="button"
               className="text-sm text-danger hover:text-[var(--danger)] font-medium px-3 py-1.5 rounded-lg hover:bg-[var(--danger-bg)] transition-colors"
-              onClick={() => handleCancel(section)}
+              onClick={onCancel}
               disabled={saving}
             >
               Cancel
@@ -188,7 +188,7 @@ export default function CommunicationSettings() {
             <button
               type="button"
               className="flex items-center gap-1.5 text-sm bg-primary text-white font-medium px-3 py-1.5 rounded-lg hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
-              onClick={() => handleSave(section)}
+              onClick={onSave}
               disabled={saving}
             >
               {saving ? <Spinner size="sm" color="white" /> : <Save size={14} />}
@@ -199,7 +199,7 @@ export default function CommunicationSettings() {
           <button
             type="button"
             className="flex items-center gap-1.5 text-sm text-primary font-medium px-3 py-1.5 rounded-lg hover:bg-[var(--accent-bg)] transition-colors disabled:opacity-50"
-            onClick={() => setEditingSection(section)}
+            onClick={onStartEdit}
             disabled={editingSection !== null}
           >
             <Edit size={16} />
@@ -245,6 +245,11 @@ export default function CommunicationSettings() {
               section="sms"
               isEnabled={editingSection === 'sms' ? smsDraft.enabled : smsConfig.enabled}
               onToggle={(val) => setSmsDraft(prev => ({ ...prev, enabled: val }))}
+              editingSection={editingSection}
+              saving={saving}
+              onCancel={() => handleCancel('sms')}
+              onSave={() => handleSave('sms')}
+              onStartEdit={() => setEditingSection('sms')}
             />
 
             {(editingSection === 'sms' ? smsDraft.enabled : smsConfig.enabled) && (
@@ -334,6 +339,11 @@ export default function CommunicationSettings() {
               section="email"
               isEnabled={editingSection === 'email' ? emailDraft.enabled : emailConfig.enabled}
               onToggle={(val) => setEmailDraft(prev => ({ ...prev, enabled: val }))}
+              editingSection={editingSection}
+              saving={saving}
+              onCancel={() => handleCancel('email')}
+              onSave={() => handleSave('email')}
+              onStartEdit={() => setEditingSection('email')}
             />
 
             {(editingSection === 'email' ? emailDraft.enabled : emailConfig.enabled) && (

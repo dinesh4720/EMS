@@ -5,6 +5,7 @@ import { getAcademicYearOptions } from '../../utils/constants';
 import PageHeader from '../../components/ui/PageHeader';
 import Tabs from '../../components/ui/Tabs';
 import Select from '../../components/ui/Select';
+import logger from '../../utils/logger';
 import AttendanceTab from './components/AttendanceTab';
 import MarksTab from './components/MarksTab';
 import FeesTab from './components/FeesTab';
@@ -37,7 +38,7 @@ export default function ReportsPage() {
         const data = await reportsApi.dashboardMetrics({ academicYear });
         if (!cancelled) setMetrics(data);
       } catch (err) {
-        console.error('Failed to load dashboard metrics:', err);
+        logger.error('Failed to load dashboard metrics:', err);
       }
     })();
     return () => {

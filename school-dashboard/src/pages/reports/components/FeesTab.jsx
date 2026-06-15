@@ -7,6 +7,7 @@ import EmptyState from '../../../components/ui/EmptyState';
 import ErrorState from '../../../components/ui/ErrorState';
 import { SkeletonTable } from '../../../components/ui/Skeleton';
 import SectionHeading from '../../../components/ui/SectionHeading';
+import logger from '../../../utils/logger';
 import ReportTable from './ReportTable';
 
 export default function FeesTab({ metrics, academicYear }) {
@@ -26,7 +27,7 @@ export default function FeesTab({ metrics, academicYear }) {
       setFeeCollection(Array.isArray(fc) ? fc : []);
       setOutstandingDues(Array.isArray(od) ? od : []);
     } catch (err) {
-      console.error('Failed to load fee reports:', err);
+      logger.error('Failed to load fee reports:', err);
       setError(err);
       toast.error('Failed to load fee reports. Refresh to try again.');
     } finally {

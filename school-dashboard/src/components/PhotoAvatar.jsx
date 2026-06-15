@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import PhotoModal from "./PhotoModal";
+import PhotoModal from "./photo/PhotoModal";
 
 // Size configurations (module scope — no recreation per render)
 const SIZE_CLASSES = {

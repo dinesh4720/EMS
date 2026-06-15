@@ -11,6 +11,7 @@ import { SkeletonTable } from '../../../components/ui/Skeleton';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import SectionHeading from '../../../components/ui/SectionHeading';
+import logger from '../../../utils/logger';
 import AttendanceTrendChart from './AttendanceTrendChart';
 import ReportTable from './ReportTable';
 
@@ -42,7 +43,7 @@ export default function AttendanceTab({ metrics }) {
     classesApi
       .getAll()
       .then((data) => setClasses(Array.isArray(data) ? data : []))
-      .catch((err) => console.error('Failed to load classes:', err));
+      .catch((err) => logger.error('Failed to load classes:', err));
   }, []);
 
   useEffect(() => {
@@ -57,7 +58,7 @@ export default function AttendanceTab({ metrics }) {
         const data = await reportsApi.studentAttendance(params);
         if (!cancelled) setRows(Array.isArray(data) ? data : []);
       } catch (err) {
-        console.error('Failed to load attendance report:', err);
+        logger.error('Failed to load attendance report:', err);
         if (!cancelled) {
           setRows([]);
           setError(err);

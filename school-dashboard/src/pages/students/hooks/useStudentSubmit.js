@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import { formatShortDate } from '../../../utils/dateFormatter';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../../../context/AppContext';
-import { cleanHealthInfo } from "../utils/studentFormValidation";
+import { cleanHealthInfo } from "../../../validators/studentFormValidation";
 
 /**
  * Hook that encapsulates the student form submission logic:

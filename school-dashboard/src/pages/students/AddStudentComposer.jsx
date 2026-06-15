@@ -41,7 +41,7 @@ import {
   validateStep as validateStepExtracted,
   isoToDdmmyy,
   ddmmyyToIso,
-} from "./utils/studentFormValidation";
+} from "../../validators/studentFormValidation";
 import {
   GENDERS,
   BLOOD_GROUPS,

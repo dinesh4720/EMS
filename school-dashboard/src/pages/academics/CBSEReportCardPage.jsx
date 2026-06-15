@@ -33,16 +33,16 @@ function MarkEntryModal({ isOpen, onClose, student, classId, academicYear, term,
   const { schoolSettings } = useApp();
   const [subjects, setSubjects] = useState(() => {
     const names = (schoolSettings?.subjects || []).map(s => (typeof s === 'string' ? s : s.name)).filter(Boolean);
-    return names.map(name => ({ subjectName: name, theoryMarks: '', practicalMarks: '' }));
+    return names.map(name => ({ rowId: crypto.randomUUID(), subjectName: name, theoryMarks: '', practicalMarks: '' }));
   });
   const [saving, setSaving] = useState(false);
 
-  const updateSubject = (i, field, val) => {
-    setSubjects(prev => prev.map((s, idx) => idx === i ? { ...s, [field]: val } : s));
+  const updateSubject = (rowId, field, val) => {
+    setSubjects(prev => prev.map(s => s.rowId === rowId ? { ...s, [field]: val } : s));
   };
 
-  const addSubject = () => setSubjects(prev => [...prev, { subjectName: '', theoryMarks: '', practicalMarks: '' }]);
-  const removeSubject = (i) => setSubjects(prev => prev.filter((_, idx) => idx !== i));
+  const addSubject = () => setSubjects(prev => [...prev, { rowId: crypto.randomUUID(), subjectName: '', theoryMarks: '', practicalMarks: '' }]);
+  const removeSubject = (rowId) => setSubjects(prev => prev.filter(s => s.rowId !== rowId));
 
   const handleSave = async () => {
     const scholasticGrades = subjects
@@ -92,13 +92,13 @@ function MarkEntryModal({ isOpen, onClose, student, classId, academicYear, term,
               <span className="col-span-3 text-center">Practical Marks</span>
               <span className="col-span-1" />
             </div>
-            {subjects.map((s, i) => (
-              <div key={`subject-row-${i}`} className="grid grid-cols-12 gap-2 items-center">
+            {subjects.map((s) => (
+              <div key={s.rowId} className="grid grid-cols-12 gap-2 items-center">
                 <Input
                   size="sm"
                   placeholder={t('academics.subjectNamePlaceholder')}
                   value={s.subjectName}
-                  onChange={e => updateSubject(i, 'subjectName', e.target.value)}
+                  onChange={e => updateSubject(s.rowId, 'subjectName', e.target.value)}
                   variant="bordered"
                   classNames={{ input: 'text-fg', inputWrapper: 'border-border-token' }}
                   className="col-span-5"
@@ -109,7 +109,7 @@ function MarkEntryModal({ isOpen, onClose, student, classId, academicYear, term,
                   placeholder={t('academics.marksPlaceholder')}
                   min={0} max={100}
                   value={s.theoryMarks}
-                  onChange={e => updateSubject(i, 'theoryMarks', e.target.value)}
+                  onChange={e => updateSubject(s.rowId, 'theoryMarks', e.target.value)}
                   variant="bordered"
                   classNames={{ input: 'text-fg text-center', inputWrapper: 'border-border-token' }}
                   className="col-span-3"
@@ -120,14 +120,14 @@ function MarkEntryModal({ isOpen, onClose, student, classId, academicYear, term,
                   placeholder={t('academics.marksPlaceholder')}
                   min={0} max={100}
                   value={s.practicalMarks}
-                  onChange={e => updateSubject(i, 'practicalMarks', e.target.value)}
+                  onChange={e => updateSubject(s.rowId, 'practicalMarks', e.target.value)}
                   variant="bordered"
                   classNames={{ input: 'text-fg text-center', inputWrapper: 'border-border-token' }}
                   className="col-span-3"
                 />
                 <button
                   type="button"
-                  onClick={() => removeSubject(i)}
+                  onClick={() => removeSubject(s.rowId)}
                   className="col-span-1 text-fg-faint hover:text-red-500 text-lg leading-none text-center"
                 >×</button>
               </div>

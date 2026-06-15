@@ -129,18 +129,18 @@ export default function AttendanceRules() {
     return () => window.removeEventListener('beforeunload', handler);
   }, [editingSection]);
 
-  const SectionHeader = ({ title, section }) => (
+  const SectionHeader = ({ title, section, editingSection, saving, loading, onCancel, onSave, onStartEdit, cancelLabel }) => (
     <div className="flex justify-between items-center py-4 px-4 bg-surface-2/50 border-b border-divider">
       <h3 className="text-sm font-semibold text-fg">{title}</h3>
       {editingSection === section ? (
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="light" color="danger" onPress={handleCancel} isDisabled={saving} className="h-8 min-w-0 px-2 text-xs">{t('pages.cancel2')}</Button>
-          <Button size="sm" color="primary" onPress={handleSave} isLoading={saving} className="h-8 min-w-0 px-3 text-xs" startContent={!saving && <Save size={12} />}>
+          <Button size="sm" variant="light" color="danger" onPress={onCancel} isDisabled={saving} className="h-8 min-w-0 px-2 text-xs">{cancelLabel}</Button>
+          <Button size="sm" color="primary" onPress={onSave} isLoading={saving} className="h-8 min-w-0 px-3 text-xs" startContent={!saving && <Save size={12} />}>
             Save
           </Button>
         </div>
       ) : (
-        <Button size="sm" variant="light" color="primary" onPress={() => { setTempRules(rules); setEditingSection(section); }} isDisabled={editingSection !== null || loading} className="h-8 min-w-0 px-2 text-xs">
+        <Button size="sm" variant="light" color="primary" onPress={onStartEdit} isDisabled={editingSection !== null || loading} className="h-8 min-w-0 px-2 text-xs">
           Edit
         </Button>
       )}
@@ -174,7 +174,17 @@ export default function AttendanceRules() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className={`shadow-sm border transition-all duration-200 ${editingSection === 'defaulter' ? 'border-primary ring-1 ring-primary' : 'border-border-token'}`}>
-          <SectionHeader title={t('pages.defaulterSettings')} section="defaulter" />
+          <SectionHeader
+            title={t('pages.defaulterSettings')}
+            section="defaulter"
+            editingSection={editingSection}
+            saving={saving}
+            loading={loading}
+            cancelLabel={t('pages.cancel2')}
+            onCancel={handleCancel}
+            onSave={handleSave}
+            onStartEdit={() => { setTempRules(rules); setEditingSection('defaulter'); }}
+          />
           <CardBody className="p-4 space-y-4">
             {editingSection === 'defaulter' ? (
               <>
@@ -224,7 +234,17 @@ export default function AttendanceRules() {
         </Card>
 
         <Card className={`shadow-sm border transition-all duration-200 ${editingSection === 'lock' ? 'border-primary ring-1 ring-primary' : 'border-border-token'}`}>
-          <SectionHeader title={t('pages.lockSettings')} section="lock" />
+          <SectionHeader
+            title={t('pages.lockSettings')}
+            section="lock"
+            editingSection={editingSection}
+            saving={saving}
+            loading={loading}
+            cancelLabel={t('pages.cancel2')}
+            onCancel={handleCancel}
+            onSave={handleSave}
+            onStartEdit={() => { setTempRules(rules); setEditingSection('lock'); }}
+          />
           <CardBody className="p-4 space-y-4">
             {editingSection === 'lock' ? (
               <Input
@@ -280,7 +300,17 @@ export default function AttendanceRules() {
         </Card>
 
         <Card className={`shadow-sm border transition-all duration-200 ${editingSection === 'notifications' ? 'border-primary ring-1 ring-primary' : 'border-border-token'}`}>
-          <SectionHeader title={t('pages.notifications')} section="notifications" />
+          <SectionHeader
+            title={t('pages.notifications')}
+            section="notifications"
+            editingSection={editingSection}
+            saving={saving}
+            loading={loading}
+            cancelLabel={t('pages.cancel2')}
+            onCancel={handleCancel}
+            onSave={handleSave}
+            onStartEdit={() => { setTempRules(rules); setEditingSection('notifications'); }}
+          />
           <CardBody className="p-4 space-y-4">
             <div className="flex items-center justify-between p-3 bg-surface-2 rounded-lg border border-border-token">
               <div>
@@ -311,7 +341,17 @@ export default function AttendanceRules() {
         </Card>
 
         <Card className={`shadow-sm border transition-all duration-200 ${editingSection === 'permissions' ? 'border-primary ring-1 ring-primary' : 'border-border-token'}`}>
-          <SectionHeader title={t('pages.editPermissions')} section="permissions" />
+          <SectionHeader
+            title={t('pages.editPermissions')}
+            section="permissions"
+            editingSection={editingSection}
+            saving={saving}
+            loading={loading}
+            cancelLabel={t('pages.cancel2')}
+            onCancel={handleCancel}
+            onSave={handleSave}
+            onStartEdit={() => { setTempRules(rules); setEditingSection('permissions'); }}
+          />
           <CardBody className="p-4 space-y-3">
             {(editingSection === 'permissions' ? tempRules.permissions : rules.permissions).map((item, i) => (
               <div key={item.role} className="flex items-center justify-between p-4 bg-surface-2 rounded-lg border border-border-token">
