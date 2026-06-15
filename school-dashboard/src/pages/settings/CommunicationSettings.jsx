@@ -6,6 +6,7 @@ import { settingsApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+import { SkeletonTable } from '../../components/ui/Skeleton';
 import logger from '../../utils/logger';
 
 
@@ -507,7 +508,7 @@ export default function CommunicationSettings() {
               </TableHeader>
               <TableBody
                 isLoading={loadingTemplates}
-                loadingContent={<Spinner size="sm" color="primary" />}
+                loadingContent={<SkeletonTable columns={4} rows={5} />}
                 emptyContent={
                   <div className="text-center py-12">
                     <p className="text-fg-faint text-sm">{t('pages.noTemplatesFoundMatchingYourSearch')}</p>
