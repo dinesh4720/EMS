@@ -109,6 +109,18 @@ export const feesApi = {
   // Student Summary
   getStudentSummary: (studentId, academicYear) => request(`/students/${studentId}/fee-summary${academicYear ? `?academicYear=${academicYear}` : ''}`),
 
+  // Fees-page KPI summary (PAG-01) — collected today / outstanding total /
+  // students owing, computed server-side over the FULL dataset rather than
+  // from the first page of payment rows. `date` is the client's local
+  // calendar day so "collected today" matches the cashier's timezone.
+  getPaymentsSummary: (filters = {}) => {
+    const params = new URLSearchParams();
+    if (filters.academicYear) params.set('academicYear', filters.academicYear);
+    if (filters.date) params.set('date', filters.date);
+    const qs = params.toString();
+    return request(`/fees/payments/summary${qs ? `?${qs}` : ''}`);
+  },
+
   // Refunds
   getRefunds: (filters) => {
     const params = new URLSearchParams(filters).toString();
