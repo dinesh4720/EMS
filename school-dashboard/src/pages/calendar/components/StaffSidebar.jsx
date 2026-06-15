@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from 'react-i18next';
 import { formatDateTime } from "../../../utils/dateFormatter";
 import EmptyState from "../../../components/ui/EmptyState";
+import { Bone } from "../../../components/ui/Skeleton";
 
 // Mobile breakpoint — below this the right pane collapses
 // Reads from design-system token --breakpoint-two-pane (DESIGN_SYSTEM.md § Responsive)
@@ -137,8 +138,8 @@ export default function StaffSidebar({
                     <BookOpen size={12} /> {t('calendar.sidebar.todaysClasses', "Today's Classes")}
                   </h4>
                   {loadingTimetable ? (
-                    <div className="space-y-1.5">
-                      {[...Array(3)].map((_, i) => <div key={`classes-skeleton-${i}`} className="h-10 animate-shimmer rounded-lg" />)}
+                    <div className="space-y-1.5" role="status" aria-busy="true" aria-label="Loading timetable">
+                      {[...Array(3)].map((_, i) => <Bone key={`classes-skeleton-${i}`} className="h-10 rounded-lg" />)}
                     </div>
                   ) : timetableError ? (
                     <ErrorState
@@ -207,8 +208,8 @@ export default function StaffSidebar({
                     <Users size={12} /> {t('calendar.sidebar.upcomingAppointments', 'Upcoming Appointments')}
                   </h4>
                   {loadingAppointments ? (
-                    <div className="space-y-1.5">
-                      {[...Array(2)].map((_, i) => <div key={`appt-skeleton-${i}`} className="h-10 animate-shimmer rounded-lg" />)}
+                    <div className="space-y-1.5" role="status" aria-busy="true" aria-label="Loading appointments">
+                      {[...Array(2)].map((_, i) => <Bone key={`appt-skeleton-${i}`} className="h-10 rounded-lg" />)}
                     </div>
                   ) : appointmentsError ? (
                     <ErrorState

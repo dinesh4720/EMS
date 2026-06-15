@@ -10,6 +10,7 @@ import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import EmptyState from '../../components/ui/EmptyState';
+import Skeleton from '../../components/ui/Skeleton';
 
 export default function StudentAssignModal({
   isOpen, onClose, route, onSaved }) {
@@ -123,9 +124,9 @@ export default function StudentAssignModal({
         </ModalHeader>
         <ModalBody className="space-y-4">
           {loading ? (
-            <div className="space-y-3 animate-pulse">
+            <div className="space-y-3" role="status" aria-busy="true" aria-live="polite" aria-label="Loading assignments">
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={`assign-skel-${i}`} className="h-12 bg-surface-2 rounded-lg" />
+                <Skeleton key={`assign-skel-${i}`} className="h-12 rounded-lg" />
               ))}
             </div>
           ) : (

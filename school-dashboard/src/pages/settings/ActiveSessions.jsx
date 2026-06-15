@@ -11,6 +11,7 @@ import { request } from "../../services/api";
 import { getDateLocale } from "../../i18n";
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
+import { SkeletonList } from '../../components/ui/Skeleton';
 
 function getDeviceIcon(device) {
   if (device === "Mobile") return Smartphone;
@@ -93,21 +94,7 @@ export default function ActiveSessions() {
             Manage active login sessions
           </p>
         </div>
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <Card key={`session-skel-${i}`} className="border border-border-token">
-              <CardBody className="p-4">
-                <div className="animate-pulse flex items-center gap-4">
-                  <div className="w-10 h-10 bg-surface-2 rounded-lg" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-surface-2 rounded w-1/3" />
-                    <div className="h-3 bg-surface-2 rounded w-1/2" />
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-          ))}
-        </div>
+        <SkeletonList items={3} avatar={true} title={true} subtitle={true} className="space-y-3" />
       </div>
     );
   }
