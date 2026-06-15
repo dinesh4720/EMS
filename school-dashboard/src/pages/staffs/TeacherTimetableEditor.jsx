@@ -134,6 +134,8 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
 
   useEffect(() => {
     if (isSlotOpen && slotForm.subject) updateAvailableClasses(slotForm.subject);
+    // `updateAvailableClasses` is recreated each render; trigger on subject.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slotForm.subject, isSlotOpen]);
 
   const updateAvailableClasses = (subject) => {
@@ -451,7 +453,7 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
                 gap: 10, padding: 12, borderBottom: "1px solid var(--divider)",
               }}
             >
-              {Array.from({ length: 6 }).map((_, col) => (
+              {Array.from({ length: 6 }).map((__unused, col) => (
                 <div
                   key={col}
                   style={{ flex: 1, height: 40, background: "var(--surface-2)", borderRadius: 6 }}

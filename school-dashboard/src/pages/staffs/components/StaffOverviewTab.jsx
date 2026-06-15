@@ -2,7 +2,7 @@
  * StaffOverviewTab - Minimal gray styling matching StudentDashboard
  * Card-based layout with clean design
  */
-import { Activity, CheckCircle, Clock, BookOpen, Users, AlertTriangle, TrendingUp, FileText, Calendar, Award, ChevronRight, XCircle, BarChart3 } from "lucide-react";
+import { Activity, CheckCircle, BookOpen, TrendingUp, FileText, Calendar, BarChart3 } from "lucide-react";
 import {
   LineChart as RechartsLineChart,
   Line,
@@ -21,7 +21,6 @@ import { useTranslation } from 'react-i18next';
 
 // Custom Tooltip
 const CustomTooltip = ({ active, payload, label }) => {
-  const { t } = useTranslation();
   if (active && payload && payload.length) {
     return (
       <div className="bg-surface p-3 rounded-lg border border-border-token shadow-sm">
@@ -42,6 +41,8 @@ const CustomTooltip = ({ active, payload, label }) => {
 export default function StaffOverviewTab({
   staff,
   monthlyStats,
+  // attendanceRate is part of the public component contract; intentionally unused here
+  // eslint-disable-next-line no-unused-vars
   attendanceRate,
   attendance,
   classTeacherAssignments,
@@ -55,11 +56,14 @@ export default function StaffOverviewTab({
 
   const todayAttendance = attendance?.[todayStr];
   const safeMonthlyStats = monthlyStats || { present: 0, absent: 0, leave: 0, halfday: 0, total: 0 };
+  // eslint-disable-next-line no-unused-vars
   const isPresentToday = todayAttendance?.status === 'present' || safeMonthlyStats.present > 0;
 
   const safeClassTeacherAssignments = classTeacherAssignments || [];
+  // eslint-disable-next-line no-unused-vars
   const totalStudents = safeClassTeacherAssignments.reduce((sum, cls) => sum + (cls.studentCount || cls.strength || 0), 0);
 
+  // eslint-disable-next-line no-unused-vars
   const avgClassAttendance = safeClassTeacherAssignments.length > 0
     ? Math.round(safeClassTeacherAssignments.reduce((sum, cls) => sum + (cls.averageAttendance || cls.attendance || 0), 0) / safeClassTeacherAssignments.length)
     : 0;

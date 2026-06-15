@@ -129,7 +129,7 @@ export default function AnnouncementForm({
       const response = await uploadApi.uploadFile(file);
       for (let i = 0; i <= 100; i += 25) {
         // light progress animation for UX
-        // eslint-disable-next-line no-await-in-loop
+         
         await new Promise((resolve) => setTimeout(resolve, 40));
         setUploadProgress(i);
       }

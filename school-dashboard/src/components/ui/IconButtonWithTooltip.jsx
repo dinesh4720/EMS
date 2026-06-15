@@ -29,7 +29,7 @@ const IconButtonWithTooltip = memo(function IconButtonWithTooltip({
       !ariaLabel &&
       !ariaLabelledBy
     ) {
-      // eslint-disable-next-line no-console
+       
       console.error(
         "[IconButtonWithTooltip] Icon-only buttons must have an accessible name via a string tooltip, aria-label, or aria-labelledby."
       );

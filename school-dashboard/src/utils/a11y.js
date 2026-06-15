@@ -18,7 +18,7 @@ export function useIconButtonA11yWarning(componentName, { isIconOnly, ariaLabel,
       !ariaLabel &&
       !ariaLabelledBy
     ) {
-      // eslint-disable-next-line no-console
+       
       console.error(
         `[${componentName}] Icon-only buttons must have an accessible name via aria-label or aria-labelledby.`
       );

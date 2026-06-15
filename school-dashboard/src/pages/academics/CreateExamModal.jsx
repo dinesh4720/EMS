@@ -64,6 +64,8 @@ const CreateExamModal = ({ onClose, onSuccess }) => {
 
   useEffect(() => {
     fetchInitialData();
+    // Mount-only; `fetchInitialData` is recreated each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchInitialData = async () => {

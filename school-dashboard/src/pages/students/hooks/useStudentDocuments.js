@@ -177,7 +177,7 @@ export function useStudentDocuments(studentId) {
       toast.error(error.message || "Failed to fix documents", { id: loadingToast });
       return false;
     }
-  }, [studentId]);
+  }, [studentId, t]);
 
   const clearUploads = useCallback(() => {
     setActiveUploads([]);

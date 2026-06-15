@@ -147,8 +147,8 @@ export default function UserManagement() {
 
     const confirmResetPassword = async () => {
         if (!selectedUser) return;
-        const newPassword = generateSecurePassword(12);
-        setGeneratedPassword(newPassword);
+        const generatedPwd = generateSecurePassword(12);
+        setGeneratedPassword(generatedPwd);
 
         try {
             setResetting(true);

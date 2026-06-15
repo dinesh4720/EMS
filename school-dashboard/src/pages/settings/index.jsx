@@ -173,7 +173,7 @@ export default function SettingsPage() {
         { key: "onboarding", label: "Setup Wizard", icon: Zap, isAction: true, onClick: () => setShowOnboarding(true) },
       ]
     }
-  ], [t, setShowOnboarding]);
+  ], [t]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isActive = (path) => {
     if (path === "/settings") return location.pathname === "/settings";

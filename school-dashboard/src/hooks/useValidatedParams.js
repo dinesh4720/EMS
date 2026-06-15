@@ -34,7 +34,7 @@ export function useValidatedParams(rules = {}, options = {}) {
       }
     }
     return true;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [params, rulesKey]);
 
   useEffect(() => {

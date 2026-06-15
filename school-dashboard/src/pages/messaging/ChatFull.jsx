@@ -242,6 +242,9 @@ export default function ChatFull() {
     if (selectedConversation && messages.length > 0) {
       loadPinnedMessages(messages);
     }
+    // `loadPinnedMessages` is recreated each render; triggering on
+    // `selectedConversation`/`messages` is the intended signal.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedConversation, messages]);
 
   // ── Auto-select conversation navigated from notification ───────────────────
@@ -253,6 +256,9 @@ export default function ChatFull() {
       autoSelectDoneRef.current = true;
       handleSelectConversation(match);
     }
+    // `handleSelectConversation` is recreated each render; triggering on
+    // `conversations` and the location state id is the intended signal.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversations, location.state?.conversationId]);
 
   // ── Initialization + cleanup ───────────────────────────────────────────────
@@ -279,6 +285,9 @@ export default function ChatFull() {
         videoCallService.peer = null;
       }
     };
+    // `initializeChat` is recreated each render; triggering on
+    // `user?.id`/`staff`/`students` is the intended signal.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, staff, students]);
 
   const initializeChat = async () => {

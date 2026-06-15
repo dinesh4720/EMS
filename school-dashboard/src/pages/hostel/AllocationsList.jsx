@@ -55,8 +55,8 @@ export default function AllocationsList() {
   const { hostels, rooms, students, studentsLoading } = useHostelLookups(formData.hostelId, studentSearch);
 
   useEffect(() => {
-    const t = setTimeout(() => { setSearch(searchInput); setPage(1); }, 300);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => { setSearch(searchInput); setPage(1); }, 300);
+    return () => clearTimeout(timer);
   }, [searchInput]);
 
   const fetchAllocations = useCallback(async () => {

@@ -1,9 +1,8 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  Button, Input, Select, SelectItem, Chip, Card, CardBody,
-  Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
-  Checkbox, Progress, Badge, Divider, Tooltip
+  Button, Select, SelectItem, Chip, Card, CardBody,
+  Checkbox, Badge, Divider, Tooltip
 } from "@heroui/react";
 import {
   ChevronRight, ChevronLeft, Wand2, BookOpen, Users, Settings,
@@ -109,6 +108,8 @@ export default function TimetableWizardModal({
         // Don't call loadClassData here — the selectedClassId effect below handles it
       }
     }
+    // `refetch` is a stable refetch function from useQuery; safe to omit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, initialClassId]);
 
   // Load class data when class is selected
@@ -116,6 +117,8 @@ export default function TimetableWizardModal({
     if (selectedClassId && isOpen) {
       loadClassData(selectedClassId);
     }
+    // `loadClassData` and `isOpen` are intentionally captured at fire time.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedClassId]);
 
   // Load all timetables to build teacher busy slots map (excluding current class)
@@ -265,10 +268,10 @@ export default function TimetableWizardModal({
         a.subject === subject &&
         a.classes?.some(c => String(c._id || c) === String(selectedClassId))
       );
-    }).map(t => ({
-      id: String(t.id || t._id),
-      name: t.name,
-      department: t.department
+    }).map(tc => ({
+      id: String(tc.id || tc._id),
+      name: tc.name,
+      department: tc.department
     }));
   }, [teacherAssignments, staff, selectedClassId]);
 
@@ -352,7 +355,7 @@ export default function TimetableWizardModal({
       slots.forEach(s => {
         const key = `${s.day}-${s.periodIndex}`;
         if (slotMap[key]) {
-          const teacherName = staff.find(t => String(t.id || t._id) === String(teacherId))?.name || 'Unknown Teacher';
+          const teacherName = staff.find(st => String(st.id || st._id) === String(teacherId))?.name || 'Unknown Teacher';
           conflicts.push({
             teacherName,
             teacherId,
@@ -371,7 +374,7 @@ export default function TimetableWizardModal({
       slots.forEach(s => {
         const busyKey = `${teacherId}-${s.day}-${s.periodIndex}`;
         if (teacherBusySlots[busyKey]) {
-          const teacherName = staff.find(t => String(t.id || t._id) === String(teacherId))?.name || 'Unknown Teacher';
+          const teacherName = staff.find(st => String(st.id || st._id) === String(teacherId))?.name || 'Unknown Teacher';
           // Avoid duplicate conflict for same teacher+day+period
           const alreadyReported = conflicts.some(c =>
             c.teacherId === teacherId && c.day === s.day && c.periodIndex === s.periodIndex
@@ -509,8 +512,8 @@ export default function TimetableWizardModal({
             if (teachers.length > 0) {
               // Try to find a teacher not busy in another class at this day+period
               const startIdx = subjectUsage[selectedSubject].perWeek % teachers.length;
-              for (let t = 0; t < teachers.length; t++) {
-                const idx = (startIdx + t) % teachers.length;
+              for (let tIdx = 0; tIdx < teachers.length; tIdx++) {
+                const idx = (startIdx + tIdx) % teachers.length;
                 const candidate = teachers[idx].id;
                 const busyKey = `${candidate}-${day}-${periodIdx}`;
                 if (!teacherBusySlots[busyKey]) {
@@ -562,6 +565,8 @@ export default function TimetableWizardModal({
     } finally {
       setIsGenerating(false);
     }
+    // `t` is stable from useTranslation; omit to keep identity.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedClassId, classSubjects, periods, periodRules, getTeachersForSubject, selectedClass, detectTeacherConflicts, teacherBusySlots]);
 
   // Save timetable
@@ -921,8 +926,8 @@ export default function TimetableWizardModal({
                             {availableTeachersForSubject.map(teacher => (
                               <Chip
                                 key={teacher.id}
-                                variant={assignedTeachers.some(t => String(t.id) === String(teacher.id)) ? "solid" : "bordered"}
-                                color={assignedTeachers.some(t => String(t.id) === String(teacher.id)) ? "primary" : "default"}
+                                variant={assignedTeachers.some(at => String(at.id) === String(teacher.id)) ? "solid" : "bordered"}
+                                color={assignedTeachers.some(at => String(at.id) === String(teacher.id)) ? "primary" : "default"}
                                 className="cursor-pointer"
                                 onClick={() => handleAssignTeacher(subject, teacher.id)}
                               >
@@ -1177,7 +1182,7 @@ export default function TimetableWizardModal({
                   <div className="bg-surface rounded-lg border border-border-token overflow-hidden">
                     {Array.from({ length: 6 }).map((_, row) => (
                       <div key={`gen-row-${row}`} className="flex gap-px bg-surface-2">
-                        {Array.from({ length: 7 }).map((_, col) => (
+                        {Array.from({ length: 7 }).map((_colUnused, col) => (
                           <div key={`gen-cell-${row}-${col}`} className="flex-1 bg-surface p-2">
                             <div className="h-8 animate-shimmer rounded" />
                           </div>

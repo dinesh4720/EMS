@@ -40,6 +40,32 @@ export function StudentsTableProvider({ actions, children }) {
         // misc
         actions.closeAllDropdowns,
         actions.onClearFilters,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const value = useMemo(() => actions, [
+        // selection
+        actions.setSelectedKeys,
+        // sort
+        actions.setSortDescriptor,
+        // phone editing
+        actions.setEditingPhoneId,
+        actions.setPhoneInput,
+        actions.handleSavePhone,
+        // row actions
+        actions.handlePinStudent,
+        actions.handleUnpinStudent,
+        actions.setSelectedStudent,
+        actions.setIsEditDrawerOpen,
+        actions.setStudentToDelete,
+        actions.onDeleteOpen,
+        actions.setStatusChangeData,
+        actions.onStatusChangeOpen,
+        actions.setTcStudents,
+        actions.onTcModalOpen,
+        actions.handleBulkAction,
+        actions.onPromoteOpen,
+        // misc
+        actions.closeAllDropdowns,
+        actions.onClearFilters,
     ]);
 
     return (

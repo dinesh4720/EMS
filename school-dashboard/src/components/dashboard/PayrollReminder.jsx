@@ -60,7 +60,7 @@ export default function PayrollReminder() {
     const interval = setInterval(checkReminder, 60 * 60 * 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [t]);
 
   // Don't render anything if there's no reminder or if it's dismissed
   if (loading || !reminder || dismissed) {

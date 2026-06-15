@@ -28,6 +28,8 @@ export default function EnrollmentFunnel() {
 
   useEffect(() => {
     fetchFunnelData();
+    // Mount-only; `fetchFunnelData` is recreated each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchFunnelData = async () => {

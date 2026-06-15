@@ -2,11 +2,11 @@ import React from 'react';
 import { getDateLocale } from '../i18n/index';
 
 import {
-  Card, CardBody, Divider, Chip, Progress
+  Card, CardBody, Divider
 } from '@heroui/react';
 import { useTranslation } from 'react-i18next';
 import {
-  Award, User, Calendar, BookOpen, TrendingUp, FileText
+  BookOpen, TrendingUp, FileText
 } from 'lucide-react';
 
 /**

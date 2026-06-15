@@ -64,6 +64,10 @@ export default function ClassSettingsPanel({
     if (classId) {
       loadClassSettings();
     }
+    // `loadClassSettings` is recreated each render; adding it to deps would
+    // re-fire the effect on every render. Triggering on `classId` is the
+    // intentional mount/change signal.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [classId]);
 
   const loadClassSettings = async () => {

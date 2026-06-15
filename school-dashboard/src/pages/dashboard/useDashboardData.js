@@ -243,6 +243,9 @@ export default function useDashboardData({
 
   const todayKey = useMemo(
     () => new Date().toISOString().split("T")[0],
+    // `staffAttendance` is intentionally captured to invalidate the memo when
+    // attendance data changes; the `useMemo` body doesn't read it directly.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [staffAttendance]
   );
 

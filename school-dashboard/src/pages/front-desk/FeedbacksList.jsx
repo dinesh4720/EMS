@@ -76,7 +76,7 @@ const FeedbacksList = forwardRef(({ onSave, ...props }, ref) => {
   useEffect(() => {
     loadFeedbacks();
     loadStaff();
-  }, []);
+  }, [loadFeedbacks]);
 
   // Expose the openModal function to parent
   useImperativeHandle(ref, () => ({
@@ -107,8 +107,8 @@ const FeedbacksList = forwardRef(({ onSave, ...props }, ref) => {
       const response = await staffApi.getAll();
       const data = Array.isArray(response) ? response : (response?.data || []);
       setStaff(data);
-    } catch (error) {
-      logger.error('Failed to load staff:', error);
+    } catch (err) {
+      logger.error('Failed to load staff:', err);
     }
   };
 
@@ -207,7 +207,7 @@ const FeedbacksList = forwardRef(({ onSave, ...props }, ref) => {
       resetForm();
       loadFeedbacks();
       onSave?.();
-    } catch (error) {
+    } catch (err) {
       toast.error(t('toast.error.failedToSaveFeedback'));
     } finally {
       setIsSubmitting(false);
@@ -257,7 +257,7 @@ const FeedbacksList = forwardRef(({ onSave, ...props }, ref) => {
           toast.success(t('toast.success.feedbackDeleted'));
           loadFeedbacks();
           onSave?.();
-        } catch (error) {
+        } catch (err) {
           toast.error(t('toast.error.failedToDeleteFeedback'));
         }
       },
@@ -384,7 +384,7 @@ const FeedbacksList = forwardRef(({ onSave, ...props }, ref) => {
         </Chip>
       ),
     },
-  ], [t]);
+  ], [t]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const rowActions = (row) => (
     <div className="flex items-center justify-end gap-1">

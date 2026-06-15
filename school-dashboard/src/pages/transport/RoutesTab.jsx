@@ -73,7 +73,7 @@ export default function RoutesTab() {
     }
   };
 
-  useEffect(() => { fetchData(); }, [academicYear]);
+  useEffect(() => { fetchData(); /* eslint-disable-line react-hooks/exhaustive-deps */ }, [academicYear]);
 
   const filtered = useMemo(() => {
     let list = routes;

@@ -328,7 +328,7 @@ function HealthSection({ formData, updateField, updateHealthInfoItem, addHealthI
                 placeholder="Select type"
                 value={allergy.type || ""}
                 onChange={(e) => { const v = e.target.value; updateHealthInfoItem("allergies", idx, "type", v); }}
-                options={["food", "medication", "environmental", "insect", "latex", "other"].map((t) => ({ value: t, label: t.charAt(0).toUpperCase() + t.slice(1) }))}
+                options={["food", "medication", "environmental", "insect", "latex", "other"].map((allergyType) => ({ value: allergyType, label: allergyType.charAt(0).toUpperCase() + allergyType.slice(1) }))}
               />
               <Select
                 label="Severity"

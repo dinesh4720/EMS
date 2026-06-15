@@ -80,7 +80,7 @@ export default function AnnouncementsList({ onView, onEdit, onRefresh }) {
     mountedRef.current = true;
     loadAnnouncements();
     return () => { mountedRef.current = false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   useEffect(() => {

@@ -73,7 +73,7 @@ export default function ChangelogPanel() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); /* eslint-disable-line react-hooks/exhaustive-deps */ }, []);
 
   useEffect(() => {
     if (showForm && titleInputRef.current) {

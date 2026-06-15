@@ -83,6 +83,9 @@ export default function ReminderTemplates({
     if (isOpen && type) {
       loadTemplates();
     }
+    // `loadTemplates` is recreated each render; triggering on `isOpen`/`type`
+    // is the intended signal.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, type]);
 
   const loadTemplates = () => {
@@ -97,9 +100,9 @@ export default function ReminderTemplates({
   };
 
   const handleSetDefault = (templateId) => {
-    setTemplates(prev => prev.map(t => ({
-      ...t,
-      isDefault: t.id === templateId
+    setTemplates(prev => prev.map(tmpl => ({
+      ...tmpl,
+      isDefault: tmpl.id === templateId
     })));
     toast.success(t('toast.success.defaultTemplateUpdated'));
   };
@@ -111,7 +114,7 @@ export default function ReminderTemplates({
       variant: 'danger',
       confirmText: 'Delete',
       onConfirm: async () => {
-        setTemplates(prev => prev.filter(t => t.id !== templateId));
+        setTemplates(prev => prev.filter(tmpl => tmpl.id !== templateId));
         toast.success(t('toast.success.templateDeleted'));
       },
     });

@@ -28,8 +28,11 @@ function CustomCalendar({ selectedDate, onSelect }) {
   const allDays = eachDayOfInterval({ start: startOfWeekDay, end: endOfWeekDay });
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const today = new Date();
-  today.setHours(0, 0, 0, 0); // Reset time for accurate comparison
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
 
   // Generate year options from 1900 to current year - 1
   const currentYear = new Date().getFullYear();

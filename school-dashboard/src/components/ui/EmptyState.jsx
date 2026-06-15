@@ -60,7 +60,7 @@ const EmptyState = memo(function EmptyState({
 
   useEffect(() => {
     if (import.meta.env?.DEV && action && !actionLabel) {
-      // eslint-disable-next-line no-console
+       
       console.warn(
         "[EmptyState] The `action` prop is provided without `actionLabel`. Prefer `actionLabel` + `onAction` for accessible action buttons."
       );

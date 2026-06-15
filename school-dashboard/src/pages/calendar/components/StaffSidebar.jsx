@@ -99,7 +99,7 @@ export default function StaffSidebar({
                 value={selectedStaff ? String(selectedStaff.id) : ""}
                 onChange={(e) => {
                   const staffId = e.target.value;
-                  const member = teachers.find(t => String(t.id) === staffId);
+                  const member = teachers.find(tch => String(tch.id) === staffId);
                   onStaffChange(member || null);
                 }}
                 options={teachers.map((teacher) => ({

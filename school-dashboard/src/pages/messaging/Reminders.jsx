@@ -38,12 +38,9 @@ export default function Reminders() {
     try {
       const response = await remindersApi.getAll();
       setReminders(response.reminders || response || []);
-    } catch (error) {
-      logger.error('Error loading reminders:', error);
-      setError(error.message || 'Unknown error');
-      toast.error(`Failed to load reminders`);
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      logger.error('Error loading reminders:', err);
+      setError(err.message || 'Unknown error');
     }
   };
 
@@ -59,7 +56,7 @@ export default function Reminders() {
       setRefreshKey(prev => prev + 1);
       setShowCreateModal(false);
       setEditReminder(null);
-    } catch (error) {
+    } catch (err) {
       toast.error(t('toast.error.failedToSaveReminder'));
     }
   };

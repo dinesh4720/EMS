@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
-import { UserCheck, Calendar, Clock, Plus, Search, Filter, X, UserPlus, RefreshCw, UserMinus } from 'lucide-react';
+import { Calendar, Clock, Plus, Search, X, RefreshCw, UserMinus } from 'lucide-react';
 import { request } from '../../services/api';
 import toast from 'react-hot-toast';
 import { useApp } from '../../context/AppContext';
@@ -71,6 +71,9 @@ export default function Substitution() {
 
   useEffect(() => {
     loadSubstitutions();
+    // `loadSubstitutions` is recreated each render; triggering on
+    // `selectedDate` is the intended signal.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate]);
 
   const loadSubstitutions = async () => {
@@ -78,7 +81,7 @@ export default function Substitution() {
       setLoading(true);
       const data = await request(`/substitutions?date=${selectedDate}`);
       setSubstitutions(Array.isArray(data) ? data : []);
-    } catch (error) {
+    } catch {
       logger.error('Error loading substitutions:', error);
       setSubstitutions([]);
     } finally {
@@ -108,6 +111,9 @@ export default function Substitution() {
 
       return matchesSearch && matchesStatus;
     });
+    // `getClassName`/`getTeacherName` close over component-scope data; reading
+    // them indirectly via the filtered output is intentional.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [substitutions, searchQuery, statusFilter]);
 
   const handleSubmit = async (e) => {
@@ -131,7 +137,7 @@ export default function Substitution() {
       setIsCreateOpen(false);
       resetForm();
       loadSubstitutions();
-    } catch (error) {
+    } catch {
       toast.error(error.message || t('toast.error.failedToAssignSubstitution', 'Failed to assign substitution'));
     } finally {
       setIsSubmitting(false);
@@ -143,7 +149,7 @@ export default function Substitution() {
       await request(`/substitutions/${id}`, { method: 'DELETE' });
       toast.success(t('toast.success.substitutionRemoved'));
       loadSubstitutions();
-    } catch (error) {
+    } catch {
       toast.error(t('toast.error.failedToRemoveSubstitution'));
     } finally {
       setDeleteConfirmId(null);
@@ -164,7 +170,7 @@ export default function Substitution() {
       setSelectedSubstitution(null);
       setSelectedTeacher("");
       loadSubstitutions();
-    } catch (error) {
+    } catch {
       toast.error(t('toast.error.failedToAssignTeacher'));
     } finally {
       setIsSubmitting(false);
@@ -185,7 +191,7 @@ export default function Substitution() {
       setSelectedSubstitution(null);
       setSelectedTeacher("");
       loadSubstitutions();
-    } catch (error) {
+    } catch {
       toast.error(t('toast.error.failedToChangeTeacher'));
     } finally {
       setIsSubmitting(false);
@@ -236,13 +242,13 @@ export default function Substitution() {
   };
 
   const getAvailableTeachers = (absentTeacherId) => {
-    return teachers.filter(t => {
-      const roles = Array.isArray(t.role) ? t.role : (t.role ? [t.role] : []);
-      const staffTypes = Array.isArray(t.staffType) ? t.staffType : (t.staffType ? [t.staffType] : []);
-      return t.status === 'active' &&
-        t._id !== absentTeacherId &&
-        t.id !== absentTeacherId &&
-        (roles.includes('Teacher') || staffTypes.includes('Teacher') || t.isClassTeacher);
+    return teachers.filter(tch => {
+      const roles = Array.isArray(tch.role) ? tch.role : (tch.role ? [tch.role] : []);
+      const staffTypes = Array.isArray(tch.staffType) ? tch.staffType : (tch.staffType ? [tch.staffType] : []);
+      return tch.status === 'active' &&
+        tch._id !== absentTeacherId &&
+        tch.id !== absentTeacherId &&
+        (roles.includes('Teacher') || staffTypes.includes('Teacher') || tch.isClassTeacher);
     });
   };
 
@@ -531,12 +537,12 @@ export default function Substitution() {
             }}
           >
             <option value="">{t('pages.selectTeacher')}</option>
-            {teachers.filter(t => {
-              const roles = Array.isArray(t.role) ? t.role : (t.role ? [t.role] : []);
+            {teachers.filter(tch => {
+              const roles = Array.isArray(tch.role) ? tch.role : (tch.role ? [tch.role] : []);
               return roles.includes('Teacher');
-            }).map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name} ({t.department})
+            }).map((tch) => (
+              <option key={tch.id} value={tch.id}>
+                {tch.name} ({tch.department})
               </option>
             ))}
           </Select>
@@ -553,12 +559,12 @@ export default function Substitution() {
               error={formErrors.substituteTeacherId}
             >
               <option value="">{t('pages.selectSubstitute')}</option>
-              {teachers.filter(t => {
-                const roles = Array.isArray(t.role) ? t.role : (t.role ? [t.role] : []);
+              {teachers.filter(tch => {
+                const roles = Array.isArray(tch.role) ? tch.role : (tch.role ? [tch.role] : []);
                 return roles.includes('Teacher');
-              }).map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name} ({t.department})
+              }).map((tch) => (
+                <option key={tch.id} value={tch.id}>
+                  {tch.name} ({tch.department})
                 </option>
               ))}
             </Select>

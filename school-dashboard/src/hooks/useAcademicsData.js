@@ -87,7 +87,7 @@ export default function useAcademicsData({ status = "all", search = "" } = {}) {
     placeholderData: (prev) => prev,
   });
 
-  const exams = examsQuery.data || [];
+  const exams = useMemo(() => examsQuery.data || [], [examsQuery.data]);
   const kpis = useMemo(() => summarizeExamKpis(exams), [exams]);
   const filtered = useMemo(
     () => filterExams(exams, { status, search }),

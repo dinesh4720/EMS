@@ -42,6 +42,8 @@ export default function StudentFormSubmissions() {
 
   useEffect(() => {
     fetchSubmissions();
+    // `fetchSubmissions` is recreated each render; trigger on filter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterStatus]);
 
   const fetchSubmissions = async () => {

@@ -101,6 +101,8 @@ const CameraView = ({ onCapture, onClose }) => {
         URL.revokeObjectURL(capturedImage.url);
       }
     };
+    // Mount-only; `startCamera`/`stopCamera` are stable callbacks from `useCallback`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Reinitialize when facing mode changes
@@ -108,6 +110,8 @@ const CameraView = ({ onCapture, onClose }) => {
     if (capturedImage) return; // Don't restart if showing captured image
 
     startCamera();
+    // `startCamera` is a stable callback; `capturedImage` is checked at fire time.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [facingMode]);
 
   // Capture photo

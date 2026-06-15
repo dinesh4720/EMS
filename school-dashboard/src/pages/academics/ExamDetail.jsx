@@ -79,7 +79,7 @@ const ExamDetail = () => {
 
     fetchAll();
     return () => controller.abort();
-  }, [examId, refreshKey]);
+  }, [examId, refreshKey, t]);
 
   const handlePublish = async () => {
     setPublishing(true);

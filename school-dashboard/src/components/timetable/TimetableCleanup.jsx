@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import {
   Card, CardHeader, CardBody, Button, Checkbox, Modal, ModalContent,
-  ModalHeader, ModalBody, ModalFooter, Progress, Divider, Chip,
-  Accordion, AccordionItem, useDisclosure
+  ModalHeader, ModalBody, ModalFooter, Divider, Chip,
+  useDisclosure
 } from '@heroui/react';
 import {
   Trash2, AlertTriangle, CheckCircle, RefreshCw, Database,
-  Calendar, Users, BookOpen, UserCheck, AlertCircle, Loader2
+  Calendar, Users, BookOpen, UserCheck, Loader2
 } from 'lucide-react';
 import { request } from '../../services/api';
 import toast from 'react-hot-toast';
@@ -41,7 +41,6 @@ export default function TimetableCleanup() {
     substitutions: true
   });
 
-  const { isOpen, onOpen, onClose } = useDisclosure();
   const confirmModal = useDisclosure();
 
   // Fetch preview data

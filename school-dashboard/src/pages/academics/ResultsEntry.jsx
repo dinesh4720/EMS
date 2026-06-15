@@ -202,6 +202,9 @@ const ResultsEntry = ({ standalone = false }) => {
     } else if (examId) {
       fetchExamAndStudents(examId);
     }
+    // `fetchExamsList`/`fetchExamAndStudents` are recreated each render; trigger
+    // on the intended state signals.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [standalone, examId]);
 
   // Update when exam selection changes in standalone mode
@@ -210,6 +213,8 @@ const ResultsEntry = ({ standalone = false }) => {
       const id = Array.from(selectedExamId)[0];
       fetchExamAndStudents(id);
     }
+    // `fetchExamAndStudents` is recreated each render; trigger on selection.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedExamId, standalone]);
 
   const fetchExamsList = async () => {
@@ -485,9 +490,9 @@ const ResultsEntry = ({ standalone = false }) => {
               trigger: 'border-border-token hover:border-fg-faint'
             }}
           >
-            {exams.map((exam) => (
-              <SelectItem key={exam.id || exam._id} value={exam.id || exam._id}>
-                {exam.name} - {exam.className || exam.classId}
+            {exams.map((ex) => (
+              <SelectItem key={ex.id || ex._id} value={ex.id || ex._id}>
+                {ex.name} - {ex.className || ex.classId}
               </SelectItem>
             ))}
           </Select>

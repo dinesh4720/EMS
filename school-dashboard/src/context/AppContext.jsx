@@ -50,7 +50,7 @@ function AppContextCore({ children }) {
   const [error, setError] = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  const storedUser = useMemo(() => getStoredUser(), [sessionVersion]);
+  const storedUser = useMemo(() => getStoredUser(), [sessionVersion]); // eslint-disable-line react-hooks/exhaustive-deps
   const isSuperAdmin = isSuperAdminRole(storedUser?.role);
   const roleKey = useMemo(
     () => extractRoleNames(storedUser?.role).sort().join(","),
@@ -59,7 +59,6 @@ function AppContextCore({ children }) {
 
   // Pull minimal state from domain contexts needed for orchestration
   const {
-    students,
     studentsHydrated,
     setStudents,
     setStudentsHydrated,
@@ -245,7 +244,7 @@ function AppContextCore({ children }) {
       toast.error(t('toast.error.failedToLoadData', { message, defaultValue: `Failed to load data: ${message}` }));
       appErrorToastRef.current = message;
     }
-  }, [appDataQuery.error]);
+  }, [appDataQuery.error, t]);
 
   // Settings error handling
   useEffect(() => {
@@ -258,7 +257,7 @@ function AppContextCore({ children }) {
       toast.error(t('toast.error.failedToLoadSettings', 'Failed to load settings'));
       settingsErrorToastRef.current = message;
     }
-  }, [settingsDataQuery.error]);
+  }, [settingsDataQuery.error, t]);
 
   // Session sync (login / logout / cross-tab)
   useEffect(() => {

@@ -99,8 +99,8 @@ export default function Vendors() {
   };
 
   const categories = useMemo(() => {
-    const set = new Set(vendors.map((v) => v.category).filter(Boolean));
-    return [...set].sort();
+    const unique = new Set(vendors.map((v) => v.category).filter(Boolean));
+    return [...unique].sort();
   }, [vendors]);
 
   const filteredVendors = vendors.filter((v) => {

@@ -67,6 +67,8 @@ export default function FormAssignments() {
   useEffect(() => {
     fetchForms();
     fetchAssignments();
+    // `fetchForms`/`fetchAssignments` are recreated each render; trigger on filter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterStatus]);
 
   const fetchForms = async () => {

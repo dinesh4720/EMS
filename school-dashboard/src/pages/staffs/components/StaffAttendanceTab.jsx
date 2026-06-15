@@ -58,6 +58,9 @@ export default function StaffAttendanceTab({ staffId }) {
 
   const monthlyStats = useMemo(() => {
     return getMonthlyAttendance(staffId, currentDate.getFullYear(), currentDate.getMonth());
+    // `staffAttendance` is intentionally captured to invalidate the memo when
+    // attendance data changes; the `useMemo` body doesn't read it directly.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [staffId, currentDate, staffAttendance, getMonthlyAttendance]);
 
   // Handlers

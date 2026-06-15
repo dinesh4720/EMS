@@ -69,6 +69,9 @@ function useVisualVariant() {
     if (VISUAL_OPTIONS.some((o) => o.key === v) && v !== variant) {
       setVariant(v);
     }
+    // `variant` is the only output of this effect; reading the current value
+    // through the setter avoids an explicit dep.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
 
   const setVisual = useCallback((key) => {

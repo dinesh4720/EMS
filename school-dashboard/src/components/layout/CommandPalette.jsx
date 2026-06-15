@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Command } from "cmdk";
 import { useNavigate } from "react-router-dom";
@@ -82,6 +82,7 @@ const ACTIONS = [
 
 const RECENTS_KEY = "ems:cmdk:recents";
 const RECENTS_MAX = 5;
+const EMPTY_ARRAY = [];
 
 function readRecents() {
   try {
@@ -259,12 +260,14 @@ export default function CommandPalette({ isOpen, onClose }) {
   const inputRef = useRef(null);
 
   // Domain data — used to populate Students/Staff/Classes groups.
+  // Empty fallbacks are stable module-level references so the
+  // downstream useMemo dependency identities don't change every render.
   const studentsCtx = useStudents();
   const staffCtx = useStaff();
   const classesCtx = useClasses();
-  const allStudents = studentsCtx?.students || [];
-  const allStaff = staffCtx?.staff || [];
-  const allClasses = classesCtx?.classes || [];
+  const allStudents = studentsCtx?.students ?? EMPTY_ARRAY;
+  const allStaff = staffCtx?.staff ?? EMPTY_ARRAY;
+  const allClasses = classesCtx?.classes ?? EMPTY_ARRAY;
 
   const studentItems = useMemo(
     () =>

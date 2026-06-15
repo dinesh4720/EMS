@@ -29,8 +29,8 @@ const PhotoEditorModal = ({ isOpen, onClose, imageSrc, onSave }) => {
       }
     }, [isOpen, imageSrc]);
 
-    const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
-        setCroppedAreaPixels(croppedAreaPixels);
+    const onCropComplete = useCallback((croppedArea, croppedAreaPixelsValue) => {
+        setCroppedAreaPixels(croppedAreaPixelsValue);
     }, []);
 
     const handleSave = async () => {

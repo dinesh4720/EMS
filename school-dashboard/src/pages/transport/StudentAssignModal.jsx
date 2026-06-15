@@ -53,6 +53,10 @@ export default function StudentAssignModal({
     } else if (!isOpen) {
       setRouteDetail(null);
     }
+    // `fetchRouteDetail` and `route` are intentionally captured at the signal
+    // points (`isOpen` and `route?._id`); adding them to deps would re-fire on
+    // every render and cause an infinite loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, route?._id]);
 
   const assignedStudentIds = useMemo(

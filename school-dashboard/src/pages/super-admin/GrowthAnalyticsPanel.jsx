@@ -72,7 +72,7 @@ export default function GrowthAnalyticsPanel() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); /* eslint-disable-line react-hooks/exhaustive-deps */ }, []);
 
   const schools = report?.schools || [];
   const funnelSteps = funnel?.funnel || [];

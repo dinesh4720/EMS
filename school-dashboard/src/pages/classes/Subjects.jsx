@@ -78,6 +78,9 @@ export default function Subjects() {
     if (isValid && id) {
       loadSubjects();
     }
+    // `loadSubjects` is recreated each render; triggering on `id`/`isValid` is
+    // the intended mount-and-change signal.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, isValid]);
 
   // If no class selected, show class selector

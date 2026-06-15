@@ -18,11 +18,16 @@ export default function StaffIdSettings() {
   useEffect(() => {
     // Load current configuration
     loadConfig();
+    // Mount-only; `loadConfig` is recreated each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     // Update preview whenever config changes
     updatePreview();
+    // `updatePreview` is recreated each render; triggering on `config` is
+    // the intended signal.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config]);
 
   const DEFAULT_CONFIG = {

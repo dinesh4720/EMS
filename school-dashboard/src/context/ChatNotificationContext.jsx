@@ -5,7 +5,7 @@ import socketService from '../services/socketServiceEnhanced';
 import chatService from '../services/chatService';
 import toast from 'react-hot-toast';
 import { MessageCircle, X, Reply, Send } from 'lucide-react';
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Textarea } from '@heroui/react';
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Textarea } from '@heroui/react';
 import { useTranslation } from 'react-i18next';
 import logger from '../utils/logger';
 
@@ -143,7 +143,11 @@ export function ChatNotificationProvider({ children }) {
       // Socket teardown on logout is handled by AuthContext via socketService.destroyAll().
       setIsConnected(false);
     };
-  }, [isAuthenticated, user?.id]); // Removed location.pathname from dependencies
+    // `showNotification` and `playNotificationSound` are local handlers that
+    // close over state setters and refs; re-running the socket setup on every
+    // render would tear down and re-bind listeners on each parent render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, user?.id, t]); // Removed location.pathname from dependencies
 
   // Fetch actual unread count from conversations
   useEffect(() => {

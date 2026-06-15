@@ -346,7 +346,7 @@ export default function TrashSettings() {
     } finally {
       setActionInProgress(false);
     }
-  }, [pendingAction, selectedItems, loadTrashData, onClose, t]);
+  }, [pendingAction, selectedItems, loadTrashData, onClose]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const topTypeStats = useMemo(() => {
     return Object.entries(stats.byType)

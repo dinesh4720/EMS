@@ -87,6 +87,8 @@ export default function IntakeFormsSettings() {
   // Fetch forms on mount
   useEffect(() => {
     fetchForms();
+    // Mount-only; `fetchForms` is recreated each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Check for navigation state to open builder with pre-filled type
@@ -117,6 +119,8 @@ export default function IntakeFormsSettings() {
       // Clear the state to prevent re-opening on refresh
       window.history.replaceState({}, document.title);
     }
+    // `onBuilderOpen` is a stable prop callback provided by the parent.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state]);
 
   const fetchForms = async () => {

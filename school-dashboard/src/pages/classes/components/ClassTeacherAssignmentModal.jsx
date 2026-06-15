@@ -105,6 +105,9 @@ export default function ClassTeacherAssignmentModal({
         variant: "info"
       });
     }
+    // `t` and `performAssignment` are stable for the lifetime of this modal;
+    // omitting them keeps the callback identity stable across renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentTeacherId, className, section, classesWithTeachers]);
 
   // Perform the actual assignment
@@ -287,7 +290,7 @@ export default function ClassTeacherAssignmentModal({
                   {t('classes.showingTeachers', 'Showing {{count}} teacher(s)', { count: filteredTeachers.length })}
                 </span>
                 <span>
-                  {filteredTeachers.filter(t => t.classTeacherOf).length} {t('classes.assignedToClasses', 'assigned to classes')}
+                  {filteredTeachers.filter(tch => tch.classTeacherOf).length} {t('classes.assignedToClasses', 'assigned to classes')}
                 </span>
               </div>
             )}

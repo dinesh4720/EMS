@@ -60,7 +60,7 @@ export function useStudentAttendance(studentId, options = {}) {
     queryFn: () => attendanceApi.getStudentAttendance(studentId, startDate, endDate),
   });
 
-  const attendanceData = attendanceQuery.data || [];
+  const attendanceData = useMemo(() => attendanceQuery.data || [], [attendanceQuery.data]);
   const attendanceStats = useMemo(() => calculateAttendanceStats(attendanceData), [attendanceData]);
 
   return {

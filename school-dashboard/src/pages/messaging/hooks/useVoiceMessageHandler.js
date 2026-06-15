@@ -342,7 +342,7 @@ export function useVoiceMessageHandler({
       setUploadProgress(0);
       setSending(false);
     }
-  }, [voicePreview, selectedConversation, user, chatService, socketService, setMessages, setSending, setUploadingFile, setUploadProgress, setVoicePreview, setRecordingDuration, setLiveWaveform, scrollToBottom, loadConversations, t]);
+  }, [voicePreview, selectedConversation, user, chatService, socketService, setMessages, setSending, setUploadingFile, setUploadProgress, setVoicePreview, setRecordingDuration, setLiveWaveform, scrollToBottom, loadConversations, t]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
     handleStartRecording,

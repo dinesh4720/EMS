@@ -83,7 +83,7 @@ export default function AssignClassToStaffModal({
         variant: "default"
       });
     }
-  }, [staffName, staffId]);
+  }, [staffName, staffId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Perform the actual assignment
   const performAssignment = async (cls, options = {}) => {

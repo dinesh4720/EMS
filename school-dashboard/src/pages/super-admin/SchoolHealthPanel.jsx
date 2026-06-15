@@ -64,7 +64,7 @@ export default function SchoolHealthPanel() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); /* eslint-disable-line react-hooks/exhaustive-deps */ }, []);
 
   return (
     <Card padding="md" radius="lg">

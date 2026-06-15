@@ -65,7 +65,7 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
 
   useEffect(() => {
     loadCallLogs();
-  }, []);
+  }, [loadCallLogs]);
 
   // Expose the openModal function to parent
   useImperativeHandle(ref, () => ({
@@ -142,7 +142,7 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
       resetForm();
       loadCallLogs();
       onSave?.();
-    } catch (error) {
+    } catch (err) {
       toast.error(t('toast.error.failedToSaveCallLog'));
     } finally {
       setIsSubmitting(false);
@@ -185,7 +185,7 @@ const CallLogsList = forwardRef(({ onSave, ...props }, ref) => {
           toast.success(t('toast.success.callLogDeleted'));
           loadCallLogs();
           onSave?.();
-        } catch (error) {
+        } catch (err) {
           toast.error(t('toast.error.failedToDeleteCallLog'));
         }
       },

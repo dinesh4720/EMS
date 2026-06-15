@@ -41,22 +41,26 @@ export function useNavHover() {
 
   useEffect(() => { openIdRef.current = openId; }, [openId]);
 
-  const clearOpen = () => clearTimeout(openT.current);
-  const clearClose = () => clearTimeout(closeT.current);
-  const clearAim = () => clearTimeout(aimT.current);
-  const clearAll = () => { clearOpen(); clearClose(); clearAim(); };
+  const clearOpen = useCallback(() => clearTimeout(openT.current), []);
+  const clearClose = useCallback(() => clearTimeout(closeT.current), []);
+  const clearAim = useCallback(() => clearTimeout(aimT.current), []);
+  const clearAll = useCallback(() => {
+    clearOpen();
+    clearClose();
+    clearAim();
+  }, [clearOpen, clearClose, clearAim]);
 
   const doOpen = useCallback((id, el) => {
     clearAll();
     setAnchorRect(el.getBoundingClientRect());
     setOpenId(id);
-  }, []);
+  }, [clearAll]);
 
   const close = useCallback(() => {
     clearAll();
     setOpenId(null);
     setAnchorRect(null);
-  }, []);
+  }, [clearAll]);
 
   // Track the pointer only while a panel is open (the only time aim matters).
   useEffect(() => {
@@ -101,7 +105,7 @@ export function useNavHover() {
     } else {
       doOpen(id, el);
     }
-  }, [aimingAtPanel, doOpen]);
+  }, [aimingAtPanel, doOpen, clearAim]);
 
   // Hovering a no-panel item should dismiss the panel — unless still aiming at it.
   const possiblyClose = useCallback((id) => {
@@ -114,7 +118,7 @@ export function useNavHover() {
       clearClose();
       closeT.current = setTimeout(close, CLOSE_DELAY);
     }
-  }, [aimingAtPanel, close]);
+  }, [aimingAtPanel, close, clearAim, clearClose]);
 
   const onItemEnter = useCallback((section, el) => {
     clearClose();
@@ -133,7 +137,7 @@ export function useNavHover() {
     } else {
       possiblyActivate(section.id, el);
     }
-  }, [doOpen, possiblyActivate, possiblyClose]);
+  }, [doOpen, possiblyActivate, possiblyClose, clearClose, clearOpen]);
 
   const onItemLeave = useCallback((section) => {
     clearOpen();
@@ -143,13 +147,13 @@ export function useNavHover() {
       clearClose();
       closeT.current = setTimeout(close, CLOSE_DELAY);
     }
-  }, [close]);
+  }, [close, clearOpen, clearClose]);
 
-  const onPanelEnter = useCallback(() => { clearAll(); }, []);
+  const onPanelEnter = useCallback(() => { clearAll(); }, [clearAll]);
   const onPanelLeave = useCallback(() => {
     clearClose();
     closeT.current = setTimeout(close, CLOSE_DELAY);
-  }, [close]);
+  }, [close, clearClose]);
 
   // Click = explicit toggle (touch + keyboard Enter/Space + mouse fallback).
   const onItemClick = useCallback((section, el) => {

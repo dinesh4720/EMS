@@ -21,19 +21,19 @@ export default function ChatSearch({ messages = [], onResultClick }) {
     const searchLower = searchQuery.toLowerCase();
 
     // Fuzzy search - match characters in sequence
-    const fuzzyMatch = (text, query) => {
+    const fuzzyMatch = (text, needle) => {
       const textLower = text.toLowerCase();
       let queryIndex = 0;
       let textIndex = 0;
 
-      while (queryIndex < query.length && textIndex < text.length) {
-        if (query[queryIndex] === textLower[textIndex]) {
+      while (queryIndex < needle.length && textIndex < text.length) {
+        if (needle[queryIndex] === textLower[textIndex]) {
           queryIndex++;
         }
         textIndex++;
       }
 
-      return queryIndex === query.length;
+      return queryIndex === needle.length;
     };
 
     // Search in messages
@@ -63,9 +63,9 @@ export default function ChatSearch({ messages = [], onResultClick }) {
 
   // Returns an array of React elements with matched parts highlighted.
   // split() with a capturing group produces alternating [unmatched, matched, unmatched, ...]
-  const buildHighlightParts = (text, query) => {
-    if (!query) return [text];
-    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const buildHighlightParts = (text, needle) => {
+    if (!needle) return [text];
+    const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
     return parts.map((part, i) =>
       i % 2 === 1

@@ -9,10 +9,8 @@ import useConfirmDialog from '../../hooks/useConfirmDialog';
 import SlotInfoModal from "../../components/timetable/SlotInfoModal";
 import {
   showErrorToast,
-  showSuccessToast,
   showWarningToast,
   executeWithFeedback,
-  parseError,
   formatConflictDetails
 } from "../../utils/errorHandling";
 import { DEFAULT_PERIODS, TIMETABLE_DAYS } from "../../utils/constants";
@@ -86,6 +84,9 @@ export default function Timetable({ classId }) {
     if (selectedClass) {
       loadTimetable();
     }
+    // `loadTimetable` is recreated each render; triggering on `selectedClass`
+    // is the intended signal.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedClass]);
 
   const loadTimetable = async () => {
@@ -179,8 +180,8 @@ export default function Timetable({ classId }) {
       // If a teacher is already assigned to this slot, check whether they're
       // still conflict-free across ALL classes (not just the currently loaded one).
       if (currentTeacherId) {
-        const isStillAvailable = teachers.some(t =>
-          String(t.id) === String(currentTeacherId) || String(t._id) === String(currentTeacherId)
+        const isStillAvailable = teachers.some(tch =>
+          String(tch.id) === String(currentTeacherId) || String(tch._id) === String(currentTeacherId)
         );
         if (!isStillAvailable) {
           setConflicts([{
@@ -206,7 +207,10 @@ export default function Timetable({ classId }) {
     if (isSlotOpen && slotForm.subject && editingSlot && selectedClass) {
       fetchAvailableTeachers(slotForm.teacherId);
     }
-  }, [slotForm.subject, isSlotOpen, editingSlot, selectedClass, fetchAvailableTeachers]);
+    // `fetchAvailableTeachers` and `slotForm.teacherId` are read at fire time;
+    // adding them would re-fire on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slotForm.subject, isSlotOpen, editingSlot, selectedClass]);
 
   // Check for conflicts when teacher is selected
   const checkConflict = async (teacherId) => {
@@ -228,8 +232,8 @@ export default function Timetable({ classId }) {
       const response = await teacherAssignmentsApi.getAvailableTeachers(params);
 
       // Check if selected teacher is in available list (backend checks ALL classes)
-      const isAvailable = response.available?.some(t =>
-        String(t.id) === String(teacherId) || String(t._id) === String(teacherId)
+      const isAvailable = response.available?.some(tch =>
+        String(tch.id) === String(teacherId) || String(tch._id) === String(teacherId)
       );
 
       if (!isAvailable && teacherId) {

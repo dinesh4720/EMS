@@ -24,7 +24,7 @@ export function AcademicsTab({ id, cls, classesEnhancedApi }) {
       .catch(error => { if (!controller.signal.aborted) { logger.error('Error fetching exams:', error); toast.error(t('toast.error.failedToLoadExams')); } })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [id]);
+  }, [id, t]);
 
   const getStatusColor = (status) => {
     switch (status) {

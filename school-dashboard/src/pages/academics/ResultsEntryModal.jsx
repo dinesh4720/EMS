@@ -25,6 +25,8 @@ const ResultsEntryModal = ({ examId, onClose }) => {
     if (examId) {
       fetchExamAndStudents();
     }
+    // `fetchExamAndStudents` is recreated each render; trigger on `examId`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [examId]);
 
   const fetchExamAndStudents = async () => {

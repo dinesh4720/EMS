@@ -84,6 +84,8 @@ export default function SchoolsPanel() {
 
   useEffect(() => {
     loadData();
+    // Mount-only; `loadData` is recreated each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const updateForm = (field, value) => {

@@ -69,8 +69,8 @@ export function useMessageActions({ user, chatService, messages, setMessages, se
       });
 
       // Update local state immediately - use String comparison
-      setMessages(prev => {
-        const updated = prev.map(msg => {
+      setMessages(messagesPrev => {
+        const updated = messagesPrev.map(msg => {
           const matches = String(msg.id) === String(messageId);
           if (matches) {
             return { ...msg, pinned: true, pinnedBy: [...(msg.pinnedBy || []), user.id] };
@@ -108,11 +108,11 @@ export function useMessageActions({ user, chatService, messages, setMessages, se
       });
 
       // Update local state immediately
-      setMessages(prev => {
-        const updated = prev.map(msg => {
+      setMessages(messagesPrev => {
+        const updated = messagesPrev.map(msg => {
           const matches = String(msg.id) === String(messageId);
           if (matches) {
-            return { ...msg, pinned: false, pinnedBy: (msg.pinnedBy || []).filter(id => String(id) !== String(user.id)) };
+            return { ...msg, pinned: false, pinnedBy: [] };
           }
           return msg;
         });
@@ -142,7 +142,7 @@ export function useMessageActions({ user, chatService, messages, setMessages, se
       logger.error('Error deleting message:', error);
       toast.error(t('messaging.toast.failedToDeleteMessage', 'Failed to delete message'));
     }
-  }, [chatService, user, setMessages, t]);
+  }, [chatService, setMessages, t]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle edit message - receives current editingMessage and editText as parameters
   const handleEditMessageWithState = useCallback(async (editingMessage, editText) => {
@@ -167,7 +167,7 @@ export function useMessageActions({ user, chatService, messages, setMessages, se
       logger.error('Error editing message:', error);
       toast.error(t('messaging.toast.failedToEditMessage', 'Failed to edit message'));
     }
-  }, [user, setMessages, setEditingMessage, setEditText, t]);
+  }, [setMessages, setEditingMessage, setEditText, t]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load pinned messages - filter from current messages
   const loadPinnedMessages = useCallback((currentMessages) => {

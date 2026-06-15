@@ -23,6 +23,8 @@ const TimetableValidationPanel = ({ type = 'class', id, academicYear }) => {
     if (id) {
       fetchValidationReport();
     }
+    // `fetchValidationReport` is recreated each render; trigger on id/type/year.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, type, resolvedAcademicYear]);
 
   const fetchValidationReport = async () => {

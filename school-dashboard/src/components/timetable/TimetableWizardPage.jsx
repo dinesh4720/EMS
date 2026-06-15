@@ -123,7 +123,7 @@ const TimetableWizardPage = () => {
   };
 
   const getTimetableForClass = (classId) => {
-    return timetables.find(t => t.classId?._id === classId || t.classId === classId);
+    return timetables.find(tt => tt.classId?._id === classId || tt.classId === classId);
   };
 
   const getClassStatus = (cls) => {

@@ -48,6 +48,9 @@ export default function StaffsPage() {
     };
     document.addEventListener('click', handleBackdropClick, true);
     return () => document.removeEventListener('click', handleBackdropClick, true);
+    // `handleCloseAddStaff` is recreated each render; binding on open/close
+    // is the intended signal.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAddStaffOpen]);
 
   useEffect(() => {

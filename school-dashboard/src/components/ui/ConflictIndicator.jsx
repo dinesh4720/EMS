@@ -36,7 +36,7 @@ export default function ConflictIndicator({
    * @returns {JSX.Element} Formatted conflict details
    */
   const displayConflictDetails = (conflict) => {
-    const { type, teacherName, teacherCode, day, periodIndex, conflicts: conflictList, message, subject, classId, className } = conflict;
+    const { type, teacherName, teacherCode, day, periodIndex, conflicts: conflictList, message, subject } = conflict;
 
     return (
       <div className="space-y-3">

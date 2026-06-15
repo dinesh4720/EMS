@@ -60,6 +60,8 @@ const ClassPerformance = () => {
     const controller = new AbortController();
     fetchData(controller.signal);
     return () => controller.abort();
+    // `fetchData` is recreated each render; trigger on filter change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [classId, selectedYear, selectedTerm]);
 
   const fetchData = async (signal) => {

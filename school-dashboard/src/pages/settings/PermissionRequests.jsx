@@ -75,6 +75,8 @@ export default function PermissionRequests() {
     const controller = new AbortController();
     fetchRequests(controller.signal);
     return () => controller.abort();
+    // `fetchRequests` is recreated each render; trigger on tab/admin change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin, activeTab]);
 
   // Listen for new permission requests via socket
@@ -93,7 +95,9 @@ export default function PermissionRequests() {
 
     return () => {
       socketService.off('permission_request_created', handleNewRequest);
-    };
+    }
+    // `fetchRequests` is recreated each render; trigger on admin status.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin]);
 
   const fetchRequests = async () => {
@@ -125,8 +129,8 @@ export default function PermissionRequests() {
     }
   };
 
-  const handleReview = (request) => {
-    setSelectedRequest(request);
+  const handleReview = (req) => {
+    setSelectedRequest(req);
     setReviewNotes("");
     onOpen();
   };
@@ -299,22 +303,22 @@ export default function PermissionRequests() {
               isLoading={loading}
               loadingContent={<SkeletonTable columns={7} rows={5} />}
             >
-              {(request) => (
-                <TableRow key={request._id}>
+              {(req) => (
+                <TableRow key={req._id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar
-                        name={request.userName}
+                        name={req.userName}
                         size="sm"
                         className="flex-shrink-0"
                       />
                       <div>
                         <p className="font-medium text-fg">
-                          {request.userName}
+                          {req.userName}
                         </p>
-                        {request.userEmail && (
+                        {req.userEmail && (
                           <p className="text-xs text-fg-muted">
-                            {request.userEmail}
+                            {req.userEmail}
                           </p>
                         )}
                       </div>
@@ -322,12 +326,12 @@ export default function PermissionRequests() {
                   </TableCell>
                   <TableCell>
                     <Chip size="sm" variant="flat" color="primary">
-                      {MODULE_LABELS[request.module] || request.module}
+                      {MODULE_LABELS[req.module] || req.module}
                     </Chip>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      {request.permissions.map(perm => (
+                      {req.permissions.map(perm => (
                         <Chip key={perm} size="sm" variant="dot">
                           {ACTION_LABELS[perm]}
                         </Chip>
@@ -336,29 +340,29 @@ export default function PermissionRequests() {
                   </TableCell>
                   <TableCell>
                     <p className="text-sm text-fg max-w-xs truncate">
-                      {request.reason}
+                      {req.reason}
                     </p>
                   </TableCell>
                   <TableCell>
                     <p className="text-sm text-fg-muted">
-                      {formatShortDate(request.requestedAt)}
+                      {formatShortDate(req.requestedAt)}
                     </p>
                   </TableCell>
                   <TableCell>
                     <Chip
                       size="sm"
                       color={
-                        request.status === 'approved' ? 'success' :
-                        request.status === 'rejected' ? 'danger' :
+                        req.status === 'approved' ? 'success' :
+                        req.status === 'rejected' ? 'danger' :
                         'warning'
                       }
                       variant="flat"
                     >
-                      {request.status}
+                      {req.status}
                     </Chip>
                   </TableCell>
                   <TableCell>
-                    {request.status === 'pending' ? (
+                    {req.status === 'pending' ? (
                       <Button
                         size="sm"
                         color="primary"

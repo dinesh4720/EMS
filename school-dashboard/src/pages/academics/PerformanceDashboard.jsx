@@ -87,6 +87,8 @@ const PerformanceDashboard = ({ onCreateExam }) => {
       fetchData();
       initialFetchDone.current = true;
     }
+    // Mount-only; `fetchData` is recreated each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Re-fetch when filters change
@@ -94,6 +96,8 @@ const PerformanceDashboard = ({ onCreateExam }) => {
     if (initialFetchDone.current) {
       fetchData(true);
     }
+    // `fetchData` is recreated each render; trigger on year change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAcademicYear]);
 
   const fetchData = async (skipCache = false) => {

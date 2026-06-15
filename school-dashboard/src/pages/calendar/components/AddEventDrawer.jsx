@@ -42,6 +42,9 @@ export default function AddEventDrawer({ isOpen, onClose, selectedDate, onAddEve
     } else if (!editingEvent && isOpen) {
       setNewEvent(defaultState);
     }
+    // `defaultState` is the initial form template — intentionally read at
+    // mount/open only, not as a dep.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingEvent, isOpen]);
 
   const types = eventTypesConfig || eventTypes;

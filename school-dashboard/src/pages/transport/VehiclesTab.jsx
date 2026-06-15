@@ -43,7 +43,7 @@ export default function VehiclesTab() {
     }
   };
 
-  useEffect(() => { fetchVehicles(); }, []);
+  useEffect(() => { fetchVehicles(); /* eslint-disable-line react-hooks/exhaustive-deps */ }, []);
 
   const makes = useMemo(() => {
     const set = new Set(vehicles.map((v) => v.make).filter(Boolean));

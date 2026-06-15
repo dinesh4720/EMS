@@ -225,7 +225,7 @@ export function useSocketListeners({ socketService, user, selectedConversationRe
     return () => {
       listeners.forEach(([event, handler]) => socketService.off(event, handler));
     };
-  }, [socketService, user, selectedConversationRef, setMessages, setConversations, setPinnedMessages, onNewMessageReceived, handleNewMessage, pendingSocketMessagesRef]);
+  }, [socketService, user, selectedConversationRef, setMessages, setConversations, setPinnedMessages, onNewMessageReceived, handleNewMessage]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
     socketConnected,

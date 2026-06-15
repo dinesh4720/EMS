@@ -53,7 +53,7 @@ const AppointmentsList = forwardRef(({ onSave, ...props }, ref) => {
   useEffect(() => {
     loadAppointments();
     loadStaff();
-  }, []);
+  }, [loadAppointments]);
 
   // Expose the openModal function to parent
   useImperativeHandle(ref, () => ({
@@ -82,8 +82,8 @@ const AppointmentsList = forwardRef(({ onSave, ...props }, ref) => {
     try {
       const response = await staffApi.getAll();
       setStaff(response);
-    } catch (error) {
-      logger.error('Failed to load staff:', error);
+    } catch (err) {
+      logger.error('Failed to load staff:', err);
     }
   };
 
@@ -124,34 +124,34 @@ const AppointmentsList = forwardRef(({ onSave, ...props }, ref) => {
   };
 
   const validateField = (name, value) => {
-    let error = '';
+    let fieldError = '';
     const nameRegex = /^[a-zA-Z\s]*$/;
 
     switch (name) {
       case 'visitorName':
-        if (!value.trim()) error = 'Visitor name is required';
-        else if (!nameRegex.test(value)) error = 'Visitor name should contain only letters';
+        if (!value.trim()) fieldError = 'Visitor name is required';
+        else if (!nameRegex.test(value)) fieldError = 'Visitor name should contain only letters';
         break;
       case 'phoneNumber':
-        if (value && (!validatePhone(value) || /^(\d)\1{9}$/.test(value))) error = 'Please enter a valid 10-digit phone number';
+        if (value && (!validatePhone(value) || /^(\d)\1{9}$/.test(value))) fieldError = 'Please enter a valid 10-digit phone number';
         break;
       case 'fromDateTime':
-        if (!value) error = 'Start time is required';
-        else if (!validateFutureDate(value)) error = 'Appointment must be in the future';
-        else if (formData.toDateTime && !validateDateRange(value, formData.toDateTime)) error = 'Start time must be before end time';
+        if (!value) fieldError = 'Start time is required';
+        else if (!validateFutureDate(value)) fieldError = 'Appointment must be in the future';
+        else if (formData.toDateTime && !validateDateRange(value, formData.toDateTime)) fieldError = 'Start time must be before end time';
         break;
       case 'toDateTime':
-        if (!value) error = 'End time is required';
-        else if (formData.fromDateTime && !validateDateRange(formData.fromDateTime, value)) error = 'End time must be after start time';
+        if (!value) fieldError = 'End time is required';
+        else if (formData.fromDateTime && !validateDateRange(formData.fromDateTime, value)) fieldError = 'End time must be after start time';
         break;
       case 'meetingWith':
-        if (!value) error = 'Please select who to meet';
+        if (!value) fieldError = 'Please select who to meet';
         break;
       default:
         break;
     }
 
-    setErrors(prev => ({ ...prev, [name]: error }));
+    setErrors(prev => ({ ...prev, [name]: fieldError }));
   };
 
   const handleSubmit = async (e) => {
@@ -209,7 +209,7 @@ const AppointmentsList = forwardRef(({ onSave, ...props }, ref) => {
       resetForm();
       loadAppointments();
       onSave?.();
-    } catch (error) {
+    } catch (err) {
       toast.error(t('toast.error.failedToSaveAppointment'));
     } finally {
       setIsSubmitting(false);
@@ -243,7 +243,7 @@ const AppointmentsList = forwardRef(({ onSave, ...props }, ref) => {
           toast.success(t('toast.success.appointmentDeleted'));
           loadAppointments();
           onSave?.();
-        } catch (error) {
+        } catch (err) {
           toast.error(t('toast.error.failedToDeleteAppointment'));
         }
       },
@@ -367,7 +367,7 @@ const AppointmentsList = forwardRef(({ onSave, ...props }, ref) => {
         </Chip>
       ),
     },
-  ], [conflictIdsByStaff, t]);
+  ], [conflictIdsByStaff, t]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const rowActions = (row) => (
     <div className="flex items-center justify-end gap-1">

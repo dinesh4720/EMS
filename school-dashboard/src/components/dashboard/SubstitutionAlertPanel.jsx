@@ -2,17 +2,16 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import logger from '../../utils/logger';
 import {
-  Card, CardHeader, CardBody, Button, Select, SelectItem,
+  Card, CardHeader, CardBody, Button,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  Chip, Avatar, Badge, Spinner, Divider, useDisclosure,
-  Progress
+  Chip, Avatar, Spinner, Divider, useDisclosure
 } from '@heroui/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  AlertTriangle, UserCheck, Clock, RefreshCw, ChevronRight,
-  CheckCircle, XCircle, UserPlus, Bell, BellOff
+  AlertTriangle, RefreshCw, ChevronRight,
+  CheckCircle, UserPlus, Bell, BellOff
 } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
+// useApp was previously destructured here but is no longer used.
 import { request } from '../../services/api';
 import socketService from '../../services/socketServiceEnhanced';
 import toast from 'react-hot-toast';
@@ -31,7 +30,7 @@ import { toTodayDateString } from '../../utils/dateFormatter';
 export default function SubstitutionAlertPanel({ className = '' }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { staff, classes, schoolSettings } = useApp();
+  // useApp() call removed; props are unused at the top-level state of this panel.
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -109,7 +108,7 @@ export default function SubstitutionAlertPanel({ className = '' }) {
       clearInterval(interval);
       socketService.off('substitution_alert', handleSubstitutionAlert);
     };
-  }, [fetchAlerts]);
+  }, [fetchAlerts, t]);
 
   // Fetch available teachers for an alert
   const fetchAvailableTeachers = async (alert) => {
@@ -191,7 +190,7 @@ export default function SubstitutionAlertPanel({ className = '' }) {
   };
 
   // Format time until class
-  const getTimeUntil = (date, period) => {
+  const getTimeUntil = (date) => {
     const now = new Date();
     const classDate = new Date(date);
     const diffMs = classDate - now;

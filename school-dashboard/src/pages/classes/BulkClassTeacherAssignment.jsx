@@ -334,9 +334,9 @@ export default function BulkClassTeacherAssignment() {
             }}
           >
             <option value="">{t('pages.chooseATeacher')}</option>
-            {teachers.map(t => (
-              <option key={String(t.id || t._id)} value={String(t.id || t._id)}>
-                {t.name} {t.department ? `(${t.department})` : ''}
+            {teachers.map(tch => (
+              <option key={String(tch.id || tch._id)} value={String(tch.id || tch._id)}>
+                {tch.name} {tch.department ? `(${tch.department})` : ''}
               </option>
             ))}
           </Select>

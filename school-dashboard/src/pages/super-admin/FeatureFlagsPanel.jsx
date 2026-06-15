@@ -98,7 +98,7 @@ export default function FeatureFlagsPanel() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); /* eslint-disable-line react-hooks/exhaustive-deps */ }, []);
 
   const handleToggle = async (flag) => {
     setSaving((prev) => ({ ...prev, [flag.key]: true }));

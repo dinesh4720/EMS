@@ -161,7 +161,7 @@ export default function StaffDashboard() {
 
   // Document hook
   const {
-    documents, setDocuments, activeUploads, documentInputRef,
+    documents, activeUploads, documentInputRef,
     handleDocumentUpload, handleDeleteDocument, initFromStaff,
   } = useStaffDocuments(id, updateStaff, uploadApi);
 
@@ -198,12 +198,15 @@ export default function StaffDashboard() {
         toast.error(t('toast.error.failedToLoadAttendanceData'));
       });
     }
-  }, [id, fetchStaffAttendanceByStaff]);
+  }, [id, fetchStaffAttendanceByStaff, t]);
 
   const today = new Date();
   const monthlyStats = useMemo(() => {
     if (!getMonthlyAttendance) return { present: 0, absent: 0, total: 0 };
     return getMonthlyAttendance(id, today.getFullYear(), today.getMonth()) || { present: 0, absent: 0, total: 0 };
+    // `today` is intentionally recomputed each render so the memo tracks the
+    // current month — adding it to deps would invalidate the memo every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, attendance, getMonthlyAttendance]);
 
   const attendanceRate = monthlyStats.total > 0 ? Math.round((monthlyStats.present / monthlyStats.total) * 100) : 0;
@@ -239,6 +242,9 @@ export default function StaffDashboard() {
       setPicturePreview(staff.picture || null);
       initFromStaff(staff);
     }
+    // Re-run only when the `staff` object changes; setters from custom hooks
+    // (useStaffPhoto/useStaffDocuments) keep stable identities per id.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [staff]);
 
   // Load subject assignments for teachers
@@ -292,6 +298,9 @@ export default function StaffDashboard() {
 
     socketService.on('staff_updated', handleStaffUpdate);
     return () => socketService.off('staff_updated', handleStaffUpdate);
+    // `setPicturePreview` has a stable identity from useStaffPhoto; omit to keep
+    // the listener setup tied to the staff record, not to hook return objects.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [staff, updateStaffLocal]);
 
   const handleSendMessage = async () => {

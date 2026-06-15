@@ -61,7 +61,7 @@ export default function CommunicationSettings() {
         if (!controller.signal.aborted) setLoadingSettings(false);
       });
     return () => controller.abort();
-  }, []);
+  }, [t]);
 
   // AUDIT-127: Warn before leaving with unsaved edits
   useEffect(() => {
@@ -81,17 +81,17 @@ export default function CommunicationSettings() {
       .then(([emailTemplates, smsTemplates]) => {
         if (cancelled) return;
         const merged = [
-          ...(Array.isArray(emailTemplates) ? emailTemplates : []).map((t) => ({
-            id: t._id,
-            name: t.name,
+          ...(Array.isArray(emailTemplates) ? emailTemplates : []).map((tmpl) => ({
+            id: tmpl._id,
+            name: tmpl.name,
             type: 'Email',
-            variables: (t.variables || []).map((v) => `{${v}}`).join(', '),
+            variables: (tmpl.variables || []).map((v) => `{${v}}`).join(', '),
           })),
-          ...(Array.isArray(smsTemplates) ? smsTemplates : []).map((t) => ({
-            id: t._id,
-            name: t.name,
+          ...(Array.isArray(smsTemplates) ? smsTemplates : []).map((tmpl) => ({
+            id: tmpl._id,
+            name: tmpl.name,
             type: 'SMS',
-            variables: (t.variables || []).map((v) => `{${v}}`).join(', '),
+            variables: (tmpl.variables || []).map((v) => `{${v}}`).join(', '),
           })),
         ];
         setTemplates(merged);
@@ -102,7 +102,7 @@ export default function CommunicationSettings() {
       })
       .finally(() => { if (!cancelled) setLoadingTemplates(false); });
     return () => { cancelled = true; };
-  }, []);
+  }, [t]);
 
   const filteredTemplates = useMemo(() => {
     return templates.filter(tmpl => {

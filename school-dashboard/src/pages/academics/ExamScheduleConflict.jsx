@@ -89,6 +89,8 @@ const ExamScheduleConflict = ({ onCreateSchedule }) => {
 
   useEffect(() => {
     fetchSchedules();
+    // `fetchSchedules` is recreated each render; trigger on year change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAcademicYear]);
 
   const fetchSchedules = async () => {

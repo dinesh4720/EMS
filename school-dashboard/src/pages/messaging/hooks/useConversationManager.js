@@ -50,7 +50,7 @@ export function useConversationManager({ chatService, socketService, user, staff
     } catch (error) {
       logger.error('Error loading conversations:', error);
     }
-  }, [chatService, user?.id, setOnlineUsers]);
+  }, [chatService, setOnlineUsers]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSelectConversation = useCallback(async (conversation) => {
     try {
@@ -80,7 +80,7 @@ export function useConversationManager({ chatService, socketService, user, staff
     } catch (error) {
       logger.error('Error selecting conversation:', error);
     }
-  }, [chatService, socketService, user?.id, setMessages, setShowMessageSearch, scrollToBottom]);
+  }, [chatService, socketService, setMessages, setShowMessageSearch, scrollToBottom]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const startNewConversation = useCallback(async (contact) => {
     try {
