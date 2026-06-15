@@ -5,70 +5,27 @@ import {
   useCallback,
 } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Plus, MessageSquare, CheckCircle2, Users, Printer, Download } from "lucide-react";
-import EmptyState from "../../components/ui/EmptyState";
+import { Plus } from "lucide-react";
 import Pagination from "../../components/common/Pagination";
 import { SkeletonTable } from "../../components/ui/Skeleton";
 import { useApp } from "../../context/AppContext";
-import ToolbarSearch from "../../components/ui/ToolbarSearch";
-import BulkActionBar from "../../components/ui/BulkActionBar";
-import FilterPillsBar from "../../components/ui/FilterPillsBar";
 import useBulkSelection from "../../hooks/useBulkSelection";
 import StaffListRow from "./StaffListRow";
 import StaffDetailPane from "./StaffDetailPane";
-import ExportMenu from "../../components/ui/ExportMenu";
-import PrintPreviewModal from "../../components/ui/PrintPreviewModal";
+import StaffListToolbar from "./StaffListToolbar";
+import StaffListEmptyState from "./StaffListEmptyState";
+import StaffListFilters, {
+  FILTERS,
+  staffMatchesFilter,
+  searchMatch,
+  useStaffFilters,
+} from "./StaffListFilters";
 import { staffAttendanceApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { isActiveStaff } from "./utils/staffHelpers";
 
 // Mobile breakpoint — below this the right pane collapses to a Drawer
 const MOBILE_MAX = 1099;
-
-// Filters surfaced on the toolbar (segmented). README spec: All | Active | Today.
-const FILTERS = [
-  { key: "all", label: "All" },
-  { key: "active", label: "Active" },
-  { key: "today", label: "Today" },
-];
-
-function staffMatchesFilter(s, filter, todayStatusOf) {
-  if (filter === "all") return true;
-  if (filter === "active") return isActiveStaff(s);
-  if (filter === "today") {
-    const status = todayStatusOf?.(s);
-    return status === "present" || status === "absent" || status === "leave";
-  }
-  return true;
-}
-
-function searchMatch(s, q) {
-  if (!q) return true;
-  const t = q.toLowerCase();
-  const role = Array.isArray(s.role) ? s.role.join(" ") : s.role || "";
-  return (
-    (s.name || "").toLowerCase().includes(t) ||
-    (s.staffNumber || s.code || "").toLowerCase().includes(t) ||
-    (s.email || "").toLowerCase().includes(t) ||
-    role.toLowerCase().includes(t)
-  );
-}
-
-/* ── sessionStorage helpers for staff filters ── */
-const parseArrayFilter = (key) => {
-  const raw = sessionStorage.getItem(`staff-filter-${key}`);
-  if (!raw || raw === "all") return [];
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : parsed !== "all" ? [parsed] : [];
-  } catch {
-    return raw !== "all" ? [raw] : [];
-  }
-};
-const parseStringFilter = (key, defaultValue = "all") => {
-  const raw = sessionStorage.getItem(`staff-filter-${key}`);
-  return raw && raw !== "all" ? raw : defaultValue;
-};
 
 export default function StaffList({ onStaffClick, onAddStaff }) {
   const { staff = [], staffAttendance, loading } = useApp();
@@ -118,7 +75,6 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
       ? window.innerWidth <= MOBILE_MAX
       : false
   );
-  const [printOpen, setPrintOpen] = useState(false);
 
   useEffect(() => {
     const onResize = () => setIsMobileViewport(window.innerWidth <= MOBILE_MAX);
@@ -133,11 +89,17 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
     return () => { document.title = prev; };
   }, []);
 
-  // ── Pills-based filter state ──
-  const [roleFilter, setRoleFilter] = useState(() => parseArrayFilter("role"));
-  const [departmentFilter, setDepartmentFilter] = useState(() => parseStringFilter("department"));
-  const [employmentTypeFilter, setEmploymentTypeFilter] = useState(() => parseStringFilter("employmentType"));
-  const [genderFilter, setGenderFilter] = useState(() => parseStringFilter("gender"));
+  // ── Pills-based filter state, derivations, and handlers ──
+  const {
+    roleFilter,
+    departmentFilter,
+    employmentTypeFilter,
+    genderFilter,
+    filtersConfig,
+    activeFiltersCount,
+    handleFilterChange,
+    clearAllFilters,
+  } = useStaffFilters(staff);
 
   // Today's attendance lookup for a given staff member.
   const todayKey = useMemo(
@@ -153,137 +115,6 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
     },
     [staffAttendance, todayKey]
   );
-
-  // ── Derived unique filter values ──
-  const uniqueRoles = useMemo(() => {
-    const set = new Set();
-    staff.forEach((s) => {
-      if (Array.isArray(s.role)) s.role.forEach((r) => { if (r) set.add(r); });
-      else if (s.role) set.add(s.role);
-    });
-    return [...set].sort();
-  }, [staff]);
-
-  const uniqueDepartments = useMemo(() => {
-    const set = new Set();
-    staff.forEach((s) => { if (s.department) set.add(s.department); });
-    return [...set].sort();
-  }, [staff]);
-
-  const uniqueEmploymentTypes = useMemo(() => {
-    const set = new Set();
-    staff.forEach((s) => { if (s.employmentType) set.add(s.employmentType); });
-    return [...set].sort();
-  }, [staff]);
-
-  const uniqueGenders = useMemo(() => {
-    const set = new Set();
-    staff.forEach((s) => { if (s.gender) set.add(s.gender); });
-    return [...set].sort();
-  }, [staff]);
-
-  // ── Filter counts ──
-  const filterCounts = useMemo(() => {
-    const roleCounts = {};
-    const deptCounts = {};
-    const empCounts = {};
-    const genderCounts = {};
-    staff.forEach((s) => {
-      if (Array.isArray(s.role)) {
-        s.role.forEach((r) => { if (r) roleCounts[r] = (roleCounts[r] || 0) + 1; });
-      } else if (s.role) {
-        roleCounts[s.role] = (roleCounts[s.role] || 0) + 1;
-      }
-      if (s.department) deptCounts[s.department] = (deptCounts[s.department] || 0) + 1;
-      if (s.employmentType) empCounts[s.employmentType] = (empCounts[s.employmentType] || 0) + 1;
-      if (s.gender) genderCounts[s.gender] = (genderCounts[s.gender] || 0) + 1;
-    });
-    return { role: roleCounts, department: deptCounts, employmentType: empCounts, gender: genderCounts };
-  }, [staff]);
-
-  // ── Active filter count ──
-  const activeFiltersCount =
-    roleFilter.length +
-    (departmentFilter !== "all" ? 1 : 0) +
-    (employmentTypeFilter !== "all" ? 1 : 0) +
-    (genderFilter !== "all" ? 1 : 0);
-
-  // ── Filter config for FilterPillsBar ──
-  const filtersConfig = useMemo(() => ({
-    role: {
-      label: "Role",
-      value: roleFilter,
-      mode: "multi",
-      options: uniqueRoles,
-      counts: filterCounts.role,
-      displayLabels: {},
-    },
-    department: {
-      label: "Department",
-      value: departmentFilter,
-      mode: "single",
-      options: uniqueDepartments,
-      counts: filterCounts.department,
-      displayLabels: {},
-    },
-    employmentType: {
-      label: "Employment Type",
-      value: employmentTypeFilter,
-      mode: "single",
-      options: uniqueEmploymentTypes,
-      counts: filterCounts.employmentType,
-      displayLabels: {},
-    },
-    gender: {
-      label: "Gender",
-      value: genderFilter,
-      mode: "single",
-      options: uniqueGenders,
-      counts: filterCounts.gender,
-      displayLabels: {},
-    },
-  }), [roleFilter, departmentFilter, employmentTypeFilter, genderFilter, uniqueRoles, uniqueDepartments, uniqueEmploymentTypes, uniqueGenders, filterCounts]);
-
-  // ── Filter change handler ──
-  const handleFilterChange = useCallback((filterKey, value) => {
-    const setters = {
-      role: setRoleFilter,
-      department: setDepartmentFilter,
-      employmentType: setEmploymentTypeFilter,
-      gender: setGenderFilter,
-    };
-    const setter = setters[filterKey];
-    if (!setter) return;
-
-    if (filterKey === "role") {
-      setter((prev) => {
-        if (value === "all") {
-          sessionStorage.setItem("staff-filter-role", JSON.stringify([]));
-          return [];
-        }
-        const next = prev.includes(value)
-          ? prev.filter((v) => v !== value)
-          : [...prev, value];
-        sessionStorage.setItem("staff-filter-role", JSON.stringify(next));
-        return next;
-      });
-    } else {
-      const next = value === "all" ? "all" : value;
-      setter(next);
-      sessionStorage.setItem(`staff-filter-${filterKey}`, next);
-    }
-  }, []);
-
-  const clearAllFilters = useCallback(() => {
-    setRoleFilter([]);
-    setDepartmentFilter("all");
-    setEmploymentTypeFilter("all");
-    setGenderFilter("all");
-    ["role", "department", "employmentType", "gender"].forEach((k) =>
-      sessionStorage.removeItem(`staff-filter-${k}`)
-    );
-    toast.success("All filters cleared");
-  }, []);
 
   // Search + filter pass — preserves underlying ordering
   const visible = useMemo(() => {
@@ -365,9 +196,6 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
   }, [isMobileViewport, selectedId, visible.length]);
 
   // ============ Pagination ============
-  // Declared before the keyboard-nav section because moveSelection() reads
-  // `paginatedVisible` in its body and dependency array — referencing it after
-  // this point would hit the temporal dead zone and throw on every render.
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
@@ -449,6 +277,21 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
 
   const showClearButton = filter !== "all" || q || activeFiltersCount > 0;
 
+  // Toolbar "Clear" resets search, pill filters, and the relevant URL params.
+  const handleToolbarClear = useCallback(() => {
+    setQ("");
+    clearAllFilters();
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("filter");
+        next.delete("q");
+        return next;
+      },
+      { replace: false }
+    );
+  }, [clearAllFilters, setSearchParams]);
+
   return (
     <div className="page" style={{ minHeight: 0, flex: 1, overflow: "hidden" }}>
       <header className="page__head">
@@ -468,114 +311,27 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
         </button>
       </header>
 
-      <div className="toolbar">
-        <div className="seg" role="tablist" aria-label="Filter staff">
-              {FILTERS.map((f) => {
-                const count = statusCounts?.[f.key] ?? 0;
-                return (
-                  <button
-                    key={f.key}
-                    type="button"
-                    role="tab"
-                    aria-selected={filter === f.key}
-                    className={`seg__btn ${filter === f.key ? "is-active" : ""}`}
-                    onClick={() => setFilter(f.key)}
-                  >
-                    {f.label}
-                    <span className="mono tnum" style={{ marginLeft: 6, color: "var(--fg-subtle)", fontSize: 11 }}>
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+      <StaffListToolbar
+        filter={filter}
+        setFilter={setFilter}
+        statusCounts={statusCounts}
+        q={q}
+        setQ={setQ}
+        showClearButton={showClearButton}
+        onClear={handleToolbarClear}
+        rows={visible}
+        selection={selection}
+        onBulkMarkPresent={handleBulkMarkPresent}
+        onBulkMessage={handleBulkMessage}
+      />
 
-            <ToolbarSearch
-              value={q}
-              onChange={setQ}
-              urlParam="q"
-              placeholder="Search staff…"
-              ariaLabel="Search staff"
-              style={{ marginLeft: "auto", flex: "0 1 280px", minWidth: 0 }}
-            />
+      <StaffListFilters
+        filtersConfig={filtersConfig}
+        onFilterChange={handleFilterChange}
+        onClearAll={clearAllFilters}
+        activeFiltersCount={activeFiltersCount}
+      />
 
-            {showClearButton && (
-              <button
-                type="button"
-                className="btn btn--ghost btn--sm"
-                onClick={() => {
-                  setQ("");
-                  clearAllFilters();
-                  setSearchParams(
-                    (prev) => {
-                      const next = new URLSearchParams(prev);
-                      next.delete("filter");
-                      next.delete("q");
-                      return next;
-                    },
-                    { replace: false }
-                  );
-                }}
-                style={{ color: "var(--fg-muted)" }}
-                aria-label="Clear all filters"
-              >
-                Clear
-              </button>
-            )}
-
-            <ExportMenu
-              rows={visible}
-              columns={[
-                { key: "name", label: "Name" },
-                { key: "code", label: "ID", accessor: (s) => s.staffNumber || s.code || "" },
-                { key: "role", label: "Role", accessor: (s) => (Array.isArray(s.role) ? s.role.join(", ") : s.role || "") },
-                { key: "department", label: "Department", accessor: (s) => s.department || "—" },
-                { key: "employmentType", label: "Employment Type", accessor: (s) => s.employmentType || "—" },
-                { key: "gender", label: "Gender", accessor: (s) => s.gender || "—" },
-                { key: "status", label: "Status", accessor: (s) => s.status || "active" },
-                { key: "email", label: "Email", accessor: (s) => s.email || "—" },
-                { key: "phone", label: "Phone", accessor: (s) => s.phone || s.mobile || "—" },
-              ]}
-              filename="staff-list"
-              title="Staff List"
-            />
-
-            <button
-              type="button"
-              className="btn btn--sm"
-              onClick={() => setPrintOpen(true)}
-              aria-label="Print preview"
-            >
-              <Printer size={14} aria-hidden />
-            </button>
-
-            <BulkActionBar
-              selection={selection}
-              totalMatching={visible.length}
-            >
-              <button
-                type="button"
-                className="btn btn--sm"
-                onClick={handleBulkMarkPresent}
-              >
-                <CheckCircle2 size={12} aria-hidden /> Mark present
-              </button>
-              <button
-                type="button"
-                className="btn btn--sm"
-                onClick={handleBulkMessage}
-              >
-                <MessageSquare size={12} aria-hidden /> Message
-              </button>
-            </BulkActionBar>
-          </div>
-
-          <FilterPillsBar
-            filters={filtersConfig}
-            onFilterChange={handleFilterChange}
-            onClearAll={clearAllFilters}
-            activeFiltersCount={activeFiltersCount}
-          />
       <div
         style={
           isMobileViewport
@@ -614,22 +370,11 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
               <SkeletonTable columns={4} rows={6} />
             </div>
           ) : visible.length === 0 ? (
-            <EmptyState
-              icon={Users}
-              title={staff.length === 0 ? "No staff yet" : "No staff matched"}
-              description={
-                staff.length === 0
-                  ? "Get started by adding your first staff member."
-                  : activeFiltersCount > 0 || q
-                  ? "Try adjusting your filters or search query."
-                  : "No staff found for the current view."
-              }
-              actionLabel={staff.length === 0 ? "Add staff" : "Clear filters"}
-              onAction={() => {
-                if (staff.length === 0) onAddStaff?.();
-                else clearAllFilters();
-              }}
-              size="md"
+            <StaffListEmptyState
+              staffCount={staff.length}
+              isFiltered={activeFiltersCount > 0 || Boolean(q)}
+              onAddStaff={onAddStaff}
+              onClearFilters={clearAllFilters}
             />
           ) : (
             paginatedVisible.map((s) => {
@@ -747,45 +492,6 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
           </div>
         </>
       )}
-
-      {/* Print Preview */}
-      <PrintPreviewModal
-        isOpen={printOpen}
-        onClose={() => setPrintOpen(false)}
-        title="Staff List"
-      >
-        <div className="p-6">
-          <h1 className="text-lg font-semibold mb-4">Staff List</h1>
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left py-2 px-3">Name</th>
-                <th className="text-left py-2 px-3">ID</th>
-                <th className="text-left py-2 px-3">Role</th>
-                <th className="text-left py-2 px-3">Department</th>
-                <th className="text-left py-2 px-3">Employment</th>
-                <th className="text-left py-2 px-3">Status</th>
-                <th className="text-left py-2 px-3">Email</th>
-                <th className="text-left py-2 px-3">Phone</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visible.map((s) => (
-                <tr key={s._id || s.id} className="border-b">
-                  <td className="py-2 px-3">{s.name}</td>
-                  <td className="py-2 px-3">{s.staffNumber || s.code || "—"}</td>
-                  <td className="py-2 px-3">{Array.isArray(s.role) ? s.role.join(", ") : s.role || "—"}</td>
-                  <td className="py-2 px-3">{s.department || "—"}</td>
-                  <td className="py-2 px-3">{s.employmentType || "—"}</td>
-                  <td className="py-2 px-3">{s.status || "active"}</td>
-                  <td className="py-2 px-3">{s.email || "—"}</td>
-                  <td className="py-2 px-3">{s.phone || s.mobile || "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </PrintPreviewModal>
     </div>
   );
 }
