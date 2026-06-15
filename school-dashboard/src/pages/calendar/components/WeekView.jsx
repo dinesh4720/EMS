@@ -1,6 +1,7 @@
 import IconButton from "../../../components/ui/IconButton";
 import { Clock, Plus } from "lucide-react";
 import { daysOfWeek, formatDateKey, formatTime } from "../constants";
+import { Bone } from "../../../components/ui/Skeleton";
 
 export default function WeekView({
   currentDate,
@@ -10,6 +11,7 @@ export default function WeekView({
   getClassName,
   onDateClick,
   onEventClick,
+  isLoading = false,
 }) {
   const start = new Date(currentDate);
   start.setDate(start.getDate() - start.getDay());
@@ -21,6 +23,8 @@ export default function WeekView({
 
   const today = new Date();
   const todayKey = formatDateKey(today.getFullYear(), today.getMonth(), today.getDate());
+
+  const isLoadingStaffData = isLoading && !!selectedStaff;
 
   return (
     <div className="overflow-x-auto">
@@ -53,6 +57,14 @@ export default function WeekView({
               tabIndex={0}
               aria-label={`${daysOfWeek[i]} ${date.getDate()}, open add event`}
             >
+              {isLoadingStaffData ? (
+                <div role="status" aria-busy="true" aria-label="Loading events" className="space-y-1.5">
+                  <Bone className="h-3 w-3/4" />
+                  <Bone className="h-3 w-2/3" />
+                  <Bone className="h-3 w-1/2" />
+                </div>
+              ) : (
+                <>
               {selectedStaff && timetableClasses.map((cls) => (
                 <div
                   key={cls.id}
@@ -93,6 +105,8 @@ export default function WeekView({
                     <Plus size={12} />
                   </IconButton>
                 </div>
+              )}
+                </>
               )}
             </div>
           </div>

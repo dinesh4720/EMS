@@ -2,6 +2,7 @@ import Chip from "../../../components/ui/Chip";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { EmptyState, Button as DSButton } from "../../../components/ui";
+import { Bone } from "../../../components/ui/Skeleton";
 import { getDateLocale } from "../../../i18n/index";
 import { daysOfWeekFull, defaultPeriods, formatDateKey, formatTime, eventTypes as defaultEventTypes } from "../constants";
 
@@ -14,6 +15,7 @@ export default function DayView({
   onDateClick,
   onEventClick,
   eventTypes = defaultEventTypes,
+  isLoading = false,
 }) {
   const { t } = useTranslation();
   const year = currentDate.getFullYear();
@@ -22,6 +24,8 @@ export default function DayView({
 
   const events = getEventsForDate(dateKey);
   const timetableClasses = getTimetableForDate(dateKey);
+
+  const isLoadingStaffData = isLoading && !!selectedStaff;
 
   return (
     <div className="flex justify-center p-6">
@@ -36,11 +40,18 @@ export default function DayView({
           </div>
         </div>
 
-        {selectedStaff && timetableClasses.length > 0 && (
+        {selectedStaff && (timetableClasses.length > 0 || isLoadingStaffData) && (
           <div className="mb-4">
             <h4 className="text-xs font-semibold text-fg-muted uppercase mb-2">
               {t("calendar.dayView.todaysClasses", "Today's Classes")}
             </h4>
+            {isLoadingStaffData ? (
+              <div role="status" aria-busy="true" aria-label="Loading classes" className="space-y-2">
+                <Bone className="h-8 w-full" />
+                <Bone className="h-8 w-11/12" />
+                <Bone className="h-8 w-3/4" />
+              </div>
+            ) : (
             <div className="space-y-2">
               {timetableClasses.map((cls) => {
                 const period = defaultPeriods[cls.periodIndex];
@@ -64,11 +75,17 @@ export default function DayView({
                 );
               })}
             </div>
+            )}
           </div>
         )}
 
         <div className="space-y-2">
-          {events.length === 0 ? (
+          {isLoadingStaffData ? (
+            <div role="status" aria-busy="true" aria-label="Loading events" className="space-y-2">
+              <Bone className="h-10 w-full" />
+              <Bone className="h-10 w-11/12" />
+            </div>
+          ) : events.length === 0 ? (
             <EmptyState
               icon={CalendarIcon}
               size="sm"
