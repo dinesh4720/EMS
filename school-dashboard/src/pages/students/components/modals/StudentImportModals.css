@@ -1,0 +1,158 @@
+/* StudentImportModals — CSS atoms (DS-09).
+ *
+ * The CSV upload/preview modals previously used `style={{}}` objects as their
+ * primary stylesheet. These atoms extract the static, recurring style objects
+ * into reusable classes. State-dependent styling (valid / invalid / duplicate,
+ * drag-active, has-file) is expressed as modifier classes so it no longer needs
+ * runtime inline styles. All colours reference design tokens — no hex codes.
+ *
+ * Genuinely data-driven values (the summary-stat colour array, progress width)
+ * remain inline, which is correct: those cannot be expressed as static classes.
+ */
+
+/* ── Text-size atoms (values off the Tailwind scale — kept exact) ─────── */
+.simport-t11 { font-size: 11px; }
+.simport-t115 { font-size: 11.5px; }
+.simport-t12 { font-size: 12px; }
+.simport-t125 { font-size: 12.5px; }
+.simport-t13 { font-size: 13px; }
+
+/* ── Token text-colour atoms ─────────────────────────────────────────── */
+.simport-c-fg { color: var(--fg); }
+.simport-c-accent { color: var(--accent); }
+.simport-c-ok { color: var(--ok); }
+.simport-c-warn { color: var(--warn); }
+.simport-c-danger { color: var(--danger); }
+.simport-em { color: var(--fg); font-weight: 600; }
+
+/* ── Panels: info/section cards and colored note banners ─────────────── */
+.simport-panel {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+}
+.simport-panel--accent {
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+  padding: 12px;
+}
+.simport-panel--warn {
+  background: var(--warn-bg);
+  border-color: var(--warn);
+  color: var(--warn);
+}
+.simport-panel--danger {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+  color: var(--danger);
+  padding: 10px;
+}
+.simport-panel__title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+/* ── Guidance lists inside panels ────────────────────────────────────── */
+.simport-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-left: 18px;
+  font-size: 12.5px;
+}
+
+/* ── Summary stat cards ──────────────────────────────────────────────── */
+.simport-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.simport-stat__value { font-size: 18px; font-weight: 700; }
+
+/* ── Drop zone ───────────────────────────────────────────────────────── */
+.simport-drop {
+  position: relative;
+  border: 2px dashed var(--border-strong);
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 32px;
+  text-align: center;
+  transition: all 160ms ease;
+}
+.simport-drop.is-active { border-color: var(--accent); background: var(--accent-bg); }
+.simport-drop.is-filled { border-color: var(--ok); background: var(--ok-bg); }
+.simport-drop__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* ── Round file-status badge ─────────────────────────────────────────── */
+.simport-filepill {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--fg-faint);
+}
+.simport-filepill.is-filled { background: var(--ok); color: #fff; }
+
+/* ── Class accordion ─────────────────────────────────────────────────── */
+.simport-scroll { max-height: 480px; overflow-y: auto; }
+.simport-acc { background: var(--surface-2); border: 1px solid var(--border); }
+.simport-acc__summary {
+  padding: 12px 16px;
+  cursor: pointer;
+  list-style: none;
+  align-items: center;
+}
+.simport-acc__summary::-webkit-details-marker { display: none; }
+.simport-acc__body { padding: 0 16px 12px; }
+.simport-acc[open] .simport-chevron { transform: rotate(90deg); }
+.simport-chevron {
+  color: var(--fg-faint);
+  transition: transform 200ms;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+/* class-header status icon (replaces opt__icon override) */
+.simport-classico {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.simport-classico.has-dup { background: var(--warn-bg); color: var(--warn); }
+.simport-classico.has-invalid { background: var(--danger-bg); color: var(--danger); }
+
+/* ── Per-student row card ────────────────────────────────────────────── */
+.simport-srow {
+  border-radius: 8px;
+  border: 1px solid var(--ok);
+  background: var(--ok-bg);
+  padding: 12px;
+}
+.simport-srow.is-dup { border-color: var(--warn); background: var(--warn-bg); }
+.simport-srow.is-invalid { border-color: var(--danger); background: var(--danger-bg); }
+
+/* error / warning sub-blocks within a student row */
+.simport-subblock { border-radius: 6px; padding: 8px; margin-bottom: 6px; }
+.simport-subblock--danger { background: var(--danger-bg); }
+.simport-subblock--warn { background: var(--warn-bg); }
