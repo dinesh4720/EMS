@@ -468,7 +468,7 @@ export default function StudentsList({ onAddStudent }) {
               }
               action={
                 students.length === 0 ? (
-                  <button type="button" className="btn btn--accent" onClick={onAddStudent}>
+                  <button type="button" className="btn btn--accent" onClick={onAddStudent} aria-label="Add your first student">
                     <Plus size={13} aria-hidden /> New Student
                   </button>
                 ) : (
