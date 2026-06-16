@@ -60,8 +60,10 @@ export default function IssueBookModal({ isOpen, onClose, onSaved, book: presele
 
   const fetchStudents = async (search = "") => {
     try {
-      const data = await studentsApi.getAll({ search, limit: 20 });
-      setStudents(data.students || []);
+      // studentsApi.list returns { data, pagination }; read .data (cf. useHostelLookups.js).
+      // studentsApi.getAll returns a plain array, so the old `data.students` was always undefined.
+      const { data } = await studentsApi.list({ search, limit: 20 });
+      setStudents(data || []);
       setActiveStudentIndex(-1);
     } catch { /* ignore */ }
   };

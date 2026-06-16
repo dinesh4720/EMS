@@ -7,7 +7,7 @@
  * progressbar roles, and accessible combobox selectors.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
 vi.mock(import("react-i18next"), async (importOriginal) => {
@@ -32,6 +32,11 @@ const mockIssues = [
   { _id: "issue-001", bookId: mockBooks[0], studentId: { _id: "student-001", name: "Aarav Kumar", admissionNo: "1001" }, issueDate: "2026-03-01", dueDate: "2026-03-28", status: "issued" },
 ];
 
+const mockStudents = [
+  { _id: "student-001", name: "Aarav Kumar", admissionNo: "1001" },
+  { _id: "student-002", name: "Aaradhya Sharma", admissionNo: "1002" },
+];
+
 vi.mock("../../services/api", () => ({
   libraryApi: {
     getBooks: vi.fn(() => Promise.resolve({ books: mockBooks, total: mockBooks.length })),
@@ -39,8 +44,9 @@ vi.mock("../../services/api", () => ({
     getStats: vi.fn(() => Promise.resolve({ totalBooks: 2, totalCopies: 25, availableCopies: 19, issued: 1, overdue: 0, reserved: 0, lowStock: 0, totalAccruedFines: 0 })),
     getReports: vi.fn(() => Promise.resolve({ mostBorrowed: [{ _id: "book-001", bookTitle: "Introduction to Physics", count: 5 }], categoryStats: [], overdueByStudent: [], unpaidFines: { total: 0, count: 0 } })),
   },
+  // studentsApi.list returns the paginated { data, pagination } envelope (PAG-03 fix).
   studentsApi: {
-    getAll: vi.fn(() => Promise.resolve({ students: [] })),
+    list: vi.fn(() => Promise.resolve({ data: mockStudents, pagination: { totalPages: 1 } })),
   },
 }));
 
@@ -113,5 +119,25 @@ describe("Library module accessibility", () => {
       expect(combo).toHaveAttribute("aria-controls");
       expect(combo).toHaveAttribute("aria-haspopup", "listbox");
     });
+  });
+
+  // Regression for PAG-03: the student picker read `data.students` off a plain array
+  // returned by studentsApi.getAll, so it was permanently empty and a book could not be
+  // issued via search. The fix uses studentsApi.list(...) and reads .data.
+  it("IssueBookModal student picker populates from search results (PAG-03)", async () => {
+    render(
+      <MemoryRouter>
+        <IssueBookModal isOpen onClose={vi.fn()} />
+      </MemoryRouter>
+    );
+
+    const studentInput = screen.getByPlaceholderText("pages.searchStudentsByNameOrAdmissionNo");
+    fireEvent.change(studentInput, { target: { value: "Aar" } });
+
+    // After the 300ms debounce, the listbox should render real options, not stay empty.
+    const options = await screen.findAllByRole("option");
+    expect(options.length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText("Aarav Kumar")).toBeInTheDocument();
+    expect(screen.getByText("Aaradhya Sharma")).toBeInTheDocument();
   });
 });
