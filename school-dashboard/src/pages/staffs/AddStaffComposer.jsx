@@ -14,14 +14,6 @@ import {
   Check,
   Download,
   Sparkles,
-  Mail,
-  Phone,
-  Calendar as CalendarIcon,
-  IndianRupee,
-  GraduationCap,
-  Building2,
-  Users,
-  Plus,
   AlertTriangle,
 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -45,6 +37,15 @@ import {
 } from "./components/add-staff/constants";
 import { buildEditFormData } from "./components/add-staff/populateEditForm";
 import { submitStaffForm } from "./components/add-staff/submitStaff";
+import {
+  FIELD_LABELS,
+  FIELD_TO_SECTION,
+  SECTIONS,
+} from "./components/add-staff/composerConstants";
+import PersonalInfoSection from "./components/add-staff/sections/PersonalInfoSection";
+import SubjectsSection from "./components/add-staff/sections/SubjectsSection";
+import EmploymentSection from "./components/add-staff/sections/EmploymentSection";
+import ReviewSection from "./components/add-staff/sections/ReviewSection";
 
 /**
  * Composer-style staff create flow (Variant A — frosted overlay).
@@ -59,41 +60,10 @@ import { submitStaffForm } from "./components/add-staff/submitStaff";
  * state into the legacy `emptyForm` shape and call the existing
  * `submitStaffForm` pipeline — so create flows still go through the same
  * validation and persistence path as the legacy AddStaff drawer.
+ *
+ * The shell owns wizard orchestration only — section bodies live in
+ * ./sections/{PersonalInfo,Subjects,Employment,Review}Section.jsx.
  */
-
-const ROLE_OPTIONS = [
-  { value: "Teaching", icon: GraduationCap, label: "Teaching", sub: "Has classes" },
-  { value: "Admin", icon: Building2, label: "Admin", sub: "Office staff" },
-  { value: "Support", icon: Users, label: "Support", sub: "Lab, library" },
-  { value: "Leadership", icon: Sparkles, label: "Leadership", sub: "HoD, principal" },
-];
-
-const SUBJECT_OPTIONS = [
-  "Mathematics", "English", "Physics", "Chemistry", "Biology",
-  "Hindi", "Sanskrit", "Computer Science", "History", "Geography",
-  "Economics", "Civics", "Art", "Music", "Physical Education",
-];
-
-const EMPLOYMENT_OPTIONS = [
-  { value: "Full-time", label: "Full-time" },
-  { value: "Part-time", label: "Part-time" },
-  { value: "Contract", label: "Contract" },
-];
-
-const FIELD_LABELS = {
-  firstName: "First name",
-  lastName: "Last name",
-  subject: "Subject",
-  email: "Email",
-  phone: "Phone",
-};
-const FIELD_TO_SECTION = {
-  firstName: "identity",
-  lastName: "identity",
-  subject: "role",
-  email: "contact",
-  phone: "contact",
-};
 
 function emptyComposerForm(seed = {}) {
   return {
@@ -188,7 +158,6 @@ const AddStaffComposer = forwardRef(function AddStaffComposer(
     }
   }, []);
   const [availableClasses, setAvailableClasses] = useState([]);
-  const fileInputRef = useRef(null);
 
   const [showRevokeModal, setShowRevokeModal] = useState(false);
   const selfRevokeConfirmed = useRef(false);
@@ -450,13 +419,6 @@ const AddStaffComposer = forwardRef(function AddStaffComposer(
   const removeClass = (label) =>
     set("classes", form.classes.filter((c) => c !== label));
 
-  // ---- Picture handlers ---------------------------------------------
-  const onPickFile = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    set("picture", file);
-  };
-
   const initials = `${form.firstName?.[0] || ""}${form.lastName?.[0] || ""}`.toUpperCase();
 
   return createPortal(
@@ -594,391 +556,38 @@ const AddStaffComposer = forwardRef(function AddStaffComposer(
                 </div>
               )}
 
-              {/* Identity */}
-              <section id="composer-section-identity" className="section">
-                <div className="section__head">
-                  <div>
-                    <div className="section__title">Identity</div>
-                    <div className="section__hint">
-                      How they show up across rosters and chat.
-                    </div>
-                  </div>
-                  {sectionStatus[0].done && (
-                    <span className="chip chip--ok">
-                      <Check size={9} strokeWidth={2.5} aria-hidden /> Looks good
-                    </span>
-                  )}
-                </div>
+              <PersonalInfoSection
+                form={form}
+                set={set}
+                errors={errors}
+                registerField={registerField}
+                picturePreviewUrl={picturePreviewUrl}
+                initials={initials}
+                sectionStatusIndex={sectionStatus[0]}
+              />
 
-                <div className="avatar-up" style={{ marginBottom: 14 }}>
-                  <ComposerAvatar
-                    previewUrl={picturePreviewUrl}
-                    initials={initials || "?"}
-                    name={`${form.firstName} ${form.lastName}`.trim()}
-                  />
-                  <div
-                    style={{
-                      flex: 1,
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 4,
-                      minWidth: 0,
-                    }}
-                  >
-                    <span style={{ fontWeight: 520 }}>Profile photo</span>
-                    <span className="subtle" style={{ fontSize: 12 }}>
-                      JPG or PNG · square · max 2 MB. Initials are used if none.
-                    </span>
-                    <div className="row gap-2" style={{ marginTop: 4 }}>
-                      <button
-                        type="button"
-                        className="btn btn--sm"
-                        onClick={() => fileInputRef.current?.click()}
-                      >
-                        Upload
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn--sm btn--ghost subtle"
-                        onClick={() => set("picture", null)}
-                      >
-                        Use initials
-                      </button>
-                    </div>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      style={{ display: "none" }}
-                      onChange={onPickFile}
-                    />
-                  </div>
-                </div>
+              <SubjectsSection
+                form={form}
+                set={set}
+                errors={errors}
+                registerField={registerField}
+                departments={departments}
+                classDraft={classDraft}
+                setClassDraft={setClassDraft}
+                addClass={addClass}
+                removeClass={removeClass}
+                availableClasses={availableClasses}
+              />
 
-                <div className="fgrid">
-                  <ComposerField
-                    label="First name"
-                    required
-                    name="firstName"
-                    error={errors.firstName}
-                    registerField={registerField}
-                  >
-                    <input
-                      className={`input ${errors.firstName ? "input--err" : ""}`}
-                      value={form.firstName}
-                      onChange={(e) => set("firstName", e.target.value)}
-                      aria-invalid={errors.firstName ? "true" : undefined}
-                    />
-                  </ComposerField>
-                  <ComposerField
-                    label="Last name"
-                    required
-                    name="lastName"
-                    error={errors.lastName}
-                    registerField={registerField}
-                  >
-                    <input
-                      className={`input ${errors.lastName ? "input--err" : ""}`}
-                      value={form.lastName}
-                      onChange={(e) => set("lastName", e.target.value)}
-                      aria-invalid={errors.lastName ? "true" : undefined}
-                    />
-                  </ComposerField>
-                  <ComposerField
-                    label="Staff code"
-                    hint="Auto-suggested · next free in series"
-                  >
-                    <div className="field__icon-wrap">
-                      <Users size={12} className="field__icon" aria-hidden />
-                      <input
-                        className="input input--with-icon input--with-suffix mono tnum"
-                        value={form.code}
-                        onChange={(e) => set("code", e.target.value)}
-                        placeholder="EMP016"
-                      />
-                      <span className="field__suffix">EMP</span>
-                    </div>
-                  </ComposerField>
-                  <ComposerField label="Display name" hint="Shown to parents · optional">
-                    <input
-                      className="input"
-                      value={form.displayName}
-                      onChange={(e) => set("displayName", e.target.value)}
-                      placeholder={`${form.firstName} ${form.lastName}`.trim() || "Anika Rao"}
-                    />
-                  </ComposerField>
-                </div>
-              </section>
+              <EmploymentSection
+                form={form}
+                set={set}
+                errors={errors}
+                registerField={registerField}
+                sectionStatusIndex={sectionStatus[2]}
+              />
 
-              {/* Role & teaching */}
-              <section id="composer-section-role" className="section">
-                <div className="section__head">
-                  <div>
-                    <div className="section__title">Role &amp; teaching</div>
-                    <div className="section__hint">
-                      Choose role first — fields below adjust to match.
-                    </div>
-                  </div>
-                </div>
-
-                <div className="optgrid" style={{ marginBottom: 14 }}>
-                  {ROLE_OPTIONS.map((r) => (
-                    <button
-                      key={r.value}
-                      type="button"
-                      className={`opt ${form.role === r.value ? "is-active" : ""}`}
-                      aria-pressed={form.role === r.value}
-                      onClick={() => set("role", r.value)}
-                    >
-                      <span className="opt__icon">
-                        <r.icon size={12} strokeWidth={2} />
-                      </span>
-                      <span
-                        className="col"
-                        style={{ gap: 1, minWidth: 0, alignItems: "flex-start" }}
-                      >
-                        <span style={{ fontWeight: 520 }}>{r.label}</span>
-                        <span className="subtle" style={{ fontSize: 11 }}>{r.sub}</span>
-                      </span>
-                      <span className="opt__check">
-                        <Check size={8} strokeWidth={3} />
-                      </span>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="fgrid">
-                  <ComposerField
-                    label="Subject"
-                    required={form.role === "Teaching"}
-                    name="subject"
-                    error={errors.subject}
-                    registerField={registerField}
-                  >
-                    <select
-                      className={`select ${errors.subject ? "input--err" : ""}`}
-                      value={form.subject}
-                      onChange={(e) => set("subject", e.target.value)}
-                      disabled={form.role !== "Teaching"}
-                      aria-invalid={errors.subject ? "true" : undefined}
-                    >
-                      <option value="">
-                        {form.role === "Teaching"
-                          ? "Select a subject…"
-                          : "—"}
-                      </option>
-                      {SUBJECT_OPTIONS.map((s) => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                    </select>
-                  </ComposerField>
-                  <ComposerField label="Department">
-                    <select
-                      className="select"
-                      value={form.dept}
-                      onChange={(e) => set("dept", e.target.value)}
-                    >
-                      {departments.map((d) => (
-                        <option key={d} value={d}>{d}</option>
-                      ))}
-                    </select>
-                  </ComposerField>
-                  <ComposerField
-                    label="Assigned classes"
-                    hint="They can take attendance and post grades for these"
-                    className="span-2"
-                  >
-                    <div className="taginput">
-                      {form.classes.map((c) => (
-                        <span key={c} className="tagchip">
-                          {c}
-                          <button
-                            type="button"
-                            onClick={() => removeClass(c)}
-                            aria-label={`Remove ${c}`}
-                          >
-                            <X size={9} />
-                          </button>
-                        </span>
-                      ))}
-                      <input
-                        value={classDraft}
-                        list="staff-composer-class-options"
-                        onChange={(e) => setClassDraft(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === ",") {
-                            e.preventDefault();
-                            addClass(classDraft);
-                          } else if (
-                            e.key === "Backspace" &&
-                            !classDraft &&
-                            form.classes.length
-                          ) {
-                            removeClass(form.classes[form.classes.length - 1]);
-                          }
-                        }}
-                        onBlur={() => addClass(classDraft)}
-                        placeholder={
-                          form.classes.length
-                            ? "Add another · type 10-C…"
-                            : "Add class · type 10-C…"
-                        }
-                      />
-                      <datalist id="staff-composer-class-options">
-                        {availableClasses.map((c) => (
-                          <option
-                            key={c.id || c.displayName}
-                            value={c.displayName || c.id}
-                          />
-                        ))}
-                      </datalist>
-                    </div>
-                  </ComposerField>
-                </div>
-              </section>
-
-              {/* Contact */}
-              <section id="composer-section-contact" className="section">
-                <div className="section__head">
-                  <div>
-                    <div className="section__title">Contact</div>
-                    <div className="section__hint">
-                      Used for the invite email and SMS confirmations.
-                    </div>
-                  </div>
-                  {sectionStatus[2].done ? (
-                    <span className="chip chip--ok">
-                      <Check size={9} strokeWidth={2.5} aria-hidden /> Looks good
-                    </span>
-                  ) : sectionStatus[2].filled < sectionStatus[2].total ? (
-                    <span className="chip chip--warn">
-                      {sectionStatus[2].total - sectionStatus[2].filled} missing
-                    </span>
-                  ) : null}
-                </div>
-
-                <div className="fgrid">
-                  <ComposerField
-                    label="Email"
-                    required
-                    hint="Invite goes here"
-                    name="email"
-                    error={errors.email}
-                    registerField={registerField}
-                  >
-                    <div className="field__icon-wrap">
-                      <Mail size={12} className="field__icon" aria-hidden />
-                      <input
-                        className={`input input--with-icon ${errors.email ? "input--err" : ""}`}
-                        value={form.email}
-                        type="email"
-                        onChange={(e) => set("email", e.target.value)}
-                        placeholder="anika.rao@school.edu"
-                        aria-invalid={errors.email ? "true" : undefined}
-                      />
-                    </div>
-                  </ComposerField>
-                  <ComposerField
-                    label="Phone"
-                    required
-                    name="phone"
-                    error={errors.phone}
-                    registerField={registerField}
-                  >
-                    <div className="field__icon-wrap">
-                      <Phone size={12} className="field__icon" aria-hidden />
-                      <input
-                        className={`input input--with-icon mono tnum ${errors.phone ? "input--err" : ""}`}
-                        value={form.phone}
-                        onChange={(e) => set("phone", e.target.value)}
-                        placeholder="+91 98765 12345"
-                        aria-invalid={errors.phone ? "true" : undefined}
-                      />
-                    </div>
-                  </ComposerField>
-                  <ComposerField label="Emergency contact" hint="Name and phone">
-                    <input
-                      className="input"
-                      value={form.emergencyContact}
-                      onChange={(e) => set("emergencyContact", e.target.value)}
-                      placeholder="—"
-                    />
-                  </ComposerField>
-                  <ComposerField label="Address" className="span-2">
-                    <textarea
-                      className="textarea"
-                      value={form.address}
-                      onChange={(e) => set("address", e.target.value)}
-                      placeholder="Optional · used on official letters"
-                    />
-                  </ComposerField>
-                </div>
-              </section>
-
-              {/* Employment */}
-              <section id="composer-section-employment" className="section">
-                <div className="section__head">
-                  <div>
-                    <div className="section__title">Employment</div>
-                    <div className="section__hint">
-                      Payroll uses these. You can edit later.
-                    </div>
-                  </div>
-                </div>
-
-                <div className="fgrid fgrid--3">
-                  <ComposerField label="Joining date" required>
-                    <div className="field__icon-wrap">
-                      <CalendarIcon size={12} className="field__icon" aria-hidden />
-                      <input
-                        type="date"
-                        className="input input--with-icon mono tnum"
-                        value={form.joinDate}
-                        onChange={(e) => set("joinDate", e.target.value)}
-                      />
-                    </div>
-                  </ComposerField>
-                  <ComposerField label="Employment type">
-                    <select
-                      className="select"
-                      value={form.employmentType}
-                      onChange={(e) => set("employmentType", e.target.value)}
-                    >
-                      {EMPLOYMENT_OPTIONS.map((o) => (
-                        <option key={o.value} value={o.value}>{o.label}</option>
-                      ))}
-                    </select>
-                  </ComposerField>
-                  <ComposerField label="Monthly salary" hint="Gross · INR">
-                    <div className="field__icon-wrap">
-                      <IndianRupee size={12} className="field__icon" aria-hidden />
-                      <input
-                        className="input input--with-icon input--with-suffix mono tnum"
-                        value={form.salary}
-                        onChange={(e) => set("salary", e.target.value)}
-                        placeholder="58000"
-                      />
-                      <span className="field__suffix">/ month</span>
-                    </div>
-                  </ComposerField>
-                </div>
-
-                <div className="row gap-2" style={{ marginTop: 12 }}>
-                  <button
-                    type="button"
-                    className="disclosure"
-                    onClick={() =>
-                      toast(
-                        "Bank, PAN, and PF details — open the Edit drawer after invite."
-                      )
-                    }
-                  >
-                    <Plus size={11} aria-hidden />
-                    Add bank, PAN, and PF details
-                  </button>
-                </div>
-              </section>
-
+              <ReviewSection />
             </div>
           </div>
 
@@ -1132,103 +741,5 @@ const AddStaffComposer = forwardRef(function AddStaffComposer(
     document.body
   );
 });
-
-function ComposerField({
-  label,
-  required,
-  hint,
-  error,
-  className = "",
-  name,
-  registerField,
-  children,
-}) {
-  const hintId = name ? `${name}-hint` : undefined;
-  const errorId = name && error ? `${name}-error` : undefined;
-  return (
-    <div
-      className={`field ${className}`}
-      ref={name && registerField ? registerField(name) : undefined}
-    >
-      <label className="field__label">
-        {label}
-        {required && <span className="req">*</span>}
-      </label>
-      {children}
-      {error ? (
-        <span
-          id={errorId}
-          role="alert"
-          className="field__hint"
-          style={{ color: "var(--danger)" }}
-        >
-          {error}
-        </span>
-      ) : hint ? (
-        <span id={hintId} className="field__hint">{hint}</span>
-      ) : null}
-    </div>
-  );
-}
-
-function ComposerAvatar({ previewUrl, initials, name }) {
-  if (previewUrl) {
-    return (
-      <img
-        src={previewUrl}
-        alt="Profile"
-        style={{
-          width: 56,
-          height: 56,
-          borderRadius: 999,
-          objectFit: "cover",
-          flexShrink: 0,
-        }}
-      />
-    );
-  }
-  // Same oklch two-hue formula as PhotoAvatar / the design system —
-  // every name gets a unique gradient. Empty/"?" placeholder still
-  // gets a subtle neutral surface so it reads as "awaiting input"
-  // instead of an arbitrarily-coloured disc.
-  const trimmed = (name || "").trim();
-  const showGradient = trimmed.length > 0 && initials !== "?";
-  const code1 = trimmed.charCodeAt(0) || 63;
-  const code2 = trimmed.charCodeAt(1 % Math.max(trimmed.length, 1)) || 63;
-  const hue1 = (code1 * 7) % 360;
-  const hue2 = (code2 * 11) % 360;
-  const background = showGradient
-    ? `linear-gradient(135deg, oklch(70% 0.14 ${hue1}), oklch(55% 0.16 ${hue2}))`
-    : "var(--surface-2)";
-  return (
-    <div
-      style={{
-        width: 56,
-        height: 56,
-        borderRadius: 999,
-        background,
-        border: showGradient ? "none" : "1px solid var(--border)",
-        display: "grid",
-        placeItems: "center",
-        color: showGradient ? "var(--surface)" : "var(--fg-muted)",
-        fontWeight: 600,
-        fontSize: 18,
-        letterSpacing: "-0.02em",
-        flexShrink: 0,
-      }}
-    >
-      {initials}
-    </div>
-  );
-}
-
-const SECTIONS = [
-  { id: "identity", label: "Identity" },
-  { id: "role", label: "Role & teaching" },
-  { id: "contact", label: "Contact" },
-  { id: "employment", label: "Employment" },
-  { id: "access", label: "System access" },
-  { id: "review", label: "Review & invite" },
-];
 
 export default AddStaffComposer;
