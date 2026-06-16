@@ -64,6 +64,8 @@ export const CONFIG = {
   // API endpoints
   API_ENDPOINTS: {
     LOGIN: '/api/parent/auth/login',
+    SEND_OTP: '/api/parent/auth/send-otp',
+    VERIFY_OTP: '/api/parent/auth/verify-otp',
     REFRESH_TOKEN: '/api/parent/auth/refresh',
     LOGOUT: '/api/parent/auth/logout',
     PROFILE: '/api/parent/profile',
