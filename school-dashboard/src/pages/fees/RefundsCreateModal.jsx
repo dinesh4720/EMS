@@ -71,11 +71,11 @@ export default function RefundsCreateModal({
     }
     const timeout = setTimeout(async () => {
       try {
-        const data = await studentsApi.getAll({
+        const { data } = await studentsApi.list({
           search: studentSearch,
           limit: 20,
         });
-        setStudentResults(data.students || []);
+        setStudentResults(data || []);
       } catch {
         setStudentResults([]);
       }
