@@ -1,22 +1,12 @@
 /**
- * Modal barrel exports.
+ * Generic/shared modals live alongside this file.
  *
- * Generic/shared modals are defined here.
- * Domain-specific modals remain co-located with their pages but are
- * re-exported from domain barrels for clean imports.
+ * Import modals directly from their defining file. Do NOT add wildcard
+ * re-exports (e.g. `export * from './students'`) — they pull every
+ * domain modal into the same chunk and defeat code-splitting.
  *
  * Usage:
- *   import { WriteRemarkModal } from '@/components/modals/students';
- *   import { CreateExamModal } from '@/components/modals/academics';
+ *   import UnsavedChangesModal from '@/components/modals/UnsavedChangesModal';
+ *   import { WriteRemarkModal } from '@/pages/students/components/modals/WriteRemarkModal';
  */
 export { default as UnsavedChangesModal } from './UnsavedChangesModal';
-
-// Domain barrel re-exports
-export * from './students';
-export * from './academics';
-export * from './library';
-export * from './staffs';
-export * from './classes';
-export * from './messaging';
-export * from './homework';
-export * from './transport';

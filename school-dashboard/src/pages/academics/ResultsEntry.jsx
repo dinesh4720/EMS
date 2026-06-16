@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useValidatedParams } from '../../hooks/useValidatedParams';
 import { getStoredUser } from '../../utils/authSession';
 import { useUnsavedChanges, useBeforeUnloadWarning } from '../../hooks/useUnsavedChanges';
-import { UnsavedChangesModal } from '../../components/modals';
+import UnsavedChangesModal from '../../components/modals/UnsavedChangesModal';
 import {
   Card,
   CardBody,
