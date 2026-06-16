@@ -6,22 +6,6 @@ Issues identified during audit but **not yet fixed**. Each entry includes the fi
 
 ## StaffAttendance.jsx
 
-### 1. `s.role.toLowerCase()` crash when role is an array
-**Severity:** High
-**Line:** ~115
-**Code:**
-```js
-s.role.toLowerCase().includes(lowerQuery)
-```
-**Problem:** `staff.role` can be an array (e.g. `["Teacher", "Admin"]`). Calling `.toLowerCase()` on an array returns `"[object object]"` and `.includes()` will never match, silently breaking search by role. Could throw if the value is `undefined`.
-**Fix:** Normalize before comparing:
-```js
-const roleStr = Array.isArray(s.role) ? s.role.join(' ') : (s.role || '');
-roleStr.toLowerCase().includes(lowerQuery)
-```
-
----
-
 ### 2. `getOverallAttendance` falls back to seeded pseudo-random number
 **Severity:** Medium
 **Lines:** 72–74
