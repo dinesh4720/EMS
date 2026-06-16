@@ -57,6 +57,13 @@ if (CONFIG_ERROR) {
       )
     : () => null;
 
+  // Register minimal service worker for offline shell caching
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      // Silent fail — offline shell caching is optional
+    });
+  }
+
   ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
       <Providers>

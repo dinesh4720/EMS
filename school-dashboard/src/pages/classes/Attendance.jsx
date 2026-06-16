@@ -1,13 +1,16 @@
 import { useState, useMemo, useEffect, useRef, useCallback, useLayoutEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDisclosure } from "@heroui/react";
-import { Check, X, Bell, AlertTriangle, TrendingUp, TimerOff, LogOut, AlarmClock, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { Check, X, Bell, AlertTriangle, TrendingUp, TimerOff, LogOut, AlarmClock, CalendarDays, ChevronLeft, ChevronRight, WifiOff, RefreshCw } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { useSettings } from "../../context/SettingsContext";
 import { attendanceApi, classesApi } from "../../services/api";
 import { useTranslation } from 'react-i18next';
 import { toTodayDateString } from '../../utils/dateFormatter';
 import logger from '../../utils/logger';
+import { useOnlineStatus } from '../../hooks/useOnlineStatus';
+import { useOfflineAttendanceSync } from '../../hooks/useOfflineAttendanceSync';
+import { queueOfflineAttendance, getCachedAttendance } from '../../services/offlineAttendance';
 import Button from "../../components/ui/Button";
 import Alert from "../../components/ui/Alert";
 import Modal from "../../components/ui/Modal";
@@ -92,6 +95,8 @@ export default function Attendance({ classId }) {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingAttendance, setIsLoadingAttendance] = useState(false);
   const [saveMessage, setSaveMessage] = useState(null);
+  const isOnline = useOnlineStatus();
+  const { pendingCount: offlinePendingCount, syncing: offlineSyncing, syncNow } = useOfflineAttendanceSync();
   const { isOpen: isOverwriteOpen, onOpen: onOverwriteOpen, onClose: onOverwriteClose } = useDisclosure();
   const { isOpen: isMarkAllOpen, onOpen: onMarkAllOpen, onClose: onMarkAllClose } = useDisclosure();
   const { isOpen: isRegOpen, onOpen: onRegOpen, onClose: onRegClose } = useDisclosure();
@@ -176,15 +181,33 @@ export default function Attendance({ classId }) {
       });
     } catch (error) {
       logger.warn('No existing attendance found, initializing defaults:', error.message);
-      setHasExistingAttendance(false);
-      setAttendance(prev => {
-        const next = { ...prev };
-        currentStudents.forEach(s => {
-          const k = sid(s);
-          if (!prev[k] || prev[k] === 'unmarked') next[k] = 'unmarked';
+      // Try to load from offline cache as a fallback
+      const cached = getCachedAttendance(resolvedClassId, date);
+      if (cached?.attendance) {
+        const cachedMap = {};
+        cached.attendance.forEach(r => {
+          if (r.studentId) cachedMap[r.studentId] = r.status;
         });
-        return next;
-      });
+        setHasExistingAttendance(true);
+        setAttendance(prev => {
+          const next = { ...prev };
+          currentStudents.forEach(s => {
+            const k = sid(s);
+            if (!prev[k] || prev[k] === 'unmarked') next[k] = cachedMap[k] || 'unmarked';
+          });
+          return next;
+        });
+      } else {
+        setHasExistingAttendance(false);
+        setAttendance(prev => {
+          const next = { ...prev };
+          currentStudents.forEach(s => {
+            const k = sid(s);
+            if (!prev[k] || prev[k] === 'unmarked') next[k] = 'unmarked';
+          });
+          return next;
+        });
+      }
     } finally {
       setIsLoadingAttendance(false);
     }
@@ -351,6 +374,30 @@ export default function Attendance({ classId }) {
       setSaveMessage(null);
       // BUG: half-day persistence — ensure status is sent verbatim (no client-side aliasing).
       const attendanceData = markedStudents.map(s => ({ studentId: sid(s), status: attendance[sid(s)] }));
+
+      // If offline, queue locally instead of failing
+      if (!isOnline) {
+        const record = {
+          classId: resolvedClassId,
+          date,
+          attendance: attendanceData,
+          clientTimestamp: new Date().toISOString(),
+        };
+        const result = queueOfflineAttendance(record);
+        if (result.success) {
+          setHasExistingAttendance(true);
+          setSaveMessage({
+            type: 'warning',
+            text: t('attendance.savedOffline', 'Saved offline for {{count}} students. Will sync when connection is restored.', { count: markedStudents.length }),
+          });
+          clearMessageAfter(5000);
+        } else {
+          setSaveMessage({ type: 'error', text: t('attendance.failedToQueueOffline', 'Failed to save offline. Please try again.') });
+          clearMessageAfter(5000);
+        }
+        return;
+      }
+
       const response = await attendanceApi.markBulk({
         classId: resolvedClassId,
         date,
@@ -386,6 +433,32 @@ export default function Attendance({ classId }) {
       }
     } catch (error) {
       logger.error('Error saving attendance:', error);
+      // Network or server failure — try to queue offline as a fallback
+      const isNetworkError =
+        !error.status ||
+        error.message?.includes('Network') ||
+        error.message?.includes('timeout') ||
+        error.message?.includes('fetch') ||
+        error.message?.includes('Failed to fetch');
+      if (isNetworkError) {
+        const attendanceData = markedStudents.map(s => ({ studentId: sid(s), status: attendance[sid(s)] }));
+        const record = {
+          classId: resolvedClassId,
+          date,
+          attendance: attendanceData,
+          clientTimestamp: new Date().toISOString(),
+        };
+        const result = queueOfflineAttendance(record);
+        if (result.success) {
+          setHasExistingAttendance(true);
+          setSaveMessage({
+            type: 'warning',
+            text: t('attendance.savedOffline', 'Saved offline for {{count}} students. Will sync when connection is restored.', { count: markedStudents.length }),
+          });
+          clearMessageAfter(5000);
+          return;
+        }
+      }
       setSaveMessage({ type: 'error', text: error.message || t('attendance.failedToSave', 'Failed to save attendance') });
       clearMessageAfter(5000);
     } finally {
@@ -543,6 +616,33 @@ export default function Attendance({ classId }) {
       )}
       {invalidDateReason && !isLocked && (
         <Alert variant="danger" className="mx-6">{invalidDateReason}</Alert>
+      )}
+      {!isOnline && (
+        <Alert variant="warning" className="mx-6">
+          <span className="flex items-center gap-2">
+            <WifiOff size={16} />
+            {t('attendance.offlineMode', 'You are offline. Attendance will be saved locally and synced automatically when your connection is restored.')}
+          </span>
+        </Alert>
+      )}
+      {offlinePendingCount > 0 && isOnline && (
+        <Alert variant="info" className="mx-6">
+          <span className="flex items-center gap-2">
+            <RefreshCw size={16} className={offlineSyncing ? 'animate-spin' : ''} />
+            {offlineSyncing
+              ? t('attendance.syncingOffline', 'Syncing {{count}} offline attendance record(s)...', { count: offlinePendingCount })
+              : t('attendance.pendingSync', '{{count}} attendance record(s) saved offline. Click to retry.', { count: offlinePendingCount })}
+            {!offlineSyncing && (
+              <button
+                type="button"
+                className="underline ml-2"
+                onClick={syncNow}
+              >
+                {t('common.syncNow', 'Sync now')}
+              </button>
+            )}
+          </span>
+        </Alert>
       )}
 
       {/* KPI metric strip */}
@@ -736,8 +836,13 @@ export default function Attendance({ classId }) {
             onClick={handleSaveAttendance}
             disabled={isReadOnly || isSaving}
             loading={isSaving}
+            icon={!isOnline ? <WifiOff size={14} /> : null}
           >
-            {isSaving ? t('common.saving', 'Saving...') : t('attendance.saveAttendance', 'Save Attendance')}
+            {isSaving
+              ? t('common.saving', 'Saving...')
+              : !isOnline
+                ? t('attendance.saveOffline', 'Save Offline')
+                : t('attendance.saveAttendance', 'Save Attendance')}
           </Button>
         </div>
       </div>
