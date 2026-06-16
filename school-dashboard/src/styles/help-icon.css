@@ -1,0 +1,40 @@
+/* ============================================================
+   HelpIcon — src/components/ui/HelpIcon.jsx
+
+   Token-driven affordance with keyboard parity. Hover and
+   :focus-visible share one accent treatment, so keyboard users
+   get the same cue as mouse users instead of nothing. The button
+   no longer mutates element style on mouse events, which also
+   keeps the affordance theme-aware in dark mode.
+   (A11Y-04 — keyboard focus; same fix as DS-10.)
+   ============================================================ */
+
+.help-icon__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-full);
+  border: 1.5px solid var(--border-strong);
+  background: transparent;
+  color: var(--fg-muted);
+  font-weight: var(--fw-semibold);
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+/* Hover and keyboard focus get the identical accent affordance. */
+.help-icon__btn:hover,
+.help-icon__btn:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+
+/* Visible focus ring for keyboard navigation only. */
+.help-icon__btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
