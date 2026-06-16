@@ -20,7 +20,6 @@ import {
   TableCell,
   Tabs,
   Tab,
-  Spinner,
 } from "@heroui/react";
 import {
   Upload,
@@ -37,6 +36,8 @@ import {
   Trash2,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { SkeletonTable, SkeletonCard } from "../../components/ui/Skeleton";
+import ErrorState from "../../components/ui/ErrorState";
 import { request, requestUpload, requestBlob } from "../../services/api";
 
 const EXPORT_ENTITIES = [
@@ -62,8 +63,10 @@ export default function DataToolsSettings() {
   const [exportEntity, setExportEntity] = useState("students");
   const [backupData, setBackupData] = useState(null);
   const [backupLoading, setBackupLoading] = useState(true);
+  const [backupError, setBackupError] = useState(null);
   const [gdprData, setGdprData] = useState(null);
   const [gdprLoading, setGdprLoading] = useState(true);
+  const [gdprError, setGdprError] = useState(null);
   const fileInputRef = useRef(null);
 
   /* ─── Import ─── */
@@ -140,9 +143,11 @@ export default function DataToolsSettings() {
   const fetchBackups = useCallback(async () => {
     try {
       setBackupLoading(true);
+      setBackupError(null);
       const data = await request("/data-tools/backup");
       setBackupData(data);
-    } catch {
+    } catch (error) {
+      setBackupError(error);
       setBackupData(null);
     } finally {
       setBackupLoading(false);
@@ -153,9 +158,11 @@ export default function DataToolsSettings() {
   const fetchGdpr = useCallback(async () => {
     try {
       setGdprLoading(true);
+      setGdprError(null);
       const data = await request("/data-tools/gdpr");
       setGdprData(data);
-    } catch {
+    } catch (error) {
+      setGdprError(error);
       setGdprData(null);
     } finally {
       setGdprLoading(false);
@@ -377,9 +384,23 @@ export default function DataToolsSettings() {
                 </div>
 
                 {backupLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Spinner size="md" />
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <SkeletonCard hasHeader={false} bodyLines={2} />
+                      <SkeletonCard hasHeader={false} bodyLines={2} />
+                      <SkeletonCard hasHeader={false} bodyLines={2} />
+                    </div>
+                    <SkeletonTable rows={4} columns={3} />
                   </div>
+                ) : backupError ? (
+                  <ErrorState
+                    icon={HardDrive}
+                    title="Couldn't load backup information"
+                    description="We couldn't reach the backup service. Try again in a moment."
+                    error={backupError}
+                    onRetry={fetchBackups}
+                    retryLabel="Retry"
+                  />
                 ) : backupData ? (
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -461,9 +482,23 @@ export default function DataToolsSettings() {
                 </div>
 
                 {gdprLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Spinner size="md" />
+                  <div className="space-y-4">
+                    <SkeletonCard hasHeader bodyLines={1} />
+                    <SkeletonTable rows={3} columns={3} />
+                    <SkeletonCard hasHeader bodyLines={1} />
+                    <SkeletonTable rows={3} columns={2} />
+                    <SkeletonCard hasHeader bodyLines={1} />
+                    <SkeletonTable rows={3} columns={2} />
                   </div>
+                ) : gdprError ? (
+                  <ErrorState
+                    icon={Shield}
+                    title="Couldn't load GDPR data"
+                    description="We couldn't reach the privacy service. Try again in a moment."
+                    error={gdprError}
+                    onRetry={fetchGdpr}
+                    retryLabel="Retry"
+                  />
                 ) : gdprData ? (
                   <div className="space-y-4">
                     {/* Consent Logs */}
