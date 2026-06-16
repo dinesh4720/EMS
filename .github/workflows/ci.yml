@@ -11,8 +11,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Build Check
+  build-dashboard:
+    name: Build Dashboard
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -35,8 +35,8 @@ jobs:
       - name: Build
         run: npm run build
 
-  lint:
-    name: Lint Check
+  lint-dashboard:
+    name: Lint Dashboard
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -59,8 +59,8 @@ jobs:
       - name: Lint
         run: npm run lint
 
-  unit-tests:
-    name: Unit Tests with Coverage
+  unit-tests-dashboard:
+    name: Dashboard Unit Tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -121,6 +121,46 @@ jobs:
 
       - name: List Playwright tests (compile check)
         run: npx playwright test --list
+
+  build-parent-app:
+    name: Build Parent App
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Build parent app (web)
+        run: npm run build:web -w parent-app
+
+  build-staff-app:
+    name: Build Staff App
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Build staff app (web)
+        run: npm run build:web -w staff-app
 
   dependency-review:
     name: Dependency Review

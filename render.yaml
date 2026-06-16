@@ -1,0 +1,54 @@
+services:
+  - type: static
+    name: school-dashboard
+    runtime: static
+    rootDir: .
+    buildCommand: npm ci --legacy-peer-deps && npm run build -w school-dashboard
+    staticPublishPath: school-dashboard/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        sync: false
+      - key: VITE_SCHOOL_NAME
+        sync: false
+      - key: VITE_SCHOOL_ADDRESS
+        sync: false
+      - key: VITE_SCHOOL_CONTACT
+        sync: false
+      - key: VITE_SCHOOL_GSTIN
+        sync: false
+
+  - type: static
+    name: parent-app-web
+    runtime: static
+    rootDir: .
+    buildCommand: npm ci --legacy-peer-deps && npm run build:web -w parent-app
+    staticPublishPath: parent-app/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: EXPO_PUBLIC_API_BASE_URL
+        sync: false
+      - key: EXPO_PUBLIC_SOCKET_URL
+        sync: false
+
+  - type: static
+    name: staff-app-web
+    runtime: static
+    rootDir: .
+    buildCommand: npm ci --legacy-peer-deps && npm run build:web -w staff-app
+    staticPublishPath: staff-app/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: EXPO_PUBLIC_API_BASE_URL
+        sync: false
+      - key: EXPO_PUBLIC_SOCKET_URL
+        sync: false

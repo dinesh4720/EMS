@@ -1,0 +1,84 @@
+name: Deploy Frontend
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - staging
+          - production
+
+concurrency:
+  group: deploy-frontend-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Pre-deploy Tests
+    uses: ./.github/workflows/ci.yml
+
+  deploy-dashboard:
+    name: Deploy Dashboard
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy Dashboard to Render
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_DASHBOARD }}
+        run: |
+          if [ -n "$RENDER_DEPLOY_HOOK" ]; then
+            curl -s "$RENDER_DEPLOY_HOOK"
+            echo "Dashboard deploy triggered on Render"
+          else
+            echo "RENDER_DEPLOY_HOOK_DASHBOARD secret not set. Skipping deploy."
+          fi
+
+  deploy-parent-app:
+    name: Deploy Parent App
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy Parent App to Render
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_PARENT_APP }}
+        run: |
+          if [ -n "$RENDER_DEPLOY_HOOK" ]; then
+            curl -s "$RENDER_DEPLOY_HOOK"
+            echo "Parent app deploy triggered on Render"
+          else
+            echo "RENDER_DEPLOY_HOOK_PARENT_APP secret not set. Skipping deploy."
+          fi
+
+  deploy-staff-app:
+    name: Deploy Staff App
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy Staff App to Render
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_STAFF_APP }}
+        run: |
+          if [ -n "$RENDER_DEPLOY_HOOK" ]; then
+            curl -s "$RENDER_DEPLOY_HOOK"
+            echo "Staff app deploy triggered on Render"
+          else
+            echo "RENDER_DEPLOY_HOOK_STAFF_APP secret not set. Skipping deploy."
+          fi
