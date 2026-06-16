@@ -118,6 +118,8 @@ See `../EMS-backend/.env.example` for full configuration details for each servic
 
 Currently only `school-dashboard` is integrated. `parent-app` and `staff-app` are not yet integrated.
 
+For ownership, repository boundaries, and the roadmap for extracting Owlin to its own repo, see [`owlin/OWNERSHIP.md`](owlin/OWNERSHIP.md).
+
 ---
 
 ## Architecture

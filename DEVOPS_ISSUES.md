@@ -119,7 +119,7 @@ They are separate from the security issues (CRITICAL_ISSUES.md) and product gaps
 - **Directory:** `/owlin/` — contains its own frontend, server, and SDK
 - **What it is:** A click/user behavior tracker with its own Express server, database (`data.json`), and React frontend
 - **Why this matters:** It's an entirely separate product embedded inside your school ERP repo. It has its own `node_modules`, its own server, and stores data in a flat JSON file (`owlin/server/data.json`). It's unclear if it's integrated with the EMS or just living alongside it. This creates confusion about what the repo actually is.
-- **Fix:** Either integrate it properly (if it's meant to track EMS usage) or move it to its own repository.
+- **Fix:** Documented the ownership and repository boundary in `owlin/OWNERSHIP.md`. Owlin remains a bounded subsystem inside the EMS monorepo for now; extraction to its own repository is deferred until `school-dashboard/owlin-sdk/` is consolidated onto `owlin/sdk/` and a publishing/deployment path is defined.
 
 ---
 
@@ -172,6 +172,6 @@ They are separate from the security issues (CRITICAL_ISSUES.md) and product gaps
 9. [ ] Stop loading all data on login — fetch per-role, per-view
 10. [ ] Complete `render.yaml` with all services and environment variables
 11. [ ] Add a root orchestration script or `docker-compose.yml`
-12. [ ] Decide what `owlin` is and move it to its own repo if it's a separate product
+12. [x] Decide what `owlin` is and document its ownership/boundary (`owlin/OWNERSHIP.md`); extraction to its own repo is deferred until SDK consolidation is complete
 13. [x] Add content filtering and proper backend proxying to the AI assistant
 14. [ ] Remove `backend/school.db` from git tracking
