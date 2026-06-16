@@ -101,11 +101,11 @@ export default function StepAcademicYear({ onNext, wizardState, setWizardState }
   };
 
   const handleNext = () => {
-    if (!fromYear.match(/^\d{4}-\d{2}$/)) {
+    if (!isValidFormat(fromYear)) {
       toast.error('From academic year must be in YYYY-YY format (e.g. 2025-26)');
       return;
     }
-    if (!toYear.match(/^\d{4}-\d{2}$/)) {
+    if (!isValidFormat(toYear)) {
       toast.error('To academic year must be in YYYY-YY format (e.g. 2026-27)');
       return;
     }

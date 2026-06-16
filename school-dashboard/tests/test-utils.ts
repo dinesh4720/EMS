@@ -2559,9 +2559,34 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
     }
 
     /* ── Promotion ── */
-    if (path === '/promotion' || path.match(/^\/promotion\//)) {
+    if (path === '/promotions' || path.match(/^\/promotions\//)) {
       if (path.includes('/rules'))      return json({ minAttendancePercent: 75, feeRequirement: 'none' });
       if (path.includes('/eligible'))   return json(state.students.filter((s) => s.status === 'active'));
+      if (path.includes('/check-year')) return json({ exists: true, classCount: state.classes.length });
+      if (path.includes('/preview-all')) {
+        return json({
+          classMappings: state.classes.map((c) => ({
+            fromClassId: c.id,
+            fromClassName: c.name,
+            fromSection: c.section,
+            studentCount: state.students.filter((s) => s.classId === c.id).length,
+            eligibleCount: state.students.filter((s) => s.classId === c.id).length,
+            blockedCount: 0,
+            isGraduating: false,
+            suggestedTargetClassId: '',
+            suggestedTargetClassName: '',
+            targetClassExists: false,
+            targetCapacity: 40,
+          })),
+          targetClassOptions: state.classes.map((c) => ({ _id: c.id, label: `${c.name}-${c.section}` })),
+        });
+      }
+      if (path.includes('/execute-all') && method === 'POST') {
+        return json({ summary: { totalStudents: 0, promoted: 0, detained: 0, graduated: 0, errors: 0 }, classMappings: [], errors: [] });
+      }
+      if (path.includes('/new-academic-year') && method === 'POST') {
+        return json({ classesCreated: state.classes.length });
+      }
       if (method === 'POST')            return json({ promoted: 0, detained: 0, message: 'Promotion completed' });
       return json([]);
     }
