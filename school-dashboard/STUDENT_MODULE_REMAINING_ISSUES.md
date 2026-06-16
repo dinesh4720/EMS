@@ -1,16 +1,16 @@
 # Student Module — Remaining Issues
 
 > Issues that were **not fixed** in the initial bug-fix pass.
-> Ordered by severity. Last updated: 2026-03-11.
+> Ordered by severity. Last updated: 2026-06-12.
 
 ---
 
 ## Critical
 
-### 1. `PromoteStudentModal` uses `api.patch` — no PATCH route exists on the backend
-- **File:** `src/pages/students/components/modals/PromoteStudentModal.jsx:54`
-- **Detail:** Calls `api.patch('/students/:id', ...)` but `routes/students.js` only defines `PUT /:id`. This will return a 404/405 and promotion will silently fail.
-- **Fix:** Change `api.patch` → `api.put` (or add a `PATCH /:id` route to the backend).
+### 1. `PromoteStudentModal` uses `api.patch` — no PATCH route exists on the backend ✅ RESOLVED
+- **File:** `src/pages/students/components/modals/PromoteStudentModal.jsx`
+- **Detail:** The modal previously called `api.patch('/students/:id', ...)` but the backend only defined `PUT /:id`, causing promotion to fail with a 404/405.
+- **Fix:** The modal now calls `studentsApi.promote(id, data)`, which performs a `POST /students/:id/promote` request to the dedicated promotion endpoint. The backend already has a matching `POST /students/:id/promote` route in `routes/students/promotions.js` that handles class promotion and graduation with fee/attendance checks. Unit tests for `studentsApi.promote` and `studentsApi.bulkPromote` were added in `src/services/api/staff.test.js`.
 
 ---
 
@@ -97,4 +97,4 @@
 
 ---
 
-*Total remaining: 12 issues (4 critical, 3 high, 2 medium, 3 low)*
+*Total remaining: 11 issues (3 critical, 3 high, 2 medium, 3 low)*
