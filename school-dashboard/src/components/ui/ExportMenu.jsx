@@ -5,6 +5,7 @@ import DropdownMenu from "./DropdownMenu";
 import Button from "./Button";
 import toast from "./toast";
 import { escapeHtml } from "../../utils/sanitize";
+import { bg, fg, border as borderColor } from "../../theme/printPalette";
 
 /**
  * ExportMenu — REVAMP-106 standard export dropdown.
@@ -82,13 +83,13 @@ function buildHtmlDocument({ title, rows, columns, mode }) {
 <title>${escapeHtml(title)}</title>
 <style>
   @page { size: A4; margin: 16mm; }
-  html,body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif; color:#111827; margin:0; padding:24px; }
+  html,body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif; color:${fg.body}; margin:0; padding:24px; }
   h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
-  .meta { font-size: 11px; color:#6b7280; margin-bottom: 16px; font-variant-numeric: tabular-nums; }
+  .meta { font-size: 11px; color:${fg.muted}; margin-bottom: 16px; font-variant-numeric: tabular-nums; }
   table { width:100%; border-collapse: collapse; font-size: 12px; }
-  thead th { background:#f3f4f6; text-align:left; padding:8px 10px; border:1px solid #e5e7eb; font-weight:600; color:#374151; }
-  tbody td { padding:8px 10px; border:1px solid #e5e7eb; vertical-align: top; }
-  tbody tr:nth-child(even) td { background:#fafafa; }
+  thead th { background:${bg.head}; text-align:left; padding:8px 10px; border:1px solid ${borderColor.default}; font-weight:600; color:${fg.label}; }
+  tbody td { padding:8px 10px; border:1px solid ${borderColor.default}; vertical-align: top; }
+  tbody tr:nth-child(even) td { background:${bg.altRowSoft}; }
   @media print { body { padding: 0; } .no-print { display:none; } }
 </style>
 </head><body>

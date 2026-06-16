@@ -4,6 +4,7 @@ import { BarChart4, Download, ExternalLink } from "lucide-react";
 import toast from "react-hot-toast";
 import Modal from "../../../../components/ui/Modal";
 import { escapeHtml } from "../../../../utils/sanitize";
+import { bg, fg, border as borderColor } from "../../../../theme/printPalette";
 
 export default function ProgressCardModal({
   isOpen,
@@ -36,8 +37,8 @@ export default function ProgressCardModal({
           body{font-family:sans-serif;padding:20px;max-width:800px;margin:0 auto}
           h1{font-size:24px}
           table{width:100%;border-collapse:collapse;margin-top:16px}
-          th,td{border:1px solid #ddd;padding:8px;text-align:left}
-          th{background:#f3f4f6}
+          th,td{border:1px solid ${borderColor.default};padding:8px;text-align:left}
+          th{background:${bg.head}}
           @page { size: A4; margin: 20mm; }
           @media print{button{display:none}}
         </style>
@@ -46,7 +47,7 @@ export default function ProgressCardModal({
         <p><strong>Name:</strong> ${escapeHtml(student.name)}</p>
         <p><strong>Class:</strong> ${escapeHtml(student.class || "N/A")} &nbsp; <strong>Roll No:</strong> ${escapeHtml(student.rollNo || "N/A")}</p>
         <p><strong>Admission No:</strong> ${escapeHtml(student.admissionNo || "N/A")}</p>
-        <p style="margin-top:16px;color:#6b7280;font-size:14px">For detailed marks and grades, visit the Academics tab of the student profile.</p>
+        <p style="margin-top:16px;color:${fg.muted};font-size:14px">For detailed marks and grades, visit the Academics tab of the student profile.</p>
         <script>window.onload=function(){window.print()}</script>
         </body></html>
       `);
