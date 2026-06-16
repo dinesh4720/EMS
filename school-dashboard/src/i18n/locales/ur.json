@@ -928,8 +928,6 @@
       "failedToDeleteForm": " form میں ناکامی",
       "failedToDuplicateForm": " form میں ناکامی",
       "failedToLoadCommunicationSettings": " communication ترتیبات میں ناکامی",
-      "passwordsDoNotMatch": "پاس ورڈ مطابقت نہیں رکھتے",
-      "passwordMustBeAtLeast5Characters": "پاس ورڈ کم از کم 5 حروف کا ہونا چاہیے",
       "failedToLoadConfigurations": " configurations میں ناکامی",
       "failedToLoadPermissionRequests": " permission requests میں ناکامی",
       "failedToApproveRequest": " request میں ناکامی",

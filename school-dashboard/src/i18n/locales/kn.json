@@ -928,8 +928,6 @@
       "failedToDeleteForm": "delete form ವಿಫಲವಾಗಿದೆ",
       "failedToDuplicateForm": "duplicate form ವಿಫಲವಾಗಿದೆ",
       "failedToLoadCommunicationSettings": "load communication settings ವಿಫಲವಾಗಿದೆ",
-      "passwordsDoNotMatch": "ಪಾಸ್‌ವರ್ಡ್‌ಗಳು ಹೊಂದಿಕೆಯಾಗುತ್ತಿಲ್ಲ",
-      "passwordMustBeAtLeast5Characters": "ಪಾಸ್‌ವರ್ಡ್ ಕನಿಷ್ಠ 5 ಅಕ್ಷರಗಳಾಗಿರಬೇಕು",
       "failedToLoadConfigurations": "load configurations ವಿಫಲವಾಗಿದೆ",
       "failedToLoadPermissionRequests": "load permission requests ವಿಫಲವಾಗಿದೆ",
       "failedToApproveRequest": "approve request ವಿಫಲವಾಗಿದೆ",

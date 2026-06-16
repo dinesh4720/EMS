@@ -928,8 +928,6 @@
       "failedToDeleteForm": "फॉर्म हटाने करने में विफल",
       "failedToDuplicateForm": "फॉर्म डुप्लिकेट करने में विफल",
       "failedToLoadCommunicationSettings": "संचार सेटिंग्स लोड करने में विफल",
-      "passwordsDoNotMatch": "पासवर्ड मेल नहीं खाते",
-      "passwordMustBeAtLeast5Characters": "पासवर्ड कम से कम 5 अक्षरों का होना चाहिए",
       "failedToLoadConfigurations": "कॉन्फ़िगरेशन लोड करने में विफल",
       "failedToLoadPermissionRequests": "अनुमति अनुरोध लोड करने में विफल",
       "failedToApproveRequest": "अनुरोध स्वीकृत करने में विफल",

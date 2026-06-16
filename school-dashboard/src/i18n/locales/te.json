@@ -953,8 +953,6 @@
       "failedToDeleteForm": "తొలగించు form విఫలమైంది",
       "failedToDuplicateForm": "duplicate form విఫలమైంది",
       "failedToLoadCommunicationSettings": "load communication settings విఫలమైంది",
-      "passwordsDoNotMatch": "పాస్‌వర్డ్‌లు సరిపోలడం లేదు",
-      "passwordMustBeAtLeast5Characters": "పాస్‌వర్డ్ కనీసం 5 అక్షరాలు ఉండాలి",
       "failedToLoadConfigurations": "load configurations విఫలమైంది",
       "failedToLoadPermissionRequests": "load permission requests విఫలమైంది",
       "failedToApproveRequest": "approve request విఫలమైంది",
