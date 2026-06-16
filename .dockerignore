@@ -1,0 +1,17 @@
+node_modules
+npm-debug.log*
+.env
+.env.*
+!.env.docker
+dist
+dist-electron
+*.test.js
+*.spec.js
+.git
+.gitignore
+*.md
+coverage
+.nyc_output
+playwright-report
+test-results
+lighthouse-report.html

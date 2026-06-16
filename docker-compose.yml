@@ -1,23 +1,71 @@
+# ============================================================
+# EMS — Full-Stack Orchestration
+# ============================================================
+# Brings up all 5 applications plus shared infrastructure:
+#   1. school-backend   (Node/Express API)
+#   2. school-dashboard (Vite React SPA)
+#   3. parent-app       (Expo web SPA)
+#   4. staff-app        (Expo web SPA)
+#   5. owlin-web        (Vite React SPA)
+#   6. owlin-server     (Node/Express analytics API)
+#   + mongo, redis, mongo-express
+#
+# Prerequisites:
+#   - EMS-backend repo must be a sibling directory (../EMS-backend)
+#   - EMS-backend/.env.docker must exist
+#
+# Quick start:
+#   make up        # or: docker compose up -d
+#   make logs      # tail all logs
+#   make down      # tear everything down
+#
+# URLs (host):
+#   Backend API      http://localhost:3001
+#   School Dashboard http://localhost:8080
+#   Parent App       http://localhost:8081
+#   Staff App        http://localhost:8082
+#   Owlin Web        http://localhost:4000
+#   Owlin Server     http://localhost:4001
+#   Mongo Express    http://localhost:8085 (profile: tools)
+#   MongoDB          mongodb://localhost:27017
+#   Redis            redis://localhost:6379
+# ============================================================
+
 services:
+  # ─── Infrastructure ───────────────────────────────────────
   mongo:
     image: mongo:7
     container_name: ems-mongo
-    restart: unless-stopped
     ports:
       - "27017:27017"
     volumes:
-      - mongo-data:/data/db
+      - mongo_data:/data/db
     healthcheck:
       test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s
+      start_period: 20s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: ems-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
   mongo-express:
     image: mongo-express:1.0.2-20
     container_name: ems-mongo-express
-    restart: unless-stopped
     profiles:
       - tools
     depends_on:
@@ -28,6 +76,101 @@ services:
     environment:
       ME_CONFIG_MONGODB_SERVER: mongo
       ME_CONFIG_BASICAUTH: "false"
+    restart: unless-stopped
+
+  # ─── App 1: school-backend ────────────────────────────────
+  backend:
+    build:
+      context: ../EMS-backend
+      dockerfile: Dockerfile
+    container_name: ems-backend
+    ports:
+      - "3001:3001"
+    env_file:
+      - ../EMS-backend/.env.docker
+    environment:
+      # Override host-localhost refs with Docker service names
+      MONGO_URI: mongodb://mongo:27017/school_db
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # ─── App 2: school-dashboard ──────────────────────────────
+  school-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: school-dashboard
+    container_name: ems-dashboard
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+
+  # ─── App 3: parent-app ────────────────────────────────────
+  parent-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: parent-app
+    container_name: ems-parent-app
+    ports:
+      - "8081:80"
+    restart: unless-stopped
+
+  # ─── App 4: staff-app ─────────────────────────────────────
+  staff-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: staff-app
+    container_name: ems-staff-app
+    ports:
+      - "8082:80"
+    restart: unless-stopped
+
+  # ─── App 5a: owlin-web ────────────────────────────────────
+  owlin-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: owlin-web
+    container_name: ems-owlin-web
+    ports:
+      - "4000:80"
+    restart: unless-stopped
+
+  # ─── App 5b: owlin-server ─────────────────────────────────
+  owlin-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: owlin-server
+    container_name: ems-owlin-server
+    ports:
+      - "4001:4001"
+    environment:
+      PORT: 4001
+      NODE_ENV: development
+      # Local SQLite via libsql (zero-config for dev)
+      TURSO_URL: file:/data/owlin.db
+      TURSO_AUTH_TOKEN: local-dev-token
+      OWLIN_ADMIN_KEY: change-me-to-a-strong-secret
+      CORS_ORIGINS: "http://localhost:4000,http://localhost:8080,http://localhost:8081,http://localhost:8082"
+    volumes:
+      - owlin_data:/data
+    restart: unless-stopped
 
 volumes:
-  mongo-data:
+  mongo_data:
+  redis_data:
+  owlin_data:
