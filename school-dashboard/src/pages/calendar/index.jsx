@@ -313,6 +313,7 @@ export default function CalendarPage() {
     onDateClick: openAddDrawer,
     onEventClick: openEventDetail,
     eventTypes,
+    isLoading: loadingAppointments || loadingTimetable,
   };
 
   const sidebarContent = (

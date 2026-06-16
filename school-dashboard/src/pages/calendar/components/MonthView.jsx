@@ -1,6 +1,7 @@
 import Tooltip from "../../../components/ui/Tooltip";
 import { useTranslation } from "react-i18next";
 import { daysOfWeek, formatDateKey } from "../constants";
+import { Bone } from "../../../components/ui/Skeleton";
 
 export default function MonthView({
   year,
@@ -11,6 +12,7 @@ export default function MonthView({
   getClassName,
   onDateClick,
   onEventClick,
+  isLoading = false,
 }) {
   const { t } = useTranslation();
   const firstDayOfMonth = new Date(year, month, 1).getDay();
@@ -22,6 +24,27 @@ export default function MonthView({
 
   const visibleEventLimit = selectedStaff ? 4 : 3;
   const dayEventLimit = selectedStaff ? 2 : 3;
+
+  const isLoadingStaffData = isLoading && !!selectedStaff;
+  const loadingDayCount = 6;
+
+  const renderLoadingCell = (key) => (
+    <div
+      key={key}
+      role="status"
+      aria-busy="true"
+      aria-label={t("calendar.monthView.loading", "Loading events")}
+      className="calendar-month__cell"
+    >
+      <div className="flex items-center justify-between mb-1.5">
+        <Bone className="h-3 w-3 rounded-full" />
+      </div>
+      <div className="space-y-1">
+        <Bone className="h-3 w-3/4" />
+        <Bone className="h-3 w-1/2" />
+      </div>
+    </div>
+  );
 
   const cells = [];
 
@@ -38,6 +61,22 @@ export default function MonthView({
   }
 
   for (let day = 1; day <= daysInMonth; day++) {
+    if (isLoadingStaffData && day <= loadingDayCount) {
+      cells.push(renderLoadingCell(day));
+      continue;
+    }
+    if (isLoadingStaffData && day > loadingDayCount) {
+      cells.push(
+        <div
+          key={`loading-rest-${day}`}
+          className="calendar-month__cell"
+          aria-hidden="true"
+        >
+          <span className="calendar-month__date text-fg-faint">{day}</span>
+        </div>,
+      );
+      continue;
+    }
     const dateKey = formatDateKey(year, month, day);
     const dayEvents = getEventsForDate(dateKey);
     const timetableClasses = getTimetableForDate(dateKey);
