@@ -17,6 +17,7 @@ import TabNavigator from './src/navigation/TabNavigator';
 import EditProfileScreen from './src/screens/EditProfileScreen';
 import ChangePasswordScreen from './src/screens/ChangePasswordScreen';
 import { initI18n } from './src/i18n';
+import { useOTAUpdates } from './src/hooks/useOTAUpdates';
 
 const Stack = createNativeStackNavigator();
 
@@ -87,6 +88,8 @@ export default function App() {
   useEffect(() => {
     initI18n().then(() => setI18nReady(true));
   }, []);
+
+  useOTAUpdates();
 
   if (!i18nReady) {
     return (

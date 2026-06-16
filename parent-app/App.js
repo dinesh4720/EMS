@@ -9,6 +9,7 @@ import { StudentProvider } from './src/context/StudentContext';
 import { ChatProvider } from './src/context/ChatContext';
 import { AppNavigator } from './src/navigation';
 import { initI18n } from './src/i18n';
+import { useOTAUpdates } from './src/hooks/useOTAUpdates';
 
 export default function App() {
   const [i18nReady, setI18nReady] = useState(false);
@@ -16,6 +17,8 @@ export default function App() {
   useEffect(() => {
     initI18n().then(() => setI18nReady(true));
   }, []);
+
+  useOTAUpdates();
 
   if (!i18nReady) {
     return (
