@@ -1,12 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Plus, BellRing, Printer, Inbox } from "lucide-react";
 import toast from "react-hot-toast";
 
 import useFeesData, { derivePaymentStatus } from "../../hooks/useFeesData";
+import { useDebounce } from "../../hooks/useDebounce";
 import FeesKpiStrip from "../../components/fees/FeesKpiStrip";
 import PaymentsTable from "../../components/fees/PaymentsTable";
 import PaymentSheet from "../../components/fees/PaymentSheet";
+import Pagination from "../../components/common/Pagination";
 import ToolbarSearch from "../../components/ui/ToolbarSearch";
 import ErrorState from "../../components/ui/ErrorState";
 import EmptyState from "../../components/ui/EmptyState";
@@ -32,6 +34,7 @@ export default function FeesPage() {
   const studentParam = searchParams.get("student");
 
   const [search, setSearch] = useState(searchParams.get("q") || "");
+  const [page, setPage] = useState(1);
   const [sheetOpen, setSheetOpen] = useState(!!studentParam);
   const [printOpen, setPrintOpen] = useState(false);
 
@@ -41,7 +44,15 @@ export default function FeesPage() {
     setSheetOpen(true);
   }
 
-  const { payments, filtered, kpis, isLoading, isError, error, refetch } = useFeesData({ status, search });
+  // Search runs server-side (PAG-01); debounce so we don't refetch on every
+  // keystroke, and reset to page 1 whenever the result set changes.
+  const debouncedSearch = useDebounce(search, 400);
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+
+  const { payments, filtered, kpis, pagination, isLoading, isFetching, isError, error, refetch } =
+    useFeesData({ status, search: debouncedSearch, page, limit: 25 });
 
   const setStatus = (next) => {
     setSearchParams(
@@ -220,7 +231,7 @@ export default function FeesPage() {
             onRetry={refetch}
             size="lg"
           />
-        ) : filtered.length === 0 ? (
+        ) : payments.length === 0 ? (
           <EmptyState
             icon={Inbox}
             title={
@@ -247,11 +258,30 @@ export default function FeesPage() {
             size="md"
           />
         ) : (
-          <PaymentsTable
-            rows={filtered}
-            onCollect={openSheet}
-            onSendReminder={onSendReminder}
-          />
+          <>
+            {filtered.length > 0 ? (
+              <PaymentsTable
+                rows={filtered}
+                onCollect={openSheet}
+                onSendReminder={onSendReminder}
+              />
+            ) : (
+              <p className="px-1 py-6 text-sm text-fg-muted">
+                No {status} payments on this page.
+              </p>
+            )}
+
+            {pagination && pagination.total > 0 && (
+              <Pagination
+                currentPage={pagination.page || page}
+                totalPages={pagination.totalPages || 1}
+                onPageChange={setPage}
+                totalItems={pagination.total}
+                itemLabel="payments"
+                disabled={isFetching}
+              />
+            )}
+          </>
         )}
 
         <PaymentSheet

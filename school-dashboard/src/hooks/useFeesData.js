@@ -173,30 +173,65 @@ export function filterPayments(payments, { status = "all", search = "" } = {}, n
   });
 }
 
+// Build the query params for GET /fees/payments, omitting empty values so we
+// never send `academicYear=undefined` or a blank `search`. Page/limit drive
+// server-side pagination; search is matched server-side (PAG-01) so payments
+// older than the current page are still findable.
+export function buildPaymentsParams({ academicYear, page = 1, limit = 25, search = "" } = {}) {
+  const params = {};
+  if (academicYear) params.academicYear = academicYear;
+  if (page) params.page = page;
+  if (limit) params.limit = limit;
+  const q = String(search || "").trim();
+  if (q) params.search = q;
+  return params;
+}
+
+// Local calendar day as YYYY-MM-DD — sent to the summary endpoint so
+// "collected today" is computed for the cashier's timezone, not the server's.
+export function localDateISO(now = new Date()) {
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 /**
  * Phase 7 main fees hook. Owns:
- *  - payments fetch via TanStack Query (refreshable via `refetch`)
+ *  - server-paginated payments fetch via TanStack Query (refreshable via `refetch`)
  *  - status derivation per row (paid / pending / overdue)
- *  - KPI computation (collected today / outstanding / overdue students)
- *  - filter helpers (status chip + search)
+ *  - KPIs from the backend summary endpoint (correct over the full dataset);
+ *    falls back to a client-side compute over the current page until it loads
+ *  - status filter on the current page (search is applied server-side)
  *
  * Keep this hook side-effect-free — components can call it freely.
  *
  * Usage:
- *   const { payments, filtered, kpis, isLoading, refetch } =
- *     useFeesData({ status: "overdue", search: "" });
+ *   const { payments, filtered, kpis, pagination, isLoading, refetch } =
+ *     useFeesData({ status: "overdue", search: "", page: 1, limit: 25 });
  */
-export default function useFeesData({ status = "all", search = "" } = {}) {
+export default function useFeesData({ status = "all", search = "", page = 1, limit = 25 } = {}) {
   const { selectedAcademicYear, currentAcademicYear, students = [] } = useApp();
   // Prefer user override; fall back to school-wide current year.
   const academicYear = selectedAcademicYear || currentAcademicYear;
 
+  const paymentsParams = buildPaymentsParams({ academicYear, page, limit, search });
   const paymentsQuery = useQuery({
-    queryKey: ["fees-payments", academicYear || "default"],
+    queryKey: ["fees-payments", paymentsParams],
     queryFn: async () => {
-      const res = await feesApi.getPayments({ academicYear });
-      return res?.payments || [];
+      // Returns { payments, pagination } — keep the full shape for the table.
+      const res = await feesApi.getPayments(paymentsParams);
+      return { payments: res?.payments ?? [], pagination: res?.pagination ?? null };
     },
+    placeholderData: (prev) => prev,
+  });
+
+  // KPIs come from the backend aggregate so they reflect every payment/due,
+  // not just the rows on the current page.
+  const today = localDateISO();
+  const summaryQuery = useQuery({
+    queryKey: ["fees-summary", academicYear || "default", today],
+    queryFn: () => feesApi.getPaymentsSummary({ academicYear, date: today }),
     placeholderData: (prev) => prev,
   });
 
@@ -204,24 +239,45 @@ export default function useFeesData({ status = "all", search = "" } = {}) {
   // and useApp() already has the full student list.
   const studentsIndex = useMemo(() => indexStudentsById(students), [students]);
   const payments = useMemo(
-    () => joinStudentsToPayments(paymentsQuery.data || [], studentsIndex),
+    () => joinStudentsToPayments(paymentsQuery.data?.payments || [], studentsIndex),
     [paymentsQuery.data, studentsIndex]
   );
+  const pagination = paymentsQuery.data?.pagination || null;
 
+  // Search is server-side; only the status chip filters the current page here.
   const filtered = useMemo(
-    () => filterPayments(payments, { status, search }),
-    [payments, status, search]
+    () => filterPayments(payments, { status, search: "" }),
+    [payments, status]
   );
 
-  const kpis = useMemo(() => computeKpis(payments), [payments]);
+  const kpis = useMemo(() => {
+    const s = summaryQuery.data;
+    if (s && typeof s === "object" && "collectedToday" in s) {
+      return {
+        collectedToday: Number(s.collectedToday) || 0,
+        outstandingTotal: Number(s.outstandingTotal) || 0,
+        overdueCount: Number(s.overdueCount) || 0,
+      };
+    }
+    // Fallback while the summary loads or if it errors — derived from the
+    // current page (under-counts, but never blocks the UI).
+    return computeKpis(payments);
+  }, [summaryQuery.data, payments]);
+
+  const refetch = () => {
+    paymentsQuery.refetch();
+    summaryQuery.refetch();
+  };
 
   return {
     payments,
     filtered,
     kpis,
+    pagination,
     isLoading: paymentsQuery.isPending,
+    isFetching: paymentsQuery.isFetching,
     isError: paymentsQuery.isError,
     error: paymentsQuery.error,
-    refetch: paymentsQuery.refetch,
+    refetch,
   };
 }

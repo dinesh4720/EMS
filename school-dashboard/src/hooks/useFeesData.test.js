@@ -6,6 +6,8 @@ import {
   isSameDay,
   indexStudentsById,
   joinStudentsToPayments,
+  buildPaymentsParams,
+  localDateISO,
   PAYMENT_STATUS,
 } from "./useFeesData";
 
@@ -255,5 +257,37 @@ describe("joinStudentsToPayments", () => {
 
   it("handles non-array input safely", () => {
     expect(joinStudentsToPayments(null, idx)).toEqual([]);
+  });
+});
+
+describe("buildPaymentsParams", () => {
+  it("includes page, limit and academicYear", () => {
+    expect(buildPaymentsParams({ academicYear: "2025-26", page: 2, limit: 25 })).toEqual({
+      academicYear: "2025-26",
+      page: 2,
+      limit: 25,
+    });
+  });
+
+  it("omits academicYear when falsy (no academicYear=undefined sent)", () => {
+    const params = buildPaymentsParams({ academicYear: undefined, page: 1, limit: 25 });
+    expect(params).not.toHaveProperty("academicYear");
+    expect(params).toEqual({ page: 1, limit: 25 });
+  });
+
+  it("trims and includes search, and omits blank/whitespace search", () => {
+    expect(buildPaymentsParams({ page: 1, limit: 25, search: "  riya  " }).search).toBe("riya");
+    expect(buildPaymentsParams({ page: 1, limit: 25, search: "   " })).not.toHaveProperty("search");
+  });
+
+  it("defaults page and limit when called with no args", () => {
+    expect(buildPaymentsParams()).toEqual({ page: 1, limit: 25 });
+  });
+});
+
+describe("localDateISO", () => {
+  it("formats a date as YYYY-MM-DD in local time, zero-padded", () => {
+    expect(localDateISO(new Date(2026, 0, 5, 23, 59))).toBe("2026-01-05");
+    expect(localDateISO(new Date(2026, 11, 31, 0, 0))).toBe("2026-12-31");
   });
 });
