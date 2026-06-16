@@ -112,6 +112,7 @@ In `backend/server.js` alone, the following sensitive routes have **zero auth mi
 - **File:** `backend/school.db`
 - **Risk:** The project uses MongoDB. This is a leftover SQLite file from early development. It is not in `.gitignore` and may contain real school data. It's confusing and a data leak risk.
 - **Fix:** Delete the file. Add `*.db` to `.gitignore`.
+- **Status (2026-06-09):** `backend/school.db` is absent from the `EMS-backend` working tree and git history across all branches. `*.db` is already in `.gitignore`. The file was previously removed from the repository.
 
 ---
 
@@ -156,7 +157,7 @@ In `backend/server.js` alone, the following sensitive routes have **zero auth mi
 4. [ ] Add `authenticate` to `studentFees.js`, `staffAttendance.js`, `feeHeads.js`, `feeSettings.js`
 5. [ ] Remove JWT secret fallback string — throw on missing env var
 6. [x] Remove `node_modules` from git tracking
-7. [ ] Delete `backend/school.db` and add `*.db` to `.gitignore`
+7. [x] Delete `backend/school.db` and add `*.db` to `.gitignore`
 8. [ ] Fix rate limiting — remove dev/localhost skip, restore sane limits
 9. [ ] Replace all hardcoded `'2024-25'` with `CURRENT_ACADEMIC_YEAR` constant
 10. [ ] Remove `strict: false` from Staff schema
