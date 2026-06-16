@@ -67,6 +67,7 @@ async function installRefundMockApi(
   page: import('@playwright/test').Page,
   state: MockState,
   refunds: RefundRecord[],
+  totalPaidByStudent: Record<string, number> = {},
 ) {
   await installMockApi(page, state);
 
@@ -128,6 +129,21 @@ async function installRefundMockApi(
       return json({ message: 'Deleted' });
     }
     return json({});
+  });
+
+  // PAG-27: refund-cap validation must hit a server-side aggregate so the
+  // total reflects every payment, not just the first page. Tests that don't
+  // care about the total-paid mock can pass an empty map (defaults to 0).
+  await page.route('**/api/fees/payments/total-paid**', async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const studentId = url.searchParams.get('studentId') || '';
+    const total = totalPaidByStudent[studentId] ?? 0;
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ totalPaid: total, paymentCount: 0 }),
+    });
   });
 }
 

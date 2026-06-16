@@ -57,6 +57,19 @@ describe('feesApi — payments', () => {
     expect(request).toHaveBeenCalledWith('/fees/payments/pay1');
   });
 
+  it('getStudentTotalPaid — calls /fees/payments/total-paid with studentId', async () => {
+    request.mockResolvedValue({ totalPaid: 12500, paymentCount: 7 });
+    const result = await feesApi.getStudentTotalPaid('stu1');
+    expect(request).toHaveBeenCalledWith('/fees/payments/total-paid?studentId=stu1');
+    expect(result).toEqual({ totalPaid: 12500, paymentCount: 7 });
+  });
+
+  it('getStudentTotalPaid — short-circuits to a zero total when no studentId is provided', async () => {
+    const result = await feesApi.getStudentTotalPaid('');
+    expect(request).not.toHaveBeenCalled();
+    expect(result).toEqual({ totalPaid: 0, paymentCount: 0 });
+  });
+
   it('createPayment — POSTs to /fees/payments with serialised body', () => {
     const data = { studentId: 'stu1', amount: 5000 };
     feesApi.createPayment(data);

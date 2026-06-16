@@ -42,13 +42,15 @@ export default function RefundsCreateModal({
       return;
     }
     const timeout = setTimeout(() => {
+      // PAG-27: refund-cap validation must use a server-side aggregate so
+      // long-tenured students (with > 50 payments) don't have their
+      // refundable total silently understated by the paginated /fees/payments
+      // list endpoint.
       feesApi
-        .getPayments({ studentId: form.studentId })
-        .then(({ payments: data }) => {
-          const total = Array.isArray(data)
-            ? data.reduce((sum, p) => sum + (p.amount || 0), 0)
-            : 0;
-          setStudentTotalPaid(total);
+        .getStudentTotalPaid(form.studentId)
+        .then((res) => {
+          const total = Number(res?.totalPaid);
+          setStudentTotalPaid(Number.isFinite(total) ? total : 0);
         })
         .catch((err) => {
           logger.error("Failed to fetch student payments for refund validation:", err);
