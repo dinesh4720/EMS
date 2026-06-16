@@ -1,15 +1,16 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   Card, CardBody, CardHeader, Button, Input, Divider,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   useDisclosure,
 } from "@heroui/react";
-import { Plus, Trash2, IndianRupee, ArrowUpRight, ArrowDownRight, CheckCircle } from "lucide-react";
-import { useApp } from "../../../context/AppContext";
-import toast from "react-hot-toast";
+import {
+  Plus, Trash2, IndianRupee, ArrowUpRight, ArrowDownRight, CheckCircle,
+} from "lucide-react";
+import { useApp } from "../../../../context/AppContext";
 import { useTranslation } from "react-i18next";
-import ConfirmDialog from '../../../components/ui/ConfirmDialog';
-import useConfirmDialog from '../../../hooks/useConfirmDialog';
+import ConfirmDialog from "../../../../components/ui/ConfirmDialog";
+import useConfirmDialog from "../../../../hooks/useConfirmDialog";
 
 export default function SalaryComponents() {
   const { t } = useTranslation();
@@ -18,6 +19,7 @@ export default function SalaryComponents() {
   const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
   const [modalType, setModalType] = useState("earnings");
   const [itemName, setItemName] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const handleOpenAdd = (type) => {
     setModalType(type);
@@ -25,24 +27,35 @@ export default function SalaryComponents() {
     onOpen();
   };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!itemName.trim()) return;
-    updateSalarySettings(modalType, "add", { name: itemName });
-    onClose();
+    setSaving(true);
+    try {
+      await updateSalarySettings(modalType, "add", { name: itemName });
+      onClose();
+    } catch {
+      // Error toast already shown by useSalaryState; keep modal open on failure
+    } finally {
+      setSaving(false);
+    }
   };
 
   // [AUDIT-557] Added confirmation before removing salary components
-  const handleRemove = (type, id) => {
+  const handleRemove = useCallback((type, id) => {
     showConfirm({
       title: 'Remove Salary Component',
       message: 'Are you sure you want to remove this salary component? This cannot be undone.',
       variant: 'danger',
       confirmText: 'Remove',
       onConfirm: async () => {
-        updateSalarySettings(type, "remove", { id });
+        try {
+          await updateSalarySettings(type, "remove", { id });
+        } catch {
+          // Error toast already shown by useSalaryState
+        }
       },
     });
-  };
+  }, [showConfirm, updateSalarySettings]);
 
   const earnings = salarySettings?.earnings || [];
   const deductions = salarySettings?.deductions || [];
@@ -255,6 +268,7 @@ export default function SalaryComponents() {
               color="primary"
               onPress={handleAdd}
               isDisabled={!itemName.trim()}
+              isLoading={saving}
             >
               {t("pages.add1")}
             </Button>
