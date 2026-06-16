@@ -139,6 +139,7 @@ export default function ChatFull() {
     handleNewMessage,
   } = useSocketListeners({
     socketService,
+    chatService,
     user,
     selectedConversationRef,
     setMessages,
