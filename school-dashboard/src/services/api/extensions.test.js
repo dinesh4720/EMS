@@ -97,9 +97,9 @@ describe('transportApi', () => {
     expect(url).toContain('status=active');
   });
 
-  it('getVehicles without params calls /transport/vehicles', () => {
+  it('getVehicles without params calls /transport/vehicles with default limit', () => {
     transportApi.getVehicles();
-    expect(request).toHaveBeenCalledWith('/transport/vehicles');
+    expect(request).toHaveBeenCalledWith('/transport/vehicles?limit=500');
   });
 
   it('getVehicles filters out empty string values', () => {
@@ -107,6 +107,12 @@ describe('transportApi', () => {
     const url = request.mock.calls[0][0];
     expect(url).toContain('type=bus');
     expect(url).not.toContain('status=');
+    expect(url).toContain('limit=500');
+  });
+
+  it('getVehicles forwards an explicit limit', () => {
+    transportApi.getVehicles({ limit: 25 });
+    expect(request).toHaveBeenCalledWith('/transport/vehicles?limit=25');
   });
 
   it('createRoute sends POST with data', () => {

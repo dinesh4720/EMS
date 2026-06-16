@@ -1,4 +1,5 @@
 import { request } from './core.js';
+import { withDefaultLimit } from './fetchDefaults.js';
 
 export const settingsApi = {
   // School Settings
@@ -153,7 +154,10 @@ export const billingApi = {
 
 export const superAdminApi = {
   getOverview: () => request('/super-admin/overview'),
-  getSchools: () => request('/super-admin/schools'),
+  getSchools: (params = {}) => {
+    const qs = new URLSearchParams(withDefaultLimit(params)).toString();
+    return request(`/super-admin/schools${qs ? `?${qs}` : ''}`);
+  },
   createSchool: (data) => request('/super-admin/schools', { method: 'POST', body: JSON.stringify(data) }),
   updateSchool: (id, data) => request(`/super-admin/schools/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   provisionSchool: (id, data) => request(`/super-admin/schools/${id}/provision`, { method: 'POST', body: JSON.stringify(data) }),
