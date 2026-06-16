@@ -380,17 +380,82 @@ export const hostelAllocationSchema = z.object({
 // STAFF
 // ────────────────────────────────────────────────────────────
 
+// Field shape mirrors AddStaffComposer (src/pages/staffs/AddStaffComposer.jsx):
+// one schema per wizard section so the composer can validate step-by-step
+// via parseFormSchema. Phone uses the same 10-digit-IN regex as the legacy
+// AddStaff flow; email is required (matches the in-composer rule that an
+// invite needs a destination).
+//
+// `requiredString` calls `.trim()` first so `.min(1)` correctly rejects
+// whitespace-only values; without that, Zod 3's trim runs as a transform
+// AFTER length checks, so a single space passes min(1) and is silently
+// swallowed to "".
+const requiredString = (label) =>
+  z
+    .string()
+    .trim()
+    .min(1, `${label} is required`);
+
 export const addStaffStep1Schema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters').max(100).trim(),
-  phone: z.string().regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit phone number'),
-  email: z.string().email('Invalid email').or(z.literal('')).optional(),
-  gender: z.string().min(1, 'Gender is required'),
-  dob: z.string().min(1, 'Date of birth is required'),
-  staffType: z.array(z.string()).min(1, 'At least one staff role is required'),
-  department: z.string().min(1, 'Department is required'),
-  joinDate: z.string().min(1, 'Join date is required'),
-  employmentType: z.string().min(1, 'Employment type is required'),
+  firstName: requiredString('First name'),
+  lastName: requiredString('Last name'),
+  code: z.string().optional(),
+  displayName: z.string().optional(),
 });
+
+export const addStaffStep2Schema = z
+  .object({
+    role: requiredString('Role'),
+    subject: z.string().optional(),
+    dept: requiredString('Department'),
+    classes: z.array(z.string()).optional(),
+  })
+  .refine(
+    (d) => d.role !== 'Teaching' || (d.subject && d.subject.trim().length > 0),
+    { message: 'Subject is required for teaching staff', path: ['subject'] }
+  );
+
+export const addStaffStep3Schema = z.object({
+  email: requiredString('Email').email('Enter a valid email'),
+  phone: z
+    .string()
+    .min(1, 'Phone is required')
+    .regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit phone number'),
+  emergencyContact: z.string().optional(),
+  address: z.string().optional(),
+});
+
+export const addStaffStep4Schema = z.object({
+  joinDate: requiredString('Joining date'),
+  employmentType: requiredString('Employment type'),
+  salary: z.string().optional(),
+});
+
+export const addStaffSchema = z
+  .object({
+    firstName: requiredString('First name'),
+    lastName: requiredString('Last name'),
+    code: z.string().optional(),
+    displayName: z.string().optional(),
+    role: requiredString('Role'),
+    subject: z.string().optional(),
+    dept: requiredString('Department'),
+    classes: z.array(z.string()).optional(),
+    email: requiredString('Email').email('Enter a valid email'),
+    phone: z
+      .string()
+      .min(1, 'Phone is required')
+      .regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit phone number'),
+    emergencyContact: z.string().optional(),
+    address: z.string().optional(),
+    joinDate: requiredString('Joining date'),
+    employmentType: requiredString('Employment type'),
+    salary: z.string().optional(),
+  })
+  .refine(
+    (d) => d.role !== 'Teaching' || (d.subject && d.subject.trim().length > 0),
+    { message: 'Subject is required for teaching staff', path: ['subject'] }
+  );
 
 // ────────────────────────────────────────────────────────────
 // PTM (Parent–Teacher Meetings)
