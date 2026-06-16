@@ -56,7 +56,7 @@ export default function Errors() {
     await errorsApi.updateStatus(fingerprint, status)
     fetchGroups()
     if (selectedGroup) {
-      selectedGroup.status = status as string
+      selectedGroup.status = status as 'unresolved' | 'resolved' | 'ignored'
       setSelectedGroup({ ...selectedGroup })
     }
   }
