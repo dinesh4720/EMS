@@ -141,6 +141,13 @@ jobs:
 
       - name: Build parent app (web)
         run: npm run build:web -w parent-app
+        env:
+          # Build-time placeholder so the web compile check passes; the real
+          # URLs are injected at deploy time by Render (see render.yaml,
+          # EXPO_PUBLIC_* with sync:false). app.config.js requires these since
+          # the hardcoded-localhost fallback was removed (DK-877).
+          EXPO_PUBLIC_API_BASE_URL: https://api.example.com
+          EXPO_PUBLIC_SOCKET_URL: wss://api.example.com
 
   build-staff-app:
     name: Build Staff App
@@ -161,6 +168,13 @@ jobs:
 
       - name: Build staff app (web)
         run: npm run build:web -w staff-app
+        env:
+          # Build-time placeholder so the web compile check passes; the real
+          # URLs are injected at deploy time by Render (see render.yaml,
+          # EXPO_PUBLIC_* with sync:false). app.config.js requires these since
+          # the hardcoded-localhost fallback was removed (DK-877).
+          EXPO_PUBLIC_API_BASE_URL: https://api.example.com
+          EXPO_PUBLIC_SOCKET_URL: wss://api.example.com
 
   dependency-review:
     name: Dependency Review
