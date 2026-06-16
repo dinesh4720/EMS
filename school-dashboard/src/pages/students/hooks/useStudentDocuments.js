@@ -130,13 +130,26 @@ export function useStudentDocuments(studentId) {
    * Handle document deletion
    */
   const handleDelete = useCallback(async (docId) => {
-    let docIndex = documents.findIndex(d => d.id === docId);
+    let doc;
 
-    if (docIndex === -1 && typeof docId === 'string' && docId.startsWith('doc-')) {
-      docIndex = parseInt(docId.replace('doc-', ''));
+    if (typeof docId === 'string' && docId.startsWith('doc-')) {
+      const docIndex = parseInt(docId.replace('doc-', ''), 10);
+      if (isNaN(docIndex) || docIndex < 0 || docIndex >= documents.length) {
+        toast.error(t('toast.error.documentNotFound'));
+        return false;
+      }
+      doc = documents[docIndex];
+    } else {
+      doc = documents.find(d => d.id === docId || d._id === docId);
     }
 
-    if (docIndex === -1 || docIndex >= documents.length) {
+    if (!doc) {
+      toast.error(t('toast.error.documentNotFound'));
+      return false;
+    }
+
+    const resolvedDocId = doc.id || doc._id;
+    if (!resolvedDocId) {
       toast.error(t('toast.error.documentNotFound'));
       return false;
     }
@@ -144,7 +157,7 @@ export function useStudentDocuments(studentId) {
     const loadingToast = toast.loading(t('toast.loading.deletingDocument'));
 
     try {
-      const result = await request(`/students/${studentId}/documents/${docIndex}`, {
+      const result = await request(`/students/${studentId}/documents/${resolvedDocId}`, {
         method: 'DELETE'
       });
       setDocuments(result.documents || []);
