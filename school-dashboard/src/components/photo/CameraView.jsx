@@ -335,7 +335,9 @@ const CameraView = ({ onCapture, onClose }) => {
             {/* Top Close Button (for captured state) */}
             {capturedImage && (
               <button
+                type="button"
                 onClick={handleClose}
+                aria-label="Close camera"
                 className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-colors"
               >
                 <X size={20} className="text-white" />

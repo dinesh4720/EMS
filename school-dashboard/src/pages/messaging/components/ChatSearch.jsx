@@ -95,7 +95,9 @@ export default function ChatSearch({ messages = [], onResultClick }) {
         />
         {query && (
           <button
+            type="button"
             onClick={clearSearch}
+            aria-label="Clear search"
             className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-full hover:bg-default-200 text-default-500 transition-colors"
           >
             <X size={14} />
