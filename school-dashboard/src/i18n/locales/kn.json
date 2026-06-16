@@ -420,7 +420,7 @@
     "locked": "ಲಾಕ್ ಆಗಿದೆ ({{seconds}}ಸೆ)",
     "inviteOnlyNote": "ಹೊಸ ಶಾಲೆಗಳನ್ನು ಆಮಂತ್ರಣದ ಮೂಲಕ ಮಾತ್ರ ಸೇರಿಸಲಾಗುತ್ತದೆ. ನಿಮ್ಮ ಸಂಸ್ಥೆಗೆ ಕಳುಹಿಸಲಾದ ಸೈನ್‌ಅಪ್ ಲಿಂಕ್ ಬಳಸಿ.",
     "privacyPolicy": "ಗೌಪ್ಯತಾ ನೀತಿ",
-    "copyright": "© {{year}} SchoolSync",
+    "copyright": "© {{year}} EMS",
     "lockoutError": "ಹಲವಾರು ವಿಫಲ ಪ್ರಯತ್ನಗಳು. {{mins}} ನಿ {{secs}} ಸೆ ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
     "lockedFor": "ಹಲವಾರು ವಿಫಲ ಪ್ರಯತ್ನಗಳು. ಖಾತೆ {{mins}} ನಿಮಿಷಗಳ ಕಾಲ ಲಾಕ್ ಆಗಿದೆ.",
     "loginFailedAttempts": "{{message}}. {{remaining}} ಪ್ರಯತ್ನ{{plural}} ಬಾಕಿ.",
@@ -451,7 +451,7 @@
     "subtitle": "ಹೊಸ ನಿರ್ವಾಹಕ ಖಾತೆಗಳನ್ನು ಪರಿಶೀಲಿಸಿದ ಆಮಂತ್ರಣ ಲಿಂಕ್‌ಗಳಿಂದ ಮಾತ್ರ ಒದಗಿಸಲಾಗುತ್ತದೆ.",
     "validatingInvite": "ಆಮಂತ್ರಣ ಲಿಂಕ್ ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ...",
     "inviteRequired": "ಆಮಂತ್ರಣ ಅಗತ್ಯವಿದೆ",
-    "inviteHelp": "ಹೊಸ ಆಮಂತ್ರಣ URL ಗಾಗಿ ನಿಮ್ಮ SchoolSync ಆನ್‌ಬೋರ್ಡಿಂಗ್ ಸಂಪರ್ಕವನ್ನು ಕೇಳಿ.",
+    "inviteHelp": "ಹೊಸ ಆಮಂತ್ರಣ URL ಗಾಗಿ ನಿಮ್ಮ EMS ಆನ್‌ಬೋರ್ಡಿಂಗ್ ಸಂಪರ್ಕವನ್ನು ಕೇಳಿ.",
     "backToLogin": "ಲಾಗಿನ್‌ಗೆ ಹಿಂತಿರುಗಿ",
     "inviteVerified": "ಆಮಂತ್ರಣ ಪರಿಶೀಲಿಸಲಾಗಿದೆ",
     "fullNameLabel": "ಪೂರ್ಣ ಹೆಸರು",
@@ -475,7 +475,7 @@
     "createAccount": "ನಿರ್ವಾಹಕ ಖಾತೆ ರಚಿಸಿ",
     "alreadyHaveAccount": "ಈಗಾಗಲೇ ಖಾತೆ ಇದೆಯೇ?",
     "signIn": "ಸೈನ್ ಇನ್",
-    "copyright": "© {{year}} SchoolSync",
+    "copyright": "© {{year}} EMS",
     "errors": {
       "inviteRequired": "ಖಾತೆ ರಚಿಸಲು ಮಾನ್ಯವಾದ ಆಮಂತ್ರಣ ಲಿಂಕ್ ಅಗತ್ಯವಿದೆ."
     }
@@ -1334,7 +1334,7 @@
     "librarians": "Librarians",
     "labAssistants": "Lab Assistants",
     "topDepartments": "Top Departments",
-    "schoolSync1": "SchoolSync",
+    "schoolSync1": "EMS",
     "goodAfternoonAdmin": "Good Afternoon, Admin",
     "whatSOn": "What's on",
     "attach": "ಲಗತ್ತಿಸಿ",

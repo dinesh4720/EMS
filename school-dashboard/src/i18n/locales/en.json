@@ -472,7 +472,7 @@
     "locked": "Locked ({{seconds}}s)",
     "inviteOnlyNote": "New schools are onboarded by invite only. Use the signup link sent to your organization.",
     "privacyPolicy": "Privacy Policy",
-    "copyright": "© {{year}} SchoolSync",
+    "copyright": "© {{year}} EMS",
     "lockoutError": "Too many failed attempts. Try again in {{mins}} min {{secs}} sec.",
     "lockedFor": "Too many failed attempts. Account locked for {{mins}} minutes.",
     "loginFailedAttempts": "{{message}}. {{remaining}} attempt{{plural}} remaining.",
@@ -503,7 +503,7 @@
     "subtitle": "New admin accounts are provisioned only from verified invite links.",
     "validatingInvite": "Validating invite link...",
     "inviteRequired": "Invite required",
-    "inviteHelp": "Ask your SchoolSync onboarding contact for a fresh invite URL.",
+    "inviteHelp": "Ask your EMS onboarding contact for a fresh invite URL.",
     "backToLogin": "Back to login",
     "inviteVerified": "Invite verified",
     "fullNameLabel": "Full Name",
@@ -527,7 +527,7 @@
     "createAccount": "Create Admin Account",
     "alreadyHaveAccount": "Already have an account?",
     "signIn": "Sign in",
-    "copyright": "© {{year}} SchoolSync",
+    "copyright": "© {{year}} EMS",
     "errors": {
       "inviteRequired": "A valid invite link is required to create an account."
     }
@@ -1432,7 +1432,7 @@
     "librarians": "Librarians",
     "labAssistants": "Lab Assistants",
     "topDepartments": "Top Departments",
-    "schoolSync1": "SchoolSync",
+    "schoolSync1": "EMS",
     "goodAfternoonAdmin": "Good Afternoon, Admin",
     "whatSOn": "What's on",
     "attach": "Attach",

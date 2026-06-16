@@ -420,7 +420,7 @@
     "locked": "مقفل ({{seconds}}s)",
     "inviteOnlyNote": "نئے اسکول صرف دعوت نامے سے شامل ہوتے ہیں۔ اپنی تنظیم کو بھیجا گیا سائن اپ لنک استعمال کریں۔",
     "privacyPolicy": "رازداری کی پالیسی",
-    "copyright": "© {{year}} SchoolSync",
+    "copyright": "© {{year}} EMS",
     "lockoutError": "بہت زیادہ ناکام کوششیں۔ {{mins}} منٹ {{secs}} سیکنڈ بعد دوبارہ کوشش کریں۔",
     "lockedFor": "بہت زیادہ ناکام کوششیں۔ اکاؤنٹ {{mins}} منٹ کے لیے مقفل ہے۔",
     "loginFailedAttempts": "{{پیغام}}۔ {{remaining}} کوشش{{plural}} باقی۔",
@@ -451,7 +451,7 @@
     "subtitle": "نئے ایڈمن اکاؤنٹس صرف تصدیق شدہ دعوت لنکس سے بنائے جاتے ہیں۔",
     "validatingInvite": "دعوت لنک کی تصدیق ہو رہی ہے...",
     "inviteRequired": "دعوت ضروری ہے",
-    "inviteHelp": "تازہ دعوت URL کے لیے اپنے SchoolSync آن بورڈنگ رابطے سے پوچھیں۔",
+    "inviteHelp": "تازہ دعوت URL کے لیے اپنے EMS آن بورڈنگ رابطے سے پوچھیں۔",
     "backToLogin": "لاگ ان پر واپس جائیں",
     "inviteVerified": "دعوت تصدیق شدہ",
     "fullNameLabel": "پورا نام",
@@ -475,7 +475,7 @@
     "createAccount": "ایڈمن اکاؤنٹ بنائیں",
     "alreadyHaveAccount": "پہلے سے اکاؤنٹ ہے؟",
     "signIn": "سائن ان کریں",
-    "copyright": "© {{year}} SchoolSync",
+    "copyright": "© {{year}} EMS",
     "errors": {
       "inviteRequired": "اکاؤنٹ بنانے کے لیے درست دعوت لنک ضروری ہے۔"
     }
@@ -1334,7 +1334,7 @@
     "librarians": "لائبریرین",
     "labAssistants": "لیب اسسٹنٹس",
     "topDepartments": "اعلیٰ شعبے",
-    "schoolSync1": "SchoolSync",
+    "schoolSync1": "EMS",
     "goodAfternoonAdmin": "Good Afternoon, ایڈمن",
     "whatSOn": "کیا ہو رہا ہے",
     "attach": "منسلک کریں",

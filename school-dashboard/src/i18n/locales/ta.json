@@ -420,7 +420,7 @@
     "locked": "பூட்டப்பட்டது ({{seconds}} வி)",
     "inviteOnlyNote": "புதிய பள்ளிகள் அழைப்பு மூலம் மட்டுமே சேர்க்கப்படும். உங்கள் நிறுவனத்திற்கு அனுப்பப்பட்ட பதிவு இணைப்பைப் பயன்படுத்தவும்.",
     "privacyPolicy": "தனியுரிமைக் கொள்கை",
-    "copyright": "© {{year}} SchoolSync",
+    "copyright": "© {{year}} EMS",
     "lockoutError": "பல தோல்வியான முயற்சிகள். {{mins}} நிமிடம் {{secs}} விநாடியில் மீண்டும் முயற்சிக்கவும்.",
     "lockedFor": "பல தோல்வியான முயற்சிகள். கணக்கு {{mins}} நிமிடங்களுக்கு பூட்டப்பட்டது.",
     "loginFailedAttempts": "{{message}}. {{remaining}} முயற்சி{{plural}} மீதம்.",
@@ -451,7 +451,7 @@
     "subtitle": "புதிய நிர்வாக கணக்குகள் சரிபார்க்கப்பட்ட அழைப்பு இணைப்புகளிலிருந்து மட்டுமே வழங்கப்படும்.",
     "validatingInvite": "அழைப்பு இணைப்பை சரிபார்க்கிறது...",
     "inviteRequired": "அழைப்பு தேவை",
-    "inviteHelp": "புதிய அழைப்பு URL க்கு உங்கள் SchoolSync தொடர்பாளரைக் கேளுங்கள்.",
+    "inviteHelp": "புதிய அழைப்பு URL க்கு உங்கள் EMS தொடர்பாளரைக் கேளுங்கள்.",
     "backToLogin": "உள்நுழைவுக்குத் திரும்பு",
     "inviteVerified": "அழைப்பு சரிபார்க்கப்பட்டது",
     "fullNameLabel": "முழுப் பெயர்",
@@ -475,7 +475,7 @@
     "createAccount": "நிர்வாகக் கணக்கை உருவாக்கு",
     "alreadyHaveAccount": "ஏற்கனவே கணக்கு உள்ளதா?",
     "signIn": "உள்நுழை",
-    "copyright": "© {{year}} SchoolSync",
+    "copyright": "© {{year}} EMS",
     "errors": {
       "inviteRequired": "கணக்கை உருவாக்க செல்லுபடியாகும் அழைப்பு இணைப்பு தேவை."
     }
@@ -1334,7 +1334,7 @@
     "librarians": "நூலகர்கள்",
     "labAssistants": "ஆய்வக உதவியாளர்கள்",
     "topDepartments": "முதன்மை துறைகள்",
-    "schoolSync1": "SchoolSync",
+    "schoolSync1": "EMS",
     "goodAfternoonAdmin": "மதிய வணக்கம், நிர்வாகி",
     "whatSOn": "என்ன நடக்கிறது",
     "attach": "இணை",
