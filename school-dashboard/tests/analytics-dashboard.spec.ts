@@ -268,9 +268,9 @@ test.describe('Analytics Dashboard', () => {
 
   // ── Test 11: Error state when API fails ─────────────────────────────
   test('shows graceful message when attendance API fails', async ({ page }) => {
-    // Override attendance API to return errors (use regex to match URLs with query params)
+    // Override attendance report APIs to return errors (use regex to match URLs with query params)
     // Registered AFTER installMockApi, so LIFO means this is checked first
-    await page.route(/\/api\/attendance\/student\//, async (route) => {
+    await page.route(/\/api\/reports\/attendance\/(class-summary|trend)/, async (route) => {
       await route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'Server Error' }) });
     });
 

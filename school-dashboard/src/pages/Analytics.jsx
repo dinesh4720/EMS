@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { Link } from "react-router-dom";
-import { attendanceApi } from "../services/api";
+import { reportsApi } from "../services/api";
 import {
   AreaChart, Area, BarChart, Bar, PieChart as RePieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -93,6 +93,12 @@ function getWeekdayLabel(date) {
   return parsedDate.toLocaleDateString(getDateLocale(), { weekday: "short" });
 }
 
+function normalizeListResponse(data) {
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.data)) return data.data;
+  return [];
+}
+
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
@@ -166,83 +172,62 @@ export default function Analytics() {
     let cancelled = false;
 
     const loadAttendanceSummary = async () => {
-      const activeStudents = (students || []).filter((student) => student?.status === "active" && student?.id);
-
-      if (!activeStudents.length) {
-        setAttendanceSummary({
-          avgAttendance: null,
-          weeklyTrend: [],
-          totalRecordedDays: 0,
-          loading: false,
-          error: null,
-        });
-        return;
-      }
-
       setAttendanceSummary((prev) => ({ ...prev, loading: true, error: null }));
 
       try {
         const { startDate, endDate } = getPresetDateRange(datePreset, currentAcademicYear, schoolSettings);
-        const sampleSize = Math.min(activeStudents.length, 20);
-        const sampledStudents = sampleSize < activeStudents.length
-          ? [...activeStudents].sort((a, b) => (a.id || a._id || '').localeCompare(b.id || b._id || '')).slice(0, sampleSize)
-          : activeStudents;
 
-        const BATCH_SIZE = 6;
-        const results = [];
-        for (let i = 0; i < sampledStudents.length; i += BATCH_SIZE) {
-          const batch = sampledStudents.slice(i, i + BATCH_SIZE);
-          const batchResults = await Promise.allSettled(
-            batch.map((student) => attendanceApi.getStudentAttendance(student.id, startDate, endDate))
-          );
-          results.push(...batchResults);
-          if (cancelled) return;
-        }
-
-        const weekdayBuckets = WEEKDAY_LABELS.reduce((acc, day) => {
-          acc[day] = { present: 0, total: 0 };
-          return acc;
-        }, {});
-
-        const studentPercentages = [];
-        let totalRecordedDays = 0;
-
-        results.forEach((result) => {
-          if (result.status !== "fulfilled") return;
-
-          const records = Array.isArray(result.value)
-            ? result.value.filter((record) => normalizeAttendanceStatus(record?.status))
-            : [];
-
-          if (records.length > 0) {
-            const presentCount = records.filter((record) => isPresentStatus(normalizeAttendanceStatus(record.status))).length;
-            studentPercentages.push((presentCount / records.length) * 100);
-          }
-
-          records.forEach((record) => {
-            const weekday = getWeekdayLabel(record.date);
-            if (!weekdayBuckets[weekday]) return;
-            totalRecordedDays += 1;
-            weekdayBuckets[weekday].total += 1;
-            if (isPresentStatus(normalizeAttendanceStatus(record.status))) {
-              weekdayBuckets[weekday].present += 1;
-            }
-          });
-        });
+        const [classSummaryResult, trendResult] = await Promise.allSettled([
+          reportsApi.classwiseAttendance({ startDate, endDate }),
+          reportsApi.attendanceTrend({ startDate, endDate, groupBy: 'day' }),
+        ]);
 
         if (cancelled) return;
 
-        setAttendanceSummary({
-          avgAttendance: studentPercentages.length
-            ? Number((studentPercentages.reduce((sum, value) => sum + value, 0) / studentPercentages.length).toFixed(1))
+        const classSummaries = normalizeListResponse(
+          classSummaryResult.status === 'fulfilled' ? classSummaryResult.value : null
+        );
+        const trendPoints = normalizeListResponse(
+          trendResult.status === 'fulfilled' ? trendResult.value : null
+        );
+
+        const totalPresent = classSummaries.reduce(
+          (sum, item) => sum + (Number(item.present) || 0),
+          0
+        );
+        const totalRecords = classSummaries.reduce(
+          (sum, item) => sum + (Number(item.total) || 0),
+          0
+        );
+        const avgAttendance = totalRecords > 0
+          ? Number(((totalPresent / totalRecords) * 100).toFixed(1))
+          : null;
+
+        const weekdayBuckets = WEEKDAY_LABELS.reduce((acc, day) => {
+          acc[day] = { rateSum: 0, count: 0 };
+          return acc;
+        }, {});
+
+        trendPoints.forEach((point) => {
+          const weekday = getWeekdayLabel(point.period);
+          if (!weekday || !WEEKDAY_LABELS.includes(weekday)) return;
+          const rate = Number(point.rate);
+          if (Number.isNaN(rate)) return;
+          weekdayBuckets[weekday].rateSum += rate;
+          weekdayBuckets[weekday].count += 1;
+        });
+
+        const weeklyTrend = WEEKDAY_LABELS.map((day) => ({
+          day,
+          students: weekdayBuckets[day].count > 0
+            ? Number((weekdayBuckets[day].rateSum / weekdayBuckets[day].count).toFixed(1))
             : null,
-          weeklyTrend: WEEKDAY_LABELS.map((day) => ({
-            day,
-            students: weekdayBuckets[day].total
-              ? Number(((weekdayBuckets[day].present / weekdayBuckets[day].total) * 100).toFixed(1))
-              : null,
-          })),
-          totalRecordedDays,
+        }));
+
+        setAttendanceSummary({
+          avgAttendance,
+          weeklyTrend,
+          totalRecordedDays: totalRecords,
           loading: false,
           error: null,
         });
@@ -264,7 +249,7 @@ export default function Analytics() {
     return () => {
       cancelled = true;
     };
-  }, [students, schoolSettings, currentAcademicYear, datePreset]);
+  }, [schoolSettings, currentAcademicYear, datePreset]);
 
   const analytics = useMemo(() => {
     const safeStudents = students || [];

@@ -2222,6 +2222,65 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
     if (path === '/analytics/academics')    return json({ averageScore: 75, passRate: 88, subjectWise: [] });
     if (path === '/analytics/trends')       return json({ enrollmentTrend: [], attendanceTrend: [], feeTrend: [] });
 
+    /* ── Reports: Attendance ── */
+    if (path === '/reports/attendance/class-summary') {
+      const start = url.searchParams.get('startDate') || '';
+      const end = url.searchParams.get('endDate') || '';
+      const summaries: Record<string, { classId: string; className: string; present: number; absent: number; total: number; percentage: number }> = {};
+      for (const a of state.attendance) {
+        if ((start && a.date < start) || (end && a.date > end)) continue;
+        if (!summaries[a.classId]) {
+          const cls = state.classes.find((c) => c.id === a.classId);
+          summaries[a.classId] = {
+            classId: a.classId,
+            className: cls ? `${cls.name}-${cls.section}` : a.classId,
+            present: 0,
+            absent: 0,
+            total: 0,
+            percentage: 0,
+          };
+        }
+        summaries[a.classId].total += 1;
+        if (a.status === 'present') summaries[a.classId].present += 1;
+        else summaries[a.classId].absent += 1;
+      }
+      const data = Object.values(summaries).map((s) => ({
+        ...s,
+        percentage: s.total > 0 ? Math.round((s.present / s.total) * 100) : 0,
+      }));
+      return json({ data, total: data.length });
+    }
+
+    if (path === '/reports/attendance/trend') {
+      const start = url.searchParams.get('startDate') || '';
+      const end = url.searchParams.get('endDate') || '';
+      const groupBy = url.searchParams.get('groupBy') || 'day';
+      const classId = url.searchParams.get('classId');
+
+      let filtered = state.attendance;
+      if (classId) filtered = filtered.filter((a) => a.classId === classId);
+      if (start || end) {
+        filtered = filtered.filter((a) => (!start || a.date >= start) && (!end || a.date <= end));
+      }
+
+      if (groupBy === 'day') {
+        const daily: Record<string, { period: string; present: number; total: number; rate: number }> = {};
+        for (const a of filtered) {
+          if (!daily[a.date]) {
+            daily[a.date] = { period: a.date, present: 0, total: 0, rate: 0 };
+          }
+          daily[a.date].total += 1;
+          if (a.status === 'present') daily[a.date].present += 1;
+        }
+        const data = Object.values(daily)
+          .map((d) => ({ ...d, rate: d.total > 0 ? Math.round((d.present / d.total) * 100) : 0 }))
+          .sort((a, b) => a.period.localeCompare(b.period));
+        return json({ data, total: data.length });
+      }
+
+      return json({ data: [], total: 0 });
+    }
+
     /* ── Reports ── */
     if (path === '/reports' || path.match(/^\/reports\//)) return json({ data: [], total: 0 });
     if (path.match(/^\/reports\/export/))   return json({ downloadUrl: '/mock/report.pdf' });
