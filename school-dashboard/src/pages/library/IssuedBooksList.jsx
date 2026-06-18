@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button, Select, SelectItem, Chip, useDisclosure } from "@heroui/react";
 import { BookUp, RotateCcw, Printer, Search } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
@@ -63,6 +63,7 @@ export default function IssuedBooksList() {
       const params = { page, limit: 25 };
       if (status === "overdue") params.overdue = "true";
       else if (status !== "all") params.status = status;
+      if (search.trim()) params.q = search.trim();
       const data = await libraryApi.getIssues(params);
       setIssues(data.issues || []);
       setTotal(data.total || 0);
@@ -72,7 +73,7 @@ export default function IssuedBooksList() {
     } finally {
       setLoading(false);
     }
-  }, [status, page, t]);
+  }, [status, page, search, t]);
 
   useEffect(() => {
     fetchIssues();
@@ -103,19 +104,6 @@ export default function IssuedBooksList() {
   };
 
   const totalPages = Math.ceil(total / 25);
-
-  const filteredIssues = useMemo(() => {
-    if (!search.trim()) return issues;
-    const q = search.toLowerCase();
-    return issues.filter(
-      (i) =>
-        (i.bookId?.title || i.bookTitle || "").toLowerCase().includes(q) ||
-        (i.studentId?.name || i.studentName || "").toLowerCase().includes(q) ||
-        (i.studentId?.admissionNo || i.studentAdmissionNo || "")
-          .toLowerCase()
-          .includes(q),
-    );
-  }, [issues, search]);
 
   const formatDate = (date) =>
     date
@@ -166,7 +154,7 @@ export default function IssuedBooksList() {
         </div>
         <div className="flex gap-2">
           <ExportMenu
-            rows={filteredIssues}
+            rows={issues}
             columns={[
               {
                 key: "book",
@@ -225,7 +213,7 @@ export default function IssuedBooksList() {
         <SkeletonTable rows={6} columns={7} />
       ) : loadError ? (
         <ErrorState error={loadError} onRetry={fetchIssues} />
-      ) : filteredIssues.length === 0 ? (
+      ) : issues.length === 0 ? (
         <EmptyState
           icon={BookUp}
           title={t("pages.noIssuedBooksFound")}
@@ -294,7 +282,7 @@ export default function IssuedBooksList() {
                 </tr>
               </thead>
               <tbody>
-                {filteredIssues.map((issue) => (
+                {issues.map((issue) => (
                   <tr
                     key={issue._id}
                     className="border-b border-divider last:border-0 hover:bg-surface-2/50 transition-colors"
@@ -440,7 +428,7 @@ export default function IssuedBooksList() {
               </tr>
             </thead>
             <tbody>
-              {filteredIssues.map((issue) => (
+              {issues.map((issue) => (
                 <tr key={issue._id} className="border-b">
                   <td className="py-2 px-3">
                     {issue.bookId?.title || issue.bookTitle || "—"}
