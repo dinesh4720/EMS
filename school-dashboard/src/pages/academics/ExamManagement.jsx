@@ -62,11 +62,27 @@ const ExamManagement = ({ onCreateExam }) => {
       try {
         const params = { limit: PAGE_LIMIT, skip: skipValue };
         if (selectedAcademicYear) params.academicYear = selectedAcademicYear;
-        const data = await examsApi.getAll(params);
-        const results = (data || []).map((e) => ({ ...e, id: e.id || e._id }));
+        const payload = await examsApi.getAll(params);
+        // PAG-10: /exams now returns { data, pagination } in the body (was:
+        // bare array + X-Total-Count/X-Has-More headers). Tolerate the old
+        // shape so a stale backend doesn't crash the management table.
+        const results = (Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.data)
+            ? payload.data
+            : []
+        ).map((e) => ({ ...e, id: e.id || e._id }));
         setExams((prev) => (isInitial ? results : [...prev, ...results]));
         setSkip(skipValue + results.length);
-        setHasMore(results.length === PAGE_LIMIT);
+        // Prefer the backend's authoritative pagination.hasMore; fall back to
+        // the legacy length-based heuristic when running against a pre-PAG-10
+        // backend (staggered rollout safety net).
+        const pageHasMore = Array.isArray(payload)
+          ? results.length === PAGE_LIMIT
+          : typeof payload?.pagination?.hasMore === 'boolean'
+            ? payload.pagination.hasMore
+            : results.length === PAGE_LIMIT;
+        setHasMore(pageHasMore);
         setError(null);
       } catch (err) {
         logger.error('Error fetching exams:', err);
