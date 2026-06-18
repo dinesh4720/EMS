@@ -186,7 +186,12 @@ function useExtendedSearch(isOpen, query) {
 
       const examList =
         examsR.status === "fulfilled"
-          ? (examsR.value?.exams || examsR.value || []).slice(0, 50)
+          ? (
+              examsR.value?.exams ||
+              examsR.value?.data ||
+              examsR.value ||
+              []
+            ).slice(0, 50)
           : [];
       setExams(
         examList.map((e) => ({
