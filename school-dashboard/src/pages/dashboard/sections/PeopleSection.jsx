@@ -143,11 +143,7 @@ export default function PeopleSection({ staff, students, staffAttendance, classe
                     photo={s.picture || s.photo}
                     type="staff"
                     sub={staffSub(s)}
-                    badge={
-                      <button type="button" className="btn btn--xs btn--ghost">
-                        Wish
-                      </button>
-                    }
+                    badge={<span className="status status--ok" aria-label="Birthday today">🎂</span>}
                   />
                 ))}
               </>
@@ -185,11 +181,7 @@ export default function PeopleSection({ staff, students, staffAttendance, classe
                     photo={s.photo || s.picture}
                     type="student"
                     sub={studentClassName(s)}
-                    badge={
-                      <button type="button" className="btn btn--xs btn--ghost">
-                        Wish
-                      </button>
-                    }
+                    badge={<span className="status status--ok" aria-label="Birthday today">🎂</span>}
                   />
                 ))}
               </>
