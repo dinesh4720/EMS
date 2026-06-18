@@ -244,6 +244,7 @@ test.describe('TC162 — Audit Logs Viewer', () => {
         const entity = url.searchParams.get('entity');
         const startDate = url.searchParams.get('startDate');
         const endDate = url.searchParams.get('endDate');
+        const search = (url.searchParams.get('search') || '').trim().toLowerCase();
         const reqPage = parseInt(url.searchParams.get('page') || '1', 10);
         const reqLimit = parseInt(url.searchParams.get('limit') || '25', 10);
 
@@ -258,6 +259,19 @@ test.describe('TC162 — Audit Logs Viewer', () => {
         }
         if (endDate) {
           filtered = filtered.filter((l) => l.createdAt <= endDate);
+        }
+        if (search) {
+          filtered = filtered.filter((l) => {
+            const userName = (l.userId?.name || l.userName || '').toLowerCase();
+            return (
+              userName.includes(search) ||
+              (l.entity || '').toLowerCase().includes(search) ||
+              (l.ipAddress || '').toLowerCase().includes(search) ||
+              (l.path || '').toLowerCase().includes(search) ||
+              (l.method || '').toLowerCase().includes(search) ||
+              (l.entityId || '').toLowerCase().includes(search)
+            );
+          });
         }
 
         const response = buildAuditLogMockResponse(filtered, reqPage, reqLimit);
@@ -391,9 +405,48 @@ test.describe('TC162 — Audit Logs Viewer', () => {
     }
   });
 
-  /* ───────── 7. Client-side search filters logs ───────── */
+  /* ───────── 7. Server-side search filters logs ───────── */
 
-  test('7) search box filters logs client-side', async ({ page }) => {
+  test('7) search box sends search query to server and filters logs across all pages', async ({ page }) => {
+    const requestedSearches: string[] = [];
+
+    await page.route('**/api/audit-logs**', async (route) => {
+      const url = new URL(route.request().url());
+      if (url.pathname.includes('/export') || url.pathname.includes('/purge')) {
+        return route.fallback();
+      }
+      const search = url.searchParams.get('search');
+      if (search !== null) requestedSearches.push(search);
+
+      let filtered = [...allLogs];
+      const action = url.searchParams.get('action');
+      const entity = url.searchParams.get('entity');
+      const startDate = url.searchParams.get('startDate');
+      const endDate = url.searchParams.get('endDate');
+      const reqPage = parseInt(url.searchParams.get('page') || '1', 10);
+      const reqLimit = parseInt(url.searchParams.get('limit') || '25', 10);
+      const needle = (search || '').trim().toLowerCase();
+
+      if (action) filtered = filtered.filter((l) => l.action === action);
+      if (entity) filtered = filtered.filter((l) => l.entity === entity);
+      if (startDate) filtered = filtered.filter((l) => l.createdAt >= startDate);
+      if (endDate) filtered = filtered.filter((l) => l.createdAt <= endDate);
+      if (needle) {
+        filtered = filtered.filter((l) =>
+          (l.userId?.name || l.userName || '').toLowerCase().includes(needle) ||
+          (l.entity || '').toLowerCase().includes(needle) ||
+          (l.ipAddress || '').toLowerCase().includes(needle) ||
+          (l.path || '').toLowerCase().includes(needle),
+        );
+      }
+
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(buildAuditLogMockResponse(filtered, reqPage, reqLimit)),
+      });
+    });
+
     await page.goto('/audit-logs');
     await page.waitForLoadState('networkidle');
 
@@ -401,26 +454,61 @@ test.describe('TC162 — Audit Logs Viewer', () => {
     await expect(searchBox).toBeVisible();
     await searchBox.fill('Ananya Sharma');
 
-    await page.waitForTimeout(300);
+    // Wait for debounce (300ms) + refetch
+    await page.waitForTimeout(500);
     const rows = page.locator('[data-log-id]');
-    // Only the login log by Ananya Sharma
     await expect(rows).toHaveCount(1);
     await expect(page.locator('[data-log-id="al-004"]')).toBeVisible();
+
+    // Server received the search param
+    expect(requestedSearches).toContain('Ananya Sharma');
   });
 
-  /* ───────── 8. Search by IP address ───────── */
+  /* ───────── 8. Search by IP address (server-side) ───────── */
 
-  test('8) search by IP address filters logs', async ({ page }) => {
+  test('8) search by IP address sends search param to server', async ({ page }) => {
+    const requestedSearches: string[] = [];
+
+    await page.route('**/api/audit-logs**', async (route) => {
+      const url = new URL(route.request().url());
+      if (url.pathname.includes('/export') || url.pathname.includes('/purge')) {
+        return route.fallback();
+      }
+      const search = url.searchParams.get('search');
+      if (search !== null) requestedSearches.push(search);
+
+      let filtered = [...allLogs];
+      const reqPage = parseInt(url.searchParams.get('page') || '1', 10);
+      const reqLimit = parseInt(url.searchParams.get('limit') || '25', 10);
+      const needle = (search || '').trim().toLowerCase();
+      if (needle) {
+        filtered = filtered.filter((l) =>
+          (l.userId?.name || l.userName || '').toLowerCase().includes(needle) ||
+          (l.entity || '').toLowerCase().includes(needle) ||
+          (l.ipAddress || '').toLowerCase().includes(needle) ||
+          (l.path || '').toLowerCase().includes(needle),
+        );
+      }
+
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(buildAuditLogMockResponse(filtered, reqPage, reqLimit)),
+      });
+    });
+
     await page.goto('/audit-logs');
     await page.waitForLoadState('networkidle');
 
     const searchBox = page.locator('input[aria-label="Search audit logs"]');
     await searchBox.fill('203.192.12.45');
 
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
     const rows = page.locator('[data-log-id]');
     await expect(rows).toHaveCount(1);
     await expect(page.locator('[data-log-id="al-005"]')).toBeVisible();
+
+    expect(requestedSearches).toContain('203.192.12.45');
   });
 
   /* ───────── 9. Reset filters clears all filters ───────── */
@@ -432,19 +520,19 @@ test.describe('TC162 — Audit Logs Viewer', () => {
     // Apply a filter
     const entityFilter = page.locator('select[aria-label="Filter by entity"]');
     await entityFilter.selectOption('auth');
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
 
     // Apply search
     const searchBox = page.locator('input[aria-label="Search audit logs"]');
     await searchBox.fill('login');
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
 
     // Click reset
     const resetBtn = page.getByRole('button', { name: /Reset/i });
     await expect(resetBtn).toBeVisible();
     await resetBtn.click();
 
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
     // All 10 logs should be back
     const rows = page.locator('[data-log-id]');
     await expect(rows).toHaveCount(10);
@@ -459,7 +547,7 @@ test.describe('TC162 — Audit Logs Viewer', () => {
     // Search for something that doesn't exist
     const searchBox = page.locator('input[aria-label="Search audit logs"]');
     await searchBox.fill('nonexistent-xyz-123');
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
 
     await expect(page.getByText('No logs matched')).toBeVisible();
     await expect(page.getByText('Try adjusting your filters or search query.')).toBeVisible();
