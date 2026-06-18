@@ -34,9 +34,9 @@ class ChatService {
 
   async getMessages(conversationId, limit = 50, before = null) {
     try {
-      let endpoint = `/messages/conversations/${conversationId}/messages?limit=${limit}`;
-      if (before) endpoint += `&before=${before}`;
-      return await request(endpoint);
+      const params = new URLSearchParams({ limit: String(limit) });
+      if (before) params.set('before', String(before));
+      return await request(`/messages/conversations/${conversationId}/messages?${params.toString()}`);
     } catch (error) {
       logger.error('Error getting messages:', error);
       return [];
