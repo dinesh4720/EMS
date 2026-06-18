@@ -17,9 +17,26 @@ export const examsApi = {
 
 // Homework API
 export const homeworkApi = {
-  getAll: (params) => {
+  getAll: async (params) => {
     const queryString = params ? new URLSearchParams(params).toString() : '';
-    return request(`/homework${queryString ? `?${queryString}` : ''}`);
+    const res = await request(`/homework${queryString ? `?${queryString}` : ''}`);
+    // Backend returns { data, pagination }; preserve full shape for callers.
+    // For backward-compat with plain-array responses, normalize to { data, pagination }.
+    if (Array.isArray(res)) return { data: res, pagination: null };
+    return { data: res?.data ?? [], pagination: res?.pagination ?? null };
+  },
+  // PAG-08 — server-computed counts (total / active / completed / cancelled /
+  // overdue) over the FULL dataset, used by the four stat cards on the
+  // dashboard so they stay correct beyond the first page.
+  getStats: (filters = {}) => {
+    const params = new URLSearchParams();
+    if (filters.status) params.set('status', filters.status);
+    if (filters.classId) params.set('classId', filters.classId);
+    if (filters.teacherId) params.set('teacherId', filters.teacherId);
+    if (filters.academicYear) params.set('academicYear', filters.academicYear);
+    if (filters.search) params.set('search', filters.search);
+    const qs = params.toString();
+    return request(`/homework/stats${qs ? `?${qs}` : ''}`);
   },
   getByClass: (classId, params) => {
     const queryString = params ? new URLSearchParams(params).toString() : '';

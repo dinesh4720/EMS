@@ -9,8 +9,10 @@
  * evolves.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
+import { createElement } from "react";
 import { render, screen, within, fireEvent, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { axe } from "vitest-axe";
 
 const TRANSLATIONS = {
@@ -100,7 +102,20 @@ const mockSubjects = [{ _id: "sub-001", name: "Mathematics" }, { _id: "sub-002",
 
 vi.mock("../../services/api", () => ({
   homeworkApi: {
-    getAll: vi.fn(() => Promise.resolve(mockHomework)),
+    // PAG-08: list endpoint now returns { data, pagination }; the page hook
+    // (useHomeworkData) unwraps it via the same shape.
+    getAll: vi.fn(() =>
+      Promise.resolve({ data: mockHomework, pagination: { page: 1, limit: 25, total: mockHomework.length, totalPages: 1 } }),
+    ),
+    getStats: vi.fn(() =>
+      Promise.resolve({
+        total: mockHomework.length,
+        active: mockHomework.filter((hw) => hw.status === "active").length,
+        completed: mockHomework.filter((hw) => hw.status === "completed").length,
+        cancelled: 0,
+        overdue: 0,
+      }),
+    ),
     create: vi.fn(() => Promise.resolve({ _id: "hw-new" })),
     update: vi.fn(() => Promise.resolve({})),
     delete: vi.fn(() => Promise.resolve({})),
@@ -135,6 +150,15 @@ function renderInPageRoot(ui) {
   return render(ui, { container: document.getElementById("root") });
 }
 
+// Wrap a tree in a fresh QueryClient so useHomeworkData (TanStack Query) can
+// run inside the a11y test. Re-created per test so cache state is isolated.
+function withQueryClient(node) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return createElement(QueryClientProvider, { client }, node);
+}
+
 describe("Homework module accessibility", () => {
   afterEach(() => {
     cleanup();
@@ -143,9 +167,11 @@ describe("Homework module accessibility", () => {
 
   it("has no detectable axe violations on the list view", async () => {
     const { container } = renderInPageRoot(
-      <MemoryRouter initialEntries={["/homework"]}>
-        <HomeworkPage />
-      </MemoryRouter>
+      withQueryClient(
+        <MemoryRouter initialEntries={["/homework"]}>
+          <HomeworkPage />
+        </MemoryRouter>,
+      ),
     );
 
     await within(container).findByRole("heading", { name: "Algebra Practice" });
@@ -156,9 +182,11 @@ describe("Homework module accessibility", () => {
 
   it("exposes each homework card action button with an accessible name", async () => {
     const { container } = renderInPageRoot(
-      <MemoryRouter initialEntries={["/homework"]}>
-        <HomeworkPage />
-      </MemoryRouter>
+      withQueryClient(
+        <MemoryRouter initialEntries={["/homework"]}>
+          <HomeworkPage />
+        </MemoryRouter>,
+      ),
     );
 
     await within(container).findByRole("heading", { name: "Algebra Practice" });
@@ -173,9 +201,11 @@ describe("Homework module accessibility", () => {
 
   it("has no detectable axe violations when the create modal is open", async () => {
     const { container } = renderInPageRoot(
-      <MemoryRouter initialEntries={["/homework"]}>
-        <HomeworkPage />
-      </MemoryRouter>
+      withQueryClient(
+        <MemoryRouter initialEntries={["/homework"]}>
+          <HomeworkPage />
+        </MemoryRouter>,
+      ),
     );
 
     await within(container).findByRole("heading", { name: "Algebra Practice" });
@@ -192,9 +222,11 @@ describe("Homework module accessibility", () => {
 
   it("has no detectable axe violations in the create modal with attachments", async () => {
     const { container } = renderInPageRoot(
-      <MemoryRouter initialEntries={["/homework"]}>
-        <HomeworkPage />
-      </MemoryRouter>
+      withQueryClient(
+        <MemoryRouter initialEntries={["/homework"]}>
+          <HomeworkPage />
+        </MemoryRouter>,
+      ),
     );
 
     await within(container).findByRole("heading", { name: "Algebra Practice" });
@@ -211,9 +243,11 @@ describe("Homework module accessibility", () => {
 
   it("has no detectable axe violations when the detail modal is open", async () => {
     const { container } = renderInPageRoot(
-      <MemoryRouter initialEntries={["/homework"]}>
-        <HomeworkPage />
-      </MemoryRouter>
+      withQueryClient(
+        <MemoryRouter initialEntries={["/homework"]}>
+          <HomeworkPage />
+        </MemoryRouter>,
+      ),
     );
 
     await within(container).findByRole("heading", { name: "Algebra Practice" });
@@ -229,9 +263,11 @@ describe("Homework module accessibility", () => {
 
   it("has no detectable axe violations in the edit modal", async () => {
     const { container } = renderInPageRoot(
-      <MemoryRouter initialEntries={["/homework"]}>
-        <HomeworkPage />
-      </MemoryRouter>
+      withQueryClient(
+        <MemoryRouter initialEntries={["/homework"]}>
+          <HomeworkPage />
+        </MemoryRouter>,
+      ),
     );
 
     await within(container).findByRole("heading", { name: "Algebra Practice" });
@@ -247,9 +283,11 @@ describe("Homework module accessibility", () => {
 
   it("has no detectable axe violations in the detail modal with grading expanded", async () => {
     const { container } = renderInPageRoot(
-      <MemoryRouter initialEntries={["/homework"]}>
-        <HomeworkPage />
-      </MemoryRouter>
+      withQueryClient(
+        <MemoryRouter initialEntries={["/homework"]}>
+          <HomeworkPage />
+        </MemoryRouter>,
+      ),
     );
 
     await within(container).findByRole("heading", { name: "Essay Writing" });
@@ -268,12 +306,21 @@ describe("Homework module accessibility", () => {
 
   it("renders the empty state without detectable axe violations", async () => {
     const { homeworkApi } = await import("../../services/api");
-    homeworkApi.getAll.mockResolvedValueOnce([]);
+    homeworkApi.getAll.mockResolvedValueOnce({ data: [], pagination: null });
+    homeworkApi.getStats.mockResolvedValueOnce({
+      total: 0,
+      active: 0,
+      completed: 0,
+      cancelled: 0,
+      overdue: 0,
+    });
 
     const { container } = renderInPageRoot(
-      <MemoryRouter initialEntries={["/homework"]}>
-        <HomeworkPage />
-      </MemoryRouter>
+      withQueryClient(
+        <MemoryRouter initialEntries={["/homework"]}>
+          <HomeworkPage />
+        </MemoryRouter>,
+      ),
     );
 
     await within(container).findByRole("button", { name: /Create First Homework/i });

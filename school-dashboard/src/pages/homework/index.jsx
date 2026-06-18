@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   ClipboardList, Calendar, Eye, Trash2, Plus, Home, Pencil,
   Users, CheckCircle2, Activity, AlertCircle,
@@ -11,8 +11,11 @@ import {
 } from '../../components/ui';
 import { CardGridPageSkeleton } from '../../components/skeletons/PageSkeletons';
 import FiltersDropdown from '../../components/FiltersDropdown';
+import Pagination from '../../components/common/Pagination';
 import CreateHomeworkModal from './CreateHomeworkModal';
 import HomeworkDetailModal from './HomeworkDetailModal';
+import useHomeworkData from '../../hooks/useHomeworkData';
+import { useDebounce } from '../../hooks/useDebounce';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { formatShortDate } from '../../utils/dateFormatter';
@@ -47,17 +50,30 @@ const getStatusLabel = (hw) => {
 const HomeworkPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [homework, setHomework] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editingHomework, setEditingHomework] = useState(null);
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null, title: '' });
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [detailId, setDetailId] = useState(null);
   const [filters, setFilters] = useState({ classId: 'all', status: 'all' });
-  const initialFetchDone = useRef(false);
+
+  // Search is matched server-side (PAG-08); debounce so we don't refetch on
+  // every keystroke, and reset to page 1 whenever the result set changes.
+  const debouncedSearch = useDebounce(searchQuery, 400);
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, filters.classId, filters.status]);
+
+  const { homework, stats, pagination, isLoading, isFetching, isError, error, refetch } =
+    useHomeworkData({
+      page,
+      limit: 25,
+      search: debouncedSearch,
+      status: filters.status,
+      classId: filters.classId,
+    });
 
   const uniqueClasses = useMemo(() => {
     const classSet = new Set();
@@ -93,32 +109,9 @@ const HomeworkPage = () => {
     return count;
   }, [filters, searchQuery]);
 
-  const fetchHomework = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await homeworkApi.getAll({ limit: 100 });
-      const items = Array.isArray(response) ? response : (response?.data || []);
-      setHomework(items);
-    } catch (err) {
-      logger.error('Error fetching homework:', err);
-      setError(err);
-      toast.error(t('toast.error.failedToLoadHomework'));
-    } finally {
-      setLoading(false);
-    }
-  }, [t]);
-
-  useEffect(() => {
-    if (!initialFetchDone.current) {
-      fetchHomework();
-      initialFetchDone.current = true;
-    }
-  }, [fetchHomework]);
-
   const refreshHomework = useCallback(() => {
-    fetchHomework();
-  }, [fetchHomework]);
+    refetch();
+  }, [refetch]);
 
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -149,29 +142,10 @@ const HomeworkPage = () => {
     }
   };
 
-  const filteredHomework = useMemo(() => homework.filter((hw) => {
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const matches =
-        hw.title?.toLowerCase().includes(query) ||
-        hw.subject?.toLowerCase().includes(query) ||
-        hw.description?.toLowerCase().includes(query);
-      if (!matches) return false;
-    }
-    if (filters.status !== 'all' && hw.status !== filters.status) return false;
-    if (filters.classId !== 'all') {
-      const className = hw.classId?.name || hw.classId?.displayName || hw.className;
-      if (className !== filters.classId) return false;
-    }
-    return true;
-  }), [homework, searchQuery, filters]);
-
-  const stats = useMemo(() => ({
-    total: homework.length,
-    active: homework.filter((hw) => hw.status === 'active').length,
-    completed: homework.filter((hw) => hw.status === 'completed').length,
-    overdue: homework.filter((hw) => hw.status === 'active' && getDueStatus(hw.dueDate) === 'overdue').length,
-  }), [homework]);
+  // Server has already applied the search + status + classId filters, so
+  // `homework` IS the filtered list. Show the existing empty state when the
+  // server returns zero rows for the current filter set.
+  const filteredHomework = homework;
 
   const header = {
     title: 'Homework',
@@ -190,16 +164,16 @@ const HomeworkPage = () => {
   );
 
   const renderBody = () => {
-    if (loading) {
+    if (isLoading) {
       return <CardGridPageSkeleton title={false} cards={6} />;
     }
 
-    if (error) {
+    if (isError) {
       return (
         <ErrorState
           title="Couldn't load homework"
           error={error}
-          onRetry={() => fetchHomework()}
+          onRetry={() => refetch()}
         />
       );
     }
@@ -238,78 +212,90 @@ const HomeworkPage = () => {
             onAction={activeFiltersCount > 0 ? handleClearFilters : openCreateModal}
           />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredHomework.map((hw) => {
-              const id = hw._id || hw.id;
-              const className = hw.classId?.name || hw.classId?.displayName || hw.className || 'N/A';
-              const submissionCount = hw.submissions?.length || 0;
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredHomework.map((hw) => {
+                const id = hw._id || hw.id;
+                const className = hw.classId?.name || hw.classId?.displayName || hw.className || 'N/A';
+                const submissionCount = hw.submissions?.length || 0;
 
-              return (
-                <Card key={id} padding="sm" elevation="raised" className="space-y-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-fg truncate">{hw.title}</h3>
-                      <p className="text-sm text-fg mt-0.5">{hw.subject}</p>
-                    </div>
-                    <Chip size="sm" color={getStatusChipColor(hw)}>
-                      {getStatusLabel(hw)}
-                    </Chip>
-                  </div>
-
-                  {hw.description && (
-                    <p className="text-sm text-fg-muted line-clamp-2">{hw.description}</p>
-                  )}
-
-                  <div className="flex items-center gap-4 text-sm">
-                    <span className="flex items-center gap-1 text-fg-muted">
-                      <Calendar size={14} />
-                      {hw.dueDate ? formatShortDate(hw.dueDate, 'Invalid date') : 'No due date'}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setDetailId(id)}
-                      className="flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 rounded-full"
-                      title="View submissions"
-                    >
-                      <Chip size="sm" color="neutral" startContent={<Users size={12} />}>
-                        {submissionCount} submitted
+                return (
+                  <Card key={id} padding="sm" elevation="raised" className="space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-fg truncate">{hw.title}</h3>
+                        <p className="text-sm text-fg mt-0.5">{hw.subject}</p>
+                      </div>
+                      <Chip size="sm" color={getStatusChipColor(hw)}>
+                        {getStatusLabel(hw)}
                       </Chip>
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-2 border-t border-divider">
-                    <span className="text-xs text-fg-muted">{className}</span>
-                    <div className="flex items-center gap-1">
-                      <IconButton
-                        size="sm"
-                        variant="ghost"
-                        aria-label={t('pages.viewDetails1')}
-                        icon={<Eye size={15} />}
-                        onClick={() => setDetailId(id)}
-                      />
-                      <IconButton
-                        size="sm"
-                        variant="ghost"
-                        aria-label="Edit homework"
-                        icon={<Pencil size={15} />}
-                        onClick={() => {
-                          setEditingHomework(hw);
-                          setCreateModalOpen(true);
-                        }}
-                      />
-                      <IconButton
-                        size="sm"
-                        variant="danger"
-                        aria-label={t('pages.delete1')}
-                        icon={<Trash2 size={15} />}
-                        onClick={() => handleDeleteClick(id, hw.title)}
-                      />
                     </div>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
+
+                    {hw.description && (
+                      <p className="text-sm text-fg-muted line-clamp-2">{hw.description}</p>
+                    )}
+
+                    <div className="flex items-center gap-4 text-sm">
+                      <span className="flex items-center gap-1 text-fg-muted">
+                        <Calendar size={14} />
+                        {hw.dueDate ? formatShortDate(hw.dueDate, 'Invalid date') : 'No due date'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setDetailId(id)}
+                        className="flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 rounded-full"
+                        title="View submissions"
+                      >
+                        <Chip size="sm" color="neutral" startContent={<Users size={12} />}>
+                          {submissionCount} submitted
+                        </Chip>
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-divider">
+                      <span className="text-xs text-fg-muted">{className}</span>
+                      <div className="flex items-center gap-1">
+                        <IconButton
+                          size="sm"
+                          variant="ghost"
+                          aria-label={t('pages.viewDetails1')}
+                          icon={<Eye size={15} />}
+                          onClick={() => setDetailId(id)}
+                        />
+                        <IconButton
+                          size="sm"
+                          variant="ghost"
+                          aria-label="Edit homework"
+                          icon={<Pencil size={15} />}
+                          onClick={() => {
+                            setEditingHomework(hw);
+                            setCreateModalOpen(true);
+                          }}
+                        />
+                        <IconButton
+                          size="sm"
+                          variant="danger"
+                          aria-label={t('pages.delete1')}
+                          icon={<Trash2 size={15} />}
+                          onClick={() => handleDeleteClick(id, hw.title)}
+                        />
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+            {pagination && pagination.total > 0 && (
+              <Pagination
+                currentPage={pagination.page || page}
+                totalPages={pagination.totalPages || 1}
+                onPageChange={setPage}
+                totalItems={pagination.total}
+                itemLabel="homework"
+                disabled={isFetching}
+              />
+            )}
+          </>
         )}
       </div>
     );
@@ -354,7 +340,7 @@ const HomeworkPage = () => {
       <HomeworkDetailModal
         homeworkId={detailId}
         onClose={() => setDetailId(null)}
-        onDataChanged={() => fetchHomework()}
+        onDataChanged={() => refetch()}
       />
 
       <ConfirmDialog
