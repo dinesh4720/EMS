@@ -39,11 +39,11 @@ export default function ClassesPage() {
   const view = searchParams.get("view") === "class" ? "class" : "today";
 
   const { loading } = useApp();
-  const { dayMeta } = useTodayPeriods();
+  const { dayMeta, isLoading: todayLoading } = useTodayPeriods();
 
   const [isAddOpen, setIsAddOpen] = useState(false);
 
-  if (loading) return <ClassesPageSkeleton />;
+  if (loading || todayLoading) return <ClassesPageSkeleton />;
 
   const setView = (next) => {
     setSearchParams(
