@@ -7,6 +7,8 @@ import toast from "react-hot-toast";
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
 import StatusBadge from '../../components/ui/StatusBadge';
+import { SkeletonTable } from '../../components/ui/Skeleton';
+import ErrorState from '../../components/ui/ErrorState';
 
 import {
   Search,
@@ -30,6 +32,7 @@ export default function ParentManagement() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [selectedParent, setSelectedParent] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -46,6 +49,7 @@ export default function ParentManagement() {
 
   const fetchParents = useCallback(async (page = 1, signal) => {
     setLoading(true);
+    setFetchError(null);
     try {
       const params = { page, limit: 20 };
       if (search) params.search = search;
@@ -60,6 +64,7 @@ export default function ParentManagement() {
     } catch (error) {
       if (error.name === 'AbortError') return;
       logger.error("Error fetching parents:", error);
+      setFetchError(error);
     } finally {
       if (!signal?.aborted) {
         setLoading(false);
@@ -164,6 +169,11 @@ export default function ParentManagement() {
     copiedPasswordTimeoutRef.current = setTimeout(() => setCopiedPassword(false), 2000);
   };
 
+  // Four-state rule: skeleton on first load, error-with-retry on a failed fetch,
+  // empty/success handled inside the table. Both gate on "no data yet" so a
+  // failed refetch never wipes parent rows already on screen.
+  const isInitialLoading = loading && parents.length === 0;
+  const showFetchError = !loading && Boolean(fetchError) && parents.length === 0;
 
   return (
     <div className="space-y-6">
@@ -220,6 +230,20 @@ export default function ParentManagement() {
       </div>
 
       {/* Table */}
+      {isInitialLoading ? (
+        <SkeletonTable rows={8} columns={7} />
+      ) : showFetchError ? (
+        <div className="bg-surface border border-border-token rounded-lg p-6">
+          <ErrorState
+            icon={Users}
+            title="Couldn't load parent accounts"
+            description="We couldn't reach the parent accounts service. Your accounts are safe — try again in a moment."
+            error={fetchError}
+            onRetry={() => fetchParents(pagination.page)}
+            retryLabel="Retry"
+          />
+        </div>
+      ) : (
       <div className="bg-surface border border-border-token rounded-lg overflow-hidden overflow-x-auto">
         <table className="w-full">
           <thead>
@@ -234,11 +258,7 @@ export default function ParentManagement() {
             </tr>
           </thead>
           <tbody className="divide-y divide-divider">
-            {loading ? (
-              <tr>
-                <td colSpan={7} className="text-center py-12 text-fg-faint text-sm">{t('pages.loading')}</td>
-              </tr>
-            ) : parents.length === 0 ? (
+            {parents.length === 0 ? (
               <tr>
                 <td colSpan={7} className="text-center py-12 text-fg-faint text-sm">{t('pages.noParentAccountsFound')}</td>
               </tr>
@@ -325,6 +345,7 @@ export default function ParentManagement() {
           </div>
         )}
       </div>
+      )}
 
       {/* Generated Password Modal */}
       {generatedPassword && !drawerOpen && (
