@@ -44,8 +44,13 @@ export default function ByClassView() {
           currentPeriodLabel: null,
         };
         cur.slotsToday += 1;
-        cur.present += slot.attendance?.present || 0;
-        cur.total += slot.attendance?.total || 0;
+        // Attendance is recorded once per class per day, so every period slot
+        // for a class carries the same daily present/total — assign it once
+        // rather than summing (which would multiply by the period count).
+        if (slot.attendance?.total) {
+          cur.present = slot.attendance.present || 0;
+          cur.total = slot.attendance.total || 0;
+        }
         if (slot.attendance?.marked) cur.marked += 1;
         else cur.unmarked += 1;
         if (p.state === "live" || p.state === "urgent") {
