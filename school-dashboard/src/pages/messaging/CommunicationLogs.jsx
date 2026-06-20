@@ -16,6 +16,12 @@ const CHANNEL_CONFIG = {
 };
 
 const PAGE_SIZE = 15;
+// Bulk-load tuning for fetching the full sent-communication history.
+// Search / channel / date filtering happens client-side, so the whole
+// history must be loaded — not an arbitrary first slice — otherwise older
+// logs are unsearchable. (PAG-22)
+const FETCH_LIMIT = 200; // server page size while paging through history
+const MAX_PAGES = 25; // hard safety cap (~5,000 logs) to avoid runaway loads
 
 function getRecipientsLabel(recipients) {
   if (!recipients?.length) return "—";
@@ -83,17 +89,39 @@ export default function CommunicationLogs() {
     return () => { mountedRef.current = false; };
   }, []);
 
+  // Reset to the first page whenever a filter changes so the user is never
+  // stranded on a page index that no longer exists after the result set
+  // shrinks. (PAG-22 — single source of truth for the page reset.)
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, channelFilter, dateFilter]);
+
   const loadData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [announcementsRes, statsRes] = await Promise.all([
-        announcementsApi.getAll({ status: "sent", limit: 200 }),
+      // First page + stats in parallel; the response tells us how many more
+      // pages of sent communications exist.
+      const [firstRes, statsRes] = await Promise.all([
+        announcementsApi.getAll({ status: "sent", page: 1, limit: FETCH_LIMIT }),
         announcementsApi.getStats(),
       ]);
       if (!mountedRef.current) return;
-      const list = announcementsRes?.announcements ?? (Array.isArray(announcementsRes) ? announcementsRes : []);
-      setAnnouncements(list);
+
+      const all = firstRes?.announcements ?? (Array.isArray(firstRes) ? firstRes : []);
+      const totalPages = Number(firstRes?.totalPages) || 1;
+
+      // Page through the remainder so client-side search/channel/date filters
+      // cover the full history rather than only the first slice. (PAG-22 —
+      // replaces the old hard `limit: 200` cap that hid older logs.)
+      for (let pageNum = 2; pageNum <= totalPages && pageNum <= MAX_PAGES; pageNum++) {
+        const res = await announcementsApi.getAll({ status: "sent", page: pageNum, limit: FETCH_LIMIT });
+        if (!mountedRef.current) return;
+        const list = res?.announcements ?? (Array.isArray(res) ? res : []);
+        all.push(...list);
+      }
+
+      setAnnouncements(all);
       setStats(statsRes ?? { sentThisMonth: 0, totalDelivered: 0, scheduled: 0 });
     } catch (err) {
       if (!mountedRef.current) return;
@@ -131,11 +159,14 @@ export default function CommunicationLogs() {
     });
   }, [announcements, searchQuery, channelFilter, dateFilter]);
 
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  // Clamp the requested page into range so a stale `page` never produces an
+  // empty slice (e.g. for the one render before the filter-reset effect runs).
+  const safePage = Math.min(page, totalPages);
+  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const clearFilters = () => {
-    setSearchQuery(""); setChannelFilter("all"); setDateFilter("all"); setPage(1);
+    setSearchQuery(""); setChannelFilter("all"); setDateFilter("all");
   };
   const hasFilters = searchQuery || channelFilter !== "all" || dateFilter !== "all";
 
@@ -223,7 +254,7 @@ export default function CommunicationLogs() {
               type="text"
               placeholder="Search by title or content…"
               value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pl-8 pr-3 text-sm text-gray-700 placeholder-gray-400 focus:border-indigo-300 focus:outline-none focus:ring-1 focus:ring-indigo-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:placeholder-zinc-500"
             />
           </div>
@@ -231,7 +262,7 @@ export default function CommunicationLogs() {
           {/* Channel filter */}
           <select
             value={channelFilter}
-            onChange={(e) => { setChannelFilter(e.target.value); setPage(1); }}
+            onChange={(e) => setChannelFilter(e.target.value)}
             className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:border-indigo-300 focus:outline-none focus:ring-1 focus:ring-indigo-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
           >
             <option value="all">All Channels</option>
@@ -244,7 +275,7 @@ export default function CommunicationLogs() {
           {/* Date filter */}
           <select
             value={dateFilter}
-            onChange={(e) => { setDateFilter(e.target.value); setPage(1); }}
+            onChange={(e) => setDateFilter(e.target.value)}
             className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:border-indigo-300 focus:outline-none focus:ring-1 focus:ring-indigo-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
           >
             <option value="all">All Time</option>
@@ -348,13 +379,13 @@ export default function CommunicationLogs() {
         {totalPages > 1 && (
           <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3 dark:border-zinc-800">
             <p className="text-xs text-fg-faint">
-              Page {page} of {totalPages}
+              Page {safePage} of {totalPages}
             </p>
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
+                onClick={() => setPage(Math.max(1, safePage - 1))}
+                disabled={safePage === 1}
                 aria-label="Previous page"
                 className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
               >
@@ -362,8 +393,8 @@ export default function CommunicationLogs() {
               </button>
               <button
                 type="button"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
+                onClick={() => setPage(Math.min(totalPages, safePage + 1))}
+                disabled={safePage === totalPages}
                 aria-label="Next page"
                 className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
               >
