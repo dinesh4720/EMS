@@ -103,6 +103,11 @@ export function useStudentPayment(studentId, {
         refetchStudent?.(),
       ]);
       void queryClient.invalidateQueries({ queryKey: ['app-context-data'] });
+      // Recording a payment changes the Fees page list and its KPI aggregates —
+      // invalidate both so they don't serve pre-payment data until the cache
+      // goes stale (PAG-26). Prefix match covers every param permutation.
+      void queryClient.invalidateQueries({ queryKey: ['fees-payments'] });
+      void queryClient.invalidateQueries({ queryKey: ['fees-summary'] });
 
       onSuccess?.();
     } catch (error) {
