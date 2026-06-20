@@ -51,8 +51,11 @@ export default function AllocationsList() {
   // Student search term for the async dropdown (MF-24)
   const [studentSearch, setStudentSearch] = useState("");
 
-  // Lookup data (hostels, rooms, students) — students are fetched via debounced search
-  const { hostels, rooms, students, studentsLoading } = useHostelLookups(formData.hostelId, studentSearch);
+  // Lookup data (hostels, rooms, students) — students are fetched via debounced search.
+  // `filterRooms` drives the list's room filter dropdown for the currently filtered hostel
+  // (PAG-20), independent of the allocation modal's `rooms` (which is scoped to free beds).
+  const { hostels, rooms, filterRooms = [], students, studentsLoading } =
+    useHostelLookups(formData.hostelId, studentSearch, hostelFilter);
 
   useEffect(() => {
     const t = setTimeout(() => { setSearch(searchInput); setPage(1); }, 300);
@@ -67,6 +70,7 @@ export default function AllocationsList() {
       if (search) params.search = search;
       if (statusFilter) params.status = statusFilter;
       if (hostelFilter) params.hostelId = hostelFilter;
+      if (roomFilter) params.roomId = roomFilter;
       const data = await hostelApi.getAllocations(params);
       setAllocations(data.allocations || []);
       setTotalPages(data.pages || 1);
@@ -76,7 +80,7 @@ export default function AllocationsList() {
     } finally {
       setIsLoading(false);
     }
-  }, [search, statusFilter, hostelFilter, page, t]);
+  }, [search, statusFilter, hostelFilter, roomFilter, page, t]);
 
   useEffect(() => { fetchAllocations(); }, [fetchAllocations]);
 
@@ -145,11 +149,6 @@ export default function AllocationsList() {
 
   const formatDate = (d) => d ? new Date(d).toLocaleDateString(getDateLocale(), { day: "2-digit", month: "short", year: "numeric" }) : "—";
 
-  const filteredAllocations = allocations.filter((a) => {
-    if (roomFilter && (a.roomId?._id || a.roomId) !== roomFilter) return false;
-    return true;
-  });
-
   if (isLoading) return <TablePageSkeleton title={false} kpiCards={0} columns={5} rows={6} />;
 
   if (loadError) {
@@ -174,7 +173,7 @@ export default function AllocationsList() {
             placeholder={t('pages.allHostels')}
             aria-label={t('pages.allHostels')}
             value={hostelFilter}
-            onChange={(e) => { setHostelFilter(e.target.value); setPage(1); }}
+            onChange={(e) => { setHostelFilter(e.target.value); setRoomFilter(""); setPage(1); }}
             className="max-w-[180px]"
             size="sm"
           >
@@ -188,9 +187,10 @@ export default function AllocationsList() {
             onChange={(e) => { setRoomFilter(e.target.value); setPage(1); }}
             className="max-w-[180px]"
             size="sm"
+            disabled={!hostelFilter}
           >
-            <option value="">All Rooms</option>
-            {rooms.map(r => <option key={r._id} value={r._id}>{r.roomNumber}</option>)}
+            <option value="">{hostelFilter ? "All Rooms" : "Select a hostel first"}</option>
+            {filterRooms.map(r => <option key={r._id} value={r._id}>{r.roomNumber}</option>)}
           </Select>
           <Select
             placeholder={t('pages.status2')}
@@ -207,7 +207,7 @@ export default function AllocationsList() {
         </div>
         <div className="flex gap-2">
           <ExportMenu
-            rows={filteredAllocations}
+            rows={allocations}
             columns={[
               { key: "student", label: "Student", accessor: (a) => a.studentName || a.studentId?.name || "—" },
               { key: "admissionNo", label: "Adm No", accessor: (a) => a.admissionNo || a.studentId?.admissionNo || "—" },
@@ -235,7 +235,7 @@ export default function AllocationsList() {
       </div>
 
       {/* Allocations Table */}
-      {filteredAllocations.length === 0 ? (
+      {allocations.length === 0 ? (
         <EmptyState
           icon={Users}
           title={t('pages.noAllocationsFound')}
@@ -262,7 +262,7 @@ export default function AllocationsList() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-divider">
-                {filteredAllocations.map((alloc) => (
+                {allocations.map((alloc) => (
                   <tr key={alloc._id} className="bg-surface hover:bg-surface-hover transition-colors">
                     <td className="px-4 py-3 font-medium text-fg">
                       {alloc.studentName || alloc.studentId?.name || "—"}
@@ -335,7 +335,7 @@ export default function AllocationsList() {
               </tr>
             </thead>
             <tbody>
-              {filteredAllocations.map((alloc) => (
+              {allocations.map((alloc) => (
                 <tr key={alloc._id} className="border-b">
                   <td className="py-2 px-3">{alloc.studentName || alloc.studentId?.name || "—"}</td>
                   <td className="py-2 px-3">{alloc.admissionNo || alloc.studentId?.admissionNo || "—"}</td>
