@@ -115,8 +115,13 @@ export const NAV_GROUPS = [
         panel: [
           { id: "intake", icon: ClipboardPen, label: "Intake Forms", href: "/intake-forms/assignments" },
           { id: "data", icon: Database, label: "Data Tools", href: "/data-tools" },
-          { id: "checklist", icon: ListChecks, label: "IA & Checklist", href: "/ia" },
-          { id: "style", icon: Palette, label: "Style Guide", href: "/style-guide" },
+          // Internal dev-only tools — never registered in production builds.
+          ...(import.meta.env.DEV
+            ? [
+                { id: "checklist", icon: ListChecks, label: "IA & Checklist", href: "/ia" },
+                { id: "style", icon: Palette, label: "Style Guide", href: "/style-guide" },
+              ]
+            : []),
           { id: "audit", icon: ScrollText, label: "Audit Logs", href: "/audit-logs" },
         ],
       },
