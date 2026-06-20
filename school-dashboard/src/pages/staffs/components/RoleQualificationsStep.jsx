@@ -1,5 +1,5 @@
 import { Input, Select, SelectItem, Chip, Switch, Autocomplete, AutocompleteItem } from "@heroui/react";
-import { Users, Hash, BookOpen, GraduationCap, Briefcase, Upload, FileScan, Check, Plus, X } from "lucide-react";
+import { Users, Hash, BookOpen, GraduationCap, Briefcase, Upload, Check, Plus, X } from "lucide-react";
 import { STAFF_ROLES } from "../../../constants/roles";
 import { useTranslation } from "react-i18next";
 import SectionHeader from "./SectionHeader";
@@ -211,11 +211,6 @@ function RoleQualificationsStep({
               <button className="inline-flex items-center gap-1.5 text-xs font-medium text-fg-muted hover:text-fg transition-colors px-2 py-1 rounded-md hover:bg-surface-hover" onClick={() => document.getElementById(`qual-doc-${i}`).click()}>
                 <Upload size={12} /> {t('staff.form.uploadCertificate')}
               </button>
-              {qual.documents && qual.documents.length > 0 && (
-                <button className="inline-flex items-center gap-1.5 text-xs font-medium text-fg-faint cursor-not-allowed px-2 py-1" disabled title={t('pages.comingSoon')}>
-                  <FileScan size={12} /> Extract Info
-                </button>
-              )}
               <input id={`qual-doc-${i}`} type="file" multiple accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => handleQualificationDocUpload(i, e.target.files)} />
               {qual.documents && qual.documents.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 ml-auto">
