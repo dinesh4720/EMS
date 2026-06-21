@@ -63,10 +63,6 @@ export default function TodayView({ retrospectiveOverride = false }) {
               );
             }
           }}
-          onViewTomorrow={() => {
-            // Stub — no /classes?date= support in this PR
-            // TODO: query-string-driven date navigation in a follow-up
-          }}
         />
         <ByClassView />
       </>
