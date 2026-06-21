@@ -53,7 +53,7 @@ export default function CookieConsentBanner() {
     >
       <div className="max-w-6xl mx-auto px-4 py-4">
         <div className="flex items-start gap-3">
-          <Cookie size={20} className="text-teal-600 dark:text-teal-400 flex-shrink-0 mt-0.5" />
+          <Cookie size={20} className="text-accent flex-shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <p className="text-sm text-fg font-medium mb-1">
               We use cookies to keep you signed in
@@ -61,7 +61,7 @@ export default function CookieConsentBanner() {
             <p className="text-xs text-fg-muted">
               SchoolSync uses essential cookies for authentication and security. No tracking or marketing cookies are used.
               See our{' '}
-              <Link to="/privacy" className="text-teal-600 hover:text-teal-700 dark:text-teal-400 underline">
+              <Link to="/privacy" className="text-accent hover:text-accent-hover underline">
                 Privacy Policy
               </Link>{' '}
               for details.
@@ -71,7 +71,7 @@ export default function CookieConsentBanner() {
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={handleAccept}
-              className="px-3 py-1.5 text-xs font-medium rounded-md bg-teal-600 text-white hover:bg-teal-700 transition-colors"
+              className="px-3 py-1.5 text-xs font-medium rounded-md bg-accent text-white hover:bg-accent-hover transition-colors"
             >
               Got it
             </button>

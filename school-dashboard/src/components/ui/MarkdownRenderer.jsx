@@ -36,7 +36,7 @@ function renderInline(text) {
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-blue-600 dark:text-blue-400 underline underline-offset-2 hover:opacity-80"
+        className="text-accent underline underline-offset-2 hover:opacity-80"
       >
         {label}
       </a>

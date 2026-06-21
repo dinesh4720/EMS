@@ -5,21 +5,21 @@ import Skeleton from "./Skeleton";
 import EmptyState from "./EmptyState";
 
 const DOT_TONE = {
-  neutral: "bg-gray-300 dark:bg-zinc-600 ring-white dark:ring-zinc-900",
-  primary: "bg-blue-500 ring-white dark:ring-zinc-900",
-  success: "bg-green-500 ring-white dark:ring-zinc-900",
-  warning: "bg-amber-500 ring-white dark:ring-zinc-900",
-  danger: "bg-red-500 ring-white dark:ring-zinc-900",
-  info: "bg-blue-500 ring-white dark:ring-zinc-900",
+  neutral: "bg-fg-faint ring-bg",
+  primary: "bg-accent ring-bg",
+  success: "bg-ok ring-bg",
+  warning: "bg-warn ring-bg",
+  danger: "bg-danger-token ring-bg",
+  info: "bg-info-token ring-bg",
 };
 
 const ICON_TONE = {
-  neutral: "bg-gray-100 text-gray-700 dark:bg-zinc-800 dark:text-zinc-300",
-  primary: "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400",
-  success: "bg-green-50 text-green-600 dark:bg-green-950 dark:text-green-400",
-  warning: "bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400",
-  danger: "bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400",
-  info: "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400",
+  neutral: "bg-surface-2 text-fg-muted",
+  primary: "bg-accent-bg text-accent",
+  success: "bg-ok-bg text-ok",
+  warning: "bg-warn-bg text-warn",
+  danger: "bg-danger-bg text-danger-token",
+  info: "bg-info-bg text-info-token",
 };
 
 function TimelineSkeleton({ rows = 3 }) {
@@ -55,7 +55,7 @@ function TimelineItem({ item, isLast }) {
         className={cn(
           "absolute left-0 top-0.5 flex h-6 w-6 items-center justify-center rounded-full ring-4",
           Icon ? (ICON_TONE[tone] ?? ICON_TONE.neutral) : null,
-          Icon ? "ring-white dark:ring-zinc-900" : null
+          Icon ? "ring-bg" : null
         )}
       >
         {Icon ? (
