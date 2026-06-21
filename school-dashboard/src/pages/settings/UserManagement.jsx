@@ -30,6 +30,7 @@ import RolesAccess from "./RolesAccess";
 import HierarchySettings from "./HierarchySettings";
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+import Skeleton, { SkeletonText } from '../../components/ui/Skeleton';
 import logger from '../../utils/logger';
 import { userChangePasswordSchema } from '../../validators/formSchemas';
 import useZodForm from '../../hooks/useZodForm';
@@ -456,9 +457,10 @@ export default function UserManagement() {
                                         </div>
                                     </div>
                                 ) : resetting ? (
-                                    <div className="flex flex-col items-center justify-center py-8">
-                                        <div className="animate-spin h-8 w-8 rounded-full border-2 border-border-token border-t-fg" />
-                                        <p className="text-sm text-fg-muted mt-4">{t('pages.generatingSecurePassword')}</p>
+                                    <div className="py-4 space-y-4" role="status" aria-live="polite" aria-busy="true">
+                                        <SkeletonText lines={2} />
+                                        <Skeleton variant="rect" className="h-12 w-full" />
+                                        <p className="text-sm text-fg-muted text-center">{t('pages.generatingSecurePassword')}</p>
                                     </div>
                                 ) : resetSuccess ? (
                                     <div className="space-y-4">
