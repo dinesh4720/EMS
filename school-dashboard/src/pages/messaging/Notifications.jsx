@@ -22,10 +22,12 @@ export default function Notifications() {
     let mounted = true;
     (async () => {
       try {
-        const data = await notificationsApi.getAll();
+        // Seed the tab badge from the server unread count, not from a capped
+        // page of notifications (PAG-18). NotificationCenter keeps it in sync
+        // afterwards via onUnreadCountChange.
+        const { count } = await notificationsApi.getUnreadCount();
         if (!mounted) return;
-        const list = Array.isArray(data) ? data : data?.notifications || [];
-        setUnreadCount(list.filter((n) => !n.isRead && !n.read).length);
+        setUnreadCount(count ?? 0);
       } catch {
         if (mounted) setUnreadCount(0);
       } finally {

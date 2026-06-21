@@ -78,15 +78,32 @@ function isUnread(notification) {
   return !(notification.isRead || notification.read);
 }
 
+// Page size for the full notification center; the popover only previews a few.
+const PAGE_SIZE = 20;
+const POPOVER_SIZE = 5;
+
+function extractList(data) {
+  return Array.isArray(data) ? data : data?.notifications || data?.data || [];
+}
+
 export default function NotificationCenter({ onUnreadCountChange, isPopover = false }) {
   const { t } = useTranslation();
   const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
   const [notifications, setNotifications] = useState([]);
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
   const [markingAll, setMarkingAll] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  // Server-authoritative totals — the badge and tab counts come from these,
+  // never from the loaded page (PAG-18). Kept in sync on local mutations so
+  // they stay accurate without an extra round-trip.
+  const [total, setTotal] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+
+  const pageSize = isPopover ? POPOVER_SIZE : PAGE_SIZE;
 
   useEffect(() => {
     let isMounted = true;
@@ -95,10 +112,17 @@ export default function NotificationCenter({ onUnreadCountChange, isPopover = fa
       setLoading(true);
       setError(null);
       try {
-        const data = await notificationsApi.getAll();
+        const data = await notificationsApi.getAll({ limit: pageSize, skip: 0 });
         if (!isMounted) return;
-        const list = Array.isArray(data) ? data : (data?.notifications || data?.data || []);
-        setNotifications(isPopover ? list.slice(0, 5) : list);
+        const list = extractList(data);
+        setNotifications(list);
+        setTotal(typeof data?.total === 'number' ? data.total : list.length);
+        setUnreadCount(
+          typeof data?.unreadCount === 'number'
+            ? data.unreadCount
+            : list.filter(isUnread).length,
+        );
+        setHasMore(Boolean(data?.pagination?.hasMore));
       } catch (err) {
         if (!isMounted) return;
         logger.error('Error loading notifications:', err);
@@ -115,8 +139,11 @@ export default function NotificationCenter({ onUnreadCountChange, isPopover = fa
       setNotifications((prev) => {
         const newNotif = { ...data, isRead: false };
         const updated = [newNotif, ...prev];
-        return isPopover ? updated.slice(0, 5) : updated;
+        return isPopover ? updated.slice(0, POPOVER_SIZE) : updated;
       });
+      // A brand-new notification is unread by definition.
+      setTotal((prev) => prev + 1);
+      setUnreadCount((prev) => prev + 1);
     };
 
     socketServiceEnhanced.on('notification:new', handleNewNotification);
@@ -125,20 +152,43 @@ export default function NotificationCenter({ onUnreadCountChange, isPopover = fa
       isMounted = false;
       socketServiceEnhanced.off('notification:new', handleNewNotification);
     };
-  }, [isPopover, reloadKey]);
+  }, [isPopover, pageSize, reloadKey]);
 
   useEffect(() => {
     if (!loading && onUnreadCountChange) {
-      onUnreadCountChange(notifications.filter(isUnread).length);
+      onUnreadCountChange(unreadCount);
     }
-  }, [notifications, loading, onUnreadCountChange]);
+  }, [unreadCount, loading, onUnreadCountChange]);
+
+  const handleLoadMore = async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const data = await notificationsApi.getAll({ limit: PAGE_SIZE, skip: notifications.length });
+      const list = extractList(data);
+      setNotifications((prev) => {
+        // De-dupe by _id in case a live push raced the fetch at the boundary.
+        const seen = new Set(prev.map((n) => n._id));
+        return [...prev, ...list.filter((n) => !seen.has(n._id))];
+      });
+      if (typeof data?.total === 'number') setTotal(data.total);
+      setHasMore(Boolean(data?.pagination?.hasMore));
+    } catch (err) {
+      logger.error('Error loading more notifications:', err);
+      toast.error('Failed to load more notifications');
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const handleMarkAsRead = async (notificationId) => {
     try {
       await notificationsApi.markAsRead(notificationId);
+      const wasUnread = notifications.some((n) => n._id === notificationId && isUnread(n));
       setNotifications((prev) =>
         prev.map((n) => (n._id === notificationId ? { ...n, isRead: true, read: true } : n)),
       );
+      if (wasUnread) setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (err) {
       logger.error('Error marking as read:', err);
       toast.error(t('toast.error.failedToMarkAsRead'));
@@ -150,6 +200,7 @@ export default function NotificationCenter({ onUnreadCountChange, isPopover = fa
     try {
       await notificationsApi.markAllAsRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true, read: true })));
+      setUnreadCount(0);
       toast.success(t('toast.success.allNotificationsMarkedAsRead'));
     } catch (err) {
       logger.error('Error marking all as read:', err);
@@ -162,7 +213,10 @@ export default function NotificationCenter({ onUnreadCountChange, isPopover = fa
   const handleDelete = async (notificationId) => {
     try {
       await notificationsApi.delete(notificationId);
+      const wasUnread = notifications.some((n) => n._id === notificationId && isUnread(n));
       setNotifications((prev) => prev.filter((n) => n._id !== notificationId));
+      setTotal((prev) => Math.max(0, prev - 1));
+      if (wasUnread) setUnreadCount((prev) => Math.max(0, prev - 1));
       toast.success(t('toast.success.notificationDeleted'));
     } catch (err) {
       logger.error('Error deleting notification:', err);
@@ -180,6 +234,9 @@ export default function NotificationCenter({ onUnreadCountChange, isPopover = fa
         try {
           await notificationsApi.clearAll();
           setNotifications([]);
+          setTotal(0);
+          setUnreadCount(0);
+          setHasMore(false);
           toast.success(t('toast.success.allNotificationsCleared'));
         } catch (err) {
           logger.error('Error clearing notifications:', err);
@@ -212,7 +269,6 @@ export default function NotificationCenter({ onUnreadCountChange, isPopover = fa
   });
 
   const groupedNotifications = groupNotificationsByDate(filteredNotifications);
-  const unreadCount = notifications.filter(isUnread).length;
 
   const formatTime = (date) => {
     const now = new Date();
@@ -226,10 +282,11 @@ export default function NotificationCenter({ onUnreadCountChange, isPopover = fa
     return formatShortDate(date);
   };
 
+  // Tab counts come from the server totals, not the loaded page (PAG-18).
   const tabs = [
-    { key: 'all', title: `All (${notifications.length})` },
+    { key: 'all', title: `All (${total})` },
     { key: 'unread', title: `Unread (${unreadCount})` },
-    { key: 'read', title: `Read (${notifications.length - unreadCount})` },
+    { key: 'read', title: `Read (${Math.max(0, total - unreadCount)})` },
   ];
 
   return (
@@ -361,6 +418,20 @@ export default function NotificationCenter({ onUnreadCountChange, isPopover = fa
             </div>
           )}
         </div>
+
+        {/* Load more — full view only; popover stays a fixed preview */}
+        {!isPopover && hasMore && !loading && !error && (
+          <div className="mt-3 flex justify-center">
+            <MinimalButton
+              size="sm"
+              variant="secondary"
+              onClick={handleLoadMore}
+              loading={loadingMore}
+            >
+              Load more
+            </MinimalButton>
+          </div>
+        )}
       </div>
       <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </>
