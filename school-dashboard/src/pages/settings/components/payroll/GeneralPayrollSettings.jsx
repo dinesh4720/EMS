@@ -7,6 +7,8 @@ import ScheduleCard from "./ScheduleCard";
 import PaymentMethodCard from "./PaymentMethodCard";
 import RemindersCard from "./RemindersCard";
 import AccessPermissionsCard from "./AccessPermissionsCard";
+import { SkeletonCard } from "../../../../components/ui/Skeleton";
+import ErrorState from "../../../../components/ui/ErrorState";
 
 const getOrdinalSuffix = (day) => {
   const num = parseInt(day);
@@ -31,42 +33,43 @@ export default function GeneralPayrollSettings() {
   const [tempReminderDays, setTempReminderDays] = useState("3");
   const [loading, setLoading] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
+
+  const fetchPayrollSettings = useCallback(async () => {
+    setInitialLoad(true);
+    setFetchError(null);
+    try {
+      const data = await settingsApi.getPayrollSettings();
+      const d = data.data?.disburseDate || "";
+      setDisburseDate(d);
+      setTempDisburseDate(d);
+      const cycle = data.data?.payrollCycle || "monthly";
+      setPayrollCycle(cycle);
+      setTempPayrollCycle(cycle);
+      // AUDIT-116: Also load payment method and reminder settings if present
+      if (data.data?.paymentMethod) {
+        setPaymentMethod(data.data.paymentMethod);
+        setTempPaymentMethod(data.data.paymentMethod);
+      }
+      if (data.data?.autoReminder !== undefined) {
+        setAutoReminder(data.data.autoReminder);
+        setTempAutoReminder(data.data.autoReminder);
+      }
+      if (data.data?.reminderDays) {
+        setReminderDays(String(data.data.reminderDays));
+        setTempReminderDays(String(data.data.reminderDays));
+      }
+      setInitialLoad(false);
+    } catch (error) {
+      logger.error("Failed to fetch payroll settings:", error);
+      setFetchError(error);
+      setInitialLoad(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    const fetchPayrollSettings = async () => {
-      try {
-        const data = await settingsApi.getPayrollSettings();
-        if (cancelled) return;
-        const d = data.data?.disburseDate || "";
-        setDisburseDate(d);
-        setTempDisburseDate(d);
-        const cycle = data.data?.payrollCycle || "monthly";
-        setPayrollCycle(cycle);
-        setTempPayrollCycle(cycle);
-        // AUDIT-116: Also load payment method and reminder settings if present
-        if (data.data?.paymentMethod) {
-          setPaymentMethod(data.data.paymentMethod);
-          setTempPaymentMethod(data.data.paymentMethod);
-        }
-        if (data.data?.autoReminder !== undefined) {
-          setAutoReminder(data.data.autoReminder);
-          setTempAutoReminder(data.data.autoReminder);
-        }
-        if (data.data?.reminderDays) {
-          setReminderDays(String(data.data.reminderDays));
-          setTempReminderDays(String(data.data.reminderDays));
-        }
-        setInitialLoad(false);
-      } catch (error) {
-        if (cancelled) return;
-        logger.error("Failed to fetch payroll settings:", error);
-        setInitialLoad(false);
-      }
-    };
     fetchPayrollSettings();
-    return () => { cancelled = true; };
-  }, []);
+  }, [fetchPayrollSettings]);
 
   // AUDIT-127: Warn before leaving with unsaved edits
   useEffect(() => {
@@ -148,6 +151,32 @@ export default function GeneralPayrollSettings() {
       setLoading(false);
     }
   }, [tempAutoReminder, tempReminderDays]);
+
+  if (initialLoad) {
+    return (
+      <div className="space-y-5">
+        <SkeletonCard bodyLines={2} />
+        <SkeletonCard bodyLines={2} />
+        <SkeletonCard bodyLines={2} />
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className="space-y-5">
+        <ErrorState
+          title={t("pages.failedToLoadPayrollSettings", "Failed to load payroll settings")}
+          description={t(
+            "pages.failedToLoadPayrollSettingsDescription",
+            "We couldn't load your payroll settings. Check your connection and try again.",
+          )}
+          error={fetchError}
+          onRetry={() => fetchPayrollSettings()}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
