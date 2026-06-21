@@ -49,6 +49,18 @@ export const intakeFormsApi = {
     const qs = p.toString();
     return request(`/form-submissions${qs ? `?${qs}` : ''}`);
   },
+  // Server-paginated submissions (PAG-16). Always sends page/limit so the
+  // backend returns the `{ data, pagination }` envelope — use this for the
+  // review queue. `getSubmissions` (bare array) stays for aggregate views.
+  listSubmissions: ({ page = 1, limit = 10, formId, reviewStatus } = {}, options = {}) => {
+    const p = new URLSearchParams();
+    p.set('page', page);
+    p.set('limit', limit);
+    if (formId) p.set('formId', formId);
+    if (reviewStatus) p.set('reviewStatus', reviewStatus);
+    const url = `/form-submissions?${p.toString()}`;
+    return options?.signal ? request(url, { signal: options.signal }) : request(url);
+  },
   getSubmission: (id) => request(`/form-submissions/${id}`),
   reviewSubmission: (id, data) => request(`/form-submissions/${id}/review`, { method: 'PUT', body: JSON.stringify(data) }),
   requestEdit: (id, data) => request(`/form-submissions/${id}/request-edit`, {
