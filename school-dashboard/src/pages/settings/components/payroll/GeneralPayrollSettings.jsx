@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { settingsApi } from "../../../../services/api";
 import toast from "react-hot-toast";
 import logger from "../../../../utils/logger";
+import { SkeletonCard } from "../../../../components/ui/Skeleton";
+import ErrorState from "../../../../components/ui/ErrorState";
 import ScheduleCard from "./ScheduleCard";
 import PaymentMethodCard from "./PaymentMethodCard";
 import RemindersCard from "./RemindersCard";
@@ -31,42 +33,43 @@ export default function GeneralPayrollSettings() {
   const [tempReminderDays, setTempReminderDays] = useState("3");
   const [loading, setLoading] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
+
+  const fetchPayrollSettings = useCallback(async () => {
+    setFetchError(null);
+    try {
+      const data = await settingsApi.getPayrollSettings();
+      const d = data.data?.disburseDate || "";
+      setDisburseDate(d);
+      setTempDisburseDate(d);
+      const cycle = data.data?.payrollCycle || "monthly";
+      setPayrollCycle(cycle);
+      setTempPayrollCycle(cycle);
+      // AUDIT-116: Also load payment method and reminder settings if present
+      if (data.data?.paymentMethod) {
+        setPaymentMethod(data.data.paymentMethod);
+        setTempPaymentMethod(data.data.paymentMethod);
+      }
+      if (data.data?.autoReminder !== undefined) {
+        setAutoReminder(data.data.autoReminder);
+        setTempAutoReminder(data.data.autoReminder);
+      }
+      if (data.data?.reminderDays) {
+        setReminderDays(String(data.data.reminderDays));
+        setTempReminderDays(String(data.data.reminderDays));
+      }
+    } catch (error) {
+      // DS-02: surface the failure instead of silently keeping stale defaults
+      logger.error("Failed to fetch payroll settings:", error);
+      setFetchError(error);
+    } finally {
+      setInitialLoad(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    const fetchPayrollSettings = async () => {
-      try {
-        const data = await settingsApi.getPayrollSettings();
-        if (cancelled) return;
-        const d = data.data?.disburseDate || "";
-        setDisburseDate(d);
-        setTempDisburseDate(d);
-        const cycle = data.data?.payrollCycle || "monthly";
-        setPayrollCycle(cycle);
-        setTempPayrollCycle(cycle);
-        // AUDIT-116: Also load payment method and reminder settings if present
-        if (data.data?.paymentMethod) {
-          setPaymentMethod(data.data.paymentMethod);
-          setTempPaymentMethod(data.data.paymentMethod);
-        }
-        if (data.data?.autoReminder !== undefined) {
-          setAutoReminder(data.data.autoReminder);
-          setTempAutoReminder(data.data.autoReminder);
-        }
-        if (data.data?.reminderDays) {
-          setReminderDays(String(data.data.reminderDays));
-          setTempReminderDays(String(data.data.reminderDays));
-        }
-        setInitialLoad(false);
-      } catch (error) {
-        if (cancelled) return;
-        logger.error("Failed to fetch payroll settings:", error);
-        setInitialLoad(false);
-      }
-    };
     fetchPayrollSettings();
-    return () => { cancelled = true; };
-  }, []);
+  }, [fetchPayrollSettings]);
 
   // AUDIT-127: Warn before leaving with unsaved edits
   useEffect(() => {
@@ -148,6 +151,29 @@ export default function GeneralPayrollSettings() {
       setLoading(false);
     }
   }, [tempAutoReminder, tempReminderDays]);
+
+  // DS-02: skeleton while the initial fetch is in flight — never show default values as if they were saved settings
+  if (initialLoad) {
+    return (
+      <div className="space-y-5" role="status" aria-busy="true" aria-label="Loading payroll settings">
+        <SkeletonCard bodyLines={3} />
+        <SkeletonCard bodyLines={2} />
+        <SkeletonCard bodyLines={2} />
+      </div>
+    );
+  }
+
+  // DS-02: a failed fetch must not silently leave editable defaults the admin could re-save
+  if (fetchError) {
+    return (
+      <ErrorState
+        title="Couldn't load payroll settings"
+        description="We couldn't load your payroll configuration. Your saved settings are unchanged — try again."
+        error={fetchError}
+        onRetry={fetchPayrollSettings}
+      />
+    );
+  }
 
   return (
     <div className="space-y-5">
