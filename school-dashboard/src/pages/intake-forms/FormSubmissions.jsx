@@ -52,22 +52,34 @@ export default function FormSubmissions() {
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [filterStatus, setFilterStatus] = useState("pending");
   const [reviewNotes, setReviewNotes] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
 
   useEffect(() => {
     fetchSubmissions();
-  }, [filterStatus]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterStatus, page, pageSize]);
 
   const fetchSubmissions = async () => {
     try {
       setLoading(true);
-      const status = filterStatus === "all" ? null : filterStatus;
-      const data = await intakeFormsApi.getSubmissions(null, status);
-      setSubmissions(Array.isArray(data) ? data : []);
+      const reviewStatus = filterStatus === "all" ? undefined : filterStatus;
+      const res = await intakeFormsApi.listSubmissions({ page, limit: pageSize, reviewStatus });
+      setSubmissions(Array.isArray(res?.data) ? res.data : []);
+      setTotalItems(res?.pagination?.totalItems ?? 0);
     } catch (error) {
       toast.error(t('intakeForms.submissions.loadFailed'));
     } finally {
       setLoading(false);
     }
+  };
+
+  // Filter changes reset to the first page so the server query and the visible
+  // page stay in sync.
+  const handleFilterChange = (status) => {
+    setFilterStatus(status);
+    setPage(1);
   };
 
   const handleViewSubmission = async (submissionId) => {
@@ -236,7 +248,7 @@ export default function FormSubmissions() {
   );
 
   const isFiltered = filterStatus !== "pending";
-  const showEmptyState = !loading && submissions.length === 0;
+  const showEmptyState = !loading && totalItems === 0;
 
   return (
     <div className="space-y-6">
@@ -255,7 +267,7 @@ export default function FormSubmissions() {
             size="sm"
             variant={filterStatus === status ? "solid" : "flat"}
             color={filterStatus === status ? "primary" : "default"}
-            onPress={() => setFilterStatus(status)}
+            onPress={() => handleFilterChange(status)}
             aria-pressed={filterStatus === status}
           >
             {t(`intakeForms.submissions.status.${status.replace(/_(.)/g, (_, c) => c.toUpperCase())}`)}
@@ -284,7 +296,12 @@ export default function FormSubmissions() {
           loading={loading}
           rowActions={rowActions}
           pagination
-          defaultPageSize={10}
+          serverMode
+          page={page}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
         />
       )}
 
