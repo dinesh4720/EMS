@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useValidatedParams } from '../../hooks/useValidatedParams';
 import { getStoredUser } from '../../utils/authSession';
@@ -23,6 +23,7 @@ import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { FileText, Users, ArrowLeft, Save, AlertCircle, Award, CheckCircle2, Search, UserX, GraduationCap } from 'lucide-react';
 import { examsApi, resultsApi, classesApi } from '../../services/api';
 import { MinimalButton, InlineEdit, StatCard, ErrorState, EmptyState, PageShell } from '../../components/ui';
+import { useApp } from '../../context/AppContext';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { calculateGrade as calculateGradeUtil } from '../../utils/grading';
@@ -165,6 +166,7 @@ const ResultsEntry = ({ standalone = false }) => {
   const { t } = useTranslation();
   const { params: { examId }, isValid } = useValidatedParams({ examId: 'objectId' }, { redirectTo: '/academics/exams' });
   const navigate = useNavigate();
+  const { selectedAcademicYear } = useApp();
   const [exams, setExams] = useState([]);
   const [selectedExamId, setSelectedExamId] = useState(examId ? new Set([examId]) : new Set([]));
   const [exam, setExam] = useState(null);
@@ -175,6 +177,7 @@ const ResultsEntry = ({ standalone = false }) => {
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [examSearch, setExamSearch] = useState('');
   const [loadedAt, setLoadedAt] = useState(null);
   const [dirtyStudentIds, setDirtyStudentIds] = useState(new Set());
   const [pendingNavPath, setPendingNavPath] = useState(null);
@@ -195,14 +198,24 @@ const ResultsEntry = ({ standalone = false }) => {
     }
   };
 
-  // For standalone mode, fetch all exams first
+  // For non-standalone mode, fetch the single exam + its students
   useEffect(() => {
-    if (standalone) {
-      fetchExamsList();
-    } else if (examId) {
+    if (!standalone && examId) {
       fetchExamAndStudents(examId);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [standalone, examId]);
+
+  // Standalone mode: drive the exam picker. PAG-09: scoping by academicYear
+  // keeps the picker to the current year, and the server-side `q` param lets
+  // teachers find older exams by name. Debounced to avoid hammering the API
+  // on every keystroke.
+  useEffect(() => {
+    if (!standalone) return;
+    const handle = setTimeout(() => fetchExamsList(examSearch), 250);
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAcademicYear, examSearch, standalone]);
 
   // Update when exam selection changes in standalone mode
   useEffect(() => {
@@ -210,17 +223,23 @@ const ResultsEntry = ({ standalone = false }) => {
       const id = Array.from(selectedExamId)[0];
       fetchExamAndStudents(id);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedExamId, standalone]);
 
-  const fetchExamsList = async () => {
+  const fetchExamsList = useCallback(async (q = '') => {
     setLoadingExams(true);
     setLoadError(null);
     try {
-      const data = await examsApi.getAll();
-      setExams(data || []);
-      // Auto-select first exam if available
-      if (data && data.length > 0) {
-        setSelectedExamId(new Set([data[0].id || data[0]._id]));
+      const params = { limit: 200 };
+      if (selectedAcademicYear) params.academicYear = selectedAcademicYear;
+      const trimmed = q.trim();
+      if (trimmed) params.q = trimmed;
+      const data = await examsApi.getAll(params);
+      const list = data || [];
+      setExams(list);
+      // Auto-select first exam if available and no current selection
+      if (list.length > 0 && selectedExamId.size === 0) {
+        setSelectedExamId(new Set([list[0].id || list[0]._id]));
       }
     } catch (error) {
       logger.error('Error fetching exams:', error);
@@ -229,7 +248,7 @@ const ResultsEntry = ({ standalone = false }) => {
     } finally {
       setLoadingExams(false);
     }
-  };
+  }, [selectedAcademicYear, selectedExamId, t]);
 
   const fetchExamAndStudents = async (id) => {
     setLoadingStudents(true);
@@ -474,7 +493,7 @@ const ResultsEntry = ({ standalone = false }) => {
       <PageShell title="Enter Results">
         <div className="space-y-4">
         {/* Exam Selector */}
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-wrap items-end gap-4">
           <Select
             label={t('pages.selectExam')}
             placeholder={t('pages.chooseAnExamToEnterResults')}
@@ -492,8 +511,26 @@ const ResultsEntry = ({ standalone = false }) => {
             ))}
           </Select>
 
+          {/* PAG-09: server-side search lets teachers find older exams that
+              fall outside the current-year default scope. */}
+          <Input
+            label={t('pages.searchExam', { defaultValue: 'Search exam' })}
+            placeholder={t('pages.searchExamPlaceholder', {
+              defaultValue: 'Search by exam or subject name',
+            })}
+            value={examSearch}
+            onValueChange={setExamSearch}
+            startContent={<Search size={16} className="text-fg-faint" />}
+            isClearable
+            onClear={() => setExamSearch('')}
+            className="max-w-xs"
+            classNames={{
+              inputWrapper: 'border-border-token hover:border-fg-faint',
+            }}
+          />
+
           {exam && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 ml-auto">
               <MinimalButton variant="ghost" onClick={handleSave} disabled={saving || students.length === 0}>
                 {saving ? 'Saving...' : 'Save Results'}
               </MinimalButton>
@@ -501,12 +538,23 @@ const ResultsEntry = ({ standalone = false }) => {
           )}
         </div>
 
-        {/* No exam selected */}
-        {exams.length === 0 && (
+        {/* No exam selected — show different copy when search is active vs
+            when the year genuinely has no exams. */}
+        {exams.length === 0 && !loadingExams && (
           <EmptyState
             icon={FileText}
-            title={t('pages.noExamsAvailable')}
-            description={t('pages.createAnExamFirstToEnterResults')}
+            title={
+              examSearch
+                ? t('pages.noExamsMatchSearch', { defaultValue: 'No exams match your search' })
+                : t('pages.noExamsAvailable')
+            }
+            description={
+              examSearch
+                ? t('pages.tryDifferentSearch', {
+                    defaultValue: 'Try a different name or clear the search to browse the current year.',
+                  })
+                : t('pages.createAnExamFirstToEnterResults')
+            }
             size="md"
           />
         )}
