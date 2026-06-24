@@ -8,7 +8,6 @@ import {
   useCallback,
   useRef,
 } from "react";
-import { useLocation } from "react-router-dom";
 import { clearStoredUser, getStoredUser } from "../utils/authSession";
 import { isSuperAdminRole } from "../utils/roleUtils";
 import toast from "react-hot-toast";
@@ -23,7 +22,6 @@ import { SchoolProvider } from "./SchoolContext";
 import { AcademicYearProvider, useAcademicYear } from "./AcademicYearContext";
 import {
   extractRoleNames,
-  shouldHydrateStudentsForPath,
   fetchRoleAwareAppData,
   fetchAppSettingsData,
 } from "./appContextHelpers";
@@ -41,8 +39,6 @@ const AppContext = createContext();
  */
 function AppContextCore({ children }) {
   const { t } = useTranslation();
-  const location = useLocation();
-  const shouldPreloadStudents = shouldHydrateStudentsForPath(location.pathname);
   const queryClient = useQueryClient();
   const appErrorToastRef = useRef(null);
   const settingsErrorToastRef = useRef(null);
@@ -59,11 +55,7 @@ function AppContextCore({ children }) {
 
   // Pull minimal state from domain contexts needed for orchestration
   const {
-    students,
-    studentsHydrated,
     setStudents,
-    setStudentsHydrated,
-    setStudentsFromQuery,
     updateStudentLocal,
   } = useStudents();
 
@@ -116,7 +108,7 @@ function AppContextCore({ children }) {
     queryFn: ({ signal }) =>
       fetchRoleAwareAppData({
         user: storedUser,
-        includeStudents: shouldPreloadStudents,
+        includeStudents: false,
         signal,
       }),
   });
@@ -133,8 +125,7 @@ function AppContextCore({ children }) {
     Boolean(storedUser?.id) && !isSuperAdmin && settingsDataQuery.isPending;
 
   const refetch = useCallback(
-    async (skipCache = false, _retryCount = 0, options = {}) => {
-      const includeStudents = options.includeStudents ?? false;
+    async (skipCache = false, _retryCount = 0, _options = {}) => {
       if (!storedUser?.id || isSuperAdmin) return null;
 
       return queryClient.fetchQuery({
@@ -145,7 +136,7 @@ function AppContextCore({ children }) {
           fetchRoleAwareAppData({
             user: storedUser,
             skipCache,
-            includeStudents,
+            includeStudents: false,
             signal,
           }),
       });
@@ -168,7 +159,6 @@ function AppContextCore({ children }) {
       setStudents([]);
       setClasses([]);
       setStaffAttendance({});
-      setStudentsHydrated(false);
       setError(null);
     }
   }, [
@@ -178,7 +168,6 @@ function AppContextCore({ children }) {
     setStudents,
     setClasses,
     setStaffAttendance,
-    setStudentsHydrated,
   ]);
 
   // Sync app query results into domain contexts
@@ -187,16 +176,12 @@ function AppContextCore({ children }) {
     setStaffFromQuery(appDataQuery.data.staff || []);
     setClassesFromQuery(appDataQuery.data.classes || []);
     setStaffAttendanceFromQuery(appDataQuery.data.staffAttendance || {});
-    if (appDataQuery.data.includeStudents) {
-      setStudentsFromQuery(appDataQuery.data.students || [], true);
-    }
     setError(null);
   }, [
     appDataQuery.data,
     setStaffFromQuery,
     setClassesFromQuery,
     setStaffAttendanceFromQuery,
-    setStudentsFromQuery,
   ]);
 
   // Sync settings query results into settings context
@@ -205,28 +190,8 @@ function AppContextCore({ children }) {
     setSettingsFromQuery(settingsDataQuery.data);
   }, [settingsDataQuery.data, setSettingsFromQuery]);
 
-  // Lazy-load students when navigating to a student-heavy page.
-  useEffect(() => {
-    if (
-      shouldPreloadStudents &&
-      !studentsHydrated &&
-      storedUser?.id &&
-      !isSuperAdmin &&
-      !appDataQuery.isFetching
-    ) {
-      // If the cached query already includes students, just sync them
-      if (appDataQuery.data?.includeStudents) {
-        setStudentsFromQuery(appDataQuery.data.students || [], true);
-        return;
-      }
-      // Otherwise fetch with students included and sync directly
-      refetch(false, 0, { includeStudents: true }).then((result) => {
-        if (result?.includeStudents) {
-          setStudentsFromQuery(result.students || [], true);
-        }
-      }).catch(() => {});
-    }
-  }, [shouldPreloadStudents, studentsHydrated, storedUser?.id, isSuperAdmin, refetch, appDataQuery.isFetching, appDataQuery.data, setStudentsFromQuery]);
+  // [PAG-05] Global student hydration removed — per-screen pages now own their
+  // own server-paginated fetches through `studentsApi.list` + `usePaginatedQuery`.
 
   // App data error handling
   useEffect(() => {
@@ -264,7 +229,6 @@ function AppContextCore({ children }) {
   useEffect(() => {
     const syncSession = () => {
       setSessionVersion((current) => current + 1);
-      setStudentsHydrated(false);
       setError(null);
     };
 
@@ -286,7 +250,7 @@ function AppContextCore({ children }) {
       window.removeEventListener("user-logged-in", handleLogin);
       window.removeEventListener("auth-session-cleared", handleSessionCleared);
     };
-  }, [queryClient, setStudentsHydrated]);
+  }, [queryClient]);
 
   // Socket.IO real-time updates
   useSocketSync({
