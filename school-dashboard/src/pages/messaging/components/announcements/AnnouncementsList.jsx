@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   Dropdown,
   DropdownTrigger,
@@ -13,6 +13,8 @@ import {
   Trash2,
   Copy,
   Send,
+  ChevronLeft,
+  ChevronRight,
   MoreVertical,
   Megaphone,
   Filter,
@@ -30,6 +32,8 @@ import { SkeletonList } from '../../../../components/ui/Skeleton';
 import ConfirmDialog from '../../../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../../../hooks/useConfirmDialog';
 import logger from '../../../../utils/logger';
+
+const PAGE_SIZE = 20;
 
 const STATUS_TONE = {
   sent: { tone: 'ok', label: 'Sent', icon: CheckCircle },
@@ -75,10 +79,40 @@ export default function AnnouncementsList({ onView, onEdit, onRefresh }) {
     if (typeof window === 'undefined') return 'all';
     return window.localStorage.getItem('announcements:audienceFilter') || 'all';
   });
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+
+  const loadAnnouncements = useCallback(async (pageToLoad = page) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await announcementsApi.getAll({
+        page: pageToLoad,
+        limit: PAGE_SIZE,
+      });
+      if (mountedRef.current) {
+        setAnnouncements(response.announcements || response || []);
+        const nextTotal = Number(response.total ?? 0);
+        const nextTotalPages = Number(response.totalPages ?? (nextTotal ? Math.ceil(nextTotal / PAGE_SIZE) : 1));
+        setTotal(nextTotal);
+        setTotalPages(Math.max(1, nextTotalPages));
+      }
+    } catch (err) {
+      logger.error('Error loading announcements:', err);
+      if (mountedRef.current) {
+        const errorMsg = err.message || 'Unknown error';
+        setError(errorMsg);
+        toast.error(`Failed to load announcements: ${errorMsg}`);
+      }
+    } finally {
+      if (mountedRef.current) setLoading(false);
+    }
+  }, [page]);
 
   useEffect(() => {
     mountedRef.current = true;
-    loadAnnouncements();
+    loadAnnouncements(1);
     return () => { mountedRef.current = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -93,24 +127,23 @@ export default function AnnouncementsList({ onView, onEdit, onRefresh }) {
     window.localStorage.setItem('announcements:audienceFilter', audienceFilter);
   }, [audienceFilter]);
 
-  const loadAnnouncements = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await announcementsApi.getAll();
-      if (mountedRef.current) {
-        setAnnouncements(response.announcements || response || []);
-      }
-    } catch (err) {
-      logger.error('Error loading announcements:', err);
-      if (mountedRef.current) {
-        const errorMsg = err.message || 'Unknown error';
-        setError(errorMsg);
-        toast.error(`Failed to load announcements: ${errorMsg}`);
-      }
-    } finally {
-      if (mountedRef.current) setLoading(false);
+  // Reset to page 1 whenever filters change.
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, audienceFilter, searchQuery]);
+
+  // Clamp page if totalPages shrinks after data refresh.
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
     }
+  }, [page, totalPages]);
+
+  const handlePageChange = (next) => {
+    const clamped = Math.max(1, Math.min(totalPages, next));
+    if (clamped === page) return;
+    setPage(clamped);
+    loadAnnouncements(clamped);
   };
 
   const filteredAnnouncements = useMemo(() => {
@@ -311,6 +344,13 @@ export default function AnnouncementsList({ onView, onEdit, onRefresh }) {
         <span>of</span>
         <span className="mono tnum">{announcements.length}</span>
         <span>announcements{hasActiveFilters ? ' (filtered)' : ''}</span>
+        {total > 0 && (
+          <>
+            <span>·</span>
+            <span className="mono tnum">{total.toLocaleString()}</span>
+            <span>total</span>
+          </>
+        )}
       </div>
 
       {/* Rows */}
@@ -537,6 +577,45 @@ export default function AnnouncementsList({ onView, onEdit, onRefresh }) {
           );
         })}
       </div>
+
+      {totalPages > 1 && (
+        <div
+          className="row"
+          style={{
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '12px 4px 0',
+            borderTop: '1px solid var(--border)',
+            marginTop: 4,
+          }}
+        >
+          <span className="subtle" style={{ fontSize: 11 }}>
+            Page {page} of {totalPages} · {total.toLocaleString()} total
+          </span>
+          <div className="row gap-2">
+            <button
+              type="button"
+              className="btn btn--sm btn--ghost"
+              disabled={page <= 1 || loading}
+              onClick={() => handlePageChange(page - 1)}
+              aria-label="Previous page"
+            >
+              <ChevronLeft size={14} aria-hidden />
+              Previous
+            </button>
+            <button
+              type="button"
+              className="btn btn--sm btn--ghost"
+              disabled={page >= totalPages || loading}
+              onClick={() => handlePageChange(page + 1)}
+              aria-label="Next page"
+            >
+              Next
+              <ChevronRight size={14} aria-hidden />
+            </button>
+          </div>
+        </div>
+      )}
 
       <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </div>
