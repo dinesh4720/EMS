@@ -85,31 +85,31 @@ export const inventoryApi = {
 };
 
 export const libraryApi = {
-  getStats: () => request('/v1/library/stats'),
-  getReports: () => request('/v1/library/reports'),
+  getStats: () => request('/library/stats'),
+  getReports: () => request('/library/reports'),
   getBooks: (params = {}) => {
     const query = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => {
       if (v !== undefined && v !== null && v !== '' && v !== 'all') query.set(k, v);
     });
     const qs = query.toString();
-    return request(`/v1/library/books${qs ? `?${qs}` : ''}`);
+    return request(`/library/books${qs ? `?${qs}` : ''}`);
   },
-  getBook: (id) => request(`/v1/library/books/${id}`),
-  createBook: (data) => request('/v1/library/books', { method: 'POST', body: JSON.stringify(data) }),
-  updateBook: (id, data) => request(`/v1/library/books/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  deleteBook: (id) => request(`/v1/library/books/${id}`, { method: 'DELETE' }),
+  getBook: (id) => request(`/library/books/${id}`),
+  createBook: (data) => request('/library/books', { method: 'POST', body: JSON.stringify(data) }),
+  updateBook: (id, data) => request(`/library/books/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteBook: (id) => request(`/library/books/${id}`, { method: 'DELETE' }),
   getIssues: (params = {}) => {
     const query = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => {
       if (v !== undefined && v !== null && v !== '' && v !== 'all') query.set(k, v);
     });
     const qs = query.toString();
-    return request(`/v1/library/issues${qs ? `?${qs}` : ''}`);
+    return request(`/library/issues${qs ? `?${qs}` : ''}`);
   },
-  issueBook: (data) => request('/v1/library/issues', { method: 'POST', body: JSON.stringify(data) }),
-  returnBook: (id, data) => request(`/v1/library/issues/${id}/return`, { method: 'PUT', body: JSON.stringify(data) }),
-  syncOverdue: () => request('/v1/library/sync-overdue', { method: 'POST' }),
+  issueBook: (data) => request('/library/issues', { method: 'POST', body: JSON.stringify(data) }),
+  returnBook: (id, data) => request(`/library/issues/${id}/return`, { method: 'PUT', body: JSON.stringify(data) }),
+  syncOverdue: () => request('/library/sync-overdue', { method: 'POST' }),
 };
 
 // Transport API
