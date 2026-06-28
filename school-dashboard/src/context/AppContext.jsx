@@ -113,6 +113,14 @@ function AppContextCore({ children }) {
     queryKey: appQueryKey,
     enabled: Boolean(storedUser?.id) && !isSuperAdmin,
     placeholderData: (previousData) => previousData,
+    // [PERF-07] These app-context queries hydrate the entire domain dataset
+    // (staff + classes + sometimes all students) and feed every domain context.
+    // Refetching on every tab refocus replaced all domain arrays and triggered a
+    // full context-cascade re-render. Opt out of focus-refetch and use a longer
+    // staleTime — real-time freshness is already handled by useSocketSync, and
+    // refetchOnReconnect:'always' (inherited) still recovers after a disconnect.
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
     queryFn: ({ signal }) =>
       fetchRoleAwareAppData({
         user: storedUser,
@@ -125,6 +133,10 @@ function AppContextCore({ children }) {
     queryKey: settingsQueryKey,
     enabled: Boolean(storedUser?.id) && !isSuperAdmin,
     placeholderData: (previousData) => previousData,
+    // [PERF-07] See appDataQuery above — settings rarely change mid-session, so
+    // skip focus-refetch and lengthen staleTime to avoid the cascade re-render.
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
     queryFn: ({ signal }) => fetchAppSettingsData({ signal }),
   });
 
