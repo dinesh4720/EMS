@@ -51,7 +51,7 @@ function AttendancePanel({ studentId, attendanceData, attendanceStats, loading, 
         <div className="card__head">
           <span className="card__title">Recent attendance</span>
           <Link
-            to={`/students/${studentId}/attendance`}
+            to={`/students/attendance?student=${studentId}`}
             className="subtle"
             style={{ fontSize: 12, textDecoration: "none" }}
           >
