@@ -83,7 +83,7 @@ export const studentsApi = {
   getResults: (id, academicYear) => request(`/students/${id}/results${academicYear ? `?academicYear=${academicYear}` : ''}`),
   getRemarks: (id, category) => request(`/students/${id}/remarks${category && category !== 'all' ? `?category=${category}` : ''}`),
   addDocument: (id, data) => request(`/students/${id}/documents`, { method: 'POST', body: JSON.stringify(data) }),
-  deleteDocument: (id, documentIndex) => request(`/students/${id}/documents/${documentIndex}`, { method: 'DELETE' }),
+  deleteDocument: (id, docId) => request(`/students/${id}/documents/${docId}`, { method: 'DELETE' }),
   fixDocuments: (id) => request(`/students/${id}/fix-documents`, { method: 'POST' }),
   sendReminder: (id, data) => request(`/students/${id}/send-reminder`, { method: 'POST', body: JSON.stringify(data) }),
   sendRemindersBulk: (data) => request('/students/send-reminders-bulk', { method: 'POST', body: JSON.stringify(data) }),
