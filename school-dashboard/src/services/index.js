@@ -73,8 +73,7 @@ export { aiService } from './aiService.js';
 // Video call service
 export { videoCallService } from './videoCallService.js';
 
-// Socket services (default exports re-exported as named)
-export { default as socketService } from './socketService.js';
+// Socket service (default export re-exported as named)
 export { default as socketServiceEnhanced } from './socketServiceEnhanced.js';
 
 // Chat services
