@@ -367,7 +367,30 @@ test.describe('Academics — Performance Dashboard & CBSE Reports', () => {
     expect(sorted.map((s) => s.rank)).toEqual([1, 2, 3, 4, 5]);
   });
 
-  /* ───── 14. Performance comparison across multiple exams ───── */
+  /* ───── 14. 'View results' on a published exam navigates to the registered route ───── */
+
+  test('View results link on a published exam lands on /academics/exams/:id', async ({ page }) => {
+    const exam = seedExam(state, { name: 'Published Exam', status: 'results_published' });
+    seedResult(state, state.students[0].id, exam.id, 'English', 75);
+
+    await page.goto('/academics');
+    await page.waitForLoadState('networkidle');
+
+    await expect(page.locator('h1').filter({ hasText: 'Academics' })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('Published Exam').first()).toBeVisible({ timeout: 10_000 });
+
+    // Regression for NAV-01: link must target the registered route, not /academics/exam-detail/:id
+    // (which is unregistered and silently bounces back to the list via the catch-all).
+    const viewResultsLink = page.getByRole('link', { name: /view results/i }).first();
+    await expect(viewResultsLink).toBeVisible({ timeout: 10_000 });
+    await expect(viewResultsLink).toHaveAttribute('href', `/academics/exams/${exam.id}`);
+
+    await viewResultsLink.click();
+    await page.waitForLoadState('networkidle');
+    await expect(page).toHaveURL(new RegExp(`/academics/exams/${exam.id}$`), { timeout: 15_000 });
+  });
+
+  /* ───── 15. Performance comparison across multiple exams ───── */
 
   test('performance comparison across multiple exams', async ({ page }) => {
     const exam1 = seedExam(state, { name: 'Unit Test 1', status: 'completed' });
