@@ -1,4 +1,4 @@
-import { request, requestUpload } from './core.js';
+import { request } from './core.js';
 import { getAuthHeaders, saveStoredUser } from '../../utils/authSession';
 import { API_URL } from '../../config/api.js';
 import { withDefaultLimit } from './fetchDefaults.js';
@@ -264,10 +264,6 @@ export const exportApi = {
 // Bulk Import API
 export const bulkImportApi = {
   downloadTemplate: (type) => request(`/bulk-import/template/${type}`),
-  // [AUDIT-159] Now uses centralized requestUpload() for automatic token refresh
-  upload: (formData) => requestUpload('/bulk-import/upload', formData),
-  preview: (jobId) => request(`/bulk-import/preview/${jobId}`),
-  confirm: (jobId) => request(`/bulk-import/confirm/${jobId}`, { method: 'POST' }),
 };
 
 // Hostel API
