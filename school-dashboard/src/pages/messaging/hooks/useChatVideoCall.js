@@ -83,6 +83,14 @@ export function useChatVideoCall({ user, selectedConversation }) {
   };
 
   const closeVideoCall = () => {
+    // Esc / backdrop dismissal is wired to this handler instead of the End
+    // button, so tear down the active call in the service to release its
+    // media stream and peer connection — otherwise the mic/camera stay live
+    // after the modal closes (MEM-01). endCall is idempotent, so this is safe
+    // even when the call was already ended via the End button.
+    if (activeCall?.callId) {
+      videoCallService.endCall(activeCall.callId);
+    }
     setShowVideoCall(false);
     setActiveCall(null);
   };
