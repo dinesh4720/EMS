@@ -19,8 +19,11 @@ export default function FilePreview({ url, fileName, className = '' }) {
 
     // Validate URL with a HEAD request before handing it to the iframe.
     // This prevents the silent blank-white-box failure.
+    // credentials:'include' so cookie-protected files (httpOnly auth cookie)
+    // pass the pre-check instead of falling back to the error state — the
+    // iframe itself sends cookies, so the HEAD probe must match it.
     const controller = new AbortController();
-    fetch(url, { method: 'HEAD', signal: controller.signal })
+    fetch(url, { method: 'HEAD', credentials: 'include', signal: controller.signal })
       .then((res) => {
         if (res.ok) {
           setStatus('ready');
