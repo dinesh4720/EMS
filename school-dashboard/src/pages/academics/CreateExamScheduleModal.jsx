@@ -3,7 +3,7 @@ import { Select, SelectItem, Input, Button } from '@heroui/react';
 import { Calendar } from 'lucide-react';
 import { examScheduleApi, classesApi } from '../../services/api';
 import toast from 'react-hot-toast';
-import { useApp } from '../../context/AppContext';
+import { useAppMeta } from '../../context/AppContext';
 import { formatShortDate } from '../../utils/dateFormatter';
 import { createExamScheduleSchema, parseFormSchema } from '../../validators/formSchemas';
 
@@ -24,7 +24,7 @@ const SESSION_TYPES = [
 ];
 
 const CreateExamScheduleModal = ({ onClose, onSuccess }) => {
-  const { currentAcademicYear } = useApp();
+  const { currentAcademicYear } = useAppMeta();
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [classes, setClasses] = useState([]);

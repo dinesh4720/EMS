@@ -4,7 +4,7 @@ import { Calendar, Award, BookOpen } from 'lucide-react';
 import { examsApi, subjectsApi, classesApi } from '../../services/api';
 import { getStoredUser } from '../../utils/authSession';
 import toast from 'react-hot-toast';
-import { useApp } from '../../context/AppContext';
+import { useAppMeta } from '../../context/AppContext';
 import { useTranslation } from 'react-i18next';
 import { createExamSchema, parseFormSchema } from '../../validators/formSchemas';
 import logger from '../../utils/logger';
@@ -38,7 +38,7 @@ const GRADING_TYPES = [
 
 const CreateExamModal = ({ onClose, onSuccess }) => {
   const { t } = useTranslation();
-  const { currentAcademicYear } = useApp();
+  const { currentAcademicYear } = useAppMeta();
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [subjects, setSubjects] = useState([]);
