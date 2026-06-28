@@ -28,14 +28,20 @@ class SocketServiceEnhanced {
     // If socket exists but not connected, don't create a new one - let it reconnect
     if (this.socket && !this.socket.connected) {
       return new Promise((resolve, reject) => {
+        const onAuthenticated = () => {
+          clearTimeout(timeout);
+          resolve();
+        };
+
         const timeout = setTimeout(() => {
+          // [MEM-07] The once('authenticated') listener never fired within the
+          // window — remove it so repeated connect() calls against a down server
+          // don't accrue listeners (MaxListenersExceeded) and retain their closures.
+          this.socket?.off('authenticated', onAuthenticated);
           reject(new Error('Reconnection timeout'));
         }, 5000);
 
-        this.socket.once('authenticated', () => {
-          clearTimeout(timeout);
-          resolve();
-        });
+        this.socket.once('authenticated', onAuthenticated);
       });
     }
 
