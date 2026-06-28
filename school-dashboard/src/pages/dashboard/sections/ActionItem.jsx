@@ -1,4 +1,4 @@
-import { AlertCircle, AlertTriangle, ArrowRight, Info } from "lucide-react";
+import { AlertCircle, AlertTriangle, ArrowRight, Info, X } from "lucide-react";
 
 const ICON_MAP = {
   danger: AlertCircle,
@@ -12,7 +12,7 @@ const TONE_CLASS = {
   info: "action-item--info",
 };
 
-export default function ActionItem({ kind, title, body, meta, primary, onPrimary }) {
+export default function ActionItem({ kind, title, body, meta, primary, onPrimary, onDismiss }) {
   const Icon = ICON_MAP[kind] || Info;
   const toneClass = TONE_CLASS[kind];
 
@@ -34,6 +34,17 @@ export default function ActionItem({ kind, title, body, meta, primary, onPrimary
           <button type="button" className="action-item__cta" onClick={onPrimary}>
             {primary}
             <ArrowRight size={12} />
+          </button>
+        )}
+        {onDismiss && (
+          <button
+            type="button"
+            className="action-item__dismiss"
+            onClick={onDismiss}
+            aria-label="Dismiss"
+            title="Dismiss"
+          >
+            <X size={14} />
           </button>
         )}
       </div>

@@ -991,6 +991,31 @@
   background: var(--accent-hover);
 }
 
+.action-item__dismiss {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  display: grid;
+  place-items: center;
+  color: var(--fg-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-left: 4px;
+  transition: background 100ms, color 100ms;
+}
+
+.action-item__dismiss:hover {
+  background: var(--surface-hover);
+  color: var(--fg);
+}
+
+.action-item__dismiss:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
 /* ============================================================
    Empty state
    ============================================================ */
