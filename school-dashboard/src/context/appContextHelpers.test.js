@@ -7,6 +7,7 @@ import {
   normalizeClassRecord,
   dedupeById,
   shouldHydrateStudentsForPath,
+  buildClassesWithTeachers,
 } from './appContextHelpers';
 
 // ─── extractRoleNames ─────────────────────────────────────────────────────────
@@ -374,5 +375,171 @@ describe('shouldHydrateStudentsForPath', () => {
 
   it('returns false for an empty path string', () => {
     expect(shouldHydrateStudentsForPath('')).toBe(false);
+  });
+});
+
+// ─── buildClassesWithTeachers ─────────────────────────────────────────────────
+
+describe('buildClassesWithTeachers', () => {
+  it('returns [] when classes is not an array', () => {
+    expect(buildClassesWithTeachers(null, [], [])).toEqual([]);
+    expect(buildClassesWithTeachers(undefined, [], [])).toEqual([]);
+  });
+
+  it('returns [] when staff is not an array', () => {
+    expect(buildClassesWithTeachers([], null, [])).toEqual([]);
+  });
+
+  it('returns [] when students is not an array', () => {
+    expect(buildClassesWithTeachers([], [], null)).toEqual([]);
+  });
+
+  it('resolves teacher name and photo by staff id', () => {
+    const classes = [{ id: 'c1', classTeacherId: 's1' }];
+    const staff = [{ id: 's1', name: 'Alice', picture: 'alice.png' }];
+    const result = buildClassesWithTeachers(classes, staff, []);
+    expect(result[0].teacher).toBe('Alice');
+    expect(result[0].teacherPhoto).toBe('alice.png');
+  });
+
+  it('resolves teacher by _id when id does not match (ObjectId shape)', () => {
+    const classes = [{ id: 'c1', classTeacherId: 'abc123' }];
+    const staff = [{ _id: 'abc123', name: 'Bob', picture: 'bob.png' }];
+    const result = buildClassesWithTeachers(classes, staff, []);
+    expect(result[0].teacher).toBe('Bob');
+    expect(result[0].teacherPhoto).toBe('bob.png');
+  });
+
+  it('matches teacher ids across number/string type differences', () => {
+    const classes = [{ id: 'c1', classTeacherId: 42 }];
+    const staff = [{ id: '42', name: 'Carol', picture: null }];
+    const result = buildClassesWithTeachers(classes, staff, []);
+    expect(result[0].teacher).toBe('Carol');
+    expect(result[0].teacherPhoto).toBeNull();
+  });
+
+  it('sets teacher and teacherPhoto to null when no staff matches', () => {
+    const classes = [{ id: 'c1', classTeacherId: 'missing' }];
+    const staff = [{ id: 's1', name: 'Alice', picture: 'alice.png' }];
+    const result = buildClassesWithTeachers(classes, staff, []);
+    expect(result[0].teacher).toBeNull();
+    expect(result[0].teacherPhoto).toBeNull();
+  });
+
+  it('keeps Array.find "first match wins" semantics for duplicate keys', () => {
+    const classes = [{ id: 'c1', classTeacherId: 's1' }];
+    const staff = [
+      { id: 's1', name: 'First', picture: 'first.png' },
+      { id: 's1', name: 'Second', picture: 'second.png' },
+    ];
+    const result = buildClassesWithTeachers(classes, staff, []);
+    expect(result[0].teacher).toBe('First');
+  });
+
+  it('counts only active, non-deleted students for the class', () => {
+    const classes = [{ id: 'c1', classTeacherId: null }];
+    const students = [
+      { id: 'st1', classId: 'c1', status: 'active' },
+      { id: 'st2', classId: 'c1' }, // status missing → defaults to active
+      { id: 'st3', classId: 'c1', status: 'inactive' }, // excluded
+      { id: 'st4', classId: 'c1', status: 'active', isDeleted: true }, // excluded
+      { id: 'st5', classId: 'c2', status: 'active' }, // other class
+    ];
+    const result = buildClassesWithTeachers(classes, [], students);
+    expect(result[0].studentCount).toBe(2);
+  });
+
+  it('matches studentCount across number/string classId type differences', () => {
+    const classes = [{ id: 7, classTeacherId: null }];
+    const students = [
+      { id: 'st1', classId: '7', status: 'active' },
+      { id: 'st2', classId: 7, status: 'active' },
+    ];
+    const result = buildClassesWithTeachers(classes, [], students);
+    expect(result[0].studentCount).toBe(2);
+  });
+
+  it('returns 0 studentCount for a class with no students', () => {
+    const classes = [{ id: 'c1', classTeacherId: null }];
+    const result = buildClassesWithTeachers(classes, [], []);
+    expect(result[0].studentCount).toBe(0);
+  });
+
+  it('preserves original class fields and order', () => {
+    const classes = [
+      { id: 'c1', classTeacherId: 's1', name: 'A', section: 'X' },
+      { id: 'c2', classTeacherId: 's2', name: 'B', section: 'Y' },
+    ];
+    const staff = [
+      { id: 's1', name: 'Alice', picture: 'a.png' },
+      { id: 's2', name: 'Bob', picture: 'b.png' },
+    ];
+    const students = [
+      { id: 'st1', classId: 'c1', status: 'active' },
+      { id: 'st2', classId: 'c2', status: 'active' },
+      { id: 'st3', classId: 'c2', status: 'active' },
+    ];
+    const result = buildClassesWithTeachers(classes, staff, students);
+    expect(result.map((c) => c.id)).toEqual(['c1', 'c2']);
+    expect(result[0]).toMatchObject({
+      id: 'c1',
+      name: 'A',
+      section: 'X',
+      teacher: 'Alice',
+      teacherPhoto: 'a.png',
+      studentCount: 1,
+    });
+    expect(result[1]).toMatchObject({
+      id: 'c2',
+      teacher: 'Bob',
+      studentCount: 2,
+    });
+  });
+
+  it('matches the brute-force join it replaces on a representative dataset', () => {
+    const classes = Array.from({ length: 20 }, (_, i) => ({
+      id: `c${i}`,
+      classTeacherId: `s${i % 5}`,
+      name: `Class ${i}`,
+    }));
+    const staff = Array.from({ length: 10 }, (_, i) => ({
+      id: `s${i}`,
+      _id: `oid${i}`,
+      name: `Staff ${i}`,
+      picture: `s${i}.png`,
+    }));
+    const students = Array.from({ length: 200 }, (_, i) => ({
+      id: `st${i}`,
+      classId: `c${i % 20}`,
+      status: i % 7 === 0 ? 'inactive' : 'active',
+      isDeleted: i % 11 === 0,
+    }));
+
+    const optimized = buildClassesWithTeachers(classes, staff, students);
+
+    // Reference implementation = the previous inline O(n²) join.
+    const reference = classes.map((c) => ({
+      ...c,
+      teacher:
+        staff.find(
+          (s) =>
+            String(s.id) === String(c.classTeacherId) ||
+            String(s._id) === String(c.classTeacherId)
+        )?.name || null,
+      teacherPhoto:
+        staff.find(
+          (s) =>
+            String(s.id) === String(c.classTeacherId) ||
+            String(s._id) === String(c.classTeacherId)
+        )?.picture || null,
+      studentCount: students.filter(
+        (s) =>
+          String(s.classId) === String(c.id) &&
+          (s.status || 'active') === 'active' &&
+          s.isDeleted !== true
+      ).length,
+    }));
+
+    expect(optimized).toEqual(reference);
   });
 });

@@ -4,6 +4,7 @@ import { classesApi } from "../services/api";
 import toast from "react-hot-toast";
 import logger from "../utils/logger";
 import { useTranslation } from 'react-i18next';
+import { buildClassesWithTeachers } from "./appContextHelpers";
 
 export const ClassesContext = createContext();
 
@@ -22,7 +23,7 @@ export function ClassesProvider({ children, staff, students }) {
     setClasses(Array.isArray(data) ? data : []);
   }, []);
 
-  const addClass = async (newClass) => {
+  const addClass = useCallback(async (newClass) => {
     try {
       const created = await classesApi.create(newClass);
       setClasses((prev) => [
@@ -36,9 +37,9 @@ export function ClassesProvider({ children, staff, students }) {
       toast.error(t('toast.error.failedToAddClass', 'Failed to add class'));
       throw err;
     }
-  };
+  }, [invalidateAppData, t]);
 
-  const updateClass = async (id, updates) => {
+  const updateClass = useCallback(async (id, updates) => {
     const prev = classes;
     try {
       const updated = await classesApi.update(id, updates);
@@ -51,16 +52,16 @@ export function ClassesProvider({ children, staff, students }) {
       setClasses(prev);
       throw err;
     }
-  };
+  }, [classes, invalidateAppData, t]);
 
   // Update class in state without API call (for real-time socket updates)
-  const updateClassLocal = (id, updates) => {
+  const updateClassLocal = useCallback((id, updates) => {
     setClasses((prev) =>
       prev.map((c) => (String(c.id) === String(id) ? { ...c, ...updates } : c))
     );
-  };
+  }, []);
 
-  const deleteClass = async (id) => {
+  const deleteClass = useCallback(async (id) => {
     const prev = classes;
     try {
       await classesApi.delete(id);
@@ -72,48 +73,41 @@ export function ClassesProvider({ children, staff, students }) {
       setClasses(prev);
       throw err;
     }
-  };
+  }, [classes, invalidateAppData, t]);
 
-  const getClassById = (id) =>
-    Array.isArray(classes) ? classes.find((c) => c.id === id) : undefined;
+  const getClassById = useCallback(
+    (id) => (Array.isArray(classes) ? classes.find((c) => c.id === id) : undefined),
+    [classes]
+  );
 
-  const classesWithTeachers = useMemo(() => {
-    if (!Array.isArray(classes) || !Array.isArray(staff) || !Array.isArray(students)) return [];
-    return classes.map((c) => ({
-      ...c,
-      teacher:
-        staff.find(
-          (s) =>
-            String(s.id) === String(c.classTeacherId) ||
-            String(s._id) === String(c.classTeacherId)
-        )?.name || null,
-      teacherPhoto:
-        staff.find(
-          (s) =>
-            String(s.id) === String(c.classTeacherId) ||
-            String(s._id) === String(c.classTeacherId)
-        )?.picture || null,
-      // FIXED: Use String() comparison for ObjectId matching and filter by active status
-      studentCount: students.filter(
-        (s) =>
-          String(s.classId) === String(c.id) &&
-          (s.status || "active") === "active" &&
-          s.isDeleted !== true
-      ).length,
-    }));
-  }, [classes, staff, students]);
+  const classesWithTeachers = useMemo(
+    () => buildClassesWithTeachers(classes, staff, students),
+    [classes, staff, students]
+  );
 
-  const value = {
-    classes,
-    classesWithTeachers,
-    setClasses,
-    setClassesFromQuery,
-    addClass,
-    updateClass,
-    updateClassLocal,
-    deleteClass,
-    getClassById,
-  };
+  const value = useMemo(
+    () => ({
+      classes,
+      classesWithTeachers,
+      setClasses,
+      setClassesFromQuery,
+      addClass,
+      updateClass,
+      updateClassLocal,
+      deleteClass,
+      getClassById,
+    }),
+    [
+      classes,
+      classesWithTeachers,
+      setClassesFromQuery,
+      addClass,
+      updateClass,
+      updateClassLocal,
+      deleteClass,
+      getClassById,
+    ]
+  );
 
   return (
     <ClassesContext.Provider value={value}>
