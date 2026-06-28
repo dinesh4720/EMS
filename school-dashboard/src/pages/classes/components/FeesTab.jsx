@@ -85,7 +85,7 @@ export function FeesTab({ id, cls, classesEnhancedApi, navigate }) {
                 </div>
                 <div className="flex items-center gap-4">
                   <span className="text-sm font-medium text-fg">{fmt(student.pendingFees || 0)}</span>
-                  <Button size="sm" variant="flat" className="bg-surface-2 text-fg" onPress={() => navigate(`/fees/collect?student=${student.id}`)}>{t('pages.collect')}</Button>
+                  <Button size="sm" variant="flat" className="bg-surface-2 text-fg" onPress={() => navigate(`/fees?student=${student.id}`)}>{t('pages.collect')}</Button>
                 </div>
               </div>
             ))}
