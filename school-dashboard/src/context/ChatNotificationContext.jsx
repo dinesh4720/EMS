@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from './AuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import socketService from '../services/socketServiceEnhanced';
@@ -287,8 +287,15 @@ export function ChatNotificationProvider({ children }) {
     setReplyingTo(null);
   };
 
+  // Memoize the context value so consumers don't re-render when this provider
+  // re-renders for unrelated state (reply modal, notification toasts, etc.).
+  const contextValue = useMemo(
+    () => ({ unreadCount, isConnected, socketOffline }),
+    [unreadCount, isConnected, socketOffline]
+  );
+
   return (
-    <ChatNotificationContext.Provider value={{ unreadCount, isConnected, socketOffline }}>
+    <ChatNotificationContext.Provider value={contextValue}>
       {children}
       
       {/* Socket offline banner */}
