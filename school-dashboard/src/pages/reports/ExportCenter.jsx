@@ -22,7 +22,7 @@ const MODULES = [
   {
     key: 'defaulters',
     name: 'Fee Defaulters',
-    endpoint: '/export/defaulters',
+    endpoint: '/export/fee-defaulters',
     requiredFilters: [],
   },
   {
