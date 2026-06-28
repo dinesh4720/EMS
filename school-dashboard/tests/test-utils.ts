@@ -2078,7 +2078,7 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
     }
 
     /* ── Seed Data ── */
-    if (path === '/seed/generate' && method === 'POST') {
+    if (path === '/seed-data/generate' && method === 'POST') {
       const cats = (body as Record<string, unknown>)?.categories as string[] || [];
       const counts: Record<string, number> = {};
       cats.forEach((c) => { counts[c] = c === 'staff' ? 15 : c === 'classes' ? 8 : c === 'students' ? 50 : 200; });
