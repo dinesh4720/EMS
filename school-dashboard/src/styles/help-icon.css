@@ -38,3 +38,56 @@
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* ── Tooltip ──────────────────────────────────────────────────
+   Solid, theme-aware floating panel. Replaces the hardcoded
+   #1e293b / #f8fafc inline styles so it tracks light/dark instead
+   of staying dark-on-dark. Only the computed placement offsets
+   remain inline on the element. (DS-10 — tokens, no inline hex.) */
+.help-icon__tooltip {
+  position: absolute;
+  z-index: 5000;
+  background: var(--surface);
+  color: var(--fg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-lg);
+  padding: 10px 14px;
+  font-size: 13px;
+  line-height: 1.55;
+  max-width: 280px;
+  min-width: 180px;
+  box-shadow: var(--shadow-lg);
+  pointer-events: auto;
+  white-space: normal;
+}
+
+/* "Learn more" knowledge-base link inside the tooltip. */
+.help-icon__kb-link {
+  display: block;
+  margin-top: 8px;
+  color: var(--accent);
+  font-size: 12px;
+  text-decoration: underline;
+}
+.help-icon__kb-link:hover,
+.help-icon__kb-link:focus-visible {
+  color: var(--accent-hover);
+}
+
+/* Close affordance for the click-triggered tooltip. */
+.help-icon__close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: var(--fg-muted);
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+}
+.help-icon__close:hover,
+.help-icon__close:focus-visible {
+  color: var(--fg);
+}
