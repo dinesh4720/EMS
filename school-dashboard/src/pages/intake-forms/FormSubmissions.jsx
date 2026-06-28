@@ -228,7 +228,7 @@ export default function FormSubmissions() {
           key: 'staff',
           label: t('intakeForms.submissions.viewStaffRecord'),
           icon: <User size={16} />,
-          onClick: () => navigate(`/staff/${row.staffId}`),
+          onClick: () => navigate(`/staffs/${row.staffId}`),
         }] : []),
       ]}
       ariaLabel={t('aria.menus.submissionActions')}
