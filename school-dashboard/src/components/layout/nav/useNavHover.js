@@ -46,6 +46,16 @@ export function useNavHover() {
   const clearAim = () => clearTimeout(aimT.current);
   const clearAll = () => { clearOpen(); clearClose(); clearAim(); };
 
+  // Clear any pending hover timers on unmount (nav teardown on route change /
+  // logout) so their callbacks can't setState(setOpenId/setAnchorRect) after the
+  // component is gone. Reads the refs directly so the cleanup stays stable and
+  // runs exactly once.
+  useEffect(() => () => {
+    clearTimeout(openT.current);
+    clearTimeout(closeT.current);
+    clearTimeout(aimT.current);
+  }, []);
+
   const doOpen = useCallback((id, el) => {
     clearAll();
     setAnchorRect(el.getBoundingClientRect());
