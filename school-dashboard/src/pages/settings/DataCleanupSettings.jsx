@@ -47,7 +47,7 @@ export default function DataCleanupSettings() {
     try {
       setLoading(true);
       setCountsError(false);
-      const data = await request("/settings/data-counts");
+      const data = await request("/data-cleanup/preview");
       if (cancelledRef.current) return;
       if (data && typeof data === "object" && Object.keys(data).length > 0) {
         setCounts({
@@ -107,7 +107,7 @@ export default function DataCleanupSettings() {
     try {
       setCleaning(true);
       const categories = Array.from(selected);
-      const response = await request("/settings/data-cleanup", {
+      const response = await request("/data-cleanup/execute", {
         method: "POST",
         body: JSON.stringify({ categories }),
       });
