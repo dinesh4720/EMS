@@ -205,6 +205,8 @@ export default function ChatFull() {
   const {
     showVideoCall,
     activeCall,
+    remoteStream,
+    localStream,
     handleVideoCall,
     handleAcceptCall,
     handleRejectCall,
@@ -475,6 +477,8 @@ export default function ChatFull() {
           isOpen={showVideoCall}
           onClose={closeVideoCall}
           call={activeCall}
+          remoteStream={remoteStream}
+          localStream={localStream}
           onAccept={handleAcceptCall}
           onReject={handleRejectCall}
           onEnd={handleEndCall}

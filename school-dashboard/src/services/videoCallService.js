@@ -86,7 +86,8 @@ class VideoCallService {
     const {
       video = true,
       audio = true,
-      callId = null
+      callId = null,
+      callerName = null
     } = options;
 
     try {
@@ -100,6 +101,7 @@ class VideoCallService {
       const call = this.peer.call(remotePeerId.toString(), this.localStream, {
         metadata: {
           callerId: this.peer.id,
+          callerName,
           callType: video ? 'video' : 'audio',
           callId
         }
