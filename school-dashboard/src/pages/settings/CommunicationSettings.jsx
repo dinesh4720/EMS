@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useEntityFetch } from "../../hooks/useEntityFetch";
-import { Input, Switch, Select, SelectItem, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Divider, Spinner } from "@heroui/react";
+import { Input, Switch, Select, SelectItem, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Divider, Spinner, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea } from "@heroui/react";
 import { Save, Plus, Edit, Search, X, MessageSquare, Mail } from "lucide-react";
 import { settingsApi } from "../../services/api";
 import toast from "react-hot-toast";
@@ -30,6 +30,14 @@ export default function CommunicationSettings() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [templates, setTemplates] = useState([]);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
+
+  // STUB-06: keep the full backend records so the editor can populate every
+  // field on Edit (the table only renders id/name/type/variables).
+  const [templateRecords, setTemplateRecords] = useState({ email: [], sms: [] });
+  // STUB-06: Add/Edit template modal state.
+  const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState(null);
+  const [savingTemplate, setSavingTemplate] = useState(false);
 
   // Track editable draft values — drafts hold the new secret input (initially empty)
   const [smsDraft, setSmsDraft] = useState(DEFAULT_SMS_DRAFT);
@@ -81,14 +89,18 @@ export default function CommunicationSettings() {
     ])
       .then(([emailTemplates, smsTemplates]) => {
         if (cancelled) return;
+        const safeEmail = Array.isArray(emailTemplates) ? emailTemplates : [];
+        const safeSms = Array.isArray(smsTemplates) ? smsTemplates : [];
+        // STUB-06: retain the full records for the editor modal.
+        setTemplateRecords({ email: safeEmail, sms: safeSms });
         const merged = [
-          ...(Array.isArray(emailTemplates) ? emailTemplates : []).map((t) => ({
+          ...safeEmail.map((t) => ({
             id: t._id,
             name: t.name,
             type: 'Email',
             variables: (t.variables || []).map((v) => `{${v}}`).join(', '),
           })),
-          ...(Array.isArray(smsTemplates) ? smsTemplates : []).map((t) => ({
+          ...safeSms.map((t) => ({
             id: t._id,
             name: t.name,
             type: 'SMS',
@@ -156,6 +168,134 @@ export default function CommunicationSettings() {
     else setEmailDraft({ ...emailConfig, password: '' });
     setEditingSection(null);
   }, [smsConfig, emailConfig]);
+
+  // STUB-06: refresh the templates list from the backend after a create/update.
+  const refreshTemplates = useCallback(async () => {
+    setLoadingTemplates(true);
+    try {
+      const [emailTemplates, smsTemplates] = await Promise.all([
+        settingsApi.getEmailTemplates().catch(() => []),
+        settingsApi.getSmsTemplates().catch(() => []),
+      ]);
+      const safeEmail = Array.isArray(emailTemplates) ? emailTemplates : [];
+      const safeSms = Array.isArray(smsTemplates) ? smsTemplates : [];
+      setTemplateRecords({ email: safeEmail, sms: safeSms });
+      setTemplates([
+        ...safeEmail.map((t) => ({
+          id: t._id,
+          name: t.name,
+          type: 'Email',
+          variables: (t.variables || []).map((v) => `{${v}}`).join(', '),
+        })),
+        ...safeSms.map((t) => ({
+          id: t._id,
+          name: t.name,
+          type: 'SMS',
+          variables: (t.variables || []).map((v) => `{${v}}`).join(', '),
+        })),
+      ]);
+    } catch (err) {
+      logger.error('Failed to refresh templates:', err);
+    } finally {
+      setLoadingTemplates(false);
+    }
+  }, []);
+
+  // STUB-06: template editor modal handlers.
+  const handleOpenCreateTemplate = useCallback(() => {
+    setEditingTemplate({
+      channel: 'email',
+      name: '',
+      type: 'custom',
+      subject: '',
+      htmlBody: '',
+      textBody: '',
+      body: '',
+      variables: '',
+      isActive: true,
+    });
+    setTemplateModalOpen(true);
+  }, []);
+
+  const handleOpenEditTemplate = useCallback((row) => {
+    // row is the display object; look up the full record for the channel.
+    const channel = row.type.toLowerCase() === 'email' ? 'email' : 'sms';
+    const record = templateRecords[channel].find((r) => r._id === row.id);
+    if (!record) {
+      toast.error(t('toast.error.failedToLoadTemplates', 'Failed to load template'));
+      return;
+    }
+    setEditingTemplate({
+      _id: record._id,
+      channel,
+      name: record.name || '',
+      type: record.type || 'custom',
+      subject: record.subject || '',
+      htmlBody: record.htmlBody || '',
+      textBody: record.textBody || '',
+      body: record.body || '',
+      variables: (record.variables || []).map((v) => `{${v}}`).join(', '),
+      isActive: record.isActive !== false,
+    });
+    setTemplateModalOpen(true);
+  }, [templateRecords, t]);
+
+  const handleCloseTemplateModal = useCallback(() => {
+    if (savingTemplate) return;
+    setTemplateModalOpen(false);
+    setEditingTemplate(null);
+  }, [savingTemplate]);
+
+  const handleSaveTemplate = async () => {
+    if (!editingTemplate) return;
+    const name = (editingTemplate.name || '').trim();
+    if (!name) {
+      toast.error(t('toast.error.failedToSaveTemplate', 'Enter a template name'));
+      return;
+    }
+    // Parse variables — accept {var}, var, comma-separated.
+    const variables = (editingTemplate.variables || '')
+      .split(',')
+      .map((v) => v.trim().replace(/^\{|\}$/g, ''))
+      .filter(Boolean);
+
+    const isEmail = editingTemplate.channel === 'email';
+    const payload = { name, type: editingTemplate.type, variables, isActive: editingTemplate.isActive };
+    if (isEmail) {
+      payload.subject = (editingTemplate.subject || '').trim();
+      payload.htmlBody = editingTemplate.htmlBody || '';
+      if (!payload.subject || !payload.htmlBody) {
+        toast.error(t('toast.error.failedToSaveTemplate', 'Subject and HTML body are required for email templates'));
+        return;
+      }
+    } else {
+      payload.body = editingTemplate.body || '';
+      if (!payload.body) {
+        toast.error(t('toast.error.failedToSaveTemplate', 'Message body is required for SMS templates'));
+        return;
+      }
+    }
+
+    setSavingTemplate(true);
+    try {
+      if (editingTemplate._id) {
+        if (isEmail) await settingsApi.updateEmailTemplate(editingTemplate._id, payload);
+        else await settingsApi.updateSmsTemplate(editingTemplate._id, payload);
+        toast.success(t('toast.success.templateUpdatedSuccessfully', 'Template updated'));
+      } else {
+        if (isEmail) await settingsApi.createEmailTemplate(payload);
+        else await settingsApi.createSmsTemplate(payload);
+        toast.success(t('toast.success.templateCreatedSuccessfully', 'Template created'));
+      }
+      setTemplateModalOpen(false);
+      setEditingTemplate(null);
+      await refreshTemplates();
+    } catch (err) {
+      toast.error(err?.message || t('toast.error.failedToSaveTemplate', 'Failed to save template'));
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
 
   const SectionHeader = ({ title, description, icon: Icon, section, isEnabled, onToggle }) => (
     <div className="flex justify-between items-start mb-6">
@@ -446,7 +586,7 @@ export default function CommunicationSettings() {
                 <p className="text-xs text-fg-muted">{t('pages.manageSmsAndEmailTemplates')}</p>
               </div>
             </div>
-            <button onClick={() => toast('Template creation coming soon')} className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-xs font-medium hover:bg-[var(--accent-hover)] transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,var(--color-primary))] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]">
+            <button onClick={handleOpenCreateTemplate} className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-xs font-medium hover:bg-[var(--accent-hover)] transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,var(--color-primary))] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]">
               <Plus size={16} aria-hidden="true" />
               <span>{t('pages.addTemplate')}</span>
             </button>
@@ -537,7 +677,7 @@ export default function CommunicationSettings() {
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">
-                        <button type="button" aria-label="Edit template" onClick={() => toast('Template editing coming soon')} className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] bg-transparent rounded-lg border border-transparent hover:border-primary hover:bg-[var(--accent-bg)] dark:hover:bg-[var(--accent-bg)] transition-all duration-200 cursor-pointer text-fg-faint hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,var(--color-primary))]">
+                        <button type="button" aria-label={t('pages.editTemplate', 'Edit template')} onClick={() => handleOpenEditTemplate(tmpl)} className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] bg-transparent rounded-lg border border-transparent hover:border-primary hover:bg-[var(--accent-bg)] dark:hover:bg-[var(--accent-bg)] transition-all duration-200 cursor-pointer text-fg-faint hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,var(--color-primary))]">
                           <Edit size={16} aria-hidden="true" />
                         </button>
                       </div>
@@ -581,6 +721,149 @@ export default function CommunicationSettings() {
           </div>
         </section>
       </div>
+
+      {/* STUB-06: Add/Edit template modal */}
+      <Modal isOpen={templateModalOpen} onClose={handleCloseTemplateModal} size="3xl" scrollBehavior="inside">
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex flex-col gap-1">
+                {editingTemplate?._id
+                  ? t('pages.editTemplate', 'Edit template')
+                  : t('pages.addTemplate', 'Add template')}
+              </ModalHeader>
+              <ModalBody className="gap-4">
+                {editingTemplate && (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Select
+                        label={t('pages.templateChannel', 'Channel')}
+                        isDisabled={!!editingTemplate._id}
+                        selectedKeys={[editingTemplate.channel]}
+                        onSelectionChange={(keys) => setEditingTemplate({
+                          ...editingTemplate,
+                          channel: Array.from(keys)[0] === 'sms' ? 'sms' : 'email',
+                        })}
+                        variant="bordered"
+                        labelPlacement="outside"
+                        classNames={{ trigger: "bg-surface border-border-token" }}
+                      >
+                        <SelectItem key="email">{t('pages.email1', 'Email')}</SelectItem>
+                        <SelectItem key="sms">SMS</SelectItem>
+                      </Select>
+                      <Select
+                        label={t('pages.templateType', 'Type')}
+                        selectedKeys={[editingTemplate.type]}
+                        onSelectionChange={(keys) => setEditingTemplate({
+                          ...editingTemplate,
+                          type: Array.from(keys)[0] || 'custom',
+                        })}
+                        variant="bordered"
+                        labelPlacement="outside"
+                        classNames={{ trigger: "bg-surface border-border-token" }}
+                      >
+                        {(editingTemplate.channel === 'email'
+                          ? ['welcome', 'fee_reminder', 'attendance_alert', 'announcement', 'exam_result', 'custom']
+                          : ['fee_reminder', 'attendance_alert', 'announcement', 'exam_result', 'welcome', 'otp', 'custom']
+                        ).map((v) => (
+                          <SelectItem key={v}>
+                            {v.split('_').map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join(' ')}
+                          </SelectItem>
+                        ))}
+                      </Select>
+                    </div>
+                    <Input
+                      label={t('pages.tEMPLATEName', 'Template name')}
+                      value={editingTemplate.name}
+                      onValueChange={(val) => setEditingTemplate({ ...editingTemplate, name: val })}
+                      variant="bordered"
+                      labelPlacement="outside"
+                      placeholder="Welcome message"
+                      classNames={{ inputWrapper: "bg-surface border-border-token" }}
+                    />
+                    {editingTemplate.channel === 'email' ? (
+                      <>
+                        <Input
+                          label={t('pages.templateSubject', 'Subject')}
+                          value={editingTemplate.subject}
+                          onValueChange={(val) => setEditingTemplate({ ...editingTemplate, subject: val })}
+                          variant="bordered"
+                          labelPlacement="outside"
+                          placeholder="Welcome to {school}"
+                          classNames={{ inputWrapper: "bg-surface border-border-token" }}
+                        />
+                        <Textarea
+                          label={t('pages.templateHtmlBody', 'HTML body')}
+                          value={editingTemplate.htmlBody}
+                          onValueChange={(val) => setEditingTemplate({ ...editingTemplate, htmlBody: val })}
+                          variant="bordered"
+                          labelPlacement="outside"
+                          placeholder="<p>Hello {parent},</p>"
+                          minRows={5}
+                          classNames={{ inputWrapper: "bg-surface border-border-token" }}
+                        />
+                        <Textarea
+                          label={t('pages.templateTextBody', 'Plain-text body (optional)')}
+                          value={editingTemplate.textBody}
+                          onValueChange={(val) => setEditingTemplate({ ...editingTemplate, textBody: val })}
+                          variant="bordered"
+                          labelPlacement="outside"
+                          minRows={3}
+                          classNames={{ inputWrapper: "bg-surface border-border-token" }}
+                        />
+                      </>
+                    ) : (
+                      <Textarea
+                        label={t('pages.templateSmsBody', 'Message body')}
+                        value={editingTemplate.body}
+                        onValueChange={(val) => setEditingTemplate({ ...editingTemplate, body: val })}
+                        variant="bordered"
+                        labelPlacement="outside"
+                        placeholder="Dear {parent}, {student} was absent today."
+                        minRows={5}
+                        maxLength={1600}
+                        description={`${(editingTemplate.body || '').length}/1600`}
+                        classNames={{ inputWrapper: "bg-surface border-border-token" }}
+                      />
+                    )}
+                    <Input
+                      label={t('pages.templateVariables', 'Variables')}
+                      value={editingTemplate.variables}
+                      onValueChange={(val) => setEditingTemplate({ ...editingTemplate, variables: val })}
+                      variant="bordered"
+                      labelPlacement="outside"
+                      placeholder="{student}, {parent}, {amount}"
+                      description={t('pages.templateVariablesHint', 'Comma-separated. Braces are optional.')}
+                      classNames={{ inputWrapper: "bg-surface border-border-token" }}
+                    />
+                  </>
+                )}
+              </ModalBody>
+              <ModalFooter>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={savingTemplate}
+                  className="text-sm text-danger hover:text-[var(--danger)] font-medium px-3 py-1.5 rounded-lg hover:bg-[var(--danger-bg)] transition-colors disabled:opacity-50"
+                >
+                  {t('pages.cancel', 'Cancel')}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveTemplate}
+                  disabled={savingTemplate}
+                  className="flex items-center gap-1.5 text-sm bg-primary text-white font-medium px-3 py-1.5 rounded-lg hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
+                >
+                  {savingTemplate ? <Spinner size="sm" color="white" /> : <Save size={14} />}
+                  {editingTemplate?._id
+                    ? t('pages.saveTemplate', 'Save template')
+                    : t('pages.createTemplate', 'Create template')}
+                </button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

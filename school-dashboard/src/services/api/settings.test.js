@@ -203,6 +203,89 @@ describe('settingsApi — Communication Settings', () => {
   });
 });
 
+describe('settingsApi — Email Templates', () => {
+  it('getEmailTemplates calls GET /settings/email-templates', () => {
+    settingsApi.getEmailTemplates();
+    expect(request).toHaveBeenCalledWith('/settings/email-templates');
+  });
+
+  it('getEmailTemplate calls GET /settings/email-templates/:id', () => {
+    settingsApi.getEmailTemplate('et-123');
+    expect(request).toHaveBeenCalledWith('/settings/email-templates/et-123');
+  });
+
+  it('createEmailTemplate calls POST /settings/email-templates', () => {
+    const data = { name: 'Welcome', type: 'welcome', subject: 'Hi', htmlBody: '<p>Hi</p>' };
+    settingsApi.createEmailTemplate(data);
+    expect(request).toHaveBeenCalledWith('/settings/email-templates', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  });
+
+  it('updateEmailTemplate calls PUT /settings/email-templates/:id', () => {
+    const data = { subject: 'Updated subject' };
+    settingsApi.updateEmailTemplate('et-456', data);
+    expect(request).toHaveBeenCalledWith('/settings/email-templates/et-456', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  });
+
+  it('deleteEmailTemplate calls DELETE /settings/email-templates/:id', () => {
+    settingsApi.deleteEmailTemplate('et-789');
+    expect(request).toHaveBeenCalledWith('/settings/email-templates/et-789', {
+      method: 'DELETE',
+    });
+  });
+
+  it('previewEmailTemplate calls POST /settings/email-templates/:id/preview', () => {
+    const data = { sampleData: { student: 'John' } };
+    settingsApi.previewEmailTemplate('et-123', data);
+    expect(request).toHaveBeenCalledWith('/settings/email-templates/et-123/preview', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  });
+});
+
+describe('settingsApi — SMS Templates', () => {
+  it('getSmsTemplates calls GET /settings/sms-templates', () => {
+    settingsApi.getSmsTemplates();
+    expect(request).toHaveBeenCalledWith('/settings/sms-templates');
+  });
+
+  it('getSmsTemplate calls GET /settings/sms-templates/:id', () => {
+    settingsApi.getSmsTemplate('st-123');
+    expect(request).toHaveBeenCalledWith('/settings/sms-templates/st-123');
+  });
+
+  it('createSmsTemplate calls POST /settings/sms-templates', () => {
+    const data = { name: 'Absence Alert', type: 'attendance_alert', body: 'Absent' };
+    settingsApi.createSmsTemplate(data);
+    expect(request).toHaveBeenCalledWith('/settings/sms-templates', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  });
+
+  it('updateSmsTemplate calls PUT /settings/sms-templates/:id', () => {
+    const data = { body: 'Updated body' };
+    settingsApi.updateSmsTemplate('st-456', data);
+    expect(request).toHaveBeenCalledWith('/settings/sms-templates/st-456', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  });
+
+  it('deleteSmsTemplate calls DELETE /settings/sms-templates/:id', () => {
+    settingsApi.deleteSmsTemplate('st-789');
+    expect(request).toHaveBeenCalledWith('/settings/sms-templates/st-789', {
+      method: 'DELETE',
+    });
+  });
+});
+
 // ---------------------------------------------------------------------------
 // billingApi
 // ---------------------------------------------------------------------------
