@@ -51,6 +51,19 @@ describe("useLiveNotifications", () => {
     expect(onCountChange).not.toHaveBeenCalled();
   });
 
+  it("passes React Query's AbortSignal to the API so it can be cancelled", async () => {
+    notificationsApi.getUnreadCount.mockResolvedValue({ count: 1 });
+    const onCountChange = vi.fn();
+
+    renderHook(() => useLiveNotifications({ onCountChange }), {
+      wrapper: makeWrapper(),
+    });
+
+    await waitFor(() => expect(notificationsApi.getUnreadCount).toHaveBeenCalled());
+    const [arg] = notificationsApi.getUnreadCount.mock.calls[0];
+    expect(arg?.signal).toBeInstanceOf(AbortSignal);
+  });
+
   it("falls back to 0 when the request fails", async () => {
     notificationsApi.getUnreadCount.mockRejectedValue(new Error("boom"));
     const onCountChange = vi.fn();
