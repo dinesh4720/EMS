@@ -113,7 +113,6 @@ export default function GeneralPayrollSettings() {
     }
   }, [tempDisburseDate, tempPayrollCycle, t]);
 
-  // TODO: AUDIT-116 - Wire up to API: PUT /settings/payroll (paymentMethod field)
   const handleSavePayment = useCallback(async () => {
     setLoading(true);
     try {
@@ -129,7 +128,6 @@ export default function GeneralPayrollSettings() {
     }
   }, [tempPaymentMethod]);
 
-  // TODO: AUDIT-116 - Wire up to API: PUT /settings/payroll (reminder fields)
   const handleSaveReminders = useCallback(async () => {
     setLoading(true);
     try {
