@@ -141,9 +141,17 @@ export function useSocketSync({
       ]);
     };
 
+    // [MEM-08] Guard against the unmount race with the dynamic import. If the
+    // effect is cleaned up (fast logout→login, or StrictMode mount→unmount→mount)
+    // before import() resolves, capturedService is still null at cleanup time, so
+    // the cleanup removes nothing. Without this flag, the late .then() would then
+    // register 8 listeners on the shared singleton that nothing ever removes.
+    let active = true;
     let capturedService = null;
     import("../../services/socketServiceEnhanced")
       .then(({ default: socketService }) => {
+        // Effect already torn down — do not connect or register orphan listeners.
+        if (!active) return;
         capturedService = socketService;
         socketService.connect();
 
@@ -163,6 +171,9 @@ export function useSocketSync({
     // [AUDIT-793] Pass the exact named callback references to off() so listeners
     // are actually removed from the singleton's Map on unmount.
     return () => {
+      // [MEM-08] Mark inactive so a still-pending import() resolves to a no-op
+      // instead of registering listeners after this effect was torn down.
+      active = false;
       if (capturedService) {
         capturedService.off("connect_error", onConnectError);
         capturedService.off("error", onError);
