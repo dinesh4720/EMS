@@ -819,3 +819,193 @@
   outline: 2px solid var(--warn);
   outline-offset: 1px;
 }
+
+/* ============================================================
+   AddStudentComposer — additional atoms (DS-09)
+   #
+   # The post-split composer files (AddStudentComposer + components/
+   # add-student/*) used `style={{}}` objects as their primary
+   # stylesheet. These atoms extract the static, recurring ones into
+   # reusable classes; state-dependent styling is expressed as
+   # modifier classes. All colours reference design tokens — no hex.
+   #
+   # Genuinely data-driven values (progress-bar width, avatar
+   # gradient hue) remain inline, which is correct.
+   ============================================================ */
+
+/* Generic flex spacer (pushes footer buttons right, balances head) */
+.cmp-spacer { flex: 1; }
+.cmp-ml-auto { margin-left: auto; }
+
+/* Section / inner-block top gaps (12px between grids, 18px between groups) */
+.cmp-mt4  { margin-top: 4px; }
+.cmp-mt12 { margin-top: 12px; }
+.cmp-mt18 { margin-top: 18px; }
+.cmp-mb14 { margin-bottom: 14px; }
+
+/* Repeat-item card — wraps each allergy / medication / emergency
+   contact / sibling / parent row inside a section. */
+.cmp-repeat {
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  margin-bottom: 8px;
+}
+.cmp-repeat--parent {
+  padding: 12px;
+  margin-bottom: 10px;
+}
+.cmp-repeat__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.cmp-repeat__label {
+  font-weight: 520;
+  font-size: 12.5px;
+}
+.cmp-repeat__actions {
+  text-align: right;
+}
+
+/* Small group heading inside a section ("Allergies", "Siblings", …).
+   Extends the existing .section__title atom (13px / 600 / -0.005em). */
+.section__title--sm {
+  font-size: 12.5px;
+  margin-bottom: 6px;
+}
+
+/* "Add X" empty-state hint above a repeat list. */
+.subtle--sm  { font-size: 12px; }
+.subtle--mb8 { margin-bottom: 8px; }
+
+/* Disclosure `<details>` block + "Add another" button spacing. */
+.disclosure-block--mt { margin-top: 12px; }
+.disclosure--mt { margin-top: 4px; }
+
+/* Checkbox row — label + checkbox, optional field-height alignment. */
+.cmp-checkrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cmp-checkrow--field { height: 32px; }
+
+/* Visually hidden native file input (triggered via label/ref). */
+.hidden-file-input { display: none; }
+
+/* Avatar uploader body column (IdentitySection). */
+.avatar-up__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.avatar-up__title { font-weight: 520; }
+.avatar-up__row   { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+
+/* ComposerAvatar preview — 56px circle. The gradient case keeps its
+   data-driven `background` inline; the no-preview ("bare") case uses
+   the modifier for the surface + border look. */
+.avatar-up__preview {
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+.avatar-up__preview img {
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  object-fit: cover;
+}
+.avatar-up__preview--grad {
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  color: white;
+}
+.avatar-up__preview--bare {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--fg-muted);
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+
+/* Composer close button — sized icon button in the head. */
+.iconbtn--24 { width: 24px; height: 24px; }
+
+/* Composer crumb chevron colour. */
+.composer__crumb-sep { color: var(--fg-faint); }
+
+/* Composer nav — label flex + nav-rail bottom spacer. */
+.cnav__label { flex: 1; text-align: left; }
+.composer__nav-spacer { margin-top: auto; padding-top: 16px; }
+
+/* Composer help-banner spacing + inner icon/text flex. */
+.help-banner--sm     { margin: 8px 4px 0; font-size: 11.5px; }
+.help-banner__icon   { margin-top: 1px; flex-shrink: 0; }
+.help-banner__text   { flex: 1; min-width: 0; }
+
+/* Other-documents file input padding override (smaller than .input default). */
+.input--file { padding: 6px; }
+
+/* DocField — file drop slot, name, list. */
+.docfield__slot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface);
+}
+.docfield__slot--err { border: 1px solid var(--danger); }
+.docfield__icon { color: var(--fg-faint); }
+.docfield__name {
+  flex: 1;
+  font-size: 12px;
+  color: var(--fg-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.docfield__name.is-filled { color: var(--fg); }
+.docfield__upload { cursor: pointer; }
+.docfield__list {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--fg-muted);
+}
+.docfield__list li { display: flex; align-items: center; gap: 8px; }
+.docfield__list-name { flex: 1; }
+
+/* Discard-unsaved-changes confirm dialog. */
+.cmp-modal-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(15, 15, 20, 0.42);
+  display: grid;
+  place-items: center;
+}
+.cmp-modal {
+  width: min(380px, calc(100% - 32px));
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  padding: 18px;
+}
+.cmp-modal__title { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+.cmp-modal__body  { margin: 0; color: var(--fg-muted); font-size: 13px; }
+.cmp-modal__foot  { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }

@@ -51,26 +51,19 @@ export default function HealthSection({
         </ComposerField>
       </div>
 
-      <div style={{ marginTop: 18 }}>
-        <div className="section__title" style={{ fontSize: 12.5, marginBottom: 6 }}>
+      <div className="cmp-mt18">
+        <div className="section__title section__title--sm">
           Allergies
         </div>
         {form.healthInfo?.allergies?.length === 0 && (
-          <p className="subtle" style={{ fontSize: 12, marginBottom: 8 }}>
+          <p className="subtle subtle--sm subtle--mb8">
             Add allergies for medical alerts.
           </p>
         )}
         {form.healthInfo?.allergies?.map((a, idx) => (
           <div
             key={a._key}
-            className="fgrid fgrid--2"
-            style={{
-              marginBottom: 8,
-              padding: 10,
-              border: "1px solid var(--border)",
-              borderRadius: 8,
-              background: "var(--surface)",
-            }}
+            className="fgrid fgrid--2 cmp-repeat"
           >
             <ComposerField label={`Allergy ${idx + 1} name`}>
               <input
@@ -134,7 +127,7 @@ export default function HealthSection({
                 placeholder="Additional notes"
               />
             </ComposerField>
-            <div className="span-2" style={{ textAlign: "right" }}>
+            <div className="span-2 cmp-repeat__actions">
               <button
                 type="button"
                 className="btn btn--sm btn--ghost"
@@ -149,7 +142,7 @@ export default function HealthSection({
         ))}
         <button
           type="button"
-          className="disclosure"
+          className="disclosure disclosure--mt"
           onClick={() =>
             addHealthInfoItem("allergies", {
               name: "",
@@ -159,33 +152,25 @@ export default function HealthSection({
               notes: "",
             })
           }
-          style={{ marginTop: 4 }}
         >
           <Plus size={11} aria-hidden />
           Add allergy
         </button>
       </div>
 
-      <div style={{ marginTop: 18 }}>
-        <div className="section__title" style={{ fontSize: 12.5, marginBottom: 6 }}>
+      <div className="cmp-mt18">
+        <div className="section__title section__title--sm">
           Medications
         </div>
         {form.healthInfo?.medications?.length === 0 && (
-          <p className="subtle" style={{ fontSize: 12, marginBottom: 8 }}>
+          <p className="subtle subtle--sm subtle--mb8">
             Add ongoing medications.
           </p>
         )}
         {form.healthInfo?.medications?.map((m, idx) => (
           <div
             key={m._key}
-            className="fgrid fgrid--2"
-            style={{
-              marginBottom: 8,
-              padding: 10,
-              border: "1px solid var(--border)",
-              borderRadius: 8,
-              background: "var(--surface)",
-            }}
+            className="fgrid fgrid--2 cmp-repeat"
           >
             <ComposerField label={`Medication ${idx + 1} name`}>
               <input
@@ -257,7 +242,7 @@ export default function HealthSection({
                 placeholder="Additional notes"
               />
             </ComposerField>
-            <div className="span-2" style={{ textAlign: "right" }}>
+            <div className="span-2 cmp-repeat__actions">
               <button
                 type="button"
                 className="btn btn--sm btn--ghost"
@@ -272,7 +257,7 @@ export default function HealthSection({
         ))}
         <button
           type="button"
-          className="disclosure"
+          className="disclosure disclosure--mt"
           onClick={() =>
             addHealthInfoItem("medications", {
               name: "",
@@ -284,33 +269,25 @@ export default function HealthSection({
               notes: "",
             })
           }
-          style={{ marginTop: 4 }}
         >
           <Plus size={11} aria-hidden />
           Add medication
         </button>
       </div>
 
-      <div style={{ marginTop: 18 }}>
-        <div className="section__title" style={{ fontSize: 12.5, marginBottom: 6 }}>
+      <div className="cmp-mt18">
+        <div className="section__title section__title--sm">
           Health emergency contacts
         </div>
         {form.healthInfo?.emergencyContacts?.length === 0 && (
-          <p className="subtle" style={{ fontSize: 12, marginBottom: 8 }}>
+          <p className="subtle subtle--sm subtle--mb8">
             Add contacts for medical emergencies.
           </p>
         )}
         {form.healthInfo?.emergencyContacts?.map((c, idx) => (
           <div
             key={c._key}
-            className="fgrid fgrid--2"
-            style={{
-              marginBottom: 8,
-              padding: 10,
-              border: "1px solid var(--border)",
-              borderRadius: 8,
-              background: "var(--surface)",
-            }}
+            className="fgrid fgrid--2 cmp-repeat"
           >
             <ComposerField label={`Contact ${idx + 1} name`}>
               <input
@@ -394,7 +371,7 @@ export default function HealthSection({
                 placeholder="e.g. 1"
               />
             </ComposerField>
-            <div className="span-2" style={{ textAlign: "right" }}>
+            <div className="span-2 cmp-repeat__actions">
               <button
                 type="button"
                 className="btn btn--sm btn--ghost"
@@ -409,7 +386,7 @@ export default function HealthSection({
         ))}
         <button
           type="button"
-          className="disclosure"
+          className="disclosure disclosure--mt"
           onClick={() =>
             addHealthInfoItem("emergencyContacts", {
               name: "",
@@ -420,33 +397,32 @@ export default function HealthSection({
               priority: 1,
             })
           }
-          style={{ marginTop: 4 }}
         >
           <Plus size={11} aria-hidden />
           Add emergency contact
         </button>
       </div>
 
-      <div className="fgrid" style={{ marginTop: 12 }}>
+      <div className="fgrid cmp-mt12">
         <ComposerField label="Services">
-          <div className="row gap-2" style={{ alignItems: "center", height: 32 }}>
-            <label className="row gap-2" style={{ alignItems: "center" }}>
+          <div className="cmp-checkrow cmp-checkrow--field">
+            <label className="cmp-checkrow">
               <input
                 type="checkbox"
                 checked={!!form.transportRequired}
                 onChange={(e) => set("transportRequired", e.target.checked)}
               />
-              <span className="subtle" style={{ fontSize: 12 }}>
+              <span className="subtle subtle--sm">
                 Transport
               </span>
             </label>
-            <label className="row gap-2" style={{ alignItems: "center" }}>
+            <label className="cmp-checkrow">
               <input
                 type="checkbox"
                 checked={!!form.hostelRequired}
                 onChange={(e) => set("hostelRequired", e.target.checked)}
               />
-              <span className="subtle" style={{ fontSize: 12 }}>
+              <span className="subtle subtle--sm">
                 Hostel
               </span>
             </label>

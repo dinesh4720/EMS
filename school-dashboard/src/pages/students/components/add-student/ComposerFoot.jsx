@@ -22,7 +22,7 @@ export default function ComposerFoot({
         </div>
         {hasChanges && <span className="subtle">· unsaved</span>}
       </div>
-      <div style={{ flex: 1 }} />
+      <div className="cmp-spacer" />
       <button type="button" className="btn btn--ghost subtle" onClick={onCancel}>
         Cancel
       </button>

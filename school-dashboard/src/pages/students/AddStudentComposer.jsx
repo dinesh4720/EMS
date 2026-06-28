@@ -416,8 +416,7 @@ const AddStudentComposer = forwardRef(function AddStudentComposer(
         <div className="composer__head">
           <button
             type="button"
-            className="iconbtn"
-            style={{ width: 24, height: 24 }}
+            className="iconbtn iconbtn--24"
             onClick={handleClose}
             aria-label="Close"
           >
@@ -425,10 +424,10 @@ const AddStudentComposer = forwardRef(function AddStudentComposer(
           </button>
           <div className="composer__crumbs">
             <span>Students</span>
-            <ChevronRight size={11} style={{ color: "var(--fg-faint)" }} aria-hidden />
+            <ChevronRight size={11} className="composer__crumb-sep" aria-hidden />
             <span className="here">{isCreate ? "New student" : "Edit student"}</span>
           </div>
-          <div style={{ flex: 1 }} />
+          <div className="cmp-spacer" />
           <span className="kbd">esc</span>
         </div>
 
