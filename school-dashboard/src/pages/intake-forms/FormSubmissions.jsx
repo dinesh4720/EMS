@@ -34,6 +34,7 @@ import DropdownMenu from '../../components/ui/DropdownMenu';
 import EmptyState from '../../components/ui/EmptyState';
 import FormField from '../../components/ui/FormField';
 import FormSection from '../../components/ui/FormSection';
+import { sanitizeUrl } from '../../utils/sanitizeUrl';
 
 const STATUS_FILTERS = ["pending", "approved", "rejected", "needs_revision", "all"];
 
@@ -128,14 +129,19 @@ export default function FormSubmissions() {
     if (!value) return <span className="text-fg-faint">{t('intakeForms.submissions.notProvided')}</span>;
 
     if (field.type === "file") {
+      const safeHref = sanitizeUrl(value);
+      if (safeHref === '#') {
+        return <span className="text-fg-faint">{t('intakeForms.submissions.notProvided')}</span>;
+      }
       return (
         <Button
           size="sm"
           variant="flat"
           startContent={<Download size={14} />}
           as="a"
-          href={value}
+          href={safeHref}
           target="_blank"
+          rel="noopener noreferrer"
           aria-label={t('pages.downloadFileOpensInNewTab')}
         >
           {t('pages.downloadFile')}

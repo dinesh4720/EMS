@@ -14,6 +14,7 @@ import {
   Button, Chip, Modal, Textarea, ErrorState,
   DataTable, DropdownMenu,
 } from "../../components/ui";
+import { sanitizeUrl } from "../../utils/sanitizeUrl";
 import "../../styles/student.css";
 
 export default function StudentFormSubmissions() {
@@ -186,9 +187,13 @@ export default function StudentFormSubmissions() {
     if (!value) return <span className="text-fg-faint">{t('pages.notProvided1')}</span>;
 
     if (field.type === "file") {
+      const safeHref = sanitizeUrl(value);
+      if (safeHref === '#') {
+        return <span className="text-fg-faint">{t('pages.notProvided1')}</span>;
+      }
       return (
         <a
-          href={value}
+          href={safeHref}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 px-3 h-8 text-xs font-medium rounded-md bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] hover:bg-[var(--color-border-strong)] transition-colors"
