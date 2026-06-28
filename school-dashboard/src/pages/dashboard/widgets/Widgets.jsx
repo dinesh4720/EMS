@@ -1,6 +1,6 @@
 import { CalendarDays, Megaphone, IndianRupee } from "lucide-react";
 import DashboardSection from "../sections/DashboardSection";
-import EmptyState from "../sections/EmptyState";
+import EmptyState from "../../../components/ui/EmptyState";
 import TimelineRow from "../sections/TimelineRow";
 import ActionItem from "../sections/ActionItem";
 import NoticeRow from "../sections/NoticeRow";
@@ -20,7 +20,7 @@ export function renderYourDay({ schedule, nowIndex }) {
   return (
     <DashboardSection title="Your day" count={schedule.length}>
       {schedule.length === 0 ? (
-        <EmptyState icon={CalendarDays} message="No events scheduled" />
+        <EmptyState icon={CalendarDays} title="No events scheduled" size="sm" className="flex-1" />
       ) : (
         <div className="timeline">
           {schedule.map((row, i) => (
@@ -76,7 +76,7 @@ export function renderAnnouncements({ announcements }) {
   return (
     <DashboardSection title="Notices" count={list.length}>
       {list.length === 0 ? (
-        <EmptyState icon={Megaphone} message="No recent notices" />
+        <EmptyState icon={Megaphone} title="No recent notices" size="sm" className="flex-1" />
       ) : (
         <div className="notice-list">
           {list.map((notice) => (
@@ -98,7 +98,7 @@ export function renderRecentPayments({ payments }) {
   return (
     <DashboardSection title="Payments" count={list.length}>
       {list.length === 0 ? (
-        <EmptyState icon={IndianRupee} message="No recent payments" />
+        <EmptyState icon={IndianRupee} title="No recent payments" size="sm" className="flex-1" />
       ) : (
         <div className="payment-list">
           {list.map((payment) => (
