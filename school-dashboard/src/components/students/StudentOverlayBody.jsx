@@ -246,7 +246,7 @@ export default function StudentOverlayBody({ studentId, onClose }) {
             items={[
               { key: "edit", label: "Edit profile", onClick: () => setOpenModal("edit") },
               { key: "move", label: "Move class", onClick: () => setOpenModal("move") },
-              { key: "tc", label: "Transfer certificate →", onClick: () => { navigate(`/students/${studentId}/transfer-certificate`); onClose?.(); } },
+              { key: "tc", label: "Transfer certificate →", onClick: () => { navigate(`/students/transfer-certificate?student=${studentId}`); onClose?.(); } },
               { key: "promote", label: "Promote student →", onClick: () => { navigate(`/students/promotion?student=${studentId}`); onClose?.(); } },
             ]}
           />
