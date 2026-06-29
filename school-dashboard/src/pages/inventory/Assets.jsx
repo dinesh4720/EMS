@@ -72,20 +72,15 @@ export default function Assets() {
   const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
   // Debounce the search box so we fetch once the user pauses typing, not per keystroke.
   const debouncedSearch = useDebounce(search, 300);
-  const filterRef = useRef({ search: debouncedSearch, filterCategory, filterStatus });
+  const filterRef = useRef({ search: debouncedSearch, filterCategory, filterStatus, filterCondition, filterLocation });
 
   const locations = useMemo(() => {
     const set = new Set(assets.map((a) => a.location).filter(Boolean));
     return [...set].sort();
   }, [assets]);
 
-  const filteredAssets = useMemo(() => {
-    return assets.filter((a) => {
-      if (filterCondition !== "all" && a.condition !== filterCondition) return false;
-      if (filterLocation !== "all" && a.location !== filterLocation) return false;
-      return true;
-    });
-  }, [assets, filterCondition, filterLocation]);
+  // condition/location filters are applied server-side (PAG-19); no client-side
+  // filtering needed — `assets` already reflects the active filters.
 
   // Vendors and the staff list are static lookups for the form selects — fetch
   // them once on mount instead of on every assets refetch / keystroke.
@@ -112,7 +107,7 @@ export default function Assets() {
       setLoading(true);
       setLoadError(null);
       const res = await inventoryApi.getAssets(
-        { search: debouncedSearch, category: filterCategory !== "all" ? filterCategory : undefined, status: filterStatus !== "all" ? filterStatus : undefined, page: pageToLoad, limit: ITEMS_PER_PAGE },
+        { search: debouncedSearch, category: filterCategory !== "all" ? filterCategory : undefined, status: filterStatus !== "all" ? filterStatus : undefined, condition: filterCondition !== "all" ? filterCondition : undefined, location: filterLocation !== "all" ? filterLocation : undefined, page: pageToLoad, limit: ITEMS_PER_PAGE },
         { signal }
       );
       if (signal?.aborted) return;
@@ -128,12 +123,12 @@ export default function Assets() {
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, filterCategory, filterStatus]);
+  }, [debouncedSearch, filterCategory, filterStatus, filterCondition, filterLocation]);
 
   useEffect(() => {
     const prev = filterRef.current;
-    const filtersChanged = prev.search !== debouncedSearch || prev.filterCategory !== filterCategory || prev.filterStatus !== filterStatus;
-    filterRef.current = { search: debouncedSearch, filterCategory, filterStatus };
+    const filtersChanged = prev.search !== debouncedSearch || prev.filterCategory !== filterCategory || prev.filterStatus !== filterStatus || prev.filterCondition !== filterCondition || prev.filterLocation !== filterLocation;
+    filterRef.current = { search: debouncedSearch, filterCategory, filterStatus, filterCondition, filterLocation };
 
     if (filtersChanged && page !== 1) {
       setPage(1);
@@ -146,7 +141,7 @@ export default function Assets() {
     fetchAssets(filtersChanged ? 1 : page, controller.signal);
     return () => controller.abort();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, debouncedSearch, filterCategory, filterStatus]);
+  }, [page, debouncedSearch, filterCategory, filterStatus, filterCondition, filterLocation]);
 
   const openCreate = () => { setEditing(null); setForm(emptyForm); setErrors({}); setIsOpen(true); };
   const openEdit = (a) => {
@@ -311,7 +306,7 @@ export default function Assets() {
         </div>
         <div className="flex gap-2">
           <ExportMenu
-            rows={filteredAssets}
+            rows={assets}
             columns={[
               { key: "name", label: "Name" },
               { key: "category", label: "Category", accessor: (a) => a.category?.replace(/_/g, " ") || "—" },
@@ -355,7 +350,7 @@ export default function Assets() {
                 </tr>
               </thead>
               <tbody className={loading ? "opacity-50 pointer-events-none" : ""}>
-                {filteredAssets.length === 0 ? (
+                {assets.length === 0 ? (
                   <tr>
                     <td colSpan={10}>
                       <EmptyState
@@ -366,7 +361,7 @@ export default function Assets() {
                     </td>
                   </tr>
                 ) : (
-                  filteredAssets.map((a) => (
+                  assets.map((a) => (
                     <tr key={a._id} className="border-b border-divider hover:bg-surface-hover">
                       <td className="px-4 py-3">
                         <p className="font-medium text-fg">{a.name}</p>
@@ -409,7 +404,7 @@ export default function Assets() {
       )}
 
       {/* Pagination */}
-      {!loadError && filteredAssets.length > 0 && (
+      {!loadError && assets.length > 0 && (
         <div className="flex items-center justify-between px-1">
           <p className="text-sm text-fg-muted">
             {t('pages.assetsTotal', { count: total })}
@@ -517,7 +512,7 @@ export default function Assets() {
               </tr>
             </thead>
             <tbody>
-              {filteredAssets.map((a) => (
+              {assets.map((a) => (
                 <tr key={a._id} className="border-b">
                   <td className="py-2 px-3">{a.name}</td>
                   <td className="py-2 px-3">{a.category?.replace(/_/g, " ") || "—"}</td>
