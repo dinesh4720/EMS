@@ -90,7 +90,7 @@ export default function SeedDataSettings() {
     try {
       setGenerating(true);
       const categories = Array.from(selected);
-      const response = await request("/seed/generate", {
+      const response = await request("/seed-data/generate", {
         method: "POST",
         body: JSON.stringify({ categories }),
       });
