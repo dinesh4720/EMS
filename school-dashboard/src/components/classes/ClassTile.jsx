@@ -17,12 +17,6 @@ function pctBand(pct) {
   return "";
 }
 
-// 7-day attendance sparkline (stub bars for now — real history endpoint TODO).
-function buildSpark(today) {
-  const cur = today ?? 80;
-  return Array.from({ length: 7 }, (_, i) => cur + (((i * 13) % 9) - 4));
-}
-
 export default function ClassTile({
   classRecord,
   todayPct,
@@ -35,7 +29,6 @@ export default function ClassTile({
   const Icon = pickIcon(classRecord.name);
   const id = classRecord._id || classRecord.id;
   const band = pctBand(todayPct);
-  const spark = buildSpark(todayPct);
 
   return (
     <Link to={`/classes/${id}`} className="class-tile">
@@ -67,16 +60,6 @@ export default function ClassTile({
         ) : (
           "Awaiting today's attendance"
         )}
-      </div>
-
-      <div className="class-tile__chart spark">
-        {spark.map((v, i) => (
-          <span
-            key={`spark-bar-${i}`}
-            className={`spark__bar${i === spark.length - 1 ? " is-now" : ""}`}
-            style={{ flex: 1, height: `${Math.max(8, (v - 60) * 2.4)}%` }}
-          />
-        ))}
       </div>
 
       <div className="class-tile__foot">
