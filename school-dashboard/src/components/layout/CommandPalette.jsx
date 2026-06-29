@@ -54,9 +54,12 @@ const PAGES = [
   { id: "academics", label: "Academics", to: "/academics", icon: BookOpen },
   { id: "fees", label: "Fees", to: "/fees", icon: Wallet },
   { id: "messaging", label: "Messaging", to: "/messaging", icon: MessageSquare },
+  { id: "messaging-email-campaigns", label: "Email campaigns", to: "/messaging/email-campaigns", icon: Megaphone },
   { id: "calendar", label: "Calendar", to: "/calendar", icon: Calendar },
   { id: "front-desk", label: "Front desk", to: "/front-desk", icon: DoorOpen },
   { id: "reports", label: "Reports", to: "/reports", icon: BarChart3 },
+  { id: "intake-forms-submissions", label: "Form submissions", to: "/intake-forms/submissions", icon: FileText },
+  { id: "intake-forms-funnel", label: "Enrollment funnel", to: "/intake-forms/funnel", icon: BarChart3 },
   { id: "library", label: "Library", to: "/library", icon: Library },
   { id: "inventory", label: "Inventory", to: "/inventory", icon: Package },
   { id: "hostel", label: "Hostel", to: "/hostel", icon: Home },
@@ -65,11 +68,11 @@ const PAGES = [
 
 const SETTINGS = [
   { id: "settings", label: "Settings overview", to: "/settings" },
-  { id: "settings-school", label: "School profile", to: "/settings/school" },
-  { id: "settings-academic", label: "Academic year", to: "/settings/academic" },
+  { id: "settings-school", label: "School profile", to: "/settings/workspace" },
+  { id: "settings-academic", label: "Academic year", to: "/settings/academics" },
   { id: "settings-users", label: "Users & roles", to: "/settings/users" },
-  { id: "settings-billing", label: "Billing & plan", to: "/settings/billing" },
-  { id: "settings-notifications", label: "Notifications", to: "/settings/notifications" },
+  { id: "settings-billing", label: "Billing & plan", to: "/settings/subscription" },
+  { id: "settings-notifications", label: "Notifications", to: "/settings/communication" },
 ];
 
 const ACTIONS = [
@@ -211,7 +214,7 @@ function useExtendedSearch(isOpen, query) {
           id: b._id || b.id,
           label: b.title || b.name || "Book",
           sub: b.author || b.isbn || "",
-          to: `/library/books/${b._id || b.id}`,
+          to: `/library/books`,
         }))
       );
 
@@ -224,7 +227,7 @@ function useExtendedSearch(isOpen, query) {
           id: a._id || a.id,
           label: a.name || a.assetName || "Asset",
           sub: a.category || a.status || "",
-          to: `/inventory/assets/${a._id || a.id}`,
+          to: `/inventory/assets`,
         }))
       );
 
@@ -237,7 +240,7 @@ function useExtendedSearch(isOpen, query) {
           id: r._id || r.id,
           label: r.roomNumber || r.name || "Room",
           sub: r.hostelName || r.type || "",
-          to: `/hostel/rooms/${r._id || r.id}`,
+          to: `/hostel/rooms`,
         }))
       );
 
@@ -250,7 +253,7 @@ function useExtendedSearch(isOpen, query) {
           id: r._id || r.id,
           label: r.name || r.routeName || "Route",
           sub: r.vehicleNumber || r.startPoint || "",
-          to: `/transport/routes/${r._id || r.id}`,
+          to: `/transport`,
         }))
       );
 
@@ -372,25 +375,25 @@ function mapServerResults(serverResults) {
     id: b._id,
     label: b.title || b.name || "Book",
     sub: b.author || b.isbn || "",
-    to: `/library/books/${b._id}`,
+    to: `/library/books`,
   }));
   const assets = pick(serverResults.assets?.results).map((a) => ({
     id: a._id,
     label: a.name || a.assetTag || "Asset",
     sub: a.category || a.status || "",
-    to: `/inventory/assets/${a._id}`,
+    to: `/inventory/assets`,
   }));
   const rooms = pick(serverResults.rooms?.results).map((r) => ({
     id: r._id,
     label: r.roomNumber || "Room",
     sub: r.hostelId?.name || r.type || "",
-    to: `/hostel/rooms/${r._id}`,
+    to: `/hostel/rooms`,
   }));
   const routes = pick(serverResults.routes?.results).map((r) => ({
     id: r._id,
     label: r.routeName || r.routeNumber || "Route",
     sub: r.routeNumber || "",
-    to: `/transport/routes/${r._id}`,
+    to: `/transport`,
   }));
 
   return { students, staff, classes, fees, exams, announcements, books, assets, rooms, routes };
