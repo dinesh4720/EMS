@@ -345,7 +345,9 @@ export default function CommunicationSettings() {
     }
   };
 
-  const SectionHeader = ({ title, description, icon: Icon, section, isEnabled, onToggle }) => (
+  // Render helper (not a nested component) so the subtree is reconciled in
+  // place rather than remounting on every parent state change.
+  const renderSectionHeader = ({ title, description, icon: Icon, section, isEnabled, onToggle }) => (
     <div className="flex justify-between items-start mb-6">
       <div className="flex items-center gap-3">
         <div className={`p-2 rounded-lg ${editingSection === section ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}>
@@ -427,14 +429,14 @@ export default function CommunicationSettings() {
         {/* SMS Section */}
         <section className={`rounded-xl border transition-all duration-300 ${editingSection === 'sms' ? 'border-primary ring-1 ring-primary bg-surface' : 'border-border-token bg-surface'}`}>
           <div className="p-6">
-            <SectionHeader
-              title={t('pages.sMSConfiguration')}
-              description="Manage SMS gateway integration"
-              icon={MessageSquare}
-              section="sms"
-              isEnabled={editingSection === 'sms' ? smsDraft.enabled : smsConfig.enabled}
-              onToggle={(val) => setSmsDraft(prev => ({ ...prev, enabled: val }))}
-            />
+            {renderSectionHeader({
+              title: t('pages.sMSConfiguration'),
+              description: "Manage SMS gateway integration",
+              icon: MessageSquare,
+              section: "sms",
+              isEnabled: editingSection === 'sms' ? smsDraft.enabled : smsConfig.enabled,
+              onToggle: (val) => setSmsDraft(prev => ({ ...prev, enabled: val })),
+            })}
 
             {(editingSection === 'sms' ? smsDraft.enabled : smsConfig.enabled) && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 px-2 animate-fade-in">
@@ -535,14 +537,14 @@ export default function CommunicationSettings() {
         {/* Email Section */}
         <section className={`rounded-xl border transition-all duration-300 ${editingSection === 'email' ? 'border-primary ring-1 ring-primary bg-surface' : 'border-border-token bg-surface'}`}>
           <div className="p-6">
-            <SectionHeader
-              title={t('pages.emailConfiguration')}
-              description="Configure SMTP for email delivery"
-              icon={Mail}
-              section="email"
-              isEnabled={editingSection === 'email' ? emailDraft.enabled : emailConfig.enabled}
-              onToggle={(val) => setEmailDraft(prev => ({ ...prev, enabled: val }))}
-            />
+            {renderSectionHeader({
+              title: t('pages.emailConfiguration'),
+              description: "Configure SMTP for email delivery",
+              icon: Mail,
+              section: "email",
+              isEnabled: editingSection === 'email' ? emailDraft.enabled : emailConfig.enabled,
+              onToggle: (val) => setEmailDraft(prev => ({ ...prev, enabled: val })),
+            })}
 
             {(editingSection === 'email' ? emailDraft.enabled : emailConfig.enabled) && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 px-2 animate-fade-in">

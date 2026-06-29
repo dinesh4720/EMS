@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useId } from 'react';
+import logger from "../../utils/logger";
 import { reportsApi } from '../../services/api/extensions';
 import { useAppMeta } from '../../context/AppContext';
 import { getAcademicYearOptions } from '../../utils/constants';
@@ -37,7 +38,7 @@ export default function ReportsPage() {
         const data = await reportsApi.dashboardMetrics({ academicYear });
         if (!cancelled) setMetrics(data);
       } catch (err) {
-        console.error('Failed to load dashboard metrics:', err);
+        logger.error('Failed to load dashboard metrics:', err);
       }
     })();
     return () => {

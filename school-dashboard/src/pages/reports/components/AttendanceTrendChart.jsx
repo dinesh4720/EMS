@@ -1,4 +1,5 @@
 import { useState, useEffect, useId, useRef, useCallback } from 'react';
+import logger from "../../../utils/logger";
 import {
   LineChart,
   Line,
@@ -39,7 +40,7 @@ export default function AttendanceTrendChart({ startDate, endDate, classId }) {
         const data = await reportsApi.attendanceTrend(params);
         if (!cancelled) setTrendData(Array.isArray(data) ? data : []);
       } catch (err) {
-        console.error('Failed to load attendance trend:', err);
+        logger.error('Failed to load attendance trend:', err);
         if (!cancelled) {
           setTrendData([]);
           setError(err);

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import logger from "../../../utils/logger";
 import { Users, UserCheck, UserX, TrendingUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { reportsApi } from '../../../services/api/extensions';
@@ -42,7 +43,7 @@ export default function AttendanceTab({ metrics }) {
     classesApi
       .getAll()
       .then((data) => setClasses(Array.isArray(data) ? data : []))
-      .catch((err) => console.error('Failed to load classes:', err));
+      .catch((err) => logger.error('Failed to load classes:', err));
   }, []);
 
   useEffect(() => {
@@ -57,7 +58,7 @@ export default function AttendanceTab({ metrics }) {
         const data = await reportsApi.studentAttendance(params);
         if (!cancelled) setRows(Array.isArray(data) ? data : []);
       } catch (err) {
-        console.error('Failed to load attendance report:', err);
+        logger.error('Failed to load attendance report:', err);
         if (!cancelled) {
           setRows([]);
           setError(err);
