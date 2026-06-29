@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 
 const LOAD_DELAY_MS = 300;
 const DEFAULT_ITEMS_PER_LOAD = 10;
@@ -14,6 +14,10 @@ const DEFAULT_ITEMS_PER_LOAD = 10;
  * @param {Object} [options]
  * @param {number} [options.itemsPerLoad=10] - Items to reveal per load step
  * @returns {{ visibleItems, hasMore, isLoadingMore, loaderRef }}
+ *   `loaderRef` is a *callback ref* — attach it with `ref={loaderRef}` exactly as
+ *   before. It works for sentinels that are rendered conditionally (e.g.
+ *   `{hasMore && <div ref={loaderRef} />}`): React invokes it the moment the
+ *   sentinel mounts, so the observer (re-)attaches then instead of only once.
  *
  * @example
  *   const { visibleItems, hasMore, isLoadingMore, loaderRef } =
@@ -25,11 +29,14 @@ const DEFAULT_ITEMS_PER_LOAD = 10;
 export function useEntityFetch(items, resetDeps = [], { itemsPerLoad = DEFAULT_ITEMS_PER_LOAD } = {}) {
   const [visibleCount, setVisibleCount] = useState(itemsPerLoad);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const loaderRef = useRef(null);
 
-  // Refs let the IntersectionObserver callback read current values without stale closures
+  // Refs let the IntersectionObserver callback read current values without stale
+  // closures, so the single observer never needs to be recreated on state changes.
   const hasMoreRef = useRef(false);
   const isLoadingMoreRef = useRef(false);
+  const itemsPerLoadRef = useRef(itemsPerLoad);
+  const observerRef = useRef(null);
+  const loadTimerRef = useRef(null);
 
   const visibleItems = useMemo(
     () => items.slice(0, visibleCount),
@@ -39,30 +46,56 @@ export function useEntityFetch(items, resetDeps = [], { itemsPerLoad = DEFAULT_I
   const hasMore = visibleCount < items.length;
   hasMoreRef.current = hasMore;
   isLoadingMoreRef.current = isLoadingMore;
+  itemsPerLoadRef.current = itemsPerLoad;
 
   // Reset visible count whenever filter-related deps change
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { setVisibleCount(itemsPerLoad); }, resetDeps);
 
-  // Attach IntersectionObserver once on mount. Refs (hasMoreRef, isLoadingMoreRef)
-  // are kept current on every render, so the callback never reads stale values and
-  // the observer does not need to be recreated on state changes.
-  useEffect(() => {
-    const observer = new IntersectionObserver(
+  // Lazily build the single observer. Its callback reads live state via refs.
+  const getObserver = useCallback(() => {
+    if (observerRef.current) return observerRef.current;
+    observerRef.current = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMoreRef.current && !isLoadingMoreRef.current) {
           setIsLoadingMore(true);
-          setTimeout(() => {
-            setVisibleCount((prev) => prev + itemsPerLoad);
+          // Track the pending timer so it can be cleared on unmount.
+          loadTimerRef.current = setTimeout(() => {
+            loadTimerRef.current = null;
+            setVisibleCount((prev) => prev + itemsPerLoadRef.current);
             setIsLoadingMore(false);
           }, LOAD_DELAY_MS);
         }
       },
       { rootMargin: '0px 0px 200px 0px', threshold: 0 }
     );
-    if (loaderRef.current) observer.observe(loaderRef.current);
-    return () => observer.disconnect();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    return observerRef.current;
+  }, []);
+
+  // Callback ref. React calls it with the sentinel node when it mounts and with
+  // null when it unmounts, so a conditionally-rendered sentinel is (re-)observed
+  // exactly when it appears — fixing the previous "observer attaches once on
+  // mount, before the sentinel exists" bug. The identity is stable, so React
+  // does not detach/reattach on every render.
+  const loaderRef = useCallback((node) => {
+    const observer = getObserver();
+    observer.disconnect();
+    if (node) observer.observe(node);
+  }, [getObserver]);
+
+  // Tear down the observer and any pending load-more timer on unmount so neither
+  // outlives the component (MEM-15).
+  useEffect(() => {
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+        observerRef.current = null;
+      }
+      if (loadTimerRef.current) {
+        clearTimeout(loadTimerRef.current);
+        loadTimerRef.current = null;
+      }
+    };
   }, []);
 
   return { visibleItems, hasMore, isLoadingMore, loaderRef };
