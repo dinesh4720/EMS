@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import logger from '../../utils/logger';
 import {
@@ -44,12 +44,19 @@ export default function SubstitutionAlertPanel({ className = '' }) {
 
   const { isOpen, onOpen, onClose } = useDisclosure();
 
+  // Stays true while mounted; flipped on unmount so stale poll/socket-triggered
+  // responses (fetchAlerts is shared by the interval and socket handler) don't
+  // apply state after teardown.
+  const isMountedRef = useRef(true);
+  useEffect(() => () => { isMountedRef.current = false; }, []);
+
   // Fetch alerts
   const fetchAlerts = useCallback(async () => {
     try {
       const today = toTodayDateString();
       const response = await request(`/substitution-alerts?date=${today}`);
 
+      if (!isMountedRef.current) return;
       if (response.success) {
         setAlerts(Array.isArray(response.alerts) ? response.alerts : []);
 
@@ -61,8 +68,10 @@ export default function SubstitutionAlertPanel({ className = '' }) {
     } catch (error) {
       logger.error('Error fetching alerts:', error);
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }, [soundEnabled]);
 

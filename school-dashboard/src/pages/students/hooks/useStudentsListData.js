@@ -27,10 +27,13 @@ import {
   computeActiveFiltersCount,
   computeFilterCounts,
   resolveSelectedIds,
+  clampPageSize,
+  serverFiltersChanged,
 } from "./useStudentsListData.helpers";
 import logger from '../../../utils/logger';
 
 const ROW_HEIGHT = 65;
+const DEFAULT_STUDENTS_PAGE_SIZE = 100;
 
 export function useStudentsListData() {
   const { t } = useTranslation();
@@ -98,6 +101,14 @@ export function useStudentsListData() {
 
   // ── Selection state ───────────────────────────────────────────────────────
   const [selectedKeys, setSelectedKeys] = useState(new Set([]));
+
+  // ── Server pagination state (PAG-04 / SCH-102) ────────────────────────────
+  // Real server pagination replaces the previous `limit: 0` (fetch-all) call,
+  // which was re-downloading every student on load + every filter/search
+  // keystroke. The backend already caps `limit` at 100/page and returns the
+  // pagination envelope consumed below.
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_STUDENTS_PAGE_SIZE);
 
   // ── Phone inline editing ──────────────────────────────────────────────────
   const [editingPhoneId, setEditingPhoneId] = useState(null);
@@ -223,15 +234,18 @@ export function useStudentsListData() {
       academicYearFilter.join(","),
       sortParams.sortBy,
       sortParams.sortOrder,
+      currentPage,
+      pageSize,
     ],
-    [deferredSearchQuery, selectedClassId, feeStatusFilter, statusFilter, academicYearFilter, sortParams.sortBy, sortParams.sortOrder]
+    [deferredSearchQuery, selectedClassId, feeStatusFilter, statusFilter, academicYearFilter, sortParams.sortBy, sortParams.sortOrder, currentPage, pageSize]
   );
 
   const studentsQuery = useQuery({
     queryKey: studentsQueryKey,
     queryFn: () =>
       studentsApi.list({
-        limit: 0,
+        page: currentPage,
+        limit: pageSize,
         search: deferredSearchQuery || undefined,
         classId: selectedClassId || undefined,
         feeStatus: feeStatusFilter.length > 0 ? feeStatusFilter.join(",") : undefined,
@@ -250,6 +264,24 @@ export function useStudentsListData() {
   const listLoading = studentsQuery.isLoading;
   const listError = studentsQuery.error;
 
+  // PAG-04 (SCH-102): server pagination metadata. The backend always returns
+  // a `pagination` envelope — even on the legacy `limit: 0` "no pagination"
+  // path — so the consumer can drive a real pager off this.
+  const serverPagination = useMemo(
+    () =>
+      studentsQuery.data?.pagination ?? {
+        currentPage,
+        totalPages: 1,
+        totalItems: students.length,
+        itemsPerPage: pageSize,
+        hasNextPage: false,
+        hasPrevPage: currentPage > 1,
+      },
+    [studentsQuery.data, currentPage, pageSize, students.length]
+  );
+  const totalPages = Math.max(1, serverPagination.totalPages ?? 1);
+  const totalItems = serverPagination.totalItems ?? students.length;
+
   const uniqueAcademicYears = useMemo(
     () =>
       [...new Set([currentAcademicYear, ...students.map((student) => student.academicYear || currentAcademicYear)])].sort(),
@@ -260,6 +292,51 @@ export function useStudentsListData() {
     setLocalStudents(null);
     setStudentFeeStructures({});
   }, [studentsQuery.data]);
+
+  // PAG-04 (SCH-102): reset to page 1 whenever a server-side filter changes.
+  // Client-only filters (academicPerformance, attendance) are NOT in
+  // SERVER_FILTER_KEYS — they run over the current page and shouldn't
+  // re-trigger a server fetch.
+  const serverFilterSnapshot = useMemo(
+    () => ({
+      search: deferredSearchQuery,
+      classId: selectedClassId,
+      feeStatus: feeStatusFilter.join(","),
+      status: statusFilter,
+      academicYear: academicYearFilter.join(","),
+      sortBy: sortParams.sortBy,
+      sortOrder: sortParams.sortOrder,
+    }),
+    [
+      deferredSearchQuery,
+      selectedClassId,
+      feeStatusFilter,
+      statusFilter,
+      academicYearFilter,
+      sortParams.sortBy,
+      sortParams.sortOrder,
+    ]
+  );
+  const lastServerFilterSnapshotRef = useRef(serverFilterSnapshot);
+  useEffect(() => {
+    if (serverFiltersChanged(lastServerFilterSnapshotRef.current, serverFilterSnapshot)) {
+      lastServerFilterSnapshotRef.current = serverFilterSnapshot;
+      setCurrentPage(1);
+    }
+  }, [serverFilterSnapshot]);
+
+  // After a server filter narrows the result set, the previous page may now
+  // be empty. Clamp into the valid range so the user doesn't see a blank
+  // table while the next refetch is in flight.
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
+
+  const setPageSizeClamped = useCallback((next) => {
+    const clamped = clampPageSize(next, DEFAULT_STUDENTS_PAGE_SIZE);
+    setPageSize(clamped);
+    setCurrentPage(1);
+  }, []);
 
   useEffect(() => {
     if (studentsQuery.error) {
@@ -708,6 +785,10 @@ export function useStudentsListData() {
     deleteStudent, updateStudent,
     // csv upload
     csvUpload,
+    // server pagination (PAG-04 / SCH-102)
+    currentPage, setCurrentPage, pageSize, setPageSize: setPageSizeClamped,
+    pagination: serverPagination,
+    totalPages, totalItems,
     // helpers
     getClassOptions,
   };
