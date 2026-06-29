@@ -35,13 +35,13 @@ export const inventoryApi = {
   getStats: () => request('/inventory/stats'),
   getReports: () => request('/inventory/reports'),
 
-  getAssets: (params = {}) => {
+  getAssets: (params = {}, options = {}) => {
     const query = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => {
       if (v !== undefined && v !== null && v !== '' && v !== 'all') query.set(k, v);
     });
     const qs = query.toString();
-    return request(`/inventory/assets${qs ? `?${qs}` : ''}`);
+    return request(`/inventory/assets${qs ? `?${qs}` : ''}`, options);
   },
   getAsset: (id) => request(`/inventory/assets/${id}`),
   getLowStockAssets: () => request('/inventory/assets/low-stock'),

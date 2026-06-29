@@ -2,19 +2,19 @@ import { CheckCircle2, XCircle, MinusCircle, AlertTriangle, Clock, Ban } from "l
 
 const STATUS_CONFIG = {
   // Academic statuses
-  pass:     { label: 'Pass',     Icon: CheckCircle2,  cls: 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-  fail:     { label: 'Fail',     Icon: XCircle,       cls: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-  passed:   { label: 'Passed',   Icon: CheckCircle2,  cls: 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-  failed:   { label: 'Failed',   Icon: XCircle,       cls: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+  pass:     { label: 'Pass',     Icon: CheckCircle2,  cls: 'bg-ok-bg text-ok' },
+  fail:     { label: 'Fail',     Icon: XCircle,       cls: 'bg-danger-bg text-danger-token' },
+  passed:   { label: 'Passed',   Icon: CheckCircle2,  cls: 'bg-ok-bg text-ok' },
+  failed:   { label: 'Failed',   Icon: XCircle,       cls: 'bg-danger-bg text-danger-token' },
   // Account / entity statuses
-  active:    { label: 'Active',    Icon: CheckCircle2, cls: 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-  inactive:  { label: 'Inactive',  Icon: MinusCircle,  cls: 'bg-gray-50 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400' },
-  suspended: { label: 'Suspended', Icon: AlertTriangle, cls: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-  'on-leave':  { label: 'On Leave',  Icon: Clock,       cls: 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
-  terminated: { label: 'Terminated', Icon: Ban,         cls: 'bg-gray-50 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400' },
+  active:    { label: 'Active',    Icon: CheckCircle2, cls: 'bg-ok-bg text-ok' },
+  inactive:  { label: 'Inactive',  Icon: MinusCircle,  cls: 'bg-surface-2 text-fg-muted' },
+  suspended: { label: 'Suspended', Icon: AlertTriangle, cls: 'bg-danger-bg text-danger-token' },
+  'on-leave':  { label: 'On Leave',  Icon: Clock,       cls: 'bg-warn-bg text-warn' },
+  terminated: { label: 'Terminated', Icon: Ban,         cls: 'bg-surface-2 text-fg-muted' },
 };
 
-const FALLBACK = { label: 'Unknown', Icon: MinusCircle, cls: 'bg-gray-50 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400' };
+const FALLBACK = { label: 'Unknown', Icon: MinusCircle, cls: 'bg-surface-2 text-fg-muted' };
 
 /**
  * StatusBadge — renders a status pill with an icon AND a text label so the
