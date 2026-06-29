@@ -1,5 +1,6 @@
-import { ChevronLeft, Mail, Phone, MoreHorizontal, X } from "lucide-react";
+import { ChevronLeft, Mail, Phone, MoreHorizontal, X, Check } from "lucide-react";
 import PhotoAvatar from "../../components/PhotoAvatar";
+import DropdownMenu from "../../components/ui/DropdownMenu";
 
 // Same status tone map as StaffListRow — kept inline so the pane is
 // self-contained.
@@ -11,6 +12,15 @@ const STATUS_TONE = {
   halfday: "warn",
   inactive: "danger",
 };
+
+// Status choices offered by the "Mark attendance" picker — same enum the
+// bulk/regularize flows use (see AttendanceContext.markStaffAttendance).
+const ATTENDANCE_OPTIONS = [
+  { key: "present", label: "Present", dot: "bg-ok" },
+  { key: "absent", label: "Absent", dot: "bg-danger-token" },
+  { key: "leave", label: "On leave", dot: "bg-warn" },
+  { key: "halfday", label: "Half day", dot: "bg-warn" },
+];
 
 function roleLabel(role) {
   if (Array.isArray(role)) return role[0] || "";
@@ -222,14 +232,35 @@ export default function StaffDetailPane({
         <button type="button" className="btn" onClick={onViewProfile}>
           View profile
         </button>
-        <button
-          type="button"
-          className="btn btn--accent"
-          style={{ flex: 1 }}
-          onClick={onMarkAttendance}
-        >
-          Mark attendance
-        </button>
+        <DropdownMenu
+          ariaLabel="Mark attendance status"
+          placement="top-end"
+          trigger={
+            <button
+              type="button"
+              className="btn btn--accent"
+              style={{ flex: 1 }}
+            >
+              Mark attendance
+            </button>
+          }
+          items={ATTENDANCE_OPTIONS.map(({ key, label, dot }) => ({
+            key,
+            label: (
+              <span className="flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${dot}`} />
+                {label}
+              </span>
+            ),
+            icon:
+              status === key ? (
+                <Check size={14} className="text-accent" />
+              ) : (
+                <span className="w-3.5" />
+              ),
+            onClick: () => onMarkAttendance?.(key),
+          }))}
+        />
       </div>
     </aside>
   );

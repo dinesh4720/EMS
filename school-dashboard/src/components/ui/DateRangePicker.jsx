@@ -79,7 +79,7 @@ export default function DateRangePicker({
           type="button"
           className={[
             'flex items-center gap-2 px-3 py-2 rounded-lg border',
-            'border-gray-300 dark:border-zinc-700',
+            'border-border-token',
             'bg-surface',
             'text-sm text-fg',
             'hover:border-primary transition-colors',

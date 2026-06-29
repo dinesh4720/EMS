@@ -280,7 +280,7 @@ export default function GuidedTour({ steps, isOpen, onClose, tourId, autoStart =
             )}
             <button
               onClick={handleNext}
-              className="bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-400"
+              className="bg-accent text-white hover:bg-accent-hover"
               style={{
                 border: 'none', borderRadius: 6,
                 padding: '8px 18px', fontSize: 13, fontWeight: 700,
@@ -297,7 +297,7 @@ export default function GuidedTour({ steps, isOpen, onClose, tourId, autoStart =
           {steps.map((_, i) => (
             <div
               key={`tour-dot-${i}`}
-              className={i === stepIndex ? 'bg-indigo-600 dark:bg-indigo-400' : 'bg-surface-2'}
+              className={i === stepIndex ? 'bg-accent' : 'bg-surface-2'}
               style={{
                 width: i === stepIndex ? 20 : 8,
                 height: 8,
