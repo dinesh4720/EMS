@@ -2086,11 +2086,38 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
     }
 
     /* ── Data Cleanup ── */
+    // Mock mirrors the real backend contract (EMS-backend/routes/dataCleanup.js):
+    //   preview  → { success, counts: { <entity>: { label, description, models, total } }, grandTotal }
+    //   execute  → { success, results: { <entity>: { label, deleted, total } }, totalDeleted }
+    // Returning the nested shape only (no flat fallback) is deliberate — if the
+    // frontend regresses to read `data.students` / `response.moved`, the preview
+    // counts silently render as 0 and the settings-deep spec fails.
     if (path === '/data-cleanup/preview') {
-      return json({ students: 120, staff: 25, classes: 10, attendance: 500, results: 80 });
+      return json({
+        success: true,
+        counts: {
+          students:   { label: 'Students',   description: '', models: {}, total: 120 },
+          staff:      { label: 'Staff',      description: '', models: {}, total: 25 },
+          classes:    { label: 'Classes',    description: '', models: {}, total: 10 },
+          attendance: { label: 'Attendance', description: '', models: {}, total: 500 },
+          results:    { label: 'Results',    description: '', models: {}, total: 80 },
+        },
+        grandTotal: 735,
+      });
     }
     if (path === '/data-cleanup/execute' && method === 'POST') {
-      return json({ success: true, moved: 735, categories: { students: 120, staff: 25, classes: 10, attendance: 500, results: 80 } });
+      return json({
+        success: true,
+        message: 'Successfully moved 735 records to trash across 5 categories',
+        results: {
+          students:   { label: 'Students',   deleted: {}, total: 120 },
+          staff:      { label: 'Staff',      deleted: {}, total: 25 },
+          classes:    { label: 'Classes',    deleted: {}, total: 10 },
+          attendance: { label: 'Attendance', deleted: {}, total: 500 },
+          results:    { label: 'Results',    deleted: {}, total: 80 },
+        },
+        totalDeleted: 735,
+      });
     }
 
     /* ── Settings ── */

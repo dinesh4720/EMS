@@ -202,6 +202,24 @@ describe('settingsApi — Communication Settings', () => {
       body: JSON.stringify(data),
     });
   });
+
+  it('testEmail calls POST /settings/communication/test-email with recipient', () => {
+    const payload = { to: 'admin@school.com' };
+    settingsApi.testEmail(payload);
+    expect(request).toHaveBeenCalledWith('/settings/communication/test-email', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  });
+
+  it('testSms calls POST /settings/communication/test-sms with recipient', () => {
+    const payload = { to: '919876543210' };
+    settingsApi.testSms(payload);
+    expect(request).toHaveBeenCalledWith('/settings/communication/test-sms', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  });
 });
 
 describe('settingsApi — Email Templates', () => {

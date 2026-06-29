@@ -250,16 +250,16 @@ export function AttendanceProvider({ children, staff }) {
     }
   }, [t]);
 
-  const approveRegularization = useCallback((staffId, date, data) => {
-    // Since current backend supports direct regularization, this might be redundant or same as above
-    // keeping placeholder for future enhancement
-    return requestRegularization(staffId, date, data.status, data.note);
-  }, [requestRegularization]);
+  const approveRegularization = useCallback(
+    (staffId, date, data) =>
+      requestRegularization(staffId, date, data.status, data.note),
+    [requestRegularization]
+  );
 
-  const fetchPendingRegularizations = useCallback(async () => {
-    // Backend doesn't have this endpoint yet in this project version
-    return [];
-  }, []);
+  // TODO(SCH-XXX): wire to GET /api/staff/regularizations/pending once the
+  // backend exposes it. Currently no callers consume this — exported only for
+  // future use.
+  const fetchPendingRegularizations = useCallback(async () => [], []);
 
   const getMonthlyAttendance = useCallback((staffId, year, month) => {
     const staffAtt = staffAttendance[staffId] || {};

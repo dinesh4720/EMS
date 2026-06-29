@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useEntityFetch } from "../../hooks/useEntityFetch";
 import { Input, Switch, Select, SelectItem, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Divider, Spinner, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea } from "@heroui/react";
-import { Save, Plus, Edit, Search, X, MessageSquare, Mail } from "lucide-react";
+import { Save, Plus, Edit, Search, X, MessageSquare, Mail, Send } from "lucide-react";
 import { settingsApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
@@ -42,6 +42,12 @@ export default function CommunicationSettings() {
   // Track editable draft values — drafts hold the new secret input (initially empty)
   const [smsDraft, setSmsDraft] = useState(DEFAULT_SMS_DRAFT);
   const [emailDraft, setEmailDraft] = useState(DEFAULT_EMAIL_DRAFT);
+
+  // Test-send recipients + loading flags (STUB-07)
+  const [testEmailRecipient, setTestEmailRecipient] = useState('');
+  const [testSmsRecipient, setTestSmsRecipient] = useState('');
+  const [testingEmail, setTestingEmail] = useState(false);
+  const [testingSms, setTestingSms] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -297,6 +303,48 @@ export default function CommunicationSettings() {
     }
   };
 
+  const handleTestEmail = async () => {
+    const recipient = testEmailRecipient.trim();
+    if (!recipient) {
+      toast.error(t('toast.error.enterTestEmailAddress', 'Enter an email address to test'));
+      return;
+    }
+    setTestingEmail(true);
+    try {
+      const result = await settingsApi.testEmail({ to: recipient });
+      if (result?.success === false) {
+        toast.error(result?.message || t('toast.error.failedToSendTestEmail', 'Failed to send test email'));
+      } else {
+        toast.success(t('toast.success.testEmailSent', `Test email sent to ${recipient}`));
+      }
+    } catch (err) {
+      toast.error(err?.message || t('toast.error.failedToSendTestEmail', 'Failed to send test email'));
+    } finally {
+      setTestingEmail(false);
+    }
+  };
+
+  const handleTestSms = async () => {
+    const recipient = testSmsRecipient.trim();
+    if (!recipient) {
+      toast.error(t('toast.error.enterTestSmsNumber', 'Enter a phone number to test'));
+      return;
+    }
+    setTestingSms(true);
+    try {
+      const result = await settingsApi.testSms({ to: recipient });
+      if (result?.success === false) {
+        toast.error(result?.message || t('toast.error.failedToSendTestSms', 'Failed to send test SMS'));
+      } else {
+        toast.success(t('toast.success.testSmsSent', `Test SMS sent to ${recipient}`));
+      }
+    } catch (err) {
+      toast.error(err?.message || t('toast.error.failedToSendTestSms', 'Failed to send test SMS'));
+    } finally {
+      setTestingSms(false);
+    }
+  };
+
   const SectionHeader = ({ title, description, icon: Icon, section, isEnabled, onToggle }) => (
     <div className="flex justify-between items-start mb-6">
       <div className="flex items-center gap-3">
@@ -442,7 +490,7 @@ export default function CommunicationSettings() {
                   </>
                 )}
 
-                <div className="md:col-span-2 p-4 bg-[var(--ok-bg)] rounded-xl border border-[var(--ok-border)] flex justify-between items-center mt-2">
+                <div className="md:col-span-2 p-4 bg-[var(--ok-bg)] rounded-xl border border-[var(--ok-border)] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mt-2">
                   <div>
                     <p className="text-sm font-semibold text-[var(--ok)]">
                       {smsConfig.hasApiKey ? 'Configured' : 'Not configured'}
@@ -451,9 +499,28 @@ export default function CommunicationSettings() {
                       {smsConfig.senderId ? `Sender: ${smsConfig.senderId}` : 'Add API key to enable SMS'}
                     </p>
                   </div>
-                  <button type="button" onClick={() => toast.error('SMS test not yet implemented')} className="px-4 py-2 bg-surface text-[var(--ok)] rounded-lg border border-[var(--ok-border)] text-xs font-medium hover:bg-[var(--ok-bg)] dark:hover:bg-[var(--ok-bg)]">
-                    Test SMS
-                  </button>
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <Input
+                      type="tel"
+                      aria-label={t('pages.testSmsRecipient', 'Test recipient phone')}
+                      placeholder="919876543210"
+                      value={testSmsRecipient}
+                      onValueChange={setTestSmsRecipient}
+                      variant="bordered"
+                      size="sm"
+                      classNames={{ inputWrapper: "bg-surface border-border-token" }}
+                      className="max-w-[180px]"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleTestSms}
+                      disabled={testingSms || !testSmsRecipient.trim()}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-surface text-[var(--ok)] rounded-lg border border-[var(--ok-border)] text-xs font-medium hover:bg-[var(--ok-bg)] dark:hover:bg-[var(--ok-bg)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                    >
+                      {testingSms ? <Spinner size="sm" color="default" /> : <Send size={12} />}
+                      {t('pages.testSms')}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -557,9 +624,26 @@ export default function CommunicationSettings() {
                   </>
                 )}
 
-                <div className="md:col-span-2 flex justify-end mt-2">
-                  <button type="button" onClick={() => toast.error('Email test not yet implemented')} className="px-4 py-2 bg-[var(--accent-bg)] text-[var(--accent)] rounded-lg border border-[var(--accent-border)] text-sm font-medium hover:bg-[var(--accent-bg)] dark:hover:bg-[var(--accent-bg)]">
-                    Send Test Email
+                <div className="md:col-span-2 flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-2 mt-2">
+                  <Input
+                    type="email"
+                    aria-label={t('pages.testEmailRecipient', 'Test recipient email')}
+                    placeholder="you@school.com"
+                    value={testEmailRecipient}
+                    onValueChange={setTestEmailRecipient}
+                    variant="bordered"
+                    size="sm"
+                    classNames={{ inputWrapper: "bg-surface border-border-token" }}
+                    className="sm:max-w-[240px]"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleTestEmail}
+                    disabled={testingEmail || !testEmailRecipient.trim()}
+                    className="flex items-center justify-center gap-1.5 px-4 py-2 bg-[var(--accent-bg)] text-[var(--accent)] rounded-lg border border-[var(--accent-border)] text-sm font-medium hover:bg-[var(--accent-bg)] dark:hover:bg-[var(--accent-bg)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                  >
+                    {testingEmail ? <Spinner size="sm" color="default" /> : <Send size={14} />}
+                    {t('pages.sendTestEmail')}
                   </button>
                 </div>
               </div>

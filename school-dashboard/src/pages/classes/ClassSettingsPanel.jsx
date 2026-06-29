@@ -16,6 +16,7 @@ import UnsavedChangesModal from '../../components/modals/UnsavedChangesModal';
 import logger from '../../utils/logger';
 import Chip from '../../components/ui/Chip';
 import MultiSelect from '../../components/ui/MultiSelect';
+import { DEFAULT_SUBJECTS } from "../../constants/subjects";
 
 
 export default function ClassSettingsPanel({
@@ -43,19 +44,9 @@ export default function ClassSettingsPanel({
   const canEdit = hasPermission('classes', 'edit');
 
   // Available subjects from school settings - extract names from objects
-  const availableSubjects = schoolSettings?.subjects?.map(s => 
+  const availableSubjects = schoolSettings?.subjects?.map(s =>
     typeof s === 'string' ? s : s.name
-  ) || [
-    "Mathematics",
-    "Science",
-    "English",
-    "Hindi",
-    "Social Studies",
-    "Computer Science",
-    "Physical Education",
-    "Art",
-    "Music"
-  ];
+  ) || DEFAULT_SUBJECTS;
 
   const subjectOptions = availableSubjects.map(s => ({ value: s, label: s }));
 

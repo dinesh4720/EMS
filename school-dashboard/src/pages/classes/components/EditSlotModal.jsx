@@ -1,5 +1,6 @@
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Select, SelectItem, Input, Spinner } from "@heroui/react";
 import { X } from "lucide-react";
+import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import ConflictIndicator from "../../../components/ConflictIndicator";
 
@@ -112,9 +113,9 @@ export function EditSlotModal({
                     setSlotForm({ ...slotForm, teacherId: "" });
                   } else if (action === 'remove_from_class') {
                     // This would require additional API call to remove teacher from conflicting class
-                    alert(`To resolve this conflict, please go to ${resolutionData.resolution.className} timetable and remove the teacher from that slot.`);
+                    toast.error(`To resolve this conflict, please go to ${resolutionData.resolution.className} timetable and remove the teacher from that slot.`);
                   } else if (action === 'update_assignments') {
-                    alert('Please go to Staff Assignments to add this subject-class assignment to the teacher.');
+                    toast.error('Please go to Staff Assignments to add this subject-class assignment to the teacher.');
                   }
                 }}
               />
