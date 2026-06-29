@@ -74,7 +74,7 @@ export default function ClassSection({
         </ComposerField>
       </div>
 
-      <div className="fgrid" style={{ marginTop: 12 }}>
+      <div className="fgrid cmp-mt12">
         <ComposerField label="Previous school" hint="If transferring in">
           <input
             className="input"

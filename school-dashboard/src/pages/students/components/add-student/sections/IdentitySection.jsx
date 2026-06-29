@@ -21,14 +21,14 @@ export default function IdentitySection({
     <section id="student-section-identity" className="section">
       <SectionHead title="Identity" hint="How they appear on the roster" done={done} />
 
-      <div className="avatar-up" style={{ marginBottom: 14 }}>
+      <div className="avatar-up cmp-mb14">
         <ComposerAvatar previewUrl={picturePreviewUrl} initials={initials} name={fullName} />
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-          <span style={{ fontWeight: 520 }}>Profile photo</span>
-          <span className="subtle" style={{ fontSize: 12 }}>
+        <div className="avatar-up__body">
+          <span className="avatar-up__title">Profile photo</span>
+          <span className="subtle subtle--sm">
             JPG or PNG · square · max 5 MB. Initials are used if none.
           </span>
-          <div className="row gap-2" style={{ marginTop: 4 }}>
+          <div className="avatar-up__row">
             <button
               type="button"
               className="btn btn--sm"
@@ -48,7 +48,7 @@ export default function IdentitySection({
             ref={pictureInputRef}
             type="file"
             accept="image/*"
-            style={{ display: "none" }}
+            className="hidden-file-input"
             onChange={(e) => handleFile("picture", e.target.files?.[0])}
           />
         </div>
@@ -151,12 +151,12 @@ export default function IdentitySection({
         </ComposerField>
       </div>
 
-      <details className="disclosure-block" style={{ marginTop: 12 }}>
+      <details className="disclosure-block disclosure-block--mt">
         <summary className="disclosure">
           <Plus size={11} aria-hidden />
           Religion, category, nationality &amp; more
         </summary>
-        <div className="fgrid" style={{ marginTop: 12 }}>
+        <div className="fgrid cmp-mt12">
           <ComposerField label="Religion">
             <select
               className="select"

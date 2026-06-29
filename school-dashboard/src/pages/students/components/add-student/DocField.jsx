@@ -30,26 +30,10 @@ export default function DocField({
         {required && <span className="req">*</span>}
       </label>
       <div
-        className="row gap-2"
-        style={{
-          alignItems: "center",
-          padding: 8,
-          border: `1px ${error ? "solid var(--danger)" : "dashed var(--border-strong)"}`,
-          borderRadius: 6,
-          background: "var(--surface)",
-        }}
+        className={`row gap-2 docfield__slot ${error ? "docfield__slot--err" : ""}`}
       >
-        <FileText size={12} style={{ color: "var(--fg-faint)" }} aria-hidden />
-        <span
-          style={{
-            flex: 1,
-            fontSize: 12,
-            color: displayName ? "var(--fg)" : "var(--fg-faint)",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
+        <FileText size={12} className="docfield__icon" aria-hidden />
+        <span className={`docfield__name ${displayName ? "is-filled" : ""}`}>
           {displayName || "No file"}
         </span>
         {existingUrl && !hasNew && (
@@ -66,12 +50,12 @@ export default function DocField({
           ref={inputRef}
           type="file"
           accept=".pdf,.jpg,.jpeg,.png"
-          style={{ display: "none" }}
+          className="hidden-file-input"
           onChange={(e) => onFile(e.target.files?.[0])}
           id={fieldId}
           aria-describedby={hintId}
         />
-        <label htmlFor={fieldId} className="btn btn--sm" style={{ cursor: "pointer" }}>
+        <label htmlFor={fieldId} className="btn btn--sm docfield__upload">
           <Upload size={11} aria-hidden /> {hasNew || existingUrl ? "Replace" : "Upload"}
         </label>
         {hasNew && (
@@ -81,7 +65,7 @@ export default function DocField({
         )}
       </div>
       {error && (
-        <span id={hintId} role="alert" className="field__hint" style={{ color: "var(--danger)" }}>
+        <span id={hintId} role="alert" className="field__hint field__hint--danger">
           {error}
         </span>
       )}
