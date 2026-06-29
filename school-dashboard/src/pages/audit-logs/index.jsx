@@ -36,6 +36,7 @@ export default function AuditLogsPage() {
   const [total, setTotal] = useState(0);
   const [exporting, setExporting] = useState(false);
   const [filters, setFilters] = useState({});
+  const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileViewport, setIsMobileViewport] = useState(() =>
     typeof window !== "undefined" ? window.innerWidth <= MOBILE_MAX : false
@@ -49,14 +50,23 @@ export default function AuditLogsPage() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
+  // Debounce the search input so we only refetch when typing pauses
+  // (300ms — matches typical UX and avoids one fetch per keystroke).
+  useEffect(() => {
+    const id = setTimeout(() => setSearchQuery(searchInput), 300);
+    return () => clearTimeout(id);
+  }, [searchInput]);
+
   const buildParams = useCallback(() => {
     const params = { page, limit: pageSize };
+    const trimmed = searchQuery.trim();
+    if (trimmed) params.search = trimmed;
     if (filters.action) params.action = filters.action;
     if (filters.entity) params.entity = filters.entity;
     if (filters.startDate) params.startDate = filters.startDate;
     if (filters.endDate) params.endDate = filters.endDate;
     return params;
-  }, [page, pageSize, filters]);
+  }, [page, pageSize, filters, searchQuery]);
 
   const fetchLogs = useCallback(async () => {
     try {
@@ -78,6 +88,12 @@ export default function AuditLogsPage() {
   useEffect(() => {
     fetchLogs();
   }, [fetchLogs]);
+
+  // When a new server-side search term arrives, drop the user back on page 1
+  // so they don't land on an empty page that no longer matches the filter.
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery]);
 
   const setSelectedId = useCallback(
     (id) => {
@@ -101,6 +117,7 @@ export default function AuditLogsPage() {
 
   const handleResetFilters = useCallback(() => {
     setFilters({});
+    setSearchInput("");
     setSearchQuery("");
     setPage(1);
   }, []);
@@ -110,6 +127,8 @@ export default function AuditLogsPage() {
       try {
         setExporting(true);
         const params = { format, ...filters };
+        const trimmedSearch = searchQuery.trim();
+        if (trimmedSearch) params.search = trimmedSearch;
         const qs = new URLSearchParams(params).toString();
         const endpoint = `/audit-logs/export${qs ? `?${qs}` : ""}`;
         const response = await requestBlob(endpoint);
@@ -132,28 +151,12 @@ export default function AuditLogsPage() {
         setExporting(false);
       }
     },
-    [filters]
+    [filters, searchQuery]
   );
 
-  // Client-side search on current page results
-  const visible = useMemo(() => {
-    if (!searchQuery.trim()) return logs;
-    const needle = searchQuery.trim().toLowerCase();
-    return logs.filter((logItem) => {
-      const userName = logItem.userId?.name || logItem.userName || "";
-      const entity = logItem.entity || "";
-      const action = logItem.action || "";
-      const ip = logItem.ipAddress || "";
-      const path = logItem.path || "";
-      return (
-        userName.toLowerCase().includes(needle) ||
-        entity.toLowerCase().includes(needle) ||
-        action.toLowerCase().includes(needle) ||
-        ip.toLowerCase().includes(needle) ||
-        path.toLowerCase().includes(needle)
-      );
-    });
-  }, [logs, searchQuery]);
+  // The server now applies the search filter, so the visible list is exactly
+  // what the API returned for the current page/filters/search.
+  const visible = logs;
 
   const totalPages = useMemo(
     () => Math.max(1, Math.ceil(total / pageSize)),
@@ -166,12 +169,17 @@ export default function AuditLogsPage() {
   );
 
   const detailVisible = !!selectedLog;
-  const showClearButton = searchQuery || filters.action || filters.entity || filters.startDate || filters.endDate;
+  const showClearButton =
+    searchQuery || filters.action || filters.entity || filters.startDate || filters.endDate;
 
   return (
     <PageShell
       title="Audit Logs"
-      description={loading ? "Loading…" : `${total.toLocaleString()} records`}
+      description={
+        loading
+          ? "Loading…"
+          : `${total.toLocaleString()} ${showClearButton ? "matching " : ""}records`
+      }
       actions={
         <>
           <Button
@@ -198,8 +206,8 @@ export default function AuditLogsPage() {
         <>
           <div className="toolbar">
             <ToolbarSearch
-              value={searchQuery}
-              onChange={setSearchQuery}
+              value={searchInput}
+              onChange={setSearchInput}
               placeholder="Search logs…"
               ariaLabel="Search audit logs"
               style={{ marginLeft: "auto", flex: "0 1 280px", minWidth: 0 }}

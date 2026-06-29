@@ -12,6 +12,7 @@ import {
   superAdminApi,
   changelogAdminApi,
   featureFlagsAdminApi,
+  auditLogsApi,
 } from './settings.js';
 
 beforeEach(() => {
@@ -405,7 +406,50 @@ describe('featureFlagsAdminApi', () => {
     featureFlagsAdminApi.removeOverride('beta', 'sch001');
     expect(request).toHaveBeenCalledWith(
       '/feature-flags/admin/beta/override/sch001',
-      { method: 'DELETE' }
+      { method: 'DELETE' },
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// auditLogsApi
+// ---------------------------------------------------------------------------
+describe('auditLogsApi', () => {
+  it('getLogs with no params calls GET /audit-logs', () => {
+    auditLogsApi.getLogs();
+    expect(request).toHaveBeenCalledWith('/audit-logs');
+  });
+
+  it('getLogs forwards search and pagination as query string', () => {
+    auditLogsApi.getLogs({ search: 'Ananya', page: 2, limit: 25 });
+    expect(request).toHaveBeenCalledWith(
+      '/audit-logs?search=Ananya&page=2&limit=25',
+    );
+  });
+
+  it('getLog calls GET /audit-logs/:id', () => {
+    auditLogsApi.getLog('log-123');
+    expect(request).toHaveBeenCalledWith('/audit-logs/log-123');
+  });
+
+  it('exportLogs forwards format and search as query string', () => {
+    auditLogsApi.exportLogs({ format: 'csv', search: 'login' });
+    expect(request).toHaveBeenCalledWith('/audit-logs/export?format=csv&search=login');
+  });
+
+  it('purgeLogs calls POST /audit-logs/purge with retentionMonths', () => {
+    auditLogsApi.purgeLogs(24);
+    expect(request).toHaveBeenCalledWith('/audit-logs/purge', {
+      method: 'POST',
+      body: JSON.stringify({ retentionMonths: 24 }),
+    });
+  });
+
+  it('purgeLogs defaults retentionMonths to 12 when omitted', () => {
+    auditLogsApi.purgeLogs();
+    expect(request).toHaveBeenCalledWith('/audit-logs/purge', {
+      method: 'POST',
+      body: JSON.stringify({ retentionMonths: 12 }),
+    });
   });
 });
