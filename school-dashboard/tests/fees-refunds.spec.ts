@@ -372,4 +372,145 @@ test.describe('Fees — Refunds (E2E-TEST-24)', () => {
     // Should show amounts with rupee symbol or formatted numbers
     expect(bodyText).toMatch(/₹|2,000|1,500|500/);
   });
+
+  // [STUB-01] Bulk Approve: filter to pending, select two rows, click the
+  // bulk Approve button, and confirm BOTH /fees/refunds/:id/approve calls
+  // fire and the records flip to "approved" on the server. Regression guard
+  // for the "endpoint not wired yet" stub toast.
+  test('11) bulk approve issues one approve call per selected refund and updates status', async ({ page }) => {
+    const { state, refunds } = createRefundState();
+    const approveCalls: string[] = [];
+    await installRefundMockApi(page, state, refunds);
+
+    // Add a second pending refund so the Pending filter has two rows.
+    refunds.push({
+      _id: 'ref-004', id: 'ref-004',
+      studentId: refunds[0].studentId,
+      classId: CLASS_10A_ID,
+      amount: 750,
+      reason: 'Lab damage',
+      refundMode: 'cash',
+      status: 'pending',
+      remarks: '',
+      createdAt: '2026-03-12T10:00:00Z',
+      schoolId: SCHOOL_ID,
+    });
+
+    // Track approve calls — override the default 200 response to also record ids.
+    await page.route('**/api/fees/refunds/*/approve', async (route) => {
+      const url = new URL(route.request().url());
+      const id = url.pathname.split('/').slice(-2, -1)[0];
+      approveCalls.push(id);
+      const r = refunds.find((x) => x._id === id);
+      if (r) r.status = 'approved';
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(r || {}),
+      });
+    });
+
+    await page.goto('/fees/refunds');
+    await page.waitForLoadState('domcontentloaded');
+    await expect(page.getByText('Ananya Sharma').first()).toBeVisible({ timeout: 10_000 });
+
+    // Filter to Pending so the table only shows the two pending rows.
+    await page.getByRole('tab', { name: /^pending$/i }).click();
+    await expect(page.getByText(/2\s*record/i).first()).toBeVisible({ timeout: 3_000 });
+
+    // Select the two visible rows via their row checkboxes.
+    const rowCheckboxes = page.locator('tbody input[type="checkbox"]');
+    await expect(rowCheckboxes).toHaveCount(2);
+    await rowCheckboxes.nth(0).check();
+    await rowCheckboxes.nth(1).check();
+
+    // BulkActionBar should now be visible with the count.
+    await expect(page.getByText(/2\s*selected/i).first()).toBeVisible({ timeout: 3_000 });
+
+    // Click the bulk Approve button in the BulkActionBar.
+    const bulkApproveBtn = page
+      .locator('[data-coach="bulk-action-bar"]')
+      .getByRole('button', { name: /^approve$/i });
+    await expect(bulkApproveBtn).toBeVisible();
+    await bulkApproveBtn.click();
+
+    // Wait for both approve calls to hit the server.
+    await expect.poll(() => approveCalls.length, { timeout: 10_000 }).toBe(2);
+
+    // No "endpoint not wired yet" stub toast should appear.
+    await expect(page.getByText(/endpoint not wired yet/i)).toHaveCount(0);
+
+    // Both targeted ids should be in the captured approve calls.
+    expect(approveCalls.sort()).toEqual(
+      expect.arrayContaining(['ref-001', 'ref-004'].sort())
+    );
+  });
+
+  // [STUB-01] Bulk Reject: select a pending refund, click bulk Reject (which
+  // opens the existing reject modal for a reason), submit, and confirm one
+  // reject call per selected id with the typed reason in the body.
+  test('12) bulk reject collects a reason and issues one reject call per selected refund', async ({ page }) => {
+    const { state, refunds } = createRefundState();
+    const rejectBodies: Array<{ id: string; body: unknown }> = [];
+    await installRefundMockApi(page, state, refunds);
+
+    await page.route('**/api/fees/refunds/*/reject', async (route) => {
+      const url = new URL(route.request().url());
+      const id = url.pathname.split('/').slice(-2, -1)[0];
+      const raw = route.request().postData() || '{}';
+      let body: unknown = {};
+      try { body = JSON.parse(raw); } catch { /* keep {} */ }
+      rejectBodies.push({ id, body });
+      const r = refunds.find((x) => x._id === id);
+      if (r) r.status = 'rejected';
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(r || {}),
+      });
+    });
+
+    await page.goto('/fees/refunds');
+    await page.waitForLoadState('domcontentloaded');
+    await expect(page.getByText('Ananya Sharma').first()).toBeVisible({ timeout: 10_000 });
+
+    // Filter to Pending — only the one pending row is visible.
+    await page.getByRole('tab', { name: /^pending$/i }).click();
+    await expect(page.getByText(/1\s*record/i).first()).toBeVisible({ timeout: 3_000 });
+
+    // Select the single visible row.
+    const rowCheckboxes = page.locator('tbody input[type="checkbox"]');
+    await expect(rowCheckboxes).toHaveCount(1);
+    await rowCheckboxes.nth(0).check();
+
+    // Click the bulk Reject button in the BulkActionBar.
+    const bulkRejectBtn = page
+      .locator('[data-coach="bulk-action-bar"]')
+      .getByRole('button', { name: /^reject$/i });
+    await expect(bulkRejectBtn).toBeVisible();
+    await bulkRejectBtn.click();
+
+    // The existing reject modal should open and ask for a reason.
+    const modal = page.locator('[role="dialog"]').last();
+    await expect(modal).toBeVisible({ timeout: 5_000 });
+    const reasonField = modal.locator('textarea#reject-reason');
+    await expect(reasonField).toBeVisible();
+    await reasonField.fill('Bulk rejection — duplicate entries');
+
+    // Submit.
+    const confirmBtn = modal.getByRole('button', { name: /reject refund/i });
+    await confirmBtn.click();
+
+    // Wait for the reject call to hit the server.
+    await expect.poll(() => rejectBodies.length, { timeout: 10_000 }).toBe(1);
+
+    // No "endpoint not wired yet" stub toast.
+    await expect(page.getByText(/endpoint not wired yet/i)).toHaveCount(0);
+
+    // Body should carry the typed reason.
+    expect(rejectBodies[0].id).toBe('ref-001');
+    expect(rejectBodies[0].body).toMatchObject({
+      rejectionReason: 'Bulk rejection — duplicate entries',
+    });
+  });
 });

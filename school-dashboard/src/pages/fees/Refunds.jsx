@@ -39,6 +39,15 @@ export default function Refunds() {
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectingRefund, setRejectingRefund] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
+  // [STUB-01] Snapshot of the bulk selection at the moment the user clicks
+  // "Reject" in the BulkActionBar. Non-null only while the bulk-reject modal
+  // is open; lets handleConfirmReject() branch into the bulk path.
+  const [bulkRejectSelection, setBulkRejectSelection] = useState(null);
+  // [STUB-01] Sentinel id for the existing actionLoading state — when set, the
+  // reject modal's "isProcessing" check (actionLoading === refundId) treats the
+  // bulk operation as in-flight, disabling the modal buttons until it resolves.
+  const BULK_REJECT_ID = "__bulk__";
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
 
   const [newRefundOpen, setNewRefundOpen] = useState(false);
 
@@ -105,10 +114,129 @@ export default function Refunds() {
   const handleReject = (refund) => {
     setRejectingRefund(refund);
     setRejectReason("");
+    setBulkRejectSelection(null);
     setRejectModalOpen(true);
   };
 
+  // [STUB-01] Open the reject modal in bulk mode: snapshot the current selection
+  // so handleConfirmReject() can route the request through the bulk path.
+  const handleBulkRejectClick = (sel) => {
+    setRejectingRefund({ _id: BULK_REJECT_ID });
+    setBulkRejectSelection(sel);
+    setRejectReason("");
+    setRejectModalOpen(true);
+  };
+
+  // [STUB-01] Resolve the list of ids to act on. In "all matching" mode the
+  // hook contract gives us selectedIds=null, so we fall back to the locally
+  // filtered refunds (the dataset the user just opted to operate on).
+  const resolveBulkIds = (sel) => {
+    if (!sel) return [];
+    if (sel.allMatchingMode) {
+      return filteredRefunds.map((r) => String(r._id));
+    }
+    return (sel.selectedIds || []).map(String);
+  };
+
+  // [STUB-01] Bulk approve: loop feesApi.approveRefund over the selection.
+  // Uses Promise.allSettled so a single failure doesn't abort the rest of the
+  // batch, and reports success / partial / total-failure via toast.
+  const handleBulkApprove = async (sel) => {
+    const ids = resolveBulkIds(sel);
+    if (ids.length === 0) return;
+    setBulkActionLoading(true);
+    const results = await Promise.allSettled(
+      ids.map((id) => feesApi.approveRefund(id, {}))
+    );
+    const ok = results.filter((r) => r.status === "fulfilled").length;
+    const failed = results.length - ok;
+    try {
+      if (failed === 0) {
+        toast.success(
+          t(
+            "toast.success.refundsApproved",
+            `Approved ${ok} refund${ok === 1 ? "" : "s"}.`
+          )
+        );
+      } else if (ok === 0) {
+        const firstError = results.find((r) => r.status === "rejected");
+        toast.error(
+          firstError?.reason?.message ||
+            t(
+              "toast.error.failedToApproveRefunds",
+              "Failed to approve refunds"
+            )
+        );
+      } else {
+        toast.success(
+          t(
+            "toast.success.refundsApprovedPartial",
+            `Approved ${ok} refund${ok === 1 ? "" : "s"}, ${failed} failed.`
+          )
+        );
+      }
+    } finally {
+      setBulkActionLoading(false);
+      sel.clear();
+      if (ok > 0) fetchRefunds();
+    }
+  };
+
+  // [STUB-01] Bulk reject: same loop pattern as approve, but each call needs
+  // a reason — we collect one from the existing reject modal and apply it
+  // uniformly to every selected refund.
+  const handleBulkConfirmReject = async (reason) => {
+    const sel = bulkRejectSelection;
+    if (!sel) return;
+    const ids = resolveBulkIds(sel);
+    if (ids.length === 0) return;
+    setActionLoading(BULK_REJECT_ID);
+    const results = await Promise.allSettled(
+      ids.map((id) => feesApi.rejectRefund(id, { rejectionReason: reason }))
+    );
+    const ok = results.filter((r) => r.status === "fulfilled").length;
+    const failed = results.length - ok;
+    try {
+      if (failed === 0) {
+        toast.success(
+          t(
+            "toast.success.refundsRejected",
+            `Rejected ${ok} refund${ok === 1 ? "" : "s"}.`
+          )
+        );
+      } else if (ok === 0) {
+        const firstError = results.find((r) => r.status === "rejected");
+        toast.error(
+          firstError?.reason?.message ||
+            t(
+              "toast.error.failedToRejectRefunds",
+              "Failed to reject refunds"
+            )
+        );
+      } else {
+        toast.success(
+          t(
+            "toast.success.refundsRejectedPartial",
+            `Rejected ${ok} refund${ok === 1 ? "" : "s"}, ${failed} failed.`
+          )
+        );
+      }
+    } finally {
+      setActionLoading(null);
+      setRejectModalOpen(false);
+      setRejectingRefund(null);
+      setBulkRejectSelection(null);
+      setRejectReason("");
+      sel.clear();
+      if (ok > 0) fetchRefunds();
+    }
+  };
+
   const handleConfirmReject = async () => {
+    if (bulkRejectSelection) {
+      await handleBulkConfirmReject(rejectReason.trim());
+      return;
+    }
     if (!rejectingRefund) return;
     const reason = rejectReason.trim();
     if (!reason) {
@@ -123,6 +251,7 @@ export default function Refunds() {
       toast.success(t("toast.success.refundRejected", "Refund rejected"));
       setRejectModalOpen(false);
       setRejectingRefund(null);
+      setBulkRejectSelection(null);
       setRejectReason("");
       fetchRefunds();
     } catch (error) {
@@ -334,6 +463,9 @@ export default function Refunds() {
           selection={selection}
           totalMatching={filteredRefunds.length}
           t={t}
+          onBulkApprove={handleBulkApprove}
+          onBulkReject={handleBulkRejectClick}
+          bulkActionLoading={bulkActionLoading}
         />
 
         <RefundsList
@@ -405,6 +537,7 @@ export default function Refunds() {
         onClose={() => {
           setRejectModalOpen(false);
           setRejectingRefund(null);
+          setBulkRejectSelection(null);
           setRejectReason("");
         }}
         onConfirm={handleConfirmReject}
