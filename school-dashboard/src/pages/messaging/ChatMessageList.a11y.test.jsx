@@ -7,8 +7,8 @@
  * via vitest-axe. They guard the fixes applied in DK-1007 (labels, focus order,
  * ARIA roles, motion) and catch regressions as the module evolves.
  */
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { render, screen, cleanup } from "@testing-library/react";
 import { axe } from "vitest-axe";
 
 vi.mock("../../../components/ui", () => ({
@@ -137,12 +137,19 @@ function renderList(props = {}) {
       onOpenNewChatModal={vi.fn()}
       isMobile={false}
       onBack={null}
+      onLoadOlder={vi.fn()}
+      loadingOlder={false}
+      hasMoreOlder={false}
       {...props}
     />
   );
 }
 
 describe("ChatMessageList accessibility", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
   it("has no detectable axe violations with populated data", async () => {
     const { container } = renderList();
 
@@ -178,5 +185,27 @@ describe("ChatMessageList accessibility", () => {
 
     const liveText = screen.getByText(/typing/);
     expect(liveText.parentElement).toHaveAttribute("aria-live", "polite");
+  });
+
+  // PAG-06: a load-older sentinel appears above the list when hasMoreOlder
+  // is true so the IntersectionObserver in the component can fetch the next
+  // page when the user scrolls up.
+  it("shows a load-older sentinel when hasMoreOlder is true", () => {
+    renderList({ hasMoreOlder: true });
+
+    expect(screen.getByTestId("load-older-sentinel")).toBeInTheDocument();
+    expect(screen.getByText(/Scroll up for older messages/i)).toBeInTheDocument();
+  });
+
+  it("announces the loading state when a fetch is in flight", () => {
+    renderList({ hasMoreOlder: true, loadingOlder: true });
+
+    expect(screen.getByText(/Loading older messages/i)).toBeInTheDocument();
+  });
+
+  it("hides the sentinel when there are no older pages", () => {
+    renderList({ hasMoreOlder: false, loadingOlder: false });
+
+    expect(screen.queryByTestId("load-older-sentinel")).not.toBeInTheDocument();
   });
 });

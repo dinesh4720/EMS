@@ -164,3 +164,64 @@ export function resolveSelectedIds(selectedKeys, filteredItems) {
   if (selectedKeys === 'all') return filteredItems.map((s) => String(s.id));
   return Array.from(selectedKeys);
 }
+
+// PAG-04 (SCH-102): real server pagination. The backend caps `limit` at
+// MAX_STUDENTS_LIST_PAGE_SIZE per page, so anything bigger would be silently
+// clamped server-side anyway. Mirroring the cap on the client keeps the UI
+// honest about what one page actually contains.
+export const MAX_STUDENTS_LIST_PAGE_SIZE = 100;
+
+/**
+ * Clamp a requested page size into the server-accepted range.
+ * - Drops non-finite / non-positive values down to the default.
+ * - Floors fractional values.
+ * - Caps at MAX_STUDENTS_LIST_PAGE_SIZE so the request matches what the
+ *   backend will return.
+ *
+ * @param {unknown} size
+ * @param {number} defaultSize
+ * @returns {number}
+ */
+export function clampPageSize(size, defaultSize) {
+  const n = Number(size);
+  const fallback = Number.isFinite(defaultSize) && defaultSize > 0 ? Math.floor(defaultSize) : MAX_STUDENTS_LIST_PAGE_SIZE;
+  if (!Number.isFinite(n) || n <= 0) return fallback;
+  return Math.min(Math.floor(n), MAX_STUDENTS_LIST_PAGE_SIZE);
+}
+
+// Filter keys whose changes should reset the students list back to page 1.
+// Anything NOT in this set runs client-side on the current page (e.g.
+// academicPerformance / attendance) and shouldn't trigger a server refetch.
+export const SERVER_FILTER_KEYS = Object.freeze([
+  'search',
+  'classId',
+  'feeStatus',
+  'status',
+  'academicYear',
+  'sortBy',
+  'sortOrder',
+]);
+
+/**
+ * Detect whether any server-side filter changed between two snapshots.
+ * Client-only filters (academicPerformance / attendance) are ignored — they
+ * run over the current page on the client and must not re-trigger a fetch.
+ *
+ * @param {Record<string, unknown>} prev
+ * @param {Record<string, unknown>} next
+ * @returns {boolean}
+ */
+export function serverFiltersChanged(prev = {}, next = {}) {
+  for (const key of SERVER_FILTER_KEYS) {
+    const a = prev[key];
+    const b = next[key];
+    if (Array.isArray(a) || Array.isArray(b)) {
+      const aStr = Array.isArray(a) ? a.join(',') : a ?? '';
+      const bStr = Array.isArray(b) ? b.join(',') : b ?? '';
+      if (aStr !== bStr) return true;
+      continue;
+    }
+    if ((a ?? '') !== (b ?? '')) return true;
+  }
+  return false;
+}

@@ -113,6 +113,9 @@ export default function ChatFull() {
     loadConversations,
     handleSelectConversation,
     startNewConversation,
+    loadOlderMessages,
+    loadingOlder,
+    hasMoreOlder,
     showNewChatModal,
     setShowNewChatModal,
     contactSearch,
@@ -438,6 +441,9 @@ export default function ChatFull() {
             onOpenNewChatModal={() => setShowNewChatModal(true)}
             isMobile={isMobileViewport}
             onBack={isMobileViewport ? handleBack : undefined}
+            onLoadOlder={loadOlderMessages}
+            loadingOlder={loadingOlder}
+            hasMoreOlder={hasMoreOlder}
           />
 
           {selectedConversation && (
