@@ -727,7 +727,7 @@ html.dark.scrollbar-visible * {
 :root {
   --panel-width-lg: 480px;     /* Calendar event drawer (calendar/index.jsx) */
   --panel-width-md: 400px;     /* Standard side panels */
-  --chart-height-lg: 300px;    /* Large chart areas (DashboardCharts) */
+  --chart-height-lg: 300px;    /* Large chart areas */
   --chart-height-md: 200px;    /* Medium chart areas (ChartSection) */
   --chart-height-sm: 160px;    /* Compact chart areas */
   --topbar-height: 44px;       /* Topbar — matches mt-11 (2.75rem) in App.jsx */

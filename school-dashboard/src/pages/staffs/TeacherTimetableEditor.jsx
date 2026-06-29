@@ -14,6 +14,7 @@ import {
   showErrorToast, showSuccessToast, showWarningToast, executeWithFeedback, formatConflictDetails,
 } from "../../utils/errorHandling";
 import { DEFAULT_PERIODS, TIMETABLE_DAYS } from "../../utils/constants";
+import toast from "react-hot-toast";
 import logger from "../../utils/logger";
 
 const days = TIMETABLE_DAYS;
@@ -428,13 +429,13 @@ export default function TeacherTimetableEditor({ teacherId, teacherName }) {
             const { action } = resolutionData;
             if (action === "remove_current") handleClearSlot();
             else if (action === "choose_different")
-              alert("Please select a different class or time slot to avoid the conflict.");
+              toast.error("Please select a different class or time slot to avoid the conflict.");
             else if (action === "remove_from_class")
-              alert(
+              toast.error(
                 `To resolve, go to ${resolutionData.resolution.className} timetable and remove the teacher from that slot.`
               );
             else if (action === "update_assignments")
-              alert("Please go to Staff Assignments to add this subject-class assignment.");
+              toast.error("Please go to Staff Assignments to add this subject-class assignment.");
             loadConflicts();
           }}
         />
