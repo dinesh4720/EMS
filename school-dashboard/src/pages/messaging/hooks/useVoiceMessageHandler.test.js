@@ -76,6 +76,10 @@ function makeVoiceRecordingState(overrides = {}) {
     audioContextRef: { current: null },
     animationFrameRef: { current: null },
     recordingDurationRef: { current: 0 },
+    // The hook assigns mediaRecorderRef.current on start and clears it in
+    // onstop; omitting it makes onstop throw "Cannot set properties of
+    // undefined (setting 'current')".
+    mediaRecorderRef: { current: null },
     ...overrides,
   };
 }
