@@ -149,17 +149,25 @@ export function ChatNotificationProvider({ children }) {
   useEffect(() => {
     if (!isAuthenticated || !user?.id) return;
 
+    // Ignore flag: when auth/user changes (or this provider unmounts) before the
+    // request resolves, drop the stale response so a slow earlier fetch can't
+    // overwrite the count for the current user.
+    let ignore = false;
+
     const fetchUnreadCount = async () => {
       try {
         const conversations = await chatService.getConversations();
+        if (ignore) return;
         const totalUnread = conversations.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0);
         setUnreadCount(totalUnread);
       } catch (error) {
-        logger.error('❌ Failed to fetch unread count:', error);
+        if (!ignore) logger.error('❌ Failed to fetch unread count:', error);
       }
     };
 
     fetchUnreadCount();
+
+    return () => { ignore = true; };
   }, [isAuthenticated, user?.id]);
 
   // Reset unread count when user visits chat page

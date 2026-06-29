@@ -20,7 +20,7 @@ export default function SearchInput({
     name,
     isLoading = false,
     onKeyDown,
-    className = "w-full sm:max-w-[250px] px-3 py-2 bg-surface rounded-lg border border-border-token hover:border-border-strong focus-within:border-gray-400 dark:focus-within:border-zinc-600 transition-all",
+    className = "w-full sm:max-w-[250px] px-3 py-2 bg-surface rounded-lg border border-border-token hover:border-border-strong focus-within:border-border-strong transition-all",
 }) {
     const location = useLocation();
 
@@ -34,7 +34,7 @@ export default function SearchInput({
     return (
         <div className={`flex items-center gap-2 ${className}`}>
             {isLoading ? (
-                <div className="w-4 h-4 border-2 border-gray-300 dark:border-zinc-600 border-t-teal-500 rounded-full animate-spin flex-shrink-0" />
+                <div className="w-4 h-4 border-2 border-border-token border-t-accent rounded-full animate-spin flex-shrink-0" />
             ) : (
                 <Search size={16} className="text-fg-faint flex-shrink-0" />
             )}
@@ -42,7 +42,7 @@ export default function SearchInput({
                 type="search"
                 name={name}
                 placeholder={placeholder}
-                className="flex-1 bg-transparent outline-none text-sm text-fg placeholder:text-gray-500 dark:placeholder:text-zinc-500"
+                className="flex-1 bg-transparent outline-none text-sm text-fg placeholder:text-fg-subtle"
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 onKeyDown={onKeyDown}
