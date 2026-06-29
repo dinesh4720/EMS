@@ -47,15 +47,20 @@ export default function DataCleanupSettings() {
     try {
       setLoading(true);
       setCountsError(false);
-      const data = await request("/settings/data-counts");
+      const data = await request("/data-cleanup/preview");
       if (cancelledRef.current) return;
-      if (data && typeof data === "object" && Object.keys(data).length > 0) {
+      // Backend contract: { counts: { <entity>: { label, description, models, total }, ... }, grandTotal }
+      // We read counts.<entity>.total. If the response is missing or malformed,
+      // counts stay at EMPTY_COUNTS (rendered as 0 with the error banner below)
+      // so the dangerous "Remove All Data" button stays gated by countsError.
+      const countsRoot = data?.counts;
+      if (countsRoot && typeof countsRoot === "object") {
         setCounts({
-          students: data.students ?? 0,
-          staff: data.staff ?? 0,
-          classes: data.classes ?? 0,
-          attendance: data.attendance ?? 0,
-          results: data.results ?? 0,
+          students: countsRoot.students?.total ?? 0,
+          staff: countsRoot.staff?.total ?? 0,
+          classes: countsRoot.classes?.total ?? 0,
+          attendance: countsRoot.attendance?.total ?? 0,
+          results: countsRoot.results?.total ?? 0,
         });
       }
     } catch {
@@ -107,18 +112,17 @@ export default function DataCleanupSettings() {
     try {
       setCleaning(true);
       const categories = Array.from(selected);
-      const response = await request("/settings/data-cleanup", {
+      const response = await request("/data-cleanup/execute", {
         method: "POST",
         body: JSON.stringify({ categories }),
       });
 
-      const movedTotal =
-        response?.moved ||
-        categories.reduce((sum, cat) => sum + (counts[cat] || 0), 0);
+      // Backend contract: { results: { <entity>: { label, deleted, total }, ... }, totalDeleted }
+      const movedTotal = response?.totalDeleted ?? 0;
+      const resultsRoot = response?.results || {};
       const categoryResults = {};
       categories.forEach((cat) => {
-        categoryResults[cat] =
-          response?.categories?.[cat] || counts[cat] || 0;
+        categoryResults[cat] = resultsRoot[cat]?.total ?? 0;
       });
 
       setResult({

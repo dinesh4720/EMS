@@ -64,8 +64,18 @@ export default function TodayView({ retrospectiveOverride = false }) {
             }
           }}
           onViewTomorrow={() => {
-            // Stub — no /classes?date= support in this PR
-            // TODO: query-string-driven date navigation in a follow-up
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const dateStr = tomorrow.toISOString().slice(0, 10);
+            setSearchParams(
+              (prev) => {
+                const next = new URLSearchParams(prev);
+                next.set("date", dateStr);
+                next.delete("period");
+                return next;
+              },
+              { replace: true }
+            );
           }}
         />
         <ByClassView />

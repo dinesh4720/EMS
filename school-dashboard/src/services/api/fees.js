@@ -49,6 +49,18 @@ export const intakeFormsApi = {
     const qs = p.toString();
     return request(`/form-submissions${qs ? `?${qs}` : ''}`);
   },
+  // Server-paginated submissions (PAG-16). Always sends page/limit so the
+  // backend returns the `{ data, pagination }` envelope — use this for the
+  // review queue. `getSubmissions` (bare array) stays for aggregate views.
+  listSubmissions: ({ page = 1, limit = 10, formId, reviewStatus } = {}, options = {}) => {
+    const p = new URLSearchParams();
+    p.set('page', page);
+    p.set('limit', limit);
+    if (formId) p.set('formId', formId);
+    if (reviewStatus) p.set('reviewStatus', reviewStatus);
+    const url = `/form-submissions?${p.toString()}`;
+    return options?.signal ? request(url, { signal: options.signal }) : request(url);
+  },
   getSubmission: (id) => request(`/form-submissions/${id}`),
   reviewSubmission: (id, data) => request(`/form-submissions/${id}/review`, { method: 'PUT', body: JSON.stringify(data) }),
   requestEdit: (id, data) => request(`/form-submissions/${id}/request-edit`, {
@@ -71,7 +83,10 @@ export const notificationsApi = {
     const query = params ? new URLSearchParams(params).toString() : '';
     return request(`/notifications${query ? `?${query}` : ''}`);
   },
-  getUnreadCount: () => request('/notifications/unread-count'),
+  getUnreadCount: (options) =>
+    options?.signal
+      ? request('/notifications/unread-count', { signal: options.signal })
+      : request('/notifications/unread-count'),
   markAsRead: (id) => request(`/notifications/${id}/read`, { method: 'PUT' }),
   markAllAsRead: () => request('/notifications/read-all', { method: 'PUT' }),
   delete: (id) => request(`/notifications/${id}`, { method: 'DELETE' }),
@@ -135,9 +150,36 @@ export const feesApi = {
   },
 
   // Refunds
-  getRefunds: (filters) => {
-    const params = new URLSearchParams(filters).toString();
-    return request(`/fees/refunds${params ? `?${params}` : ''}`);
+  // Server-paginated since PAG-17 (was fetch-all + client slicing). Returns
+  // { refunds, pagination }; the bare-array shape is normalized for callers
+  // that haven't migrated yet.
+  getRefunds: async (filters) => {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          params.set(key, value);
+        }
+      });
+    }
+    const qs = params.toString();
+    const res = await request(`/fees/refunds${qs ? `?${qs}` : ''}`);
+    if (Array.isArray(res)) return { refunds: res, pagination: null };
+    return { refunds: res?.refunds ?? [], pagination: res?.pagination ?? null };
+  },
+  // Refunds-page KPI summary (PAG-17) — total refund amount + per-status
+  // counts computed over the FULL filtered dataset, not the loaded page.
+  getRefundsSummary: (filters = {}) => {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          params.set(key, value);
+        }
+      });
+    }
+    const qs = params.toString();
+    return request(`/fees/refunds/summary${qs ? `?${qs}` : ''}`);
   },
   getRefundById: (id) => request(`/fees/refunds/${id}`),
   createRefund: (data) => request('/fees/refunds', { method: 'POST', body: JSON.stringify(data) }),

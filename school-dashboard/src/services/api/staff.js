@@ -42,6 +42,18 @@ export const studentsApi = {
       }
     };
   },
+  /**
+   * Bulk-fetch every student matching the given scope (all students when no
+   * `classId` is provided; otherwise every student of one class). Internally
+   * walks every page in a tight loop — at ~3k students with the default 100/page
+   * cap this is ~30 sequential round-trips, and the app-context used to re-run
+   * the loop after every student create/update/delete.
+   *
+   * [PAG-05] Do NOT call this from app-shell hydration. Per-screen pages must
+   * fetch their own page via `studentsApi.list` + `usePaginatedQuery`. Reserve
+   * `getAll` for narrow scopes where the full result set is small and bounded
+   * (e.g. one classId, or a CSV duplicate check on import).
+   */
   getAll: async (classIdOrOptions, { signal } = {}) => {
     let params = {};
     let skipCache = false;
@@ -83,7 +95,7 @@ export const studentsApi = {
   getResults: (id, academicYear) => request(`/students/${id}/results${academicYear ? `?academicYear=${academicYear}` : ''}`),
   getRemarks: (id, category) => request(`/students/${id}/remarks${category && category !== 'all' ? `?category=${category}` : ''}`),
   addDocument: (id, data) => request(`/students/${id}/documents`, { method: 'POST', body: JSON.stringify(data) }),
-  deleteDocument: (id, documentIndex) => request(`/students/${id}/documents/${documentIndex}`, { method: 'DELETE' }),
+  deleteDocument: (id, docId) => request(`/students/${id}/documents/${docId}`, { method: 'DELETE' }),
   fixDocuments: (id) => request(`/students/${id}/fix-documents`, { method: 'POST' }),
   sendReminder: (id, data) => request(`/students/${id}/send-reminder`, { method: 'POST', body: JSON.stringify(data) }),
   sendRemindersBulk: (data) => request('/students/send-reminders-bulk', { method: 'POST', body: JSON.stringify(data) }),

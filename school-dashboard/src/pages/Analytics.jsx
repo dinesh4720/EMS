@@ -154,6 +154,40 @@ const DATE_PRESETS = [
   { key: 'last-90-days', label: 'Last 90 Days' },
 ];
 
+// Scoped date-range toggle — drives ONLY the attendance-trend fetch on this page.
+// The other cards (distribution, fees, staff, KPIs) read current-state snapshots
+// from AppContext and have no meaningful time-window interpretation, so the
+// toggle lives next to the one card it actually filters (MOCK-08).
+const DatePresetToggle = ({ value, onChange, size = 'sm' }) => {
+  const pad = size === 'sm' ? 'px-2 py-1 text-xs' : 'px-3 py-1.5 text-sm';
+  return (
+    <div
+      className="flex flex-wrap gap-1"
+      role="group"
+      aria-label="Attendance date range presets"
+    >
+      {DATE_PRESETS.map((preset) => {
+        const active = value === preset.key;
+        return (
+          <button
+            key={preset.key}
+            type="button"
+            onClick={() => onChange(preset.key)}
+            aria-pressed={active}
+            className={`${pad} rounded-md border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 ${
+              active
+                ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
+                : 'bg-white dark:bg-zinc-900 text-fg-muted border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600'
+            }`}
+          >
+            {preset.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+};
+
 export default function Analytics() {
   const { t } = useTranslation();
   const { students, staff, classesWithTeachers, feeDefaulters, schoolSettings, currentAcademicYear } = useApp();
@@ -436,25 +470,6 @@ export default function Analytics() {
         </p>
       </div>
 
-      {/* Date Preset Selector */}
-      <div className="flex flex-wrap gap-2 mb-6" role="group" aria-label="Date range presets">
-        {DATE_PRESETS.map((preset) => (
-          <button
-            key={preset.key}
-            type="button"
-            onClick={() => setDatePreset(preset.key)}
-            aria-pressed={datePreset === preset.key}
-            className={`px-3 py-1.5 text-sm rounded-md border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/30 ${
-              datePreset === preset.key
-                ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
-                : 'bg-white dark:bg-zinc-900 text-fg-muted border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600'
-            }`}
-          >
-            {preset.label}
-          </button>
-        ))}
-      </div>
-
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
         <div className="xl:col-span-8 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -566,12 +581,15 @@ export default function Analytics() {
             <ChartCard
               title={t('pages.attendanceTrends1')}
               description={t('pages.averageByWeekday')}
+              actions={
+                <DatePresetToggle value={datePreset} onChange={setDatePreset} />
+              }
               height={200}
               isLoading={attendanceSummary.loading}
               isEmpty={!attendanceSummary.loading && attendanceSummary.totalRecordedDays === 0 && !attendanceSummary.error}
               error={attendanceSummary.error}
               emptyTitle="No attendance records"
-              emptyDescription="No attendance records found for the current academic year."
+              emptyDescription="No attendance records found for the selected date range."
             >
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart

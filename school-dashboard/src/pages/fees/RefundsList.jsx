@@ -1,5 +1,6 @@
 import RefundListRow from "./RefundListRow";
 import RefundsEmptyState from "./RefundsEmptyState";
+import { SkeletonRow } from "../../components/ui/Skeleton";
 
 const ITEMS_PER_LOAD = 10;
 
@@ -66,15 +67,20 @@ export default function RefundsList({
 
       <div
         ref={loaderRef}
-        className="flex justify-center py-4 bg-surface-2 border-t border-border-token"
+        className="py-3 bg-surface-2 border-t border-border-token"
       >
         {isLoadingMore && (
-          <span className="h-4 w-4 rounded-full border-2 border-border-strong border-t-accent animate-spin" />
+          <div className="px-3" aria-hidden="true">
+            <SkeletonRow />
+            <SkeletonRow />
+          </div>
         )}
         {!hasMore && totalMatching > ITEMS_PER_LOAD && (
-          <span className="text-fg-faint text-xs">
-            {t("pages.allRefundsLoaded")}
-          </span>
+          <div className="flex justify-center">
+            <span className="text-fg-faint text-xs">
+              {t("pages.allRefundsLoaded")}
+            </span>
+          </div>
         )}
       </div>
     </>

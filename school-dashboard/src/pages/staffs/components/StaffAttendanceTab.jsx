@@ -177,7 +177,7 @@ export default function StaffAttendanceTab({ staffId }) {
             </div>
 
             {record?.inTime && record.inTime !== '-' && (
-              <div className="text-[10px] opacity-75 mt-1">
+              <div className="text-2xs opacity-75 mt-1">
                 {record.inTime}
               </div>
             )}

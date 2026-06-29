@@ -72,6 +72,8 @@ export const settingsApi = {
   // Communication Settings
   getCommunicationSettings: (options) => options?.signal ? request('/settings/communication', { signal: options.signal }) : request('/settings/communication'),
   updateCommunicationSettings: (data, options) => request('/settings/communication', { method: 'PUT', body: JSON.stringify(data), ...(options?.signal ? { signal: options.signal } : {}) }),
+  testEmail: (data) => request('/settings/communication/test-email', { method: 'POST', body: JSON.stringify(data) }),
+  testSms: (data) => request('/settings/communication/test-sms', { method: 'POST', body: JSON.stringify(data) }),
 
   // Email Templates
   getEmailTemplates: () => request('/settings/email-templates'),

@@ -21,16 +21,18 @@ export default function ComposerNav({
           <span className="cnav__num" aria-hidden>
             {s.done ? <Check size={10} strokeWidth={2.5} aria-hidden /> : s.index + 1}
           </span>
-          <span style={{ flex: 1, textAlign: "left" }}>{s.label}</span>
+          <span className="cnav__label">
+            {s.label}
+          </span>
           {s.countLabel && <span className="cnav__count">{s.countLabel}</span>}
         </button>
       ))}
 
-      <div style={{ marginTop: "auto", paddingTop: 16 }} />
+      <div className="composer__nav-spacer" />
       {!helpDismissed && (
-        <div className="help-banner" style={{ margin: "8px 4px 0", fontSize: 11.5 }}>
-          <Sparkles size={12} style={{ marginTop: 1, flexShrink: 0 }} aria-hidden />
-          <span style={{ flex: 1, minWidth: 0 }}>
+        <div className="help-banner help-banner--sm">
+          <Sparkles size={12} className="help-banner__icon" aria-hidden />
+          <span className="help-banner__text">
             Fill what you have — most fields can be edited later from the
             student profile.
           </span>

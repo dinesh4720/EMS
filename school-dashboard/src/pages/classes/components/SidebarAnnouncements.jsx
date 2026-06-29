@@ -53,7 +53,7 @@ export function SidebarAnnouncements({ announcements, onSend, loading }) {
             <div className="flex items-start justify-between gap-2">
               <p className="text-xs font-medium text-fg line-clamp-1">{a.title}</p>
               {a.priority && a.priority !== 'normal' && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 font-medium ${priorityColors[a.priority] || priorityColors.normal}`}>
+                <span className={`text-2xs px-1.5 py-0.5 rounded-full flex-shrink-0 font-medium ${priorityColors[a.priority] || priorityColors.normal}`}>
                   {a.priority}
                 </span>
               )}

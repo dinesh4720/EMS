@@ -3,7 +3,7 @@ import { Users } from "lucide-react";
 import PhotoAvatar from "../../../components/PhotoAvatar";
 import { toTodayDateString } from "../../../utils/dateFormatter";
 import { isBirthdayToday } from "../formatters";
-import EmptyState from "./EmptyState";
+import EmptyState from "../../../components/ui/EmptyState";
 
 function PersonRow({ name, sub, badge, photo, type }) {
   return (
@@ -143,11 +143,6 @@ export default function PeopleSection({ staff, students, staffAttendance, classe
                     photo={s.picture || s.photo}
                     type="staff"
                     sub={staffSub(s)}
-                    badge={
-                      <button type="button" className="btn btn--xs btn--ghost">
-                        Wish
-                      </button>
-                    }
                   />
                 ))}
               </>
@@ -170,7 +165,7 @@ export default function PeopleSection({ staff, students, staffAttendance, classe
             {absentStaff.length === 0 &&
               staffBirthdays.length === 0 &&
               presentStaff.length === 0 && (
-                <EmptyState icon={Users} message="No staff data available" />
+                <EmptyState icon={Users} title="No staff data available" size="sm" className="flex-1" />
               )}
           </div>
         ) : (
@@ -185,11 +180,6 @@ export default function PeopleSection({ staff, students, staffAttendance, classe
                     photo={s.photo || s.picture}
                     type="student"
                     sub={studentClassName(s)}
-                    badge={
-                      <button type="button" className="btn btn--xs btn--ghost">
-                        Wish
-                      </button>
-                    }
                   />
                 ))}
               </>
@@ -227,7 +217,7 @@ export default function PeopleSection({ staff, students, staffAttendance, classe
                 </>
               )}
             {activeStudents.length === 0 && (
-              <EmptyState icon={Users} message="No student data available" />
+              <EmptyState icon={Users} title="No student data available" size="sm" className="flex-1" />
             )}
           </div>
         )}

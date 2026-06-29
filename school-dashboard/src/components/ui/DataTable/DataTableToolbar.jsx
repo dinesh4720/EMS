@@ -65,7 +65,7 @@ export function DataTableToolbar({
               <Button variant="outline" size="sm" icon={<Filter size={14} />}>
                 Filters
                 {activeFilterCount > 0 ? (
-                  <span className="ml-1 inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-[var(--color-primary)] text-[10px] font-semibold text-white">
+                  <span className="ml-1 inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-[var(--color-primary)] text-2xs font-semibold text-white">
                     {activeFilterCount}
                   </span>
                 ) : null}

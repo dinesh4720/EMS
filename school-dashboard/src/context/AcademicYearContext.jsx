@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 
 const STORAGE_KEY = "ems_selected_academic_year";
 
@@ -46,8 +46,15 @@ export function AcademicYearProvider({ children }) {
     return () => window.removeEventListener("auth-session-cleared", handleSessionCleared);
   }, []);
 
+  // Memoize so consumers only re-render when the selected year actually changes
+  // (setSelectedAcademicYear is already stable via useCallback).
+  const value = useMemo(
+    () => ({ storedYear, setSelectedAcademicYear }),
+    [storedYear, setSelectedAcademicYear]
+  );
+
   return (
-    <AcademicYearContext.Provider value={{ storedYear, setSelectedAcademicYear }}>
+    <AcademicYearContext.Provider value={value}>
       {children}
     </AcademicYearContext.Provider>
   );

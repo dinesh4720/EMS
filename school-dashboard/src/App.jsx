@@ -55,8 +55,10 @@ const StudentPromotionPage = lazyWithRetry(() => import("./pages/students/Studen
 const TransferCertificatePage = lazyWithRetry(() => import("./pages/students/TransferCertificatePage"));
 const ReportsPage = lazyWithRetry(() => import("./pages/reports"));
 const DataToolsPage = lazyWithRetry(() => import("./pages/data-tools"));
-const StyleGuidePage = lazyWithRetry(() => import("./pages/StyleGuide"));
-const IAPage = lazyWithRetry(() => import("./pages/IA"));
+// Internal dev-only pages. Guarding the dynamic import on the statically-known
+// `isDev` flag lets the bundler drop these chunks entirely from production builds.
+const StyleGuidePage = isDev ? lazyWithRetry(() => import("./pages/StyleGuide")) : null;
+const IAPage = isDev ? lazyWithRetry(() => import("./pages/IA")) : null;
 const AuditLogsPage = lazyWithRetry(() => import("./pages/audit-logs"));
 
 // Lazy load components that aren't needed on initial render
@@ -488,16 +490,21 @@ function AuthenticatedApp() {
                         </PermissionGuard>
                       </RouteEB>
                     } />
-                    <Route path="/style-guide" element={
-                      <RouteEB>
-                        <StyleGuidePage />
-                      </RouteEB>
-                    } />
-                    <Route path="/ia" element={
-                      <RouteEB>
-                        <IAPage />
-                      </RouteEB>
-                    } />
+                    {/* Internal dev-only routes — not registered in production builds */}
+                    {isDev && (
+                      <>
+                        <Route path="/style-guide" element={
+                          <RouteEB>
+                            <StyleGuidePage />
+                          </RouteEB>
+                        } />
+                        <Route path="/ia" element={
+                          <RouteEB>
+                            <IAPage />
+                          </RouteEB>
+                        } />
+                      </>
+                    )}
                     {/* 404 catch-all for authenticated users */}
                     <Route path="*" element={
                       <div className="flex flex-col items-center justify-center py-24 gap-4">

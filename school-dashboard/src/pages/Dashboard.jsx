@@ -7,6 +7,7 @@ import { useAuth } from "../context/AuthContext";
 import useDashboardData from "./dashboard/useDashboardData";
 import SubstitutionAlertPanel from "../components/SubstitutionAlertPanel";
 import NpsSurveyModal from "../components/NpsSurveyModal";
+import { toTodayDateString } from "../utils/dateFormatter";
 
 import {
   DEFAULT_WIDGET_ORDER,
@@ -27,6 +28,7 @@ import {
 import PeopleSection from "./dashboard/sections/PeopleSection";
 import DashboardSkeleton from "./dashboard/skeleton/DashboardSkeleton";
 import { compactINR } from "./dashboard/formatters";
+import { formatUpcomingDayLabel } from "./dashboard/dashboardHelpers";
 
 const LEGACY_SECTION_MAP = {
   yourDay: "yourDay",
@@ -70,7 +72,7 @@ function readPersistedVisible() {
 
 function Dashboard() {
   const navigate = useNavigate();
-  const { classes, currentAcademicYear, staff, staffAttendance, students } = useApp();
+  const { classes, currentAcademicYear, staff, staffAttendance, students, events } = useApp();
   const { user: authUser } = useAuth();
 
   const {
@@ -81,6 +83,8 @@ function Dashboard() {
     recentAnnouncements,
     feeCollectionData,
     dashboardLoading,
+    urgentSubstitution,
+    upcomingPtm,
     reload,
   } = useDashboardData({
     classes,
@@ -120,6 +124,14 @@ function Dashboard() {
     setTimeout(() => setRefreshing(false), 600);
   };
 
+  const dismissPriority = useCallback((id) => {
+    setDismissed((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  }, []);
+
   const initialLoading = dashboardLoading;
 
   const firstName = (authUser?.name || "").trim().split(" ")[0] || "there";
@@ -153,51 +165,105 @@ function Dashboard() {
         onPrimary: () => navigate("/fees"),
       });
     }
-    items.push({
-      id: "coverage",
-      kind: "warn",
-      title: "Period 3 · 10-B unstaffed",
-      body: "Substitute not assigned",
-      meta: "10:30 – 11:15",
-      primary: "Assign substitute",
-      onPrimary: () => navigate("/staffs"),
-    });
-    items.push({
-      id: "ptm",
-      kind: "info",
-      title: "PTM agenda · Dec 20",
-      body: "Finalize discussion points",
-      meta: "3 days left",
-      primary: "Open agenda",
-      onPrimary: () => navigate("/ptm"),
-    });
+    if (urgentSubstitution) {
+      const alert = urgentSubstitution.alert;
+      const classLabel = alert?.className || "a class";
+      const periodLabel = alert?.periodName || (alert?.period ? `Period ${alert.period}` : "Period");
+      const absentName = alert?.absentTeacherId?.name || alert?.absentTeacher?.name;
+      const subName =
+        typeof alert?.substituteTeacherId === "object"
+          ? alert.substituteTeacherId?.name
+          : null;
+      if (urgentSubstitution.unassigned) {
+        items.push({
+          id: `coverage-${alert?._id || "current"}`,
+          kind: "warn",
+          title: `${periodLabel} · ${classLabel} unstaffed`,
+          body: absentName ? `${absentName} absent · Substitute not assigned` : "Substitute not assigned",
+          meta: alert?.timeSlot || "—",
+          primary: "Assign substitute",
+          onPrimary: () => navigate("/staffs"),
+        });
+      } else {
+        items.push({
+          id: `coverage-${alert?._id || "current"}`,
+          kind: "info",
+          title: `${periodLabel} · ${classLabel}`,
+          body: absentName && subName ? `${absentName} → ${subName}` : "Substitute assigned",
+          meta: alert?.timeSlot || "—",
+          primary: "View substitution",
+          onPrimary: () => navigate("/staffs"),
+        });
+      }
+    }
+    if (upcomingPtm) {
+      const ptmDate = upcomingPtm.date || upcomingPtm.scheduledFor;
+      const isOngoing = String(upcomingPtm.status || "").toLowerCase() === "ongoing";
+      const classLabel = upcomingPtm.classId?.name
+        ? `${upcomingPtm.classId.name}${upcomingPtm.classId.section ? `-${upcomingPtm.classId.section}` : ""}`
+        : null;
+      items.push({
+        id: `ptm-${upcomingPtm._id || "current"}`,
+        kind: isOngoing ? "warn" : "info",
+        title: `PTM agenda · ${isOngoing ? "today" : formatUpcomingDayLabel(ptmDate)}`,
+        body: classLabel || upcomingPtm.title || "Finalize discussion points",
+        meta: isOngoing ? "Ongoing now" : formatUpcomingDayLabel(ptmDate),
+        primary: "Open agenda",
+        onPrimary: () => navigate("/ptm"),
+      });
+    }
     return items.filter((item) => !dismissed.has(item.id)).slice(0, 3);
-  }, [feeDefaultersCount, paymentSnapshot.totalPending, navigate, dismissed]);
+  }, [feeDefaultersCount, paymentSnapshot.totalPending, navigate, dismissed, urgentSubstitution, upcomingPtm]);
 
   const pendingCount = priorities.length;
 
-  const schedule = useMemo(
-    () => [
-      { time: "09:00", title: "Morning assembly", meta: "Auditorium · You're addressing Grade 9–12", mine: true },
-      { time: "10:30", title: "Walk-through · Grade 6 wing", meta: "With the coordinator" },
-      { time: "11:30", title: "Parent meet · 10-A", meta: "Concern: math grades · 30 min", mine: true },
-      { time: "13:30", title: "Staff briefing · 7 leads", meta: "Weekly sync · Conf room A" },
-      { time: "15:30", title: "Annual day rehearsal", meta: "Auditorium · Grade 9–12 · drop-in" },
-    ],
-    []
-  );
+  const schedule = useMemo(() => {
+    const todayKey = toTodayDateString();
+    return (events || [])
+      .filter((event) => event && event.date === todayKey)
+      .map((event) => {
+        const time = event.allDay
+          ? "All day"
+          : event.startTime || "—";
+        const metaParts = [];
+        if (!event.allDay && event.endTime) {
+          metaParts.push(`${event.startTime || "—"} – ${event.endTime}`);
+        }
+        if (event.type) {
+          metaParts.push(event.type.charAt(0).toUpperCase() + event.type.slice(1));
+        }
+        if (event.description) {
+          metaParts.push(event.description);
+        }
+        return {
+          time,
+          title: event.title || "Untitled event",
+          meta: metaParts.join(" · "),
+        };
+      })
+      .sort((left, right) => {
+        if (left.time === "All day") return -1;
+        if (right.time === "All day") return 1;
+        return left.time.localeCompare(right.time);
+      });
+  }, [events]);
 
   const nowIndex = useMemo(() => {
     const minutes = now.getHours() * 60 + now.getMinutes();
     const starts = schedule.map((row) => {
-      const [hr, min] = row.time.split(":").map(Number);
+      const parts = row.time.split(":");
+      if (parts.length !== 2) return null;
+      const hr = Number(parts[0]);
+      const min = Number(parts[1]);
+      if (!Number.isFinite(hr) || !Number.isFinite(min)) return null;
       return hr * 60 + min;
     });
     let idx = -1;
     for (let i = 0; i < starts.length; i += 1) {
-      if (minutes >= starts[i]) idx = i;
+      if (starts[i] != null && minutes >= starts[i]) idx = i;
     }
     if (idx < 0) return -1;
+    if (starts[idx] == null) return -1;
     return minutes - starts[idx] < 90 ? idx : -1;
   }, [now, schedule]);
 
@@ -246,7 +312,7 @@ function Dashboard() {
         case "yourDay":
           return renderYourDay({ schedule, nowIndex });
         case "actions":
-          return renderActions({ priorities, pendingCount });
+          return renderActions({ priorities, pendingCount, onDismiss: dismissPriority });
         case "people":
           return (
             <PeopleSection
@@ -280,6 +346,7 @@ function Dashboard() {
       nowIndex,
       priorities,
       pendingCount,
+      dismissPriority,
       navigate,
     ]
   );
@@ -341,10 +408,6 @@ function Dashboard() {
 
       <div className="moments">
         <span className="moments__lab">Week</span>
-        <span>
-          <b>3</b> inter-school finals
-        </span>
-        <span className="moments__dot">·</span>
         <span>
           <b>
             {attendanceSnapshot.studentRate != null ? `${attendanceSnapshot.studentRate}%` : "—"}

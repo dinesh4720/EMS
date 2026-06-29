@@ -52,6 +52,19 @@ vi.mock("../../services/api", () => ({
     getAll: vi.fn(() => Promise.resolve(mockForms)),
     getAssignments: vi.fn(() => Promise.resolve(mockAssignments)),
     getSubmissions: vi.fn(() => Promise.resolve(mockSubmissions)),
+    listSubmissions: vi.fn(() =>
+      Promise.resolve({
+        data: mockSubmissions,
+        pagination: {
+          currentPage: 1,
+          totalPages: 1,
+          totalItems: mockSubmissions.length,
+          itemsPerPage: 10,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
+      })
+    ),
     getSubmission: vi.fn(() => Promise.resolve(mockSubmissions[0])),
   },
 }));

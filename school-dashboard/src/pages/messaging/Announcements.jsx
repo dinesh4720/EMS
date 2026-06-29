@@ -8,11 +8,9 @@ import { announcementsApi } from "../../services/api";
 import { useTranslation } from 'react-i18next';
 import {
   Card,
-  ErrorState,
   MinimalButton,
   SectionHeading,
   StatCard,
-  Skeleton,
 } from "../../components/ui";
 
 export default function Announcements({ isDrawerOpen, setIsDrawerOpen }) {
@@ -22,9 +20,8 @@ export default function Announcements({ isDrawerOpen, setIsDrawerOpen }) {
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [editAnnouncement, setEditAnnouncement] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [stats, setStats] = useState({ sent: 0, delivered: 0, scheduled: 0 });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [stats, setStats] = useState({ sentThisMonth: 0, totalDelivered: 0, scheduled: 0 });
+  const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
     if (isDrawerOpen) setShowCreateModal(true);
@@ -32,26 +29,21 @@ export default function Announcements({ isDrawerOpen, setIsDrawerOpen }) {
 
   useEffect(() => {
     let mounted = true;
-    if (refreshKey === 0) setLoading(true);
-    setError(null);
-    announcementsApi.getAll()
+    setStatsLoading(true);
+    announcementsApi.getStats()
       .then((data) => {
         if (!mounted) return;
-        const list = Array.isArray(data) ? data : (data?.announcements || []);
-        const sent = list.filter((item) => item.status === 'sent').length;
-        const scheduled = list.filter((item) => item.status === 'scheduled').length;
-        const delivered = list.reduce(
-          (sum, item) => sum + (item.deliveredCount || item.recipientCount || 0),
-          0,
-        );
-        setStats({ sent, delivered, scheduled });
+        setStats({
+          sentThisMonth: data?.sentThisMonth ?? 0,
+          totalDelivered: data?.totalDelivered ?? 0,
+          scheduled: data?.scheduled ?? 0,
+        });
       })
-      .catch((err) => {
+      .catch(() => {
         if (!mounted) return;
-        setError(err);
         toast.error(t('toast.error.failedToLoad'));
       })
-      .finally(() => { if (mounted) setLoading(false); });
+      .finally(() => { if (mounted) setStatsLoading(false); });
     return () => { mounted = false; };
   }, [refreshKey, t]);
 
@@ -85,8 +77,8 @@ export default function Announcements({ isDrawerOpen, setIsDrawerOpen }) {
   };
 
   const statCards = [
-    { label: 'Sent', value: stats.sent, subtext: 'Total sent', icon: Send, color: 'primary' },
-    { label: 'Delivered', value: stats.delivered.toLocaleString(), subtext: 'Total recipients', icon: Check, color: 'gray' },
+    { label: 'Sent', value: stats.sentThisMonth, subtext: 'This month', icon: Send, color: 'primary' },
+    { label: 'Delivered', value: stats.totalDelivered.toLocaleString(), subtext: 'All-time recipients', icon: Check, color: 'gray' },
     { label: 'Scheduled', value: stats.scheduled, subtext: 'Pending', icon: Clock, color: 'warning' },
   ];
 
@@ -97,11 +89,11 @@ export default function Announcements({ isDrawerOpen, setIsDrawerOpen }) {
           <StatCard
             key={stat.label}
             label={stat.label}
-            value={loading ? '—' : stat.value}
+            value={statsLoading ? '—' : stat.value}
             subtext={stat.subtext}
             icon={stat.icon}
             color={stat.color}
-            isLoading={loading}
+            isLoading={statsLoading}
           />
         ))}
       </div>
@@ -122,25 +114,12 @@ export default function Announcements({ isDrawerOpen, setIsDrawerOpen }) {
           </SectionHeading>
         </Card.Header>
         <div className="p-5">
-          {error ? (
-            <ErrorState
-              error={error}
-              onRetry={() => setRefreshKey((prev) => prev + 1)}
-            />
-          ) : loading ? (
-            <div className="space-y-3">
-              <Skeleton.Row />
-              <Skeleton.Row />
-              <Skeleton.Row />
-            </div>
-          ) : (
-            <AnnouncementsList
-              key={refreshKey}
-              onView={handleView}
-              onEdit={handleEdit}
-              onRefresh={() => setRefreshKey((prev) => prev + 1)}
-            />
-          )}
+          <AnnouncementsList
+            key={refreshKey}
+            onView={handleView}
+            onEdit={handleEdit}
+            onRefresh={() => setRefreshKey((prev) => prev + 1)}
+          />
         </div>
       </Card>
 

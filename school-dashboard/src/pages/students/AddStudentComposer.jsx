@@ -32,6 +32,11 @@ import {
   isoToDdmmyy,
 } from "./utils/studentFormValidation";
 import { FIELD_LABELS, FIELD_TO_SECTION } from "./utils/studentComposerFields";
+import {
+  readStudentDraft,
+  saveStudentDraft,
+  clearStudentDraft,
+} from "./utils/studentDraftStorage";
 import { validateFileType } from "../../utils/fileValidation";
 import logger from "../../utils/logger";
 
@@ -151,27 +156,19 @@ const AddStudentComposer = forwardRef(function AddStudentComposer(
     const current = JSON.stringify(form);
     setHasChanges(current !== initialFormSnapshot.current);
     if (isCreate && current !== initialFormSnapshot.current) {
-      try {
-        sessionStorage.setItem("student-form-draft", current);
-      } catch {
-        /* storage full */
-      }
+      saveStudentDraft(form);
     }
   }, [form, isCreate]);
 
-  // Restore draft for new students
+  // Restore draft for new students — only a fresh (within-TTL) draft is
+  // returned; stale/expired/corrupt drafts are purged by readStudentDraft.
   useEffect(() => {
     if (!isCreate) return;
-    try {
-      const draft = sessionStorage.getItem("student-form-draft");
-      if (draft) {
-        const parsed = JSON.parse(draft);
-        // Hydration is fine — useStudentFormState builds initial from initialData,
-        // and we merge any draft on top.
-        Object.entries(parsed).forEach(([k, v]) => set(k, v));
-      }
-    } catch {
-      /* corrupt — ignore */
+    const draft = readStudentDraft();
+    if (draft) {
+      // Hydration is fine — useStudentFormState builds initial from initialData,
+      // and we merge any draft on top.
+      Object.entries(draft).forEach(([k, v]) => set(k, v));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -265,11 +262,7 @@ const AddStudentComposer = forwardRef(function AddStudentComposer(
   };
   const confirmClose = () => {
     setShowConfirmClose(false);
-    try {
-      sessionStorage.removeItem("student-form-draft");
-    } catch {
-      /* no-op */
-    }
+    clearStudentDraft();
     onClose();
   };
   useImperativeHandle(ref, () => ({
@@ -367,11 +360,7 @@ const AddStudentComposer = forwardRef(function AddStudentComposer(
         onSave: async (payload) => {
           try {
             const result = await onSave(payload);
-            try {
-              sessionStorage.removeItem("student-form-draft");
-            } catch {
-              /* no-op */
-            }
+            clearStudentDraft();
             return result;
           } catch (err) {
             const { fields, message } = mapServerErrors(err);
@@ -416,8 +405,7 @@ const AddStudentComposer = forwardRef(function AddStudentComposer(
         <div className="composer__head">
           <button
             type="button"
-            className="iconbtn"
-            style={{ width: 24, height: 24 }}
+            className="iconbtn iconbtn--24"
             onClick={handleClose}
             aria-label="Close"
           >
@@ -425,10 +413,10 @@ const AddStudentComposer = forwardRef(function AddStudentComposer(
           </button>
           <div className="composer__crumbs">
             <span>Students</span>
-            <ChevronRight size={11} style={{ color: "var(--fg-faint)" }} aria-hidden />
+            <ChevronRight size={11} className="composer__crumb-sep" aria-hidden />
             <span className="here">{isCreate ? "New student" : "Edit student"}</span>
           </div>
-          <div style={{ flex: 1 }} />
+          <div className="cmp-spacer" />
           <span className="kbd">esc</span>
         </div>
 
@@ -540,10 +528,9 @@ const AddStudentComposer = forwardRef(function AddStudentComposer(
           isEdit={Boolean(initialData)}
           onCancel={handleClose}
           onSaveDraft={() => {
-            try {
-              sessionStorage.setItem("student-form-draft", JSON.stringify(form));
+            if (saveStudentDraft(form)) {
               toast.success("Draft saved locally");
-            } catch {
+            } else {
               toast.error("Couldn't save draft");
             }
           }}

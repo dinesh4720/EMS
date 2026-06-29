@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { Sparkles } from 'lucide-react';
 import './AiAssistantPanel.css';
 import { useTranslation } from 'react-i18next';
@@ -60,15 +60,20 @@ export const AiAssistantProvider = ({ children }) => {
   const closePanel = useCallback(() => setIsOpen(false), []);
   const togglePanel = useCallback(() => setIsOpen(prev => !prev), []);
 
-  const value = {
-    isOpen,
-    isIdle,
-    panelWidth,
-    setPanelWidth,
-    openPanel,
-    closePanel,
-    togglePanel,
-  };
+  // Memoize so consumers don't re-render on every provider render
+  // (setPanelWidth and the callbacks are already stable references).
+  const value = useMemo(
+    () => ({
+      isOpen,
+      isIdle,
+      panelWidth,
+      setPanelWidth,
+      openPanel,
+      closePanel,
+      togglePanel,
+    }),
+    [isOpen, isIdle, panelWidth, setPanelWidth, openPanel, closePanel, togglePanel]
+  );
 
   return (
     <AiAssistantContext.Provider value={value}>

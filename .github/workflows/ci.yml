@@ -5,6 +5,18 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+  # Allow this workflow to be invoked as the pre-deploy test gate by deploy.yml
+  # (`uses: ./.github/workflows/ci.yml`). Without workflow_call the reusable-workflow
+  # call is rejected at parse time and every Deploy Frontend run fails.
+  workflow_call:
+    inputs:
+      skip_badges:
+        description: >-
+          Set true when invoked as the deploy gate. The standalone push/PR run
+          already pushes coverage badges; running the badge push again from the
+          deploy gate races it and fails on a non-fast-forward push.
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -111,6 +123,9 @@ jobs:
           if-no-files-found: error
 
       - name: Generate coverage badges
+        # Skip when this run is the deploy.yml pre-deploy gate (see skip_badges
+        # input) — the standalone push/PR CI run owns the badge push.
+        if: ${{ !inputs.skip_badges }}
         uses: jpb06/coverage-badges-action@latest
         with:
           coverage-summary-path: ./school-dashboard/coverage/coverage-summary.json

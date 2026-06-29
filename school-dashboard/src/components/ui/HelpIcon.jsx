@@ -67,22 +67,10 @@ export default function HelpIcon({
     right: { left: '100%', top: '50%', transform: 'translateY(-50%)', marginLeft: 8 },
   };
 
-  const tooltipStyle = {
-    position: 'absolute',
-    zIndex: 5000,
-    background: '#1e293b',
-    color: '#f8fafc',
-    borderRadius: 8,
-    padding: '10px 14px',
-    fontSize: 13,
-    lineHeight: 1.55,
-    maxWidth: 280,
-    minWidth: 180,
-    boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
-    pointerEvents: 'auto',
-    whiteSpace: 'normal',
-    ...(placementStyles[placement] || placementStyles.top),
-  };
+  // Only the computed placement offsets stay inline; all colors, sizing and
+  // elevation live in .help-icon__tooltip (token-driven, theme-aware). See
+  // src/styles/help-icon.css. (DS-10 — no inline hex.)
+  const tooltipPlacementStyle = placementStyles[placement] || placementStyles.top;
 
   return (
     <span
@@ -121,7 +109,8 @@ export default function HelpIcon({
           ref={tooltipRef}
           id={tooltipId}
           role="tooltip"
-          style={tooltipStyle}
+          className="help-icon__tooltip"
+          style={tooltipPlacementStyle}
           onMouseEnter={trigger === 'hover' ? showTooltip : undefined}
           onMouseLeave={trigger === 'hover' ? hideTooltip : undefined}
         >
@@ -131,13 +120,7 @@ export default function HelpIcon({
               href={`/help/kb/${kbSlug}`}
               target="_blank"
               rel="noopener noreferrer"
-              style={{
-                display: 'block',
-                marginTop: 8,
-                color: '#93c5fd',
-                fontSize: 12,
-                textDecoration: 'underline',
-              }}
+              className="help-icon__kb-link"
             >
               Learn more →
             </a>
@@ -147,11 +130,7 @@ export default function HelpIcon({
             <button
               type="button"
               onClick={() => setVisible(false)}
-              style={{
-                position: 'absolute', top: 6, right: 8,
-                background: 'none', border: 'none', color: '#94a3b8',
-                fontSize: 14, cursor: 'pointer', lineHeight: 1, padding: 0,
-              }}
+              className="help-icon__close"
               aria-label="Close help"
             >
               ×

@@ -1,4 +1,4 @@
-import { request, requestUpload } from './core.js';
+import { request } from './core.js';
 import { getAuthHeaders, saveStoredUser } from '../../utils/authSession';
 import { API_URL } from '../../config/api.js';
 import { withDefaultLimit } from './fetchDefaults.js';
@@ -35,13 +35,13 @@ export const inventoryApi = {
   getStats: () => request('/inventory/stats'),
   getReports: () => request('/inventory/reports'),
 
-  getAssets: (params = {}) => {
+  getAssets: (params = {}, options = {}) => {
     const query = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => {
       if (v !== undefined && v !== null && v !== '' && v !== 'all') query.set(k, v);
     });
     const qs = query.toString();
-    return request(`/inventory/assets${qs ? `?${qs}` : ''}`);
+    return request(`/inventory/assets${qs ? `?${qs}` : ''}`, options);
   },
   getAsset: (id) => request(`/inventory/assets/${id}`),
   getLowStockAssets: () => request('/inventory/assets/low-stock'),
@@ -85,31 +85,31 @@ export const inventoryApi = {
 };
 
 export const libraryApi = {
-  getStats: () => request('/v1/library/stats'),
-  getReports: () => request('/v1/library/reports'),
+  getStats: () => request('/library/stats'),
+  getReports: () => request('/library/reports'),
   getBooks: (params = {}) => {
     const query = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => {
       if (v !== undefined && v !== null && v !== '' && v !== 'all') query.set(k, v);
     });
     const qs = query.toString();
-    return request(`/v1/library/books${qs ? `?${qs}` : ''}`);
+    return request(`/library/books${qs ? `?${qs}` : ''}`);
   },
-  getBook: (id) => request(`/v1/library/books/${id}`),
-  createBook: (data) => request('/v1/library/books', { method: 'POST', body: JSON.stringify(data) }),
-  updateBook: (id, data) => request(`/v1/library/books/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  deleteBook: (id) => request(`/v1/library/books/${id}`, { method: 'DELETE' }),
+  getBook: (id) => request(`/library/books/${id}`),
+  createBook: (data) => request('/library/books', { method: 'POST', body: JSON.stringify(data) }),
+  updateBook: (id, data) => request(`/library/books/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteBook: (id) => request(`/library/books/${id}`, { method: 'DELETE' }),
   getIssues: (params = {}) => {
     const query = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => {
       if (v !== undefined && v !== null && v !== '' && v !== 'all') query.set(k, v);
     });
     const qs = query.toString();
-    return request(`/v1/library/issues${qs ? `?${qs}` : ''}`);
+    return request(`/library/issues${qs ? `?${qs}` : ''}`);
   },
-  issueBook: (data) => request('/v1/library/issues', { method: 'POST', body: JSON.stringify(data) }),
-  returnBook: (id, data) => request(`/v1/library/issues/${id}/return`, { method: 'PUT', body: JSON.stringify(data) }),
-  syncOverdue: () => request('/v1/library/sync-overdue', { method: 'POST' }),
+  issueBook: (data) => request('/library/issues', { method: 'POST', body: JSON.stringify(data) }),
+  returnBook: (id, data) => request(`/library/issues/${id}/return`, { method: 'PUT', body: JSON.stringify(data) }),
+  syncOverdue: () => request('/library/sync-overdue', { method: 'POST' }),
 };
 
 // Transport API
@@ -264,10 +264,6 @@ export const exportApi = {
 // Bulk Import API
 export const bulkImportApi = {
   downloadTemplate: (type) => request(`/bulk-import/template/${type}`),
-  // [AUDIT-159] Now uses centralized requestUpload() for automatic token refresh
-  upload: (formData) => requestUpload('/bulk-import/upload', formData),
-  preview: (jobId) => request(`/bulk-import/preview/${jobId}`),
-  confirm: (jobId) => request(`/bulk-import/confirm/${jobId}`, { method: 'POST' }),
 };
 
 // Hostel API
@@ -425,8 +421,12 @@ export const expensesApi = {
     return request(`/expenses${qs ? `?${qs}` : ''}`);
   },
   getSummary: (params = {}) => {
-    const query = new URLSearchParams(params).toString();
-    return request(`/expenses/summary${query ? `?${query}` : ''}`);
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') query.set(k, v);
+    });
+    const qs = query.toString();
+    return request(`/expenses/summary${qs ? `?${qs}` : ''}`);
   },
   create: (data) => request('/expenses', { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => request(`/expenses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),

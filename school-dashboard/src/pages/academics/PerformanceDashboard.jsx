@@ -30,6 +30,14 @@ const dashboardCache = {
   key: null
 };
 
+// PAG-10: backend caps /exams at 200/page; the dashboard KPIs must see
+// every exam in the academic year so the "scheduled/completed/published"
+// counts don't silently exclude older entries.
+const DASHBOARD_PAGE_LIMIT = 200;
+// Hard ceiling on pagination rounds so a misbehaving backend can never spin
+// the dashboard into a request storm.
+const DASHBOARD_MAX_PAGES = 25;
+
 if (typeof window !== 'undefined') {
   window.addEventListener('auth-session-cleared', () => {
     dashboardCache.data = null;
@@ -116,13 +124,54 @@ const PerformanceDashboard = ({ onCreateExam }) => {
 
     setLoading(true);
     try {
-      // Fetch exams and performance dashboard data in parallel
-      const [examsData, perfData] = await Promise.all([
-        examsApi.getAll({ academicYear: selectedAcademicYear }),
+      // Fetch performance dashboard aggregation and the first page of exams
+      // in parallel. Then paginate the exams list to gather every exam in
+      // the year (PAG-10) so the KPI counts aren't capped at 50.
+      const [perfData, firstPage] = await Promise.all([
         academicPerformanceApi.getDashboard({ academicYear: selectedAcademicYear }).catch(() => null),
+        examsApi.getAll({ academicYear: selectedAcademicYear, skip: 0, limit: DASHBOARD_PAGE_LIMIT }),
       ]);
 
-      setExams(examsData || []);
+      // PAG-10: response is { data, pagination }. Pre-PAG-10 callers passed
+      // the bare array; tolerate both shapes so an old backend doesn't crash
+      // the dashboard during a staggered rollout.
+      const firstPageItems = Array.isArray(firstPage)
+        ? firstPage
+        : Array.isArray(firstPage?.data)
+          ? firstPage.data
+          : [];
+      const firstPageHasMore = Array.isArray(firstPage)
+        ? false
+        : !!firstPage?.pagination?.hasMore;
+
+      const collected = [...firstPageItems];
+      let hasMore = firstPageHasMore;
+      let skip = firstPageItems.length;
+      let pageCount = 1;
+      // Keep paging until the backend reports hasMore=false. Bounded by the
+      // backend's own 200-per-page cap, so this is at most a handful of
+      // round-trips for typical schools. The hard cap protects against a
+      // broken backend that never flips hasMore to false.
+      while (hasMore && pageCount < DASHBOARD_MAX_PAGES) {
+        const next = await examsApi.getAll({
+          academicYear: selectedAcademicYear,
+          skip,
+          limit: DASHBOARD_PAGE_LIMIT,
+        });
+        const items = Array.isArray(next) ? next : Array.isArray(next?.data) ? next.data : [];
+        if (items.length === 0) {
+          hasMore = false;
+          break;
+        }
+        collected.push(...items);
+        hasMore = Array.isArray(next) ? false : !!next?.pagination?.hasMore;
+        skip += items.length;
+        pageCount += 1;
+      }
+
+      const examsData = collected;
+
+      setExams(examsData);
 
       // Use backend performance data when available
       if (perfData) {
@@ -148,7 +197,7 @@ const PerformanceDashboard = ({ onCreateExam }) => {
 
       // Cache the results
       dashboardCache.data = {
-        exams: examsData || [],
+        exams: examsData,
         classPerformance: perfData?.classPerformance || [],
         subjectAverages: perfData?.subjectAverages || [],
         gradeDistribution: perfData?.gradeDistribution || [],

@@ -48,7 +48,7 @@ const DOT_STYLES = {
 };
 
 const SIZE_STYLES = {
-  sm: "text-[10px] px-1.5 py-0.5 gap-1",
+  sm: "text-2xs px-1.5 py-0.5 gap-1",
   md: "text-xs px-2 py-0.5 gap-1",
   lg: "text-sm px-2.5 py-1 gap-1.5",
 };

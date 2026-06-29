@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useApp } from "../../../context/AppContext";
 import { DEFAULT_PERIODS } from "../../../utils/constants";
+import { timetableApi, attendanceApi } from "../../../services/api/classes";
 
 // Phase 6 · cutoff + urgency thresholds.
 // TODO: read these from schoolSettings.attendance once exposed:
@@ -59,54 +61,118 @@ export function derivePeriodState(
   return "live";
 }
 
-// Holiday detection — until a real holidays endpoint is consumed,
-// treat Sundays as the only "no school" days. Everything else is a school day.
-// TODO: read from schoolSettings.holidays / events.
-function isWeekendOrHoliday(now) {
-  return now.getDay() === 0; // Sunday
+/**
+ * Build a per-class daily-attendance map from the today-snapshot response.
+ *
+ * Attendance is recorded once per student per day (see the Attendance model's
+ * unique index on schoolId+studentId+date) — there is no per-period attendance.
+ * So a class is "marked" for the day when it has at least one recorded row.
+ *
+ * snapshot shape: { date, classes: { [classId]: { present, absent, ..., total } } }
+ * returns Map<classId(string), { present, total, marked }>
+ */
+export function buildClassAttendanceMap(snapshot) {
+  const map = new Map();
+  const classes = snapshot?.classes || {};
+  for (const [classId, counts] of Object.entries(classes)) {
+    const total = Number(counts?.total) || 0;
+    const present = Number(counts?.present) || 0;
+    map.set(String(classId), { present, total, marked: total > 0 });
+  }
+  return map;
 }
 
-// Deterministic class → period assignment until the real timetable lands.
-// Hash class.id to assign each class to N periods of the day.
-// TODO: replace with class.timetable[dayOfWeek] once the schema exposes it.
-function synthSlotsForPeriod(periodIdx, periods, classes, staff) {
-  if (!Array.isArray(classes) || classes.length === 0) return [];
-  const teacherById = new Map(
-    (staff || []).map((s) => [String(s._id || s.id), s])
-  );
-  // Each class is scheduled for this period if (hash + periodIdx) is even.
-  // Picks ~half the classes per period — realistic class density.
+// Human label for a populated class ref (name + section, no duplication).
+function classLabel(cls) {
+  if (!cls) return "";
+  const name = cls.name || "";
+  const section = cls.section || "";
+  if (section && !String(name).includes(section)) {
+    return `${name} ${section}`.trim();
+  }
+  return name || section || "";
+}
+
+/**
+ * Real class → period assignment for one period index on a given day.
+ *
+ * Each timetable's `schedule[day]` array is parallel to its `periods` array
+ * (index i ↔ period i — see TimetableGrid), and a free period is an empty
+ * `subject`. We surface only the classes that actually have a subject this
+ * period today, with their real subject / teacher / room, and attach the
+ * class's real daily attendance.
+ *
+ * `timetables`     — array of { classId(populated), periods, schedule }
+ * `teacherById`    — Map<staffId, staff> for resolving teacher names
+ * `classAttendance`— Map<classId, { present, total, marked }> from the snapshot
+ */
+export function buildSlotsForPeriod(
+  periodIdx,
+  fullDayName,
+  timetables,
+  teacherById,
+  classAttendance
+) {
   const slots = [];
-  for (const c of classes) {
-    const hash = String(c._id || c.id || c.name || "")
-      .split("")
-      .reduce((a, ch) => (a + ch.charCodeAt(0)) % 1000, 0);
-    if ((hash + periodIdx * 7) % 2 !== 0) continue;
-    const teacher = teacherById.get(String(c.classTeacherId)) || null;
+  for (const tt of timetables || []) {
+    const daySlots = tt?.schedule?.[fullDayName];
+    if (!Array.isArray(daySlots)) continue;
+    const slot = daySlots[periodIdx];
+    const subject = (slot?.subject || "").trim();
+    if (!subject) continue; // empty subject = free period for this class
+
+    const cls = tt.classId && typeof tt.classId === "object" ? tt.classId : null;
+    const classId = String(cls?._id || tt.classId || "");
+    if (!classId) continue;
+
+    const teacher = teacherById.get(String(slot.teacherId)) || null;
+    const att =
+      classAttendance.get(classId) || { present: 0, total: 0, marked: false };
+
     slots.push({
-      classId: c._id || c.id,
-      className: c.name || c.section || "",
-      subject: c.subjects?.[periodIdx % (c.subjects?.length || 1)] || "—",
-      teacherId: teacher?._id || teacher?.id || null,
-      teacherName: teacher?.name || c.teacher || "—",
-      room: c.room || "—",
+      classId,
+      className: classLabel(cls),
+      subject,
+      teacherId: slot.teacherId ? String(slot.teacherId) : null,
+      teacherName: teacher?.name || "—",
+      room: slot.room || "—",
+      attendance: { marked: att.marked, present: att.present, total: att.total },
     });
   }
   return slots;
 }
 
+// Count the real, scheduled (non-empty) class slots for a day across all
+// classes. Zero means nobody has class today → a no-school day, derived from
+// the real timetable instead of a hardcoded "Sundays only" rule.
+function countScheduledForDay(fullDayName, timetables) {
+  let n = 0;
+  for (const tt of timetables || []) {
+    const daySlots = tt?.schedule?.[fullDayName];
+    if (!Array.isArray(daySlots)) continue;
+    for (const slot of daySlots) {
+      if ((slot?.subject || "").trim()) n += 1;
+    }
+  }
+  return n;
+}
+
 /**
  * Phase 6 main data hook. Owns:
- *  - Period derivation from school settings (or DEFAULT_PERIODS fallback)
- *  - Per-class slot assignment (synthesized; see TODO)
+ *  - Period derivation from the real timetable bell schedule
+ *  - Per-class slot assignment from the real timetable (no synthesis)
+ *  - Per-class daily attendance from attendanceApi.getTodaySnapshot()
  *  - State machine evaluation for every slot
  *  - The 60s tick that re-renders so live/urgent/overdue transitions fire
  *
- * TODO: replace with a single `GET /api/classes/today/periods` call once the
- * backend exposes it. Proposed shape documented in the Phase 6 README.
+ * Data sources (the two endpoints the original TODO called for):
+ *  - GET /timetable?academicYear=…   → every class's weekly schedule
+ *  - GET /attendance/today-snapshot   → per-class present/total for today
  */
 export default function useTodayPeriods() {
-  const { classes, staff, schoolSettings } = useApp();
+  const { staff = [], schoolSettings, selectedAcademicYear, currentAcademicYear } =
+    useApp();
+  const academicYear = selectedAcademicYear || currentAcademicYear;
 
   // Per-page tick — bumped every 60s so derived states recompute.
   const [tick, setTick] = useState(0);
@@ -115,22 +181,64 @@ export default function useTodayPeriods() {
     return () => clearInterval(id);
   }, []);
 
-  // Today's attendance — TODO: real per-class attendance fetch with marked status.
-  // For now, no class is marked (everything renders Live/Upcoming/Urgent/Overdue).
-  // Wire to `attendanceApi.getTodaySnapshot()` per-class result when shape stabilises.
-  const markedSet = useMemo(() => new Set(), []);
+  // Real timetable for every class (shared react-query cache: the hook is
+  // mounted by ClassesPage, TodayView and ByClassView but only fetches once).
+  const timetableQuery = useQuery({
+    queryKey: ["today-timetables", academicYear || "default"],
+    queryFn: async () => {
+      const res = await timetableApi.getAll(academicYear);
+      return Array.isArray(res) ? res : res?.timetables || res?.data || [];
+    },
+    placeholderData: (prev) => prev,
+    staleTime: 5 * 60_000,
+  });
 
-  return useMemo(() => {
+  // Real per-class attendance for today.
+  const snapshotQuery = useQuery({
+    queryKey: ["today-attendance-snapshot"],
+    queryFn: () => attendanceApi.getTodaySnapshot(),
+    placeholderData: (prev) => prev,
+    staleTime: 60_000,
+  });
+
+  const timetables = useMemo(
+    () => timetableQuery.data || [],
+    [timetableQuery.data]
+  );
+  const classAttendance = useMemo(
+    () => buildClassAttendanceMap(snapshotQuery.data),
+    [snapshotQuery.data]
+  );
+  const teacherById = useMemo(() => {
+    const m = new Map();
+    for (const s of staff || []) m.set(String(s._id || s.id), s);
+    return m;
+  }, [staff]);
+
+  const isLoading = timetableQuery.isPending || snapshotQuery.isPending;
+
+  const result = useMemo(() => {
     const now = new Date();
     void tick; // ensure recompute on tick
 
     const dayName = DAY_NAMES[now.getDay()];
     const fullDayName = FULL_DAY_NAMES[now.getDay()];
 
-    const periodsConfig = schoolSettings?.periods || DEFAULT_PERIODS;
+    // Bell schedule: prefer the real timetable's periods (the schedule arrays
+    // are aligned to them by index), then school settings, then the default.
+    const periodsConfig =
+      timetables.find((t) => Array.isArray(t.periods) && t.periods.length)
+        ?.periods ||
+      schoolSettings?.periods ||
+      DEFAULT_PERIODS;
     const totalPeriodsScheduled = periodsConfig.length;
 
-    if (isWeekendOrHoliday(now)) {
+    // No-school day = nothing scheduled today in the real timetable. Once the
+    // timetable has loaded and today is empty, treat it as a closed day.
+    const scheduledTodayCount = countScheduledForDay(fullDayName, timetables);
+    const isNoSchoolDay = !isLoading && scheduledTodayCount === 0;
+
+    if (isNoSchoolDay) {
       return {
         periods: [],
         dayMeta: {
@@ -145,6 +253,7 @@ export default function useTodayPeriods() {
           isSchoolDayComplete: false,
           totalCovered: 0,
           totalScheduled: 0,
+          totalPeriodsScheduled,
           overdueIds: [],
           unmarkedCount: 0,
           activePeriodNumber: null,
@@ -156,15 +265,22 @@ export default function useTodayPeriods() {
       const start = timeOnDate(p.startTime || p.start, now);
       const end = timeOnDate(p.endTime || p.end, now);
       const isBreak = !!p.isBreak;
-      const slots = isBreak ? [] : synthSlotsForPeriod(idx, periodsConfig, classes, staff);
+      const slots = isBreak
+        ? []
+        : buildSlotsForPeriod(
+            idx,
+            fullDayName,
+            timetables,
+            teacherById,
+            classAttendance
+          );
 
       const evaluatedSlots = slots.map((s) => ({
         ...s,
-        attendance: { marked: markedSet.has(s.classId), present: 0, total: 0 },
         state: derivePeriodState(
           { start, end, hasClass: true },
           now,
-          markedSet.has(s.classId)
+          s.attendance.marked
         ),
       }));
 
@@ -172,7 +288,9 @@ export default function useTodayPeriods() {
       let periodState = "skipped";
       if (evaluatedSlots.length > 0) {
         const order = ["overdue", "urgent", "live", "upcoming", "marked"];
-        const found = order.find((s) => evaluatedSlots.some((x) => x.state === s));
+        const found = order.find((s) =>
+          evaluatedSlots.some((x) => x.state === s)
+        );
         periodState = found || "skipped";
       }
 
@@ -234,5 +352,7 @@ export default function useTodayPeriods() {
         activePeriodNumber,
       },
     };
-  }, [classes, staff, schoolSettings, markedSet, tick]);
+  }, [timetables, classAttendance, teacherById, schoolSettings, isLoading, tick]);
+
+  return { ...result, isLoading };
 }

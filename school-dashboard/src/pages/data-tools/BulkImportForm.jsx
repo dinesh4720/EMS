@@ -5,8 +5,7 @@ import toast from 'react-hot-toast';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import Checkbox from '../../components/ui/Checkbox';
-import { API_URL } from '../../config/api';
-import { clearStoredUser, getAuthHeaders } from '../../utils/authSession';
+import { requestBlob, requestUpload } from '../../services/api';
 
 const IMPORT_TYPES = [
   { key: 'students', label: 'Students', icon: Users },
@@ -139,15 +138,9 @@ export default function BulkImportForm() {
 
   const handleDownloadTemplate = async () => {
     try {
-      const response = await fetch(`${API_URL}/bulk-import/template/${selectedType}`, {
-        headers: getAuthHeaders(),
-        credentials: 'include',
-      });
-      if (response.status === 401) {
-        clearStoredUser();
-        throw new Error('Session expired. Please log in again.');
-      }
-      if (!response.ok) throw new Error('Download failed');
+      // [SEC-08] Route through requestBlob() so a 401 attempts a token refresh
+      // before logging the user out, instead of a premature session clear.
+      const response = await requestBlob(`/bulk-import/template/${selectedType}`);
 
       const blob = await response.blob();
       const disposition = response.headers.get('Content-Disposition') || '';
@@ -178,32 +171,14 @@ export default function BulkImportForm() {
       const formData = new FormData();
       formData.append('file', file);
 
-      const headers = getAuthHeaders();
-      // Do not set Content-Type for FormData
-      delete headers['Content-Type'];
-
-      const url = `${API_URL}/bulk-import/${selectedType}${dryRun ? '?dryRun=true' : ''}`;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers,
-        credentials: 'include',
-        body: formData,
-      });
-
-      if (response.status === 401) {
-        clearStoredUser();
-        throw new Error(t('dataTools.sessionExpired', 'Session expired. Please log in again.'));
-      }
-      if (!response.ok) {
-        const errData = await response.json().catch(() => null);
-        const errMsg =
-          typeof errData?.error === 'string'
-            ? errData.error
-            : errData?.message || t('dataTools.bulkImport.importFailed', 'Import failed');
-        throw new Error(errMsg);
-      }
-
-      const data = await response.json();
+      // [SEC-08] Route through requestUpload() so a 401 attempts a token refresh
+      // before logging the user out, instead of a premature session clear.
+      // requestUpload omits Content-Type (browser sets the multipart boundary)
+      // and returns the parsed JSON body.
+      const data = await requestUpload(
+        `/bulk-import/${selectedType}${dryRun ? '?dryRun=true' : ''}`,
+        formData
+      );
       setResult(data);
 
       if (dryRun) {

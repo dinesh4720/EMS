@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { attendanceApi, studentsApi } from "../../../services/api";
+import { attendanceApi, examsApi, studentsApi } from "../../../services/api";
+import { buildUpcoming } from "../components/dashboard/utils";
 
 function normalizeAttendanceStatus(status = "") {
   const s = status.toLowerCase().trim();
@@ -101,6 +102,34 @@ export function useStudentRemarks(studentId, options = {}) {
     loading: remarksQuery.isPending,
     error: remarksQuery.error?.message || null,
     refetch: remarksQuery.refetch,
+  };
+}
+
+// MOCK-09 · Upcoming-card feed.
+// Fetches the student's class exams and derives the { date, title, meta }
+// items the Overview panel's UpcomingCard renders. Returns an empty list on
+// fetch failure or while the student record (and thus classId) is loading.
+export function useStudentUpcoming(classId, options = {}) {
+  const { autoFetch = true } = options;
+  const examsQuery = useQuery({
+    queryKey: ["students", "upcoming-exams", classId || null],
+    enabled: Boolean(classId) && autoFetch,
+    queryFn: async () => {
+      const res = await examsApi.getByClass(classId);
+      return Array.isArray(res) ? res : res?.data || res?.exams || [];
+    },
+    retry: 1,
+  });
+
+  const upcoming = useMemo(
+    () => buildUpcoming(examsQuery.data || []),
+    [examsQuery.data]
+  );
+
+  return {
+    upcoming,
+    loading: examsQuery.isPending,
+    error: examsQuery.error?.message || null,
   };
 }
 

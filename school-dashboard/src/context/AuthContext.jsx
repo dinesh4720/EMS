@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { clearLegacyCredentials, clearStoredUser, getAuthHeaders, getStoredUser, saveStoredUser } from "../utils/authSession";
 import { isSuperAdminRole } from "../utils/roleUtils";
@@ -20,6 +20,16 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // PERF-05: Keep the latest pathname in a ref so the auth-session-cleared
+  // listener can read it without re-subscribing on every navigation. Reading
+  // location.pathname directly in the effect deps would re-register the
+  // listener (and churn any downstream effect that depends on logout) on each
+  // route change.
+  const pathnameRef = useRef(location.pathname);
+  useEffect(() => {
+    pathnameRef.current = location.pathname;
+  }, [location.pathname]);
 
   useEffect(() => {
     // SECURITY: Clean up legacy mock credentials left by an earlier version
@@ -110,16 +120,16 @@ export const AuthProvider = ({ children }) => {
     const handleSessionCleared = () => {
       setUser(null);
       setIsAuthenticated(false);
-      if (location.pathname !== '/login') {
+      if (pathnameRef.current !== '/login') {
         navigate('/login');
       }
     };
 
     window.addEventListener('auth-session-cleared', handleSessionCleared);
     return () => window.removeEventListener('auth-session-cleared', handleSessionCleared);
-  }, [location.pathname, navigate]);
+  }, [navigate]);
 
-  const login = async (emailOrPhone, password) => {
+  const login = useCallback(async (emailOrPhone, password) => {
     try {
       const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
@@ -155,9 +165,9 @@ export const AuthProvider = ({ children }) => {
       logger.error('Login error:', error?.message || error);
       throw error;
     }
-  };
+  }, [navigate]);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
@@ -179,16 +189,22 @@ export const AuthProvider = ({ children }) => {
     // Tear down the shared socket singleton on logout (destroyAll clears listeners too)
     socketService.destroyAll();
     navigate('/login');
-  };
+  }, [navigate]);
+
+  // PERF-05: Memoize the context value so navigation-triggered re-renders of
+  // AuthProvider (it subscribes to useLocation) don't hand a new object to the
+  // ~20 useAuth consumers. With login/logout stabilized via useCallback, this
+  // value's identity only changes when user/isAuthenticated/loading change.
+  const value = useMemo(() => ({
+    user,
+    isAuthenticated,
+    login,
+    logout,
+    loading,
+  }), [user, isAuthenticated, login, logout, loading]);
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      isAuthenticated,
-      login,
-      logout,
-      loading,
-    }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

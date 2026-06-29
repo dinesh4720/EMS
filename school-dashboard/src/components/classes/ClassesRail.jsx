@@ -173,17 +173,15 @@ function WeekMiniCal({ dayMeta }) {
         <div className="weekcal">
           {WEEK_LABELS.map((label, idx) => {
             const isToday = idx === dowMon0;
-            const isPast = idx < dowMon0;
-            const isWeekend = idx >= 5;
-            // Today's bar reflects the day's coverage state; past days show
-            // neutral until a real per-day attendance summary lands.
+            // Only today's bar reflects a real coverage state (from dayMeta).
+            // Past and future days stay neutral — there is no per-day attendance
+            // summary endpoint yet, so colouring past days green would claim
+            // full attendance coverage with zero data.
             // TODO: real per-day "covered/total" once the summary endpoint exists.
             let barClass = "weekcal__bar--neutral";
             if (isToday) {
               if (dayMeta?.unmarkedCount > 0) barClass = "weekcal__bar--warn";
               else if (dayMeta?.totalCovered > 0) barClass = "weekcal__bar--ok";
-            } else if (isPast && !isWeekend) {
-              barClass = "weekcal__bar--ok";
             }
             return (
               <div

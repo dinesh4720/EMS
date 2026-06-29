@@ -58,6 +58,9 @@ export default function PermissionRequests() {
   }), [t]);
   const { user } = useAuth();
   const { isAdmin } = usePermissions();
+  // [MEM-09] Derive a primitive from the (unstable) isAdmin function so effects
+  // can depend on a stable value instead of a new function identity each render.
+  const isUserAdmin = isAdmin();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -71,16 +74,24 @@ export default function PermissionRequests() {
   const fetchVersionRef = useRef(0);
 
   useEffect(() => {
-    if (!isAdmin()) return;
+    if (!isUserAdmin) return;
     const controller = new AbortController();
     fetchRequests(controller.signal);
     return () => controller.abort();
-  }, [isAdmin, activeTab]);
+  }, [isUserAdmin, activeTab]);
 
-  // Listen for new permission requests via socket
+  // Listen for new permission requests via socket.
+  // [MEM-09 / AUDIT-785] Do NOT guard registration with isConnected():
+  // socketServiceEnhanced.on() stores listeners in its internal Map even before
+  // the socket connects, and the 'connect' handler re-registers them on
+  // (re)connection. An early return while the socket was down would skip
+  // registration entirely, so the listener would never fire — the leak this
+  // finding tracks. Depend on the primitive isUserAdmin / activeTab instead of
+  // the unstable isAdmin function so the effect stops churning every render
+  // while still re-subscribing with a fresh fetch closure when the tab changes.
   useEffect(() => {
+    if (!isUserAdmin) return;
     const socketService = getSocketService();
-    if (!socketService?.isConnected() || !isAdmin()) return;
 
     const handleNewRequest = () => {
       fetchRequests();
@@ -94,7 +105,7 @@ export default function PermissionRequests() {
     return () => {
       socketService.off('permission_request_created', handleNewRequest);
     };
-  }, [isAdmin]);
+  }, [isUserAdmin, activeTab]);
 
   const fetchRequests = async () => {
     const version = ++fetchVersionRef.current;
@@ -176,7 +187,7 @@ export default function PermissionRequests() {
     }
   };
 
-  if (!isAdmin()) {
+  if (!isUserAdmin) {
     return (
       <div className="p-6">
         <Card>

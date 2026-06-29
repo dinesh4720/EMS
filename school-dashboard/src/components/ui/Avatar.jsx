@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import { cn } from "../../utils/cn";
 
 const SIZE_STYLES = {
-  xs: "h-6 w-6 text-[10px]",
+  xs: "h-6 w-6 text-2xs",
   sm: "h-8 w-8 text-xs",
   md: "h-10 w-10 text-sm",
   lg: "h-12 w-12 text-base",
@@ -11,10 +11,10 @@ const SIZE_STYLES = {
 };
 
 const STATUS_STYLES = {
-  online: "bg-green-500",
-  offline: "bg-gray-400 dark:bg-zinc-500",
-  away: "bg-amber-500",
-  busy: "bg-red-500",
+  online: "bg-ok",
+  offline: "bg-fg-subtle",
+  away: "bg-warn",
+  busy: "bg-danger-token",
 };
 
 const STATUS_SIZE = {
@@ -37,6 +37,11 @@ function getInitials(name) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+/* Decorative, non-semantic: each user's initials avatar gets a stable colour
+ * from this set purely for visual variety. These are NOT status colours, so
+ * they intentionally stay as raw palette gradients — the design tokens reserve
+ * --ok/--warn/--danger/--info for status and have no decorative-gradient
+ * equivalent (see tokens.css: "Status — used ONLY for status, never decoration"). */
 const GRADIENT_CLASSES = [
   "bg-gradient-to-br from-violet-500 to-purple-600",
   "bg-gradient-to-br from-pink-500 to-rose-600",
@@ -100,7 +105,7 @@ const Avatar = forwardRef(function Avatar(
           className={cn(
             "flex items-center justify-center h-full w-full font-semibold text-white",
             SHAPE_STYLES[shape],
-            initials ? gradient : "bg-gray-200 text-gray-500 dark:bg-zinc-800 dark:text-zinc-400",
+            initials ? gradient : "bg-surface-2 text-fg-muted",
             fallbackClassName
           )}
         >
@@ -116,7 +121,7 @@ const Avatar = forwardRef(function Avatar(
           aria-label={status}
           role="img"
           className={cn(
-            "absolute right-0 bottom-0 rounded-full ring-2 ring-white dark:ring-zinc-900",
+            "absolute right-0 bottom-0 rounded-full ring-2 ring-bg",
             STATUS_SIZE[size],
             STATUS_STYLES[status]
           )}
@@ -155,7 +160,7 @@ Avatar.Group = function AvatarGroup({ children, max, size = "md", className }) {
       {visible.map((child, idx) => (
         <div
           key={child.key ?? idx}
-          className={cn("ring-2 ring-white dark:ring-zinc-900 rounded-full", idx > 0 && OFFSET_BY_SIZE[size])}
+          className={cn("ring-2 ring-bg rounded-full", idx > 0 && OFFSET_BY_SIZE[size])}
         >
           {child}
         </div>
@@ -163,7 +168,7 @@ Avatar.Group = function AvatarGroup({ children, max, size = "md", className }) {
       {overflow > 0 && (
         <div
           className={cn(
-            "flex items-center justify-center rounded-full ring-2 ring-white dark:ring-zinc-900 bg-gray-100 text-gray-700 dark:bg-zinc-800 dark:text-zinc-300 font-medium",
+            "flex items-center justify-center rounded-full ring-2 ring-bg bg-surface-2 text-fg font-medium",
             SIZE_STYLES[size],
             OFFSET_BY_SIZE[size]
           )}

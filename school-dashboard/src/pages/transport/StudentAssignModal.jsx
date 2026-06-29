@@ -225,15 +225,15 @@ export default function StudentAssignModal({
                             <div className="flex items-center gap-2 mt-0.5">
                               {studentAdmId && <span className="text-xs text-fg-muted">{studentAdmId}</span>}
                               {stop && (
-                                <Chip size="sm" variant="flat" color="primary" className="h-5 text-[10px]">
+                                <Chip size="sm" variant="flat" color="primary" className="h-5 text-2xs">
                                   {stop.name}
                                 </Chip>
                               )}
                               {assignment.pickupActive && (
-                                <Chip size="sm" variant="flat" color="success" className="h-5 text-[10px]">{t('pages.pickup')}</Chip>
+                                <Chip size="sm" variant="flat" color="success" className="h-5 text-2xs">{t('pages.pickup')}</Chip>
                               )}
                               {assignment.dropActive && (
-                                <Chip size="sm" variant="flat" color="secondary" className="h-5 text-[10px]">{t('pages.drop')}</Chip>
+                                <Chip size="sm" variant="flat" color="secondary" className="h-5 text-2xs">{t('pages.drop')}</Chip>
                               )}
                             </div>
                           </div>

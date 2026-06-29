@@ -6,14 +6,7 @@
  * javascript: and data: protocol execution.
  */
 
-const SAFE_PROTOCOLS = /^(https?:|mailto:)/i;
-
-function sanitizeUrl(url) {
-  if (!url) return '#';
-  const trimmed = url.trim();
-  if (!SAFE_PROTOCOLS.test(trimmed)) return '#';
-  return trimmed;
-}
+import { sanitizeUrl } from '../../utils/sanitizeUrl';
 
 // Inline markdown link pattern: [text](url)
 const LINK_RE = /\[([^\]]*)\]\(([^)]*)\)/g;
@@ -36,7 +29,7 @@ function renderInline(text) {
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-blue-600 dark:text-blue-400 underline underline-offset-2 hover:opacity-80"
+        className="text-accent underline underline-offset-2 hover:opacity-80"
       >
         {label}
       </a>

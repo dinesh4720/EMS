@@ -9,6 +9,7 @@ import { useApp } from "../../context/AppContext";
 import { usePermissions } from "../../context/PermissionContext";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import { showErrorToast, executeWithFeedback } from "../../utils/errorHandling";
+import { DEFAULT_SUBJECTS } from "../../constants/subjects";
 import logger from "../../utils/logger";
 
 export default function StaffAssignmentPanel({ staffId, onAssignClassTeacher }) {
@@ -44,10 +45,7 @@ export default function StaffAssignmentPanel({ staffId, onAssignClassTeacher }) 
   const canEdit = hasPermission("staff", "edit");
 
   const availableSubjects =
-    schoolSettings?.subjects?.map((s) => (typeof s === "string" ? s : s.name)) || [
-      "Mathematics", "Science", "English", "Hindi", "Social Studies",
-      "Computer Science", "Physical Education", "Art", "Music",
-    ];
+    schoolSettings?.subjects?.map((s) => (typeof s === "string" ? s : s.name)) || DEFAULT_SUBJECTS;
 
   useEffect(() => {
     if (staffId) loadData();

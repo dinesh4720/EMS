@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import Skeleton from "../../components/ui/Skeleton";
 import { useApp } from "../../context/AppContext";
 import { CreateDrawer } from "../../components/create/CreateDrawer";
+import { Field } from "../../components/create/Field";
 import useTodayPeriods from "./hooks/useTodayPeriods";
 import TodayView from "./views/TodayView";
 import ByClassView from "./views/ByClassView";
@@ -39,11 +40,11 @@ export default function ClassesPage() {
   const view = searchParams.get("view") === "class" ? "class" : "today";
 
   const { loading } = useApp();
-  const { dayMeta } = useTodayPeriods();
+  const { dayMeta, isLoading: todayLoading } = useTodayPeriods();
 
   const [isAddOpen, setIsAddOpen] = useState(false);
 
-  if (loading) return <ClassesPageSkeleton />;
+  if (loading || todayLoading) return <ClassesPageSkeleton />;
 
   const setView = (next) => {
     setSearchParams(
@@ -355,22 +356,5 @@ function AddClassDrawer({ isOpen, onClose }) {
         </div>
       </form>
     </CreateDrawer>
-  );
-}
-
-function Field({ label, required, error, children }) {
-  return (
-    <label className="field">
-      <span className="field__label">
-        {label}
-        {required && <span className="req">*</span>}
-      </span>
-      {children}
-      {error && (
-        <span className="field__hint" style={{ color: "var(--danger)" }}>
-          {error}
-        </span>
-      )}
-    </label>
   );
 }
