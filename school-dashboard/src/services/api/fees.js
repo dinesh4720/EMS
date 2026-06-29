@@ -83,7 +83,10 @@ export const notificationsApi = {
     const query = params ? new URLSearchParams(params).toString() : '';
     return request(`/notifications${query ? `?${query}` : ''}`);
   },
-  getUnreadCount: () => request('/notifications/unread-count'),
+  getUnreadCount: (options) =>
+    options?.signal
+      ? request('/notifications/unread-count', { signal: options.signal })
+      : request('/notifications/unread-count'),
   markAsRead: (id) => request(`/notifications/${id}/read`, { method: 'PUT' }),
   markAllAsRead: () => request('/notifications/read-all', { method: 'PUT' }),
   delete: (id) => request(`/notifications/${id}`, { method: 'DELETE' }),

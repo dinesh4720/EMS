@@ -11,6 +11,11 @@ import { notificationsApi } from '../services/api';
  * and surfaces the query in React Query Devtools. Polling pauses while the
  * notification panel is open (it fetches its own data) via `enabled: !paused`.
  *
+ * [MEM-12] Long-session stability: `refetchIntervalInBackground: false` skips
+ * the poll while the tab is hidden, and the query's AbortSignal is threaded
+ * into the fetch so the in-flight request is cancelled on unmount or when the
+ * query is otherwise dropped — no dangling request after the bell goes away.
+ *
  * @param {object} options
  * @param {(count: number) => void} options.onCountChange - Called with the latest unread count
  * @param {boolean} [options.paused=false] - Stop polling while true (e.g. panel is open)
@@ -22,7 +27,9 @@ export function useLiveNotifications({ onCountChange, paused = false, intervalMs
 
     const { data, isError } = useQuery({
         queryKey: ['notifications', 'unread-count'],
-        queryFn: () => notificationsApi.getUnreadCount(),
+        // Forward React Query's AbortSignal so the in-flight request is
+        // cancelled when the query is dropped (unmount / cache eviction).
+        queryFn: ({ signal }) => notificationsApi.getUnreadCount({ signal }),
         enabled: !paused,
         refetchInterval: paused ? false : intervalMs,
         // Keep the poll lightweight: don't refetch a hidden tab on its interval.
