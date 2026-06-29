@@ -1,5 +1,6 @@
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { ScrollShadow } from "@heroui/react";
-import { Search, Phone, Video, Pin, Check, CheckCheck, Forward, Download, Mic, MessageCircle, Plus, ChevronLeft } from "lucide-react";
+import { Search, Phone, Video, Pin, Check, CheckCheck, Forward, Download, Loader2, Mic, MessageCircle, Plus, ChevronLeft } from "lucide-react";
 import MessageActionsMenu from "./MessageActionsMenu";
 import MessageReactions from "./MessageReactions";
 import EmojiPicker from "./EmojiPicker";
@@ -33,8 +34,15 @@ export default function ChatMessageList({
   onOpenNewChatModal,
   isMobile,
   onBack,
+  onLoadOlder,
+  loadingOlder,
+  hasMoreOlder,
 }) {
   const { t } = useTranslation();
+  const scrollRef = useRef(null);
+  const loadMoreSentinelRef = useRef(null);
+  const prevFirstIdRef = useRef(null);
+  const prevScrollHeightRef = useRef(0);
 
   const getMessageStatus = (msg) => {
     if (msg.senderId !== user?.id) return null;
@@ -46,6 +54,51 @@ export default function ChatMessageList({
       return <Check size={14} className="text-default-400" />;
     }
   };
+
+  // PAG-06: trigger onLoadOlder when the sentinel above the message list
+  // scrolls into view. Disconnect while a fetch is in flight so we don't
+  // queue a second request for the same page.
+  useEffect(() => {
+    const sentinel = loadMoreSentinelRef.current;
+    const root = scrollRef.current;
+    if (!sentinel || !root || !onLoadOlder) return undefined;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) onLoadOlder();
+        }
+      },
+      { root, rootMargin: '120px 0px 0px 0px', threshold: 0 }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [onLoadOlder, hasMoreOlder]);
+
+  // PAG-06: when an older page is prepended, the browser keeps the same
+  // scrollTop — which would push the user's view down by the height of the
+  // newly inserted rows. Capture the height delta before paint and shift the
+  // scroll position so the viewport stays anchored on the same message.
+  useLayoutEffect(() => {
+    const firstId = messages[0]?._id || messages[0]?.id || null;
+    const prevFirstId = prevFirstIdRef.current;
+    const el = scrollRef.current;
+    if (prevFirstId && firstId && firstId !== prevFirstId && el && prevScrollHeightRef.current > 0) {
+      const heightDelta = el.scrollHeight - prevScrollHeightRef.current;
+      if (heightDelta > 0) {
+        el.scrollTop = el.scrollTop + heightDelta;
+      }
+    }
+    prevFirstIdRef.current = firstId;
+    prevScrollHeightRef.current = el?.scrollHeight || 0;
+  }, [messages]);
+
+  // PAG-06: reset the scroll-preservation baseline when the user switches
+  // conversations — the next prepend is for a different chat, not the same
+  // page that was on screen.
+  useEffect(() => {
+    prevFirstIdRef.current = null;
+    prevScrollHeightRef.current = 0;
+  }, [selectedConversation?.id]);
 
   if (!selectedConversation) {
     return (
@@ -199,7 +252,28 @@ export default function ChatMessageList({
       )}
 
       {/* Messages */}
-      <ScrollShadow className="flex-1 min-h-0 p-4 space-y-3">
+      <ScrollShadow ref={scrollRef} className="flex-1 min-h-0 p-4 space-y-3">
+        {/* PAG-06: sentinel above the message list — when it scrolls into
+            view we fetch the next older page. A small status row also keeps
+            users oriented while a fetch is in flight or when we've reached
+            the start of the conversation. */}
+        {(hasMoreOlder || loadingOlder) && (
+          <div
+            ref={loadMoreSentinelRef}
+            data-testid="load-older-sentinel"
+            className="flex items-center justify-center gap-2 py-2 text-xs text-[var(--color-text-muted)]"
+            aria-live="polite"
+          >
+            {loadingOlder ? (
+              <>
+                <Loader2 size={14} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                <span>{t('messaging.chat.loadingOlder', 'Loading older messages…')}</span>
+              </>
+            ) : (
+              <span>{t('messaging.chat.scrollForOlder', 'Scroll up for older messages')}</span>
+            )}
+          </div>
+        )}
         {(() => {
           // Deduplicate by _id / id, then sort chronologically (BUG-08, BUG-34)
           const seen = new Set();
