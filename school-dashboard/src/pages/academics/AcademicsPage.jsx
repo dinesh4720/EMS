@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Plus, FileText } from "lucide-react";
 
 import useAcademicsData from "../../hooks/useAcademicsData";
@@ -14,6 +15,7 @@ const VALID_FILTERS = new Set(["all", "upcoming", "drafts", "published", "comple
 // Replaces PerformanceDashboard + ExamManagement landing.
 // Single canonical surface: KPI strip + filterable exam list.
 export default function AcademicsPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const status = (() => {
@@ -54,18 +56,18 @@ export default function AcademicsPage() {
         value={search}
         onChange={setSearch}
         urlParam="q"
-        placeholder="Search exams, subjects…"
-        ariaLabel="Search exams"
+        placeholder={t("academics.page.searchPlaceholder")}
+        ariaLabel={t("academics.page.searchAria")}
         style={{ flex: 1, maxWidth: 360 }}
       />
 
-      <div className="seg" role="tablist" aria-label="Filter exams">
+      <div className="seg" role="tablist" aria-label={t("academics.page.filterAria")}>
         {[
-          { key: "all", label: "All" },
-          { key: "upcoming", label: "Upcoming" },
-          { key: "drafts", label: "Drafts" },
-          { key: "published", label: "Published" },
-          { key: "completed", label: "Completed" },
+          { key: "all", label: t("academics.page.filterAll") },
+          { key: "upcoming", label: t("academics.page.filterUpcoming") },
+          { key: "drafts", label: t("academics.page.filterDrafts") },
+          { key: "published", label: t("academics.page.filterPublished") },
+          { key: "completed", label: t("academics.page.filterCompleted") },
         ].map((f) => (
           <button
             key={f.key}
@@ -84,8 +86,12 @@ export default function AcademicsPage() {
 
   return (
     <PageShell
-      title="Academics"
-      description={`${todayLabel} · ${kpis.upcomingCount} upcoming · ${kpis.publishedCount} published`}
+      title={t("academics.page.title")}
+      description={t("academics.page.summary", {
+        date: todayLabel,
+        upcoming: kpis.upcomingCount,
+        published: kpis.publishedCount,
+      })}
       actions={
         <div className="row gap-2">
           <button
@@ -93,21 +99,21 @@ export default function AcademicsPage() {
             className="btn"
             onClick={() => navigate("/academics/cbse-report-card")}
           >
-            Report cards →
+            {t("academics.page.reportCards")} →
           </button>
           <button
             type="button"
             className="btn btn--accent"
             onClick={() => navigate("/academics/exams?new=1")}
           >
-            <Plus size={13} aria-hidden /> New exam
+            <Plus size={13} aria-hidden /> {t("academics.page.newExam")}
           </button>
         </div>
       }
       toolbar={toolbar}
       breadcrumbs={[
-        { label: "Home", href: "/" },
-        { label: "Academics" },
+        { label: t("pages.home"), href: "/" },
+        { label: t("academics.page.title") },
       ]}
       bodyPadding="none"
     >
@@ -117,14 +123,14 @@ export default function AcademicsPage() {
         {isLoading ? (
           <EmptyState
             icon={FileText}
-            title="Loading exams…"
+            title={t("academics.page.loading")}
             size="md"
           />
         ) : filtered.length === 0 ? (
           <EmptyState
             icon={FileText}
-            title="No exams found"
-            description={search ? "Try adjusting your search." : "Create an exam to get started."}
+            title={t("academics.page.emptyTitle")}
+            description={search ? t("academics.page.emptySearchHint") : t("academics.page.emptyHint")}
             size="md"
           />
         ) : (

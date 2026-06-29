@@ -11,6 +11,7 @@ import {
   ModalFooter,
 } from '@heroui/react';
 import { CalendarRange, AlertTriangle, CheckCircle, Clock, Trash2, Zap, Send } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { examScheduleApi } from '../../services/api';
 import { useAppMeta } from '../../context/AppContext';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
@@ -74,14 +75,14 @@ const STATUS_COLOR = {
   sent: 'success',
 };
 
-const STATUS_LABEL = {
-  draft: 'Draft',
-  scheduled: 'Confirmed',
-  sent: 'Sent to Parents',
-};
-
 const ExamScheduleConflict = ({ onCreateSchedule }) => {
+  const { t } = useTranslation();
   const { selectedAcademicYear } = useAppMeta();
+  const statusLabel = {
+    draft: t('academics.scheduleConflict.statusDraft'),
+    scheduled: t('academics.scheduleConflict.statusScheduled'),
+    sent: t('academics.scheduleConflict.statusSent'),
+  };
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null, name: '' });
@@ -99,7 +100,7 @@ const ExamScheduleConflict = ({ onCreateSchedule }) => {
       // Defensive: API may return {} or undefined on network/parse errors
       setSchedules(Array.isArray(data) ? data : []);
     } catch {
-      toast.error('Failed to load exam schedules');
+      toast.error(t('academics.scheduleConflict.toastLoadFailed'));
       setSchedules([]);
     } finally {
       setLoading(false);
@@ -120,23 +121,23 @@ const ExamScheduleConflict = ({ onCreateSchedule }) => {
   const handleGenerate = async (id) => {
     try {
       await examScheduleApi.generate(id);
-      toast.success('Timetable generated successfully');
+      toast.success(t('academics.scheduleConflict.toastGenerated'));
       fetchSchedules();
     } catch (err) {
-      toast.error(err.message || 'Failed to generate timetable');
+      toast.error(err.message || t('academics.scheduleConflict.toastGenerateFailed'));
     }
   };
 
   const handleConfirm = async (id) => {
     try {
       await examScheduleApi.confirm(id);
-      toast.success('Schedule confirmed');
+      toast.success(t('academics.scheduleConflict.toastConfirmed'));
       fetchSchedules();
     } catch (err) {
       if (err.type === 'ConflictError') {
-        toast.error('Schedule conflicts with an existing confirmed schedule');
+        toast.error(t('academics.scheduleConflict.toastConfirmConflict'));
       } else {
-        toast.error(err.message || 'Failed to confirm schedule');
+        toast.error(err.message || t('academics.scheduleConflict.toastConfirmFailed'));
       }
     }
   };
@@ -144,10 +145,10 @@ const ExamScheduleConflict = ({ onCreateSchedule }) => {
   const handleSend = async (id) => {
     try {
       await examScheduleApi.send(id);
-      toast.success('Timetable sent to parents');
+      toast.success(t('academics.scheduleConflict.toastSent'));
       fetchSchedules();
     } catch (err) {
-      toast.error(err.message || 'Failed to send timetable');
+      toast.error(err.message || t('academics.scheduleConflict.toastSendFailed'));
     }
   };
 
@@ -159,10 +160,10 @@ const ExamScheduleConflict = ({ onCreateSchedule }) => {
     setDeleting(true);
     try {
       await examScheduleApi.delete(deleteModal.id);
-      toast.success('Exam schedule deleted');
+      toast.success(t('academics.scheduleConflict.toastDeleted'));
       fetchSchedules();
     } catch {
-      toast.error('Failed to delete exam schedule');
+      toast.error(t('academics.scheduleConflict.toastDeleteFailed'));
     } finally {
       setDeleting(false);
       setDeleteModal({ isOpen: false, id: null, name: '' });
@@ -181,11 +182,10 @@ const ExamScheduleConflict = ({ onCreateSchedule }) => {
           <AlertTriangle size={18} className="text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
           <div>
             <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
-              {conflicts.length} schedule conflict{conflicts.length > 1 ? 's' : ''} detected
+              {t('academics.scheduleConflict.conflictsDetected', { count: conflicts.length })}
             </p>
             <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
-              The highlighted schedules share overlapping date ranges for the same class.
-              Adjust dates or delete duplicates to resolve.
+              {t('academics.scheduleConflict.conflictsHint')}
             </p>
           </div>
         </div>
@@ -195,9 +195,9 @@ const ExamScheduleConflict = ({ onCreateSchedule }) => {
       {schedules.length === 0 ? (
         <div className="text-center py-16">
           <CalendarRange size={40} className="mx-auto mb-3 text-fg-faint" />
-          <p className="text-fg-muted mb-4">No exam schedules yet</p>
+          <p className="text-fg-muted mb-4">{t('academics.scheduleConflict.emptyTitle')}</p>
           <Button color="primary" size="sm" onPress={onCreateSchedule}>
-            Create First Schedule
+            {t('academics.scheduleConflict.createFirst')}
           </Button>
         </div>
       ) : (
@@ -246,11 +246,11 @@ const ExamScheduleConflict = ({ onCreateSchedule }) => {
                             color={STATUS_COLOR[schedule.status] || 'default'}
                             variant="flat"
                           >
-                            {STATUS_LABEL[schedule.status] || schedule.status}
+                            {statusLabel[schedule.status] || schedule.status}
                           </Chip>
                           {hasConflict && (
                             <Chip size="sm" color="warning" variant="flat">
-                              Conflict
+                              {t('academics.scheduleConflict.conflictChip')}
                             </Chip>
                           )}
                         </div>
@@ -273,7 +273,7 @@ const ExamScheduleConflict = ({ onCreateSchedule }) => {
                         <button
                           className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors"
                           onClick={() => handleGenerate(schedule._id)}
-                          title="Generate timetable"
+                          title={t('academics.scheduleConflict.actionGenerate')}
                         >
                           <Zap size={15} className="text-blue-500" />
                         </button>
@@ -282,7 +282,7 @@ const ExamScheduleConflict = ({ onCreateSchedule }) => {
                         <button
                           className="p-2 rounded-lg hover:bg-green-50 dark:hover:bg-green-950 transition-colors"
                           onClick={() => handleConfirm(schedule._id)}
-                          title="Confirm schedule"
+                          title={t('academics.scheduleConflict.actionConfirm')}
                         >
                           <CheckCircle size={15} className="text-green-500" />
                         </button>
@@ -291,7 +291,7 @@ const ExamScheduleConflict = ({ onCreateSchedule }) => {
                         <button
                           className="p-2 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-950 transition-colors"
                           onClick={() => handleSend(schedule._id)}
-                          title="Send to parents"
+                          title={t('academics.scheduleConflict.actionSend')}
                         >
                           <Send size={15} className="text-purple-500" />
                         </button>
@@ -299,7 +299,7 @@ const ExamScheduleConflict = ({ onCreateSchedule }) => {
                       <button
                         className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
                         onClick={() => handleDeleteClick(schedule._id, schedule.name)}
-                        title="Delete schedule"
+                        title={t('academics.scheduleConflict.actionDelete')}
                       >
                         <Trash2 size={15} className="text-red-400" />
                       </button>
@@ -326,17 +326,16 @@ const ExamScheduleConflict = ({ onCreateSchedule }) => {
                 <AlertTriangle size={18} className="text-red-500" />
               </div>
               <div>
-                <h3 className="text-base font-medium">Delete Schedule</h3>
+                <h3 className="text-base font-medium">{t('academics.scheduleConflict.deleteTitle')}</h3>
                 <p className="text-sm text-fg-muted font-normal">
-                  This will also delete all generated exams and results.
+                  {t('academics.scheduleConflict.deleteSubtitle')}
                 </p>
               </div>
             </div>
           </ModalHeader>
           <ModalBody className="py-4">
             <p className="text-sm text-fg-muted">
-              Are you sure you want to delete{' '}
-              <span className="font-medium">{deleteModal.name}</span>?
+              {t('academics.scheduleConflict.deleteConfirm', { name: deleteModal.name })}
             </p>
           </ModalBody>
           <ModalFooter className="border-t border-divider">
@@ -345,10 +344,10 @@ const ExamScheduleConflict = ({ onCreateSchedule }) => {
               onPress={() => setDeleteModal({ isOpen: false, id: null, name: '' })}
               isDisabled={deleting}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button color="danger" onPress={handleConfirmDelete} isLoading={deleting}>
-              Delete
+              {t('common.delete')}
             </Button>
           </ModalFooter>
         </ModalContent>

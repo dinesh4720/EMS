@@ -1,30 +1,32 @@
 import { useState, useEffect } from 'react';
 import { Select, SelectItem, Input, Button } from '@heroui/react';
 import { Calendar } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { examScheduleApi, classesApi } from '../../services/api';
 import toast from 'react-hot-toast';
 import { useAppMeta } from '../../context/AppContext';
 import { formatShortDate } from '../../utils/dateFormatter';
 import { createExamScheduleSchema, parseFormSchema } from '../../validators/formSchemas';
 
-const EXAM_TYPES = [
-  { value: 'unit_test', label: 'Unit Test' },
-  { value: 'quiz', label: 'Quiz' },
-  { value: 'midterm', label: 'Mid Term' },
-  { value: 'final', label: 'Final Exam' },
-  { value: 'quarterly', label: 'Quarterly' },
-  { value: 'half_yearly', label: 'Half Yearly' },
-  { value: 'annual', label: 'Annual' },
-];
-
-const SESSION_TYPES = [
-  { value: 'morning', label: 'Morning' },
-  { value: 'afternoon', label: 'Afternoon' },
-  { value: 'both', label: 'Both' },
-];
-
 const CreateExamScheduleModal = ({ onClose, onSuccess }) => {
+  const { t } = useTranslation();
   const { currentAcademicYear } = useAppMeta();
+
+  const EXAM_TYPES = [
+    { value: 'unit_test', label: t('academics.createSchedule.typeUnitTest') },
+    { value: 'quiz', label: t('academics.createSchedule.typeQuiz') },
+    { value: 'midterm', label: t('academics.createSchedule.typeMidterm') },
+    { value: 'final', label: t('academics.createSchedule.typeFinal') },
+    { value: 'quarterly', label: t('academics.createSchedule.typeQuarterly') },
+    { value: 'half_yearly', label: t('academics.createSchedule.typeHalfYearly') },
+    { value: 'annual', label: t('academics.createSchedule.typeAnnual') },
+  ];
+
+  const SESSION_TYPES = [
+    { value: 'morning', label: t('academics.createSchedule.sessionMorning') },
+    { value: 'afternoon', label: t('academics.createSchedule.sessionAfternoon') },
+    { value: 'both', label: t('academics.createSchedule.sessionBoth') },
+  ];
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [classes, setClasses] = useState([]);
@@ -58,9 +60,9 @@ const CreateExamScheduleModal = ({ onClose, onSuccess }) => {
         });
         setClasses(Array.from(unique.values()));
       })
-      .catch(() => toast.error('Failed to load classes'))
+      .catch(() => toast.error(t('academics.createSchedule.toastLoadClassesFailed')))
       .finally(() => setLoadingData(false));
-  }, []);
+  }, [t]);
 
   const handleChange = (field, value) => {
     setErrors((prev) => ({ ...prev, [field]: undefined }));
@@ -88,7 +90,7 @@ const CreateExamScheduleModal = ({ onClose, onSuccess }) => {
     setConflictError(null);
 
     if (!validate()) {
-      toast.error('Please fix the errors in the form');
+      toast.error(t('academics.createSchedule.toastFixErrors'));
       return;
     }
 
@@ -105,7 +107,7 @@ const CreateExamScheduleModal = ({ onClose, onSuccess }) => {
         defaultPassingMarks: parseInt(formData.defaultPassingMarks) || 35,
         academicYear: currentAcademicYear,
       });
-      toast.success('Exam schedule created successfully');
+      toast.success(t('academics.createSchedule.toastCreated'));
       onSuccess?.();
     } catch (error) {
       // 409 Conflict — show which existing schedules overlap
@@ -115,15 +117,15 @@ const CreateExamScheduleModal = ({ onClose, onSuccess }) => {
           const names = conflicts
             .map((c) => `"${c.scheduleName}" (${formatShortDate(c.startDate)} – ${formatShortDate(c.endDate)})`)
             .join(', ');
-          setConflictError(`Overlaps with: ${names}`);
-          toast.error(`Schedule conflict with ${conflicts.length} existing schedule${conflicts.length > 1 ? 's' : ''}`);
+          setConflictError(t('academics.createSchedule.overlapsWith', { names }));
+          toast.error(t('academics.createSchedule.toastConflict', { count: conflicts.length }));
         } else {
           // Duplicate name conflict (no conflicts array)
-          setConflictError(error.message || 'An exam schedule with this name already exists');
-          toast.error(error.message || 'Duplicate schedule name');
+          setConflictError(error.message || t('academics.createSchedule.duplicateName'));
+          toast.error(error.message || t('academics.createSchedule.toastDuplicate'));
         }
       } else {
-        toast.error('Failed to create exam schedule: ' + (error.message || 'Unknown error'));
+        toast.error(t('academics.createSchedule.toastCreateFailed', { error: error.message || t('academics.createSchedule.unknownError') }));
       }
     } finally {
       setLoading(false);
@@ -135,13 +137,13 @@ const CreateExamScheduleModal = ({ onClose, onSuccess }) => {
       <div>
         <h4 className="text-sm font-medium text-fg mb-3 flex items-center gap-2">
           <Calendar size={16} className="text-fg-faint" />
-          Schedule Details
+          {t('academics.createSchedule.detailsHeading')}
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
-            label="Schedule Name"
+            label={t('academics.createSchedule.nameLabel')}
             labelPlacement="outside"
-            placeholder="e.g. Mid-Term March 2026"
+            placeholder={t('academics.createSchedule.namePlaceholder')}
             value={formData.name}
             onValueChange={(v) => handleChange('name', v)}
             isInvalid={!!errors.name}
@@ -149,17 +151,17 @@ const CreateExamScheduleModal = ({ onClose, onSuccess }) => {
             isRequired
           />
           <Select
-            label="Exam Type"
+            label={t('academics.createSchedule.examTypeLabel')}
             labelPlacement="outside"
             selectedKeys={formData.type}
             onSelectionChange={(v) => handleChange('type', v)}
           >
-            {EXAM_TYPES.map((t) => (
-              <SelectItem key={t.value}>{t.label}</SelectItem>
+            {EXAM_TYPES.map((examType) => (
+              <SelectItem key={examType.value}>{examType.label}</SelectItem>
             ))}
           </Select>
           <Input
-            label="Start Date"
+            label={t('academics.createSchedule.startDateLabel')}
             labelPlacement="outside"
             type="date"
             value={formData.startDate}
@@ -169,7 +171,7 @@ const CreateExamScheduleModal = ({ onClose, onSuccess }) => {
             isRequired
           />
           <Input
-            label="End Date"
+            label={t('academics.createSchedule.endDateLabel')}
             labelPlacement="outside"
             type="date"
             value={formData.endDate}
@@ -182,9 +184,9 @@ const CreateExamScheduleModal = ({ onClose, onSuccess }) => {
       </div>
 
       <Select
-        label="Classes"
+        label={t('academics.createSchedule.classesLabel')}
         labelPlacement="outside"
-        placeholder={loadingData ? 'Loading...' : 'Select classes'}
+        placeholder={loadingData ? t('academics.createSchedule.loadingPlaceholder') : t('academics.createSchedule.selectClassesPlaceholder')}
         selectionMode="multiple"
         selectedKeys={formData.classIds}
         onSelectionChange={(v) => handleChange('classIds', v)}
@@ -200,7 +202,7 @@ const CreateExamScheduleModal = ({ onClose, onSuccess }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Select
-          label="Session"
+          label={t('academics.createSchedule.sessionLabel')}
           labelPlacement="outside"
           selectedKeys={formData.sessionType}
           onSelectionChange={(v) => handleChange('sessionType', v)}
@@ -210,7 +212,7 @@ const CreateExamScheduleModal = ({ onClose, onSuccess }) => {
           ))}
         </Select>
         <Input
-          label="Max Marks"
+          label={t('academics.createSchedule.maxMarksLabel')}
           labelPlacement="outside"
           type="number"
           value={formData.defaultMaxMarks}
@@ -219,7 +221,7 @@ const CreateExamScheduleModal = ({ onClose, onSuccess }) => {
           errorMessage={errors.defaultMaxMarks}
         />
         <Input
-          label="Passing Marks"
+          label={t('academics.createSchedule.passingMarksLabel')}
           labelPlacement="outside"
           type="number"
           value={formData.defaultPassingMarks}
@@ -232,20 +234,20 @@ const CreateExamScheduleModal = ({ onClose, onSuccess }) => {
       {/* Conflict error — shows which schedules overlap */}
       {conflictError && (
         <div className="rounded-lg border border-red-200 bg-red-50 dark:bg-red-950 dark:border-red-800 px-4 py-3">
-          <p className="text-sm font-medium text-red-700 dark:text-red-400 mb-1">Schedule Conflict</p>
+          <p className="text-sm font-medium text-red-700 dark:text-red-400 mb-1">{t('academics.createSchedule.conflictTitle')}</p>
           <p className="text-sm text-red-600 dark:text-red-300">{conflictError}</p>
           <p className="text-xs text-red-500 dark:text-red-400 mt-1">
-            Adjust the date range or select different classes to avoid the overlap.
+            {t('academics.createSchedule.conflictHint')}
           </p>
         </div>
       )}
 
       <div className="flex justify-end gap-3 pt-2">
         <Button variant="flat" onPress={onClose} isDisabled={loading}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button type="submit" color="primary" isLoading={loading}>
-          Create Schedule
+          {t('academics.createSchedule.submit')}
         </Button>
       </div>
     </form>
