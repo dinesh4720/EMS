@@ -16,6 +16,7 @@ import Alert from "../../components/ui/Alert";
 import Modal from "../../components/ui/Modal";
 import Drawer from "../../components/ui/Drawer";
 import EmptyState from "../../components/ui/EmptyState";
+import Skeleton from "../../components/ui/Skeleton";
 
 const ATTENDANCE_STATUSES = [
   { key: 'present', labelKey: 'attendance.present', label: 'Present', icon: Check, shortcut: 'P' },
@@ -572,7 +573,7 @@ export default function Attendance({ classId }) {
             </button>
           </div>
           {isLoadingAttendance && (
-            <span aria-hidden="true" className="inline-block w-4 h-4 rounded-full border-2 border-[var(--border-strong)] border-t-[var(--accent)] animate-spin" />
+            <Skeleton variant="rect" className="h-5 w-16 shrink-0" />
           )}
         </div>
 

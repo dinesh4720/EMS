@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { request } from '../../services/api';
-import { PageLayout, MinimalButton } from '../../components/ui';
+import { PageLayout, MinimalButton, Skeleton, SkeletonText } from '../../components/ui';
 import toast from 'react-hot-toast';
 import { formatShortDate, formatDateTime} from '../../utils/dateFormatter';
 import { useTranslation } from 'react-i18next';
@@ -433,8 +433,10 @@ export default function EmailCampaignsPage() {
           </ModalHeader>
           <ModalBody className="px-0 py-0">
             {previewModal.loading ? (
-              <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400" />
+              <div className="px-6 py-6 space-y-4">
+                <Skeleton variant="text" className="h-5 w-1/3" />
+                <SkeletonText lines={6} />
+                <Skeleton variant="rect" className="h-32 w-full" />
               </div>
             ) : (
               <iframe
