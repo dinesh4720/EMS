@@ -107,7 +107,7 @@ function DashboardTabs({
     );
   };
   const handleReportCard = () => {
-    navigate(`/students/${studentId}/report-card`);
+    navigate(`/academics/cbse-report-card?student=${studentId}`);
   };
   const handleLogNote = () => {
     setActiveTab("remarks");
