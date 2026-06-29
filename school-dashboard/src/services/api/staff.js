@@ -1,6 +1,76 @@
 import { request } from './core.js';
 
 export const staffApi = {
+  /**
+   * Server-driven paginated list for the Staff dashboard (SCH-193 / PAG-28-FE).
+   *
+   * Mirrors `studentsApi.list` and returns the `{ data, pagination, facets }`
+   * envelope from the paginated branch of `GET /staff` (added in EMS-backend
+   * PR #131). The `facets` aggregate is computed server-side over
+   * (schoolId + q + today) so the dashboard's filter pills can be driven
+   * without scanning the full in-memory list.
+   *
+   * Params (`undefined`, `null`, `''` and `'all'` are stripped so the URL
+   * stays clean — matches `studentsApi.list`):
+   *   - page, limit                         — pagination
+   *   - q                                   — server-side substring search
+   *   - role, department, employmentType,
+   *     gender, status                      — facet / status filters
+   *   - today                               — 'true' restricts to staff with
+   *                                          a present/absent/leave record
+   *                                          for today (StaffAttendance join)
+   *   - includeFacets                       — 'false' skips the 4 aggregation
+   *                                          queries when only refreshing the
+   *                                          page (e.g. paging within a fixed
+   *                                          filter set)
+   *
+   * `opts.skipCache` is forwarded to `request`; `opts.signal` is passed through
+   * so callers can abort in-flight requests on unmount or param change.
+   *
+   * NOTE: this is intentionally separate from `staffApi.getAll` (below) — the
+   * AppContext bootstrap and ~40 consumers still use `getAll`, which returns
+   * the full list and must not change shape.
+   */
+  list: async (params = {}, options = {}) => {
+    const query = new URLSearchParams();
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === undefined || value === null || value === '' || value === 'all') {
+        return;
+      }
+      // Arrays (e.g. role: ['Teacher', 'Admin']) become a single comma param,
+      // matching the backend's parseCommaList semantics from PR #131.
+      if (Array.isArray(value)) {
+        if (value.length === 0) return;
+        query.set(key, value.join(','));
+        return;
+      }
+      query.set(key, value);
+    });
+
+    const queryString = query.toString();
+    const { skipCache = false, ...restOpts } = options;
+    const response = await request(`/staff${queryString ? `?${queryString}` : ''}`, {
+      skipCache,
+      ...restOpts,
+    });
+
+    return {
+      data: response.data || [],
+      pagination: response.pagination || {
+        page: params.page || 1,
+        limit: params.limit || 25,
+        total: Array.isArray(response.data) ? response.data.length : 0,
+        totalPages: 1,
+      },
+      facets: response.facets || {
+        role: [],
+        department: [],
+        employmentType: [],
+        gender: [],
+      },
+    };
+  },
   getAll: (skipCache = false, opts) => request('/staff', { skipCache, ...opts }),
   getById: (id, opts) => request(`/staff/${id}`, opts),
   getClasses: (id, opts) => request(`/staff/${id}/classes`, opts),
