@@ -42,6 +42,18 @@ export const studentsApi = {
       }
     };
   },
+  /**
+   * Bulk-fetch every student matching the given scope (all students when no
+   * `classId` is provided; otherwise every student of one class). Internally
+   * walks every page in a tight loop — at ~3k students with the default 100/page
+   * cap this is ~30 sequential round-trips, and the app-context used to re-run
+   * the loop after every student create/update/delete.
+   *
+   * [PAG-05] Do NOT call this from app-shell hydration. Per-screen pages must
+   * fetch their own page via `studentsApi.list` + `usePaginatedQuery`. Reserve
+   * `getAll` for narrow scopes where the full result set is small and bounded
+   * (e.g. one classId, or a CSV duplicate check on import).
+   */
   getAll: async (classIdOrOptions, { signal } = {}) => {
     let params = {};
     let skipCache = false;

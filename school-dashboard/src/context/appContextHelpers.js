@@ -7,7 +7,6 @@
 
 import {
   staffApi,
-  studentsApi,
   classesApi,
   settingsApi,
   staffAttendanceApi,
@@ -189,8 +188,14 @@ async function fetchStaffAttendanceData({ signal } = {}) {
   }
 }
 
-async function loadAllStudentsForContext(skipCache = false, { signal } = {}) {
-  return studentsApi.getAll({ skipCache }, { signal });
+async function loadAllStudentsForContext(_skipCache = false, _opts = {}) {
+  // [PAG-05] Global student hydration removed. The app shell used to fetch every
+  // student page (e.g. 30 round-trips for ~3k students) on every "student-heavy"
+  // route, then re-run the same loop on every create/update/delete via the
+  // `app-context-data` query invalidation. Per-screen pages now own their own
+  // server-paginated fetches through `studentsApi.list` + `usePaginatedQuery`,
+  // so the app-context no longer needs to bulk-hydrate students.
+  return [];
 }
 
 async function fetchTeacherScopedAppData(
