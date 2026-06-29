@@ -27,6 +27,7 @@ import {
 import PeopleSection from "./dashboard/sections/PeopleSection";
 import DashboardSkeleton from "./dashboard/skeleton/DashboardSkeleton";
 import { compactINR } from "./dashboard/formatters";
+import { formatUpcomingDayLabel } from "./dashboard/dashboardHelpers";
 
 const LEGACY_SECTION_MAP = {
   yourDay: "yourDay",
@@ -81,6 +82,8 @@ function Dashboard() {
     recentAnnouncements,
     feeCollectionData,
     dashboardLoading,
+    urgentSubstitution,
+    upcomingPtm,
     reload,
   } = useDashboardData({
     classes,
@@ -161,26 +164,55 @@ function Dashboard() {
         onPrimary: () => navigate("/fees"),
       });
     }
-    items.push({
-      id: "coverage",
-      kind: "warn",
-      title: "Period 3 · 10-B unstaffed",
-      body: "Substitute not assigned",
-      meta: "10:30 – 11:15",
-      primary: "Assign substitute",
-      onPrimary: () => navigate("/staffs"),
-    });
-    items.push({
-      id: "ptm",
-      kind: "info",
-      title: "PTM agenda · Dec 20",
-      body: "Finalize discussion points",
-      meta: "3 days left",
-      primary: "Open agenda",
-      onPrimary: () => navigate("/ptm"),
-    });
+    if (urgentSubstitution) {
+      const alert = urgentSubstitution.alert;
+      const classLabel = alert?.className || "a class";
+      const periodLabel = alert?.periodName || (alert?.period ? `Period ${alert.period}` : "Period");
+      const absentName = alert?.absentTeacherId?.name || alert?.absentTeacher?.name;
+      const subName =
+        typeof alert?.substituteTeacherId === "object"
+          ? alert.substituteTeacherId?.name
+          : null;
+      if (urgentSubstitution.unassigned) {
+        items.push({
+          id: `coverage-${alert?._id || "current"}`,
+          kind: "warn",
+          title: `${periodLabel} · ${classLabel} unstaffed`,
+          body: absentName ? `${absentName} absent · Substitute not assigned` : "Substitute not assigned",
+          meta: alert?.timeSlot || "—",
+          primary: "Assign substitute",
+          onPrimary: () => navigate("/staffs"),
+        });
+      } else {
+        items.push({
+          id: `coverage-${alert?._id || "current"}`,
+          kind: "info",
+          title: `${periodLabel} · ${classLabel}`,
+          body: absentName && subName ? `${absentName} → ${subName}` : "Substitute assigned",
+          meta: alert?.timeSlot || "—",
+          primary: "View substitution",
+          onPrimary: () => navigate("/staffs"),
+        });
+      }
+    }
+    if (upcomingPtm) {
+      const ptmDate = upcomingPtm.date || upcomingPtm.scheduledFor;
+      const isOngoing = String(upcomingPtm.status || "").toLowerCase() === "ongoing";
+      const classLabel = upcomingPtm.classId?.name
+        ? `${upcomingPtm.classId.name}${upcomingPtm.classId.section ? `-${upcomingPtm.classId.section}` : ""}`
+        : null;
+      items.push({
+        id: `ptm-${upcomingPtm._id || "current"}`,
+        kind: isOngoing ? "warn" : "info",
+        title: `PTM agenda · ${isOngoing ? "today" : formatUpcomingDayLabel(ptmDate)}`,
+        body: classLabel || upcomingPtm.title || "Finalize discussion points",
+        meta: isOngoing ? "Ongoing now" : formatUpcomingDayLabel(ptmDate),
+        primary: "Open agenda",
+        onPrimary: () => navigate("/ptm"),
+      });
+    }
     return items.filter((item) => !dismissed.has(item.id)).slice(0, 3);
-  }, [feeDefaultersCount, paymentSnapshot.totalPending, navigate, dismissed]);
+  }, [feeDefaultersCount, paymentSnapshot.totalPending, navigate, dismissed, urgentSubstitution, upcomingPtm]);
 
   const pendingCount = priorities.length;
 
