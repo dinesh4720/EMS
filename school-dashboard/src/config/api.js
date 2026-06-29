@@ -18,7 +18,7 @@ const resolveApiUrl = () => {
     return raw.trim();
   }
   if (import.meta.env.DEV) {
-    return 'http://localhost:3002/api';
+    return 'http://localhost:3002/api/v1';
   }
   return null; // missing in production — CONFIG_ERROR will be set
 };
@@ -48,7 +48,7 @@ export const CONFIG_ERROR = (() => {
   return null;
 })();
 
-// Derive socket URL from API_URL by stripping the /api suffix, unless explicitly overridden.
+// Derive socket URL from API_URL by stripping the /api or /api/v1 suffix, unless explicitly overridden.
 // Override via VITE_SOCKET_URL when API and socket servers run on different domains.
 const resolveSocketUrl = () => {
   const raw = import.meta.env.VITE_SOCKET_URL;
@@ -56,7 +56,7 @@ const resolveSocketUrl = () => {
     return raw.trim();
   }
   if (!API_URL) return null; // CONFIG_ERROR will be set; app won't mount
-  return API_URL.replace(/\/api\/?$/, '');
+  return API_URL.replace(/\/api(?:\/v1)?\/?$/, '');
 };
 
 export const SOCKET_URL = resolveSocketUrl();

@@ -25,15 +25,15 @@ beforeEach(() => {
 // ─── libraryApi ───────────────────────────────────────────────────────────────
 
 describe('libraryApi', () => {
-  it('getBooks without params calls /v1/library/books', () => {
+  it('getBooks without params calls /library/books', () => {
     libraryApi.getBooks();
-    expect(request).toHaveBeenCalledWith('/v1/library/books');
+    expect(request).toHaveBeenCalledWith('/library/books');
   });
 
   it('getBooks with params appends query string', () => {
     libraryApi.getBooks({ genre: 'fiction' });
     const url = request.mock.calls[0][0];
-    expect(url).toContain('/v1/library/books?');
+    expect(url).toContain('/library/books?');
     expect(url).toContain('genre=fiction');
   });
 
@@ -47,39 +47,39 @@ describe('libraryApi', () => {
 
   it('getBook calls correct URL for single book', () => {
     libraryApi.getBook('book123');
-    expect(request).toHaveBeenCalledWith('/v1/library/books/book123');
+    expect(request).toHaveBeenCalledWith('/library/books/book123');
   });
 
   it('createBook sends POST with data', () => {
     const data = { title: 'Harry Potter', author: 'Rowling', isbn: '123456' };
     libraryApi.createBook(data);
-    expect(request).toHaveBeenCalledWith('/v1/library/books', {
+    expect(request).toHaveBeenCalledWith('/library/books', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   });
 
-  it('issueBook sends POST to /v1/library/issues', () => {
+  it('issueBook sends POST to /library/issues', () => {
     const data = { bookId: 'book1', studentId: 'stu1', dueDate: '2024-12-31' };
     libraryApi.issueBook(data);
-    expect(request).toHaveBeenCalledWith('/v1/library/issues', {
+    expect(request).toHaveBeenCalledWith('/library/issues', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   });
 
-  it('returnBook sends PUT to /v1/library/issues/:id/return', () => {
+  it('returnBook sends PUT to /library/issues/:id/return', () => {
     const data = { returnDate: '2024-12-01', condition: 'good' };
     libraryApi.returnBook('issue99', data);
-    expect(request).toHaveBeenCalledWith('/v1/library/issues/issue99/return', {
+    expect(request).toHaveBeenCalledWith('/library/issues/issue99/return', {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   });
 
-  it('getStats calls /v1/library/stats', () => {
+  it('getStats calls /library/stats', () => {
     libraryApi.getStats();
-    expect(request).toHaveBeenCalledWith('/v1/library/stats');
+    expect(request).toHaveBeenCalledWith('/library/stats');
   });
 });
 
