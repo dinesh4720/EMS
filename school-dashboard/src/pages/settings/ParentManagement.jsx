@@ -10,6 +10,8 @@ import useConfirmDialog from '../../hooks/useConfirmDialog';
 import StatusBadge from '../../components/ui/StatusBadge';
 import { SkeletonTable } from '../../components/ui/Skeleton';
 import ErrorState from '../../components/ui/ErrorState';
+import Modal from '../../components/ui/Modal';
+import Drawer from '../../components/ui/Drawer';
 
 import {
   Search,
@@ -19,7 +21,6 @@ import {
   KeyRound,
   Power,
   PowerOff,
-  X,
   Copy,
   Check,
   AlertTriangle,
@@ -347,47 +348,39 @@ export default function ParentManagement() {
       )}
 
       {/* Generated Password Modal */}
-      {generatedPassword && !drawerOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" onClick={() => setGeneratedPassword(null)}>
-          <div className="bg-surface rounded-xl p-6 w-full max-w-[400px] shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-fg">{t('pages.passwordReset')}</h3>
-              <button onClick={() => setGeneratedPassword(null)} aria-label={t('pages.close')} title={t('pages.close')} className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded text-fg-faint hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,var(--color-primary))]">
-                <X size={18} aria-hidden="true" />
-              </button>
-            </div>
-            <div className="bg-[var(--warn-bg)] border border-[var(--warn-border)] rounded-lg p-3 mb-4 flex items-start gap-2">
-              <AlertTriangle size={16} className="text-[var(--warn)] mt-0.5 flex-shrink-0" />
-              <p className="text-sm text-[var(--warn)]">{t('pages.shareThisPasswordWithTheParentItWillNotBeShownAgain')}</p>
-            </div>
-            <div className="flex items-center gap-2 bg-surface-2 rounded-lg px-4 py-3">
-              <code className="flex-1 text-sm font-mono font-medium text-fg">{generatedPassword}</code>
-              <button
-                onClick={() => copyToClipboard(generatedPassword)}
-                aria-label={copiedPassword ? "Password copied" : "Copy password"}
-                title={copiedPassword ? "Copied" : "Copy"}
-                className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,var(--color-primary))]"
-              >
-                {copiedPassword ? <Check size={16} className="text-[var(--ok)]" aria-hidden="true" /> : <Copy size={16} className="text-fg-muted" aria-hidden="true" />}
-              </button>
-            </div>
-          </div>
+      <Modal
+        isOpen={!!generatedPassword && !drawerOpen}
+        onClose={() => setGeneratedPassword(null)}
+        title={t('pages.passwordReset')}
+        size="sm"
+      >
+        <div className="bg-[var(--warn-bg)] border border-[var(--warn-border)] rounded-lg p-3 mb-4 flex items-start gap-2">
+          <AlertTriangle size={16} className="text-[var(--warn)] mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-[var(--warn)]">{t('pages.shareThisPasswordWithTheParentItWillNotBeShownAgain')}</p>
         </div>
-      )}
+        <div className="flex items-center gap-2 bg-surface-2 rounded-lg px-4 py-3">
+          <code className="flex-1 text-sm font-mono font-medium text-fg">{generatedPassword}</code>
+          <button
+            onClick={() => copyToClipboard(generatedPassword)}
+            aria-label={copiedPassword ? "Password copied" : "Copy password"}
+            title={copiedPassword ? "Copied" : "Copy"}
+            className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,var(--color-primary))]"
+          >
+            {copiedPassword ? <Check size={16} className="text-[var(--ok)]" aria-hidden="true" /> : <Copy size={16} className="text-fg-muted" aria-hidden="true" />}
+          </button>
+        </div>
+      </Modal>
 
       {/* Detail Drawer */}
-      {drawerOpen && selectedParent && (
-        <div className="fixed inset-0 z-50 flex justify-end" onClick={() => { setDrawerOpen(false); setGeneratedPassword(null); }}>
-          <div className="bg-black/20 absolute inset-0" />
-          <div className="relative bg-surface w-full sm:w-[480px] sm:max-w-[100vw] h-full shadow-xl overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 bg-surface border-b border-divider px-6 py-4 flex items-center justify-between z-10">
-              <h3 className="font-semibold text-fg">{t('pages.parentDetails')}</h3>
-              <button onClick={() => { setDrawerOpen(false); setGeneratedPassword(null); }} aria-label={t('pages.close')} title={t('pages.close')} className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded text-fg-faint hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,var(--color-primary))]">
-                <X size={18} aria-hidden="true" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-6">
+      <Drawer
+        isOpen={drawerOpen && !!selectedParent}
+        onClose={() => { setDrawerOpen(false); setGeneratedPassword(null); }}
+        title={t('pages.parentDetails')}
+        size="md"
+        placement="right"
+      >
+        {selectedParent && (
+        <div className="space-y-6">
               {/* Parent Info */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -491,10 +484,9 @@ export default function ParentManagement() {
                   )}
                 </div>
               </div>
-            </div>
-          </div>
         </div>
-      )}
+        )}
+      </Drawer>
 
       <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </div>
