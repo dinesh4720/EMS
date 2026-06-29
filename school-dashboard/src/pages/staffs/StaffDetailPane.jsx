@@ -51,7 +51,6 @@ export default function StaffDetailPane({
   todayStatus,
   attendancePct,
   checkInTime,
-  recentActivity = [],
   onClose,
   onViewProfile,
   onMarkAttendance,
@@ -182,29 +181,8 @@ export default function StaffDetailPane({
           >
             {formatJoinDate(staff.joinDate)}
           </span>
-        </div>
       </div>
-
-      {/* Recent activity */}
-      <div className="detail-pane__section">
-        <div className="card__title" style={{ marginBottom: 10 }}>
-          Recent activity
-        </div>
-        {recentActivity.length === 0 ? (
-          <div className="subtle" style={{ fontSize: 12 }}>
-            No recent activity recorded.
-          </div>
-        ) : (
-          <ul className="dp-feed">
-            {recentActivity.slice(0, 4).map((entry, i) => (
-              <li key={`${entry.time}-${i}`}>
-                <span className="dp-feed__time mono tnum">{entry.time}</span>
-                <span>{entry.text}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+    </div>
 
       {/* Contact */}
       <div className="detail-pane__section">
