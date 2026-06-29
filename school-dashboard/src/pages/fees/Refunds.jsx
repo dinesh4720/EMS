@@ -6,9 +6,9 @@ import {
   useCallback,
 } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useEntityFetch } from "../../hooks/useEntityFetch";
 import { TablePageSkeleton } from "../../components/skeletons/PageSkeletons";
 import useBulkSelection from "../../hooks/useBulkSelection";
+import { useDebounce } from "../../hooks/useDebounce";
 import { feesApi } from "../../services/api";
 import { useCurrency } from "../../context/hooks/useCurrency";
 import ErrorState from "../../components/ui/ErrorState";
@@ -24,6 +24,24 @@ import RefundsRejectModal from "./RefundsRejectModal";
 import { downloadRefundCsv } from "./refundDownload";
 
 const MOBILE_MAX = 1099;
+const PAGE_SIZE = 20;
+const SEARCH_DEBOUNCE_MS = 400;
+// Preload a 200px margin below the viewport so the next page starts to load
+// before the user hits the bottom of the list.
+const OBSERVER_ROOT_MARGIN = "0px 0px 200px 0px";
+
+// Build the query params for GET /fees/refunds. `search` and `status` are
+// applied server-side (PAG-17) so refunds beyond the first page are still
+// filtered. Empty / "all" values are omitted to keep the URL clean.
+function buildRefundsParams({ search, status, page, limit }) {
+  const params = {};
+  const q = String(search || "").trim();
+  if (q) params.search = q;
+  if (status && status !== "all") params.status = status;
+  if (page) params.page = page;
+  if (limit) params.limit = limit;
+  return params;
+}
 
 export default function Refunds() {
   const { t } = useTranslation();
@@ -31,10 +49,30 @@ export default function Refunds() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  // Search runs server-side; debounce so we don't refetch on every keystroke.
+  const debouncedSearch = useDebounce(searchQuery, SEARCH_DEBOUNCE_MS);
+
+  // Server-backed infinite scroll state (PAG-17). `refunds` accumulates every
+  // page fetched so far; `pagination.total` is the FULL filtered count for
+  // the count chip and bulk-selection "all matching" semantics.
   const [refunds, setRefunds] = useState([]);
+  const [pagination, setPagination] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [fetchError, setFetchError] = useState(null);
   const [actionLoading, setActionLoading] = useState(null);
+
+  // KPI cards come from the /refunds/summary aggregate so they reflect the
+  // FULL filtered dataset, not just the rows currently loaded.
+  const [summary, setSummary] = useState({
+    totalAmount: 0,
+    totalCount: 0,
+    pendingCount: 0,
+    approvedCount: 0,
+    processedCount: 0,
+    rejectedCount: 0,
+  });
 
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectingRefund, setRejectingRefund] = useState(null);
@@ -79,12 +117,56 @@ export default function Refunds() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  const fetchRefunds = useCallback(async () => {
+  // Fetch a single page from the server. Returns `{ refunds, pagination }`
+  // or throws — the caller decides how to surface the error.
+  const fetchPage = useCallback(
+    async (page) => {
+      const params = buildRefundsParams({
+        search: debouncedSearch,
+        status: statusFilter,
+        page,
+        limit: PAGE_SIZE,
+      });
+      const res = await feesApi.getRefunds(params);
+      return {
+        refunds: Array.isArray(res?.refunds) ? res.refunds : [],
+        pagination: res?.pagination ?? null,
+      };
+    },
+    [debouncedSearch, statusFilter]
+  );
+
+  // Reload from page 1 — used on first mount, after every filter/search
+  // change, and after any mutate action (approve/reject/process/create).
+  // Replaces the loaded list and refreshes the KPI summary in parallel.
+  const reload = useCallback(async () => {
+    setLoading(true);
+    setFetchError(null);
+    currentPageRef.current = 1;
     try {
-      setLoading(true);
-      setFetchError(null);
-      const data = await feesApi.getRefunds({});
-      setRefunds(Array.isArray(data) ? data : []);
+      const [pageRes, summaryRes] = await Promise.all([
+        fetchPage(1),
+        feesApi
+          .getRefundsSummary(
+            buildRefundsParams({
+              search: debouncedSearch,
+              status: statusFilter,
+            })
+          )
+          .catch(() => null),
+      ]);
+      setRefunds(pageRes.refunds);
+      setPagination(pageRes.pagination);
+      if (summaryRes && typeof summaryRes === "object") {
+        setSummary({
+          totalAmount: Number(summaryRes.totalAmount) || 0,
+          totalCount: Number(summaryRes.totalCount) || 0,
+          pendingCount: Number(summaryRes.pendingCount) || 0,
+          approvedCount: Number(summaryRes.approvedCount) || 0,
+          processedCount: Number(summaryRes.processedCount) || 0,
+          rejectedCount: Number(summaryRes.rejectedCount) || 0,
+        });
+      }
     } catch (error) {
       logger.error("Error fetching refunds:", error);
       setFetchError(error?.message || t("toast.error.failedToLoadRefunds"));
@@ -92,18 +174,85 @@ export default function Refunds() {
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [fetchPage, debouncedSearch, statusFilter, t]);
+
+  // Reset to page 1 whenever the debounced search or status filter changes.
+  useEffect(() => {
+    reload();
+  }, [reload]);
+
+  // ── Server-backed infinite scroll ───────────────────────────────────
+  // IntersectionObserver triggers `loadMore()` when the sentinel scrolls into
+  // view. Refs hold the latest values so the observer callback (attached once)
+  // never reads stale state.
+  const currentPageRef = useRef(1);
+  const hasMoreRef = useRef(false);
+  const isLoadingMoreRef = useRef(false);
+  const loaderRef = useRef(null);
+
+  const hasMore = (pagination?.total ?? refunds.length) > refunds.length;
 
   useEffect(() => {
-    fetchRefunds();
-  }, [fetchRefunds]);
+    hasMoreRef.current = hasMore;
+  }, [hasMore]);
+  useEffect(() => {
+    isLoadingMoreRef.current = isLoadingMore;
+  }, [isLoadingMore]);
+
+  const loadMore = useCallback(async () => {
+    if (isLoadingMoreRef.current || !hasMoreRef.current) return;
+    const next = (currentPageRef.current || 1) + 1;
+    setIsLoadingMore(true);
+    try {
+      const res = await feesApi.getRefunds(
+        buildRefundsParams({
+          search: debouncedSearch,
+          status: statusFilter,
+          page: next,
+          limit: PAGE_SIZE,
+        })
+      );
+      const rows = Array.isArray(res?.refunds) ? res.refunds : [];
+      currentPageRef.current = next;
+      setRefunds((prev) => {
+        // De-dupe in case the underlying dataset shifted between fetches
+        // (a refund created/deleted while paginating could otherwise re-add
+        // an already-loaded row).
+        const seen = new Set(prev.map((r) => String(r._id)));
+        return [...prev, ...rows.filter((r) => !seen.has(String(r._id)))];
+      });
+      setPagination(res?.pagination ?? null);
+    } catch (error) {
+      logger.error("Error loading more refunds:", error);
+      toast.error(t("toast.error.failedToLoadRefunds"));
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [debouncedSearch, statusFilter, t]);
+
+  useEffect(() => {
+    // The sentinel node only exists once the list (not the skeleton or error
+    // state) is on the screen, so re-attach whenever the load state or the
+    // loaded row count changes — not just when `loadMore`'s identity changes.
+    if (loading) return;
+    const node = loaderRef.current;
+    if (!node) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMore();
+      },
+      { rootMargin: OBSERVER_ROOT_MARGIN, threshold: 0 }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [loadMore, loading, refunds.length]);
 
   const handleApprove = async (refund) => {
     setActionLoading(refund._id);
     try {
       await feesApi.approveRefund(refund._id, {});
       toast.success(t("toast.success.refundApproved"));
-      fetchRefunds();
+      reload();
     } catch {
       toast.error(t("toast.error.failedToApproveRefund"));
     } finally {
@@ -253,7 +402,7 @@ export default function Refunds() {
       setRejectingRefund(null);
       setBulkRejectSelection(null);
       setRejectReason("");
-      fetchRefunds();
+      reload();
     } catch (error) {
       toast.error(
         error?.message ||
@@ -271,7 +420,7 @@ export default function Refunds() {
     try {
       await feesApi.processRefund(refund._id, {});
       toast.success(t("toast.success.refundProcessed"));
-      fetchRefunds();
+      reload();
     } catch {
       toast.error(t("toast.error.failedToProcessRefund"));
     } finally {
@@ -279,29 +428,18 @@ export default function Refunds() {
     }
   };
 
-  const filteredRefunds = useMemo(() => {
-    return refunds.filter((r) => {
-      const studentName = r.studentId?.name || "";
-      const matchesSearch = studentName
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
-      const matchesStatus =
-        statusFilter === "all" || r.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
-  }, [refunds, searchQuery, statusFilter]);
-
-  const { visibleItems: visibleRefunds, hasMore, isLoadingMore, loaderRef } =
-    useEntityFetch(filteredRefunds, [searchQuery, statusFilter]);
+  // Full filtered count (server-side total) — drives the count chip, the
+  // "all refunds loaded" sentinel text, and bulk-selection "all matching".
+  const totalMatching = pagination?.total ?? refunds.length;
 
   const visibleIds = useMemo(
-    () => visibleRefunds.map((r) => String(r._id)),
-    [visibleRefunds]
+    () => refunds.map((r) => String(r._id)),
+    [refunds]
   );
 
   const selection = useBulkSelection({
     visibleIds,
-    totalMatching: filteredRefunds.length,
+    totalMatching,
   });
 
   const toggleCheck = useCallback(
@@ -309,25 +447,16 @@ export default function Refunds() {
     [selection]
   );
 
-  const totalRefunds = filteredRefunds.reduce(
-    (sum, r) => sum + (r.amount || 0),
-    0
-  );
-  const pendingCount = filteredRefunds.filter((r) => r.status === "pending").length;
-  const approvedCount = filteredRefunds.filter((r) => r.status === "approved").length;
-  const processedCount = filteredRefunds.filter((r) => r.status === "processed").length;
-  const rejectedCount = filteredRefunds.filter((r) => r.status === "rejected").length;
-
   const selectedRefund = useMemo(() => {
     if (!selectedId) return null;
-    return visibleRefunds.find((r) => String(r._id) === selectedId) || null;
-  }, [selectedId, visibleRefunds]);
+    return refunds.find((r) => String(r._id) === selectedId) || null;
+  }, [selectedId, refunds]);
 
   useEffect(() => {
     if (isMobileViewport) return;
     if (selectedId) return;
-    if (visibleRefunds.length === 0) return;
-    const first = visibleRefunds[0];
+    if (refunds.length === 0) return;
+    const first = refunds[0];
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev);
@@ -337,23 +466,23 @@ export default function Refunds() {
       { replace: true }
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMobileViewport, selectedId, visibleRefunds.length]);
+  }, [isMobileViewport, selectedId, refunds.length]);
 
   const listRef = useRef(null);
   const rowRefs = useRef(new Map());
 
   const moveSelection = useCallback(
     (delta) => {
-      if (visibleRefunds.length === 0) return;
-      const ids = visibleRefunds.map((r) => String(r._id));
+      if (refunds.length === 0) return;
+      const ids = refunds.map((r) => String(r._id));
       const currentIdx = ids.indexOf(selectedId);
       const nextIdx =
         currentIdx === -1
           ? delta > 0
             ? 0
-            : visibleRefunds.length - 1
-          : Math.min(visibleRefunds.length - 1, Math.max(0, currentIdx + delta));
-      const nextRefund = visibleRefunds[nextIdx];
+            : refunds.length - 1
+          : Math.min(refunds.length - 1, Math.max(0, currentIdx + delta));
+      const nextRefund = refunds[nextIdx];
       if (!nextRefund) return;
       const nextId = String(nextRefund._id);
       setSelectedId(nextId);
@@ -362,7 +491,7 @@ export default function Refunds() {
         rowRefs.current.get(nextId)?.focus({ preventScroll: true });
       });
     },
-    [visibleRefunds, selectedId, setSelectedId]
+    [refunds, selectedId, setSelectedId]
   );
 
   const handleListKeyDown = useCallback(
@@ -434,23 +563,23 @@ export default function Refunds() {
         <div className="refund-kpi">
           <div className="refund-kpi__cell">
             <span className="refund-kpi__label">{t("pages.totalRefunds")}</span>
-            <span className="refund-kpi__value mono tnum">{fmt(totalRefunds)}</span>
+            <span className="refund-kpi__value mono tnum">{fmt(summary.totalAmount)}</span>
           </div>
           <div className="refund-kpi__cell">
             <span className="refund-kpi__label">{t("pages.pending2")}</span>
-            <span className="refund-kpi__value mono tnum">{pendingCount}</span>
+            <span className="refund-kpi__value mono tnum">{summary.pendingCount}</span>
           </div>
           <div className="refund-kpi__cell">
             <span className="refund-kpi__label">{t("pages.approved1")}</span>
-            <span className="refund-kpi__value mono tnum">{approvedCount}</span>
+            <span className="refund-kpi__value mono tnum">{summary.approvedCount}</span>
           </div>
           <div className="refund-kpi__cell">
             <span className="refund-kpi__label">{t("pages.processed")}</span>
-            <span className="refund-kpi__value mono tnum">{processedCount}</span>
+            <span className="refund-kpi__value mono tnum">{summary.processedCount}</span>
           </div>
           <div className="refund-kpi__cell">
             <span className="refund-kpi__label">{t("pages.rejected")}</span>
-            <span className="refund-kpi__value mono tnum">{rejectedCount}</span>
+            <span className="refund-kpi__value mono tnum">{summary.rejectedCount}</span>
           </div>
         </div>
 
@@ -461,7 +590,7 @@ export default function Refunds() {
           onStatusFilterChange={setStatusFilter}
           onOpenNewRefund={() => setNewRefundOpen(true)}
           selection={selection}
-          totalMatching={filteredRefunds.length}
+          totalMatching={totalMatching}
           t={t}
           onBulkApprove={handleBulkApprove}
           onBulkReject={handleBulkRejectClick}
@@ -471,7 +600,7 @@ export default function Refunds() {
         <RefundsList
           listRef={listRef}
           onListKeyDown={handleListKeyDown}
-          visibleRefunds={visibleRefunds}
+          visibleRefunds={refunds}
           searchQuery={searchQuery}
           statusFilter={statusFilter}
           selectedId={selectedId}
@@ -482,7 +611,7 @@ export default function Refunds() {
           loaderRef={loaderRef}
           hasMore={hasMore}
           isLoadingMore={isLoadingMore}
-          totalMatching={filteredRefunds.length}
+          totalMatching={totalMatching}
           currencyFmt={fmt}
           t={t}
         />
@@ -551,7 +680,7 @@ export default function Refunds() {
       <RefundsCreateModal
         open={newRefundOpen}
         onClose={() => setNewRefundOpen(false)}
-        onCreated={fetchRefunds}
+        onCreated={reload}
         t={t}
       />
     </div>
@@ -587,7 +716,7 @@ export default function Refunds() {
           title={t("common.somethingWentWrong", "Something went wrong")}
           description={fetchError}
           retryLabel={t("common.tryAgain", "Try again")}
-          onRetry={fetchRefunds}
+          onRetry={reload}
           size="lg"
         />
       </PageShell>
@@ -597,7 +726,7 @@ export default function Refunds() {
   return (
     <PageShell
       {...shellProps}
-      description={`${filteredRefunds.length} ${filteredRefunds.length === 1 ? "record" : "records"}`}
+      description={`${totalMatching} ${totalMatching === 1 ? "record" : "records"}`}
     >
       {pageContent}
     </PageShell>
