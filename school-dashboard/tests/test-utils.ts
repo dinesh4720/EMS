@@ -2086,10 +2086,10 @@ export async function installMockApi(page: Page, state: MockState): Promise<void
     }
 
     /* ── Data Cleanup ── */
-    if (path === '/settings/data-counts') {
+    if (path === '/data-cleanup/preview') {
       return json({ students: 120, staff: 25, classes: 10, attendance: 500, results: 80 });
     }
-    if (path === '/settings/data-cleanup' && method === 'POST') {
+    if (path === '/data-cleanup/execute' && method === 'POST') {
       return json({ success: true, moved: 735, categories: { students: 120, staff: 25, classes: 10, attendance: 500, results: 80 } });
     }
 
