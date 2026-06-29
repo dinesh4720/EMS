@@ -16,6 +16,14 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import logger from '../../utils/logger';
 
+// CODE-06: stable id generator for editable subject rows so React doesn't
+// misattribute DOM state (focus, controlled input values) when a middle row
+// is removed. Index-as-key on a removable list corrupts identity of rows
+// below the deleted index.
+let __subjectRowIdCounter = 0;
+const newSubjectRowId = () => `subj-row-${++__subjectRowIdCounter}`;
+const withRowIds = (rows) => rows.map((row) => ({ ...row, _rowId: newSubjectRowId() }));
+
 
 // Token-driven grade pill class — maps CBSE grade bands to the
 // status semantics defined in academics.css (.grade-pill--*).
@@ -33,7 +41,7 @@ function MarkEntryModal({ isOpen, onClose, student, classId, academicYear, term,
   const { schoolSettings } = useApp();
   const [subjects, setSubjects] = useState(() => {
     const names = (schoolSettings?.subjects || []).map(s => (typeof s === 'string' ? s : s.name)).filter(Boolean);
-    return names.map(name => ({ subjectName: name, theoryMarks: '', practicalMarks: '' }));
+    return withRowIds(names.map(name => ({ subjectName: name, theoryMarks: '', practicalMarks: '' })));
   });
   const [saving, setSaving] = useState(false);
 
@@ -41,7 +49,7 @@ function MarkEntryModal({ isOpen, onClose, student, classId, academicYear, term,
     setSubjects(prev => prev.map((s, idx) => idx === i ? { ...s, [field]: val } : s));
   };
 
-  const addSubject = () => setSubjects(prev => [...prev, { subjectName: '', theoryMarks: '', practicalMarks: '' }]);
+  const addSubject = () => setSubjects(prev => [...prev, { subjectName: '', theoryMarks: '', practicalMarks: '', _rowId: newSubjectRowId() }]);
   const removeSubject = (i) => setSubjects(prev => prev.filter((_, idx) => idx !== i));
 
   const handleSave = async () => {
@@ -93,7 +101,7 @@ function MarkEntryModal({ isOpen, onClose, student, classId, academicYear, term,
               <span className="col-span-1" />
             </div>
             {subjects.map((s, i) => (
-              <div key={`subject-row-${i}`} className="grid grid-cols-12 gap-2 items-center">
+              <div key={s._rowId} className="grid grid-cols-12 gap-2 items-center">
                 <Input
                   size="sm"
                   placeholder={t('academics.subjectNamePlaceholder')}
