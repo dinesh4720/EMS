@@ -32,7 +32,7 @@ export function searchMatch(s, q) {
   );
 }
 
-/* ── sessionStorage helpers for staff filters ── */
+/* ── sessionStorage helpers for staff filter values ── */
 const parseArrayFilter = (key) => {
   const raw = sessionStorage.getItem(`staff-filter-${key}`);
   if (!raw || raw === "all") return [];
@@ -48,109 +48,57 @@ const parseStringFilter = (key, defaultValue = "all") => {
   return raw && raw !== "all" ? raw : defaultValue;
 };
 
+const EMPTY_FACETS = { role: [], department: [], employmentType: [], gender: [] };
+const FACET_KEYS = ["role", "department", "employmentType", "gender"];
+
 /**
- * Owns the pills-based staff filter state (role / department / employment
- * type / gender), its sessionStorage persistence, and the derived option
- * lists, counts, and active-filter tally. Returns everything the list shell
- * needs to filter `visible` plus what <StaffListFilters/> needs to render.
+ * Normalizes whatever the caller passes into the facet shape `<FilterPillsBar/>`
+ * consumes. SCH-193: the canonical input is the server-returned `facets` object
+ * (`{ role: [{ value, count }, ...], ... }`). `null`/`undefined` degrades to an
+ * empty facet set so the pill bar simply has no options until the server
+ * payload lands.
  */
-export function useStaffFilters(staff) {
+function useResolvedFacets(input) {
+  return useMemo(() => {
+    if (!input || typeof input !== "object" || Array.isArray(input)) {
+      return EMPTY_FACETS;
+    }
+    const out = { ...EMPTY_FACETS };
+    for (const key of FACET_KEYS) {
+      const list = Array.isArray(input[key]) ? input[key] : [];
+      out[key] = list
+        .filter((entry) => entry && entry.value != null && entry.value !== "")
+        .map((entry) => ({
+          value: String(entry.value),
+          count: Number(entry.count) || 0,
+        }));
+    }
+    return out;
+  }, [input]);
+}
+
+/**
+ * Pills-based staff filter STATE (role / department / employment type / gender),
+ * its sessionStorage persistence, the active-filter tally, and change handlers.
+ *
+ * SCH-193 / PAG-28-FE: this hook owns only the STATE. The facet-derived pill
+ * options/counts live in `useStaffFiltersConfig`, which is called AFTER the
+ * server payload arrives so it can render pills from real data. Splitting the
+ * two avoids the chicken-and-egg where `useStaffList` needs the filter state
+ * but the facets it returns are what feed the pill config.
+ */
+export function useStaffFilterState() {
   const [roleFilter, setRoleFilter] = useState(() => parseArrayFilter("role"));
   const [departmentFilter, setDepartmentFilter] = useState(() => parseStringFilter("department"));
   const [employmentTypeFilter, setEmploymentTypeFilter] = useState(() => parseStringFilter("employmentType"));
   const [genderFilter, setGenderFilter] = useState(() => parseStringFilter("gender"));
 
-  // ── Derived unique filter values ──
-  const uniqueRoles = useMemo(() => {
-    const set = new Set();
-    staff.forEach((s) => {
-      if (Array.isArray(s.role)) s.role.forEach((r) => { if (r) set.add(r); });
-      else if (s.role) set.add(s.role);
-    });
-    return [...set].sort();
-  }, [staff]);
-
-  const uniqueDepartments = useMemo(() => {
-    const set = new Set();
-    staff.forEach((s) => { if (s.department) set.add(s.department); });
-    return [...set].sort();
-  }, [staff]);
-
-  const uniqueEmploymentTypes = useMemo(() => {
-    const set = new Set();
-    staff.forEach((s) => { if (s.employmentType) set.add(s.employmentType); });
-    return [...set].sort();
-  }, [staff]);
-
-  const uniqueGenders = useMemo(() => {
-    const set = new Set();
-    staff.forEach((s) => { if (s.gender) set.add(s.gender); });
-    return [...set].sort();
-  }, [staff]);
-
-  // ── Filter counts ──
-  const filterCounts = useMemo(() => {
-    const roleCounts = {};
-    const deptCounts = {};
-    const empCounts = {};
-    const genderCounts = {};
-    staff.forEach((s) => {
-      if (Array.isArray(s.role)) {
-        s.role.forEach((r) => { if (r) roleCounts[r] = (roleCounts[r] || 0) + 1; });
-      } else if (s.role) {
-        roleCounts[s.role] = (roleCounts[s.role] || 0) + 1;
-      }
-      if (s.department) deptCounts[s.department] = (deptCounts[s.department] || 0) + 1;
-      if (s.employmentType) empCounts[s.employmentType] = (empCounts[s.employmentType] || 0) + 1;
-      if (s.gender) genderCounts[s.gender] = (genderCounts[s.gender] || 0) + 1;
-    });
-    return { role: roleCounts, department: deptCounts, employmentType: empCounts, gender: genderCounts };
-  }, [staff]);
-
-  // ── Active filter count ──
   const activeFiltersCount =
     roleFilter.length +
     (departmentFilter !== "all" ? 1 : 0) +
     (employmentTypeFilter !== "all" ? 1 : 0) +
     (genderFilter !== "all" ? 1 : 0);
 
-  // ── Filter config for FilterPillsBar ──
-  const filtersConfig = useMemo(() => ({
-    role: {
-      label: "Role",
-      value: roleFilter,
-      mode: "multi",
-      options: uniqueRoles,
-      counts: filterCounts.role,
-      displayLabels: {},
-    },
-    department: {
-      label: "Department",
-      value: departmentFilter,
-      mode: "single",
-      options: uniqueDepartments,
-      counts: filterCounts.department,
-      displayLabels: {},
-    },
-    employmentType: {
-      label: "Employment Type",
-      value: employmentTypeFilter,
-      mode: "single",
-      options: uniqueEmploymentTypes,
-      counts: filterCounts.employmentType,
-      displayLabels: {},
-    },
-    gender: {
-      label: "Gender",
-      value: genderFilter,
-      mode: "single",
-      options: uniqueGenders,
-      counts: filterCounts.gender,
-      displayLabels: {},
-    },
-  }), [roleFilter, departmentFilter, employmentTypeFilter, genderFilter, uniqueRoles, uniqueDepartments, uniqueEmploymentTypes, uniqueGenders, filterCounts]);
-
-  // ── Filter change handler ──
   const handleFilterChange = useCallback((filterKey, value) => {
     const setters = {
       role: setRoleFilter,
@@ -196,7 +144,6 @@ export function useStaffFilters(staff) {
     departmentFilter,
     employmentTypeFilter,
     genderFilter,
-    filtersConfig,
     activeFiltersCount,
     handleFilterChange,
     clearAllFilters,
@@ -204,8 +151,83 @@ export function useStaffFilters(staff) {
 }
 
 /**
+ * Build the `filtersConfig` shape `<FilterPillsBar/>` consumes from the server
+ * facets + the current filter state. SCH-193: pill `options` + `counts` come
+ * from the server-returned `facets` aggregate (computed by GET /staff over
+ * `q` + `today`, excluding facet selections). Each facet is `[{ value, count }]`
+ * server-side; the bar wants `options: string[]` and `counts: { [value]: number }`.
+ */
+export function useStaffFiltersConfig(facets, filterState) {
+  const resolved = useResolvedFacets(facets);
+
+  return useMemo(() => {
+    const buildOptions = (key) => resolved[key].map((f) => f.value);
+    const buildCounts = (key) =>
+      Object.fromEntries(resolved[key].map((f) => [f.value, f.count]));
+
+    return {
+      role: {
+        label: "Role",
+        value: filterState.roleFilter,
+        mode: "multi",
+        options: buildOptions("role"),
+        counts: buildCounts("role"),
+        displayLabels: {},
+      },
+      department: {
+        label: "Department",
+        value: filterState.departmentFilter,
+        mode: "single",
+        options: buildOptions("department"),
+        counts: buildCounts("department"),
+        displayLabels: {},
+      },
+      employmentType: {
+        label: "Employment Type",
+        value: filterState.employmentTypeFilter,
+        mode: "single",
+        options: buildOptions("employmentType"),
+        counts: buildCounts("employmentType"),
+        displayLabels: {},
+      },
+      gender: {
+        label: "Gender",
+        value: filterState.genderFilter,
+        mode: "single",
+        options: buildOptions("gender"),
+        counts: buildCounts("gender"),
+        displayLabels: {},
+      },
+    };
+  }, [
+    resolved,
+    filterState.roleFilter,
+    filterState.departmentFilter,
+    filterState.employmentTypeFilter,
+    filterState.genderFilter,
+  ]);
+}
+
+/**
+ * Back-compat single-call API: state + facet-driven config in one hook.
+ *
+ * SCH-193 / PAG-28-FE: callers that don't need the split (none in this codebase
+ * today — kept for tests and any external consumer) can use this. When `facets`
+ * is null/empty, the returned `filtersConfig` has no options but the filter
+ * STATE is fully usable; the caller rebuilds via `useStaffFiltersConfig` once
+ * the server payload arrives. `StaffList.jsx` uses the split form so the hook
+ * order is stable across renders even before `facets` lands.
+ */
+export function useStaffFilters(facets) {
+  const state = useStaffFilterState();
+  const filtersConfig = useStaffFiltersConfig(facets, state);
+  return { ...state, filtersConfig };
+}
+
+/**
  * Presentational pills bar for the staff list. State and derivations live in
- * `useStaffFilters`; this just renders the shared FilterPillsBar.
+ * `useStaffFilterState` + `useStaffFiltersConfig`; this just renders the shared
+ * FilterPillsBar.
  */
 export default function StaffListFilters({
   filtersConfig,

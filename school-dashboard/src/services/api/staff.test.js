@@ -13,6 +13,111 @@ beforeEach(() => {
 // staffApi
 // ---------------------------------------------------------------------------
 describe('staffApi', () => {
+  // ── staffApi.list (SCH-193 / PAG-28-FE) ───────────────────────────────
+  // Server-driven paginated branch of GET /staff. Mirrors `studentsApi.list`
+  // and returns the `{ data, pagination, facets }` envelope from EMS-backend
+  // PR #131.
+  describe('list — server-driven paginated branch (SCH-193)', () => {
+    it('calls /staff with no query string when all params are empty', async () => {
+      request.mockResolvedValueOnce({ data: [], pagination: {}, facets: {} });
+      await staffApi.list({});
+      expect(request).toHaveBeenCalledWith('/staff', { skipCache: false });
+    });
+
+    it('strips null, undefined, empty string, and "all" params', async () => {
+      request.mockResolvedValueOnce({ data: [], pagination: {}, facets: {} });
+      await staffApi.list({
+        q: null,
+        role: undefined,
+        department: '',
+        employmentType: 'all',
+        gender: 'all',
+        status: 'all',
+        today: undefined,
+      });
+      const [url] = request.mock.calls[0];
+      expect(url).toBe('/staff');
+    });
+
+    it('serializes scalar params (page, limit, q, today, status, facets) into the URL', async () => {
+      request.mockResolvedValueOnce({ data: [], pagination: {}, facets: {} });
+      await staffApi.list({
+        page: 2,
+        limit: 25,
+        q: 'smith',
+        department: 'Math',
+        employmentType: 'Full-Time',
+        gender: 'Female',
+        today: 'true',
+        status: 'active',
+        includeFacets: 'false',
+      });
+      const [url] = request.mock.calls[0];
+      expect(url.startsWith('/staff?')).toBe(true);
+      expect(url).toContain('page=2');
+      expect(url).toContain('limit=25');
+      expect(url).toContain('q=smith');
+      expect(url).toContain('department=Math');
+      expect(url).toContain('employmentType=Full-Time');
+      expect(url).toContain('gender=Female');
+      expect(url).toContain('today=true');
+      expect(url).toContain('status=active');
+      expect(url).toContain('includeFacets=false');
+    });
+
+    it('joins array params (role) into a single comma-separated value', async () => {
+      request.mockResolvedValueOnce({ data: [], pagination: {}, facets: {} });
+      await staffApi.list({ role: ['Teacher', 'Admin'] });
+      const [url] = request.mock.calls[0];
+      expect(url).toContain('role=Teacher%2CAdmin');
+    });
+
+    it('omits empty array params entirely', async () => {
+      request.mockResolvedValueOnce({ data: [], pagination: {}, facets: {} });
+      await staffApi.list({ role: [] });
+      const [url] = request.mock.calls[0];
+      expect(url).toBe('/staff');
+    });
+
+    it('returns the { data, pagination, facets } envelope from the backend', async () => {
+      const data = [{ _id: 'stf1', name: 'Asha' }];
+      const pagination = { page: 1, limit: 25, total: 1, totalPages: 1 };
+      const facets = {
+        role: [{ value: 'Teacher', count: 1 }],
+        department: [],
+        employmentType: [],
+        gender: [],
+      };
+      request.mockResolvedValueOnce({ data, pagination, facets });
+      const result = await staffApi.list({ page: 1 });
+      expect(result.data).toEqual(data);
+      expect(result.pagination).toEqual(pagination);
+      expect(result.facets).toEqual(facets);
+    });
+
+    it('provides default pagination + empty facets when backend omits them', async () => {
+      request.mockResolvedValueOnce({ data: [{ _id: 'a' }, { _id: 'b' }] });
+      const result = await staffApi.list({ page: 3, limit: 10 });
+      expect(result.pagination).toMatchObject({ page: 3, limit: 10, total: 2, totalPages: 1 });
+      expect(result.facets).toEqual({
+        role: [],
+        department: [],
+        employmentType: [],
+        gender: [],
+      });
+    });
+
+    it('forwards skipCache and signal through to request', async () => {
+      request.mockResolvedValueOnce({ data: [], pagination: {}, facets: {} });
+      const ac = new AbortController();
+      await staffApi.list({}, { skipCache: true, signal: ac.signal });
+      expect(request).toHaveBeenCalledWith('/staff', {
+        skipCache: true,
+        signal: ac.signal,
+      });
+    });
+  });
+
   it('getAll — calls /staff with skipCache false by default', () => {
     staffApi.getAll();
     expect(request).toHaveBeenCalledWith('/staff', { skipCache: false });

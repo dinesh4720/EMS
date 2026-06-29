@@ -56,6 +56,24 @@ vi.mock("../../components/ui/PrintPreviewModal", () => ({ default: () => null })
 
 vi.mock("../../services/api", () => ({
   staffAttendanceApi: { markBulk: vi.fn() },
+  staffApi: { list: vi.fn().mockResolvedValue({ data: [], pagination: {}, facets: {} }) },
+}));
+
+// SCH-193: the page consumes the server-driven `useStaffList` hook for rows;
+// provide a deterministic page for the attendance test so the detail pane
+// appears when the URL selects staff-001.
+vi.mock("./hooks/useStaffList", () => ({
+  useStaffList: () => ({
+    data: [
+      { _id: "staff-001", id: "staff-001", name: "Ananya", role: ["Teacher"] },
+    ],
+    pagination: { page: 1, limit: 25, total: 1, totalPages: 1 },
+    facets: { role: [], department: [], employmentType: [], gender: [] },
+    loading: false,
+    error: null,
+    clampedPage: 1,
+    reload: vi.fn(),
+  }),
 }));
 
 import StaffList from "./StaffList";

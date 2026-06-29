@@ -16,16 +16,17 @@ import StaffListToolbar from "./StaffListToolbar";
 import StaffListEmptyState from "./StaffListEmptyState";
 import StaffListFilters, {
   FILTERS,
-  staffMatchesFilter,
-  searchMatch,
-  useStaffFilters,
+  useStaffFilterState,
+  useStaffFiltersConfig,
 } from "./StaffListFilters";
+import { useStaffList } from "./hooks/useStaffList";
 import { staffAttendanceApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { isActiveStaff } from "./utils/staffHelpers";
 
 // Mobile breakpoint — below this the right pane collapses to a Drawer
 const MOBILE_MAX = 1099;
+const DEFAULT_PAGE_SIZE = 25;
 
 export default function StaffList({ onStaffClick, onAddStaff }) {
   const { staff = [], staffAttendance, loading, markStaffAttendance } = useApp();
@@ -89,17 +90,51 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
     return () => { document.title = prev; };
   }, []);
 
-  // ── Pills-based filter state, derivations, and handlers ──
+  // ── Pills-based filter state (role / department / employment type / gender) ──
+  // SCH-193 / PAG-28-FE: filter STATE is independent of facets, so it is
+  // materialized first. The facet-derived pill options/counts are built later
+  // via `useStaffFiltersConfig` once `useStaffList` returns the server payload.
+  // The previous code derived these from the full in-memory `staff` array,
+  // which (a) kept the dashboard on the client-side slice path and (b) produced
+  // pill counts that ignored the active search; the server now computes the
+  // same facets over `q` + `today` (excluding facet selections) in PR #131.
+  const filterState = useStaffFilterState();
   const {
     roleFilter,
     departmentFilter,
     employmentTypeFilter,
     genderFilter,
-    filtersConfig,
     activeFiltersCount,
     handleFilterChange,
     clearAllFilters,
-  } = useStaffFilters(staff);
+  } = filterState;
+
+  // ── Server-driven pagination state (SCH-193 / PAG-28-FE) ──
+  // `page` and `pageSize` live here (URL-synced below); `q` is the raw input
+  // that gets debounced inside `useStaffList`. The segmented filter
+  // (`all`/`active`/`today`) maps to server `status`/`today` params in the hook.
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+
+  const {
+    data: pageData,
+    pagination,
+    facets,
+    loading: listLoading,
+    clampedPage,
+  } = useStaffList({
+    q,
+    filter,
+    roleFilter,
+    departmentFilter,
+    employmentTypeFilter,
+    genderFilter,
+    page,
+    pageSize,
+  });
+
+  // Build the pill-bar config from the server facets + current filter state.
+  const filtersConfig = useStaffFiltersConfig(facets, filterState);
 
   // Today's attendance lookup for a given staff member.
   const todayKey = useMemo(
@@ -116,30 +151,15 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
     [staffAttendance, todayKey]
   );
 
-  // Search + filter pass — preserves underlying ordering
-  const visible = useMemo(() => {
-    return staff.filter((s) => {
-      if (!searchMatch(s, q)) return false;
-      if (!staffMatchesFilter(s, filter, todayStatusOf)) return false;
-
-      // Role filter (multi-select, OR)
-      if (roleFilter.length > 0) {
-        const staffRoles = Array.isArray(s.role) ? s.role : [s.role].filter(Boolean);
-        if (!roleFilter.some((r) => staffRoles.includes(r))) return false;
-      }
-
-      // Department filter (single-select)
-      if (departmentFilter !== "all" && s.department !== departmentFilter) return false;
-
-      // Employment type filter (single-select)
-      if (employmentTypeFilter !== "all" && s.employmentType !== employmentTypeFilter) return false;
-
-      // Gender filter (single-select)
-      if (genderFilter !== "all" && s.gender !== genderFilter) return false;
-
-      return true;
-    });
-  }, [staff, q, filter, todayStatusOf, roleFilter, departmentFilter, employmentTypeFilter, genderFilter]);
+  // ── Visible rows for the current page ──
+  // SCH-193: the server now returns the filtered, paginated slice. `pageData`
+  // IS the visible set; we no longer filter+slice the shared AppContext `staff`
+  // array client-side. `pagination.total` is the FULL filtered count (drives
+  // the count chip + bulk "select all matching N" semantics); the rows we
+  // render are just the current page.
+  const visible = pageData;
+  const totalMatching = pagination?.total ?? visible.length;
+  const totalPages = Math.max(1, pagination?.totalPages ?? 1);
 
   // Stable id list for the shared bulk-selection hook.
   const visibleIds = useMemo(
@@ -149,9 +169,11 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
 
   // Bulk selection — shared hook (REVAMP-101): Esc clears, shift-click range,
   // "Select all" = visible only, "Select all matching N" CTA when applicable.
+  // `totalMatching` is the server-computed filtered count so "select all
+  // matching" advertises the true number even when only one page is loaded.
   const selection = useBulkSelection({
     visibleIds,
-    totalMatching: visible.length,
+    totalMatching,
   });
 
   const statusCounts = useMemo(() => {
@@ -166,13 +188,19 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
     return { all, active, today };
   }, [staff, todayStatusOf]);
 
-  // Selected staff record from the URL
+  // Selected staff record from the URL. The server-paged `visible` array only
+  // holds the current page, so the detail-pane lookup falls back to the shared
+  // AppContext `staff` list (which still bootstraps the full set for the ~40
+  // other consumers). This keeps deep links (`/staffs?id=…`) working even when
+  // the selected staff is not on page 1.
   const selectedStaff = useMemo(() => {
     if (!selectedId) return null;
     return (
-      staff.find((s) => (s._id || s.id) === selectedId) || null
+      visible.find((s) => (s._id || s.id) === selectedId) ||
+      staff.find((s) => (s._id || s.id) === selectedId) ||
+      null
     );
-  }, [selectedId, staff]);
+  }, [selectedId, visible, staff]);
 
   // Auto-select the first visible staff on desktop when nothing is in
   // the URL — matches the design's two-pane default state where the
@@ -195,29 +223,21 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMobileViewport, selectedId, visible.length]);
 
-  // ============ Pagination ============
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
-
-  const totalPages = useMemo(
-    () => Math.max(1, Math.ceil(visible.length / pageSize)),
-    [visible.length, pageSize]
-  );
-
-  const paginatedVisible = useMemo(
-    () => visible.slice((page - 1) * pageSize, page * pageSize),
-    [visible, page, pageSize]
-  );
-
+  // ── Page reset + clamp (SCH-193) ──
+  // Reset to page 1 whenever the filter set changes (search, segmented filter,
+  // or any facet). The server then re-evaluates `totalPages` for the new set.
   useEffect(() => {
     setPage(1);
   }, [q, filter, activeFiltersCount]);
 
+  // Clamp page back into range. The hook exposes `clampedPage` (server-corrected)
+  // so we update the local state without waiting for the next refetch.
   useEffect(() => {
-    if (page > totalPages) {
-      setPage(totalPages);
+    if (clampedPage && clampedPage !== page) {
+      setPage(clampedPage);
     }
-  }, [page, totalPages]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clampedPage]);
 
   // ============ Bulk action handlers ============
   const toggleCheck = useCallback(
@@ -241,9 +261,26 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
   };
 
   const handleBulkMessage = () => {
-    const selectedStaffList = visible.filter((s) =>
-      selection.isSelected(s._id || s.id)
+    // SCH-193: bulk selection may include staff not on the current page (e.g.
+    // "select all matching N"). The page only holds `visible`, so phone
+    // lookups fall back to the shared AppContext `staff` list to resolve
+    // every selected id.
+    const selectedSet = new Set(
+      (selection.selectedIds || []).map((id) => String(id))
     );
+    const isSelectedSource = (s) => {
+      const id = String(s._id || s.id);
+      return selection.allMatchingMode || selectedSet.has(id);
+    };
+    const selectedStaffList = [
+      ...visible.filter(isSelectedSource),
+      ...staff.filter((s) => {
+        const id = String(s._id || s.id);
+        // Avoid double-counting rows already picked from the current page.
+        if (visible.some((v) => String(v._id || v.id) === id)) return false;
+        return isSelectedSource(s);
+      }),
+    ];
     const phones = selectedStaffList
       .map((s) => s.phone || s.mobile)
       .filter(Boolean);
@@ -312,7 +349,9 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
         <div>
           <h1 className="page__title">Staff</h1>
           <p className="page__sub">
-            {loading ? "Loading…" : `${visible.length} of ${staff.length}`}
+            {listLoading || loading
+              ? "Loading…"
+              : `${totalMatching}${pagination?.total != null ? ` of ${staff.length}` : ""}`}
           </p>
         </div>
         <button
@@ -379,19 +418,19 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
             minHeight: 0,
           }}
         >
-          {loading ? (
+          {listLoading || loading ? (
             <div style={{ padding: 16 }}>
               <SkeletonTable columns={4} rows={6} />
             </div>
           ) : visible.length === 0 ? (
             <StaffListEmptyState
               staffCount={staff.length}
-              isFiltered={activeFiltersCount > 0 || Boolean(q)}
+              isFiltered={activeFiltersCount > 0 || Boolean(q) || filter !== "all"}
               onAddStaff={onAddStaff}
               onClearFilters={clearAllFilters}
             />
           ) : (
-            paginatedVisible.map((s) => {
+            visible.map((s) => {
               const id = s._id || s.id;
               return (
                 <StaffListRow
@@ -410,7 +449,7 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
         </ul>
 
         {/* Pagination footer */}
-        {!loading && visible.length > 0 && (
+        {!listLoading && !loading && visible.length > 0 && (
           <div
             className="flex items-center justify-between px-4 py-2 border-t"
             style={{ borderColor: "var(--divider)" }}
@@ -434,7 +473,7 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
               currentPage={page}
               totalPages={totalPages}
               onPageChange={setPage}
-              totalItems={visible.length}
+              totalItems={totalMatching}
               itemLabel="staff"
             />
           </div>
