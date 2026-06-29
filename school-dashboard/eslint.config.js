@@ -9,7 +9,7 @@ const UI_COMPONENT_GLOB = 'src/components/ui/**/*.{js,jsx}';
 
 export default [
   {
-    ignores: ['dist/**', 'node_modules/**', 'public/owlin-tracker.js', 'owlin-sdk/**', 'playwright-report*/**', 'test-results*/**', 'test-student-dashboard.js', 'test-section-validation.js'],
+    ignores: ['dist/**', 'node_modules/**', 'public/owlin-tracker.js', 'owlin-sdk/**', 'playwright-report*/**', 'test-results*/**'],
   },
   js.configs.recommended,
   // Config files run in Node environment
