@@ -50,7 +50,7 @@ export function renderYourDay({ schedule, nowIndex }) {
   );
 }
 
-export function renderActions({ priorities, pendingCount }) {
+export function renderActions({ priorities, pendingCount, onDismiss }) {
   if (priorities.length === 0) return null;
   return (
     <DashboardSection title="Actions" count={pendingCount}>
@@ -64,6 +64,7 @@ export function renderActions({ priorities, pendingCount }) {
             meta={priority.meta}
             primary={priority.primary}
             onPrimary={priority.onPrimary}
+            onDismiss={onDismiss ? () => onDismiss(priority.id) : undefined}
           />
         ))}
       </div>

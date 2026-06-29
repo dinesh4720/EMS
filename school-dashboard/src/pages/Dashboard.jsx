@@ -120,6 +120,14 @@ function Dashboard() {
     setTimeout(() => setRefreshing(false), 600);
   };
 
+  const dismissPriority = useCallback((id) => {
+    setDismissed((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  }, []);
+
   const initialLoading = dashboardLoading;
 
   const firstName = (authUser?.name || "").trim().split(" ")[0] || "there";
@@ -246,7 +254,7 @@ function Dashboard() {
         case "yourDay":
           return renderYourDay({ schedule, nowIndex });
         case "actions":
-          return renderActions({ priorities, pendingCount });
+          return renderActions({ priorities, pendingCount, onDismiss: dismissPriority });
         case "people":
           return (
             <PeopleSection
@@ -280,6 +288,7 @@ function Dashboard() {
       nowIndex,
       priorities,
       pendingCount,
+      dismissPriority,
       navigate,
     ]
   );
