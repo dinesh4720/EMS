@@ -277,12 +277,14 @@ export default function Refunds() {
   };
 
   // [STUB-01] Resolve the list of ids to act on. In "all matching" mode the
-  // hook contract gives us selectedIds=null, so we fall back to the locally
-  // filtered refunds (the dataset the user just opted to operate on).
+  // hook contract gives us selectedIds=null, so we fall back to the loaded
+  // refunds list. Post-PAG-17 the server applies the active search/status
+  // filter, so `refunds` already holds exactly the matching dataset the user
+  // opted to operate on.
   const resolveBulkIds = (sel) => {
     if (!sel) return [];
     if (sel.allMatchingMode) {
-      return filteredRefunds.map((r) => String(r._id));
+      return refunds.map((r) => String(r._id));
     }
     return (sel.selectedIds || []).map(String);
   };
@@ -327,7 +329,7 @@ export default function Refunds() {
     } finally {
       setBulkActionLoading(false);
       sel.clear();
-      if (ok > 0) fetchRefunds();
+      if (ok > 0) reload();
     }
   };
 
@@ -377,7 +379,7 @@ export default function Refunds() {
       setBulkRejectSelection(null);
       setRejectReason("");
       sel.clear();
-      if (ok > 0) fetchRefunds();
+      if (ok > 0) reload();
     }
   };
 
