@@ -398,6 +398,29 @@ export const useApp = () => {
   };
 };
 
+/**
+ * useAppMeta — slim access to cross-cutting app state ONLY:
+ *   loading, settingsLoading, error,
+ *   refetch, refetchSettings,
+ *   currentAcademicYear, selectedAcademicYear, setSelectedAcademicYear,
+ *   showOnboarding, setShowOnboarding.
+ *
+ * Unlike useApp(), this subscribes only to AppContext — a memoized, slim
+ * value — and NOT to the five domain contexts (students/staff/classes/
+ * attendance/settings). Components that need only the cross-cutting fields
+ * above should use this hook so they no longer re-render on every socket
+ * tick, fee payment, attendance mark, or window-refocus refetch (PERF-03).
+ *
+ * If you need domain data (students, staff, classes, schoolSettings, …),
+ * use the focused domain hook instead: useStudents/useStaff/useClasses/
+ * useAttendance/useSettings/useSchool.
+ */
+export const useAppMeta = () => {
+  const context = useContext(AppContext);
+  if (!context) throw new Error("useAppMeta must be used within AppProvider");
+  return context;
+};
+
 // Re-export domain hooks so consumers can import from a single location.
 // Prefer importing from domain context files directly in new code.
 export { useStudents } from "./StudentsContext";

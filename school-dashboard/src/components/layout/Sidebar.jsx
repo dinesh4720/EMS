@@ -4,7 +4,7 @@ import {
   ChevronRight, ChevronsLeft, ChevronsRight, GraduationCap, Search,
 } from "lucide-react";
 import { useChatNotifications } from "../../context/ChatNotificationContext";
-import { useApp } from "../../context/AppContext";
+import { useAppMeta } from "../../context/AppContext";
 import { useSchool } from "../../context/SchoolContext";
 import UserMenu from "./UserMenu";
 import { getPinnedPages, subscribePinnedPages } from "../../utils/pinnedPages";
@@ -29,7 +29,7 @@ function openCommandPalette() {
 function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
   const location = useLocation();
   const { schoolSettings } = useSchool();
-  const { currentAcademicYear } = useApp();
+  const { currentAcademicYear } = useAppMeta();
   const chatNotifications = useChatNotifications();
   const unreadCount = chatNotifications?.unreadCount || 0;
 

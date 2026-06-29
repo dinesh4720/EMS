@@ -5,30 +5,26 @@ import { cn } from "../../utils/cn";
 
 const VARIANT_STYLES = {
   info: {
-    container:
-      "bg-blue-50 text-blue-900 border-blue-200 dark:bg-blue-950/40 dark:text-blue-100 dark:border-blue-900/60",
-    icon: "text-blue-500 dark:text-blue-400",
+    container: "bg-info-bg text-info-token border-info-border",
+    icon: "text-info-token",
     Icon: Info,
     role: "status",
   },
   success: {
-    container:
-      "bg-green-50 text-green-900 border-green-200 dark:bg-green-950/40 dark:text-green-100 dark:border-green-900/60",
-    icon: "text-green-600 dark:text-green-400",
+    container: "bg-ok-bg text-ok border-ok-border",
+    icon: "text-ok",
     Icon: CheckCircle2,
     role: "status",
   },
   warning: {
-    container:
-      "bg-amber-50 text-amber-900 border-amber-200 dark:bg-amber-950/40 dark:text-amber-100 dark:border-amber-900/60",
-    icon: "text-amber-600 dark:text-amber-400",
+    container: "bg-warn-bg text-warn border-warn-border",
+    icon: "text-warn",
     Icon: AlertTriangle,
     role: "status",
   },
   danger: {
-    container:
-      "bg-red-50 text-red-900 border-red-200 dark:bg-red-950/40 dark:text-red-100 dark:border-red-900/60",
-    icon: "text-red-600 dark:text-red-400",
+    container: "bg-danger-bg text-danger-token border-danger-border",
+    icon: "text-danger-token",
     Icon: XCircle,
     role: "alert",
   },

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext, useState, useMemo, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { studentsApi } from "../services/api";
 import toast from "react-hot-toast";
@@ -28,7 +28,7 @@ export function StudentsProvider({ children }) {
     if (hydrated !== undefined) setStudentsHydrated(hydrated);
   }, []);
 
-  const addStudent = async (newStudent) => {
+  const addStudent = useCallback(async (newStudent) => {
     try {
       const created = await studentsApi.create(newStudent);
       setStudents((prev) => [...prev, created]);
@@ -40,9 +40,9 @@ export function StudentsProvider({ children }) {
       err._toastShown = true;
       throw err;
     }
-  };
+  }, [invalidateAppData, t]);
 
-  const updateStudent = async (id, updates) => {
+  const updateStudent = useCallback(async (id, updates) => {
     const prev = students;
     try {
       const updated = await studentsApi.update(id, updates);
@@ -66,16 +66,16 @@ export function StudentsProvider({ children }) {
       setStudents(prev);
       throw err;
     }
-  };
+  }, [students, invalidateAppData, t]);
 
   // Update student in state without API call (for real-time socket updates)
-  const updateStudentLocal = (id, updates) => {
+  const updateStudentLocal = useCallback((id, updates) => {
     setStudents((prev) =>
       prev.map((s) => (String(s.id) === String(id) ? { ...s, ...updates } : s))
     );
-  };
+  }, []);
 
-  const deleteStudent = async (id) => {
+  const deleteStudent = useCallback(async (id) => {
     const prev = students;
     try {
       const result = await studentsApi.delete(id);
@@ -87,35 +87,54 @@ export function StudentsProvider({ children }) {
       setStudents(prev);
       throw err;
     }
-  };
+  }, [students, invalidateAppData]);
 
-  const getStudentById = (id) =>
-    Array.isArray(students) ? students.find((s) => String(s.id) === String(id)) : undefined;
+  const getStudentById = useCallback(
+    (id) =>
+      Array.isArray(students) ? students.find((s) => String(s.id) === String(id)) : undefined,
+    [students]
+  );
 
   // FIXED: Use String() comparison for ObjectId matching and filter by active status
-  const getStudentsByClass = (classId) =>
-    Array.isArray(students)
-      ? students.filter(
-          (s) =>
-            String(s.classId) === String(classId) &&
-            (s.status || "active") === "active" &&
-            s.isDeleted !== true
-        )
-      : [];
+  const getStudentsByClass = useCallback(
+    (classId) =>
+      Array.isArray(students)
+        ? students.filter(
+            (s) =>
+              String(s.classId) === String(classId) &&
+              (s.status || "active") === "active" &&
+              s.isDeleted !== true
+          )
+        : [],
+    [students]
+  );
 
-  const value = {
-    students,
-    studentsHydrated,
-    setStudents,
-    setStudentsHydrated,
-    setStudentsFromQuery,
-    addStudent,
-    updateStudent,
-    updateStudentLocal,
-    deleteStudent,
-    getStudentById,
-    getStudentsByClass,
-  };
+  const value = useMemo(
+    () => ({
+      students,
+      studentsHydrated,
+      setStudents,
+      setStudentsHydrated,
+      setStudentsFromQuery,
+      addStudent,
+      updateStudent,
+      updateStudentLocal,
+      deleteStudent,
+      getStudentById,
+      getStudentsByClass,
+    }),
+    [
+      students,
+      studentsHydrated,
+      setStudentsFromQuery,
+      addStudent,
+      updateStudent,
+      updateStudentLocal,
+      deleteStudent,
+      getStudentById,
+      getStudentsByClass,
+    ]
+  );
 
   return <StudentsContext.Provider value={value}>{children}</StudentsContext.Provider>;
 }

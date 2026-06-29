@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useId } from 'react';
 import { reportsApi } from '../../services/api/extensions';
-import { useApp } from '../../context/AppContext';
+import { useAppMeta } from '../../context/AppContext';
 import { getAcademicYearOptions } from '../../utils/constants';
 import PageHeader from '../../components/ui/PageHeader';
 import Tabs from '../../components/ui/Tabs';
@@ -18,7 +18,7 @@ const TABS = [
 export default function ReportsPage() {
   const baseId = useId();
   const tabpanelId = `${baseId}-tabpanel`;
-  const { currentAcademicYear, selectedAcademicYear, setSelectedAcademicYear } = useApp();
+  const { currentAcademicYear, selectedAcademicYear, setSelectedAcademicYear } = useAppMeta();
   const [activeTab, setActiveTab] = useState('attendance');
   const [metrics, setMetrics] = useState(null);
 

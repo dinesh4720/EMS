@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useApp } from "../context/AppContext";
+import { useAppMeta } from "../context/AppContext";
 import { getAcademicYearOptions } from "../utils/constants";
 
 /**
@@ -8,7 +8,7 @@ import { getAcademicYearOptions } from "../utils/constants";
  * all data views that depend on it automatically refresh.
  */
 export default function AcademicYearSelector() {
-  const { currentAcademicYear, selectedAcademicYear, setSelectedAcademicYear } = useApp();
+  const { currentAcademicYear, selectedAcademicYear, setSelectedAcademicYear } = useAppMeta();
 
   const yearOptions = useMemo(
     () => getAcademicYearOptions(currentAcademicYear, { past: 2, future: 1 }),
