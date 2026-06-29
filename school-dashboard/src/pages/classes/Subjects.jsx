@@ -543,7 +543,7 @@ export default function Subjects() {
                           <Chip
                             size="sm"
                             color={getStatusBadge(chapter.status)}
-                            className="mt-1 h-5 text-[10px]"
+                            className="mt-1 h-5 text-2xs"
                           >
                             {chapter.status === 'not_started' ? t('classes.notStarted', 'Not Started') : chapter.status === 'in_progress' ? t('classes.inProgress', 'In Progress') : chapter.status === 'completed' ? t('pages.completed', 'Completed') : t('classes.notStarted', 'Not Started')}
                           </Chip>
