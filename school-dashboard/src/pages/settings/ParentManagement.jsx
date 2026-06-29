@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import logger from "../../utils/logger";
+import { useDebounce } from "../../hooks/useDebounce";
 import { parentApi } from "../../services/api";
 import { getDateLocale } from '../../i18n/index';
 import { useTranslation } from 'react-i18next';
@@ -30,6 +31,8 @@ export default function ParentManagement() {
   const [parents, setParents] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 0 });
   const [search, setSearch] = useState("");
+  // PAG-25: search runs server-side; debounce so we don't refetch on every keystroke.
+  const debouncedSearch = useDebounce(search, 400);
   const [statusFilter, setStatusFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -52,7 +55,7 @@ export default function ParentManagement() {
     setError(null);
     try {
       const params = { page, limit: 20 };
-      if (search) params.search = search;
+      if (debouncedSearch) params.search = debouncedSearch;
       if (statusFilter) params.status = statusFilter;
 
       const response = await parentApi.getAll(params, { signal });
@@ -73,7 +76,7 @@ export default function ParentManagement() {
         setLoading(false);
       }
     }
-  }, [search, statusFilter]);
+  }, [debouncedSearch, statusFilter]);
 
   useEffect(() => {
     const controller = new AbortController();
