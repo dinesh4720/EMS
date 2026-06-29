@@ -4,7 +4,7 @@ import logger from "../../../utils/logger";
 import toast from "react-hot-toast";
 import { formatShortDate } from '../../../utils/dateFormatter';
 import { useTranslation } from 'react-i18next';
-import { useApp } from '../../../context/AppContext';
+import { useAppMeta } from '../../../context/AppContext';
 import { cleanHealthInfo } from "../utils/studentFormValidation";
 
 /**
@@ -23,7 +23,7 @@ import { cleanHealthInfo } from "../utils/studentFormValidation";
 function useStudentSubmit() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { t } = useTranslation();
-  const { currentAcademicYear } = useApp();
+  const { currentAcademicYear } = useAppMeta();
 
   const generateUniqueId = () => `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 

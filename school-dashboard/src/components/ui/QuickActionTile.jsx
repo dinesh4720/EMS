@@ -7,13 +7,15 @@ import Badge from "./Badge";
 
 const ICON_TONE = {
   neutral: "bg-surface-2 text-fg",
-  primary: "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400",
-  success: "bg-green-50 text-green-600 dark:bg-green-950 dark:text-green-400",
-  warning: "bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400",
-  danger: "bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400",
-  info: "bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400",
-  violet: "bg-violet-50 text-violet-600 dark:bg-violet-950 dark:text-violet-400",
-  emerald: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400",
+  primary: "bg-accent-bg text-accent",
+  success: "bg-ok-bg text-ok",
+  warning: "bg-warn-bg text-warn",
+  danger: "bg-danger-bg text-danger-token",
+  info: "bg-info-bg text-info-token",
+  // No dedicated decorative-hue tokens exist; legacy violet/emerald tones map
+  // onto the closest semantic token (accent / ok) rather than raw palette.
+  violet: "bg-accent-bg text-accent",
+  emerald: "bg-ok-bg text-ok",
 };
 
 const LAYOUT = {

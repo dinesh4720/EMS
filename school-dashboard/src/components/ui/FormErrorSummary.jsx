@@ -33,15 +33,14 @@ const FormErrorSummary = forwardRef(function FormErrorSummary(
       role="alert"
       aria-live="assertive"
       className={cn(
-        "rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900",
-        "dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-100",
+        "rounded-lg border border-danger-border bg-danger-bg px-4 py-3 text-sm text-danger-token",
         className
       )}
     >
       <div className="flex items-start gap-2">
         <AlertCircle
           size={16}
-          className="mt-0.5 shrink-0 text-red-600 dark:text-red-400"
+          className="mt-0.5 shrink-0 text-danger-token"
           aria-hidden="true"
         />
         <div className="flex-1 min-w-0">

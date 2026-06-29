@@ -10,10 +10,10 @@ const TRACK_SIZE = {
 
 const COLOR_STYLES = {
   primary: "bg-fg",
-  success: "bg-green-500",
-  warning: "bg-amber-500",
-  danger: "bg-red-500",
-  info: "bg-blue-500",
+  success: "bg-ok",
+  warning: "bg-warn",
+  danger: "bg-danger-token",
+  info: "bg-info-token",
 };
 
 function clampPercent(value, max) {
@@ -100,10 +100,10 @@ const CIRCULAR_SIZE = {
 
 const CIRCULAR_COLOR = {
   primary: "stroke-fg",
-  success: "stroke-green-500",
-  warning: "stroke-amber-500",
-  danger: "stroke-red-500",
-  info: "stroke-blue-500",
+  success: "stroke-ok",
+  warning: "stroke-warn",
+  danger: "stroke-danger-token",
+  info: "stroke-info-token",
 };
 
 function CircularProgress({
