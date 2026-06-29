@@ -182,18 +182,27 @@ test.describe('Settings — Data Management (Trash, Seed Data, Cleanup)', () => 
     await page.waitForLoadState('networkidle');
     await page.waitForSelector('main, [id="main-content"], nav', { timeout: 15000 });
 
+    // Wait for the data-cleanup page body to actually mount (the shell renders
+    // a "Loading" placeholder before the React tree finishes hydrating) AND for
+    // the preview API to resolve so the per-category count chips populate.
+    await expect(page.getByText('Remove All Data').first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('120').first()).toBeVisible({ timeout: 15_000 });
+
     const body = await page.textContent('body');
 
     // Verify the DataCleanup component is rendered
     expect(body).toContain('Remove All Data');
-    expect(body).toContain('Permanently delete all data');
+    expect(body).toContain('Move selected data to trash');
 
     // Verify warning banner
     expect(body).toContain('Danger Zone');
     expect(body).toContain('move it to Trash');
     expect(body).toContain('30 days');
 
-    // Verify category cards with counts
+    // Verify category cards with counts. The mock (tests/test-utils.ts) returns
+    // the BACKEND's nested shape only — `counts.students.total`, not a flat
+    // `students` number. If the frontend regresses to `data.students`, the
+    // count silently renders as 0 and these assertions fail.
     expect(body).toContain('Students');
     expect(body).toContain('120');
     expect(body).toContain('Staff');
@@ -261,7 +270,10 @@ test.describe('Settings — Data Management (Trash, Seed Data, Cleanup)', () => 
     // Verify results view shows success
     await expect(page.getByText('Moved to Trash!').first()).toBeVisible({ timeout: 10000 });
 
-    // Verify deleted counts are displayed
+    // Verify deleted counts are displayed. The mock returns the BACKEND's nested
+    // shape only — `totalDeleted` and `results.<entity>.total`, not the legacy
+    // flat `moved` / `categories[entity]`. If the frontend regresses, the totals
+    // silently render as 0 and these assertions fail.
     const body = await page.textContent('body');
     expect(body).toContain('735');
     expect(body).toContain('Students');
