@@ -351,10 +351,6 @@ function Dashboard() {
       <div className="moments">
         <span className="moments__lab">Week</span>
         <span>
-          <b>3</b> inter-school finals
-        </span>
-        <span className="moments__dot">·</span>
-        <span>
           <b>
             {attendanceSnapshot.studentRate != null ? `${attendanceSnapshot.studentRate}%` : "—"}
           </b>{" "}
