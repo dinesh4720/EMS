@@ -21,6 +21,13 @@ concurrency:
 jobs:
   test:
     name: Pre-deploy Tests
+    # ci.yml's unit-tests job requests `contents: write` (it commits coverage
+    # badges). A called workflow's GITHUB_TOKEN cannot exceed the caller's, and
+    # this repo's default token is read-only, so without this the whole Deploy
+    # Frontend run is rejected at startup ("workflow file issue"). Grant write
+    # to the calling job only — the deploy jobs below stay read-only.
+    permissions:
+      contents: write
     uses: ./.github/workflows/ci.yml
 
   deploy-dashboard:
