@@ -5,6 +5,10 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+  # Allow this workflow to be invoked as the pre-deploy test gate by deploy.yml
+  # (`uses: ./.github/workflows/ci.yml`). Without workflow_call the reusable-workflow
+  # call is rejected at parse time and every Deploy Frontend run fails.
+  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
