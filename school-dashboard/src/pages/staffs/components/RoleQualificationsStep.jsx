@@ -1,6 +1,7 @@
 import { Input, Select, SelectItem, Chip, Switch, Autocomplete, AutocompleteItem } from "@heroui/react";
 import { Users, Hash, BookOpen, GraduationCap, Briefcase, Upload, Check, Plus, X } from "lucide-react";
 import { STAFF_ROLES } from "../../../constants/roles";
+import { DEPARTMENTS, DEGREE_OPTIONS } from "../../../constants/staffForm";
 import { useTranslation } from "react-i18next";
 import SectionHeader from "./SectionHeader";
 
@@ -12,16 +13,8 @@ const selectStyles = {
 };
 
 const staffTypes = STAFF_ROLES;
-const departments = ["Science", "Mathematics", "Languages", "Social Studies", "Commerce", "Arts", "Physical Education", "IT/Computer", "Library", "Administration", "Accounts", "Management", "Counseling", "Special Education", "Sports", "Others"];
-const degreeOptions = [
-  { label: "B.Ed", value: "B.Ed" }, { label: "M.Ed", value: "M.Ed" },
-  { label: "PhD", value: "PhD" }, { label: "B.Sc", value: "B.Sc" },
-  { label: "M.Sc", value: "M.Sc" }, { label: "B.A", value: "B.A" },
-  { label: "M.A", value: "M.A" }, { label: "B.Com", value: "B.Com" },
-  { label: "M.Com", value: "M.Com" }, { label: "MBA", value: "MBA" },
-  { label: "B.Tech", value: "B.Tech" }, { label: "M.Tech", value: "M.Tech" },
-  { label: "Other", value: "Other" }
-];
+const departments = DEPARTMENTS;
+const degreeOptions = DEGREE_OPTIONS;
 
 // This component renders BOTH Step 2 (Job Details) and Step 3 (Qualifications) content
 // based on the `stepNumber` prop.
