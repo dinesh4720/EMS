@@ -229,7 +229,7 @@ export default function NPSAnalyticsPage() {
                           style={{ height: `${barH}%` }}
                           title={`${t.responses} responses`}
                         />
-                        <span className="text-[10px] text-fg-faint mt-1">{t.month}</span>
+                        <span className="text-2xs text-fg-faint mt-1">{t.month}</span>
                       </div>
                     );
                     });

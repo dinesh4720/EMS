@@ -237,7 +237,7 @@ export default function ChatMessageList({
                     <span className="text-xs font-semibold text-primary truncate group-hover:text-primary-600">
                       {msg.senderName || 'Unknown'}
                     </span>
-                    <span className="text-[10px] text-default-400 dark:text-zinc-600">
+                    <span className="text-2xs text-default-400 dark:text-zinc-600">
                       {formatTime(msg.createdAt)}
                     </span>
                   </div>
@@ -492,7 +492,7 @@ export default function ChatMessageList({
                       )}
                       <div className="flex items-center gap-1.5 mt-1.5 pt-1.5">
                         {msg.isEdited && (
-                          <span className={`text-[10px] ${isMe ? 'text-white/60' : 'text-default-400 dark:text-zinc-500'}`}>
+                          <span className={`text-2xs ${isMe ? 'text-white/60' : 'text-default-400 dark:text-zinc-500'}`}>
                             edited
                           </span>
                         )}

@@ -93,7 +93,7 @@ LinearProgress.propTypes = {
 };
 
 const CIRCULAR_SIZE = {
-  sm: { size: 32, stroke: 3, fontSize: "text-[10px]" },
+  sm: { size: 32, stroke: 3, fontSize: "text-2xs" },
   md: { size: 48, stroke: 4, fontSize: "text-xs" },
   lg: { size: 64, stroke: 5, fontSize: "text-sm" },
 };

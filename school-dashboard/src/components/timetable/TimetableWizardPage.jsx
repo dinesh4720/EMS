@@ -274,7 +274,7 @@ const TimetableWizardPage = () => {
                   </h3>
                   <p className="text-xs text-fg-muted mt-1 line-clamp-2">{tab.desc}</p>
                   {tab.badge && (
-                    <span className={`inline-block mt-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${tab.badge.cls}`}>
+                    <span className={`inline-block mt-2 text-2xs font-bold px-2 py-0.5 rounded-full ${tab.badge.cls}`}>
                       {tab.badge.text}
                     </span>
                   )}
@@ -403,7 +403,7 @@ const TimetableWizardPage = () => {
                         {periodRules.maxPeriodsPerSubjectPerDay}
                       </span>
                     </div>
-                    <div className="flex justify-between text-[10px] text-gray-400 dark:text-zinc-600 mt-1">
+                    <div className="flex justify-between text-2xs text-gray-400 dark:text-zinc-600 mt-1">
                       <span>1</span><span>4</span>
                     </div>
                   </div>
@@ -423,7 +423,7 @@ const TimetableWizardPage = () => {
                         {periodRules.maxPeriodsPerSubjectPerWeek}
                       </span>
                     </div>
-                    <div className="flex justify-between text-[10px] text-gray-400 dark:text-zinc-600 mt-1">
+                    <div className="flex justify-between text-2xs text-gray-400 dark:text-zinc-600 mt-1">
                       <span>1</span><span>12</span>
                     </div>
                   </div>

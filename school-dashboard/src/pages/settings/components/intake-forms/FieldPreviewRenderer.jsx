@@ -148,7 +148,7 @@ const FieldPreviewRenderer = ({ field }) => {
             <Upload size={16} className="text-fg-faint" aria-hidden="true" />
             <div className="text-center">
               <p className="text-xs text-fg-muted font-medium">{t('pages.clickToUploadOrDragAndDrop')}</p>
-              {field.description && <p className="text-[10px] text-fg-faint mt-1">{field.description}</p>}
+              {field.description && <p className="text-2xs text-fg-faint mt-1">{field.description}</p>}
             </div>
             <input
               type="file"
