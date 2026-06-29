@@ -7,6 +7,7 @@ import {
 import { announcementsApi } from "../../services/api";
 import toast from "react-hot-toast";
 import { SkeletonList } from "../../components/ui/Skeleton";
+import StatCard from "../../components/ui/StatCard";
 
 const CHANNEL_CONFIG = {
   email: { label: "Email", icon: Mail, color: "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300", dot: "bg-blue-500" },
@@ -34,21 +35,6 @@ function formatDate(dateString) {
   const d = new Date(dateString);
   if (isNaN(d.getTime())) return "—";
   return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
-}
-
-function StatCard({ label, value, icon: Icon, color, sub }) {
-  return (
-    <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 flex items-start gap-4">
-      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${color}`}>
-        <Icon size={18} />
-      </div>
-      <div>
-        <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
-        <p className="text-sm text-fg-muted">{label}</p>
-        {sub && <p className="mt-0.5 text-xs text-fg-faint">{sub}</p>}
-      </div>
-    </div>
-  );
 }
 
 function ChannelBadge({ channel }) {
@@ -225,21 +211,21 @@ export default function CommunicationLogs() {
           label="Sent This Month"
           value={stats.sentThisMonth?.toLocaleString() ?? "0"}
           icon={Send}
-          color="bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400"
+          color="indigo"
         />
         <StatCard
           label="Total Delivered"
           value={stats.totalDelivered?.toLocaleString() ?? "0"}
           icon={CheckCircle2}
-          color="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400"
-          sub="across all channels"
+          color="emerald"
+          subtext="across all channels"
         />
         <StatCard
           label="Total Campaigns"
           value={announcements.length.toLocaleString()}
           icon={BarChart2}
-          color="bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400"
-          sub="sent announcements"
+          color="amber"
+          subtext="sent announcements"
         />
       </div>
 

@@ -1,17 +1,23 @@
 import { cn } from "../../utils/cn";
 
-export function Field({ label, required, hint, className, children }) {
+export function Field({ label, required, hint, error, className, children }) {
   return (
-    <div className={cn("field", className)}>
+    <label className={cn("field", className)}>
       {label && (
-        <label className="field__label">
+        <span className="field__label">
           {label}
           {required && <span className="req">*</span>}
-        </label>
+        </span>
       )}
       {children}
-      {hint && <span className="field__hint">{hint}</span>}
-    </div>
+      {error ? (
+        <span className="field__hint" style={{ color: "var(--danger)" }}>
+          {error}
+        </span>
+      ) : hint ? (
+        <span className="field__hint">{hint}</span>
+      ) : null}
+    </label>
   );
 }
 
