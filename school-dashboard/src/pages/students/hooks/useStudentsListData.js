@@ -3,10 +3,11 @@
  * Encapsulates all state, data-fetching, filtering, and action logic
  * for the StudentsList page. The component only renders.
  */
-import { useState, useMemo, useEffect, useRef, useCallback, useDeferredValue } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useQuery, keepPreviousData, useQueryClient } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
 // useDisclosure replaced with local useState per design-system compliance
+import { useDebounce } from "../../../hooks/useDebounce";
 
 import { useApp } from "../../../context/AppContext";
 import { studentsApi } from "../../../services/api";
@@ -84,7 +85,7 @@ export function useStudentsListData() {
   const [academicPerformanceFilter, setAcademicPerformanceFilter] = useState(() => parseArrayFilter("academicPerformance"));
   const [attendanceFilter, setAttendanceFilter] = useState(() => parseArrayFilter("attendance"));
   const [localStudents, setLocalStudents] = useState(null);
-  const deferredSearchQuery = useDeferredValue(searchQuery.trim());
+  const deferredSearchQuery = useDebounce(searchQuery.trim(), 300);
 
   // ── Dropdown open/close state ─────────────────────────────────────────────
   const [bulkDropdownOpen, setBulkDropdownOpen] = useState(false);
