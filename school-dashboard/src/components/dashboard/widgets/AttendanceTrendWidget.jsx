@@ -43,19 +43,15 @@ export default function AttendanceTrendWidget({
     if (historicalData.length > 0) return historicalData;
     const studentRate = attendanceSnapshot.studentRate ?? null;
     const staffRate = attendanceSnapshot.staffRate ?? null;
-    const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const todayIdx = new Date().getDay() - 1;
-    return days.map((day, i) => ({
-      day,
-      students:
-        studentRate != null
-          ? Math.max(70, Math.min(99, studentRate + (i - (todayIdx >= 0 ? todayIdx : 3)) * 2))
-          : null,
-      staff:
-        staffRate != null
-          ? Math.max(70, Math.min(99, staffRate + (i - (todayIdx >= 0 ? todayIdx : 3)) * 1.5))
-          : null,
-    }));
+    if (studentRate == null && staffRate == null) return [];
+    const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    return [
+      {
+        day: dayLabels[new Date().getDay()],
+        students: studentRate,
+        staff: staffRate,
+      },
+    ];
   }, [historicalData, attendanceSnapshot]);
 
   const hasData = data.some((row) => row.students != null || row.staff != null);
