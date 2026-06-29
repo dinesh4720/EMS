@@ -135,9 +135,36 @@ export const feesApi = {
   },
 
   // Refunds
-  getRefunds: (filters) => {
-    const params = new URLSearchParams(filters).toString();
-    return request(`/fees/refunds${params ? `?${params}` : ''}`);
+  // Server-paginated since PAG-17 (was fetch-all + client slicing). Returns
+  // { refunds, pagination }; the bare-array shape is normalized for callers
+  // that haven't migrated yet.
+  getRefunds: async (filters) => {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          params.set(key, value);
+        }
+      });
+    }
+    const qs = params.toString();
+    const res = await request(`/fees/refunds${qs ? `?${qs}` : ''}`);
+    if (Array.isArray(res)) return { refunds: res, pagination: null };
+    return { refunds: res?.refunds ?? [], pagination: res?.pagination ?? null };
+  },
+  // Refunds-page KPI summary (PAG-17) — total refund amount + per-status
+  // counts computed over the FULL filtered dataset, not the loaded page.
+  getRefundsSummary: (filters = {}) => {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          params.set(key, value);
+        }
+      });
+    }
+    const qs = params.toString();
+    return request(`/fees/refunds/summary${qs ? `?${qs}` : ''}`);
   },
   getRefundById: (id) => request(`/fees/refunds/${id}`),
   createRefund: (data) => request('/fees/refunds', { method: 'POST', body: JSON.stringify(data) }),
