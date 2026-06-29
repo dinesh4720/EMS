@@ -10,7 +10,7 @@ import {
   Select,
   Textarea,
 } from "../../../components/ui";
-import { useApp } from "../../../context/AppContext";
+import { useAppMeta } from "../../../context/AppContext";
 import { useCurrency } from "../../../context/hooks/useCurrency";
 import FeeHeadEditorRow from "./FeeHeadEditorRow";
 
@@ -35,7 +35,7 @@ export default function FeeTemplateModal({
   onRemoveFeeHead,
 }) {
   const { t } = useTranslation();
-  const { currentAcademicYear } = useApp();
+  const { currentAcademicYear } = useAppMeta();
   const { fmt } = useCurrency();
 
   const sectionOptions = useMemo(() => SECTIONS.map((sec) => ({
