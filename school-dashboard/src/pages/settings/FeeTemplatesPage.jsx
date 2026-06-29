@@ -4,7 +4,7 @@ import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 
 import { request } from "../../services/api.js";
-import { useApp } from "../../context/AppContext";
+import { useAppMeta } from "../../context/AppContext";
 import useConfirmDialog from "../../hooks/useConfirmDialog";
 import logger from "../../utils/logger";
 import {
@@ -49,7 +49,7 @@ const newFeeHead = () => ({
 
 export default function FeeTemplatesManagement() {
   const { t } = useTranslation();
-  const { currentAcademicYear } = useApp();
+  const { currentAcademicYear } = useAppMeta();
   const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
 
   const [templates, setTemplates] = useState([]);

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useApp } from "../../../context/AppContext";
+import { useAppMeta } from "../../../context/AppContext";
 import { studentFeesApi } from "../../../services/api";
 
 async function fetchStudentFeeStructure(studentId, academicYear, autoInitialize) {
@@ -38,7 +38,7 @@ async function fetchStudentFeeStructure(studentId, academicYear, autoInitialize)
 }
 
 export function useStudentFees(studentId, options = {}) {
-  const { currentAcademicYear } = useApp();
+  const { currentAcademicYear } = useAppMeta();
   const {
     academicYear = currentAcademicYear,
     autoInitialize = true,
@@ -66,7 +66,7 @@ export function useStudentFees(studentId, options = {}) {
 const EMPTY_FEE_STRUCTURES = {};
 
 export function useBatchStudentFees(studentIds, options = {}) {
-  const { currentAcademicYear } = useApp();
+  const { currentAcademicYear } = useAppMeta();
   const { academicYear = currentAcademicYear } = options;
   // Use sorted join for a lightweight stable key instead of JSON.stringify
   const stableIds = useMemo(() => (studentIds || []).slice().sort(), [studentIds]);
