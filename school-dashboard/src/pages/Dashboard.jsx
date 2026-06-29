@@ -7,6 +7,7 @@ import { useAuth } from "../context/AuthContext";
 import useDashboardData from "./dashboard/useDashboardData";
 import SubstitutionAlertPanel from "../components/SubstitutionAlertPanel";
 import NpsSurveyModal from "../components/NpsSurveyModal";
+import { toTodayDateString } from "../utils/dateFormatter";
 
 import {
   DEFAULT_WIDGET_ORDER,
@@ -71,7 +72,7 @@ function readPersistedVisible() {
 
 function Dashboard() {
   const navigate = useNavigate();
-  const { classes, currentAcademicYear, staff, staffAttendance, students } = useApp();
+  const { classes, currentAcademicYear, staff, staffAttendance, students, events } = useApp();
   const { user: authUser } = useAuth();
 
   const {
@@ -216,28 +217,53 @@ function Dashboard() {
 
   const pendingCount = priorities.length;
 
-  const schedule = useMemo(
-    () => [
-      { time: "09:00", title: "Morning assembly", meta: "Auditorium · You're addressing Grade 9–12", mine: true },
-      { time: "10:30", title: "Walk-through · Grade 6 wing", meta: "With the coordinator" },
-      { time: "11:30", title: "Parent meet · 10-A", meta: "Concern: math grades · 30 min", mine: true },
-      { time: "13:30", title: "Staff briefing · 7 leads", meta: "Weekly sync · Conf room A" },
-      { time: "15:30", title: "Annual day rehearsal", meta: "Auditorium · Grade 9–12 · drop-in" },
-    ],
-    []
-  );
+  const schedule = useMemo(() => {
+    const todayKey = toTodayDateString();
+    return (events || [])
+      .filter((event) => event && event.date === todayKey)
+      .map((event) => {
+        const time = event.allDay
+          ? "All day"
+          : event.startTime || "—";
+        const metaParts = [];
+        if (!event.allDay && event.endTime) {
+          metaParts.push(`${event.startTime || "—"} – ${event.endTime}`);
+        }
+        if (event.type) {
+          metaParts.push(event.type.charAt(0).toUpperCase() + event.type.slice(1));
+        }
+        if (event.description) {
+          metaParts.push(event.description);
+        }
+        return {
+          time,
+          title: event.title || "Untitled event",
+          meta: metaParts.join(" · "),
+        };
+      })
+      .sort((left, right) => {
+        if (left.time === "All day") return -1;
+        if (right.time === "All day") return 1;
+        return left.time.localeCompare(right.time);
+      });
+  }, [events]);
 
   const nowIndex = useMemo(() => {
     const minutes = now.getHours() * 60 + now.getMinutes();
     const starts = schedule.map((row) => {
-      const [hr, min] = row.time.split(":").map(Number);
+      const parts = row.time.split(":");
+      if (parts.length !== 2) return null;
+      const hr = Number(parts[0]);
+      const min = Number(parts[1]);
+      if (!Number.isFinite(hr) || !Number.isFinite(min)) return null;
       return hr * 60 + min;
     });
     let idx = -1;
     for (let i = 0; i < starts.length; i += 1) {
-      if (minutes >= starts[i]) idx = i;
+      if (starts[i] != null && minutes >= starts[i]) idx = i;
     }
     if (idx < 0) return -1;
+    if (starts[idx] == null) return -1;
     return minutes - starts[idx] < 90 ? idx : -1;
   }, [now, schedule]);
 
