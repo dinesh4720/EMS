@@ -77,7 +77,7 @@ export default function ExamsTable({ rows = [], onEnterResults }) {
             <span><StatusPill status={status} /></span>
             <span className="academics-table__action row gap-1 justify-end">
               {status === "results_published" ? (
-                <Link to={`/academics/exam-detail/${id}`} className="btn btn--sm">
+                <Link to={`/academics/exams/${id}`} className="btn btn--sm">
                   View results
                 </Link>
               ) : (
