@@ -10,6 +10,7 @@ import {
   useStudentAttendance,
   useStudentResults,
   useStudentFees,
+  useStudentUpcoming,
 } from "./hooks";
 
 import DashboardTabs from "./components/dashboard/DashboardTabs";
@@ -99,6 +100,13 @@ export default function StudentDashboard() {
   const monthAttendance = buildMonthAttendance(attendanceData);
   const gpa = student?.gpa != null ? student.gpa : deriveGpa(subjects);
 
+  // MOCK-09 · Upcoming card — feeds the student's class exams. The hook is
+  // gated on classId so it stays dormant until the student record resolves.
+  const classId = student?.classId || "";
+  const { upcoming } = useStudentUpcoming(classId, {
+    autoFetch: Boolean(classId),
+  });
+
   const timelineDays = useMemo(() => {
     const items = [];
     const lastAttendance = (attendanceData || []).slice(-1)[0];
@@ -121,8 +129,6 @@ export default function StudentDashboard() {
     }
     return items;
   }, [attendanceData]);
-
-  const upcoming = useMemo(() => [], []);
 
   const onAdminMutation = () => {
     refetchStudent?.();
