@@ -192,17 +192,6 @@ export default function FeeHeadsUnified({ embedded = false }) {
       onConfirm: async () => {
         setDeletingId(id);
         try {
-          const depCheck = await request(`/fee-heads/${id}/dependencies`).catch(() => null);
-          if (depCheck?.inUse) {
-            toast.error(
-              t("fees.cannotDeleteAssigned", {
-                count: depCheck.studentCount || 0,
-                defaultValue: `Cannot delete: fee head is assigned to ${depCheck.studentCount || "some"} student(s). Remove assignments first.`,
-              }),
-            );
-            setDeletingId(null);
-            return;
-          }
           await request(`/fee-heads/${id}`, { method: "DELETE" });
           setFeeHeads((prev) => prev.filter((fh) => fh._id !== id));
           toast.success(t("toast.success.feeHeadDeleted"));
