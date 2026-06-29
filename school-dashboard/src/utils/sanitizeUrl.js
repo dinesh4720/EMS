@@ -14,6 +14,10 @@
  */
 
 const SAFE_PROTOCOLS = /^(https?:|mailto:)/i;
+// A leading URL scheme: an ASCII letter followed by letters/digits/+/-/. and a
+// colon, anchored at the start. Distinguishes "this URL declares a protocol"
+// (e.g. javascript:, data:) from a scheme-less relative URL.
+const HAS_SCHEME = /^[a-z][a-z0-9+.-]*:/i;
 // Browsers drop ASCII control chars (0x00–0x1F, 0x7F) at navigation time, so
 // a payload like `java\nscript:` evaluates as `javascript:` unless we strip
 // them ourselves before validating the protocol.
@@ -30,7 +34,17 @@ export function sanitizeUrl(url) {
   if (typeof url !== 'string') return '#';
   const cleaned = url.replace(CONTROL_CHARS, '').trim();
   if (!cleaned) return '#';
-  if (!SAFE_PROTOCOLS.test(cleaned)) return '#';
+  // Protocol-relative URLs (//host/…) inherit the page scheme and can point at
+  // an arbitrary origin — reject before the relative-URL allowance below.
+  if (cleaned.startsWith('//')) return '#';
+  // If the URL declares a scheme, it must be on the allowlist. This is what
+  // neutralises javascript:, data:, vbscript:, etc.
+  if (HAS_SCHEME.test(cleaned)) {
+    return SAFE_PROTOCOLS.test(cleaned) ? cleaned : '#';
+  }
+  // No scheme and not protocol-relative → a same-origin relative URL (e.g.
+  // `/students/1`, `?tab=x`, `#anchor`). Safe to keep intact — a scheme-looking
+  // substring in a query/fragment is never parsed as the URL's protocol.
   return cleaned;
 }
 
