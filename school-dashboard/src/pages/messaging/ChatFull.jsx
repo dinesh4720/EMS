@@ -262,6 +262,14 @@ export default function ChatFull() {
   }, [conversations, location.state?.conversationId]);
 
   // ── Initialization + cleanup ───────────────────────────────────────────────
+  // Depend only on user?.id and the *loaded-ness* of staff/students (boolean
+  // coercions), NOT their array identity. staff/students come from useApp()
+  // and get a new identity on every socket-driven update and window-refocus
+  // refetch; depending on the arrays themselves re-ran this effect on every
+  // tick, tearing down listeners + destroying the PeerJS peer (dropping any
+  // active video call) and re-fetching contacts+conversations each time.
+  // !!staff/!!students flip only when loading completes (null → array), so the
+  // effect fires once on initial load and again only on real auth teardown.
   useEffect(() => {
     if (user?.id && staff && students) {
       initializeChat();
@@ -285,7 +293,12 @@ export default function ChatFull() {
         videoCallService.peer = null;
       }
     };
-  }, [user?.id, staff, students]);
+    // Depend on the *loaded-ness* of staff/students (boolean), not their array
+    // identity, so the effect fires once on initial load instead of on every
+    // socket tick. initializeChat is a per-render closure; including it would
+    // re-fire every render. See MEM-06.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, !!staff, !!students]);
 
   const initializeChat = async () => {
     try {
