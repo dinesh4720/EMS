@@ -8,8 +8,7 @@ import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import EmptyState from '../../components/ui/EmptyState';
 import { SkeletonTable } from '../../components/ui/Skeleton';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
-import { API_URL } from '../../config/api';
-import { clearStoredUser, getAuthHeaders } from '../../utils/authSession';
+import { request } from '../../services/api';
 import JobStatusBadge from './JobStatusBadge';
 import { formatDate } from './_helpers';
 
@@ -23,16 +22,9 @@ export default function BulkImportHistory() {
   const fetchHistory = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/bulk-import/history`, {
-        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-        credentials: 'include',
-      });
-      if (response.status === 401) {
-        clearStoredUser();
-        throw new Error('Session expired. Please log in again.');
-      }
-      if (!response.ok) throw new Error('Failed to load history');
-      const data = await response.json();
+      // [SEC-08] Route through request() so a 401 attempts a token refresh
+      // before logging the user out, instead of a premature session clear.
+      const data = await request('/bulk-import/history');
       setHistory(data?.jobs || []);
     } catch {
       toast.error(t('dataTools.bulkImport.loadHistoryFailed', 'Failed to load import history'));
@@ -54,16 +46,9 @@ export default function BulkImportHistory() {
       onConfirm: async () => {
         setRollingBack(jobId);
         try {
-          const response = await fetch(`${API_URL}/bulk-import/history/${jobId}/rollback`, {
-            method: 'POST',
-            headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-            credentials: 'include',
-          });
-          if (response.status === 401) {
-            clearStoredUser();
-            throw new Error('Session expired. Please log in again.');
-          }
-          if (!response.ok) throw new Error('Rollback failed');
+          // [SEC-08] Route through request() so a 401 attempts a token refresh
+          // before logging the user out, instead of a premature session clear.
+          await request(`/bulk-import/history/${jobId}/rollback`, { method: 'POST' });
 
           toast.success(t('dataTools.bulkImport.rollbackSuccess', 'Import rolled back successfully'));
           fetchHistory();
