@@ -28,7 +28,7 @@ import { isActiveStaff } from "./utils/staffHelpers";
 const MOBILE_MAX = 1099;
 
 export default function StaffList({ onStaffClick, onAddStaff }) {
-  const { staff = [], staffAttendance, loading } = useApp();
+  const { staff = [], staffAttendance, loading, markStaffAttendance } = useApp();
 
   // ============ Routing first (Step 1) ============
   const navigate = useNavigate();
@@ -255,11 +255,25 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
   };
 
   // ============ Single-row mark-attendance ============
-  const handleMarkAttendanceFor = (s) => {
-    // Stub — real flow opens a status picker (present/absent/leave).
-    // TODO: open mark-attendance popover with status choices
-    toast.success(`Marked ${s.name} present (endpoint not wired yet).`);
-  };
+  // The detail pane opens a status picker; this records today's attendance
+  // for the chosen status via the shared optimistic markStaffAttendance flow
+  // (toast + rollback on failure are handled there).
+  const handleMarkAttendanceFor = useCallback(
+    (s, status) => {
+      if (!s || !status) return;
+      const id = s._id || s.id;
+      const checkIn =
+        status === "present"
+          ? new Date().toLocaleTimeString("en-US", {
+              hour12: false,
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "-";
+      markStaffAttendance(id, todayKey, status, checkIn);
+    },
+    [markStaffAttendance, todayKey]
+  );
 
   // ============ Detail-pane "View profile" → deep dashboard ============
   const handleViewProfile = useCallback(
@@ -440,13 +454,12 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
                   ]?.checkIn || null
                 : null
             }
-            recentActivity={[]}
             onClose={closeDetail}
             onViewProfile={() =>
               selectedStaff && handleViewProfile(selectedStaff)
             }
-            onMarkAttendance={() =>
-              selectedStaff && handleMarkAttendanceFor(selectedStaff)
+            onMarkAttendance={(status) =>
+              selectedStaff && handleMarkAttendanceFor(selectedStaff, status)
             }
           />
         )}
@@ -479,14 +492,13 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
                     ]?.checkIn || null
                   : null
               }
-              recentActivity={[]}
               isMobile
               onClose={closeDetail}
               onViewProfile={() =>
                 selectedStaff && handleViewProfile(selectedStaff)
               }
-              onMarkAttendance={() =>
-                selectedStaff && handleMarkAttendanceFor(selectedStaff)
+              onMarkAttendance={(status) =>
+                selectedStaff && handleMarkAttendanceFor(selectedStaff, status)
               }
             />
           </div>

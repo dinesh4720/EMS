@@ -24,9 +24,14 @@ export default function PayrollReminder() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Ignore flag: a request in flight when the component unmounts (or the
+    // interval fires after unmount) must not apply state or fire a toast.
+    let ignore = false;
+
     const checkReminder = async () => {
       try {
         const data = await settingsApi.getPayrollReminder();
+        if (ignore) return;
         if (data.shouldShow) {
           setReminder(data);
           // Show toast notification
@@ -47,9 +52,9 @@ export default function PayrollReminder() {
           ), { duration: 10000, id: 'payroll-reminder' });
         }
       } catch (error) {
-        logger.error('Failed to check payroll reminder:', error);
+        if (!ignore) logger.error('Failed to check payroll reminder:', error);
       } finally {
-        setLoading(false);
+        if (!ignore) setLoading(false);
       }
     };
 
@@ -59,7 +64,10 @@ export default function PayrollReminder() {
     // Check reminder every hour (in case the user keeps the app open)
     const interval = setInterval(checkReminder, 60 * 60 * 1000);
 
-    return () => clearInterval(interval);
+    return () => {
+      ignore = true;
+      clearInterval(interval);
+    };
   }, []);
 
   // Don't render anything if there's no reminder or if it's dismissed

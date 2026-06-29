@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import logger from "../../utils/logger";
+import { useDebounce } from "../../hooks/useDebounce";
 import { parentApi } from "../../services/api";
 import { getDateLocale } from '../../i18n/index';
 import { useTranslation } from 'react-i18next';
@@ -7,6 +8,10 @@ import toast from "react-hot-toast";
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
 import StatusBadge from '../../components/ui/StatusBadge';
+import { SkeletonTable } from '../../components/ui/Skeleton';
+import ErrorState from '../../components/ui/ErrorState';
+import Modal from '../../components/ui/Modal';
+import Drawer from '../../components/ui/Drawer';
 
 import {
   Search,
@@ -16,7 +21,6 @@ import {
   KeyRound,
   Power,
   PowerOff,
-  X,
   Copy,
   Check,
   AlertTriangle,
@@ -28,8 +32,11 @@ export default function ParentManagement() {
   const [parents, setParents] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 0 });
   const [search, setSearch] = useState("");
+  // PAG-25: search runs server-side; debounce so we don't refetch on every keystroke.
+  const debouncedSearch = useDebounce(search, 400);
   const [statusFilter, setStatusFilter] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [selectedParent, setSelectedParent] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -46,9 +53,10 @@ export default function ParentManagement() {
 
   const fetchParents = useCallback(async (page = 1, signal) => {
     setLoading(true);
+    setError(null);
     try {
       const params = { page, limit: 20 };
-      if (search) params.search = search;
+      if (debouncedSearch) params.search = debouncedSearch;
       if (statusFilter) params.status = statusFilter;
 
       const response = await parentApi.getAll(params, { signal });
@@ -56,16 +64,20 @@ export default function ParentManagement() {
       if (response.success) {
         setParents(response.data.parents);
         setPagination(response.data.pagination);
+      } else {
+        throw new Error(response.message || response.error || 'Failed to load parent accounts');
       }
     } catch (error) {
       if (error.name === 'AbortError') return;
       logger.error("Error fetching parents:", error);
+      setParents([]);
+      setError(error);
     } finally {
       if (!signal?.aborted) {
         setLoading(false);
       }
     }
-  }, [search, statusFilter]);
+  }, [debouncedSearch, statusFilter]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -220,6 +232,18 @@ export default function ParentManagement() {
       </div>
 
       {/* Table */}
+      {loading ? (
+        <SkeletonTable rows={6} columns={7} />
+      ) : error ? (
+        <div className="bg-surface border border-border-token rounded-lg">
+          <ErrorState
+            title={t('pages.failedToLoadParentAccounts', 'Failed to load parent accounts')}
+            description={t('pages.failedToLoadParentAccountsDescription', "We couldn't load parent accounts. Check your connection and try again.")}
+            error={error}
+            onRetry={() => fetchParents(pagination.page)}
+          />
+        </div>
+      ) : (
       <div className="bg-surface border border-border-token rounded-lg overflow-hidden overflow-x-auto">
         <table className="w-full">
           <thead>
@@ -234,11 +258,7 @@ export default function ParentManagement() {
             </tr>
           </thead>
           <tbody className="divide-y divide-divider">
-            {loading ? (
-              <tr>
-                <td colSpan={7} className="text-center py-12 text-fg-faint text-sm">{t('pages.loading')}</td>
-              </tr>
-            ) : parents.length === 0 ? (
+            {parents.length === 0 ? (
               <tr>
                 <td colSpan={7} className="text-center py-12 text-fg-faint text-sm">{t('pages.noParentAccountsFound')}</td>
               </tr>
@@ -325,49 +345,42 @@ export default function ParentManagement() {
           </div>
         )}
       </div>
-
-      {/* Generated Password Modal */}
-      {generatedPassword && !drawerOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" onClick={() => setGeneratedPassword(null)}>
-          <div className="bg-surface rounded-xl p-6 w-full max-w-[400px] shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-fg">{t('pages.passwordReset')}</h3>
-              <button onClick={() => setGeneratedPassword(null)} aria-label={t('pages.close')} title={t('pages.close')} className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded text-fg-faint hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,var(--color-primary))]">
-                <X size={18} aria-hidden="true" />
-              </button>
-            </div>
-            <div className="bg-[var(--warn-bg)] border border-[var(--warn-border)] rounded-lg p-3 mb-4 flex items-start gap-2">
-              <AlertTriangle size={16} className="text-[var(--warn)] mt-0.5 flex-shrink-0" />
-              <p className="text-sm text-[var(--warn)]">{t('pages.shareThisPasswordWithTheParentItWillNotBeShownAgain')}</p>
-            </div>
-            <div className="flex items-center gap-2 bg-surface-2 rounded-lg px-4 py-3">
-              <code className="flex-1 text-sm font-mono font-medium text-fg">{generatedPassword}</code>
-              <button
-                onClick={() => copyToClipboard(generatedPassword)}
-                aria-label={copiedPassword ? "Password copied" : "Copy password"}
-                title={copiedPassword ? "Copied" : "Copy"}
-                className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,var(--color-primary))]"
-              >
-                {copiedPassword ? <Check size={16} className="text-[var(--ok)]" aria-hidden="true" /> : <Copy size={16} className="text-fg-muted" aria-hidden="true" />}
-              </button>
-            </div>
-          </div>
-        </div>
       )}
 
-      {/* Detail Drawer */}
-      {drawerOpen && selectedParent && (
-        <div className="fixed inset-0 z-50 flex justify-end" onClick={() => { setDrawerOpen(false); setGeneratedPassword(null); }}>
-          <div className="bg-black/20 absolute inset-0" />
-          <div className="relative bg-surface w-full sm:w-[480px] sm:max-w-[100vw] h-full shadow-xl overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 bg-surface border-b border-divider px-6 py-4 flex items-center justify-between z-10">
-              <h3 className="font-semibold text-fg">{t('pages.parentDetails')}</h3>
-              <button onClick={() => { setDrawerOpen(false); setGeneratedPassword(null); }} aria-label={t('pages.close')} title={t('pages.close')} className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded text-fg-faint hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,var(--color-primary))]">
-                <X size={18} aria-hidden="true" />
-              </button>
-            </div>
+      {/* Generated Password Modal */}
+      <Modal
+        isOpen={!!generatedPassword && !drawerOpen}
+        onClose={() => setGeneratedPassword(null)}
+        title={t('pages.passwordReset')}
+        size="sm"
+      >
+        <div className="bg-[var(--warn-bg)] border border-[var(--warn-border)] rounded-lg p-3 mb-4 flex items-start gap-2">
+          <AlertTriangle size={16} className="text-[var(--warn)] mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-[var(--warn)]">{t('pages.shareThisPasswordWithTheParentItWillNotBeShownAgain')}</p>
+        </div>
+        <div className="flex items-center gap-2 bg-surface-2 rounded-lg px-4 py-3">
+          <code className="flex-1 text-sm font-mono font-medium text-fg">{generatedPassword}</code>
+          <button
+            onClick={() => copyToClipboard(generatedPassword)}
+            aria-label={copiedPassword ? "Password copied" : "Copy password"}
+            title={copiedPassword ? "Copied" : "Copy"}
+            className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring,var(--color-primary))]"
+          >
+            {copiedPassword ? <Check size={16} className="text-[var(--ok)]" aria-hidden="true" /> : <Copy size={16} className="text-fg-muted" aria-hidden="true" />}
+          </button>
+        </div>
+      </Modal>
 
-            <div className="p-6 space-y-6">
+      {/* Detail Drawer */}
+      <Drawer
+        isOpen={drawerOpen && !!selectedParent}
+        onClose={() => { setDrawerOpen(false); setGeneratedPassword(null); }}
+        title={t('pages.parentDetails')}
+        size="md"
+        placement="right"
+      >
+        {selectedParent && (
+        <div className="space-y-6">
               {/* Parent Info */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -471,10 +484,9 @@ export default function ParentManagement() {
                   )}
                 </div>
               </div>
-            </div>
-          </div>
         </div>
-      )}
+        )}
+      </Drawer>
 
       <ConfirmDialog {...confirmState} onClose={closeConfirm} />
     </div>

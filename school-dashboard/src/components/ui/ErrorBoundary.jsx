@@ -16,7 +16,7 @@ function ChunkErrorFallback({ onReload }) {
       </p>
       <button
         onClick={onReload}
-        className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm hover:bg-teal-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2"
+        className="px-4 py-2 bg-accent text-white rounded-lg text-sm hover:bg-accent-hover transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
       >
         {t('common.reloadPage', 'Reload page')}
       </button>
@@ -37,7 +37,7 @@ function GenericErrorFallback({ message, onReset }) {
       </p>
       <button
         onClick={onReset}
-        className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm hover:bg-teal-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2"
+        className="px-4 py-2 bg-accent text-white rounded-lg text-sm hover:bg-accent-hover transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
       >
         {t('common.tryAgain', 'Try again')}
       </button>

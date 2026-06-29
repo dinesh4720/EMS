@@ -4,7 +4,7 @@ import toast from "react-hot-toast";
 import { IndianRupee, Calendar as CalendarIcon } from "lucide-react";
 import { z } from "zod";
 import Modal from "../../../../components/ui/Modal";
-import { useApp } from "../../../../context/AppContext";
+import { useAppMeta } from "../../../../context/AppContext";
 import { toTodayDateString, formatMonthYear } from "../../../../utils/dateFormatter";
 import { formatCurrency } from "../../../../utils/numberFormatter";
 import logger from "../../../../utils/logger";
@@ -55,7 +55,7 @@ export default function PaymentModal({
   onPaymentComplete,
 }) {
   const { t } = useTranslation();
-  const { currentAcademicYear } = useApp();
+  const { currentAcademicYear } = useAppMeta();
   const [paymentForm, setPaymentForm] = useState(emptyForm);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);

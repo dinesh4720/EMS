@@ -58,8 +58,8 @@ export default function FilePreview({ url, fileName, className = '' }) {
     return (
       <div className={`flex items-center justify-center bg-surface-2 rounded-lg border border-dashed border-border-strong ${className}`}>
         <div className="flex flex-col items-center gap-3 p-8 text-center max-w-xs">
-          <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center">
-            <AlertTriangle size={22} className="text-red-500 dark:text-red-400" />
+          <div className="w-12 h-12 rounded-full bg-danger-bg flex items-center justify-center">
+            <AlertTriangle size={22} className="text-danger-token" />
           </div>
           <div>
             <p className="text-sm font-medium text-fg mb-1">
