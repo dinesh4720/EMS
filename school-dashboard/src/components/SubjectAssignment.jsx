@@ -490,7 +490,7 @@ const SubjectAssignment = () => {
                 <span className="text-xs text-fg-muted">Subject Directory</span>
               </button>
               <button
-                onClick={() => navigate('/timetable')}
+                onClick={() => navigate('/classes/timetable')}
                 className="flex flex-col items-center gap-2 p-4 rounded-lg bg-surface-2 hover:bg-surface-2 transition-colors"
               >
                 <BookOpen size={18} className="text-fg-muted" />
