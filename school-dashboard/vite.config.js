@@ -50,16 +50,26 @@ export default defineConfig({
         manualChunks(id) {
           if (!id.includes('node_modules')) return;
 
-          // Core React runtime — cached long-term, loaded on every page
-          if (id.includes('/react-dom/') || id.includes('/react/') || id.includes('/scheduler/')) {
+          // Core React runtime — cached long-term, loaded on every page.
+          // Anchor on the node_modules package boundary so this does NOT also
+          // match scoped packages whose path contains "/react/" (notably
+          // @heroui/react → .../node_modules/@heroui/react/...), which would
+          // otherwise pull the entire HeroUI library into react-vendor.
+          if (id.includes('/node_modules/react/') || id.includes('/node_modules/react-dom/') || id.includes('/node_modules/scheduler/')) {
             return 'react-vendor';
           }
           if (id.includes('react-router')) {
             return 'router-vendor';
           }
 
-          // UI framework
-          if (id.includes('@heroui') || id.includes('@react-aria') || id.includes('@react-stately') || id.includes('@react-types')) {
+          // React Aria / Stately primitives that HeroUI builds on. Kept in
+          // their own chunk so the HeroUI component layer and its a11y/state
+          // foundation download in parallel and cache independently.
+          if (id.includes('@react-aria') || id.includes('@react-stately') || id.includes('@react-types')) {
+            return 'aria-vendor';
+          }
+          // HeroUI component framework
+          if (id.includes('@heroui')) {
             return 'ui-vendor';
           }
           if (id.includes('framer-motion')) {
