@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { X, Receipt } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -8,30 +9,34 @@ import { expenseSchema } from "../../validators/formSchemas";
 import useZodForm from "../../hooks/useZodForm";
 
 const CATEGORY_OPTIONS = [
-  { value: "salaries", label: "Salaries" },
-  { value: "utilities", label: "Utilities" },
-  { value: "maintenance", label: "Maintenance" },
-  { value: "supplies", label: "Supplies" },
-  { value: "equipment", label: "Equipment" },
-  { value: "events", label: "Events" },
-  { value: "transport", label: "Transport" },
-  { value: "marketing", label: "Marketing" },
-  { value: "other", label: "Other" },
+  "salaries",
+  "utilities",
+  "maintenance",
+  "supplies",
+  "equipment",
+  "events",
+  "transport",
+  "marketing",
+  "other",
 ];
 
 const PAYMENT_MODE_OPTIONS = [
-  { value: "cash", label: "Cash" },
-  { value: "cheque", label: "Cheque" },
-  { value: "bank_transfer", label: "Bank Transfer" },
-  { value: "upi", label: "UPI" },
-  { value: "other", label: "Other" },
+  "cash",
+  "cheque",
+  "bank_transfer",
+  "upi",
+  "other",
 ];
 
-const STATUS_OPTIONS = [
-  { value: "pending", label: "Pending" },
-  { value: "approved", label: "Approved" },
-  { value: "rejected", label: "Rejected" },
-];
+const PAYMENT_MODE_KEYS = {
+  cash: "cash",
+  cheque: "cheque",
+  bank_transfer: "bankTransfer",
+  upi: "upi",
+  other: "other",
+};
+
+const STATUS_OPTIONS = ["pending", "approved", "rejected"];
 
 function todayLocalISO() {
   const now = new Date();
@@ -73,6 +78,7 @@ function getInitialValues(expense) {
 }
 
 export default function ExpenseModal({ isOpen, onClose, expense = null, onSaved }) {
+  const { t } = useTranslation();
   const cardRef = useRef(null);
   const isEdit = Boolean(expense);
 
@@ -121,16 +127,16 @@ export default function ExpenseModal({ isOpen, onClose, expense = null, onSaved 
     try {
       if (isEdit) {
         await expensesApi.update(expense._id || expense.id, payload);
-        toast.success("Expense updated");
+        toast.success(t("expenses.toast.updated"));
       } else {
         await expensesApi.create(payload);
-        toast.success("Expense created");
+        toast.success(t("expenses.toast.created"));
       }
       onSaved?.();
       onClose?.();
     } catch (err) {
       logger.error("Expense save failed:", err);
-      toast.error(err?.message || "Failed to save expense");
+      toast.error(err?.message || t("expenses.toast.saveFailed"));
     }
   };
 
@@ -149,16 +155,16 @@ export default function ExpenseModal({ isOpen, onClose, expense = null, onSaved 
         className="fees-sheet"
         role="dialog"
         aria-modal="true"
-        aria-label={isEdit ? "Edit expense" : "Add expense"}
+        aria-label={isEdit ? t("expenses.form.editTitle") : t("expenses.form.addTitle")}
         tabIndex={-1}
         onSubmit={handleSubmit(onSubmit, onInvalid)}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="fees-sheet__head">
           <div className="col" style={{ gap: 2, minWidth: 0 }}>
-            <h2 className="fees-sheet__title">{isEdit ? "Edit expense" : "Add expense"}</h2>
+            <h2 className="fees-sheet__title">{isEdit ? t("expenses.form.editTitle") : t("expenses.form.addTitle")}</h2>
             <p className="fees-sheet__subtitle">
-              {isEdit ? `Update details for ${expense.title}` : "Record a new school expense"}
+              {isEdit ? t("expenses.form.editSubtitle", { title: expense.title }) : t("expenses.form.addSubtitle")}
             </p>
           </div>
           <button
@@ -166,7 +172,7 @@ export default function ExpenseModal({ isOpen, onClose, expense = null, onSaved 
             className="iconbtn"
             style={{ width: 28, height: 28 }}
             onClick={onClose}
-            aria-label="Close sheet"
+            aria-label={t("expenses.form.closeAria")}
           >
             <X size={14} aria-hidden />
           </button>
@@ -174,10 +180,10 @@ export default function ExpenseModal({ isOpen, onClose, expense = null, onSaved 
 
         <div className="fees-sheet__body">
           <div className="fees-sheet__field">
-            <label className="fees-sheet__label">Title</label>
+            <label className="fees-sheet__label">{t("expenses.form.titleLabel")}</label>
             <input
               type="text"
-              placeholder="e.g. Monthly electricity bill"
+              placeholder={t("expenses.form.titlePlaceholder")}
               aria-invalid={errors.title ? "true" : undefined}
               required
               {...register("title")}
@@ -187,7 +193,7 @@ export default function ExpenseModal({ isOpen, onClose, expense = null, onSaved 
 
           <div className="fees-sheet__field-row">
             <div className="fees-sheet__field">
-              <label className="fees-sheet__label">Amount (₹)</label>
+              <label className="fees-sheet__label">{t("expenses.form.amountLabel")}</label>
               <input
                 type="number"
                 min="0"
@@ -201,7 +207,7 @@ export default function ExpenseModal({ isOpen, onClose, expense = null, onSaved 
               {errors.amount && <span className="fees-sheet__error">{errors.amount.message}</span>}
             </div>
             <div className="fees-sheet__field">
-              <label className="fees-sheet__label">Date</label>
+              <label className="fees-sheet__label">{t("expenses.form.dateLabel")}</label>
               <input
                 type="date"
                 className="mono tnum"
@@ -215,27 +221,27 @@ export default function ExpenseModal({ isOpen, onClose, expense = null, onSaved 
 
           <div className="fees-sheet__field-row">
             <div className="fees-sheet__field">
-              <label className="fees-sheet__label">Category</label>
+              <label className="fees-sheet__label">{t("expenses.form.categoryLabel")}</label>
               <select
                 aria-invalid={errors.category ? "true" : undefined}
                 required
                 {...register("category")}
               >
-                <option value="">— Select —</option>
-                {CATEGORY_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
+                <option value="">{t("expenses.form.categoryPlaceholder")}</option>
+                {CATEGORY_OPTIONS.map((value) => (
+                  <option key={value} value={value}>
+                    {t(`expenses.categories.${value}`)}
                   </option>
                 ))}
               </select>
               {errors.category && <span className="fees-sheet__error">{errors.category.message}</span>}
             </div>
             <div className="fees-sheet__field">
-              <label className="fees-sheet__label">Payment Mode</label>
+              <label className="fees-sheet__label">{t("expenses.form.paymentModeLabel")}</label>
               <select {...register("paymentMode")}>
-                {PAYMENT_MODE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
+                {PAYMENT_MODE_OPTIONS.map((value) => (
+                  <option key={value} value={value}>
+                    {t(`expenses.form.paymentModes.${PAYMENT_MODE_KEYS[value]}`)}
                   </option>
                 ))}
               </select>
@@ -243,10 +249,10 @@ export default function ExpenseModal({ isOpen, onClose, expense = null, onSaved 
           </div>
 
           <div className="fees-sheet__field">
-            <label className="fees-sheet__label">Description</label>
+            <label className="fees-sheet__label">{t("expenses.form.descriptionLabel")}</label>
             <textarea
               rows={3}
-              placeholder="Optional details about this expense"
+              placeholder={t("expenses.form.descriptionPlaceholder")}
               aria-invalid={errors.description ? "true" : undefined}
               style={{ resize: "vertical" }}
               {...register("description")}
@@ -256,20 +262,20 @@ export default function ExpenseModal({ isOpen, onClose, expense = null, onSaved 
 
           <div className="fees-sheet__field-row">
             <div className="fees-sheet__field">
-              <label className="fees-sheet__label">Vendor</label>
+              <label className="fees-sheet__label">{t("expenses.form.vendorLabel")}</label>
               <input
                 type="text"
-                placeholder="Vendor or payee name"
+                placeholder={t("expenses.form.vendorPlaceholder")}
                 aria-invalid={errors.vendor ? "true" : undefined}
                 {...register("vendor")}
               />
               {errors.vendor && <span className="fees-sheet__error">{errors.vendor.message}</span>}
             </div>
             <div className="fees-sheet__field">
-              <label className="fees-sheet__label">Receipt URL</label>
+              <label className="fees-sheet__label">{t("expenses.form.receiptUrlLabel")}</label>
               <input
                 type="url"
-                placeholder="https://..."
+                placeholder={t("expenses.form.receiptUrlPlaceholder")}
                 aria-invalid={errors.receiptUrl ? "true" : undefined}
                 {...register("receiptUrl")}
               />
@@ -280,20 +286,20 @@ export default function ExpenseModal({ isOpen, onClose, expense = null, onSaved 
           {isEdit && (
             <div className="fees-sheet__field-row">
               <div className="fees-sheet__field">
-                <label className="fees-sheet__label">Status</label>
+                <label className="fees-sheet__label">{t("expenses.form.statusLabel")}</label>
                 <select {...register("status")}>
-                  {STATUS_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
+                  {STATUS_OPTIONS.map((value) => (
+                    <option key={value} value={value}>
+                      {t(`expenses.statuses.${value}`)}
                     </option>
                   ))}
                 </select>
               </div>
               <div className="fees-sheet__field">
-                <label className="fees-sheet__label">Approved By</label>
+                <label className="fees-sheet__label">{t("expenses.form.approvedByLabel")}</label>
                 <input
                   type="text"
-                  placeholder="Name of approver"
+                  placeholder={t("expenses.form.approvedByPlaceholder")}
                   {...register("approvedBy")}
                 />
               </div>
@@ -303,7 +309,7 @@ export default function ExpenseModal({ isOpen, onClose, expense = null, onSaved 
 
         <div className="fees-sheet__foot">
           <span className="subtle" style={{ fontSize: 12 }}>
-            {isEdit ? "Changes will be saved on submit" : "Expense will be recorded immediately"}
+            {isEdit ? t("expenses.form.footEdit") : t("expenses.form.footAdd")}
           </span>
           <button
             type="submit"
@@ -311,7 +317,7 @@ export default function ExpenseModal({ isOpen, onClose, expense = null, onSaved 
             disabled={isSubmitting}
           >
             <Receipt size={13} aria-hidden />{" "}
-            {isSubmitting ? "Saving…" : isEdit ? "Update expense" : "Add expense"}
+            {isSubmitting ? t("expenses.form.saving") : isEdit ? t("expenses.form.updateBtn") : t("expenses.form.addBtn")}
           </button>
         </div>
       </form>

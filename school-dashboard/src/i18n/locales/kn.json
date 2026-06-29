@@ -4103,5 +4103,185 @@
       "exportDownloaded": "ರಫ್ತು ಡೌನ್‌ಲೋಡ್ ಆಗಿದೆ",
       "exportFailed": "ರಫ್ತು ವಿಫಲವಾಗಿದೆ"
     }
+  },
+  "expenses": {
+    "title": "ವೆಚ್ಚಗಳು",
+    "add": "ವೆಚ್ಚವನ್ನು ಸೇರಿಸಿ",
+    "addFirst": "ನಿಮ್ಮ ಮೊದಲ ವೆಚ್ಚವನ್ನು ಸೇರಿಸಿ",
+    "searchPlaceholder": "ಶೀರ್ಷಿಕೆಯಿಂದ ವೆಚ್ಚಗಳನ್ನು ಹುಡುಕಿ…",
+    "searchAria": "ವೆಚ್ಚಗಳನ್ನು ಹುಡುಕಿ",
+    "filterStatusAria": "ಸ್ಥಿತಿಯಿಂದ ಫಿಲ್ಟರ್ ಮಾಡಿ",
+    "filterCategoryAria": "ವರ್ಗದಿಂದ ಫಿಲ್ಟರ್ ಮಾಡಿ",
+    "allCategories": "ಎಲ್ಲಾ ವರ್ಗಗಳು",
+    "noExpenses": "ಯಾವುದೇ ವೆಚ್ಚಗಳು ಕಂಡುಬಂದಿಲ್ಲ.",
+    "unableToLoad": "ವೆಚ್ಚಗಳನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
+    "subLine": "{{date}} · {{count}} ವೆಚ್ಚಗಳು ದಾಖಲಾಗಿವೆ",
+    "pageOf": "ಪುಟ {{page}} / {{total}}",
+    "previous": "ಹಿಂದಿನ",
+    "next": "ಮುಂದಿನ",
+    "filterAll": "ಎಲ್ಲಾ",
+    "statuses": {
+      "pending": "ಬಾಕಿ",
+      "approved": "ಅನುಮೋದಿತ",
+      "rejected": "ತಿರಸ್ಕೃತ"
+    },
+    "categories": {
+      "salaries": "ಸಂಬಳಗಳು",
+      "utilities": "ಉಪಯುಕ್ತತೆಗಳು",
+      "maintenance": "ನಿರ್ವಹಣೆ",
+      "supplies": "ಪೂರೈಕೆಗಳು",
+      "equipment": "ಸಲಕರಣೆಗಳು",
+      "events": "ಕಾರ್ಯಕ್ರಮಗಳು",
+      "transport": "ಸಾರಿಗೆ",
+      "marketing": "ಮಾರ್ಕೆಟಿಂಗ್",
+      "other": "ಇತರೆ"
+    },
+    "table": {
+      "title": "ಶೀರ್ಷಿಕೆ",
+      "category": "ವರ್ಗ",
+      "date": "ದಿನಾಂಕ",
+      "amount": "ಮೊತ್ತ",
+      "status": "ಸ್ಥಿತಿ",
+      "actions": "ಕ್ರಿಯೆಗಳು",
+      "edit": "ಸಂಪಾದಿಸಿ",
+      "delete": "ಅಳಿಸಿ",
+      "editAria": "{{title}} ಸಂಪಾದಿಸಿ",
+      "deleteAria": "{{title}} ಅಳಿಸಿ"
+    },
+    "deleteDialog": {
+      "title": "ವೆಚ್ಚವನ್ನು ಅಳಿಸಿ",
+      "message": "ನೀವು ಖಚಿತವಾಗಿ \"{{title}}\" ಅಳಿಸಲು ಬಯಸುವಿರಾ? ಈ ಕ್ರಿಯೆಯನ್ನು ರದ್ದುಗೊಳಿಸಲಾಗುವುದಿಲ್ಲ.",
+      "confirm": "ಅಳಿಸಿ"
+    },
+    "toast": {
+      "deleted": "ವೆಚ್ಚ ಅಳಿಸಲಾಗಿದೆ",
+      "deleteFailed": "ವೆಚ್ಚ ಅಳಿಸಲು ವಿಫಲವಾಗಿದೆ",
+      "updated": "ವೆಚ್ಚ ನವೀಕರಿಸಲಾಗಿದೆ",
+      "created": "ವೆಚ್ಚ ರಚಿಸಲಾಗಿದೆ",
+      "saveFailed": "ವೆಚ್ಚ ಉಳಿಸಲು ವಿಫಲವಾಗಿದೆ"
+    },
+    "summary": {
+      "overviewAria": "ವೆಚ್ಚಗಳ ಅವಲೋಕನ",
+      "total": "ಒಟ್ಟು ವೆಚ್ಚಗಳು",
+      "acrossAll": "ಎಲ್ಲಾ ವರ್ಗಗಳಲ್ಲಿ",
+      "topCategory": "ಅಗ್ರ ವರ್ಗ",
+      "highestSpend": "ಅತಿ ಹೆಚ್ಚು ಖರ್ಚು",
+      "totalEntries": "ಒಟ್ಟು ನಮೂದುಗಳು",
+      "recordedExpenses": "ದಾಖಲಾದ ವೆಚ್ಚಗಳು"
+    },
+    "form": {
+      "editTitle": "ವೆಚ್ಚ ಸಂಪಾದಿಸಿ",
+      "addTitle": "ವೆಚ್ಚ ಸೇರಿಸಿ",
+      "editSubtitle": "{{title}} ಗಾಗಿ ವಿವರಗಳನ್ನು ನವೀಕರಿಸಿ",
+      "addSubtitle": "ಹೊಸ ಶಾಲಾ ವೆಚ್ಚವನ್ನು ದಾಖಲಿಸಿ",
+      "closeAria": "ಶೀಟ್ ಮುಚ್ಚಿ",
+      "titleLabel": "ಶೀರ್ಷಿಕೆ",
+      "titlePlaceholder": "ಉದಾ. ಮಾಸಿಕ ವಿದ್ಯುತ್ ಬಿಲ್",
+      "amountLabel": "ಮೊತ್ತ (₹)",
+      "dateLabel": "ದಿನಾಂಕ",
+      "categoryLabel": "ವರ್ಗ",
+      "categoryPlaceholder": "— ಆಯ್ಕೆಮಾಡಿ —",
+      "paymentModeLabel": "ಪಾವತಿ ವಿಧ",
+      "paymentModes": {
+        "cash": "ನಗದು",
+        "cheque": "ಚೆಕ್",
+        "bankTransfer": "ಬ್ಯಾಂಕ್ ವರ್ಗಾವಣೆ",
+        "upi": "ಯುಪಿಐ",
+        "other": "ಇತರೆ"
+      },
+      "descriptionLabel": "ವಿವರ",
+      "descriptionPlaceholder": "ಈ ವೆಚ್ಚದ ಬಗ್ಗೆ ಐಚ್ಛಿಕ ವಿವರಗಳು",
+      "vendorLabel": "ಮಾರಾಟಗಾರ",
+      "vendorPlaceholder": "ಮಾರಾಟಗಾರ ಅಥವಾ ಪಾವತಿದಾರರ ಹೆಸರು",
+      "receiptUrlLabel": "ರಸೀತಿ URL",
+      "receiptUrlPlaceholder": "https://...",
+      "statusLabel": "ಸ್ಥಿತಿ",
+      "approvedByLabel": "ಅನುಮೋದಿಸಿದವರು",
+      "approvedByPlaceholder": "ಅನುಮೋದಕರ ಹೆಸರು",
+      "footEdit": "ಸಲ್ಲಿಸಿದಾಗ ಬದಲಾವಣೆಗಳು ಉಳಿಸಲ್ಪಡುತ್ತವೆ",
+      "footAdd": "ವೆಚ್ಚವನ್ನು ತಕ್ಷಣ ದಾಖಲಿಸಲಾಗುತ್ತದೆ",
+      "saving": "ಉಳಿಸಲಾಗುತ್ತಿದೆ…",
+      "updateBtn": "ವೆಚ್ಚ ನವೀಕರಿಸಿ",
+      "addBtn": "ವೆಚ್ಚ ಸೇರಿಸಿ"
+    }
+  },
+  "auditLogs": {
+    "title": "ಆಡಿಟ್ ಲಾಗ್‌ಗಳು",
+    "loading": "ಲೋಡ್ ಆಗುತ್ತಿದೆ…",
+    "records": "{{count}} ದಾಖಲೆಗಳು",
+    "recordsMatching": "{{count}} ಹೊಂದುವ ದಾಖಲೆಗಳು",
+    "exportCsv": "CSV ರಫ್ತು ಮಾಡಿ",
+    "exportJson": "JSON ರಫ್ತು ಮಾಡಿ",
+    "searchPlaceholder": "ಲಾಗ್‌ಗಳನ್ನು ಹುಡುಕಿ…",
+    "searchAria": "ಆಡಿಟ್ ಲಾಗ್‌ಗಳನ್ನು ಹುಡುಕಿ",
+    "reset": "ಮರುಹೊಂದಿಸಿ",
+    "clearFilters": "ಫಿಲ್ಟರ್‌ಗಳನ್ನು ತೆರವುಗೊಳಿಸಿ",
+    "show": "ತೋರಿಸಿ",
+    "perPage": "ಪ್ರತಿ ಪುಟ",
+    "itemLabel": "ಲಾಗ್‌ಗಳು",
+    "listAria": "ಆಡಿಟ್ ಲಾಗ್ ಪಟ್ಟಿ",
+    "filterActionAria": "ಕ್ರಿಯೆಯಿಂದ ಫಿಲ್ಟರ್ ಮಾಡಿ",
+    "filterEntityAria": "ಘಟಕದಿಂದ ಫಿಲ್ಟರ್ ಮಾಡಿ",
+    "perPageAria": "ಪ್ರತಿ ಪುಟ ಐಟಂಗಳು",
+    "dateRangePlaceholder": "ದಿನಾಂಕ ಶ್ರೇಣಿ",
+    "detailDrawerTitle": "ಆಡಿಟ್ ಲಾಗ್ ವಿವರಗಳು",
+    "allActions": "ಎಲ್ಲಾ ಕ್ರಿಯೆಗಳು",
+    "allEntities": "ಎಲ್ಲಾ ಘಟಕಗಳು",
+    "actions": {
+      "created": "ರಚಿಸಲಾಗಿದೆ",
+      "updated": "ನವೀಕರಿಸಲಾಗಿದೆ",
+      "deleted": "ಅಳಿಸಲಾಗಿದೆ",
+      "login": "ಲಾಗಿನ್",
+      "logout": "ಲಾಗ್‌ಔಟ್",
+      "loginFailed": "ಲಾಗಿನ್ ವಿಫಲವಾಗಿದೆ",
+      "passwordChanged": "ಪಾಸ್‌ವರ್ಡ್ ಬದಲಾಯಿಸಲಾಗಿದೆ",
+      "permissionChanged": "ಅನುಮತಿ ಬದಲಾಯಿಸಲಾಗಿದೆ",
+      "settingsChanged": "ಸೆಟ್ಟಿಂಗ್‌ಗಳು ಬದಲಾಯಿಸಲಾಗಿವೆ",
+      "roleChanged": "ಪಾತ್ರ ಬದಲಾಯಿಸಲಾಗಿದೆ"
+    },
+    "entities": {
+      "student": "ವಿದ್ಯಾರ್ಥಿ",
+      "staff": "ಸಿಬ್ಬಂದಿ",
+      "class": "ತರಗತಿ",
+      "fee": "ಶುಲ್ಕ",
+      "auth": "ದೃಢೀಕರಣ"
+    },
+    "empty": {
+      "noLogsTitle": "ಇನ್ನೂ ಯಾವುದೇ ಆಡಿಟ್ ಲಾಗ್ ಇಲ್ಲ",
+      "noLogsDesc": "ಬಳಕೆದಾರರು ಕ್ರಿಯೆಗಳನ್ನು ನಿರ್ವಹಿಸಿದಾಗ ಚಟುವಟಿಕೆ ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತದೆ.",
+      "noMatchTitle": "ಯಾವುದೇ ಲಾಗ್ ಹೊಂದಿಲ್ಲ",
+      "noMatchDesc": "ನಿಮ್ಮ ಫಿಲ್ಟರ್ ಅಥವಾ ಹುಡುಕು ಪ್ರಶ್ನೆಯನ್ನು ಸರಿಹೊಂದಿಸಿ."
+    },
+    "detail": {
+      "selectTitle": "ಲಾಗ್ ಆಯ್ಕೆಮಾಡಿ",
+      "selectDesc": "ಯಾವುದೇ ಆಡಿಟ್ ಲಾಗ್ ಕ್ಲಿಕ್ ಮಾಡಿ ಅದರ ವಿವರಗಳನ್ನು ವೀಕ್ಷಿಸಿ.",
+      "closeAria": "ಮುಚ್ಚಿ",
+      "entity": "ಘಟಕ",
+      "entityId": "ಘಟಕ ಐಡಿ",
+      "performedBy": "ನಿರ್ವಹಿಸಿದವರು",
+      "role": "ಪಾತ್ರ",
+      "ipAddress": "IP ವಿಳಾಸ",
+      "method": "ವಿಧಾನ",
+      "path": "ಮಾರ್ಗ",
+      "userAgent": "ಬಳಕೆದಾರ ಏಜೆಂಟ್",
+      "fieldChanges": "ಕ್ಷೇತ್ರ ಬದಲಾವಣೆಗಳು",
+      "field": "ಕ್ಷೇತ್ರ",
+      "old": "ಹಳೆಯ",
+      "new": "ಹೊಸ",
+      "snapshot": "ಸ್ನ್ಯಾಪ್‌ಶಾಟ್",
+      "oldValue": "ಹಳೆಯ ಮೌಲ್ಯ",
+      "newValue": "ಹೊಸ ಮೌಲ್ಯ"
+    },
+    "relative": {
+      "justNow": "ಈಗ",
+      "minutesAgo": "{{count}}ನಿ ಹಿಂದೆ",
+      "hoursAgo": "{{count}}ಗಂ ಹಿಂದೆ",
+      "daysAgo": "{{count}}ದಿ ಹಿಂದೆ"
+    },
+    "toast": {
+      "loadFailed": "ಆಡಿಟ್ ಲಾಗ್‌ಗಳನ್ನು ಲೋಡ್ ಮಾಡಲು ವಿಫಲವಾಗಿದೆ",
+      "exportReady": "{{format}} ರಫ್ತು ಸಿದ್ಧ",
+      "exportFailed": "ರಫ್ತು ವಿಫಲವಾಗಿದೆ"
+    }
   }
 }

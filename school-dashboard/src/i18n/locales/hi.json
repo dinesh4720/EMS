@@ -4103,5 +4103,185 @@
       "exportDownloaded": "निर्यात डाउनलोड किया गया",
       "exportFailed": "निर्यात विफल"
     }
+  },
+  "expenses": {
+    "title": "व्यय",
+    "add": "व्यय जोड़ें",
+    "addFirst": "अपना पहला व्यय जोड़ें",
+    "searchPlaceholder": "शीर्षक से व्यय खोजें…",
+    "searchAria": "व्यय खोजें",
+    "filterStatusAria": "स्थिति से फ़िल्टर करें",
+    "filterCategoryAria": "श्रेणी से फ़िल्टर करें",
+    "allCategories": "सभी श्रेणियाँ",
+    "noExpenses": "कोई व्यय नहीं मिला।",
+    "unableToLoad": "व्यय लोड करने में असमर्थ",
+    "subLine": "{{date}} · {{count}} व्यय दर्ज किए गए",
+    "pageOf": "पृष्ठ {{page}} / {{total}}",
+    "previous": "पिछला",
+    "next": "अगला",
+    "filterAll": "सभी",
+    "statuses": {
+      "pending": "लंबित",
+      "approved": "स्वीकृत",
+      "rejected": "अस्वीकृत"
+    },
+    "categories": {
+      "salaries": "वेतन",
+      "utilities": "उपयोगिताएँ",
+      "maintenance": "रखरखाव",
+      "supplies": "आपूर्ति",
+      "equipment": "उपकरण",
+      "events": "कार्यक्रम",
+      "transport": "परिवहन",
+      "marketing": "विपणन",
+      "other": "अन्य"
+    },
+    "table": {
+      "title": "शीर्षक",
+      "category": "श्रेणी",
+      "date": "तिथि",
+      "amount": "राशि",
+      "status": "स्थिति",
+      "actions": "क्रियाएँ",
+      "edit": "संपादित करें",
+      "delete": "हटाएँ",
+      "editAria": "{{title}} संपादित करें",
+      "deleteAria": "{{title}} हटाएँ"
+    },
+    "deleteDialog": {
+      "title": "व्यय हटाएँ",
+      "message": "क्या आप वाकई \"{{title}}\" को हटाना चाहते हैं? यह क्रिया पूर्ववत नहीं की जा सकती।",
+      "confirm": "हटाएँ"
+    },
+    "toast": {
+      "deleted": "व्यय हटाया गया",
+      "deleteFailed": "व्यय हटाने में विफल",
+      "updated": "व्यय अपडेट किया गया",
+      "created": "व्यय बनाया गया",
+      "saveFailed": "व्यय सहेजने में विफल"
+    },
+    "summary": {
+      "overviewAria": "व्यय का अवलोकन",
+      "total": "कुल व्यय",
+      "acrossAll": "सभी श्रेणियों में",
+      "topCategory": "शीर्ष श्रेणी",
+      "highestSpend": "उच्चतम खर्च",
+      "totalEntries": "कुल प्रविष्टियाँ",
+      "recordedExpenses": "दर्ज व्यय"
+    },
+    "form": {
+      "editTitle": "व्यय संपादित करें",
+      "addTitle": "व्यय जोड़ें",
+      "editSubtitle": "{{title}} के लिए विवरण अपडेट करें",
+      "addSubtitle": "नया स्कूल व्यय दर्ज करें",
+      "closeAria": "शीट बंद करें",
+      "titleLabel": "शीर्षक",
+      "titlePlaceholder": "जैसे मासिक बिजली बिल",
+      "amountLabel": "राशि (₹)",
+      "dateLabel": "तिथि",
+      "categoryLabel": "श्रेणी",
+      "categoryPlaceholder": "— चुनें —",
+      "paymentModeLabel": "भुगतान का तरीका",
+      "paymentModes": {
+        "cash": "नकद",
+        "cheque": "चेक",
+        "bankTransfer": "बैंक हस्तांतरण",
+        "upi": "यूपीआई",
+        "other": "अन्य"
+      },
+      "descriptionLabel": "विवरण",
+      "descriptionPlaceholder": "इस व्यय के बारे में वैकल्पिक विवरण",
+      "vendorLabel": "विक्रेता",
+      "vendorPlaceholder": "विक्रेता या भुगतानकर्ता का नाम",
+      "receiptUrlLabel": "रसीद URL",
+      "receiptUrlPlaceholder": "https://...",
+      "statusLabel": "स्थिति",
+      "approvedByLabel": "स्वीकृति द्वारा",
+      "approvedByPlaceholder": "स्वीकृति देने वाले का नाम",
+      "footEdit": "सबमिट पर बदलाव सहेजे जाएँगे",
+      "footAdd": "व्यय तुरंत दर्ज किया जाएगा",
+      "saving": "सहेज रहे हैं…",
+      "updateBtn": "व्यय अपडेट करें",
+      "addBtn": "व्यय जोड़ें"
+    }
+  },
+  "auditLogs": {
+    "title": "ऑडिट लॉग",
+    "loading": "लोड हो रहा है…",
+    "records": "{{count}} रिकॉर्ड",
+    "recordsMatching": "{{count}} मेल खाते रिकॉर्ड",
+    "exportCsv": "CSV निर्यात करें",
+    "exportJson": "JSON निर्यात करें",
+    "searchPlaceholder": "लॉग खोजें…",
+    "searchAria": "ऑडिट लॉग खोजें",
+    "reset": "रीसेट",
+    "clearFilters": "फ़िल्टर साफ़ करें",
+    "show": "दिखाएँ",
+    "perPage": "प्रति पृष्ठ",
+    "itemLabel": "लॉग",
+    "listAria": "ऑडिट लॉग सूची",
+    "filterActionAria": "क्रिया से फ़िल्टर करें",
+    "filterEntityAria": "इकाई से फ़िल्टर करें",
+    "perPageAria": "प्रति पृष्ठ आइटम",
+    "dateRangePlaceholder": "तिथि सीमा",
+    "detailDrawerTitle": "ऑडिट लॉग विवरण",
+    "allActions": "सभी क्रियाएँ",
+    "allEntities": "सभी इकाइयाँ",
+    "actions": {
+      "created": "बनाया गया",
+      "updated": "अपडेट किया गया",
+      "deleted": "हटाया गया",
+      "login": "लॉगिन",
+      "logout": "लॉगआउट",
+      "loginFailed": "लॉगिन विफल",
+      "passwordChanged": "पासवर्ड बदला गया",
+      "permissionChanged": "अनुमति बदली गई",
+      "settingsChanged": "सेटिंग्स बदली गईं",
+      "roleChanged": "भूमिका बदली गई"
+    },
+    "entities": {
+      "student": "छात्र",
+      "staff": "स्टाफ",
+      "class": "कक्षा",
+      "fee": "शुल्क",
+      "auth": "प्रमाणीकरण"
+    },
+    "empty": {
+      "noLogsTitle": "अभी कोई ऑडिट लॉग नहीं है",
+      "noLogsDesc": "उपयोगकर्ताओं द्वारा क्रियाएँ करने पर गतिविधि यहाँ दिखाई देगी।",
+      "noMatchTitle": "कोई लॉग मेल नहीं खाया",
+      "noMatchDesc": "अपने फ़िल्टर या खोज क्वेरी को समायोजित करने का प्रयास करें।"
+    },
+    "detail": {
+      "selectTitle": "एक लॉग चुनें",
+      "selectDesc": "किसी भी ऑडिट लॉग पर क्लिक करके उसका विवरण देखें।",
+      "closeAria": "बंद करें",
+      "entity": "इकाई",
+      "entityId": "इकाई आईडी",
+      "performedBy": "निष्पादितकर्ता",
+      "role": "भूमिका",
+      "ipAddress": "IP पता",
+      "method": "विधि",
+      "path": "पथ",
+      "userAgent": "उपयोगकर्ता एजेंट",
+      "fieldChanges": "फ़ील्ड परिवर्तन",
+      "field": "फ़ील्ड",
+      "old": "पुराना",
+      "new": "नया",
+      "snapshot": "स्नैपशॉट",
+      "oldValue": "पुराना मान",
+      "newValue": "नया मान"
+    },
+    "relative": {
+      "justNow": "अभी",
+      "minutesAgo": "{{count}}मि पहले",
+      "hoursAgo": "{{count}}घ पहले",
+      "daysAgo": "{{count}}दिन पहले"
+    },
+    "toast": {
+      "loadFailed": "ऑडिट लॉग लोड करने में विफल",
+      "exportReady": "{{format}} निर्यात तैयार",
+      "exportFailed": "निर्यात विफल"
+    }
   }
 }
