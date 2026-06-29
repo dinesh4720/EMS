@@ -68,6 +68,8 @@ export default function StudentsList({ onAddStudent }) {
     contextLoading, listLoading, listError,
     // students data
     students, filteredItems, visibleItems, selectedCount, classes,
+    // server pagination (PAG-04 / SCH-102)
+    currentPage, setCurrentPage, pageSize, setPageSize, totalPages, totalItems,
     // filter state
     searchQuery, setSearchQuery, statusFilter, setStatusFilter,
     // filter helpers
@@ -173,28 +175,21 @@ export default function StudentsList({ onAddStudent }) {
   }, [isMobileViewport, selectedId, visibleItems.length]);
 
   // ============ Pagination ============
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  // PAG-04 (SCH-102): pagination state now lives in useStudentsListData and
+  // is driven by the server response. visibleItems is already the current
+  // page (≤ pageSize rows), so the old client-side slice is gone. The hook
+  // resets `currentPage` to 1 on server-filter changes and clamps to
+  // `totalPages` so we don't render an empty table after a filter narrows.
+  const page = currentPage;
+  const setPage = setCurrentPage;
 
-  const totalPages = useMemo(
-    () => Math.max(1, Math.ceil(visibleItems.length / pageSize)),
-    [visibleItems.length, pageSize]
-  );
+  const paginatedItems = visibleItems;
 
-  const paginatedItems = useMemo(
-    () => visibleItems.slice((page - 1) * pageSize, page * pageSize),
-    [visibleItems, page, pageSize]
-  );
-
+  // Keep keyboard-nav row refs in sync with the active page so ArrowUp/Down
+  // don't reach into the previous page's DOM after a server page change.
   useEffect(() => {
-    setPage(1);
-  }, [searchQuery, statusFilter, activeFiltersCount]);
-
-  useEffect(() => {
-    if (page > totalPages) {
-      setPage(totalPages);
-    }
-  }, [page, totalPages]);
+    rowRefs.current = new Map();
+  }, [currentPage]);
 
   // ============ Keyboard nav ============
   const listRef = useRef(null);
@@ -346,7 +341,7 @@ export default function StudentsList({ onAddStudent }) {
   return (
     <PageShell
       title="Students"
-      description={`${filteredItems.length} of ${students.length}`}
+      description={`${filteredItems.length} of ${totalItems}`}
       actions={
         <div className="row gap-2">
           <ExportMenu
@@ -458,16 +453,16 @@ export default function StudentsList({ onAddStudent }) {
           {visibleItems.length === 0 ? (
             <EmptyState
               icon={Users}
-              title={students.length === 0 ? "No students yet" : "No students matched"}
+              title={totalItems === 0 ? "No students yet" : "No students matched"}
               description={
-                students.length === 0
+                totalItems === 0
                   ? "Get started by adding your first student."
                   : activeFiltersCount > 0 || searchQuery
                   ? "Try adjusting your filters or search query."
                   : "No students found for the current view."
               }
               action={
-                students.length === 0 ? (
+                totalItems === 0 ? (
                   <button type="button" className="btn btn--accent" onClick={onAddStudent} aria-label="Add your first student">
                     <Plus size={13} aria-hidden /> New Student
                   </button>
@@ -516,7 +511,7 @@ export default function StudentsList({ onAddStudent }) {
               <select
                 className="select select--sm"
                 value={pageSize}
-                onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+                onChange={(e) => setPageSize(Number(e.target.value))}
                 aria-label="Items per page"
               >
                 <option value={10}>10</option>
@@ -530,7 +525,7 @@ export default function StudentsList({ onAddStudent }) {
               currentPage={page}
               totalPages={totalPages}
               onPageChange={setPage}
-              totalItems={visibleItems.length}
+              totalItems={totalItems}
               itemLabel="students"
             />
           </div>

@@ -8,6 +8,8 @@ import toast from "react-hot-toast";
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
 import StatusBadge from '../../components/ui/StatusBadge';
+import { SkeletonTable } from '../../components/ui/Skeleton';
+import ErrorState from '../../components/ui/ErrorState';
 
 import {
   Search,
@@ -32,7 +34,8 @@ export default function ParentManagement() {
   // PAG-25: search runs server-side; debounce so we don't refetch on every keystroke.
   const debouncedSearch = useDebounce(search, 400);
   const [statusFilter, setStatusFilter] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [selectedParent, setSelectedParent] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -49,6 +52,7 @@ export default function ParentManagement() {
 
   const fetchParents = useCallback(async (page = 1, signal) => {
     setLoading(true);
+    setError(null);
     try {
       const params = { page, limit: 20 };
       if (debouncedSearch) params.search = debouncedSearch;
@@ -59,10 +63,14 @@ export default function ParentManagement() {
       if (response.success) {
         setParents(response.data.parents);
         setPagination(response.data.pagination);
+      } else {
+        throw new Error(response.message || response.error || 'Failed to load parent accounts');
       }
     } catch (error) {
       if (error.name === 'AbortError') return;
       logger.error("Error fetching parents:", error);
+      setParents([]);
+      setError(error);
     } finally {
       if (!signal?.aborted) {
         setLoading(false);
@@ -223,6 +231,18 @@ export default function ParentManagement() {
       </div>
 
       {/* Table */}
+      {loading ? (
+        <SkeletonTable rows={6} columns={7} />
+      ) : error ? (
+        <div className="bg-surface border border-border-token rounded-lg">
+          <ErrorState
+            title={t('pages.failedToLoadParentAccounts', 'Failed to load parent accounts')}
+            description={t('pages.failedToLoadParentAccountsDescription', "We couldn't load parent accounts. Check your connection and try again.")}
+            error={error}
+            onRetry={() => fetchParents(pagination.page)}
+          />
+        </div>
+      ) : (
       <div className="bg-surface border border-border-token rounded-lg overflow-hidden overflow-x-auto">
         <table className="w-full">
           <thead>
@@ -237,11 +257,7 @@ export default function ParentManagement() {
             </tr>
           </thead>
           <tbody className="divide-y divide-divider">
-            {loading ? (
-              <tr>
-                <td colSpan={7} className="text-center py-12 text-fg-faint text-sm">{t('pages.loading')}</td>
-              </tr>
-            ) : parents.length === 0 ? (
+            {parents.length === 0 ? (
               <tr>
                 <td colSpan={7} className="text-center py-12 text-fg-faint text-sm">{t('pages.noParentAccountsFound')}</td>
               </tr>
@@ -328,6 +344,7 @@ export default function ParentManagement() {
           </div>
         )}
       </div>
+      )}
 
       {/* Generated Password Modal */}
       {generatedPassword && !drawerOpen && (

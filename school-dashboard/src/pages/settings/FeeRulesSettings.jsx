@@ -9,7 +9,7 @@ import {
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { Plus, Edit, Trash2, Save } from "lucide-react";
 import toast from "react-hot-toast";
-import { useApp } from "../../context/AppContext";
+import { useAppMeta } from "../../context/AppContext";
 import { useTranslation } from 'react-i18next';
 import HelpIcon from '../../components/ui/HelpIcon';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
@@ -21,7 +21,7 @@ import { useCurrency } from '../../context/hooks/useCurrency';
 export function ConcessionsTab() {
   const { t } = useTranslation();
   const { fmt } = useCurrency();
-  const { currentAcademicYear } = useApp();
+  const { currentAcademicYear } = useAppMeta();
   const [concessions, setConcessions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -231,7 +231,7 @@ export function ConcessionsTab() {
 export function LateFeeTab() {
   const { t } = useTranslation();
   const { currencySymbol } = useCurrency();
-  const { currentAcademicYear } = useApp();
+  const { currentAcademicYear } = useAppMeta();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [fetchError, setFetchError] = useState(null);
@@ -375,7 +375,7 @@ const PAYMENT_METHODS_DEFAULT = {
 // ============ PAYMENT METHODS TAB ============
 export function PaymentMethodsTab() {
   const { t } = useTranslation();
-  const { currentAcademicYear } = useApp();
+  const { currentAcademicYear } = useAppMeta();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [fetchError, setFetchError] = useState(null);
@@ -483,7 +483,7 @@ export function PaymentMethodsTab() {
 // ============ COLLECTION PERIOD TAB ============
 export function CollectionPeriodTab() {
   const { t } = useTranslation();
-  const { currentAcademicYear } = useApp();
+  const { currentAcademicYear } = useAppMeta();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [fetchError, setFetchError] = useState(null);
@@ -575,7 +575,7 @@ const GENERAL_RULES_DEFAULT = {
 // ============ GENERAL RULES TAB ============
 export function GeneralRulesTab() {
   const { t } = useTranslation();
-  const { currentAcademicYear } = useApp();
+  const { currentAcademicYear } = useAppMeta();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [fetchError, setFetchError] = useState(null);

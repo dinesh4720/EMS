@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import logger from '../../utils/logger';
 import {
@@ -44,12 +44,34 @@ export default function SubstitutionAlertPanel({ className = '' }) {
 
   const { isOpen, onOpen, onClose } = useDisclosure();
 
-  // Fetch alerts
+  // Stays true while mounted; flipped on unmount so stale poll/socket-triggered
+  // responses (fetchAlerts is shared by the interval and socket handler) don't
+  // apply state after teardown.
+  const isMountedRef = useRef(true);
+  // Tracks the in-flight fetchAlerts request so a newer call (interval tick,
+  // socket trigger, manual refresh) can abort the prior one, and unmount can
+  // abort whatever is still pending.
+  const abortControllerRef = useRef(null);
+  // Holds the setInterval id so the visibilitychange handler can pause/resume
+  // polling without the effect itself needing to re-run.
+  const intervalRef = useRef(null);
+  useEffect(() => () => { isMountedRef.current = false; }, []);
+
+  // Fetch alerts. Aborts any in-flight request first so a stale response can
+  // never overwrite a fresher one (interval tick vs. socket trigger vs. manual
+  // refresh all share this path).
   const fetchAlerts = useCallback(async () => {
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     try {
       const today = toTodayDateString();
-      const response = await request(`/substitution-alerts?date=${today}`);
+      const response = await request(`/substitution-alerts?date=${today}`, {
+        signal: controller.signal,
+      });
 
+      if (!isMountedRef.current) return;
       if (response.success) {
         setAlerts(Array.isArray(response.alerts) ? response.alerts : []);
 
@@ -59,10 +81,18 @@ export default function SubstitutionAlertPanel({ className = '' }) {
         }
       }
     } catch (error) {
+      // AbortError is expected (superseded by a newer call, or unmount) — not a
+      // real failure, so don't log it.
+      if (controller.signal.aborted || error?.name === 'AbortError') return;
       logger.error('Error fetching alerts:', error);
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      // Only the active request owns the loading/refreshing flags. A superseded
+      // request's finally must not clobber the newer request's state.
+      if (isMountedRef.current && abortControllerRef.current === controller) {
+        setLoading(false);
+        setRefreshing(false);
+        abortControllerRef.current = null;
+      }
     }
   }, [soundEnabled]);
 
@@ -71,7 +101,22 @@ export default function SubstitutionAlertPanel({ className = '' }) {
 
     // Refresh every 2 minutes (reduced from 30s to avoid rate-limit issues —
     // real-time updates come via socket, polling is just a fallback)
-    const interval = setInterval(fetchAlerts, 120000);
+    intervalRef.current = setInterval(fetchAlerts, 120000);
+
+    // Pause the poll while the tab is hidden — no point burning requests the
+    // user can't see. On refocus, catch up immediately and resume polling.
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+      } else if (!intervalRef.current) {
+        fetchAlerts();
+        intervalRef.current = setInterval(fetchAlerts, 120000);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Listen for real-time substitution alerts via socket
     const handleSubstitutionAlert = (data) => {
@@ -106,8 +151,15 @@ export default function SubstitutionAlertPanel({ className = '' }) {
     socketService.on('substitution_alert', handleSubstitutionAlert);
 
     return () => {
-      clearInterval(interval);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       socketService.off('substitution_alert', handleSubstitutionAlert);
+      // Abort any in-flight request so a stale response never lands after
+      // teardown (unmount or fetchAlerts identity change).
+      abortControllerRef.current?.abort();
     };
   }, [fetchAlerts]);
 

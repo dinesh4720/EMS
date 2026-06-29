@@ -16,7 +16,7 @@ import { useTranslation } from "react-i18next";
 
 import { feesApi } from "../../services/api.js";
 import { feeStructureAssignmentSchema, parseFormSchema } from "../../validators/formSchemas";
-import { useApp } from "../../context/AppContext";
+import { useAppMeta } from "../../context/AppContext";
 import { useCurrency } from "../../context/hooks/useCurrency";
 import { getAcademicYearOptions } from "../../utils/constants";
 import { getDateLocale } from "../../i18n/index";
@@ -68,7 +68,7 @@ const calculateAnnualTotal = (feeHeads) =>
 export default function FeeStructureAssignment({ classes, onAssignmentComplete }) {
   const { t } = useTranslation();
   const { fmt, currencySymbol } = useCurrency();
-  const { currentAcademicYear } = useApp();
+  const { currentAcademicYear } = useAppMeta();
   const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
 
   const academicYearOptions = useMemo(
