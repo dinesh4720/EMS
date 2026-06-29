@@ -642,10 +642,11 @@ export function useStudentsListData() {
     const ids = resolveSelectedIds(selectedKeys, filteredItems);
     onReminderClose();
     try {
-      await request("/messages/bulk-reminder", {
+      await request("/students/send-reminders-bulk", {
         method: "POST",
         body: JSON.stringify({
           studentIds: ids.length > 0 ? ids : filteredItems.map((student) => student.id),
+          type: "fee",
           message: reminderMessage,
           scheduledTime: reminderTime || undefined,
         }),
