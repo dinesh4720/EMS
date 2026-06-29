@@ -35,7 +35,7 @@ export default function DisabledButtonWithTooltip({
       delay={300}
       closeDelay={0}
       classNames={{
-        content: "bg-amber-600 text-white dark:bg-amber-500 text-xs px-2 py-1 rounded-md font-medium"
+        content: "bg-warn text-white text-xs px-2 py-1 rounded-md font-medium"
       }}
     >
       <div className="inline-flex">
@@ -88,7 +88,7 @@ export function IconDisabledTooltip({
       delay={300}
       closeDelay={0}
       classNames={{
-        content: "bg-amber-600 text-white dark:bg-amber-500 text-xs px-2 py-1 rounded-md font-medium"
+        content: "bg-warn text-white text-xs px-2 py-1 rounded-md font-medium"
       }}
     >
       <Button
