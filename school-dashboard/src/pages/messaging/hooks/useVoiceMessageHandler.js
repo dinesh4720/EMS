@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import logger from '../../../utils/logger';
@@ -19,6 +19,15 @@ export function useVoiceMessageHandler({
   pendingSocketMessagesRef,
 }) {
   const { t } = useTranslation();
+
+  // Synchronous re-entry guard. The `isRecording` *state* only flips to true
+  // after the async `getUserMedia` await resolves, leaving a window in which a
+  // rapid second trigger (double-click, repeated keypress) would start a second
+  // recorder and orphan the first one's MediaStream, AudioContext, and timers.
+  // This ref flips immediately — before any await — so the second call bails
+  // out before acquiring a new stream. Reset when the recording stops or the
+  // start attempt fails. (MEM-11)
+  const recordingActiveRef = useRef(false);
 
   const {
     voicePreview, setVoicePreview,
@@ -69,6 +78,11 @@ export function useVoiceMessageHandler({
   }, []);
 
   const handleStartRecording = useCallback(async () => {
+    // Bail out if a recording is already starting or in progress, so a
+    // double-trigger can't orphan the first recorder's resources. (MEM-11)
+    if (recordingActiveRef.current) return;
+    recordingActiveRef.current = true;
+
     try {
       // Clear any previous preview
       if (voicePreview?.url) {
@@ -118,6 +132,7 @@ export function useVoiceMessageHandler({
         });
         setRecordedChunks([]);
         setIsRecording(false);
+        recordingActiveRef.current = false;
 
         // Stop animation
         if (animationFrameRef.current) {
@@ -180,6 +195,17 @@ export function useVoiceMessageHandler({
       recorder.sampleInterval = sampleInterval;
 
     } catch (error) {
+      // Start failed (e.g. mic permission denied) — release the guard so the
+      // user can retry. Also tear down anything acquired before the failure.
+      recordingActiveRef.current = false;
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+        mediaStreamRef.current = null;
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
       logger.error('Error starting recording:', error);
       toast.error(t('messaging.toast.failedToAccessMicrophone', 'Failed to access microphone'));
     }
