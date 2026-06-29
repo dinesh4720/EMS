@@ -4,6 +4,7 @@ import { classesApi } from "../services/api";
 import toast from "react-hot-toast";
 import logger from "../utils/logger";
 import { useTranslation } from 'react-i18next';
+import { buildClassesWithTeachers } from "./appContextHelpers";
 
 export const ClassesContext = createContext();
 
@@ -79,31 +80,10 @@ export function ClassesProvider({ children, staff, students }) {
     [classes]
   );
 
-  const classesWithTeachers = useMemo(() => {
-    if (!Array.isArray(classes) || !Array.isArray(staff) || !Array.isArray(students)) return [];
-    return classes.map((c) => ({
-      ...c,
-      teacher:
-        staff.find(
-          (s) =>
-            String(s.id) === String(c.classTeacherId) ||
-            String(s._id) === String(c.classTeacherId)
-        )?.name || null,
-      teacherPhoto:
-        staff.find(
-          (s) =>
-            String(s.id) === String(c.classTeacherId) ||
-            String(s._id) === String(c.classTeacherId)
-        )?.picture || null,
-      // FIXED: Use String() comparison for ObjectId matching and filter by active status
-      studentCount: students.filter(
-        (s) =>
-          String(s.classId) === String(c.id) &&
-          (s.status || "active") === "active" &&
-          s.isDeleted !== true
-      ).length,
-    }));
-  }, [classes, staff, students]);
+  const classesWithTeachers = useMemo(
+    () => buildClassesWithTeachers(classes, staff, students),
+    [classes, staff, students]
+  );
 
   const value = useMemo(
     () => ({

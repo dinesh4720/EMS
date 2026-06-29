@@ -126,6 +126,69 @@ export function dedupeById(items = []) {
 }
 
 // ---------------------------------------------------------------------------
+// Derived collections
+// ---------------------------------------------------------------------------
+
+/**
+ * Join classes with their class-teacher details and active student counts.
+ *
+ * Replaces the previous O(classes × (2·staff + students)) shape — two
+ * `staff.find()` calls plus a `students.filter()` per class — which re-ran on
+ * every socket update / refetch. This builds two indexes in a single pass each,
+ * making the whole join O(staff + students + classes).
+ *
+ * Behaviour is preserved exactly:
+ *  - teacher / teacherPhoto resolve the first staff member whose `id` OR `_id`
+ *    (string-compared) equals the class `classTeacherId`;
+ *  - studentCount counts students whose `classId` matches the class `id` and
+ *    that are active (`status` defaults to "active") and not soft-deleted.
+ */
+export function buildClassesWithTeachers(classes, staff, students) {
+  if (
+    !Array.isArray(classes) ||
+    !Array.isArray(staff) ||
+    !Array.isArray(students)
+  ) {
+    return [];
+  }
+
+  // Index staff by id and _id once. Only record a key the first time it is
+  // seen so lookups keep Array.prototype.find's "first match wins" semantics.
+  const staffByKey = new Map();
+  for (const member of staff) {
+    if (!member) continue;
+    if (member.id != null) {
+      const idKey = String(member.id);
+      if (!staffByKey.has(idKey)) staffByKey.set(idKey, member);
+    }
+    if (member._id != null) {
+      const altKey = String(member._id);
+      if (!staffByKey.has(altKey)) staffByKey.set(altKey, member);
+    }
+  }
+
+  // Count active, non-deleted students per class in a single pass.
+  const studentCountByClass = new Map();
+  for (const student of students) {
+    if (!student) continue;
+    if ((student.status || "active") !== "active") continue;
+    if (student.isDeleted === true) continue;
+    const classKey = String(student.classId);
+    studentCountByClass.set(classKey, (studentCountByClass.get(classKey) || 0) + 1);
+  }
+
+  return classes.map((classItem) => {
+    const teacher = staffByKey.get(String(classItem.classTeacherId));
+    return {
+      ...classItem,
+      teacher: teacher?.name || null,
+      teacherPhoto: teacher?.picture || null,
+      studentCount: studentCountByClass.get(String(classItem.id)) || 0,
+    };
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Path-based student preloading logic
 // ---------------------------------------------------------------------------
 
