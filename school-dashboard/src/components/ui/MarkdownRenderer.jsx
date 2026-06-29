@@ -6,14 +6,7 @@
  * javascript: and data: protocol execution.
  */
 
-const SAFE_PROTOCOLS = /^(https?:|mailto:)/i;
-
-function sanitizeUrl(url) {
-  if (!url) return '#';
-  const trimmed = url.trim();
-  if (!SAFE_PROTOCOLS.test(trimmed)) return '#';
-  return trimmed;
-}
+import { sanitizeUrl } from '../../utils/sanitizeUrl';
 
 // Inline markdown link pattern: [text](url)
 const LINK_RE = /\[([^\]]*)\]\(([^)]*)\)/g;
