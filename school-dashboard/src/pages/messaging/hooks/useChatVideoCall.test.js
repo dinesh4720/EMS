@@ -39,6 +39,10 @@ vi.mock('../../../services/videoCallService', () => ({
     acceptCall: vi.fn(async () => ({})),
     rejectCall: vi.fn(),
     endCall: vi.fn(),
+    // The hook subscribes to service events in a useEffect on mount; without
+    // these the mounted hook throws "default.on is not a function".
+    on: vi.fn(),
+    off: vi.fn(),
   },
 }));
 
