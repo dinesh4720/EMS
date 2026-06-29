@@ -454,7 +454,6 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
                   ]?.checkIn || null
                 : null
             }
-            recentActivity={[]}
             onClose={closeDetail}
             onViewProfile={() =>
               selectedStaff && handleViewProfile(selectedStaff)
@@ -493,7 +492,6 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
                     ]?.checkIn || null
                   : null
               }
-              recentActivity={[]}
               isMobile
               onClose={closeDetail}
               onViewProfile={() =>
