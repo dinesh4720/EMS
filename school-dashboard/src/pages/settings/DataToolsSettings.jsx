@@ -43,7 +43,7 @@ import { request, requestUpload, requestBlob } from "../../services/api";
 const EXPORT_ENTITIES = [
   { key: "students", label: "Students", icon: Users },
   { key: "staff", label: "Staff", icon: GraduationCap },
-  { key: "fees", label: "Fees", icon: IndianRupee },
+  { key: "fee-collection", label: "Fees", icon: IndianRupee },
 ];
 
 const IMPORT_TYPES = [
@@ -98,7 +98,7 @@ export default function DataToolsSettings() {
       formData.append("file", importFile);
       formData.append("type", importType);
 
-      const response = await requestUpload("/data-tools/import", formData);
+      const response = await requestUpload(`/bulk-import/${importType}`, formData);
 
       setImportResult({
         total: response.totalRecords ?? 0,
@@ -118,7 +118,7 @@ export default function DataToolsSettings() {
   const handleExport = async (entity) => {
     try {
       setExporting(true);
-      const response = await requestBlob(`/data-tools/export/${entity}`);
+      const response = await requestBlob(`/export/${entity}`);
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -144,7 +144,7 @@ export default function DataToolsSettings() {
     try {
       setBackupLoading(true);
       setBackupError(null);
-      const data = await request("/data-tools/backup");
+      const data = await request("/backup/list");
       setBackupData(data);
     } catch (error) {
       setBackupError(error);
@@ -159,7 +159,7 @@ export default function DataToolsSettings() {
     try {
       setGdprLoading(true);
       setGdprError(null);
-      const data = await request("/data-tools/gdpr");
+      const data = await request("/gdpr/dashboard");
       setGdprData(data);
     } catch (error) {
       setGdprError(error);
