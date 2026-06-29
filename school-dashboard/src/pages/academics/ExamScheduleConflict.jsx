@@ -12,7 +12,7 @@ import {
 } from '@heroui/react';
 import { CalendarRange, AlertTriangle, CheckCircle, Clock, Trash2, Zap, Send } from 'lucide-react';
 import { examScheduleApi } from '../../services/api';
-import { useApp } from '../../context/AppContext';
+import { useAppMeta } from '../../context/AppContext';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import toast from 'react-hot-toast';
 import { formatShortDate } from '../../utils/dateFormatter';
@@ -81,7 +81,7 @@ const STATUS_LABEL = {
 };
 
 const ExamScheduleConflict = ({ onCreateSchedule }) => {
-  const { selectedAcademicYear } = useApp();
+  const { selectedAcademicYear } = useAppMeta();
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null, name: '' });

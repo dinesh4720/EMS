@@ -1,12 +1,12 @@
 import AcademicYearSelector from "../../components/AcademicYearSelector";
-import { useApp } from "../../context/AppContext";
+import { useAppMeta } from "../../context/AppContext";
 
 // TODO: replace this single global control with contextual year filters
 // per page (each list/report should pick its own range, with a "use
 // workspace default" option). The global selector here is a stop-gap
 // until per-page filters land.
 export default function WorkspaceSettings() {
-  const { currentAcademicYear, selectedAcademicYear } = useApp();
+  const { currentAcademicYear, selectedAcademicYear } = useAppMeta();
   const isNonCurrent =
     selectedAcademicYear && selectedAcademicYear !== currentAcademicYear;
 

@@ -41,7 +41,7 @@ export function StaffProvider({ children }) {
     setStaff(Array.isArray(data) ? data : []);
   }, []);
 
-  const addStaff = async (newStaff) => {
+  const addStaff = useCallback(async (newStaff) => {
     try {
       const created = await staffApi.create(newStaff);
       setStaff((prev) => [...prev, created]);
@@ -52,9 +52,9 @@ export function StaffProvider({ children }) {
       toast.error(t('toast.error.failedToAddStaffMember', 'Failed to add staff member'));
       throw err;
     }
-  };
+  }, [invalidateAppData, t]);
 
-  const updateStaff = async (id, updates) => {
+  const updateStaff = useCallback(async (id, updates) => {
     const prev = staff;
     try {
       const updated = await staffApi.update(id, updates);
@@ -78,16 +78,16 @@ export function StaffProvider({ children }) {
       setStaff(prev);
       throw err;
     }
-  };
+  }, [staff, invalidateAppData, t]);
 
   // Update staff in state without API call (for real-time socket updates)
-  const updateStaffLocal = (id, updates) => {
+  const updateStaffLocal = useCallback((id, updates) => {
     setStaff((prev) =>
       prev.map((s) => (String(s.id) === String(id) ? { ...s, ...updates } : s))
     );
-  };
+  }, []);
 
-  const deleteStaff = async (id) => {
+  const deleteStaff = useCallback(async (id) => {
     const prev = staff;
     try {
       await staffApi.delete(id);
@@ -99,20 +99,23 @@ export function StaffProvider({ children }) {
       setStaff(prev);
       throw err;
     }
-  };
+  }, [staff, invalidateAppData, t]);
 
-  const toggleStaffStatus = async (id) => {
+  const toggleStaffStatus = useCallback(async (id) => {
     const staffMember = staff.find((s) => s.id === id);
     if (staffMember) {
       const newStatus = isActiveStaff(staffMember) ? "inactive" : "active";
       await updateStaff(id, { status: newStatus });
     }
-  };
+  }, [staff, updateStaff]);
 
-  const getStaffById = (id) =>
-    Array.isArray(staff) && id
-      ? staff.find((s) => String(s.id) === String(id) || (s._id && String(s._id) === String(id)))
-      : undefined;
+  const getStaffById = useCallback(
+    (id) =>
+      Array.isArray(staff) && id
+        ? staff.find((s) => String(s.id) === String(id) || (s._id && String(s._id) === String(id)))
+        : undefined,
+    [staff]
+  );
 
   const teachers = useMemo(
     () =>
@@ -125,38 +128,66 @@ export function StaffProvider({ children }) {
     [staff]
   );
 
-  const addLessonPlan = (plan) => setLessonPlans((prev) => [plan, ...prev]);
-  const addDocument = (doc) => setDocuments((prev) => [doc, ...prev]);
-  const addRemark = (remark) => setRemarks((prev) => [remark, ...prev]);
+  const addLessonPlan = useCallback((plan) => setLessonPlans((prev) => [plan, ...prev]), []);
+  const addDocument = useCallback((doc) => setDocuments((prev) => [doc, ...prev]), []);
+  const addRemark = useCallback((remark) => setRemarks((prev) => [remark, ...prev]), []);
 
-  const value = {
-    staff,
-    teachers,
-    lessonPlans,
-    documents,
-    remarks,
-    setStaff,
-    setStaffFromQuery,
-    addStaff,
-    updateStaff,
-    updateStaffLocal,
-    deleteStaff,
-    toggleStaffStatus,
-    getStaffById,
-    addLessonPlan,
-    addDocument,
-    addRemark,
-    // Salary
-    salarySettings,
-    staffSalaries,
-    payrollHistory,
-    loadingSalarySettings,
-    updateSalarySettings,
-    updateStaffSalary,
-    processPayroll,
-    fetchPayrollHistory,
-    getPayrollForMonth,
-  };
+  const value = useMemo(
+    () => ({
+      staff,
+      teachers,
+      lessonPlans,
+      documents,
+      remarks,
+      setStaff,
+      setStaffFromQuery,
+      addStaff,
+      updateStaff,
+      updateStaffLocal,
+      deleteStaff,
+      toggleStaffStatus,
+      getStaffById,
+      addLessonPlan,
+      addDocument,
+      addRemark,
+      // Salary
+      salarySettings,
+      staffSalaries,
+      payrollHistory,
+      loadingSalarySettings,
+      updateSalarySettings,
+      updateStaffSalary,
+      processPayroll,
+      fetchPayrollHistory,
+      getPayrollForMonth,
+    }),
+    [
+      staff,
+      teachers,
+      lessonPlans,
+      documents,
+      remarks,
+      setStaffFromQuery,
+      addStaff,
+      updateStaff,
+      updateStaffLocal,
+      deleteStaff,
+      toggleStaffStatus,
+      getStaffById,
+      addLessonPlan,
+      addDocument,
+      addRemark,
+      salarySettings,
+      staffSalaries,
+      payrollHistory,
+      loadingSalarySettings,
+      updateSalarySettings,
+      updateStaffSalary,
+      processPayroll,
+      fetchPayrollHistory,
+      getPayrollForMonth,
+    ]
+  );
 
   return <StaffContext.Provider value={value}>{children}</StaffContext.Provider>;
 }

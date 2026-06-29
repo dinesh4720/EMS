@@ -18,7 +18,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer
 } from 'recharts';
-import { useApp } from '../../context/AppContext';
+import { useAppMeta } from '../../context/AppContext';
 import { getAcademicYearOptions } from '../../utils/constants';
 import { CHART_COLORS, useChartTheme } from '../../utils/chartTheme';
 import { useTranslation } from 'react-i18next';
@@ -38,7 +38,7 @@ const ClassPerformance = () => {
   const { t } = useTranslation();
   const { params: { classId }, isValid } = useValidatedParams({ classId: 'objectId' }, { redirectTo: '/academics' });
   const navigate = useNavigate();
-  const { currentAcademicYear, selectedAcademicYear, setSelectedAcademicYear } = useApp();
+  const { currentAcademicYear, selectedAcademicYear, setSelectedAcademicYear } = useAppMeta();
   const chart = useChartTheme();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
