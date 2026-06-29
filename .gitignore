@@ -22,3 +22,10 @@ test-results-master/
 .claude/
 *.bak
 test-results/
+
+# Test/debug artifacts (CODE-11)
+master-test/
+playwright-report-master/
+test-results-master/
+pr_payload.json
+*.ps1

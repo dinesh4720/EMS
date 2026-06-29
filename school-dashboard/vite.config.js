@@ -106,7 +106,13 @@ export default defineConfig({
   },
   // Performance optimizations for dev server
   esbuild: {
-    logOverride: { 'this-is-undefined-in-esm': 'silent' }
+    logOverride: { 'this-is-undefined-in-esm': 'silent' },
+    // CODE-09: drop console/debugger from production builds. Logger calls
+    // (src/utils/logger.js) are gated on log level so they survive; raw
+    // console.* calls bypass the redacting logger and would otherwise ship
+    // in the prod bundle.
+    drop: process.env.NODE_ENV === 'production' ? ['debugger'] : [],
+    pure: process.env.NODE_ENV === 'production' ? ['console.debug'] : [],
   },
   // Vitest configuration — keep unit tests separate from Playwright E2E tests
   test: {

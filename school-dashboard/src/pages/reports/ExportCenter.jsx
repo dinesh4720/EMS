@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { request, requestBlob } from '../../services/api';
+import logger from '../../utils/logger';
 import PageHeader from '../../components/ui/PageHeader';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -173,7 +174,7 @@ function ExportCard({ module }) {
       URL.revokeObjectURL(downloadUrl);
       toast.success(`${module.name} exported successfully`);
     } catch (error) {
-      console.error(`Failed to export ${module.name}:`, error);
+      logger.error(`Failed to export ${module.name}:`, error);
       toast.error(`Failed to export ${module.name}. Check your connection and try again.`);
     } finally {
       setExporting(false);

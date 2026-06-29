@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useId } from 'react';
 import { reportsApi } from '../../services/api/extensions';
 import { useAppMeta } from '../../context/AppContext';
 import { getAcademicYearOptions } from '../../utils/constants';
+import logger from '../../utils/logger';
 import PageHeader from '../../components/ui/PageHeader';
 import Tabs from '../../components/ui/Tabs';
 import Select from '../../components/ui/Select';
@@ -37,7 +38,7 @@ export default function ReportsPage() {
         const data = await reportsApi.dashboardMetrics({ academicYear });
         if (!cancelled) setMetrics(data);
       } catch (err) {
-        console.error('Failed to load dashboard metrics:', err);
+        logger.error('Failed to load dashboard metrics:', err);
       }
     })();
     return () => {
