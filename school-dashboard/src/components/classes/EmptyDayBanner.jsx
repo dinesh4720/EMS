@@ -4,7 +4,7 @@ import { Check, Sun, AlertTriangle } from "lucide-react";
 //   weekend / holiday → info  ("No school today · {dayName}")
 //   end-of-day, no unmarked → ok  ("School day complete · {covered}/{total} covered")
 //   end-of-day, unmarked > 0 → warn  (adds "· {N} unmarked" + overdue link)
-export default function EmptyDayBanner({ dayMeta, onViewOverdue, onViewTomorrow }) {
+export default function EmptyDayBanner({ dayMeta, onViewOverdue }) {
   if (!dayMeta) return null;
 
   if (dayMeta.isWeekendOrHoliday) {
@@ -17,11 +17,6 @@ export default function EmptyDayBanner({ dayMeta, onViewOverdue, onViewTomorrow 
         <span className="empty-day-banner__meta">
           School is closed.
         </span>
-        <div className="empty-day-banner__actions">
-          <button type="button" className="btn btn--sm" onClick={onViewTomorrow}>
-            View tomorrow's schedule →
-          </button>
-        </div>
       </div>
     );
   }
@@ -53,8 +48,8 @@ export default function EmptyDayBanner({ dayMeta, onViewOverdue, onViewTomorrow 
             </>
           )}
         </span>
-        <div className="empty-day-banner__actions">
-          {hasUnmarked && (
+        {hasUnmarked && (
+          <div className="empty-day-banner__actions">
             <button
               type="button"
               className="btn btn--sm"
@@ -62,11 +57,8 @@ export default function EmptyDayBanner({ dayMeta, onViewOverdue, onViewTomorrow 
             >
               View overdue →
             </button>
-          )}
-          <button type="button" className="btn btn--sm" onClick={onViewTomorrow}>
-            View tomorrow →
-          </button>
-        </div>
+          </div>
+        )}
       </div>
     );
   }
