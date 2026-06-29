@@ -33,6 +33,7 @@ export function useVoiceMessageHandler({
     audioContextRef,
     animationFrameRef,
     recordingDurationRef,
+    mediaRecorderRef,
   } = voiceRecordingState;
 
   // Compress waveform samples to a specific number of bars
@@ -129,10 +130,14 @@ export function useVoiceMessageHandler({
 
         // Close audio context
         audioContext.close();
+
+        // Recorder is finished — drop the ref so unmount cleanup is a no-op.
+        mediaRecorderRef.current = null;
       };
 
       recorder.start();
       setMediaRecorder(recorder);
+      mediaRecorderRef.current = recorder;
       setIsRecording(true);
       setRecordingDuration(0);
       recordingDurationRef.current = 0;
@@ -178,7 +183,7 @@ export function useVoiceMessageHandler({
       logger.error('Error starting recording:', error);
       toast.error(t('messaging.toast.failedToAccessMicrophone', 'Failed to access microphone'));
     }
-  }, [voicePreview, setVoicePreview, setLiveWaveform, mediaStreamRef, analyserRef, audioContextRef, setIsRecording, setRecordingDuration, recordingDurationRef, setMediaRecorder, setRecordedChunks, recordingTimerRef, animationFrameRef, compressWaveform, t]);
+  }, [voicePreview, setVoicePreview, setLiveWaveform, mediaStreamRef, analyserRef, audioContextRef, setIsRecording, setRecordingDuration, recordingDurationRef, setMediaRecorder, mediaRecorderRef, setRecordedChunks, recordingTimerRef, animationFrameRef, compressWaveform, t]);
 
   const handleStopRecording = useCallback(() => {
     // Clear the sample interval
