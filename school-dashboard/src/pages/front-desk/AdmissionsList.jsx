@@ -12,8 +12,10 @@ import { Edit, Eye, Inbox, LayoutGrid, List as ListIcon, Plus, Trash2 } from 'lu
 import toast from 'react-hot-toast';
 import ToolbarSearch from '../../components/ui/ToolbarSearch';
 import { ConfirmDialog, EmptyState, ErrorState, PageShell, SkeletonTable } from '../../components/ui';
+import Pagination from '../../components/common/Pagination';
 import { classesApi, frontDeskApi, staffApi } from '../../services/api';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
+import { useDebounce } from '../../hooks/useDebounce';
 import logger from '../../utils/logger';
 import AdmissionDetailModal from './AdmissionDetailModal';
 import AdmissionFormModal from './AdmissionFormModal';
@@ -24,6 +26,10 @@ import {
   getStatusMeta,
   stageOfStatus,
 } from './admissionsConstants';
+
+// Page size for the list view. The board view loads the full filtered set
+// (limit=0) because a kanban needs every card to group it by stage.
+const PAGE_SIZE = 25;
 
 const extractList = (response) =>
   Array.isArray(response) ? response : response?.data || [];
@@ -49,18 +55,6 @@ const COLOR_TO_TONE = {
   neutral: 'neutral',
 };
 
-function searchMatch(a, q) {
-  if (!q) return true;
-  const t = q.toLowerCase();
-  return (
-    (a.studentName || '').toLowerCase().includes(t) ||
-    (a.parentName || '').toLowerCase().includes(t) ||
-    (a.phoneNumber || '').toLowerCase().includes(t) ||
-    (a.classApplyingFor || '').toLowerCase().includes(t) ||
-    (a.applicationId || a._id || '').toLowerCase().includes(t)
-  );
-}
-
 const formatApplicationId = (a) => {
   if (a.applicationId) return a.applicationId;
   const tail = String(a._id || '').slice(-6).toUpperCase();
@@ -72,6 +66,8 @@ const AdmissionsList = forwardRef(function AdmissionsList({ onSave }, ref) {
   const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
 
   const [admissions, setAdmissions] = useState([]);
+  const [pagination, setPagination] = useState(null);
+  const [statusCounts, setStatusCounts] = useState(null);
   const [staff, setStaff] = useState([]);
   const [availableClasses, setAvailableClasses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -85,13 +81,35 @@ const AdmissionsList = forwardRef(function AdmissionsList({ onSave }, ref) {
   const [view, setView] = useState('list'); // 'list' | 'board'
   const [stageFilter, setStageFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  // Debounced so typing doesn't fire a request (and a page reset) per keystroke.
+  const debouncedSearch = useDebounce(search, 300);
+
+  // Search / stage filtering and pagination are all done server-side now, so
+  // the page only ever holds the records it needs to render.
+  const buildParams = useCallback(() => {
+    const params = {};
+    const term = debouncedSearch.trim();
+    if (term) params.search = term;
+    if (stageFilter !== 'all') params.stage = stageFilter;
+    if (view === 'list') {
+      params.page = page;
+      params.limit = PAGE_SIZE;
+    } else {
+      params.limit = 0; // board view: every matching card
+    }
+    return params;
+  }, [debouncedSearch, stageFilter, view, page]);
 
   const loadAdmissions = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await frontDeskApi.getAdmissions();
+      const response = await frontDeskApi.getAdmissions(buildParams());
+      const envelope = response && !Array.isArray(response) ? response : null;
       setAdmissions(extractList(response));
+      setPagination(envelope?.pagination ?? null);
+      setStatusCounts(envelope?.statusCounts ?? null);
     } catch (err) {
       logger.error('Failed to load admissions:', err);
       setError(err);
@@ -99,7 +117,7 @@ const AdmissionsList = forwardRef(function AdmissionsList({ onSave }, ref) {
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [buildParams, t]);
 
   const loadSupportingData = useCallback(async () => {
     try {
@@ -125,8 +143,18 @@ const AdmissionsList = forwardRef(function AdmissionsList({ onSave }, ref) {
 
   useEffect(() => {
     loadAdmissions();
+  }, [loadAdmissions]);
+
+  useEffect(() => {
     loadSupportingData();
-  }, [loadAdmissions, loadSupportingData]);
+  }, [loadSupportingData]);
+
+  // If a delete empties the current page, fall back onto the new last page.
+  useEffect(() => {
+    if (view === 'list' && pagination && page > pagination.totalPages) {
+      setPage(pagination.totalPages);
+    }
+  }, [view, pagination, page]);
 
   const openCreateModal = useCallback(() => {
     setEditingAdmission(null);
@@ -170,6 +198,29 @@ const AdmissionsList = forwardRef(function AdmissionsList({ onSave }, ref) {
     onSave?.();
   };
 
+  // Reset to the first page whenever the active filter set changes so the user
+  // never lands on an out-of-range page.
+  const handleSearchChange = useCallback((value) => {
+    setSearch(value);
+    setPage(1);
+  }, []);
+
+  const handleStageFilter = useCallback((key) => {
+    setStageFilter(key);
+    setPage(1);
+  }, []);
+
+  const handleViewChange = useCallback((nextView) => {
+    setView(nextView);
+    setPage(1);
+  }, []);
+
+  const clearFilters = useCallback(() => {
+    setStageFilter('all');
+    setSearch('');
+    setPage(1);
+  }, []);
+
   // Drag-to-stage handler — validates the destination stage and calls the
   // existing update endpoint. The optimistic update keeps the board snappy.
   const handleStageChange = useCallback(
@@ -207,29 +258,40 @@ const AdmissionsList = forwardRef(function AdmissionsList({ onSave }, ref) {
     [admissions, onSave]
   );
 
-  const visible = useMemo(() => {
-    return admissions.filter((a) => {
-      if (!searchMatch(a, search)) return false;
-      if (stageFilter !== 'all' && stageOfStatus(a.status) !== stageFilter) return false;
-      return true;
-    });
-  }, [admissions, search, stageFilter]);
+  // The server has already applied the search + stage filters for this page.
+  const visible = admissions;
 
+  // Stage chip counts come from the server's whole-school status breakdown so
+  // they stay accurate regardless of the current page or active search. Fall
+  // back to the loaded rows if the envelope is unavailable (e.g. legacy shape).
   const stageCounts = useMemo(() => {
-    const counts = { all: admissions.length };
+    const counts = { all: 0 };
     STAGE_OPTIONS.forEach((s) => { counts[s.key] = 0; });
-    admissions.forEach((a) => {
-      const key = stageOfStatus(a.status);
-      counts[key] = (counts[key] || 0) + 1;
-    });
+    if (statusCounts) {
+      counts.all = statusCounts.all || 0;
+      Object.entries(statusCounts).forEach(([status, n]) => {
+        if (status === 'all') return;
+        const key = stageOfStatus(status);
+        counts[key] = (counts[key] || 0) + n;
+      });
+    } else {
+      counts.all = admissions.length;
+      admissions.forEach((a) => {
+        const key = stageOfStatus(a.status);
+        counts[key] = (counts[key] || 0) + 1;
+      });
+    }
     return counts;
-  }, [admissions]);
+  }, [statusCounts, admissions]);
+
+  const totalCount = pagination?.totalItems ?? visible.length;
+  const stageLabel = STAGE_OPTIONS.find((s) => s.key === stageFilter)?.label;
 
   const toolbar = (
     <div className="toolbar">
       <ToolbarSearch
         value={search}
-        onChange={setSearch}
+        onChange={handleSearchChange}
         urlParam="q"
         placeholder="Search by name, parent, phone, class…"
         ariaLabel="Search admissions"
@@ -244,7 +306,7 @@ const AdmissionsList = forwardRef(function AdmissionsList({ onSave }, ref) {
             role="tab"
             aria-selected={stageFilter === f.key}
             className={`seg__btn ${stageFilter === f.key ? 'is-active' : ''}`}
-            onClick={() => setStageFilter(f.key)}
+            onClick={() => handleStageFilter(f.key)}
           >
             {f.label}
             <span className="mono tnum" style={{ marginLeft: 6, color: 'var(--fg-faint)' }}>
@@ -258,7 +320,7 @@ const AdmissionsList = forwardRef(function AdmissionsList({ onSave }, ref) {
         <button
           type="button"
           className="btn btn--ghost btn--sm"
-          onClick={() => { setStageFilter('all'); setSearch(''); }}
+          onClick={clearFilters}
           style={{ color: 'var(--fg-muted)' }}
           aria-label="Clear filters"
         >
@@ -271,7 +333,7 @@ const AdmissionsList = forwardRef(function AdmissionsList({ onSave }, ref) {
   return (
     <PageShell
       title="Admissions"
-      description={`${visible.length} of ${admissions.length}${stageFilter !== 'all' ? ` · ${STAGE_OPTIONS.find((s) => s.key === stageFilter)?.label}` : ''}`}
+      description={`${totalCount} ${totalCount === 1 ? 'enquiry' : 'enquiries'}${stageFilter !== 'all' ? ` · ${stageLabel}` : ''}`}
       actions={
         <div className="row gap-2">
           <div className="seg" role="tablist" aria-label="View mode">
@@ -280,7 +342,7 @@ const AdmissionsList = forwardRef(function AdmissionsList({ onSave }, ref) {
               role="tab"
               aria-selected={view === 'list'}
               className={`seg__btn ${view === 'list' ? 'is-active' : ''}`}
-              onClick={() => setView('list')}
+              onClick={() => handleViewChange('list')}
             >
               <ListIcon size={11} aria-hidden /> List
             </button>
@@ -289,7 +351,7 @@ const AdmissionsList = forwardRef(function AdmissionsList({ onSave }, ref) {
               role="tab"
               aria-selected={view === 'board'}
               className={`seg__btn ${view === 'board' ? 'is-active' : ''}`}
-              onClick={() => setView('board')}
+              onClick={() => handleViewChange('board')}
             >
               <LayoutGrid size={11} aria-hidden /> Board
             </button>
@@ -308,13 +370,13 @@ const AdmissionsList = forwardRef(function AdmissionsList({ onSave }, ref) {
       bodyPadding="none"
     >
       <div className="adm-page">
-      {loading && (
+      {loading && admissions.length === 0 && (
         <div className="adm-list" aria-busy="true">
           <SkeletonTable columns={7} rows={6} />
         </div>
       )}
 
-      {!loading && error && (
+      {!loading && error && admissions.length === 0 && (
         <ErrorState
           title="Failed to load admissions"
           description="We couldn't load the admission enquiries. Try again in a moment."
@@ -326,8 +388,12 @@ const AdmissionsList = forwardRef(function AdmissionsList({ onSave }, ref) {
       {!loading && !error && visible.length === 0 && (
         <EmptyState
           icon={Inbox}
-          title={`No admission enquiries${stageFilter !== 'all' ? ' in this stage' : ''}`}
-          description="Get started by creating a new admission enquiry."
+          title={`No admission enquiries${stageFilter !== 'all' || search ? ' match your filters' : ''}`}
+          description={
+            stageFilter !== 'all' || search
+              ? 'Try a different search or stage filter.'
+              : 'Get started by creating a new admission enquiry.'
+          }
           action={
             <button type="button" className="btn btn--accent" onClick={openCreateModal}>
               <Plus size={13} aria-hidden /> New enquiry
@@ -337,8 +403,9 @@ const AdmissionsList = forwardRef(function AdmissionsList({ onSave }, ref) {
         />
       )}
 
-      {!loading && !error && visible.length > 0 && view === 'list' && (
-        <div className="adm-list" role="list">
+      {visible.length > 0 && view === 'list' && (
+        <>
+        <div className="adm-list" role="list" aria-busy={loading}>
           {visible.map((row) => {
             const meta = getStatusMeta(row.status);
             const toneKey = COLOR_TO_TONE[meta.color] || 'neutral';
@@ -406,9 +473,25 @@ const AdmissionsList = forwardRef(function AdmissionsList({ onSave }, ref) {
             );
           })}
         </div>
+        {pagination && pagination.totalPages > 1 && (
+          <div
+            className="flex items-center justify-end px-4 py-2 border-t"
+            style={{ borderColor: 'var(--divider)' }}
+          >
+            <Pagination
+              currentPage={pagination.currentPage}
+              totalPages={pagination.totalPages}
+              onPageChange={setPage}
+              disabled={loading}
+              totalItems={pagination.totalItems}
+              itemLabel="enquiries"
+            />
+          </div>
+        )}
+        </>
       )}
 
-      {!loading && !error && visible.length > 0 && view === 'board' && (
+      {visible.length > 0 && view === 'board' && (
         <AdmissionTracker
           admissions={visible}
           onCardClick={handleView}
