@@ -4,6 +4,11 @@ import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Monitor, Speaker } from 
 import { useTranslation } from 'react-i18next';
 import logger from '../../../utils/logger';
 
+function stopStream(stream) {
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+  }
+}
 
 export default function VideoCallModal({
   isOpen,
@@ -23,6 +28,10 @@ export default function VideoCallModal({
   const [callDuration, setCallDuration] = useState(0);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
+  // Mirror the active streams into refs so the unmount cleanup below — which
+  // runs with an empty dependency list — can stop the latest tracks (MEM-01).
+  const localStreamRef = useRef(null);
+  const remoteStreamRef = useRef(null);
 
   // The hook now sources streams from the PeerJS service (STUB-09) and passes
   // them in as props. Mirror them into local state so the existing binding /
@@ -49,16 +58,29 @@ export default function VideoCallModal({
   }, [call]);
 
   useEffect(() => {
+    remoteStreamRef.current = remoteStream;
     if (remoteStream && remoteVideoRef.current) {
       remoteVideoRef.current.srcObject = remoteStream;
     }
   }, [remoteStream]);
 
   useEffect(() => {
+    localStreamRef.current = localStream;
     if (localStream && localVideoRef.current) {
       localVideoRef.current.srcObject = localStream;
     }
   }, [localStream]);
+
+  // Stop every captured track when the modal unmounts. Closing via Esc or a
+  // backdrop click (or navigating away mid-call) only flips state and unmounts
+  // this component — it never runs handleEnd — so without this the camera and
+  // mic would stay live with no UI left to stop them (MEM-01).
+  useEffect(() => {
+    return () => {
+      stopStream(localStreamRef.current);
+      stopStream(remoteStreamRef.current);
+    };
+  }, []);
 
   const formatDuration = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -82,13 +104,8 @@ export default function VideoCallModal({
   };
 
   const handleEnd = () => {
-    // Stop tracks
-    if (localStream) {
-      localStream.getTracks().forEach(track => track.stop());
-    }
-    if (remoteStream) {
-      remoteStream.getTracks().forEach(track => track.stop());
-    }
+    stopStream(localStream);
+    stopStream(remoteStream);
 
     setLocalStream(null);
     setRemoteStream(null);
