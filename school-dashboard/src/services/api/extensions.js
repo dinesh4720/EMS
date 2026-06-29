@@ -425,8 +425,12 @@ export const expensesApi = {
     return request(`/expenses${qs ? `?${qs}` : ''}`);
   },
   getSummary: (params = {}) => {
-    const query = new URLSearchParams(params).toString();
-    return request(`/expenses/summary${query ? `?${query}` : ''}`);
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') query.set(k, v);
+    });
+    const qs = query.toString();
+    return request(`/expenses/summary${qs ? `?${qs}` : ''}`);
   },
   create: (data) => request('/expenses', { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => request(`/expenses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),

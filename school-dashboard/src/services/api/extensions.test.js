@@ -14,6 +14,7 @@ import {
   hostelApi,
   parentApi,
   reportsApi,
+  expensesApi,
 } from './extensions.js';
 
 beforeEach(() => {
@@ -255,5 +256,30 @@ describe('reportsApi', () => {
   it('dashboardMetrics with empty params calls base URL without ?', () => {
     reportsApi.dashboardMetrics({});
     expect(request).toHaveBeenCalledWith('/reports/dashboard/metrics');
+  });
+});
+
+// ─── expensesApi ────────────────────────────────────────────────────────────
+
+describe('expensesApi', () => {
+  it('getSummary without params calls /expenses/summary', () => {
+    expensesApi.getSummary();
+    expect(request).toHaveBeenCalledWith('/expenses/summary');
+  });
+
+  it('getSummary forwards status and category filters', () => {
+    expensesApi.getSummary({ status: 'approved', category: 'supplies' });
+    const url = request.mock.calls[0][0];
+    expect(url).toContain('/expenses/summary?');
+    expect(url).toContain('status=approved');
+    expect(url).toContain('category=supplies');
+  });
+
+  it('getSummary drops undefined/null/empty values (no literal "undefined")', () => {
+    expensesApi.getSummary({ status: undefined, category: 'utilities' });
+    const url = request.mock.calls[0][0];
+    expect(url).not.toContain('status=');
+    expect(url).not.toContain('undefined');
+    expect(url).toContain('category=utilities');
   });
 });
