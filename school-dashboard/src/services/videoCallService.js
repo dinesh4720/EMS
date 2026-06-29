@@ -126,6 +126,11 @@ class VideoCallService {
       return call;
     } catch (error) {
       logger.error('❌ Failed to start call:', error);
+      // Stop any media tracks acquired before the failure so the camera/mic indicator turns off
+      if (this.localStream) {
+        this.localStream.getTracks().forEach(track => track.stop());
+        this.localStream = null;
+      }
       this.emit('callError', error);
       throw error;
     }
@@ -175,6 +180,11 @@ class VideoCallService {
       this.emit('callAccepted', { callId });
     } catch (error) {
       logger.error('❌ Failed to accept call:', error);
+      // Stop any media tracks acquired before the failure so the camera/mic indicator turns off
+      if (this.localStream) {
+        this.localStream.getTracks().forEach(track => track.stop());
+        this.localStream = null;
+      }
       this.emit('callError', error);
       throw error;
     }
