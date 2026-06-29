@@ -216,10 +216,17 @@ const ResultsEntry = ({ standalone = false }) => {
     setLoadingExams(true);
     setLoadError(null);
     try {
-      const data = await examsApi.getAll();
-      setExams(data || []);
+      const payload = await examsApi.getAll();
+      // PAG-10: /exams now returns { data, pagination } in the body. Tolerate
+      // the old bare-array shape so a stale backend doesn't break the picker.
+      const data = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.data)
+          ? payload.data
+          : [];
+      setExams(data);
       // Auto-select first exam if available
-      if (data && data.length > 0) {
+      if (data.length > 0) {
         setSelectedExamId(new Set([data[0].id || data[0]._id]));
       }
     } catch (error) {
