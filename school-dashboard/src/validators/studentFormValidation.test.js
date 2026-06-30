@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CURRENT_ACADEMIC_YEAR } from '../../../utils/constants';
+import { CURRENT_ACADEMIC_YEAR } from '../utils/constants';
 import {
   parentZodSchema,
   step1Schema,

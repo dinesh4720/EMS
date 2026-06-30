@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { RELIGIONS } from "../../../constants/studentConstants";
-import { ddmmyyToIso } from "../utils/studentFormValidation";
+import { ddmmyyToIso } from "../../../validators/studentFormValidation";
 
 const emptyForm = {
   fullName: "",

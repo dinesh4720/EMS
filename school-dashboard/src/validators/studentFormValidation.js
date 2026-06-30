@@ -5,7 +5,7 @@
  */
 import { z } from 'zod';
 import { ddmmyyToIso, isoToDdmmyy } from './dateUtils';
-import { VALIDATION_RULES } from '../../../constants/studentConstants';
+import { VALIDATION_RULES } from '../constants/studentConstants';
 
 // ── Health Info sub-schemas ──
 const allergySchema = z.object({

@@ -30,7 +30,7 @@ import useDocumentConfigs from "./hooks/useDocumentConfigs";
 import {
   validateStep as validateStepExtracted,
   isoToDdmmyy,
-} from "./utils/studentFormValidation";
+} from "../../validators/studentFormValidation";
 import { FIELD_LABELS, FIELD_TO_SECTION } from "./utils/studentComposerFields";
 import {
   readStudentDraft,
