@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import logger from "../../../utils/logger";
 import { Wallet, Receipt, AlertCircle, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { reportsApi } from '../../../services/api/extensions';
@@ -26,7 +27,7 @@ export default function FeesTab({ metrics, academicYear }) {
       setFeeCollection(Array.isArray(fc) ? fc : []);
       setOutstandingDues(Array.isArray(od) ? od : []);
     } catch (err) {
-      console.error('Failed to load fee reports:', err);
+      logger.error('Failed to load fee reports:', err);
       setError(err);
       toast.error('Failed to load fee reports. Refresh to try again.');
     } finally {

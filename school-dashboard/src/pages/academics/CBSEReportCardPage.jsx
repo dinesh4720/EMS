@@ -33,7 +33,7 @@ function MarkEntryModal({ isOpen, onClose, student, classId, academicYear, term,
   const { schoolSettings } = useApp();
   const [subjects, setSubjects] = useState(() => {
     const names = (schoolSettings?.subjects || []).map(s => (typeof s === 'string' ? s : s.name)).filter(Boolean);
-    return names.map(name => ({ subjectName: name, theoryMarks: '', practicalMarks: '' }));
+    return names.map(name => ({ id: crypto.randomUUID(), subjectName: name, theoryMarks: '', practicalMarks: '' }));
   });
   const [saving, setSaving] = useState(false);
 
@@ -41,7 +41,7 @@ function MarkEntryModal({ isOpen, onClose, student, classId, academicYear, term,
     setSubjects(prev => prev.map((s, idx) => idx === i ? { ...s, [field]: val } : s));
   };
 
-  const addSubject = () => setSubjects(prev => [...prev, { subjectName: '', theoryMarks: '', practicalMarks: '' }]);
+  const addSubject = () => setSubjects(prev => [...prev, { id: crypto.randomUUID(), subjectName: '', theoryMarks: '', practicalMarks: '' }]);
   const removeSubject = (i) => setSubjects(prev => prev.filter((_, idx) => idx !== i));
 
   const handleSave = async () => {
@@ -93,7 +93,7 @@ function MarkEntryModal({ isOpen, onClose, student, classId, academicYear, term,
               <span className="col-span-1" />
             </div>
             {subjects.map((s, i) => (
-              <div key={`subject-row-${i}`} className="grid grid-cols-12 gap-2 items-center">
+              <div key={s.id} className="grid grid-cols-12 gap-2 items-center">
                 <Input
                   size="sm"
                   placeholder={t('academics.subjectNamePlaceholder')}
