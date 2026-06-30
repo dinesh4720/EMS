@@ -22,3 +22,8 @@ test-results-master/
 .claude/
 *.bak
 test-results/
+
+# scratch / debug artifacts (CODE-11) — keep credential-bearing helper scripts
+# and one-off PR payloads out of version control
+*.ps1
+pr_payload.json
