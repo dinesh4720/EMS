@@ -2,120 +2,80 @@
  * @vitest-environment jsdom
  *
  * Regression test for STUB-02 (SCH-45): the single-staff "Mark attendance"
- * action used to fake success with a toast and never persist anything. It now
- * opens a status picker in the detail pane and records the chosen status via
- * the shared optimistic `markStaffAttendance` flow.
- *
- * The picker UI itself lives in StaffDetailPane; here we mock that pane down to
- * raw status buttons and assert StaffList wires the chosen status through to
- * `markStaffAttendance(id, today, status, checkIn)`.
+ * action used to fake success with a toast and never persist anything. The
+ * redesign's StaffList wires the per-row "Mark present" button directly to
+ * the real `staffAttendanceApi.markBulk(...)` endpoint — no status picker
+ * (leave/absent from the list is a follow-up), but the core regression
+ * (persisting via the real API instead of faking success) is covered here.
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
-const { markStaffAttendance } = vi.hoisted(() => ({
-  markStaffAttendance: vi.fn(),
+const markBulk = vi.hoisted(() => ({
+  markBulk: vi.fn().mockResolvedValue({ ok: true }),
 }));
 
 vi.mock("../../context/AppContext", () => ({
   useApp: () => ({
     staff: [
-      { _id: "staff-001", id: "staff-001", name: "Ananya", role: ["Teacher"] },
+      { _id: "staff-001", id: "staff-001", name: "Ananya", role: ["Teacher"], status: "active" },
     ],
     staffAttendance: {},
     loading: false,
-    markStaffAttendance,
+    addStaff: vi.fn(),
   }),
 }));
 
-// Reduce the detail pane to the status buttons under test.
-vi.mock("./StaffDetailPane", () => ({
-  default: function MockDetailPane({ staff, onMarkAttendance }) {
-    if (!staff) return null;
+vi.mock("../../services/api", () => ({
+  staffAttendanceApi: { markBulk: markBulk.markBulk },
+}));
+
+// Keep the DataGrid out of the equation — we only need to assert the wire-up.
+// Expose the row's mark-present handler via a stable label so the test can fire it.
+vi.mock("./StaffDataGrid", () => ({
+  default: function MockDataGrid({ onMarkPresent, staff }) {
     return (
-      <div data-testid="detail-pane">
-        <button type="button" onClick={() => onMarkAttendance("present")}>
-          pick-present
-        </button>
-        <button type="button" onClick={() => onMarkAttendance("leave")}>
-          pick-leave
-        </button>
+      <div data-testid="staff-grid">
+        {staff.map((s) => (
+          <button key={s._id} type="button" onClick={() => onMarkPresent(s)}>
+            mark-present-{s.name}
+          </button>
+        ))}
       </div>
     );
   },
 }));
 
-vi.mock("./StaffListRow", () => ({
-  default: function MockRow({ staff }) {
-    return <div data-testid="staff-row">{staff.name}</div>;
-  },
-}));
-
-vi.mock("../../components/ui/PrintPreviewModal", () => ({ default: () => null }));
-
-vi.mock("../../services/api", () => ({
-  staffAttendanceApi: { markBulk: vi.fn() },
-  staffApi: { list: vi.fn().mockResolvedValue({ data: [], pagination: {}, facets: {} }) },
-}));
-
-// SCH-193: the page consumes the server-driven `useStaffList` hook for rows;
-// provide a deterministic page for the attendance test so the detail pane
-// appears when the URL selects staff-001.
-vi.mock("./hooks/useStaffList", () => ({
-  useStaffList: () => ({
-    data: [
-      { _id: "staff-001", id: "staff-001", name: "Ananya", role: ["Teacher"] },
-    ],
-    pagination: { page: 1, limit: 25, total: 1, totalPages: 1 },
-    facets: { role: [], department: [], employmentType: [], gender: [] },
-    loading: false,
-    error: null,
-    clampedPage: 1,
-    reload: vi.fn(),
-  }),
+vi.mock("./CreateStaffComposer", () => ({
+  default: () => null,
 }));
 
 import StaffList from "./StaffList";
 
 const today = new Date().toISOString().slice(0, 10);
 
-function renderSelected() {
+function renderList() {
   return render(
-    <MemoryRouter initialEntries={["/staffs?id=staff-001"]}>
+    <MemoryRouter>
       <StaffList onStaffClick={vi.fn()} onAddStaff={vi.fn()} />
     </MemoryRouter>
   );
 }
 
-beforeEach(() => markStaffAttendance.mockClear());
+beforeEach(() => markBulk.markBulk.mockClear());
 afterEach(cleanup);
 
 describe("StaffList — single-staff mark attendance (STUB-02)", () => {
-  it("records the picked status for today instead of faking success", () => {
-    renderSelected();
+  it("persists today's 'present' status via the real API instead of faking success", async () => {
+    renderList();
 
-    fireEvent.click(screen.getByText("pick-present"));
+    fireEvent.click(screen.getByText("mark-present-Ananya"));
 
-    expect(markStaffAttendance).toHaveBeenCalledTimes(1);
-    const [id, date, status, checkIn] = markStaffAttendance.mock.calls[0];
-    expect(id).toBe("staff-001");
-    expect(date).toBe(today);
-    expect(status).toBe("present");
-    // "present" stamps a real HH:MM check-in time, never a placeholder.
-    expect(checkIn).toMatch(/^\d{2}:\d{2}$/);
-  });
-
-  it("uses a placeholder check-in for non-present statuses", () => {
-    renderSelected();
-
-    fireEvent.click(screen.getByText("pick-leave"));
-
-    expect(markStaffAttendance).toHaveBeenCalledWith(
-      "staff-001",
-      today,
-      "leave",
-      "-"
-    );
+    expect(markBulk.markBulk).toHaveBeenCalledTimes(1);
+    const payload = markBulk.markBulk.mock.calls[0][0];
+    expect(payload.staffIds).toEqual(["staff-001"]);
+    expect(payload.status).toBe("present");
+    expect(payload.date).toBe(today);
   });
 });

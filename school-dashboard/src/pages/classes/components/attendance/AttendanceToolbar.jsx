@@ -2,6 +2,7 @@ import { Check, CalendarDays, Bell, ChevronLeft, ChevronRight } from "lucide-rea
 import { useTranslation } from "react-i18next";
 import { toTodayDateString } from "../../../../utils/dateFormatter";
 import Button from "../../../../components/ui/Button";
+import Skeleton from "../../../../components/ui/Skeleton";
 
 /** Top toolbar: class picker, date navigation, daily/monthly toggle, bulk actions. */
 export default function AttendanceToolbar({
@@ -88,7 +89,7 @@ export default function AttendanceToolbar({
           </button>
         </div>
         {isLoadingAttendance && (
-          <span aria-hidden="true" className="inline-block w-4 h-4 rounded-full border-2 border-[var(--border-strong)] border-t-[var(--accent)] animate-spin" />
+          <Skeleton variant="rect" className="h-5 w-16 shrink-0" />
         )}
       </div>
 

@@ -246,7 +246,13 @@ export function useStudentsListData() {
     queryFn: () =>
       studentsApi.list({
         page: currentPage,
-        limit: pageSize,
+        // The redesigned StudentsDataGrid paginates client-side over the loaded
+        // batch (no server-page navigator in the redesign's look), so it needs
+        // the full roster in one fetch. limit=0 opts into the backend's
+        // noPagination mode (see routes/students/crud.js), which returns every
+        // student and reports totalPages=1. Hook-level pagination state is kept
+        // for any future server-paged consumer; the redesign ignores it.
+        limit: 0,
         search: deferredSearchQuery || undefined,
         classId: selectedClassId || undefined,
         feeStatus: feeStatusFilter.length > 0 ? feeStatusFilter.join(",") : undefined,

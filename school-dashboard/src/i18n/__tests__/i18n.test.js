@@ -137,7 +137,7 @@ const ALLOWED_ORPHAN_KEYS = [
   'components.skip',
   'components.skipOnboarding',
   'components.skipSetup',
-  'components.theFeeCollectionChartWillReturnOnceThePaymentsAPIResponds',
+  'components.theFeeCollectionChartWillReturnOnceThePaymentsApiResponds',
   'components.thisSectionUpdatesOnceStaffOrClassAttendanceIsMarked',
   'components.uploadYourAdministratorProfilePicture',
   'components.weeklyStudentStaffPresence',

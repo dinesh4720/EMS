@@ -11,6 +11,7 @@ import {
 import { useApp } from "../context/AppContext";
 import { useAuth } from "../context/AuthContext";
 import useDashboardData from "./dashboard/useDashboardData";
+import ErrorState from "../components/ui/ErrorState";
 import SubstitutionAlertPanel from "../components/SubstitutionAlertPanel";
 import NpsSurveyModal from "../components/NpsSurveyModal";
 
@@ -49,6 +50,7 @@ function Dashboard() {
     recentPayments,
     recentAnnouncements,
     dashboardLoading,
+    dashboardError,
     reload,
   } = useDashboardData({
     classes,
@@ -241,6 +243,21 @@ function Dashboard() {
   /* ─── Loading state ─────────────────────────────────────────────────── */
   if (dashboardLoading) {
     return <DashboardSkeleton />;
+  }
+
+  // dashboardError is only set when the entire dashboard feed fails (all sources
+  // rejected). Surface a retry instead of silently rendering empty/zero widgets.
+  if (dashboardError) {
+    return (
+      <div className="briefing briefing--error">
+        <ErrorState
+          title="Unable to load dashboard"
+          error={dashboardError}
+          onRetry={reload}
+          size="lg"
+        />
+      </div>
+    );
   }
 
   return (
