@@ -116,10 +116,11 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
   const onBulkAction = useCallback(async (key) => {
     if (selectedKeys.size === 0) { toast("Select one or more staff first."); return; }
     const ids = [...selectedKeys];
-    if (key === "present") {
+    if (key === "present" || key === "leave" || key === "absent") {
+      const label = key === "present" ? "present" : key === "leave" ? "on leave" : "absent";
       try {
-        await staffAttendanceApi.markBulk({ staffIds: ids, status: "present", date: todayKey });
-        toast.success(`Marked ${ids.length} staff present.`);
+        await staffAttendanceApi.markBulk({ staffIds: ids, status: key, date: todayKey });
+        toast.success(`Marked ${ids.length} staff ${label}.`);
         setSelectedKeys(new Set());
       } catch (err) { toast.error(err?.message || "Failed to mark attendance"); }
       return;
@@ -146,10 +147,11 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
     if (!phone) { toast("No contact number on file."); return; }
     navigate(`/messaging?to=${encodeURIComponent(phone)}`);
   }, [navigate]);
-  const onMarkPresent = useCallback(async (s) => {
+  const onMarkAttendance = useCallback(async (s, status) => {
+    const label = status === "present" ? "present" : status === "leave" ? "on leave" : "absent";
     try {
-      await staffAttendanceApi.markBulk({ staffIds: [sid(s)], status: "present", date: todayKey });
-      toast.success(`Marked ${s.name} present.`);
+      await staffAttendanceApi.markBulk({ staffIds: [sid(s)], status, date: todayKey });
+      toast.success(`Marked ${s.name} ${label}.`);
     } catch (err) { toast.error(err?.message || "Failed to mark attendance"); }
   }, [todayKey]);
   const onDeactivateStaff = useCallback(() => toast("Open the staff profile to change their status."), []);
@@ -177,7 +179,7 @@ export default function StaffList({ onStaffClick, onAddStaff }) {
         onAddStaff={() => setCreateOpen(true)}
         onOpenStaff={onOpenStaff}
         onMessageStaff={onMessageStaff}
-        onMarkPresent={onMarkPresent}
+        onMarkAttendance={onMarkAttendance}
         onDeactivateStaff={onDeactivateStaff}
         activeFiltersCount={activeFiltersCount}
         moreActions={moreActions}

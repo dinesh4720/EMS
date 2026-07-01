@@ -3,10 +3,9 @@
  *
  * Regression test for STUB-02 (SCH-45): the single-staff "Mark attendance"
  * action used to fake success with a toast and never persist anything. The
- * redesign's StaffList wires the per-row "Mark present" button directly to
- * the real `staffAttendanceApi.markBulk(...)` endpoint — no status picker
- * (leave/absent from the list is a follow-up), but the core regression
- * (persisting via the real API instead of faking success) is covered here.
+ * redesign's StaffList now offers a status picker (Present / On leave / Absent)
+ * in the row kebab menu, each wired to the real `staffAttendanceApi.markBulk`
+ * endpoint with the chosen status — no faking, no hardcoded "present".
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
@@ -31,16 +30,23 @@ vi.mock("../../services/api", () => ({
   staffAttendanceApi: { markBulk: markBulk.markBulk },
 }));
 
-// Keep the DataGrid out of the equation — we only need to assert the wire-up.
-// Expose the row's mark-present handler via a stable label so the test can fire it.
+// Expose each status picker button via a stable label so the test can fire it.
 vi.mock("./StaffDataGrid", () => ({
-  default: function MockDataGrid({ onMarkPresent, staff }) {
+  default: function MockDataGrid({ onMarkAttendance, staff }) {
     return (
       <div data-testid="staff-grid">
         {staff.map((s) => (
-          <button key={s._id} type="button" onClick={() => onMarkPresent(s)}>
-            mark-present-{s.name}
-          </button>
+          <div key={s._id} data-testid={`row-${s._id}`}>
+            <button type="button" onClick={() => onMarkAttendance(s, "present")}>
+              mark-present-{s.name}
+            </button>
+            <button type="button" onClick={() => onMarkAttendance(s, "leave")}>
+              mark-leave-{s.name}
+            </button>
+            <button type="button" onClick={() => onMarkAttendance(s, "absent")}>
+              mark-absent-{s.name}
+            </button>
+          </div>
         ))}
       </div>
     );
@@ -67,7 +73,7 @@ beforeEach(() => markBulk.markBulk.mockClear());
 afterEach(cleanup);
 
 describe("StaffList — single-staff mark attendance (STUB-02)", () => {
-  it("persists today's 'present' status via the real API instead of faking success", async () => {
+  it("persists 'present' via the real API instead of faking success", async () => {
     renderList();
 
     fireEvent.click(screen.getByText("mark-present-Ananya"));
@@ -76,6 +82,30 @@ describe("StaffList — single-staff mark attendance (STUB-02)", () => {
     const payload = markBulk.markBulk.mock.calls[0][0];
     expect(payload.staffIds).toEqual(["staff-001"]);
     expect(payload.status).toBe("present");
+    expect(payload.date).toBe(today);
+  });
+
+  it("persists 'leave' via the real API", async () => {
+    renderList();
+
+    fireEvent.click(screen.getByText("mark-leave-Ananya"));
+
+    expect(markBulk.markBulk).toHaveBeenCalledTimes(1);
+    const payload = markBulk.markBulk.mock.calls[0][0];
+    expect(payload.staffIds).toEqual(["staff-001"]);
+    expect(payload.status).toBe("leave");
+    expect(payload.date).toBe(today);
+  });
+
+  it("persists 'absent' via the real API", async () => {
+    renderList();
+
+    fireEvent.click(screen.getByText("mark-absent-Ananya"));
+
+    expect(markBulk.markBulk).toHaveBeenCalledTimes(1);
+    const payload = markBulk.markBulk.mock.calls[0][0];
+    expect(payload.staffIds).toEqual(["staff-001"]);
+    expect(payload.status).toBe("absent");
     expect(payload.date).toBe(today);
   });
 });

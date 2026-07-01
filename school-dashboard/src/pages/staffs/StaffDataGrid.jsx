@@ -22,6 +22,8 @@ const I = {
   columns: (p) => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...p}><path d="M4 6h16M4 12h16M4 18h16" /></svg>),
   kebab: (p) => (<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" {...p}><circle cx="12" cy="5" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="12" cy="19" r="1.7" /></svg>),
   present: (p) => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6a6e78" strokeWidth="2" {...p}><path d="M20 6L9 17l-5-5" /></svg>),
+  leave: (p) => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6a6e78" strokeWidth="2" {...p}><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 9h18M8 3v4M16 3v4" /><path d="M12.5 14l-1 1.5h2l-1 1.5" /></svg>),
+  absent: (p) => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6a6e78" strokeWidth="2" {...p}><circle cx="12" cy="8" r="3.5" /><path d="M5 20c0-3.3 3.1-6 7-6s7 2.7 7 6" /><path d="M16 4l4 4M20 4l-4 4" /></svg>),
   message: (p) => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6a6e78" strokeWidth="2" {...p}><path d="M4 4h16v12H7l-3 3V4z" /></svg>),
   assign: (p) => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6a6e78" strokeWidth="2" {...p}><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 9h18M9 4v16" /></svg>),
   payroll: (p) => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6a6e78" strokeWidth="2" {...p}><path d="M12 3v4M8 5l8 0M4 11h16v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z" /></svg>),
@@ -82,7 +84,7 @@ export default function StaffDataGrid({
   onAddStaff,
   onOpenStaff,
   onMessageStaff,
-  onMarkPresent,
+  onMarkAttendance,
   onDeactivateStaff,
   activeFiltersCount = 0,
   moreActions = [],
@@ -278,8 +280,13 @@ export default function StaffDataGrid({
                 <div className="sdg-menu-head">
                   <span>{hasSelection ? `${selectedCount} staff selected` : "No rows selected · acts on selection"}</span>
                 </div>
-                <button className="sdg-menu-item" onClick={() => { closeMenu(); onBulkAction?.("present"); }}><I.present /> Mark present today</button>
                 <button className="sdg-menu-item" onClick={() => { closeMenu(); onBulkAction?.("message"); }}><I.message /> Message staff</button>
+                <div className="sdg-menu-sep" />
+                <div className="ln"><span>Mark attendance</span></div>
+                <button className="sdg-menu-item" onClick={() => { closeMenu(); onBulkAction?.("present"); }}><I.present /> Present today</button>
+                <button className="sdg-menu-item" onClick={() => { closeMenu(); onBulkAction?.("leave"); }}><I.leave /> On leave</button>
+                <button className="sdg-menu-item" onClick={() => { closeMenu(); onBulkAction?.("absent"); }}><I.absent /> Absent</button>
+                <div className="sdg-menu-sep" />
                 <button className="sdg-menu-item" onClick={() => { closeMenu(); onBulkAction?.("assign"); }}><I.assign /> Assign to classes</button>
                 <button className="sdg-menu-item" onClick={() => { closeMenu(); onBulkAction?.("payroll"); }}><I.payroll /> Run payroll</button>
                 <div className="sdg-menu-sep" />
@@ -435,7 +442,11 @@ export default function StaffDataGrid({
                           <div className="sdg-menu" style={{ width: 200, top: 30 }}>
                             <button className="sdg-menu-item" onClick={(e) => { e.stopPropagation(); closeMenu(); onOpenStaff?.(r.raw); }}><I.open /> Open profile</button>
                             <button className="sdg-menu-item" onClick={(e) => { e.stopPropagation(); closeMenu(); onMessageStaff?.(r.raw); }}><I.message /> Message</button>
-                            <button className="sdg-menu-item" onClick={(e) => { e.stopPropagation(); closeMenu(); onMarkPresent?.(r.raw); }}><I.present /> Mark present</button>
+                            <div className="sdg-menu-sep" />
+                            <div className="ln"><span>Mark attendance</span></div>
+                            <button className="sdg-menu-item" onClick={(e) => { e.stopPropagation(); closeMenu(); onMarkAttendance?.(r.raw, "present"); }}><I.present /> Present</button>
+                            <button className="sdg-menu-item" onClick={(e) => { e.stopPropagation(); closeMenu(); onMarkAttendance?.(r.raw, "leave"); }}><I.leave /> On leave</button>
+                            <button className="sdg-menu-item" onClick={(e) => { e.stopPropagation(); closeMenu(); onMarkAttendance?.(r.raw, "absent"); }}><I.absent /> Absent</button>
                             <div className="sdg-menu-sep" />
                             <button className="sdg-menu-item is-danger" onClick={(e) => { e.stopPropagation(); closeMenu(); onDeactivateStaff?.(r.raw); }}><I.deactivate /> Deactivate</button>
                           </div>
