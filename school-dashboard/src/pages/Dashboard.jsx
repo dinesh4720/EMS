@@ -5,6 +5,7 @@ import { RefreshCw, AlertCircle, LayoutGrid } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { useAuth } from "../context/AuthContext";
 import useDashboardData from "./dashboard/useDashboardData";
+import ErrorState from "../components/ui/ErrorState";
 import SubstitutionAlertPanel from "../components/SubstitutionAlertPanel";
 import NpsSurveyModal from "../components/NpsSurveyModal";
 import { toTodayDateString } from "../utils/dateFormatter";
@@ -83,6 +84,7 @@ function Dashboard() {
     recentAnnouncements,
     feeCollectionData,
     dashboardLoading,
+    dashboardError,
     urgentSubstitution,
     upcomingPtm,
     reload,
@@ -358,6 +360,21 @@ function Dashboard() {
 
   if (initialLoading) {
     return <DashboardSkeleton />;
+  }
+
+  // dashboardError is only set when the entire dashboard feed fails (all sources
+  // rejected). Surface a retry instead of silently rendering empty/zero widgets.
+  if (dashboardError) {
+    return (
+      <div className="page page--principal">
+        <ErrorState
+          title="Unable to load dashboard"
+          error={dashboardError}
+          onRetry={reload}
+          size="lg"
+        />
+      </div>
+    );
   }
 
   return (

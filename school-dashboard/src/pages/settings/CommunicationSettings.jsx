@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { SkeletonTable } from '../../components/ui/Skeleton';
+import ErrorState from '../../components/ui/ErrorState';
 import logger from '../../utils/logger';
 
 
@@ -30,6 +31,7 @@ export default function CommunicationSettings() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [templates, setTemplates] = useState([]);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
+  const [templatesError, setTemplatesError] = useState(null);
 
   // STUB-06: keep the full backend records so the editor can populate every
   // field on Edit (the table only renders id/name/type/variables).
@@ -89,14 +91,23 @@ export default function CommunicationSettings() {
   useEffect(() => {
     let cancelled = false;
     setLoadingTemplates(true);
-    Promise.all([
-      settingsApi.getEmailTemplates().catch(() => []),
-      settingsApi.getSmsTemplates().catch(() => []),
+    setTemplatesError(null);
+    // allSettled so a single channel failing degrades gracefully, but if BOTH
+    // fail we surface an error state instead of a misleading empty table.
+    Promise.allSettled([
+      settingsApi.getEmailTemplates(),
+      settingsApi.getSmsTemplates(),
     ])
-      .then(([emailTemplates, smsTemplates]) => {
+      .then(([emailRes, smsRes]) => {
         if (cancelled) return;
-        const safeEmail = Array.isArray(emailTemplates) ? emailTemplates : [];
-        const safeSms = Array.isArray(smsTemplates) ? smsTemplates : [];
+        if (emailRes.status === 'rejected' && smsRes.status === 'rejected') {
+          logger.error('Failed to load templates:', emailRes.reason || smsRes.reason);
+          setTemplatesError(emailRes.reason || smsRes.reason || new Error('Failed to load templates'));
+          toast.error(t('toast.error.failedToLoadTemplates', 'Failed to load templates'));
+          return;
+        }
+        const safeEmail = emailRes.status === 'fulfilled' && Array.isArray(emailRes.value) ? emailRes.value : [];
+        const safeSms = smsRes.status === 'fulfilled' && Array.isArray(smsRes.value) ? smsRes.value : [];
         // STUB-06: retain the full records for the editor modal.
         setTemplateRecords({ email: safeEmail, sms: safeSms });
         const merged = [
@@ -114,10 +125,6 @@ export default function CommunicationSettings() {
           })),
         ];
         setTemplates(merged);
-      })
-      .catch((err) => {
-        logger.error('Failed to load templates:', err);
-        if (!cancelled) toast.error(t('toast.error.failedToLoadTemplates', 'Failed to load templates'));
       })
       .finally(() => { if (!cancelled) setLoadingTemplates(false); });
     return () => { cancelled = true; };
@@ -178,13 +185,19 @@ export default function CommunicationSettings() {
   // STUB-06: refresh the templates list from the backend after a create/update.
   const refreshTemplates = useCallback(async () => {
     setLoadingTemplates(true);
+    setTemplatesError(null);
     try {
-      const [emailTemplates, smsTemplates] = await Promise.all([
-        settingsApi.getEmailTemplates().catch(() => []),
-        settingsApi.getSmsTemplates().catch(() => []),
+      const [emailRes, smsRes] = await Promise.allSettled([
+        settingsApi.getEmailTemplates(),
+        settingsApi.getSmsTemplates(),
       ]);
-      const safeEmail = Array.isArray(emailTemplates) ? emailTemplates : [];
-      const safeSms = Array.isArray(smsTemplates) ? smsTemplates : [];
+      if (emailRes.status === 'rejected' && smsRes.status === 'rejected') {
+        logger.error('Failed to refresh templates:', emailRes.reason || smsRes.reason);
+        setTemplatesError(emailRes.reason || smsRes.reason || new Error('Failed to load templates'));
+        return;
+      }
+      const safeEmail = emailRes.status === 'fulfilled' && Array.isArray(emailRes.value) ? emailRes.value : [];
+      const safeSms = smsRes.status === 'fulfilled' && Array.isArray(smsRes.value) ? smsRes.value : [];
       setTemplateRecords({ email: safeEmail, sms: safeSms });
       setTemplates([
         ...safeEmail.map((t) => ({
@@ -200,8 +213,6 @@ export default function CommunicationSettings() {
           variables: (t.variables || []).map((v) => `{${v}}`).join(', '),
         })),
       ]);
-    } catch (err) {
-      logger.error('Failed to refresh templates:', err);
     } finally {
       setLoadingTemplates(false);
     }
@@ -736,9 +747,17 @@ export default function CommunicationSettings() {
                 isLoading={loadingTemplates}
                 loadingContent={<SkeletonTable columns={4} rows={5} />}
                 emptyContent={
-                  <div className="text-center py-12">
-                    <p className="text-fg-faint text-sm">{t('pages.noTemplatesFoundMatchingYourSearch')}</p>
-                  </div>
+                  templatesError ? (
+                    <ErrorState
+                      title={t('toast.error.failedToLoadTemplates', 'Failed to load templates')}
+                      error={templatesError}
+                      onRetry={refreshTemplates}
+                    />
+                  ) : (
+                    <div className="text-center py-12">
+                      <p className="text-fg-faint text-sm">{t('pages.noTemplatesFoundMatchingYourSearch')}</p>
+                    </div>
+                  )
                 }
               >
                 {visibleTemplates.map((tmpl) => (

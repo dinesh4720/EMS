@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { useDisclosure } from "@heroui/react";
 import { useApp } from "../../context/AppContext";
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+import ErrorState from '../../components/ui/ErrorState';
 import { timetableApi, teacherAssignmentsApi } from "../../services/api";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import useConfirmDialog from '../../hooks/useConfirmDialog';
@@ -41,6 +42,7 @@ export default function Timetable({ classId }) {
   const [periods, setPeriods] = useState(defaultPeriods);
   const [schedule, setSchedule] = useState({});
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [view, setView] = useState('week'); // 'week' | 'day'
   const [activeDay, setActiveDay] = useState(days[0]);
@@ -91,6 +93,7 @@ export default function Timetable({ classId }) {
   const loadTimetable = async () => {
     try {
       setLoading(true);
+      setLoadError(null);
       const data = await timetableApi.getByClass(selectedClass, currentAcademicYear);
       if (data && data.schedule) {
         setTimetable(data);
@@ -104,13 +107,19 @@ export default function Timetable({ classId }) {
       }
       setHasChanges(false);
     } catch (err) {
-      if (err.status !== 404 && !err.message?.includes('not found')) {
+      const isNotFound = err.status === 404 || err.message?.includes('not found');
+      if (isNotFound) {
+        // Genuinely no timetable yet — show the empty state so one can be created.
+        setPeriods(defaultPeriods);
+        setSchedule(initializeSchedule());
+        setTimetable(null);
+      } else {
+        // Real load failure — surface an error state instead of an editable empty
+        // grid, so a transient failure can't be mistaken for "no timetable" and
+        // silently overwritten by a rebuild.
         logger.error('Failed to load timetable:', err);
+        setLoadError(err);
       }
-      // Don't show error toast - just initialize empty state
-      setPeriods(defaultPeriods);
-      setSchedule(initializeSchedule());
-      setTimetable(null);
     } finally {
       setLoading(false);
     }
@@ -586,6 +595,13 @@ export default function Timetable({ classId }) {
 
       {loading && !hasChanges ? (
         <TablePageSkeleton />
+      ) : loadError ? (
+        <ErrorState
+          title="Unable to load timetable"
+          error={loadError}
+          onRetry={loadTimetable}
+          size="lg"
+        />
       ) : !timetable ? (
         <TimetableEmptyState
           onWizardClick={handleWizardClick}

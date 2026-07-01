@@ -14,6 +14,7 @@ import { auditLogsApi, requestBlob } from "../../services/api";
 import { PageShell } from "../../components/ui";
 import Drawer from "../../components/ui/Drawer";
 import EmptyState from "../../components/ui/EmptyState";
+import ErrorState from "../../components/ui/ErrorState";
 import Pagination from "../../components/common/Pagination";
 import ToolbarSearch from "../../components/ui/ToolbarSearch";
 import { TablePageSkeleton } from "../../components/skeletons/PageSkeletons";
@@ -32,7 +33,7 @@ export default function AuditLogsPage() {
 
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [, setError] = useState(null);
+  const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [total, setTotal] = useState(0);
@@ -275,6 +276,15 @@ export default function AuditLogsPage() {
               {loading ? (
                 <div style={{ padding: 16 }}>
                   <TablePageSkeleton />
+                </div>
+              ) : error ? (
+                <div style={{ padding: 16 }}>
+                  <ErrorState
+                    title="Unable to load audit logs"
+                    error={error}
+                    onRetry={fetchLogs}
+                    size="lg"
+                  />
                 </div>
               ) : visible.length === 0 ? (
                 <EmptyState

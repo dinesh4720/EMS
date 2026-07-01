@@ -35,6 +35,7 @@ import Textarea from '../../components/ui/Textarea';
 import IconButton from '../../components/ui/IconButton';
 import DropdownMenu from '../../components/ui/DropdownMenu';
 import EmptyState from '../../components/ui/EmptyState';
+import ErrorState from '../../components/ui/ErrorState';
 import FormField from '../../components/ui/FormField';
 import FormSection from '../../components/ui/FormSection';
 
@@ -51,6 +52,7 @@ export default function FormAssignments() {
   } = useDisclosure();
 
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(null);
   const [assignments, setAssignments] = useState([]);
   const [forms, setForms] = useState([]);
   const [selectedAssignment, setSelectedAssignment] = useState(null);
@@ -81,10 +83,12 @@ export default function FormAssignments() {
   const fetchAssignments = async () => {
     try {
       setLoading(true);
+      setLoadError(null);
       const status = filterStatus === "all" ? null : filterStatus;
       const data = await intakeFormsApi.getAssignments(null, status);
       setAssignments(Array.isArray(data) ? data : []);
     } catch (error) {
+      setLoadError(error);
       toast.error(t('toast.error.failedToLoadAssignments'));
     } finally {
       setLoading(false);
@@ -334,7 +338,18 @@ export default function FormAssignments() {
       </div>
 
       {/* Assignments Table / Empty State */}
-      {showEmptyState ? (
+      {loadError ? (
+        <Card className="bg-surface border border-divider">
+          <CardBody>
+            <ErrorState
+              title="Unable to load assignments"
+              error={loadError}
+              onRetry={fetchAssignments}
+              size="lg"
+            />
+          </CardBody>
+        </Card>
+      ) : showEmptyState ? (
         <Card className="bg-surface border border-divider">
           <CardBody>
             <EmptyState

@@ -8,7 +8,7 @@ import { staffAttendanceApi } from "../../services/api/classes";
 import toast from "react-hot-toast";
 import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import { TablePageSkeleton } from "../../components/skeletons/PageSkeletons";
-import { PageHeader, Breadcrumbs, EmptyState } from "../../components/ui";
+import { PageHeader, Breadcrumbs, EmptyState, ErrorState } from "../../components/ui";
 
 function safeFormat(dateStr) {
   if (!dateStr) return "—";
@@ -43,15 +43,18 @@ export default function LeaveManagement() {
   const navigate = useNavigate();
   const [leaves, setLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [processingId, setProcessingId] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const [rejectModal, setRejectModal] = useState({ open: false, leaveId: null, reason: "" });
 
   const fetchLeaves = useCallback(async () => {
     try {
+      setLoadError(null);
       const data = await staffAttendanceApi.getPendingLeaves();
       setLeaves(Array.isArray(data) ? data : []);
-    } catch {
+    } catch (err) {
+      setLoadError(err);
       toast.error("Failed to load pending leave requests");
     } finally {
       setLoading(false);
@@ -175,7 +178,14 @@ export default function LeaveManagement() {
         }
       />
 
-      {leaves.length === 0 ? (
+      {loadError ? (
+        <ErrorState
+          title="Unable to load leave requests"
+          error={loadError}
+          onRetry={fetchLeaves}
+          size="lg"
+        />
+      ) : leaves.length === 0 ? (
         <EmptyState
           icon={Check}
           kind="ok"
