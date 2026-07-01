@@ -1,6 +1,6 @@
 import { Cake, ArrowRight } from "lucide-react";
 import PhotoAvatar from "../../../components/PhotoAvatar";
-import EmptyState from "./EmptyState";
+import EmptyState from "../../../components/ui/EmptyState";
 
 /**
  * MomentsList — birthdays + quick human moments.

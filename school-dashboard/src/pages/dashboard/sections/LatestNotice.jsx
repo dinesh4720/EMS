@@ -1,6 +1,6 @@
 import { Megaphone } from "lucide-react";
 import { formatRelativeTime } from "../../../utils/dateFormatter";
-import EmptyState from "./EmptyState";
+import EmptyState from "../../../components/ui/EmptyState";
 
 /**
  * LatestNotice — single most-recent announcement, prominent.
