@@ -56,3 +56,68 @@ describe('config/api URL resolution', () => {
     expect(api.SOCKET_URL).toBe('https://sockets.example.com');
   });
 });
+
+/**
+ * CONFIG_ERROR drives the plain-DOM config-error page rendered in main.jsx
+ * before React mounts. In production it must reject a plaintext / mixed-content
+ * API or socket URL so credentials never travel over http on an https app.
+ * The DEV branch short-circuits, so these tests force DEV: false.
+ */
+describe('config/api CONFIG_ERROR https enforcement', () => {
+  const originalEnv = { ...import.meta.env };
+
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    Object.assign(import.meta.env, originalEnv);
+  });
+
+  it('is null in development regardless of scheme', async () => {
+    import.meta.env.DEV = true;
+    import.meta.env.VITE_API_URL = 'http://localhost:3002/api';
+    const api = await import('./api.js');
+    expect(api.CONFIG_ERROR).toBeNull();
+  });
+
+  it('flags a plaintext http:// VITE_API_URL in production', async () => {
+    import.meta.env.DEV = false;
+    import.meta.env.VITE_API_URL = 'http://api.school.com/api';
+    delete import.meta.env.VITE_SOCKET_URL;
+    const api = await import('./api.js');
+    expect(api.CONFIG_ERROR).toMatch(/must use https:\/\//);
+  });
+
+  it('flags a scheme-less VITE_API_URL in production', async () => {
+    import.meta.env.DEV = false;
+    import.meta.env.VITE_API_URL = 'api.school.com/api';
+    delete import.meta.env.VITE_SOCKET_URL;
+    const api = await import('./api.js');
+    expect(api.CONFIG_ERROR).toMatch(/must use https:\/\//);
+  });
+
+  it('accepts an https:// VITE_API_URL in production', async () => {
+    import.meta.env.DEV = false;
+    import.meta.env.VITE_API_URL = 'https://api.school.com/api';
+    delete import.meta.env.VITE_SOCKET_URL;
+    const api = await import('./api.js');
+    expect(api.CONFIG_ERROR).toBeNull();
+  });
+
+  it('flags a plaintext ws:// VITE_SOCKET_URL in production', async () => {
+    import.meta.env.DEV = false;
+    import.meta.env.VITE_API_URL = 'https://api.school.com/api';
+    import.meta.env.VITE_SOCKET_URL = 'ws://sockets.school.com';
+    const api = await import('./api.js');
+    expect(api.CONFIG_ERROR).toMatch(/must use https:\/\/ or wss:\/\//);
+  });
+
+  it('accepts a wss:// VITE_SOCKET_URL in production', async () => {
+    import.meta.env.DEV = false;
+    import.meta.env.VITE_API_URL = 'https://api.school.com/api';
+    import.meta.env.VITE_SOCKET_URL = 'wss://sockets.school.com';
+    const api = await import('./api.js');
+    expect(api.CONFIG_ERROR).toBeNull();
+  });
+});

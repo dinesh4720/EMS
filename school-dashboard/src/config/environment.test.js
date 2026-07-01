@@ -60,6 +60,50 @@ describe('environment validation', () => {
     );
   });
 
+  it('throws in production mode when VITE_API_URL uses plaintext http://', async () => {
+    const env = { DEV: false, VITE_API_URL: 'http://api.school.com/api' };
+    const { validateEnvironment } = await import('./environment.js');
+    expect(() => validateEnvironment(env)).toThrow(
+      'VITE_API_URL must use https:// in production'
+    );
+  });
+
+  it('throws in production mode when VITE_API_URL has no scheme', async () => {
+    const env = { DEV: false, VITE_API_URL: 'api.school.com/api' };
+    const { validateEnvironment } = await import('./environment.js');
+    expect(() => validateEnvironment(env)).toThrow(
+      'VITE_API_URL must use https:// in production'
+    );
+  });
+
+  it('does not enforce https in development mode', async () => {
+    const env = { DEV: true, VITE_API_URL: 'http://localhost:3002/api' };
+    const { validateEnvironment } = await import('./environment.js');
+    expect(() => validateEnvironment(env)).not.toThrow();
+  });
+
+  it('throws in production mode when explicit VITE_SOCKET_URL uses plaintext http://', async () => {
+    const env = {
+      DEV: false,
+      VITE_API_URL: 'https://api.myapp.com/api',
+      VITE_SOCKET_URL: 'http://socket.myapp.com',
+    };
+    const { validateEnvironment } = await import('./environment.js');
+    expect(() => validateEnvironment(env)).toThrow(
+      'VITE_SOCKET_URL must use https:// or wss:// in production'
+    );
+  });
+
+  it('accepts a wss:// VITE_SOCKET_URL in production', async () => {
+    const env = {
+      DEV: false,
+      VITE_API_URL: 'https://api.myapp.com/api',
+      VITE_SOCKET_URL: 'wss://socket.myapp.com',
+    };
+    const { validateEnvironment } = await import('./environment.js');
+    expect(() => validateEnvironment(env)).not.toThrow();
+  });
+
   it('passes when required and optional variables are valid in production', async () => {
     const env = {
       DEV: false,
