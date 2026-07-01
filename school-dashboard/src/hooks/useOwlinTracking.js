@@ -10,6 +10,12 @@ let _trackerInstance = null
 
 const OWLIN_ENABLED_KEY = 'owlinTrackerEnabled'
 const OWLIN_ENDPOINT = import.meta.env.VITE_OWLIN_ENDPOINT?.trim() || ''
+// SECURITY: any VITE_-prefixed value is compiled into the public JS bundle and
+// is therefore world-readable. This key is only ever used to *ingest* analytics
+// events — the tracker SDK init below and the X-API-Key header on the
+// users/identify + sessions/start writes. It MUST be provisioned as a write-only
+// event-ingestion key; never a read/admin key. If Owlin ever needs a privileged
+// key, move those calls behind the backend instead of exposing it here.
 const OWLIN_API_KEY = import.meta.env.VITE_OWLIN_API_KEY?.trim() || ''
 const OWLIN_API_BASE = OWLIN_ENDPOINT.replace(/\/api\/v1\/events\/batch\/?$/, '').replace(/\/api\/events\/?$/, '')
 const IS_OWLIN_CONFIGURED = Boolean(OWLIN_ENDPOINT)

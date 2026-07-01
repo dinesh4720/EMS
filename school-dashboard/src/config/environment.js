@@ -9,6 +9,15 @@
 // Placeholder pattern written into .env.production — must never reach a real build.
 const PLACEHOLDER_PATTERN = /your-backend-app|example\.com|changeme/i;
 
+// Production must use TLS. A plaintext http:// (or scheme-less) API URL forces
+// every request()/socket call into mixed content on an https app — the browser
+// blocks it, or credentials (auth rides credentials:'include') travel in the
+// clear. http://localhost is a dev-only convenience and never reaches this
+// check because the validator short-circuits in dev mode below.
+const SECURE_API_URL_PATTERN = /^https:\/\//i;
+// The socket transport may be supplied explicitly as https:// or wss://.
+const SECURE_SOCKET_URL_PATTERN = /^(?:https|wss):\/\//i;
+
 export const REQUIRED_VARS = ['VITE_API_URL'];
 export const OPTIONAL_URL_VARS = ['VITE_SOCKET_URL'];
 
@@ -38,14 +47,32 @@ export function validateEnvironment(env = import.meta.env) {
           `Set it to your real backend URL in your CI/CD or hosting environment.`
       );
     }
+
+    if (!SECURE_API_URL_PATTERN.test(trimmed)) {
+      throw new Error(
+        `${key} must use https:// in production (got "${trimmed}"). ` +
+          `A plaintext http:// URL exposes credentials and is blocked as mixed ` +
+          `content by browsers. Use http://localhost only in development.`
+      );
+    }
   }
 
   for (const key of OPTIONAL_URL_VARS) {
     const value = env[key];
-    if (value && typeof value === 'string' && PLACEHOLDER_PATTERN.test(value.trim())) {
+    if (!value || typeof value !== 'string' || !value.trim()) continue;
+
+    const trimmed = value.trim();
+    if (PLACEHOLDER_PATTERN.test(trimmed)) {
       throw new Error(
-        `${key} is still set to the placeholder value "${value.trim()}". ` +
+        `${key} is still set to the placeholder value "${trimmed}". ` +
           `Set it to your real socket server URL or remove it to auto-derive from VITE_API_URL.`
+      );
+    }
+
+    if (!SECURE_SOCKET_URL_PATTERN.test(trimmed)) {
+      throw new Error(
+        `${key} must use https:// or wss:// in production (got "${trimmed}"). ` +
+          `A plaintext socket URL is blocked as mixed content on an https app.`
       );
     }
   }
