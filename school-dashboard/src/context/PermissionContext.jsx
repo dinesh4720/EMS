@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useAuth } from "./AuthContext";
 import { getStoredUser } from "../utils/authSession";
 import { request } from "../services/api.js";
@@ -170,7 +170,7 @@ export const PermissionProvider = ({ children }) => {
   // Fetch permissions from the server. Accepts a targetUser so it can be
   // called before AuthContext's user state is set (e.g. on mount from stored user).
   // ---------------------------------------------------------------------------
-  const fetchUserPermissions = async (targetUser) => {
+  const fetchUserPermissions = useCallback(async (targetUser) => {
     const id = targetUser?.id;
     if (!id) return;
     try {
@@ -194,7 +194,7 @@ export const PermissionProvider = ({ children }) => {
       setLoading(false);
       setReady(true);
     }
-  };
+  }, []);
 
   // ---------------------------------------------------------------------------
   // On mount: fire /permissions/me from the stored user immediately — runs
@@ -233,7 +233,7 @@ export const PermissionProvider = ({ children }) => {
     }
   }, [isAuthenticated]);
 
-  const hasPermission = (module, action = 'view') => {
+  const hasPermission = useCallback((module, action = 'view') => {
     // SECURITY: Only trust the role for admin short-circuit when the role has
     // been verified by the server. This prevents privilege escalation via
     // sessionStorage tampering. The _roleVerified flag is set by AuthContext
@@ -273,7 +273,7 @@ export const PermissionProvider = ({ children }) => {
     }
 
     return false;
-  };
+  }, [user, permissions]);
 
   // ---------------------------------------------------------------------------
   // Module enablement — independent of role permissions. A module a school has
@@ -283,14 +283,14 @@ export const PermissionProvider = ({ children }) => {
   // of hidden nav. Module keys without a registry entry (system/dev routes) are
   // always allowed.
   // ---------------------------------------------------------------------------
-  const isModuleEnabled = (module) => {
+  const isModuleEnabled = useCallback((module) => {
     if (!module) return true;
     if (isCoreModule(module)) return true;
     if (enabledModules === null) return true; // not loaded yet
     return enabledModules.includes(module);
-  };
+  }, [enabledModules]);
 
-  const requestPermission = async (module, action, reason) => {
+  const requestPermission = useCallback(async (module, action, reason) => {
     try {
       return await request('/permissions/request', {
         method: 'POST',
@@ -307,9 +307,9 @@ export const PermissionProvider = ({ children }) => {
       logger.error('Error requesting permission:', error);
       throw error;
     }
-  };
+  }, [user]);
 
-  const isAdmin = () => {
+  const isAdmin = useCallback(() => {
     const roleVerified = user?._roleVerified === true;
     const roleStr = typeof user?.role === 'string' ? user.role :
                     user?.role?.toString?.() || '';
@@ -320,28 +320,31 @@ export const PermissionProvider = ({ children }) => {
       normalizedRole === 'superadmin' ||
       normalizedRole === 'principal'
     );
-  };
+  }, [user]);
 
-  const refreshPermissions = () => {
+  const refreshPermissions = useCallback(() => {
     if (isAuthenticated && user) {
       fetchUserPermissions(user);
     }
-  };
+  }, [isAuthenticated, user, fetchUserPermissions]);
+
+  const value = useMemo(
+    () => ({
+      permissions,
+      loading,
+      ready,
+      hasPermission,
+      isAdmin,
+      requestPermission,
+      refreshPermissions,
+      enabledModules,
+      isModuleEnabled,
+    }),
+    [permissions, loading, ready, hasPermission, isAdmin, requestPermission, refreshPermissions, enabledModules, isModuleEnabled]
+  );
 
   return (
-    <PermissionContext.Provider
-      value={{
-        permissions,
-        loading,
-        ready,
-        hasPermission,
-        isAdmin,
-        requestPermission,
-        refreshPermissions,
-        enabledModules,
-        isModuleEnabled,
-      }}
-    >
+    <PermissionContext.Provider value={value}>
       {children}
     </PermissionContext.Provider>
   );

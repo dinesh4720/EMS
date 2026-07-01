@@ -45,7 +45,7 @@ export default function ComposerField({
       </label>
       {Children.map(children, attachIds)}
       {error ? (
-        <span id={hintId} role="alert" className="field__hint" style={{ color: "var(--danger)" }}>
+        <span id={hintId} role="alert" className="field__hint field__hint--danger">
           {error}
         </span>
       ) : hint ? (

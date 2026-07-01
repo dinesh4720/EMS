@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import logger from "../../../utils/logger";
 import { AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { reportsApi } from '../../../services/api/extensions';
@@ -26,7 +27,7 @@ export default function MarksTab({ academicYear }) {
     examsApi
       .getAll(params)
       .then((data) => setExams(Array.isArray(data) ? data : []))
-      .catch((err) => console.error('Failed to load exams:', err));
+      .catch((err) => logger.error('Failed to load exams:', err));
   }, [academicYear]);
 
   const fetchData = useCallback(async () => {
@@ -46,7 +47,7 @@ export default function MarksTab({ academicYear }) {
       setGradeDistribution(Array.isArray(gd) ? gd : []);
       setRankList(Array.isArray(rl) ? rl : []);
     } catch (err) {
-      console.error('Failed to load marks report:', err);
+      logger.error('Failed to load marks report:', err);
       setError(err);
       toast.error('Failed to load marks report. Refresh to try again.');
     } finally {

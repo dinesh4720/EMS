@@ -1,8 +1,10 @@
 import { useState, useEffect, useMemo, useId } from 'react';
+import logger from "../../utils/logger";
 import { reportsApi } from '../../services/api/extensions';
-import { useApp } from '../../context/AppContext';
+import { useAppMeta } from '../../context/AppContext';
 import { getAcademicYearOptions } from '../../utils/constants';
 import PageHeader from '../../components/ui/PageHeader';
+import ErrorState from '../../components/ui/ErrorState';
 import Tabs from '../../components/ui/Tabs';
 import Select from '../../components/ui/Select';
 import AttendanceTab from './components/AttendanceTab';
@@ -18,9 +20,11 @@ const TABS = [
 export default function ReportsPage() {
   const baseId = useId();
   const tabpanelId = `${baseId}-tabpanel`;
-  const { currentAcademicYear, selectedAcademicYear, setSelectedAcademicYear } = useApp();
+  const { currentAcademicYear, selectedAcademicYear, setSelectedAcademicYear } = useAppMeta();
   const [activeTab, setActiveTab] = useState('attendance');
   const [metrics, setMetrics] = useState(null);
+  const [metricsError, setMetricsError] = useState(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const academicYearOptions = useMemo(
     () => getAcademicYearOptions(currentAcademicYear, { past: 2, future: 1 }),
@@ -33,17 +37,21 @@ export default function ReportsPage() {
     if (!academicYear) return undefined;
     let cancelled = false;
     (async () => {
+      setMetricsError(null);
       try {
         const data = await reportsApi.dashboardMetrics({ academicYear });
         if (!cancelled) setMetrics(data);
       } catch (err) {
-        console.error('Failed to load dashboard metrics:', err);
+        if (!cancelled) {
+          logger.error('Failed to load dashboard metrics:', err);
+          setMetricsError(err);
+        }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [academicYear]);
+  }, [academicYear, reloadKey]);
 
   const yearSelector = (
     <Select
@@ -89,9 +97,20 @@ export default function ReportsPage() {
         aria-label="Report content"
         aria-live="polite"
       >
-        {activeTab === 'attendance' && <AttendanceTab metrics={metrics} />}
-        {activeTab === 'marks' && <MarksTab academicYear={academicYear} />}
-        {activeTab === 'fees' && <FeesTab metrics={metrics} academicYear={academicYear} />}
+        {metricsError ? (
+          <ErrorState
+            title="Unable to load reports"
+            error={metricsError}
+            onRetry={() => setReloadKey((k) => k + 1)}
+            size="lg"
+          />
+        ) : (
+          <>
+            {activeTab === 'attendance' && <AttendanceTab metrics={metrics} />}
+            {activeTab === 'marks' && <MarksTab academicYear={academicYear} />}
+            {activeTab === 'fees' && <FeesTab metrics={metrics} academicYear={academicYear} />}
+          </>
+        )}
       </div>
     </main>
   );

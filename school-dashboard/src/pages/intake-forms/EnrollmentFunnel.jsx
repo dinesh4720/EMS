@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Card, CardBody, Chip } from "@heroui/react";
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import PageHeader from '../../components/ui/PageHeader';
+import ErrorState from '../../components/ui/ErrorState';
 import { Users, FileCheck, CheckCircle, XCircle, Clock } from "lucide-react";
 import toast from "react-hot-toast";
 import { intakeFormsApi } from "../../services/api";
@@ -18,6 +19,7 @@ const FUNNEL_STAGES = [
 export default function EnrollmentFunnel() {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(null);
   const [stats, setStats] = useState({
     assigned: 0,
     in_progress: 0,
@@ -33,6 +35,7 @@ export default function EnrollmentFunnel() {
   const fetchFunnelData = async () => {
     try {
       setLoading(true);
+      setLoadError(null);
       const [assignments, submissions] = await Promise.all([
         intakeFormsApi.getAssignments(null, null),
         intakeFormsApi.getSubmissions(null, null),
@@ -47,6 +50,7 @@ export default function EnrollmentFunnel() {
       };
       setStats(counts);
     } catch (error) {
+      setLoadError(error);
       toast.error(t('toast.error.failedToLoadFunnelData'));
     } finally {
       setLoading(false);
@@ -66,6 +70,13 @@ export default function EnrollmentFunnel() {
 
       {loading ? (
         <TablePageSkeleton title={false} searchBar={false} kpiCards={5} columns={3} rows={4} />
+      ) : loadError ? (
+        <ErrorState
+          title="Unable to load enrollment funnel"
+          error={loadError}
+          onRetry={fetchFunnelData}
+          size="lg"
+        />
       ) : (
         <>
           {/* Stats Cards */}

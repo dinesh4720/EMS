@@ -6,6 +6,7 @@ import {
   useRef,
 } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { FileDown, RotateCcw, ClipboardList } from "lucide-react";
 import { Button } from "@heroui/react";
 import toast from "react-hot-toast";
@@ -13,6 +14,7 @@ import { auditLogsApi, requestBlob } from "../../services/api";
 import { PageShell } from "../../components/ui";
 import Drawer from "../../components/ui/Drawer";
 import EmptyState from "../../components/ui/EmptyState";
+import ErrorState from "../../components/ui/ErrorState";
 import Pagination from "../../components/common/Pagination";
 import ToolbarSearch from "../../components/ui/ToolbarSearch";
 import { TablePageSkeleton } from "../../components/skeletons/PageSkeletons";
@@ -25,17 +27,19 @@ import AuditLogFilters from "./AuditLogFilters";
 const MOBILE_MAX = 1099;
 
 export default function AuditLogsPage() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedId = searchParams.get("id") || null;
 
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [, setError] = useState(null);
+  const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [total, setTotal] = useState(0);
   const [exporting, setExporting] = useState(false);
   const [filters, setFilters] = useState({});
+  const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileViewport, setIsMobileViewport] = useState(() =>
     typeof window !== "undefined" ? window.innerWidth <= MOBILE_MAX : false
@@ -49,14 +53,23 @@ export default function AuditLogsPage() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
+  // Debounce the search input so we only refetch when typing pauses
+  // (300ms — matches typical UX and avoids one fetch per keystroke).
+  useEffect(() => {
+    const id = setTimeout(() => setSearchQuery(searchInput), 300);
+    return () => clearTimeout(id);
+  }, [searchInput]);
+
   const buildParams = useCallback(() => {
     const params = { page, limit: pageSize };
+    const trimmed = searchQuery.trim();
+    if (trimmed) params.search = trimmed;
     if (filters.action) params.action = filters.action;
     if (filters.entity) params.entity = filters.entity;
     if (filters.startDate) params.startDate = filters.startDate;
     if (filters.endDate) params.endDate = filters.endDate;
     return params;
-  }, [page, pageSize, filters]);
+  }, [page, pageSize, filters, searchQuery]);
 
   const fetchLogs = useCallback(async () => {
     try {
@@ -69,15 +82,21 @@ export default function AuditLogsPage() {
     } catch (err) {
       logger.error("Failed to load audit logs:", err);
       setError(err);
-      toast.error("Failed to load audit logs");
+      toast.error(t("auditLogs.toast.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, [buildParams]);
+  }, [buildParams, t]);
 
   useEffect(() => {
     fetchLogs();
   }, [fetchLogs]);
+
+  // When a new server-side search term arrives, drop the user back on page 1
+  // so they don't land on an empty page that no longer matches the filter.
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery]);
 
   const setSelectedId = useCallback(
     (id) => {
@@ -101,6 +120,7 @@ export default function AuditLogsPage() {
 
   const handleResetFilters = useCallback(() => {
     setFilters({});
+    setSearchInput("");
     setSearchQuery("");
     setPage(1);
   }, []);
@@ -110,6 +130,8 @@ export default function AuditLogsPage() {
       try {
         setExporting(true);
         const params = { format, ...filters };
+        const trimmedSearch = searchQuery.trim();
+        if (trimmedSearch) params.search = trimmedSearch;
         const qs = new URLSearchParams(params).toString();
         const endpoint = `/audit-logs/export${qs ? `?${qs}` : ""}`;
         const response = await requestBlob(endpoint);
@@ -124,36 +146,20 @@ export default function AuditLogsPage() {
         link.click();
         link.remove();
         setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-        toast.success(`${format.toUpperCase()} export ready`);
+        toast.success(t("auditLogs.toast.exportReady", { format: format.toUpperCase() }));
       } catch (err) {
         logger.error("Export failed:", err);
-        toast.error(err?.message || "Export failed");
+        toast.error(err?.message || t("auditLogs.toast.exportFailed"));
       } finally {
         setExporting(false);
       }
     },
-    [filters]
+    [filters, searchQuery, t]
   );
 
-  // Client-side search on current page results
-  const visible = useMemo(() => {
-    if (!searchQuery.trim()) return logs;
-    const needle = searchQuery.trim().toLowerCase();
-    return logs.filter((logItem) => {
-      const userName = logItem.userId?.name || logItem.userName || "";
-      const entity = logItem.entity || "";
-      const action = logItem.action || "";
-      const ip = logItem.ipAddress || "";
-      const path = logItem.path || "";
-      return (
-        userName.toLowerCase().includes(needle) ||
-        entity.toLowerCase().includes(needle) ||
-        action.toLowerCase().includes(needle) ||
-        ip.toLowerCase().includes(needle) ||
-        path.toLowerCase().includes(needle)
-      );
-    });
-  }, [logs, searchQuery]);
+  // The server now applies the search filter, so the visible list is exactly
+  // what the API returned for the current page/filters/search.
+  const visible = logs;
 
   const totalPages = useMemo(
     () => Math.max(1, Math.ceil(total / pageSize)),
@@ -166,12 +172,19 @@ export default function AuditLogsPage() {
   );
 
   const detailVisible = !!selectedLog;
-  const showClearButton = searchQuery || filters.action || filters.entity || filters.startDate || filters.endDate;
+  const showClearButton =
+    searchQuery || filters.action || filters.entity || filters.startDate || filters.endDate;
 
   return (
     <PageShell
-      title="Audit Logs"
-      description={loading ? "Loading…" : `${total.toLocaleString()} records`}
+      title={t("auditLogs.title")}
+      description={
+        loading
+          ? t("auditLogs.loading")
+          : showClearButton
+            ? t("auditLogs.recordsMatching", { count: total.toLocaleString() })
+            : t("auditLogs.records", { count: total.toLocaleString() })
+      }
       actions={
         <>
           <Button
@@ -181,7 +194,7 @@ export default function AuditLogsPage() {
             onPress={() => handleExport("csv")}
             startContent={<FileDown size={14} />}
           >
-            Export CSV
+            {t("auditLogs.exportCsv")}
           </Button>
           <Button
             size="sm"
@@ -190,7 +203,7 @@ export default function AuditLogsPage() {
             onPress={() => handleExport("json")}
             startContent={<FileDown size={14} />}
           >
-            Export JSON
+            {t("auditLogs.exportJson")}
           </Button>
         </>
       }
@@ -198,10 +211,10 @@ export default function AuditLogsPage() {
         <>
           <div className="toolbar">
             <ToolbarSearch
-              value={searchQuery}
-              onChange={setSearchQuery}
-              placeholder="Search logs…"
-              ariaLabel="Search audit logs"
+              value={searchInput}
+              onChange={setSearchInput}
+              placeholder={t("auditLogs.searchPlaceholder")}
+              ariaLabel={t("auditLogs.searchAria")}
               style={{ marginLeft: "auto", flex: "0 1 280px", minWidth: 0 }}
             />
             {showClearButton && (
@@ -211,7 +224,7 @@ export default function AuditLogsPage() {
                 onPress={handleResetFilters}
                 startContent={<RotateCcw size={14} />}
               >
-                Reset
+                {t("auditLogs.reset")}
               </Button>
             )}
           </div>
@@ -221,7 +234,7 @@ export default function AuditLogsPage() {
           />
         </>
       }
-      breadcrumbs={[{ label: "Home", href: "/" }, { label: "Audit Logs" }]}
+      breadcrumbs={[{ label: "Home", href: "/" }, { label: t("auditLogs.title") }]}
       bodyPadding="none"
       scrollable={false}
     >
@@ -248,46 +261,55 @@ export default function AuditLogsPage() {
           }}
         >
           {/* List rows */}
-          <div
-            ref={listRef}
-            role="listbox"
-            aria-label="Audit logs list"
-            tabIndex={0}
-            style={{
-              flex: 1,
-              overflow: "auto",
-              outline: "none",
-              minHeight: 0,
-            }}
-          >
-            {loading ? (
-              <div style={{ padding: 16 }}>
-                <TablePageSkeleton />
-              </div>
-            ) : visible.length === 0 ? (
-              <EmptyState
-                icon={ClipboardList}
-                title={logs.length === 0 ? "No audit logs yet" : "No logs matched"}
-                description={
-                  logs.length === 0
-                    ? "Activity will appear here once users perform actions."
-                    : "Try adjusting your filters or search query."
-                }
-                action={
-                  logs.length === 0 ? null : (
-                    <Button
-                      size="sm"
-                      variant="flat"
-                      onPress={handleResetFilters}
-                      startContent={<RotateCcw size={14} />}
-                    >
-                      Clear filters
-                    </Button>
-                  )
-                }
-                size="md"
-              />
-            ) : (
+            <div
+              ref={listRef}
+              role="listbox"
+              aria-label={t("auditLogs.listAria")}
+              tabIndex={0}
+              style={{
+                flex: 1,
+                overflow: "auto",
+                outline: "none",
+                minHeight: 0,
+              }}
+            >
+              {loading ? (
+                <div style={{ padding: 16 }}>
+                  <TablePageSkeleton />
+                </div>
+              ) : error ? (
+                <div style={{ padding: 16 }}>
+                  <ErrorState
+                    title="Unable to load audit logs"
+                    error={error}
+                    onRetry={fetchLogs}
+                    size="lg"
+                  />
+                </div>
+              ) : visible.length === 0 ? (
+                <EmptyState
+                  icon={ClipboardList}
+                  title={logs.length === 0 ? t("auditLogs.empty.noLogsTitle") : t("auditLogs.empty.noMatchTitle")}
+                  description={
+                    logs.length === 0
+                      ? t("auditLogs.empty.noLogsDesc")
+                      : t("auditLogs.empty.noMatchDesc")
+                  }
+                  action={
+                    logs.length === 0 ? null : (
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        onPress={handleResetFilters}
+                        startContent={<RotateCcw size={14} />}
+                      >
+                        {t("auditLogs.clearFilters")}
+                      </Button>
+                    )
+                  }
+                  size="md"
+                />
+              ) : (
               visible.map((log) => (
                 <AuditLogListRow
                   key={log._id}
@@ -307,7 +329,7 @@ export default function AuditLogsPage() {
             >
               <div className="flex items-center gap-2">
                 <span className="text-sm" style={{ color: "var(--fg-muted)" }}>
-                  Show
+                  {t("auditLogs.show")}
                 </span>
                 <select
                   className="h-7 px-2 rounded-md border text-sm bg-surface text-fg focus:outline-none focus:ring-1"
@@ -317,7 +339,7 @@ export default function AuditLogsPage() {
                     setPageSize(Number(e.target.value));
                     setPage(1);
                   }}
-                  aria-label="Items per page"
+                  aria-label={t("auditLogs.perPageAria")}
                 >
                   <option value={10}>10</option>
                   <option value={25}>25</option>
@@ -325,7 +347,7 @@ export default function AuditLogsPage() {
                   <option value={100}>100</option>
                 </select>
                 <span className="text-sm" style={{ color: "var(--fg-muted)" }}>
-                  per page
+                  {t("auditLogs.perPage")}
                 </span>
               </div>
               <Pagination
@@ -333,7 +355,7 @@ export default function AuditLogsPage() {
                 totalPages={totalPages}
                 onPageChange={setPage}
                 totalItems={total}
-                itemLabel="logs"
+                itemLabel={t("auditLogs.itemLabel")}
               />
             </div>
           )}
@@ -349,7 +371,7 @@ export default function AuditLogsPage() {
           <Drawer
             isOpen={detailVisible}
             onClose={() => setSelectedId(null)}
-            title="Audit log detail"
+            title={t("auditLogs.detailDrawerTitle")}
             size="md"
             placement="right"
           >

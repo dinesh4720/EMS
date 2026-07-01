@@ -1,4 +1,5 @@
 import { forwardRef } from "react";
+import { useTranslation } from "react-i18next";
 
 const ACTION_TONE = {
   created: "ok",
@@ -13,20 +14,20 @@ const ACTION_TONE = {
   role_changed: "warn",
 };
 
-const ACTION_LABEL = {
-  created: "Created",
-  updated: "Updated",
-  deleted: "Deleted",
-  login: "Login",
-  logout: "Logout",
-  login_failed: "Login Failed",
-  password_changed: "Password Changed",
-  permission_changed: "Permission Changed",
-  settings_changed: "Settings Changed",
-  role_changed: "Role Changed",
+const ACTION_KEYS = {
+  created: "created",
+  updated: "updated",
+  deleted: "deleted",
+  login: "login",
+  logout: "logout",
+  login_failed: "loginFailed",
+  password_changed: "passwordChanged",
+  permission_changed: "permissionChanged",
+  settings_changed: "settingsChanged",
+  role_changed: "roleChanged",
 };
 
-function formatDate(dateStr) {
+function formatDate(t, dateStr) {
   if (!dateStr) return "—";
   const date = new Date(dateStr);
   return date.toLocaleString(undefined, {
@@ -38,28 +39,31 @@ function formatDate(dateStr) {
   });
 }
 
-function formatRelative(dateStr) {
+function formatRelative(t, dateStr) {
   if (!dateStr) return "—";
   const date = new Date(dateStr);
   const now = new Date();
   const diffMs = now - date;
   const diffMins = Math.floor(diffMs / 60000);
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffMins < 1) return t("auditLogs.relative.justNow");
+  if (diffMins < 60) return t("auditLogs.relative.minutesAgo", { count: diffMins });
   const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffHours < 24) return t("auditLogs.relative.hoursAgo", { count: diffHours });
   const diffDays = Math.floor(diffHours / 24);
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return formatDate(dateStr);
+  if (diffDays < 7) return t("auditLogs.relative.daysAgo", { count: diffDays });
+  return formatDate(t, dateStr);
 }
 
 const AuditLogListRow = forwardRef(function AuditLogListRow(
   { log, isActive, onSelect },
   ref
 ) {
+  const { t } = useTranslation();
   const action = log.action || "unknown";
   const tone = ACTION_TONE[action] || "default";
-  const label = ACTION_LABEL[action] || action.replace(/_/g, " ");
+  const label = ACTION_KEYS[action]
+    ? t(`auditLogs.actions.${ACTION_KEYS[action]}`)
+    : action.replace(/_/g, " ");
   const userName = log.userId?.name || log.userName || "—";
   const entity = log.entity || "—";
 
@@ -174,13 +178,13 @@ const AuditLogListRow = forwardRef(function AuditLogListRow(
           className="block"
           style={{ fontSize: 12, color: "var(--fg-muted)" }}
         >
-          {formatRelative(log.createdAt)}
+          {formatRelative(t, log.createdAt)}
         </span>
         <span
           className="block"
           style={{ fontSize: 11, color: "var(--fg-faint)" }}
         >
-          {formatDate(log.createdAt)}
+          {formatDate(t, log.createdAt)}
         </span>
       </div>
     </button>

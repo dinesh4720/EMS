@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext, useState, useMemo, useCallback } from "react";
 import { staffAttendanceApi, attendanceApi } from "../services/api";
 import { getStoredUser } from "../utils/authSession";
 import toast from "react-hot-toast";
@@ -80,7 +80,7 @@ export function AttendanceProvider({ children, staff }) {
     }
   }, []);
 
-  const markStaffAttendance = async (
+  const markStaffAttendance = useCallback(async (
     staffId,
     date,
     status,
@@ -118,9 +118,9 @@ export function AttendanceProvider({ children, staff }) {
       // Revert optimistic update on failure
       setStaffAttendance(prevAttendance);
     }
-  };
+  }, [staffAttendance, t]);
 
-  const markStudentAttendance = async (studentId, date, status, classId) => {
+  const markStudentAttendance = useCallback(async (studentId, date, status, classId) => {
     // Optimistic update
     setStudentAttendance((prev) => ({
       ...prev,
@@ -149,9 +149,9 @@ export function AttendanceProvider({ children, staff }) {
         return { ...prev, [studentId]: restDates };
       });
     }
-  };
+  }, [t]);
 
-  const getStaffAttendanceForDate = (date) => {
+  const getStaffAttendanceForDate = useCallback((date) => {
     const result = {};
     if (Array.isArray(staff)) {
       staff.forEach((s) => {
@@ -163,9 +163,9 @@ export function AttendanceProvider({ children, staff }) {
       });
     }
     return result;
-  };
+  }, [staff, staffAttendance]);
 
-  const markAllStaffAttendance = async (
+  const markAllStaffAttendance = useCallback(async (
     date,
     status,
     specificStaffIds = null,
@@ -213,9 +213,9 @@ export function AttendanceProvider({ children, staff }) {
       // Revert optimistic update on failure
       setStaffAttendance(prevAttendance);
     }
-  };
+  }, [staff, staffAttendance, t]);
 
-  const requestRegularization = async (staffId, date, requestedStatus, reason) => {
+  const requestRegularization = useCallback(async (staffId, date, requestedStatus, reason) => {
     try {
       const user = getStoredUser() || {};
       const response = await staffAttendanceApi.regularize(staffId, {
@@ -248,20 +248,20 @@ export function AttendanceProvider({ children, staff }) {
       toast.error(t('toast.error.failedToRegularizeAttendance', 'Failed to regularize attendance'));
       throw err;
     }
-  };
+  }, [t]);
 
-  const approveRegularization = async (staffId, date, data) => {
-    // Since current backend supports direct regularization, this might be redundant or same as above
-    // keeping placeholder for future enhancement
-    return requestRegularization(staffId, date, data.status, data.note);
-  };
+  const approveRegularization = useCallback(
+    (staffId, date, data) =>
+      requestRegularization(staffId, date, data.status, data.note),
+    [requestRegularization]
+  );
 
-  const fetchPendingRegularizations = async () => {
-    // Backend doesn't have this endpoint yet in this project version
-    return [];
-  };
+  // TODO(SCH-XXX): wire to GET /api/staff/regularizations/pending once the
+  // backend exposes it. Currently no callers consume this — exported only for
+  // future use.
+  const fetchPendingRegularizations = useCallback(async () => [], []);
 
-  const getMonthlyAttendance = (staffId, year, month) => {
+  const getMonthlyAttendance = useCallback((staffId, year, month) => {
     const staffAtt = staffAttendance[staffId] || {};
     let present = 0, absent = 0, leave = 0, halfday = 0;
     Object.entries(staffAtt).forEach(([date, data]) => {
@@ -274,25 +274,42 @@ export function AttendanceProvider({ children, staff }) {
       }
     });
     return { present, absent, leave, halfday, total: present + absent + leave + halfday };
-  };
+  }, [staffAttendance]);
 
-  const value = {
-    staffAttendance,
-    studentAttendance,
-    setStaffAttendance,
-    setStudentAttendance,
-    setStaffAttendanceFromQuery,
-    fetchStaffAttendanceForDate,
-    fetchStaffAttendanceByStaff,
-    markStaffAttendance,
-    markStudentAttendance,
-    getStaffAttendanceForDate,
-    markAllStaffAttendance,
-    requestRegularization,
-    approveRegularization,
-    fetchPendingRegularizations,
-    getMonthlyAttendance,
-  };
+  const value = useMemo(
+    () => ({
+      staffAttendance,
+      studentAttendance,
+      setStaffAttendance,
+      setStudentAttendance,
+      setStaffAttendanceFromQuery,
+      fetchStaffAttendanceForDate,
+      fetchStaffAttendanceByStaff,
+      markStaffAttendance,
+      markStudentAttendance,
+      getStaffAttendanceForDate,
+      markAllStaffAttendance,
+      requestRegularization,
+      approveRegularization,
+      fetchPendingRegularizations,
+      getMonthlyAttendance,
+    }),
+    [
+      staffAttendance,
+      studentAttendance,
+      setStaffAttendanceFromQuery,
+      fetchStaffAttendanceForDate,
+      fetchStaffAttendanceByStaff,
+      markStaffAttendance,
+      markStudentAttendance,
+      getStaffAttendanceForDate,
+      markAllStaffAttendance,
+      requestRegularization,
+      approveRegularization,
+      fetchPendingRegularizations,
+      getMonthlyAttendance,
+    ]
+  );
 
   return <AttendanceContext.Provider value={value}>{children}</AttendanceContext.Provider>;
 }

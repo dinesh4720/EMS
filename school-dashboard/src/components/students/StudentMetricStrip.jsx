@@ -64,25 +64,25 @@ export default function StudentMetricStrip({
         label="Attendance"
         value={attendance != null ? attendance : null}
         suffix="%"
-        // TODO: compute "vs last term" delta when historical attendance lands
-        deltaText={attendance != null ? "↑ 1.4 vs last term" : null}
-        deltaUp
+        // Delta intentionally null — no fabricated trend until a historical
+        // attendance endpoint exists to compute a real "vs last term" delta.
+        deltaText={null}
       />
       <MetricCell
         label="Class rank"
         value={rank != null ? rank : null}
         suffix={classSize ? `/${classSize}` : null}
-        // TODO: compute rank-delta when ranking history is exposed
-        deltaText={rank != null ? "↑ 2 places" : null}
-        deltaUp
+        // Delta intentionally null — no fabricated movement until ranking
+        // history is exposed to compute a real rank-delta.
+        deltaText={null}
       />
       <MetricCell
         label="GPA"
         value={gpa != null ? gpa : null}
         suffix="/10"
-        // TODO: real GPA delta vs previous term
-        deltaText={gpa != null ? "↑ 0.3" : null}
-        deltaUp
+        // Delta intentionally null — no fabricated change until a previous-term
+        // GPA endpoint exists to compute a real delta.
+        deltaText={null}
       />
       <MetricCell
         label="Fee status"

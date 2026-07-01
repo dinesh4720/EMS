@@ -87,7 +87,7 @@ const UserMenu = memo(function UserMenu({
               role="menuitem"
               onClick={() => {
                 close();
-                navigate("/super-admin/schools");
+                navigate("/super-admin");
               }}
               className="usermenu__item"
             >

@@ -34,23 +34,10 @@ export default function ParentsSection({
         return (
           <div
             key={p._key}
-            style={{
-              border: "1px solid var(--border)",
-              borderRadius: 8,
-              padding: 12,
-              marginBottom: 10,
-              background: "var(--surface)",
-            }}
+            className="cmp-repeat cmp-repeat--parent"
           >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: 10,
-              }}
-            >
-              <span style={{ fontWeight: 520, fontSize: 12.5 }}>
+            <div className="cmp-repeat__head">
+              <span className="cmp-repeat__label">
                 {isFirst ? "Primary parent / guardian" : `Contact ${idx + 1}`}
               </span>
               {!isFirst && (
@@ -131,13 +118,13 @@ export default function ParentsSection({
                 />
               </ComposerField>
               <ComposerField label="WhatsApp on this phone">
-                <label className="row gap-2" style={{ alignItems: "center", height: 32 }}>
+                <label className="cmp-checkrow cmp-checkrow--field">
                   <input
                     type="checkbox"
                     checked={!!p.isWhatsapp}
                     onChange={(e) => updateParent(idx, "isWhatsapp", e.target.checked)}
                   />
-                  <span className="subtle" style={{ fontSize: 12 }}>
+                  <span className="subtle subtle--sm">
                     Send updates via WhatsApp
                   </span>
                 </label>
@@ -149,34 +136,26 @@ export default function ParentsSection({
 
       <button
         type="button"
-        className="disclosure"
+        className="disclosure disclosure--mt"
         onClick={addParent}
-        style={{ marginTop: 4 }}
       >
         <Plus size={11} aria-hidden />
         Add another parent or guardian
       </button>
 
-      <div style={{ marginTop: 18 }}>
-        <div className="section__title" style={{ fontSize: 12.5, marginBottom: 6 }}>
+      <div className="cmp-mt18">
+        <div className="section__title section__title--sm">
           Siblings
         </div>
         {form.siblings.length === 0 && (
-          <p className="subtle" style={{ fontSize: 12, marginBottom: 8 }}>
+          <p className="subtle subtle--sm subtle--mb8">
             Add siblings to keep family records linked.
           </p>
         )}
         {form.siblings.map((s, idx) => (
           <div
             key={s._key}
-            className="fgrid fgrid--3"
-            style={{
-              marginBottom: 8,
-              padding: 10,
-              border: "1px solid var(--border)",
-              borderRadius: 8,
-              background: "var(--surface)",
-            }}
+            className="fgrid fgrid--3 cmp-repeat"
           >
             <ComposerField label="Name">
               <input
@@ -201,8 +180,8 @@ export default function ParentsSection({
               </select>
             </ComposerField>
             <ComposerField label="In this school">
-              <div className="row gap-2" style={{ alignItems: "center", height: 32 }}>
-                <label className="row gap-2" style={{ alignItems: "center" }}>
+              <div className="cmp-checkrow cmp-checkrow--field">
+                <label className="cmp-checkrow">
                   <input
                     type="checkbox"
                     checked={!!s.inSameSchool}
@@ -210,16 +189,15 @@ export default function ParentsSection({
                       updateSibling(idx, "inSameSchool", e.target.checked)
                     }
                   />
-                  <span className="subtle" style={{ fontSize: 12 }}>
+                  <span className="subtle subtle--sm">
                     Yes
                   </span>
                 </label>
                 <button
                   type="button"
-                  className="btn btn--sm btn--ghost"
+                  className="btn btn--sm btn--ghost cmp-ml-auto"
                   onClick={() => removeSibling(idx)}
                   aria-label="Remove sibling"
-                  style={{ marginLeft: "auto" }}
                 >
                   <Trash2 size={11} aria-hidden />
                 </button>
@@ -229,9 +207,8 @@ export default function ParentsSection({
         ))}
         <button
           type="button"
-          className="disclosure"
+          className="disclosure disclosure--mt"
           onClick={addSibling}
-          style={{ marginTop: 4 }}
         >
           <Plus size={11} aria-hidden />
           Add sibling

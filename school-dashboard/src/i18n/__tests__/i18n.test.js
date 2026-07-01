@@ -137,11 +137,13 @@ const ALLOWED_ORPHAN_KEYS = [
   'components.skip',
   'components.skipOnboarding',
   'components.skipSetup',
-  'components.theFeeCollectionChartWillReturnOnceThePaymentsApiResponds',
+  'components.theFeeCollectionChartWillReturnOnceThePaymentsAPIResponds',
   'components.thisSectionUpdatesOnceStaffOrClassAttendanceIsMarked',
   'components.uploadYourAdministratorProfilePicture',
   'components.weeklyStudentStaffPresence',
   'components.welcomeToSchoolDashboard',
+  // dataTools.sessionExpired lost its consumer in the data-tools refactor.
+  'dataTools.sessionExpired',
 ];
 
 /**

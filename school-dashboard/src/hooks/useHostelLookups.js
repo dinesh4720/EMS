@@ -13,12 +13,16 @@ import { useDebounce } from "./useDebounce";
  * load, to avoid pulling hundreds of records every time the allocation modal
  * opens (MF-24).
  *
- * @param {string} hostelIdForRooms - Load available rooms for this hostel
+ * @param {string} hostelIdForRooms - Load available rooms for this hostel (allocation modal)
  * @param {string} studentSearch    - Search term for async student lookup (debounced 300ms)
+ * @param {string} filterHostelId   - Load *all* rooms for this hostel to drive the list's
+ *                                     room filter dropdown (PAG-20). Unlike the modal lookup
+ *                                     this is not restricted to rooms with free beds, since a
+ *                                     full room still has allocations worth filtering by.
  */
 const LOOKUPS_KEY = "hostel-lookups";
 
-export function useHostelLookups(hostelIdForRooms, studentSearch = "") {
+export function useHostelLookups(hostelIdForRooms, studentSearch = "", filterHostelId = "") {
   const queryClient = useQueryClient();
 
   // Raw term drives show/hide immediately (so clearing the field hides results
@@ -42,6 +46,15 @@ export function useHostelLookups(hostelIdForRooms, studentSearch = "") {
     select: (res) => res?.rooms || [],
   });
 
+  // Rooms for the list's room filter (PAG-20): every room in the selected
+  // hostel, not just those with free beds, so the filter can target full rooms.
+  const filterRoomsQuery = useQuery({
+    queryKey: [LOOKUPS_KEY, "filter-rooms", filterHostelId || null],
+    queryFn: () => hostelApi.getRooms({ hostelId: filterHostelId }),
+    enabled: Boolean(filterHostelId),
+    select: (res) => res?.rooms || [],
+  });
+
   const studentsQuery = useQuery({
     queryKey: [LOOKUPS_KEY, "student-search", debouncedSearch],
     queryFn: () => studentsApi.list({ search: debouncedSearch, limit: 30 }),
@@ -54,6 +67,7 @@ export function useHostelLookups(hostelIdForRooms, studentSearch = "") {
   const error =
     hostelsQuery.error?.message ||
     roomsQuery.error?.message ||
+    filterRoomsQuery.error?.message ||
     studentsQuery.error?.message ||
     null;
 
@@ -64,6 +78,7 @@ export function useHostelLookups(hostelIdForRooms, studentSearch = "") {
   return {
     hostels: hostelsQuery.data || [],
     rooms: hostelIdForRooms ? (roomsQuery.data || []) : [],
+    filterRooms: filterHostelId ? (filterRoomsQuery.data || []) : [],
     students: showStudents ? (studentsQuery.data || []) : [],
     studentsLoading: showStudents && studentsQuery.isFetching,
     error,

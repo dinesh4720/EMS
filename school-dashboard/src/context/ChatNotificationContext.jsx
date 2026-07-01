@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from './AuthContext';
 import { usePermissions } from './PermissionContext';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -159,17 +159,24 @@ export function ChatNotificationProvider({ children }) {
   useEffect(() => {
     if (!isAuthenticated || !user?.id || !messagingEnabled) return;
 
+    // Ignore flag: when auth/user changes (or this provider unmounts) before the
+    // request resolves, drop the stale response so a slow earlier fetch can't
+    // overwrite the count for the current user.
+    let ignore = false;
+
     const fetchUnreadCount = async () => {
       try {
         const conversations = await chatService.getConversations();
+        if (ignore) return;
         const totalUnread = conversations.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0);
         setUnreadCount(totalUnread);
       } catch (error) {
-        logger.error('❌ Failed to fetch unread count:', error);
+        if (!ignore) logger.error('❌ Failed to fetch unread count:', error);
       }
     };
 
     fetchUnreadCount();
+    return () => { ignore = true; };
   }, [isAuthenticated, user?.id, messagingEnabled]);
 
   // Reset unread count when user visits chat page
@@ -297,8 +304,15 @@ export function ChatNotificationProvider({ children }) {
     setReplyingTo(null);
   };
 
+  // Memoize the context value so consumers don't re-render when this provider
+  // re-renders for unrelated state (reply modal, notification toasts, etc.).
+  const contextValue = useMemo(
+    () => ({ unreadCount, isConnected, socketOffline }),
+    [unreadCount, isConnected, socketOffline]
+  );
+
   return (
-    <ChatNotificationContext.Provider value={{ unreadCount, isConnected, socketOffline }}>
+    <ChatNotificationContext.Provider value={contextValue}>
       {children}
       
       {/* Socket offline banner */}

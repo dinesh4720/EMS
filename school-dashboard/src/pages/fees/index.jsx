@@ -26,6 +26,7 @@ export default function FeesIndex() {
           path="templates"
           element={<Navigate to="/settings/fee-templates" replace />}
         />
+        <Route path="*" element={<Navigate to="/fees" replace />} />
       </Routes>
     </Suspense>
   );

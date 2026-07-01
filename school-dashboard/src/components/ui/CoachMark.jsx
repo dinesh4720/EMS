@@ -190,8 +190,14 @@ function useTrackedRect(target) {
     window.addEventListener('scroll', schedule, true);
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(schedule) : null;
     ro?.observe(target);
+    // Observe only the target's container subtree rather than the whole
+    // document.body. Sibling/content changes that reflow the target happen
+    // within its parent; ResizeObserver covers the target's own size and the
+    // scroll/resize listeners cover viewport changes. Watching all of body
+    // re-measured on every unrelated mutation anywhere in the app (MEM-16).
+    const mutationRoot = target.parentElement ?? target;
     const mo = typeof MutationObserver !== 'undefined' ? new MutationObserver(schedule) : null;
-    mo?.observe(document.body, { attributes: true, childList: true, subtree: true });
+    mo?.observe(mutationRoot, { attributes: true, childList: true, subtree: true });
 
     return () => {
       window.removeEventListener('resize', schedule);

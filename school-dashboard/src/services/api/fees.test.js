@@ -313,6 +313,14 @@ describe('notificationsApi', () => {
     expect(request).toHaveBeenCalledWith('/notifications/unread-count');
   });
 
+  it('getUnreadCount — forwards an AbortSignal when provided', () => {
+    const controller = new AbortController();
+    notificationsApi.getUnreadCount({ signal: controller.signal });
+    expect(request).toHaveBeenCalledWith('/notifications/unread-count', {
+      signal: controller.signal,
+    });
+  });
+
   it('markAsRead — PUTs to /notifications/:id/read', () => {
     notificationsApi.markAsRead('notif1');
     expect(request).toHaveBeenCalledWith('/notifications/notif1/read', { method: 'PUT' });

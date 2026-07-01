@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BarChart4, Download, ExternalLink } from "lucide-react";
+import { BarChart4, Printer, ExternalLink } from "lucide-react";
 import toast from "react-hot-toast";
 import Modal from "../../../../components/ui/Modal";
 import { escapeHtml } from "../../../../utils/sanitize";
@@ -96,10 +96,10 @@ export default function ProgressCardModal({
               </>
             ) : (
               <>
-                <Download size={13} aria-hidden />{" "}
+                <Printer size={13} aria-hidden />{" "}
                 {t(
-                  "students.profile.overview.downloadReport",
-                  "Download Report"
+                  "students.profile.overview.printReport",
+                  "Print Report"
                 )}
               </>
             )}

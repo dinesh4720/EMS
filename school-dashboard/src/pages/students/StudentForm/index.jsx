@@ -9,8 +9,8 @@ import DocumentsStep from "./steps/DocumentsStep";
 import { Stepper } from "../../../components/ui";
 import { useTranslation } from 'react-i18next';
 import logger from '../../../utils/logger';
-import { buildStudentPayload } from "../utils/studentFormValidation";
-import { useApp } from "../../../context/AppContext";
+import { buildStudentPayload } from "../../../validators/studentFormValidation";
+import { useAppMeta } from "../../../context/AppContext";
 
 
 /**
@@ -110,7 +110,7 @@ export default function StudentForm({
     }, 100);
   };
 
-  const { currentAcademicYear } = useApp();
+  const { currentAcademicYear } = useAppMeta();
 
   const handleSubmit = async (e) => {
     e?.preventDefault?.();

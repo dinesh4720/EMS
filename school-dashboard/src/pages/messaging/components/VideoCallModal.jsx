@@ -4,6 +4,11 @@ import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Monitor, Speaker } from 
 import { useTranslation } from 'react-i18next';
 import logger from '../../../utils/logger';
 
+function stopStream(stream) {
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+  }
+}
 
 export default function VideoCallModal({
   isOpen,
@@ -12,7 +17,9 @@ export default function VideoCallModal({
   currentUser,
   onAccept,
   onReject,
-  onEnd
+  onEnd,
+  remoteStream: remoteStreamProp,
+  localStream: localStreamProp
 }) {
   const [localStream, setLocalStream] = useState(null);
   const [remoteStream, setRemoteStream] = useState(null);
@@ -21,6 +28,20 @@ export default function VideoCallModal({
   const [callDuration, setCallDuration] = useState(0);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
+  // Mirror the active streams into refs so the unmount cleanup below — which
+  // runs with an empty dependency list — can stop the latest tracks (MEM-01).
+  const localStreamRef = useRef(null);
+  const remoteStreamRef = useRef(null);
+
+  // The hook now sources streams from the PeerJS service (STUB-09) and passes
+  // them in as props. Mirror them into local state so the existing binding /
+  // cleanup effects (which read state) keep working unchanged.
+  useEffect(() => {
+    setLocalStream(localStreamProp ?? null);
+  }, [localStreamProp]);
+  useEffect(() => {
+    setRemoteStream(remoteStreamProp ?? null);
+  }, [remoteStreamProp]);
 
   useEffect(() => {
     let interval;
@@ -37,16 +58,29 @@ export default function VideoCallModal({
   }, [call]);
 
   useEffect(() => {
+    remoteStreamRef.current = remoteStream;
     if (remoteStream && remoteVideoRef.current) {
       remoteVideoRef.current.srcObject = remoteStream;
     }
   }, [remoteStream]);
 
   useEffect(() => {
+    localStreamRef.current = localStream;
     if (localStream && localVideoRef.current) {
       localVideoRef.current.srcObject = localStream;
     }
   }, [localStream]);
+
+  // Stop every captured track when the modal unmounts. Closing via Esc or a
+  // backdrop click (or navigating away mid-call) only flips state and unmounts
+  // this component — it never runs handleEnd — so without this the camera and
+  // mic would stay live with no UI left to stop them (MEM-01).
+  useEffect(() => {
+    return () => {
+      stopStream(localStreamRef.current);
+      stopStream(remoteStreamRef.current);
+    };
+  }, []);
 
   const formatDuration = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -70,13 +104,8 @@ export default function VideoCallModal({
   };
 
   const handleEnd = () => {
-    // Stop tracks
-    if (localStream) {
-      localStream.getTracks().forEach(track => track.stop());
-    }
-    if (remoteStream) {
-      remoteStream.getTracks().forEach(track => track.stop());
-    }
+    stopStream(localStream);
+    stopStream(remoteStream);
 
     setLocalStream(null);
     setRemoteStream(null);
@@ -111,6 +140,7 @@ export default function VideoCallModal({
             <div>
               <h3 className="text-lg font-semibold">
                 {call?.status === 'incoming' ? 'Incoming Call' :
+                 call?.status === 'initiated' ? 'Calling...' :
                  call?.status === 'connected' ? 'Connected' :
                  'Call'}
               </h3>
@@ -160,6 +190,50 @@ export default function VideoCallModal({
                   <Phone size={28} />
                 </Button>
               </div>
+            </div>
+          )}
+
+          {/* Initiated (Caller) Screen — waiting for the callee to accept.
+              Without this branch the caller sees a blank modal because the
+              modal previously only rendered the 'incoming' and 'connected'
+              states (STUB-09). */}
+          {call?.status === 'initiated' && (
+            <div className="flex flex-col items-center justify-center h-[500px] text-white">
+              <div className="w-24 h-24 rounded-full bg-primary-500 flex items-center justify-center mb-6 animate-pulse">
+                <span className="text-4xl">👤</span>
+              </div>
+              <h2 className="text-2xl font-semibold mb-2">
+                {call.remoteUserName || 'Unknown'}
+              </h2>
+              <p className="text-default-400 mb-8">
+                {call.callType === 'video' ? 'Video call' : 'Audio call'} • Ringing...
+              </p>
+
+              {call.callType === 'video' && localStream && (
+                <div className="w-48 h-36 rounded-lg overflow-hidden shadow-2xl border-2 border-white/20 dark:border-white/15 bg-black mb-8">
+                  <video
+                    ref={localVideoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-cover transform scale-x-[-1]"
+                  />
+                </div>
+              )}
+
+              <Button
+                color="danger"
+                size="lg"
+                isIconOnly
+                aria-label="Cancel call"
+                onClick={() => {
+                  handleEnd();
+                  onClose();
+                }}
+                className="w-16 h-16 rounded-full"
+              >
+                <PhoneOff size={28} />
+              </Button>
             </div>
           )}
 

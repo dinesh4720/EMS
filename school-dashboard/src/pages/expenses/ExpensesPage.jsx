@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -19,17 +20,18 @@ const VALID_CATEGORIES = new Set([
   "equipment", "events", "transport", "marketing", "other",
 ]);
 
-const CATEGORY_LABELS = {
-  salaries: "Salaries",
-  utilities: "Utilities",
-  maintenance: "Maintenance",
-  supplies: "Supplies",
-  equipment: "Equipment",
-  events: "Events",
-  transport: "Transport",
-  marketing: "Marketing",
-  other: "Other",
-};
+const STATUS_FILTERS = ["all", "pending", "approved", "rejected"];
+const CATEGORY_KEYS = [
+  "salaries",
+  "utilities",
+  "maintenance",
+  "supplies",
+  "equipment",
+  "events",
+  "transport",
+  "marketing",
+  "other",
+];
 
 const STATUS_PILL_CLASS = {
   pending: "status--warn",
@@ -47,9 +49,9 @@ function fmtINR(n) {
   return inrFormatter.format(Number.isFinite(n) ? n : 0);
 }
 
-function StatusPill({ status }) {
+function StatusPill({ status, t }) {
   const cls = STATUS_PILL_CLASS[status] || "status--warn";
-  const label = status ? status.charAt(0).toUpperCase() + status.slice(1) : "Pending";
+  const label = status ? t(`expenses.statuses.${status}`) : t("expenses.statuses.pending");
   return (
     <span className={`status ${cls}`}>
       <span className="dot" aria-hidden />
@@ -59,6 +61,7 @@ function StatusPill({ status }) {
 }
 
 export default function ExpensesPage() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const statusFilter = (() => {
@@ -172,11 +175,11 @@ export default function ExpensesPage() {
     setDeleteLoading(true);
     try {
       await expensesApi.delete(deleteTarget._id || deleteTarget.id);
-      toast.success("Expense deleted");
+      toast.success(t("expenses.toast.deleted"));
       fetchData();
     } catch (err) {
       logger.error("Delete expense failed:", err);
-      toast.error(err?.message || "Failed to delete expense");
+      toast.error(err?.message || t("expenses.toast.deleteFailed"));
     } finally {
       setDeleteLoading(false);
       setDeleteTarget(null);
@@ -184,13 +187,13 @@ export default function ExpensesPage() {
   };
 
   const subLine = useMemo(() => {
-    const today = new Date().toLocaleDateString("en-US", {
+    const today = new Date().toLocaleDateString(undefined, {
       weekday: "short",
       month: "short",
       day: "numeric",
     });
-    return `${today} · ${totalCount} expense${totalCount === 1 ? "" : "s"} recorded`;
-  }, [totalCount]);
+    return t("expenses.subLine", { date: today, count: totalCount });
+  }, [totalCount, t]);
 
   const toolbar = (
     <div className="toolbar" style={{ borderBottom: "none", paddingTop: 0 }}>
@@ -198,27 +201,22 @@ export default function ExpensesPage() {
         value={search}
         onChange={setSearch}
         urlParam="q"
-        placeholder="Search expenses by title…"
-        ariaLabel="Search expenses"
+        placeholder={t("expenses.searchPlaceholder")}
+        ariaLabel={t("expenses.searchAria")}
         style={{ flex: 1, maxWidth: 360 }}
       />
 
-      <div className="seg" role="tablist" aria-label="Filter by status">
-        {[
-          { key: "all", label: "All" },
-          { key: "pending", label: "Pending" },
-          { key: "approved", label: "Approved" },
-          { key: "rejected", label: "Rejected" },
-        ].map((filter) => (
+      <div className="seg" role="tablist" aria-label={t("expenses.filterStatusAria")}>
+        {STATUS_FILTERS.map((key) => (
           <button
-            key={filter.key}
+            key={key}
             type="button"
             role="tab"
-            aria-selected={statusFilter === filter.key}
-            className={`seg__btn${statusFilter === filter.key ? " is-active" : ""}`}
-            onClick={() => setStatus(filter.key)}
+            aria-selected={statusFilter === key}
+            className={`seg__btn${statusFilter === key ? " is-active" : ""}`}
+            onClick={() => setStatus(key)}
           >
-            {filter.label}
+            {key === "all" ? t("expenses.filterAll") : t(`expenses.statuses.${key}`)}
           </button>
         ))}
       </div>
@@ -228,11 +226,11 @@ export default function ExpensesPage() {
           className="select select--sm"
           value={categoryFilter}
           onChange={(e) => setCategory(e.target.value)}
-          aria-label="Filter by category"
+          aria-label={t("expenses.filterCategoryAria")}
         >
-          <option value="all">All categories</option>
-          {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
-            <option key={key} value={key}>{label}</option>
+          <option value="all">{t("expenses.allCategories")}</option>
+          {CATEGORY_KEYS.map((key) => (
+            <option key={key} value={key}>{t(`expenses.categories.${key}`)}</option>
           ))}
         </select>
       </div>
@@ -241,26 +239,26 @@ export default function ExpensesPage() {
 
   const emptyState = (
     <div className="flex flex-col items-center justify-center py-16 gap-3 text-fg-muted">
-      <p className="text-sm">No expenses found.</p>
+      <p className="text-sm">{t("expenses.noExpenses")}</p>
       <button type="button" className="btn btn--accent btn--sm" onClick={openCreate}>
-        <Plus size={13} aria-hidden /> Add your first expense
+        <Plus size={13} aria-hidden /> {t("expenses.addFirst")}
       </button>
     </div>
   );
 
   return (
     <PageShell
-      title="Expenses"
+      title={t("expenses.title")}
       description={subLine}
       actions={
         <button type="button" className="btn btn--accent" onClick={openCreate}>
-          <Plus size={13} aria-hidden /> Add expense
+          <Plus size={13} aria-hidden /> {t("expenses.add")}
         </button>
       }
       toolbar={toolbar}
       breadcrumbs={[
         { label: "Home", href: "/" },
-        { label: "Expenses" },
+        { label: t("expenses.title") },
       ]}
       bodyPadding="none"
     >
@@ -282,7 +280,7 @@ export default function ExpensesPage() {
           <TablePageSkeleton kpiCards={3} columns={6} rows={6} />
         ) : isError ? (
           <ErrorState
-            title="Unable to load expenses"
+            title={t("expenses.unableToLoad")}
             error={error}
             onRetry={() => fetchData()}
             size="lg"
@@ -293,17 +291,17 @@ export default function ExpensesPage() {
           <>
             <div className="fees-table" role="table">
               <div className="fees-table__head" role="row">
-                <span>Title</span>
-                <span>Category</span>
-                <span>Date</span>
-                <span className="fees-table__amount">Amount</span>
-                <span>Status</span>
-                <span className="fees-table__action">Actions</span>
+                <span>{t("expenses.table.title")}</span>
+                <span>{t("expenses.table.category")}</span>
+                <span>{t("expenses.table.date")}</span>
+                <span className="fees-table__amount">{t("expenses.table.amount")}</span>
+                <span>{t("expenses.table.status")}</span>
+                <span className="fees-table__action">{t("expenses.table.actions")}</span>
               </div>
               {expenses.map((ex) => {
                 const id = ex._id || ex.id;
                 const dateStr = ex.expenseDate
-                  ? new Date(ex.expenseDate).toLocaleDateString("en-IN", {
+                  ? new Date(ex.expenseDate).toLocaleDateString(undefined, {
                       day: "2-digit",
                       month: "short",
                       year: "numeric",
@@ -318,20 +316,20 @@ export default function ExpensesPage() {
                       </div>
                     </span>
                     <span className="subtle">
-                      {CATEGORY_LABELS[ex.category] || ex.category || "—"}
+                      {ex.category ? t(`expenses.categories.${ex.category}`, ex.category) : "—"}
                     </span>
                     <span className="mono tnum">{dateStr}</span>
                     <span className="fees-table__amount tnum">{fmtINR(ex.amount)}</span>
                     <span>
-                      <StatusPill status={ex.status} />
+                      <StatusPill status={ex.status} t={t} />
                     </span>
                     <span className="fees-table__action row gap-1">
                       <button
                         type="button"
                         className="btn btn--sm"
                         onClick={() => openEdit(ex)}
-                        aria-label={`Edit ${ex.title}`}
-                        title="Edit"
+                        aria-label={t("expenses.table.editAria", { title: ex.title })}
+                        title={t("expenses.table.edit")}
                       >
                         <Pencil size={13} aria-hidden />
                       </button>
@@ -340,8 +338,8 @@ export default function ExpensesPage() {
                         className="btn btn--sm"
                         style={{ color: "var(--danger)" }}
                         onClick={() => setDeleteTarget(ex)}
-                        aria-label={`Delete ${ex.title}`}
-                        title="Delete"
+                        aria-label={t("expenses.table.deleteAria", { title: ex.title })}
+                        title={t("expenses.table.delete")}
                       >
                         <Trash2 size={13} aria-hidden />
                       </button>
@@ -354,7 +352,7 @@ export default function ExpensesPage() {
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-4 py-3 border-t border-divider">
                 <span className="text-xs text-fg-muted">
-                  Page {page} of {totalPages}
+                  {t("expenses.pageOf", { page, total: totalPages })}
                 </span>
                 <div className="row gap-2">
                   <button
@@ -367,7 +365,7 @@ export default function ExpensesPage() {
                       fetchData({ page: next });
                     }}
                   >
-                    Previous
+                    {t("expenses.previous")}
                   </button>
                   <button
                     type="button"
@@ -379,7 +377,7 @@ export default function ExpensesPage() {
                       fetchData({ page: next });
                     }}
                   >
-                    Next
+                    {t("expenses.next")}
                   </button>
                 </div>
               </div>
@@ -398,10 +396,10 @@ export default function ExpensesPage() {
           isOpen={!!deleteTarget}
           onClose={() => setDeleteTarget(null)}
           onConfirm={handleDelete}
-          title="Delete Expense"
-          message={`Are you sure you want to delete "${deleteTarget?.title || "this expense"}"? This action cannot be undone.`}
-          confirmText="Delete"
-          cancelText="Cancel"
+          title={t("expenses.deleteDialog.title")}
+          message={t("expenses.deleteDialog.message", { title: deleteTarget?.title || t("expenses.title") })}
+          confirmText={t("expenses.deleteDialog.confirm")}
+          cancelText={t("common.cancel")}
           variant="danger"
           isLoading={deleteLoading}
         />

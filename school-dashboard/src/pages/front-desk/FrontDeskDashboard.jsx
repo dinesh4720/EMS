@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   Button,
   DropdownMenu,
+  ErrorState,
 } from '../../components/ui';
 import {
   Users, DoorOpen, Calendar, MessageSquare, Phone, Plus, ChevronDown, Download
@@ -50,6 +51,7 @@ export default function FrontDeskDashboard() {
   });
   const [recentActivity, setRecentActivity] = useState([]);
   const [isExporting, setIsExporting] = useState(false);
+  const [statsError, setStatsError] = useState(null);
 
   useEffect(() => {
     loadStats();
@@ -57,6 +59,7 @@ export default function FrontDeskDashboard() {
 
   const loadStats = async () => {
     try {
+      setStatsError(null);
       const [visitors, gatePasses, appointments, feedbacks, callLogs] = await Promise.all([
         frontDeskApi.getVisitorsToday(),
         frontDeskApi.getGatePassesToday(),
@@ -95,6 +98,7 @@ export default function FrontDeskDashboard() {
       setRecentActivity(activities);
     } catch (error) {
       logger.error('Error loading stats:', error);
+      setStatsError(error);
       toast.error('Failed to load dashboard data');
     }
   };
@@ -283,7 +287,17 @@ export default function FrontDeskDashboard() {
 
         {/* MAIN CONTENT - 2/3 */}
         <div className="lg:col-span-2 space-y-4">
-          {selectedTab === 'overview' && <Overview stats={stats} onTabChange={handleTabChange} />}
+          {selectedTab === 'overview' && (
+            statsError ? (
+              <ErrorState
+                title="Unable to load front desk data"
+                error={statsError}
+                onRetry={loadStats}
+              />
+            ) : (
+              <Overview stats={stats} onTabChange={handleTabChange} />
+            )
+          )}
           {selectedTab === 'visitors' && <VisitorLog ref={visitorLogRef} onSave={loadStats} />}
           {selectedTab === 'gate-passes' && <GatePassLog ref={gatePassLogRef} onSave={loadStats} />}
           {selectedTab === 'appointments' && <AppointmentsList ref={appointmentsListRef} onSave={loadStats} />}

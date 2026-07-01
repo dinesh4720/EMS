@@ -30,6 +30,7 @@ export default function AiAssistantPage() {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const mediaRecorderRef = useRef(null);
+  const mediaStreamRef = useRef(null);
   const audioChunksRef = useRef([]);
 
   const prebuiltPrompts = aiService.getPrebuiltPrompts();
@@ -78,6 +79,7 @@ export default function AiAssistantPage() {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
+      mediaStreamRef.current = stream;
       audioChunksRef.current = [];
 
       mediaRecorder.ondataavailable = (event) => {
@@ -87,6 +89,7 @@ export default function AiAssistantPage() {
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         stream.getTracks().forEach((track) => track.stop());
+        mediaStreamRef.current = null;
         setIsTranscribing(true);
         try {
           const transcription = await aiService.transcribeAudio(audioBlob);
@@ -123,6 +126,21 @@ export default function AiAssistantPage() {
   };
 
   const toggleRecording = () => (isRecording ? stopRecording() : startRecording());
+
+  // Stop the recorder and release the microphone if the user navigates away mid-recording.
+  // Without this, the MediaRecorder and getUserMedia tracks survive unmount and the mic stays hot.
+  useEffect(() => {
+    return () => {
+      const recorder = mediaRecorderRef.current;
+      if (recorder && recorder.state !== 'inactive') {
+        // Detach onstop so we don't fire a transcription request for a recording the user abandoned.
+        recorder.onstop = null;
+        recorder.stop();
+      }
+      mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
+    };
+  }, []);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading || isRecording || isTranscribing) return;

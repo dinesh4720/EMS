@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
+import logger from "../../utils/logger";
 import { Download } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { API_URL } from '../../config/api';
-import { clearStoredUser, getAuthHeaders } from '../../utils/authSession';
+import { request, requestBlob } from '../../services/api';
 import PageHeader from '../../components/ui/PageHeader';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -22,7 +22,7 @@ const MODULES = [
   {
     key: 'defaulters',
     name: 'Fee Defaulters',
-    endpoint: '/export/defaulters',
+    endpoint: '/export/fee-defaulters',
     requiredFilters: [],
   },
   {
@@ -109,15 +109,11 @@ function ExportCard({ module }) {
     let cancelled = false;
     selectFilters.forEach(async (filter) => {
       try {
-        const res = await fetch(`${API_URL}${filter.optionsEndpoint}`, {
-          headers: getAuthHeaders(),
-          credentials: 'include',
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (!cancelled) {
-            setSelectOptions((prev) => ({ ...prev, [filter.key]: Array.isArray(data) ? data : [] }));
-          }
+        // [SEC-08] Route through request() so a 401 attempts a token refresh
+        // before logging the user out, instead of a premature session clear.
+        const data = await request(filter.optionsEndpoint);
+        if (!cancelled) {
+          setSelectOptions((prev) => ({ ...prev, [filter.key]: Array.isArray(data) ? data : [] }));
         }
       } catch {
         // leave dropdown empty on error
@@ -160,19 +156,9 @@ function ExportCard({ module }) {
       for (const [key, value] of Object.entries(filters)) {
         if (value) params.set(key, value);
       }
-      const url = `${API_URL}${module.endpoint}?${params.toString()}`;
-      const response = await fetch(url, {
-        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-        credentials: 'include',
-      });
-
-      if (response.status === 401) {
-        clearStoredUser();
-        throw new Error('Session expired. Please log in again.');
-      }
-      if (!response.ok) {
-        throw new Error('Export failed');
-      }
+      // [SEC-08] Route through requestBlob() so a 401 attempts a token refresh
+      // before logging the user out, instead of a premature session clear.
+      const response = await requestBlob(`${module.endpoint}?${params.toString()}`);
 
       const blob = await response.blob();
       const ext = getFileExtension(format);
@@ -188,7 +174,7 @@ function ExportCard({ module }) {
       URL.revokeObjectURL(downloadUrl);
       toast.success(`${module.name} exported successfully`);
     } catch (error) {
-      console.error(`Failed to export ${module.name}:`, error);
+      logger.error(`Failed to export ${module.name}:`, error);
       toast.error(`Failed to export ${module.name}. Check your connection and try again.`);
     } finally {
       setExporting(false);

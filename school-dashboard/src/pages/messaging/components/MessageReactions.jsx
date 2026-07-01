@@ -38,7 +38,7 @@ export default function MessageReactions({ reactions, currentUserId, onReact }) 
           >
             <span className="text-base">{emoji}</span>
             {reactorList.length > 1 && (
-              <span className="text-[10px] font-semibold text-fg-muted pr-0.5">
+              <span className="text-2xs font-semibold text-fg-muted pr-0.5">
                 {reactorList.length}
               </span>
             )}

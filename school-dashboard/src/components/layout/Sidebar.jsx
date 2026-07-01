@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useChatNotifications } from "../../context/ChatNotificationContext";
-import { useApp } from "../../context/AppContext";
+import { useAppMeta } from "../../context/AppContext";
 import { useSchool } from "../../context/SchoolContext";
 import { usePermissions } from "../../context/PermissionContext";
 import UserMenu from "./UserMenu";
@@ -32,7 +32,7 @@ function openCommandPalette() {
 function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
   const location = useLocation();
   const { schoolSettings } = useSchool();
-  const { currentAcademicYear, setShowOnboarding } = useApp();
+  const { currentAcademicYear, setShowOnboarding } = useAppMeta();
   const chatNotifications = useChatNotifications();
   const unreadCount = chatNotifications?.unreadCount || 0;
 

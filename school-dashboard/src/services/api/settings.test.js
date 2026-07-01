@@ -12,6 +12,7 @@ import {
   superAdminApi,
   changelogAdminApi,
   featureFlagsAdminApi,
+  auditLogsApi,
 } from './settings.js';
 
 beforeEach(() => {
@@ -199,6 +200,107 @@ describe('settingsApi — Communication Settings', () => {
     expect(request).toHaveBeenCalledWith('/settings/communication', {
       method: 'PUT',
       body: JSON.stringify(data),
+    });
+  });
+
+  it('testEmail calls POST /settings/communication/test-email with recipient', () => {
+    const payload = { to: 'admin@school.com' };
+    settingsApi.testEmail(payload);
+    expect(request).toHaveBeenCalledWith('/settings/communication/test-email', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  });
+
+  it('testSms calls POST /settings/communication/test-sms with recipient', () => {
+    const payload = { to: '919876543210' };
+    settingsApi.testSms(payload);
+    expect(request).toHaveBeenCalledWith('/settings/communication/test-sms', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  });
+});
+
+describe('settingsApi — Email Templates', () => {
+  it('getEmailTemplates calls GET /settings/email-templates', () => {
+    settingsApi.getEmailTemplates();
+    expect(request).toHaveBeenCalledWith('/settings/email-templates');
+  });
+
+  it('getEmailTemplate calls GET /settings/email-templates/:id', () => {
+    settingsApi.getEmailTemplate('et-123');
+    expect(request).toHaveBeenCalledWith('/settings/email-templates/et-123');
+  });
+
+  it('createEmailTemplate calls POST /settings/email-templates', () => {
+    const data = { name: 'Welcome', type: 'welcome', subject: 'Hi', htmlBody: '<p>Hi</p>' };
+    settingsApi.createEmailTemplate(data);
+    expect(request).toHaveBeenCalledWith('/settings/email-templates', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  });
+
+  it('updateEmailTemplate calls PUT /settings/email-templates/:id', () => {
+    const data = { subject: 'Updated subject' };
+    settingsApi.updateEmailTemplate('et-456', data);
+    expect(request).toHaveBeenCalledWith('/settings/email-templates/et-456', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  });
+
+  it('deleteEmailTemplate calls DELETE /settings/email-templates/:id', () => {
+    settingsApi.deleteEmailTemplate('et-789');
+    expect(request).toHaveBeenCalledWith('/settings/email-templates/et-789', {
+      method: 'DELETE',
+    });
+  });
+
+  it('previewEmailTemplate calls POST /settings/email-templates/:id/preview', () => {
+    const data = { sampleData: { student: 'John' } };
+    settingsApi.previewEmailTemplate('et-123', data);
+    expect(request).toHaveBeenCalledWith('/settings/email-templates/et-123/preview', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  });
+});
+
+describe('settingsApi — SMS Templates', () => {
+  it('getSmsTemplates calls GET /settings/sms-templates', () => {
+    settingsApi.getSmsTemplates();
+    expect(request).toHaveBeenCalledWith('/settings/sms-templates');
+  });
+
+  it('getSmsTemplate calls GET /settings/sms-templates/:id', () => {
+    settingsApi.getSmsTemplate('st-123');
+    expect(request).toHaveBeenCalledWith('/settings/sms-templates/st-123');
+  });
+
+  it('createSmsTemplate calls POST /settings/sms-templates', () => {
+    const data = { name: 'Absence Alert', type: 'attendance_alert', body: 'Absent' };
+    settingsApi.createSmsTemplate(data);
+    expect(request).toHaveBeenCalledWith('/settings/sms-templates', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  });
+
+  it('updateSmsTemplate calls PUT /settings/sms-templates/:id', () => {
+    const data = { body: 'Updated body' };
+    settingsApi.updateSmsTemplate('st-456', data);
+    expect(request).toHaveBeenCalledWith('/settings/sms-templates/st-456', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  });
+
+  it('deleteSmsTemplate calls DELETE /settings/sms-templates/:id', () => {
+    settingsApi.deleteSmsTemplate('st-789');
+    expect(request).toHaveBeenCalledWith('/settings/sms-templates/st-789', {
+      method: 'DELETE',
     });
   });
 });
@@ -405,7 +507,50 @@ describe('featureFlagsAdminApi', () => {
     featureFlagsAdminApi.removeOverride('beta', 'sch001');
     expect(request).toHaveBeenCalledWith(
       '/feature-flags/admin/beta/override/sch001',
-      { method: 'DELETE' }
+      { method: 'DELETE' },
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// auditLogsApi
+// ---------------------------------------------------------------------------
+describe('auditLogsApi', () => {
+  it('getLogs with no params calls GET /audit-logs', () => {
+    auditLogsApi.getLogs();
+    expect(request).toHaveBeenCalledWith('/audit-logs');
+  });
+
+  it('getLogs forwards search and pagination as query string', () => {
+    auditLogsApi.getLogs({ search: 'Ananya', page: 2, limit: 25 });
+    expect(request).toHaveBeenCalledWith(
+      '/audit-logs?search=Ananya&page=2&limit=25',
+    );
+  });
+
+  it('getLog calls GET /audit-logs/:id', () => {
+    auditLogsApi.getLog('log-123');
+    expect(request).toHaveBeenCalledWith('/audit-logs/log-123');
+  });
+
+  it('exportLogs forwards format and search as query string', () => {
+    auditLogsApi.exportLogs({ format: 'csv', search: 'login' });
+    expect(request).toHaveBeenCalledWith('/audit-logs/export?format=csv&search=login');
+  });
+
+  it('purgeLogs calls POST /audit-logs/purge with retentionMonths', () => {
+    auditLogsApi.purgeLogs(24);
+    expect(request).toHaveBeenCalledWith('/audit-logs/purge', {
+      method: 'POST',
+      body: JSON.stringify({ retentionMonths: 24 }),
+    });
+  });
+
+  it('purgeLogs defaults retentionMonths to 12 when omitted', () => {
+    auditLogsApi.purgeLogs();
+    expect(request).toHaveBeenCalledWith('/audit-logs/purge', {
+      method: 'POST',
+      body: JSON.stringify({ retentionMonths: 12 }),
+    });
   });
 });

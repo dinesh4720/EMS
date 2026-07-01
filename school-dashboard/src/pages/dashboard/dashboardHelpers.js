@@ -250,3 +250,92 @@ export function getRelativeTime(date) {
     day: "numeric",
   });
 }
+
+/**
+ * Whole-day difference between a target date and "now", ignoring time-of-day.
+ * Returns null for invalid input. Future dates return positive integers,
+ * today returns 0, past dates return negative integers.
+ */
+export function getDaysUntil(dateValue, now = new Date()) {
+  const target = toValidDate(dateValue);
+  if (!target) return null;
+  const startOfDay = (date) =>
+    new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const ms = startOfDay(target).getTime() - startOfDay(now).getTime();
+  return Math.round(ms / 86400000);
+}
+
+/**
+ * Human label for an upcoming date relative to today.
+ * "today" / "tomorrow" / "in N days" (2-6) / short locale date (7+).
+ * Returns "—" for invalid input.
+ */
+export function formatUpcomingDayLabel(dateValue, now = new Date()) {
+  const days = getDaysUntil(dateValue, now);
+  if (days == null) return "—";
+  if (days === 0) return "today";
+  if (days === 1) return "tomorrow";
+  if (days > 1 && days < 7) return `in ${days} days`;
+  const target = toValidDate(dateValue);
+  return target.toLocaleDateString(getDateLocale(), {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+/**
+ * Pick the single most urgent substitution alert to surface on the dashboard.
+ * Prefers unassigned alerts (no substituteTeacherId); falls back to the
+ * highest-priority covered alert so the surface is still meaningful once
+ * everything is staffed. Returns { alert, unassigned } or null when empty.
+ *
+ * Sort order: unassigned first, then priority desc, then earliest period.
+ */
+export function pickMostUrgentSubstitution(alerts) {
+  const list = Array.isArray(alerts) ? alerts : [];
+  const ranked = list
+    .map((alert) => ({
+      alert,
+      unassigned: !alert?.substituteTeacherId,
+      priority: Number(alert?.priority || 0),
+      period: Number(alert?.period || Number.POSITIVE_INFINITY),
+    }))
+    .sort((left, right) => {
+      if (left.unassigned !== right.unassigned) return left.unassigned ? -1 : 1;
+      if (left.priority !== right.priority) return right.priority - left.priority;
+      return left.period - right.period;
+    });
+  const top = ranked[0];
+  return top ? { alert: top.alert, unassigned: top.unassigned } : null;
+}
+
+const PTM_ACTIVE_STATUSES = new Set(["scheduled", "ongoing"]);
+
+/**
+ * Pick the next PTM session worth surfacing on the dashboard.
+ * Considers only scheduled/ongoing, non-soft-deleted sessions with a
+ * valid date. Ongoing wins; otherwise the nearest upcoming date.
+ * Returns the session object or null.
+ */
+export function pickUpcomingPtmSession(sessions, now = new Date()) {
+  const list = Array.isArray(sessions) ? sessions : [];
+  const candidates = list.filter((session) => {
+    if (!session) return false;
+    if (session.deletedAt || session.isDeleted) return false;
+    if (!PTM_ACTIVE_STATUSES.has(String(session.status || "").toLowerCase()))
+      return false;
+    return toValidDate(session.date || session.scheduledFor) != null;
+  });
+  if (candidates.length === 0) return null;
+  const ongoing = candidates.find(
+    (session) => String(session.status || "").toLowerCase() === "ongoing"
+  );
+  if (ongoing) return ongoing;
+  const nowMs = now.getTime();
+  return candidates
+    .map((session) => {
+      const date = toValidDate(session.date || session.scheduledFor);
+      return { session, delta: Math.abs(date.getTime() - nowMs) };
+    })
+    .sort((left, right) => left.delta - right.delta)[0].session;
+}

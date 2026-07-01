@@ -53,6 +53,52 @@ vi.mock("../../components/ui/PrintPreviewModal", () => ({ default: () => null })
 
 vi.mock("../../services/api", () => ({
   staffAttendanceApi: { markBulk: vi.fn() },
+  staffApi: { list: vi.fn().mockResolvedValue({ data: [], pagination: {}, facets: {} }) },
+}));
+
+// SCH-193: page reads rows from the server-driven useStaffList hook.
+vi.mock("./hooks/useStaffList", () => ({
+  useStaffList: () => ({
+    data: [
+      {
+        _id: "staff-001",
+        id: "staff-001",
+        name: "Ananya Sharma",
+        staffNumber: "EMP001",
+        role: ["Teacher"],
+        department: "Science",
+        employmentType: "Full-time",
+        gender: "Female",
+        status: "active",
+        email: "ananya@schoolsync.test",
+        phone: "9876543210",
+      },
+      {
+        _id: "staff-002",
+        id: "staff-002",
+        name: "Ravi Menon",
+        staffNumber: "EMP002",
+        role: ["Teacher", "Admin"],
+        department: "Mathematics",
+        employmentType: "Full-time",
+        gender: "Male",
+        status: "active",
+        email: "ravi@schoolsync.test",
+        phone: "9876543211",
+      },
+    ],
+    pagination: { page: 1, limit: 25, total: 2, totalPages: 1 },
+    facets: {
+      role: [{ value: "Teacher", count: 2 }, { value: "Admin", count: 1 }],
+      department: [{ value: "Science", count: 1 }, { value: "Mathematics", count: 1 }],
+      employmentType: [{ value: "Full-time", count: 2 }],
+      gender: [{ value: "Female", count: 1 }, { value: "Male", count: 1 }],
+    },
+    loading: false,
+    error: null,
+    clampedPage: 1,
+    reload: vi.fn(),
+  }),
 }));
 
 import StaffList from "./StaffList";

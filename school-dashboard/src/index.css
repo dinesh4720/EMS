@@ -61,15 +61,23 @@
 
   --color-ok: var(--ok);
   --color-ok-bg: var(--ok-bg);
+  --color-ok-border: var(--ok-border);
+  --color-ok-hover: var(--ok-hover);
   --color-warn: var(--warn);
   --color-warn-bg: var(--warn-bg);
+  --color-warn-border: var(--warn-border);
+  --color-warn-hover: var(--warn-hover);
 
   /* Focus indicator — full-opacity accent for 3:1 contrast on all surfaces */
   --color-focus-ring: var(--accent);
   --color-danger-token: var(--danger);
   --color-danger-bg: var(--danger-bg);
+  --color-danger-border: var(--danger-border);
+  --color-danger-hover: var(--danger-hover);
   --color-info-token: var(--info);
   --color-info-bg: var(--info-bg);
+  --color-info-border: var(--info-border);
+  --color-info-hover: var(--info-hover);
 
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
@@ -720,7 +728,7 @@ html.dark.scrollbar-visible * {
 :root {
   --panel-width-lg: 480px;     /* Calendar event drawer (calendar/index.jsx) */
   --panel-width-md: 400px;     /* Standard side panels */
-  --chart-height-lg: 300px;    /* Large chart areas (DashboardCharts) */
+  --chart-height-lg: 300px;    /* Large chart areas */
   --chart-height-md: 200px;    /* Medium chart areas (ChartSection) */
   --chart-height-sm: 160px;    /* Compact chart areas */
   --topbar-height: 44px;       /* Topbar — matches mt-11 (2.75rem) in App.jsx */

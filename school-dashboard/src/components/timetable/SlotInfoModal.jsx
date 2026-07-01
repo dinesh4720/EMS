@@ -217,7 +217,7 @@ export default function SlotInfoModal({
                       size="sm"
                       variant="flat"
                       color={hw.status === 'completed' ? 'success' : hw.status === 'overdue' ? 'danger' : 'default'}
-                      className="text-[10px] capitalize shrink-0"
+                      className="text-2xs capitalize shrink-0"
                     >
                       {hw.status || 'assigned'}
                     </Chip>
@@ -255,7 +255,7 @@ export default function SlotInfoModal({
                       size="sm"
                       variant="flat"
                       color={exam.status === 'results_published' ? 'success' : exam.status === 'scheduled' ? 'primary' : 'default'}
-                      className="text-[10px] capitalize shrink-0"
+                      className="text-2xs capitalize shrink-0"
                     >
                       {exam.status?.replace(/_/g, ' ') || 'draft'}
                     </Chip>

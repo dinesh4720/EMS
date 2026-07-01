@@ -61,7 +61,9 @@ const SCIMSettings = lazyWithRetry(() => import("./SCIMSettings"));
 const WebhooksPage = lazyWithRetry(() => import("./WebhooksPage"));
 const ParentManagement = lazyWithRetry(() => import("./ParentManagement"));
 const DataCleanupSettings = lazyWithRetry(() => import("./DataCleanupSettings"));
-const SeedDataSettings = lazyWithRetry(() => import("./SeedDataSettings"));
+// Dev-only tool — guarding the dynamic import on the statically-known DEV flag
+// drops the SeedDataSettings chunk from production builds entirely.
+const SeedDataSettings = import.meta.env.DEV ? lazyWithRetry(() => import("./SeedDataSettings")) : null;
 const ActiveSessions = lazyWithRetry(() => import("./ActiveSessions"));
 const PromotionRulesSettings = lazyWithRetry(() => import("./PromotionRulesSettings"));
 const PeriodSettings = lazyWithRetry(() => import("./PeriodSettings"));
@@ -169,7 +171,11 @@ export default function SettingsPage() {
       items: [
         { key: "subscription", label: "Subscription", icon: CreditCard, path: "/settings/subscription" },
         { key: "trash", label: "Trash", icon: Trash2, path: "/settings/trash", isNew: true },
-        { key: "seed-data", label: "Seed Data", icon: Zap, path: "/settings/seed-data", isNew: true },
+        // 'Generate Dummy Data' writes fake records into the live tenant DB —
+        // dev-only, never registered in production builds.
+        ...(import.meta.env.DEV
+          ? [{ key: "seed-data", label: "Seed Data", icon: Zap, path: "/settings/seed-data", isNew: true }]
+          : []),
         { key: "data-tools", label: "Data Tools", icon: Database, path: "/settings/data-tools", isNew: true },
         { key: "data-cleanup", label: "Data Cleanup", icon: Trash2, path: "/settings/data-cleanup", isNew: true },
         { key: "sessions", label: "Active Sessions", icon: Activity, path: "/settings/sessions", isNew: true },
@@ -392,9 +398,12 @@ export default function SettingsPage() {
               <Route path="nps" element={
                 <SettingsErrorBoundary><NPSAnalyticsPage /></SettingsErrorBoundary>
               } />
-              <Route path="seed-data" element={
-                <SettingsErrorBoundary><RequirePermission adminOnly><SeedDataSettings /></RequirePermission></SettingsErrorBoundary>
-              } />
+              {/* Dev-only: 'Generate Dummy Data' is not registered in production builds */}
+              {import.meta.env.DEV && (
+                <Route path="seed-data" element={
+                  <SettingsErrorBoundary><RequirePermission adminOnly><SeedDataSettings /></RequirePermission></SettingsErrorBoundary>
+                } />
+              )}
               <Route path="data-cleanup" element={
                 <SettingsErrorBoundary><RequirePermission adminOnly><DataCleanupSettings /></RequirePermission></SettingsErrorBoundary>
               } />

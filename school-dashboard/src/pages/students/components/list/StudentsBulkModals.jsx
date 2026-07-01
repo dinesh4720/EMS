@@ -236,10 +236,10 @@ export default function StudentsBulkModals({
 
             {/* ── Bulk Message Modal ────────────────────────────────────────── */}
             <Modal isOpen={isReminderOpen} onClose={onReminderClose} aria-labelledby="reminder-title">
-                <Modal.Header id="reminder-title">{t("pages.sendBulkMessageToParents")}</Modal.Header>
+                <Modal.Header id="reminder-title">{t("pages.sendFeeReminderToParents", "Send Fee Reminder to Parents")}</Modal.Header>
                 <Modal.Body>
                     <p className="text-fg-muted text-sm mb-2">
-                        This will send a notification to the parents of{" "}
+                        This will send a fee reminder to the parents of{" "}
                         <b>{reminderTargetCount}</b> students from the current list.
                     </p>
                     <div className="space-y-4">
@@ -280,7 +280,7 @@ export default function StudentsBulkModals({
                             }
                         }}
                     >
-                        Schedule Message
+                        Send Reminder
                     </Button>
                 </Modal.Footer>
             </Modal>

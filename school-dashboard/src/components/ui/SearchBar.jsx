@@ -138,7 +138,7 @@ const SearchBar = forwardRef(function SearchBar(
       ) : shortcut ? (
         <kbd
           aria-hidden="true"
-          className="hidden sm:inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded border border-[var(--color-border-strong)] bg-[var(--color-bg-secondary)] text-[10px] font-medium text-[var(--color-text-muted)] flex-shrink-0"
+          className="hidden sm:inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded border border-[var(--color-border-strong)] bg-[var(--color-bg-secondary)] text-2xs font-medium text-[var(--color-text-muted)] flex-shrink-0"
         >
           {shortcut}
         </kbd>

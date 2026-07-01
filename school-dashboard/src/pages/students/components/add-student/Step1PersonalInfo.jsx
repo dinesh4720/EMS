@@ -7,7 +7,7 @@ import { GENDERS, BLOOD_GROUPS, RELIGIONS, CATEGORIES, MOTHER_TONGUES } from "..
 import { INDIAN_STATES } from "../../../../constants/states";
 import { lookupPincode } from "../../../../services/api";
 import { normalizeStateName } from "../../../../constants/states";
-import { ddmmyyToIso } from "../../utils/studentFormValidation";
+import { ddmmyyToIso } from "../../../../validators/studentFormValidation";
 import logger from "../../../../utils/logger";
 import ClickAwayListener from "./ClickAwayListener";
 import CustomCalendar from "./CustomCalendar";

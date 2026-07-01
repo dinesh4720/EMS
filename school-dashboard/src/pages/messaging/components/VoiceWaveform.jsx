@@ -227,7 +227,7 @@ export default function VoiceWaveform({
       </div>
 
       {/* Time Display */}
-      <div className={`flex-shrink-0 tabular-nums min-w-[32px] text-right ${size === 'small' ? 'text-[10px]' : 'text-xs'} ${isOwn ? 'text-white/80' : 'text-default-500 dark:text-zinc-400'}`}>
+      <div className={`flex-shrink-0 tabular-nums min-w-[32px] text-right ${size === 'small' ? 'text-2xs' : 'text-xs'} ${isOwn ? 'text-white/80' : 'text-default-500 dark:text-zinc-400'}`}>
         {isRecording
           ? formatTime(duration)
           : formatTime(isPlaying ? currentTime : (duration || (audioRef.current?.duration || 0)))

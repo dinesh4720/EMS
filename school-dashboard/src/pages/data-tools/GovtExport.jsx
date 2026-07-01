@@ -7,8 +7,7 @@ import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
 import PageHeader from '../../components/ui/PageHeader';
-import { API_URL } from '../../config/api';
-import { clearStoredUser, getAuthHeaders } from '../../utils/authSession';
+import { requestBlob } from '../../services/api';
 
 const EXPORT_TYPES = [
   { key: 'udise', title: 'UDISE+ Enrollment', titleKey: 'udise', badge: 'UDISE+', badgeColor: 'info', hasClassId: false },
@@ -50,20 +49,9 @@ export default function GovtExport() {
       if (classId) params.set('classId', classId);
       params.set('format', format);
 
-      const response = await fetch(`${API_URL}/export/govt/${type}?${params.toString()}`, {
-        headers: getAuthHeaders(),
-        credentials: 'include',
-      });
-
-      if (response.status === 401) {
-        clearStoredUser();
-        throw new Error(t('dataTools.sessionExpired', 'Session expired. Please log in again.'));
-      }
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({ error: t('dataTools.govt.exportFailed', 'Export failed') }));
-        throw new Error(err.error || t('dataTools.govt.exportFailed', 'Export failed'));
-      }
+      // [SEC-08] Route through requestBlob() so a 401 attempts a token refresh
+      // before logging the user out, instead of a premature session clear.
+      const response = await requestBlob(`/export/govt/${type}?${params.toString()}`);
 
       const blob = await response.blob();
       const disposition = response.headers.get('Content-Disposition') || '';

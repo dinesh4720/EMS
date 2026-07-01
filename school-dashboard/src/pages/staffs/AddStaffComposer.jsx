@@ -66,6 +66,8 @@ import ReviewSection from "./components/add-staff/sections/ReviewSection";
  * ./sections/{PersonalInfo,Subjects,Employment,Review}Section.jsx.
  */
 
+const STAFF_FORM_DRAFT_KEY = "staff-form-draft";
+
 function emptyComposerForm(seed = {}) {
   return {
     firstName: "",
@@ -86,6 +88,11 @@ function emptyComposerForm(seed = {}) {
     picture: null,
     ...seed,
   };
+}
+
+function serializeStaffDraft(form) {
+  const { picture: _picture, ...rest } = form;
+  return JSON.stringify(rest);
 }
 
 function fromEditingStaff(staff) {
@@ -202,6 +209,53 @@ const AddStaffComposer = forwardRef(function AddStaffComposer(
     clearFieldError(key);
   }, [clearFieldError]);
 
+  // ---- Draft persistence (create mode) ------------------------------
+  const initialFormSnapshot = useRef(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      initialFormSnapshot.current = serializeStaffDraft(form);
+    }, 400);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!isCreate) return;
+    try {
+      const draft = sessionStorage.getItem(STAFF_FORM_DRAFT_KEY);
+      if (!draft) return;
+      const parsed = JSON.parse(draft);
+      if (parsed && typeof parsed === "object") {
+        setForm((f) => ({ ...f, ...parsed, picture: f.picture }));
+        setHasChanges(true);
+      }
+    } catch {
+      /* corrupt draft — ignore */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!isCreate) return;
+    if (!initialFormSnapshot.current) return;
+    const current = serializeStaffDraft(form);
+    if (current === initialFormSnapshot.current) return;
+    try {
+      sessionStorage.setItem(STAFF_FORM_DRAFT_KEY, current);
+    } catch {
+      /* storage full — ignore */
+    }
+  }, [form, isCreate]);
+
+  const clearStaffDraft = () => {
+    try {
+      sessionStorage.removeItem(STAFF_FORM_DRAFT_KEY);
+    } catch {
+      /* no-op */
+    }
+  };
+
 
   // ---- Close ---------------------------------------------------------
   const handleClose = () => {
@@ -210,6 +264,7 @@ const AddStaffComposer = forwardRef(function AddStaffComposer(
   };
   const confirmClose = () => {
     setShowConfirmClose(false);
+    clearStaffDraft();
     onClose();
   };
   const cancelClose = () => setShowConfirmClose(false);
@@ -315,10 +370,12 @@ const AddStaffComposer = forwardRef(function AddStaffComposer(
       if (!result) return;
       const { savedStaff, staffData } = result;
       if (isCreate && savedStaff?.id) {
+        clearStaffDraft();
         setCreatedStaffId(savedStaff.id);
         setCreatedStaffName(staffData?.name || legacyPayload.name);
         setShowClassSubjectModal(true);
       } else {
+        clearStaffDraft();
         onClose();
       }
     } catch (e) {
@@ -617,7 +674,17 @@ const AddStaffComposer = forwardRef(function AddStaffComposer(
             <button
               type="button"
               className="btn"
-              onClick={() => toast.success("Draft saved locally")}
+              onClick={() => {
+                try {
+                  sessionStorage.setItem(
+                    STAFF_FORM_DRAFT_KEY,
+                    serializeStaffDraft(form)
+                  );
+                  toast.success("Draft saved locally");
+                } catch {
+                  toast.error("Couldn't save draft");
+                }
+              }}
               disabled={!canEdit}
             >
               Save draft

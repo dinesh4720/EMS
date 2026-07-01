@@ -23,7 +23,6 @@ import logger from '../../utils/logger';
  */
 const CameraView = ({ onCapture, onClose }) => {
   const { t } = useTranslation();
-  const [stream, setStream] = useState(null);
   const [capturedImage, setCapturedImage] = useState(null);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -31,6 +30,11 @@ const CameraView = ({ onCapture, onClose }) => {
   const [facingMode, setFacingMode] = useState("user"); // 'user' or 'environment'
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  // Hold the active MediaStream in a ref so cleanup always sees the current
+  // stream. A state value closed over by the mount effect goes stale (MEM-03):
+  // it snapshots `stream === null` from the first render, so unmount cleanup
+  // no-ops and the camera tracks stay live forever.
+  const streamRef = useRef(null);
 
   // Initialize camera
   const startCamera = useCallback(async () => {
@@ -38,9 +42,11 @@ const CameraView = ({ onCapture, onClose }) => {
       setIsLoading(true);
       setError(null);
 
-      // Stop existing stream
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop());
+      // Stop any existing stream (e.g. when switching cameras) so we never
+      // leave the previous camera live alongside the new one.
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
       }
 
       const constraints = {
@@ -53,7 +59,7 @@ const CameraView = ({ onCapture, onClose }) => {
       };
 
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-      setStream(mediaStream);
+      streamRef.current = mediaStream;
 
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
@@ -80,35 +86,41 @@ const CameraView = ({ onCapture, onClose }) => {
         toast.error("Failed to access camera.");
       }
     }
-  }, [facingMode, stream]);
+  }, [facingMode]);
 
-  // Stop camera
+  // Stop camera — reads the live stream from the ref so it is never a stale
+  // no-op, even when called from a cleanup closure captured at first render.
   const stopCamera = useCallback(() => {
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-      setStream(null);
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
     }
-  }, [stream]);
+  }, []);
 
-  // Initialize camera on mount
+  // Start the camera on mount and restart it whenever the facing mode changes
+  // (startCamera's identity changes only with facingMode). The cleanup runs on
+  // every re-run and on unmount, and stopCamera releases the live stream from
+  // the ref — so the camera tracks are always stopped instead of leaking
+  // (MEM-03). switchCamera is only reachable from the live view, so this never
+  // restarts while a captured image is being previewed.
   useEffect(() => {
     startCamera();
 
     return () => {
       stopCamera();
-      // Clean up captured image URL
-      if (capturedImage?.url) {
-        URL.revokeObjectURL(capturedImage.url);
+    };
+  }, [startCamera, stopCamera]);
+
+  // Revoke the captured image's object URL when it is replaced or on unmount,
+  // so blob URLs do not accumulate across capture/retake cycles.
+  useEffect(() => {
+    const url = capturedImage?.url;
+    return () => {
+      if (url) {
+        URL.revokeObjectURL(url);
       }
     };
-  }, []);
-
-  // Reinitialize when facing mode changes
-  useEffect(() => {
-    if (capturedImage) return; // Don't restart if showing captured image
-
-    startCamera();
-  }, [facingMode]);
+  }, [capturedImage]);
 
   // Capture photo
   const capturePhoto = useCallback(() => {
@@ -145,14 +157,12 @@ const CameraView = ({ onCapture, onClose }) => {
     );
   }, [facingMode, stopCamera, isCapturing]);
 
-  // Retake photo
+  // Retake photo — the previous object URL is revoked by the capturedImage
+  // cleanup effect when capturedImage transitions back to null.
   const handleRetake = useCallback(() => {
-    if (capturedImage?.url) {
-      URL.revokeObjectURL(capturedImage.url);
-    }
     setCapturedImage(null);
     startCamera();
-  }, [capturedImage, startCamera]);
+  }, [startCamera]);
 
   // Use captured photo
   const handleUsePhoto = useCallback(() => {
@@ -169,14 +179,12 @@ const CameraView = ({ onCapture, onClose }) => {
     setFacingMode((prev) => (prev === "user" ? "environment" : "user"));
   }, []);
 
-  // Handle close
+  // Handle close — the captured image's object URL is revoked by its cleanup
+  // effect when CameraView unmounts.
   const handleClose = useCallback(() => {
     stopCamera();
-    if (capturedImage?.url) {
-      URL.revokeObjectURL(capturedImage.url);
-    }
     onClose();
-  }, [stopCamera, capturedImage, onClose]);
+  }, [stopCamera, onClose]);
 
   return (
     <div className="relative w-full h-[600px] bg-black flex items-center justify-center">

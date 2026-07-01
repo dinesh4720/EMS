@@ -8,7 +8,6 @@ import {
   useCallback,
   useRef,
 } from "react";
-import { useLocation } from "react-router-dom";
 import { clearStoredUser, getStoredUser } from "../utils/authSession";
 import { isSuperAdminRole } from "../utils/roleUtils";
 import toast from "react-hot-toast";
@@ -23,7 +22,6 @@ import { SchoolProvider } from "./SchoolContext";
 import { AcademicYearProvider, useAcademicYear } from "./AcademicYearContext";
 import {
   extractRoleNames,
-  shouldHydrateStudentsForPath,
   fetchRoleAwareAppData,
   fetchAppSettingsData,
 } from "./appContextHelpers";
@@ -41,8 +39,6 @@ const AppContext = createContext();
  */
 function AppContextCore({ children }) {
   const { t } = useTranslation();
-  const location = useLocation();
-  const shouldPreloadStudents = shouldHydrateStudentsForPath(location.pathname);
   const queryClient = useQueryClient();
   const appErrorToastRef = useRef(null);
   const settingsErrorToastRef = useRef(null);
@@ -59,11 +55,7 @@ function AppContextCore({ children }) {
 
   // Pull minimal state from domain contexts needed for orchestration
   const {
-    students,
-    studentsHydrated,
     setStudents,
-    setStudentsHydrated,
-    setStudentsFromQuery,
     updateStudentLocal,
   } = useStudents();
 
@@ -113,10 +105,18 @@ function AppContextCore({ children }) {
     queryKey: appQueryKey,
     enabled: Boolean(storedUser?.id) && !isSuperAdmin,
     placeholderData: (previousData) => previousData,
+    // [PERF-07] These app-context queries hydrate the entire domain dataset
+    // (staff + classes + sometimes all students) and feed every domain context.
+    // Refetching on every tab refocus replaced all domain arrays and triggered a
+    // full context-cascade re-render. Opt out of focus-refetch and use a longer
+    // staleTime — real-time freshness is already handled by useSocketSync, and
+    // refetchOnReconnect:'always' (inherited) still recovers after a disconnect.
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
     queryFn: ({ signal }) =>
       fetchRoleAwareAppData({
         user: storedUser,
-        includeStudents: shouldPreloadStudents,
+        includeStudents: false,
         signal,
       }),
   });
@@ -125,6 +125,10 @@ function AppContextCore({ children }) {
     queryKey: settingsQueryKey,
     enabled: Boolean(storedUser?.id) && !isSuperAdmin,
     placeholderData: (previousData) => previousData,
+    // [PERF-07] See appDataQuery above — settings rarely change mid-session, so
+    // skip focus-refetch and lengthen staleTime to avoid the cascade re-render.
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
     queryFn: ({ signal }) => fetchAppSettingsData({ signal }),
   });
 
@@ -133,8 +137,7 @@ function AppContextCore({ children }) {
     Boolean(storedUser?.id) && !isSuperAdmin && settingsDataQuery.isPending;
 
   const refetch = useCallback(
-    async (skipCache = false, _retryCount = 0, options = {}) => {
-      const includeStudents = options.includeStudents ?? false;
+    async (skipCache = false, _retryCount = 0, _options = {}) => {
       if (!storedUser?.id || isSuperAdmin) return null;
 
       return queryClient.fetchQuery({
@@ -145,7 +148,7 @@ function AppContextCore({ children }) {
           fetchRoleAwareAppData({
             user: storedUser,
             skipCache,
-            includeStudents,
+            includeStudents: false,
             signal,
           }),
       });
@@ -168,7 +171,6 @@ function AppContextCore({ children }) {
       setStudents([]);
       setClasses([]);
       setStaffAttendance({});
-      setStudentsHydrated(false);
       setError(null);
     }
   }, [
@@ -178,7 +180,6 @@ function AppContextCore({ children }) {
     setStudents,
     setClasses,
     setStaffAttendance,
-    setStudentsHydrated,
   ]);
 
   // Sync app query results into domain contexts
@@ -187,16 +188,12 @@ function AppContextCore({ children }) {
     setStaffFromQuery(appDataQuery.data.staff || []);
     setClassesFromQuery(appDataQuery.data.classes || []);
     setStaffAttendanceFromQuery(appDataQuery.data.staffAttendance || {});
-    if (appDataQuery.data.includeStudents) {
-      setStudentsFromQuery(appDataQuery.data.students || [], true);
-    }
     setError(null);
   }, [
     appDataQuery.data,
     setStaffFromQuery,
     setClassesFromQuery,
     setStaffAttendanceFromQuery,
-    setStudentsFromQuery,
   ]);
 
   // Sync settings query results into settings context
@@ -205,28 +202,8 @@ function AppContextCore({ children }) {
     setSettingsFromQuery(settingsDataQuery.data);
   }, [settingsDataQuery.data, setSettingsFromQuery]);
 
-  // Lazy-load students when navigating to a student-heavy page.
-  useEffect(() => {
-    if (
-      shouldPreloadStudents &&
-      !studentsHydrated &&
-      storedUser?.id &&
-      !isSuperAdmin &&
-      !appDataQuery.isFetching
-    ) {
-      // If the cached query already includes students, just sync them
-      if (appDataQuery.data?.includeStudents) {
-        setStudentsFromQuery(appDataQuery.data.students || [], true);
-        return;
-      }
-      // Otherwise fetch with students included and sync directly
-      refetch(false, 0, { includeStudents: true }).then((result) => {
-        if (result?.includeStudents) {
-          setStudentsFromQuery(result.students || [], true);
-        }
-      }).catch(() => {});
-    }
-  }, [shouldPreloadStudents, studentsHydrated, storedUser?.id, isSuperAdmin, refetch, appDataQuery.isFetching, appDataQuery.data, setStudentsFromQuery]);
+  // [PAG-05] Global student hydration removed — per-screen pages now own their
+  // own server-paginated fetches through `studentsApi.list` + `usePaginatedQuery`.
 
   // App data error handling
   useEffect(() => {
@@ -264,7 +241,6 @@ function AppContextCore({ children }) {
   useEffect(() => {
     const syncSession = () => {
       setSessionVersion((current) => current + 1);
-      setStudentsHydrated(false);
       setError(null);
     };
 
@@ -286,7 +262,7 @@ function AppContextCore({ children }) {
       window.removeEventListener("user-logged-in", handleLogin);
       window.removeEventListener("auth-session-cleared", handleSessionCleared);
     };
-  }, [queryClient, setStudentsHydrated]);
+  }, [queryClient]);
 
   // Socket.IO real-time updates
   useSocketSync({
@@ -396,6 +372,29 @@ export const useApp = () => {
     ...settings,
     ...context,
   };
+};
+
+/**
+ * useAppMeta — slim access to cross-cutting app state ONLY:
+ *   loading, settingsLoading, error,
+ *   refetch, refetchSettings,
+ *   currentAcademicYear, selectedAcademicYear, setSelectedAcademicYear,
+ *   showOnboarding, setShowOnboarding.
+ *
+ * Unlike useApp(), this subscribes only to AppContext — a memoized, slim
+ * value — and NOT to the five domain contexts (students/staff/classes/
+ * attendance/settings). Components that need only the cross-cutting fields
+ * above should use this hook so they no longer re-render on every socket
+ * tick, fee payment, attendance mark, or window-refocus refetch (PERF-03).
+ *
+ * If you need domain data (students, staff, classes, schoolSettings, …),
+ * use the focused domain hook instead: useStudents/useStaff/useClasses/
+ * useAttendance/useSettings/useSchool.
+ */
+export const useAppMeta = () => {
+  const context = useContext(AppContext);
+  if (!context) throw new Error("useAppMeta must be used within AppProvider");
+  return context;
 };
 
 // Re-export domain hooks so consumers can import from a single location.

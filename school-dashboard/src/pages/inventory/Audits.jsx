@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { formatShortDate } from '../../utils/dateFormatter';
+import AssetPicker from './AssetPicker';
 
 const STATUSES = ["PENDING", "IN_PROGRESS", "COMPLETED"];
 const CONDITIONS = ["GOOD", "FAIR", "POOR", "DAMAGED"];
@@ -27,7 +28,6 @@ const emptyForm = { title: "", status: "PENDING", startDate: "", notes: "", audi
 export default function Audits() {
   const { t } = useTranslation();
   const [audits, setAudits] = useState([]);
-  const [assets, setAssets] = useState([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
@@ -44,12 +44,8 @@ export default function Audits() {
     try {
       setLoading(true);
       setLoadError(null);
-      const [data, assetData] = await Promise.all([
-        inventoryApi.getAudits(filterStatus !== "all" ? filterStatus : undefined),
-        inventoryApi.getAssets({}),
-      ]);
+      const data = await inventoryApi.getAudits(filterStatus !== "all" ? filterStatus : undefined);
       setAudits(Array.isArray(data) ? data : []);
-      setAssets(assetData?.data || (Array.isArray(assetData) ? assetData : []));
     } catch (err) {
       setLoadError(err);
     } finally {
@@ -70,6 +66,10 @@ export default function Audits() {
       notes: a.notes || "",
       auditItems: (a.auditItems || []).map((item) => ({
         assetId: item.assetId?._id || item.assetId || "",
+        // Keep the populated name/tag so the picker can label the current
+        // selection without a fetch. These are stripped from the save payload.
+        assetName: item.assetId?.name,
+        assetTag: item.assetId?.assetTag,
         expectedQuantity: item.expectedQuantity ?? "",
         actualQuantity: item.actualQuantity ?? "",
         condition: item.condition || "",
@@ -268,7 +268,7 @@ export default function Audits() {
               )}
               <div className="space-y-3">
                 {(form.auditItems || []).map((item, idx) => (
-                  <div key={item.assetId || `form-audit-item-${idx}`} className="border border-divider rounded-lg p-3 relative">
+                  <div key={`form-audit-item-${idx}`} className="border border-divider rounded-lg p-3 relative">
                     <div className="absolute top-2 right-2">
                       <IconButton
                         aria-label="Remove audit item"
@@ -279,14 +279,13 @@ export default function Audits() {
                       />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pr-8">
-                      <Select
+                      <AssetPicker
                         label="Asset"
-                        selectedKeys={item.assetId ? [item.assetId] : []}
-                        onSelectionChange={(keys) => setAuditItem(idx, "assetId", [...keys][0] || "")}
+                        value={item.assetId}
+                        onChange={(id) => setAuditItem(idx, "assetId", id)}
+                        selectedAsset={item.assetId && item.assetName ? { _id: item.assetId, name: item.assetName, assetTag: item.assetTag } : undefined}
                         className="sm:col-span-2"
-                      >
-                        {assets.map((a) => <SelectItem key={a._id}>{a.name}{a.assetTag ? ` (${a.assetTag})` : ""}</SelectItem>)}
-                      </Select>
+                      />
                       <Input label="Expected Qty" type="number" value={String(item.expectedQuantity)} onValueChange={(v) => setAuditItem(idx, "expectedQuantity", v)} />
                       <Input label="Actual Qty" type="number" value={String(item.actualQuantity)} onValueChange={(v) => setAuditItem(idx, "actualQuantity", v)} />
                       <Select

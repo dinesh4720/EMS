@@ -1,7 +1,6 @@
 import { Plus, CheckCircle2, Ban } from "lucide-react";
 import ToolbarSearch from "../../components/ui/ToolbarSearch";
 import BulkActionBar from "../../components/ui/BulkActionBar";
-import toast from "react-hot-toast";
 
 const STATUS_FILTERS = [
   { key: "all", label: "All" },
@@ -20,7 +19,12 @@ export default function RefundsToolbar({
   selection,
   totalMatching,
   t,
+  onBulkApprove,
+  onBulkReject,
+  bulkActionLoading = false,
 }) {
+  const bulkDisabled = bulkActionLoading || !onBulkApprove || !onBulkReject;
+
   return (
     <div className="toolbar" style={{ paddingTop: 0 }}>
       <ToolbarSearch
@@ -64,26 +68,18 @@ export default function RefundsToolbar({
         <button
           type="button"
           className="btn btn--sm"
-          onClick={() => {
-            toast.success(
-              `Approved ${selection.count} refunds (queued — endpoint not wired yet).`
-            );
-            selection.clear();
-          }}
+          disabled={bulkDisabled}
+          onClick={() => onBulkApprove?.(selection)}
         >
-          <CheckCircle2 size={12} aria-hidden /> Approve
+          <CheckCircle2 size={12} aria-hidden /> {t("common.approve", "Approve")}
         </button>
         <button
           type="button"
           className="btn btn--sm"
-          onClick={() => {
-            toast.success(
-              `Rejected ${selection.count} refunds (queued — endpoint not wired yet).`
-            );
-            selection.clear();
-          }}
+          disabled={bulkDisabled}
+          onClick={() => onBulkReject?.(selection)}
         >
-          <Ban size={12} aria-hidden /> Reject
+          <Ban size={12} aria-hidden /> {t("common.reject", "Reject")}
         </button>
       </BulkActionBar>
     </div>

@@ -117,3 +117,62 @@ export function formatDateShort(d) {
     return "—";
   }
 }
+
+// Upcoming-card derivation (MOCK-09).
+// Maps class exams → the { date: "MMM DD", title, meta } shape UpcomingCard
+// renders. Only future scheduled/ongoing exams are shown; the list is capped
+// and sorted by start date ascending so the next exam sits on top.
+const UPCOMING_EXAM_STATUSES = new Set(["scheduled", "ongoing"]);
+const UPCOMING_MAX_ITEMS = 5;
+
+function formatUpcomingDate(d) {
+  if (!d) return "";
+  const dt = new Date(d);
+  if (Number.isNaN(dt.getTime())) return "";
+  // "MMM DD" — e.g. "Jun 28". UpcomingCard splits on whitespace into month/day.
+  return dt.toLocaleDateString("en-US", {
+    month: "short",
+    day: "2-digit",
+  });
+}
+
+function examStartDate(exam) {
+  const raw = exam?.startDate || exam?.examDate || exam?.date;
+  if (!raw) return null;
+  const dt = new Date(raw);
+  return Number.isNaN(dt.getTime()) ? null : dt;
+}
+
+export function buildUpcoming(exams, today = new Date()) {
+  if (!Array.isArray(exams) || exams.length === 0) return [];
+  const startOfToday = new Date(today);
+  startOfToday.setHours(0, 0, 0, 0);
+
+  const upcoming = exams
+    .map((exam) => ({
+      exam,
+      start: examStartDate(exam),
+      status: String(exam?.status || "scheduled").toLowerCase(),
+    }))
+    .filter(
+      ({ start, status }) =>
+        start && UPCOMING_EXAM_STATUSES.has(status) && start >= startOfToday
+    )
+    .sort((a, b) => a.start - b.start);
+
+  return upcoming.slice(0, UPCOMING_MAX_ITEMS).map(({ exam, start }) => {
+    const subject = exam.subjectName || exam.subject || "";
+    const title = exam.name || subject || "Exam";
+    const metaParts = [subject, exam.className, exam.term].filter(Boolean);
+    // Avoid duplicating the title when the exam name is the subject itself.
+    const meta = metaParts
+      .filter((part) => part !== title)
+      .slice(0, 3)
+      .join(" · ");
+    return {
+      date: formatUpcomingDate(start),
+      title,
+      meta,
+    };
+  });
+}

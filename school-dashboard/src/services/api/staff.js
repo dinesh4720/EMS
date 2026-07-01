@@ -1,6 +1,76 @@
 import { request } from './core.js';
 
 export const staffApi = {
+  /**
+   * Server-driven paginated list for the Staff dashboard (SCH-193 / PAG-28-FE).
+   *
+   * Mirrors `studentsApi.list` and returns the `{ data, pagination, facets }`
+   * envelope from the paginated branch of `GET /staff` (added in EMS-backend
+   * PR #131). The `facets` aggregate is computed server-side over
+   * (schoolId + q + today) so the dashboard's filter pills can be driven
+   * without scanning the full in-memory list.
+   *
+   * Params (`undefined`, `null`, `''` and `'all'` are stripped so the URL
+   * stays clean — matches `studentsApi.list`):
+   *   - page, limit                         — pagination
+   *   - q                                   — server-side substring search
+   *   - role, department, employmentType,
+   *     gender, status                      — facet / status filters
+   *   - today                               — 'true' restricts to staff with
+   *                                          a present/absent/leave record
+   *                                          for today (StaffAttendance join)
+   *   - includeFacets                       — 'false' skips the 4 aggregation
+   *                                          queries when only refreshing the
+   *                                          page (e.g. paging within a fixed
+   *                                          filter set)
+   *
+   * `opts.skipCache` is forwarded to `request`; `opts.signal` is passed through
+   * so callers can abort in-flight requests on unmount or param change.
+   *
+   * NOTE: this is intentionally separate from `staffApi.getAll` (below) — the
+   * AppContext bootstrap and ~40 consumers still use `getAll`, which returns
+   * the full list and must not change shape.
+   */
+  list: async (params = {}, options = {}) => {
+    const query = new URLSearchParams();
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === undefined || value === null || value === '' || value === 'all') {
+        return;
+      }
+      // Arrays (e.g. role: ['Teacher', 'Admin']) become a single comma param,
+      // matching the backend's parseCommaList semantics from PR #131.
+      if (Array.isArray(value)) {
+        if (value.length === 0) return;
+        query.set(key, value.join(','));
+        return;
+      }
+      query.set(key, value);
+    });
+
+    const queryString = query.toString();
+    const { skipCache = false, ...restOpts } = options;
+    const response = await request(`/staff${queryString ? `?${queryString}` : ''}`, {
+      skipCache,
+      ...restOpts,
+    });
+
+    return {
+      data: response.data || [],
+      pagination: response.pagination || {
+        page: params.page || 1,
+        limit: params.limit || 25,
+        total: Array.isArray(response.data) ? response.data.length : 0,
+        totalPages: 1,
+      },
+      facets: response.facets || {
+        role: [],
+        department: [],
+        employmentType: [],
+        gender: [],
+      },
+    };
+  },
   getAll: (skipCache = false, opts) => request('/staff', { skipCache, ...opts }),
   getById: (id, opts) => request(`/staff/${id}`, opts),
   getClasses: (id, opts) => request(`/staff/${id}/classes`, opts),
@@ -42,6 +112,18 @@ export const studentsApi = {
       }
     };
   },
+  /**
+   * Bulk-fetch every student matching the given scope (all students when no
+   * `classId` is provided; otherwise every student of one class). Internally
+   * walks every page in a tight loop — at ~3k students with the default 100/page
+   * cap this is ~30 sequential round-trips, and the app-context used to re-run
+   * the loop after every student create/update/delete.
+   *
+   * [PAG-05] Do NOT call this from app-shell hydration. Per-screen pages must
+   * fetch their own page via `studentsApi.list` + `usePaginatedQuery`. Reserve
+   * `getAll` for narrow scopes where the full result set is small and bounded
+   * (e.g. one classId, or a CSV duplicate check on import).
+   */
   getAll: async (classIdOrOptions, { signal } = {}) => {
     let params = {};
     let skipCache = false;
@@ -83,7 +165,7 @@ export const studentsApi = {
   getResults: (id, academicYear) => request(`/students/${id}/results${academicYear ? `?academicYear=${academicYear}` : ''}`),
   getRemarks: (id, category) => request(`/students/${id}/remarks${category && category !== 'all' ? `?category=${category}` : ''}`),
   addDocument: (id, data) => request(`/students/${id}/documents`, { method: 'POST', body: JSON.stringify(data) }),
-  deleteDocument: (id, documentIndex) => request(`/students/${id}/documents/${documentIndex}`, { method: 'DELETE' }),
+  deleteDocument: (id, docId) => request(`/students/${id}/documents/${docId}`, { method: 'DELETE' }),
   fixDocuments: (id) => request(`/students/${id}/fix-documents`, { method: 'POST' }),
   sendReminder: (id, data) => request(`/students/${id}/send-reminder`, { method: 'POST', body: JSON.stringify(data) }),
   sendRemindersBulk: (data) => request('/students/send-reminders-bulk', { method: 'POST', body: JSON.stringify(data) }),

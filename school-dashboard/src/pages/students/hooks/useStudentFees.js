@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useApp } from "../../../context/AppContext";
+import { useAppMeta } from "../../../context/AppContext";
 import { usePermissions } from "../../../context/PermissionContext";
 import { studentFeesApi } from "../../../services/api";
 
@@ -47,7 +47,7 @@ async function fetchStudentFeeStructure(studentId, academicYear, autoInitialize)
 }
 
 export function useStudentFees(studentId, options = {}) {
-  const { currentAcademicYear } = useApp();
+  const { currentAcademicYear } = useAppMeta();
   const {
     academicYear = currentAcademicYear,
     autoInitialize = true,
@@ -76,7 +76,7 @@ export function useStudentFees(studentId, options = {}) {
 const EMPTY_FEE_STRUCTURES = {};
 
 export function useBatchStudentFees(studentIds, options = {}) {
-  const { currentAcademicYear } = useApp();
+  const { currentAcademicYear } = useAppMeta();
   const { academicYear = currentAcademicYear } = options;
   const feesEnabled = useFeesEnabled();
   // Use sorted join for a lightweight stable key instead of JSON.stringify

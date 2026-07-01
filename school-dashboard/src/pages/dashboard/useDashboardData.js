@@ -4,7 +4,9 @@ import {
   announcementsApi,
   attendanceApi,
   feesApi,
+  ptmApi,
   studentFeesApi,
+  substitutionAlertsApi,
 } from "../../services/api";
 import {
   createEmptyAttendanceSnapshot,
@@ -15,6 +17,8 @@ import {
   isSuccessfulPayment,
   normalizeAnnouncements,
   normalizePayments,
+  pickMostUrgentSubstitution,
+  pickUpcomingPtmSession,
   toValidDate,
 } from "./dashboardHelpers";
 
@@ -53,6 +57,8 @@ export default function useDashboardData({
   const [paymentsLoaded, setPaymentsLoaded] = useState(false);
   const [feeDefaultersCount, setFeeDefaultersCount] = useState(0);
   const [reloadKey, setReloadKey] = useState(0);
+  const [urgentSubstitution, setUrgentSubstitution] = useState(null);
+  const [upcomingPtm, setUpcomingPtm] = useState(null);
 
   const studentsRef = useRef(students);
   studentsRef.current = students;
@@ -293,6 +299,46 @@ export default function useDashboardData({
 
   const reload = () => setReloadKey((k) => k + 1);
 
+  useEffect(() => {
+    let cancelled = false;
+    const todayDateKey = new Date().toISOString().split("T")[0];
+
+    const loadActionsFeed = async () => {
+      const [subsResult, ptmResult] = await Promise.allSettled([
+        substitutionAlertsApi.getAlerts(todayDateKey),
+        ptmApi.getAll({ from: todayDateKey, limit: 20 }),
+      ]);
+
+      if (cancelled) return;
+
+      const subsBody =
+        subsResult.status === "fulfilled" ? subsResult.value : null;
+      const subsAlerts = Array.isArray(subsBody?.alerts)
+        ? subsBody.alerts
+        : Array.isArray(subsBody)
+          ? subsBody
+          : [];
+      const topSubs = pickMostUrgentSubstitution(subsAlerts);
+      setUrgentSubstitution(
+        topSubs ? { alert: topSubs.alert, unassigned: topSubs.unassigned } : null
+      );
+
+      const ptmBody = ptmResult.status === "fulfilled" ? ptmResult.value : null;
+      const ptmSessions = Array.isArray(ptmBody)
+        ? ptmBody
+        : Array.isArray(ptmBody?.data)
+          ? ptmBody.data
+          : [];
+      setUpcomingPtm(pickUpcomingPtmSession(ptmSessions));
+    };
+
+    loadActionsFeed();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadKey]);
+
   return {
     recentPayments,
     recentAnnouncements,
@@ -304,6 +350,8 @@ export default function useDashboardData({
     dashboardLoading,
     dashboardError,
     paymentsLoaded,
+    urgentSubstitution,
+    upcomingPtm,
     reload,
   };
 }

@@ -82,15 +82,14 @@ export default function DocumentsSection({
             multiple
             accept=".pdf,.jpg,.jpeg,.png"
             onChange={(e) => handleMultiFile("otherDocuments", e.target.files)}
-            className="input"
-            style={{ padding: 6 }}
+            className="input input--file"
           />
           {form.otherDocuments?.length > 0 && (
-            <ul style={{ marginTop: 6, fontSize: 12, color: "var(--fg-muted)" }}>
+            <ul className="docfield__list">
               {form.otherDocuments.map((f, i) => (
-                <li key={`${f.name}-${f.size}-${i}`} className="row gap-2" style={{ alignItems: "center" }}>
+                <li key={`${f.name}-${f.size}-${i}`}>
                   <FileText size={11} aria-hidden />
-                  <span style={{ flex: 1 }}>{f.name}</span>
+                  <span className="docfield__list-name">{f.name}</span>
                   <button
                     type="button"
                     className="btn btn--sm btn--ghost"

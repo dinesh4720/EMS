@@ -1,6 +1,7 @@
 import { Input, Select, SelectItem, Chip, Switch, Autocomplete, AutocompleteItem } from "@heroui/react";
-import { Users, Hash, BookOpen, GraduationCap, Briefcase, Upload, FileScan, Check, Plus, X } from "lucide-react";
+import { Users, Hash, BookOpen, GraduationCap, Briefcase, Upload, Check, Plus, X } from "lucide-react";
 import { STAFF_ROLES } from "../../../constants/roles";
+import { DEPARTMENTS, DEGREE_OPTIONS } from "../../../constants/staffForm";
 import { useTranslation } from "react-i18next";
 import SectionHeader from "./SectionHeader";
 
@@ -12,16 +13,8 @@ const selectStyles = {
 };
 
 const staffTypes = STAFF_ROLES;
-const departments = ["Science", "Mathematics", "Languages", "Social Studies", "Commerce", "Arts", "Physical Education", "IT/Computer", "Library", "Administration", "Accounts", "Management", "Counseling", "Special Education", "Sports", "Others"];
-const degreeOptions = [
-  { label: "B.Ed", value: "B.Ed" }, { label: "M.Ed", value: "M.Ed" },
-  { label: "PhD", value: "PhD" }, { label: "B.Sc", value: "B.Sc" },
-  { label: "M.Sc", value: "M.Sc" }, { label: "B.A", value: "B.A" },
-  { label: "M.A", value: "M.A" }, { label: "B.Com", value: "B.Com" },
-  { label: "M.Com", value: "M.Com" }, { label: "MBA", value: "MBA" },
-  { label: "B.Tech", value: "B.Tech" }, { label: "M.Tech", value: "M.Tech" },
-  { label: "Other", value: "Other" }
-];
+const departments = DEPARTMENTS;
+const degreeOptions = DEGREE_OPTIONS;
 
 // This component renders BOTH Step 2 (Job Details) and Step 3 (Qualifications) content
 // based on the `stepNumber` prop.
@@ -211,11 +204,6 @@ function RoleQualificationsStep({
               <button className="inline-flex items-center gap-1.5 text-xs font-medium text-fg-muted hover:text-fg transition-colors px-2 py-1 rounded-md hover:bg-surface-hover" onClick={() => document.getElementById(`qual-doc-${i}`).click()}>
                 <Upload size={12} /> {t('staff.form.uploadCertificate')}
               </button>
-              {qual.documents && qual.documents.length > 0 && (
-                <button className="inline-flex items-center gap-1.5 text-xs font-medium text-fg-faint cursor-not-allowed px-2 py-1" disabled title={t('pages.comingSoon')}>
-                  <FileScan size={12} /> Extract Info
-                </button>
-              )}
               <input id={`qual-doc-${i}`} type="file" multiple accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => handleQualificationDocUpload(i, e.target.files)} />
               {qual.documents && qual.documents.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 ml-auto">

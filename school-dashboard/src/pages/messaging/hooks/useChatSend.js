@@ -105,7 +105,7 @@ export function useChatSend({
     } catch (error) {
       logger.error('Error sending message:', error);
       setNewMessage(messageContent);
-      alert('Failed to send message');
+      toast.error('Failed to send message');
     } finally {
       setSending(false);
     }
@@ -169,7 +169,7 @@ export function useChatSend({
       loadConversations();
     } catch (error) {
       logger.error('Error uploading file:', error);
-      alert(`Failed to upload file: ${error.message}`);
+      toast.error(`Failed to upload file: ${error.message}`);
     } finally {
       setUploadingFile(false);
       setSending(false);
@@ -188,7 +188,7 @@ export function useChatSend({
     if (!file || !selectedConversation) return;
 
     if (file.size > 10 * 1024 * 1024) {
-      alert('File size must be less than 10MB');
+      toast.error('File size must be less than 10MB');
       return;
     }
 

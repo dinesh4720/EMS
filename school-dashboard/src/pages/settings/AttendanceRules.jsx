@@ -129,7 +129,9 @@ export default function AttendanceRules() {
     return () => window.removeEventListener('beforeunload', handler);
   }, [editingSection]);
 
-  const SectionHeader = ({ title, section }) => (
+  // Render helper (not a nested component) so the subtree is reconciled in
+  // place rather than remounting on every parent state change.
+  const renderSectionHeader = ({ title, section }) => (
     <div className="flex justify-between items-center py-4 px-4 bg-surface-2/50 border-b border-divider">
       <h3 className="text-sm font-semibold text-fg">{title}</h3>
       {editingSection === section ? (
@@ -174,7 +176,7 @@ export default function AttendanceRules() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className={`shadow-sm border transition-all duration-200 ${editingSection === 'defaulter' ? 'border-primary ring-1 ring-primary' : 'border-border-token'}`}>
-          <SectionHeader title={t('pages.defaulterSettings')} section="defaulter" />
+          {renderSectionHeader({ title: t('pages.defaulterSettings'), section: 'defaulter' })}
           <CardBody className="p-4 space-y-4">
             {editingSection === 'defaulter' ? (
               <>
@@ -224,7 +226,7 @@ export default function AttendanceRules() {
         </Card>
 
         <Card className={`shadow-sm border transition-all duration-200 ${editingSection === 'lock' ? 'border-primary ring-1 ring-primary' : 'border-border-token'}`}>
-          <SectionHeader title={t('pages.lockSettings')} section="lock" />
+          {renderSectionHeader({ title: t('pages.lockSettings'), section: 'lock' })}
           <CardBody className="p-4 space-y-4">
             {editingSection === 'lock' ? (
               <Input
@@ -280,7 +282,7 @@ export default function AttendanceRules() {
         </Card>
 
         <Card className={`shadow-sm border transition-all duration-200 ${editingSection === 'notifications' ? 'border-primary ring-1 ring-primary' : 'border-border-token'}`}>
-          <SectionHeader title={t('pages.notifications')} section="notifications" />
+          {renderSectionHeader({ title: t('pages.notifications'), section: 'notifications' })}
           <CardBody className="p-4 space-y-4">
             <div className="flex items-center justify-between p-3 bg-surface-2 rounded-lg border border-border-token">
               <div>
@@ -311,7 +313,7 @@ export default function AttendanceRules() {
         </Card>
 
         <Card className={`shadow-sm border transition-all duration-200 ${editingSection === 'permissions' ? 'border-primary ring-1 ring-primary' : 'border-border-token'}`}>
-          <SectionHeader title={t('pages.editPermissions')} section="permissions" />
+          {renderSectionHeader({ title: t('pages.editPermissions'), section: 'permissions' })}
           <CardBody className="p-4 space-y-3">
             {(editingSection === 'permissions' ? tempRules.permissions : rules.permissions).map((item, i) => (
               <div key={item.role} className="flex items-center justify-between p-4 bg-surface-2 rounded-lg border border-border-token">

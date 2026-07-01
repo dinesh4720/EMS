@@ -10,6 +10,7 @@ import toast from "react-hot-toast";
 import { useTranslation } from 'react-i18next';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
 import { formatShortDate } from '../../utils/dateFormatter';
+import AssetPicker from './AssetPicker';
 
 const TYPES = ["PREVENTIVE", "CORRECTIVE", "INSPECTION"];
 const STATUSES = ["SCHEDULED", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
@@ -29,7 +30,6 @@ const emptyForm = {
 export default function Maintenance() {
   const { t } = useTranslation();
   const [logs, setLogs] = useState([]);
-  const [assets, setAssets] = useState([]);
   const [vendors, setVendors] = useState([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -45,13 +45,11 @@ export default function Maintenance() {
     try {
       setLoading(true);
       setLoadError(null);
-      const [logsData, assetsData, vendorData] = await Promise.all([
+      const [logsData, vendorData] = await Promise.all([
         inventoryApi.getMaintenance({ status: filterStatus !== "all" ? filterStatus : undefined }),
-        inventoryApi.getAssets({ limit: 500 }),
         inventoryApi.getVendors(),
       ]);
       setLogs(Array.isArray(logsData) ? logsData : []);
-      setAssets(assetsData?.data || []);
       setVendors(Array.isArray(vendorData) ? vendorData : []);
     } catch (err) {
       setLoadError(err);
@@ -198,9 +196,15 @@ export default function Maintenance() {
           <ModalHeader>{editing ? "Edit Maintenance Log" : "New Maintenance Log"}</ModalHeader>
           <ModalBody>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Select label={t('pages.asset')} isRequired selectedKeys={form.assetId ? [form.assetId] : []} onSelectionChange={(keys) => set("assetId", [...keys][0] || "")} isInvalid={!!errors.assetId} errorMessage={errors.assetId}>
-                {assets.map((a) => <SelectItem key={a._id}>{a.name}{a.assetTag ? ` (${a.assetTag})` : ""}</SelectItem>)}
-              </Select>
+              <AssetPicker
+                label={t('pages.asset')}
+                isRequired
+                value={form.assetId}
+                onChange={(id) => set("assetId", id)}
+                selectedAsset={editing && typeof editing.assetId === "object" ? editing.assetId : undefined}
+                isInvalid={!!errors.assetId}
+                errorMessage={errors.assetId}
+              />
               <Select label={t('pages.type1')} selectedKeys={[form.maintenanceType]} onSelectionChange={(keys) => set("maintenanceType", [...keys][0])}>
                 {TYPES.map((mt) => <SelectItem key={mt}>{mt}</SelectItem>)}
               </Select>

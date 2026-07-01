@@ -99,7 +99,7 @@ test.describe('TC164 — Data Tools Settings', () => {
     await installMockApi(page, state);
 
     /* ── Import ── */
-    await page.route('**/data-tools/import', async (route) => {
+    await page.route('**/bulk-import/*', async (route) => {
       const method = route.request().method();
       if (method === 'POST') {
         return route.fulfill({
@@ -126,7 +126,7 @@ test.describe('TC164 — Data Tools Settings', () => {
     });
 
     /* ── Export ── */
-    await page.route('**/data-tools/export/students', async (route) => {
+    await page.route('**/export/students', async (route) => {
       return route.fulfill({
         status: 200,
         contentType: 'text/csv',
@@ -135,7 +135,7 @@ test.describe('TC164 — Data Tools Settings', () => {
       });
     });
 
-    await page.route('**/data-tools/export/staff', async (route) => {
+    await page.route('**/export/staff', async (route) => {
       return route.fulfill({
         status: 200,
         contentType: 'text/csv',
@@ -144,7 +144,7 @@ test.describe('TC164 — Data Tools Settings', () => {
       });
     });
 
-    await page.route('**/data-tools/export/fees', async (route) => {
+    await page.route('**/export/fee-collection', async (route) => {
       return route.fulfill({
         status: 200,
         contentType: 'text/csv',
@@ -154,7 +154,7 @@ test.describe('TC164 — Data Tools Settings', () => {
     });
 
     /* ── Backup ── */
-    await page.route('**/data-tools/backup', async (route) => {
+    await page.route('**/backup/list', async (route) => {
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -163,7 +163,7 @@ test.describe('TC164 — Data Tools Settings', () => {
     });
 
     /* ── GDPR ── */
-    await page.route('**/data-tools/gdpr', async (route) => {
+    await page.route('**/gdpr/dashboard', async (route) => {
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -350,7 +350,7 @@ test.describe('TC164 — Data Tools Settings', () => {
   /* ───────── 7. Backup tab empty state ───────── */
   test('7) Backup tab shows empty state when no backup data exists', async ({ page }) => {
     // Override backup to return null/empty
-    await page.route('**/data-tools/backup', async (route) => {
+    await page.route('**/backup/list', async (route) => {
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -401,7 +401,7 @@ test.describe('TC164 — Data Tools Settings', () => {
 
   /* ───────── 9. GDPR tab empty state ───────── */
   test('9) GDPR tab shows empty messages when no GDPR data exists', async ({ page }) => {
-    await page.route('**/data-tools/gdpr', async (route) => {
+    await page.route('**/gdpr/dashboard', async (route) => {
       return route.fulfill({
         status: 200,
         contentType: 'application/json',

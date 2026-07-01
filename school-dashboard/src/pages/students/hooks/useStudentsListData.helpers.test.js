@@ -9,6 +9,10 @@ import {
   computeActiveFiltersCount,
   computeFilterCounts,
   resolveSelectedIds,
+  clampPageSize,
+  serverFiltersChanged,
+  SERVER_FILTER_KEYS,
+  MAX_STUDENTS_LIST_PAGE_SIZE,
 } from './useStudentsListData.helpers';
 
 // ─── computeStatusCounts ─────────────────────────────────────────────────────
@@ -377,5 +381,142 @@ describe('resolveSelectedIds', () => {
   it('returns all IDs from empty list when "all"', () => {
     const result = resolveSelectedIds('all', []);
     expect(result).toEqual([]);
+  });
+});
+
+// ─── PAG-04 (SCH-102): server pagination helpers ─────────────────────────────
+
+describe('MAX_STUDENTS_LIST_PAGE_SIZE', () => {
+  it('matches the backend cap (100/page)', () => {
+    // routes/students/crud.js caps `limit` at 100 — mirror it here so the
+    // UI never sends a value the server would silently clamp.
+    expect(MAX_STUDENTS_LIST_PAGE_SIZE).toBe(100);
+  });
+});
+
+describe('clampPageSize', () => {
+  it('returns the value when in range', () => {
+    expect(clampPageSize(25, 100)).toBe(25);
+    expect(clampPageSize(1, 100)).toBe(1);
+    expect(clampPageSize(100, 100)).toBe(100);
+  });
+
+  it('caps at MAX_STUDENTS_LIST_PAGE_SIZE for oversize values', () => {
+    expect(clampPageSize(150, 100)).toBe(MAX_STUDENTS_LIST_PAGE_SIZE);
+    expect(clampPageSize(1000, 100)).toBe(MAX_STUDENTS_LIST_PAGE_SIZE);
+  });
+
+  it('falls back to the default for non-finite / non-positive values', () => {
+    expect(clampPageSize(0, 50)).toBe(50);
+    expect(clampPageSize(-1, 50)).toBe(50);
+    expect(clampPageSize(NaN, 50)).toBe(50);
+    expect(clampPageSize(null, 50)).toBe(50);
+    expect(clampPageSize(undefined, 50)).toBe(50);
+    expect(clampPageSize('', 50)).toBe(50);
+    expect(clampPageSize('abc', 50)).toBe(50);
+  });
+
+  it('floors fractional values', () => {
+    expect(clampPageSize(25.7, 100)).toBe(25);
+    expect(clampPageSize(0.5, 100)).toBe(0); // 0 is non-positive → default
+  });
+
+  it('falls back to MAX_STUDENTS_LIST_PAGE_SIZE when default is invalid', () => {
+    // When the size itself is invalid AND the default is also invalid, the
+    // fallback chain bottoms out at MAX_STUDENTS_LIST_PAGE_SIZE so we never
+    // return 0 or NaN to the API.
+    expect(clampPageSize(0, 0)).toBe(MAX_STUDENTS_LIST_PAGE_SIZE);
+    expect(clampPageSize(-10, -10)).toBe(MAX_STUDENTS_LIST_PAGE_SIZE);
+    expect(clampPageSize(NaN, NaN)).toBe(MAX_STUDENTS_LIST_PAGE_SIZE);
+    expect(clampPageSize('', null)).toBe(MAX_STUDENTS_LIST_PAGE_SIZE);
+  });
+
+  it('handles string-numeric values from <select> onChange', () => {
+    // React <select> gives us a string; the hook should coerce + clamp.
+    expect(clampPageSize('25', 100)).toBe(25);
+    expect(clampPageSize('200', 100)).toBe(MAX_STUDENTS_LIST_PAGE_SIZE);
+  });
+});
+
+describe('SERVER_FILTER_KEYS', () => {
+  it('lists only server-side filters', () => {
+    // Client-only filters (academicPerformance / attendance) must NOT be in
+    // this list -- they run over the current page on the client and must not
+    // trigger a server refetch.
+    expect(SERVER_FILTER_KEYS).toContain('search');
+    expect(SERVER_FILTER_KEYS).toContain('classId');
+    expect(SERVER_FILTER_KEYS).toContain('feeStatus');
+    expect(SERVER_FILTER_KEYS).toContain('status');
+    expect(SERVER_FILTER_KEYS).toContain('academicYear');
+    expect(SERVER_FILTER_KEYS).toContain('sortBy');
+    expect(SERVER_FILTER_KEYS).toContain('sortOrder');
+    expect(SERVER_FILTER_KEYS).not.toContain('academicPerformance');
+    expect(SERVER_FILTER_KEYS).not.toContain('attendance');
+  });
+
+  it('is frozen so consumers cannot mutate it at runtime', () => {
+    expect(Object.isFrozen(SERVER_FILTER_KEYS)).toBe(true);
+  });
+});
+
+describe('serverFiltersChanged', () => {
+  const baseline = {
+    search: 'a',
+    classId: 'cls1',
+    feeStatus: 'paid,pending',
+    status: 'active',
+    academicYear: '2025-26',
+    sortBy: 'name',
+    sortOrder: 'asc',
+  };
+
+  it('returns false when no server filter differs', () => {
+    expect(serverFiltersChanged(baseline, { ...baseline })).toBe(false);
+  });
+
+  it('detects a search change', () => {
+    expect(serverFiltersChanged(baseline, { ...baseline, search: 'ab' })).toBe(true);
+  });
+
+  it('detects a classId change', () => {
+    expect(serverFiltersChanged(baseline, { ...baseline, classId: 'cls2' })).toBe(true);
+  });
+
+  it('detects a status change', () => {
+    expect(serverFiltersChanged(baseline, { ...baseline, status: 'inactive' })).toBe(true);
+  });
+
+  it('detects an academicYear change', () => {
+    expect(serverFiltersChanged(baseline, { ...baseline, academicYear: '2024-25' })).toBe(true);
+  });
+
+  it('detects a sortBy change', () => {
+    expect(serverFiltersChanged(baseline, { ...baseline, sortBy: 'class' })).toBe(true);
+  });
+
+  it('ignores client-only filters (academicPerformance, attendance)', () => {
+    // These run over the current page on the client and must NOT trigger a
+    // page reset / server refetch.
+    expect(
+      serverFiltersChanged(baseline, { ...baseline, academicPerformance: 'excellent', attendance: 'good' })
+    ).toBe(false);
+  });
+
+  it('treats undefined / null / "" as the same missing value', () => {
+    expect(serverFiltersChanged({ search: '' }, { search: undefined })).toBe(false);
+    expect(serverFiltersChanged({ search: null }, { search: '' })).toBe(false);
+    expect(serverFiltersChanged({ classId: undefined }, { classId: null })).toBe(false);
+  });
+
+  it('normalizes array values by joining with ","', () => {
+    expect(serverFiltersChanged({ feeStatus: ['paid', 'pending'] }, { feeStatus: 'paid,pending' })).toBe(false);
+    expect(serverFiltersChanged({ feeStatus: ['paid'] }, { feeStatus: 'pending' })).toBe(true);
+    expect(serverFiltersChanged({ feeStatus: 'paid' }, { feeStatus: ['paid', 'pending'] })).toBe(true);
+  });
+
+  it('handles missing prev/next gracefully', () => {
+    expect(serverFiltersChanged(undefined, { search: 'a' })).toBe(true);
+    expect(serverFiltersChanged({ search: 'a' }, undefined)).toBe(true);
+    expect(serverFiltersChanged({}, {})).toBe(false);
   });
 });

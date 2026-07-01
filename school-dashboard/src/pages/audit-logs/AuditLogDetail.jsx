@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Chip } from "@heroui/react";
 import {
   Eye,
@@ -12,20 +13,20 @@ import {
 } from "lucide-react";
 
 const ACTION_META = {
-  created: { label: "Created", color: "success", icon: FileEdit },
-  updated: { label: "Updated", color: "primary", icon: FileEdit },
-  deleted: { label: "Deleted", color: "danger", icon: Trash2 },
-  login: { label: "Login", color: "success", icon: LogIn },
-  logout: { label: "Logout", color: "default", icon: LogOut },
-  login_failed: { label: "Login Failed", color: "danger", icon: ShieldAlert },
-  password_changed: { label: "Password Changed", color: "warning", icon: KeyRound },
-  permission_changed: { label: "Permission Changed", color: "warning", icon: ShieldAlert },
-  settings_changed: { label: "Settings Changed", color: "primary", icon: Settings },
-  role_changed: { label: "Role Changed", color: "warning", icon: UserCog },
+  created: { key: "created", color: "success", icon: FileEdit },
+  updated: { key: "updated", color: "primary", icon: FileEdit },
+  deleted: { key: "deleted", color: "danger", icon: Trash2 },
+  login: { key: "login", color: "success", icon: LogIn },
+  logout: { key: "logout", color: "default", icon: LogOut },
+  login_failed: { key: "loginFailed", color: "danger", icon: ShieldAlert },
+  password_changed: { key: "passwordChanged", color: "warning", icon: KeyRound },
+  permission_changed: { key: "permissionChanged", color: "warning", icon: ShieldAlert },
+  settings_changed: { key: "settingsChanged", color: "primary", icon: Settings },
+  role_changed: { key: "roleChanged", color: "warning", icon: UserCog },
 };
 
 function getActionMeta(action) {
-  return ACTION_META[action] || { label: action, color: "default", icon: Eye };
+  return ACTION_META[action] || { key: null, color: "default", icon: Eye };
 }
 
 function formatValue(value) {
@@ -52,6 +53,8 @@ export default function AuditLogDetail({
   onClose,
   isMobile = false,
 }) {
+  const { t } = useTranslation();
+
   if (!log) {
     return (
       <div
@@ -60,15 +63,16 @@ export default function AuditLogDetail({
       >
         <Eye size={32} style={{ color: "var(--fg-faint)", marginBottom: 12 }} />
         <p className="text-sm font-medium" style={{ color: "var(--fg)" }}>
-          Select a log
+          {t("auditLogs.detail.selectTitle")}
         </p>
-        <p className="text-xs mt-1">Click any audit log to view its details.</p>
+        <p className="text-xs mt-1">{t("auditLogs.detail.selectDesc")}</p>
       </div>
     );
   }
 
   const meta = getActionMeta(log.action);
   const ActionIcon = meta.icon;
+  const actionLabel = meta.key ? t(`auditLogs.actions.${meta.key}`) : (log.action || "").replace(/_/g, " ");
   const changes = log.changes || [];
   const hasChanges = changes.length > 0;
   const hasOldValue = log.oldValue != null;
@@ -108,7 +112,7 @@ export default function AuditLogDetail({
           </div>
           <div className="min-w-0">
             <Chip size="sm" variant="flat" color={meta.color} className="capitalize">
-              {meta.label}
+              {actionLabel}
             </Chip>
             <p className="text-xs mt-0.5 truncate" style={{ color: "var(--fg-muted)" }}>
               {formatDate(log.createdAt)}
@@ -120,7 +124,7 @@ export default function AuditLogDetail({
             type="button"
             onClick={onClose}
             className="p-1 rounded-md hover:bg-surface-hover shrink-0 ml-2"
-            aria-label="Close"
+            aria-label={t("auditLogs.detail.closeAria")}
           >
             <Trash2 size={14} style={{ color: "var(--fg-muted)" }} />
           </button>
@@ -131,22 +135,22 @@ export default function AuditLogDetail({
       <div className="flex-1 overflow-auto px-5 py-4 space-y-5">
         {/* Metadata grid */}
         <div className="grid grid-cols-2 gap-3">
-          <MetadataItem label="Entity" value={log.entity || "—"} capitalize />
-          <MetadataItem label="Entity ID" value={log.entityId || "—"} />
+          <MetadataItem label={t("auditLogs.detail.entity")} value={log.entity || "—"} capitalize />
+          <MetadataItem label={t("auditLogs.detail.entityId")} value={log.entityId || "—"} />
           <MetadataItem
-            label="Performed By"
+            label={t("auditLogs.detail.performedBy")}
             value={log.userId?.name || log.userName || "—"}
           />
           <MetadataItem
-            label="Role"
+            label={t("auditLogs.detail.role")}
             value={log.userId?.role || "—"}
             capitalize
           />
-          <MetadataItem label="IP Address" value={log.ipAddress || "—"} />
-          <MetadataItem label="Method" value={log.method || "—"} uppercase />
-          <MetadataItem label="Path" value={log.path || "—"} fullWidth />
+          <MetadataItem label={t("auditLogs.detail.ipAddress")} value={log.ipAddress || "—"} />
+          <MetadataItem label={t("auditLogs.detail.method")} value={log.method || "—"} uppercase />
+          <MetadataItem label={t("auditLogs.detail.path")} value={log.path || "—"} fullWidth />
           {log.userAgent && (
-            <MetadataItem label="User Agent" value={log.userAgent} fullWidth />
+            <MetadataItem label={t("auditLogs.detail.userAgent")} value={log.userAgent} fullWidth />
           )}
         </div>
 
@@ -154,20 +158,20 @@ export default function AuditLogDetail({
         {hasChanges && (
           <div className="space-y-2">
             <h4 className="text-sm font-semibold" style={{ color: "var(--fg)" }}>
-              Field Changes
+              {t("auditLogs.detail.fieldChanges")}
             </h4>
             <div className="border rounded-lg overflow-hidden" style={{ borderColor: "var(--border-token)" }}>
               <table className="w-full text-sm">
                 <thead style={{ background: "var(--surface-2)" }}>
                   <tr>
                     <th className="text-left px-3 py-2 text-[11px] font-medium uppercase" style={{ color: "var(--fg-muted)" }}>
-                      Field
+                      {t("auditLogs.detail.field")}
                     </th>
                     <th className="text-left px-3 py-2 text-[11px] font-medium uppercase" style={{ color: "var(--fg-muted)" }}>
-                      Old
+                      {t("auditLogs.detail.old")}
                     </th>
                     <th className="text-left px-3 py-2 text-[11px] font-medium uppercase" style={{ color: "var(--fg-muted)" }}>
-                      New
+                      {t("auditLogs.detail.new")}
                     </th>
                   </tr>
                 </thead>
@@ -199,13 +203,13 @@ export default function AuditLogDetail({
         {(hasOldValue || hasNewValue) && !hasChanges && (
           <div className="space-y-2">
             <h4 className="text-sm font-semibold" style={{ color: "var(--fg)" }}>
-              Snapshot
+              {t("auditLogs.detail.snapshot")}
             </h4>
             {hasOldValue && (
-              <SnapshotBlock label="Old Value" value={log.oldValue} />
+              <SnapshotBlock label={t("auditLogs.detail.oldValue")} value={log.oldValue} />
             )}
             {hasNewValue && (
-              <SnapshotBlock label="New Value" value={log.newValue} />
+              <SnapshotBlock label={t("auditLogs.detail.newValue")} value={log.newValue} />
             )}
           </div>
         )}

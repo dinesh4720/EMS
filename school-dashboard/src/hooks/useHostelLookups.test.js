@@ -58,6 +58,25 @@ describe("useHostelLookups", () => {
     expect(hostelApi.getRooms).toHaveBeenCalledWith({ hostelId: "h1", available: true });
   });
 
+  it("does not load filter rooms until a filter hostel is selected", async () => {
+    const { result } = renderHook(() => useHostelLookups(undefined, "", ""), {
+      wrapper: makeWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.hostels).toHaveLength(1));
+    expect(result.current.filterRooms).toEqual([]);
+    expect(hostelApi.getRooms).not.toHaveBeenCalled();
+  });
+
+  it("loads ALL rooms (not just available) for the filter hostel (PAG-20)", async () => {
+    const { result } = renderHook(() => useHostelLookups(undefined, "", "h1"), {
+      wrapper: makeWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.filterRooms).toHaveLength(1));
+    expect(hostelApi.getRooms).toHaveBeenCalledWith({ hostelId: "h1" });
+  });
+
   it("does not search students for terms shorter than 2 characters", async () => {
     const { result } = renderHook(() => useHostelLookups(undefined, "a"), {
       wrapper: makeWrapper(),
