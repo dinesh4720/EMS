@@ -34,6 +34,7 @@ import {
 import { useStudents } from "../../context/StudentsContext";
 import { useStaff } from "../../context/StaffContext";
 import { useClasses } from "../../context/ClassesContext";
+import { formatCurrencyPrecise } from "../../utils/numberFormatter";
 import {
   feesApi,
   examsApi,
@@ -182,7 +183,7 @@ function useExtendedSearch(isOpen, query) {
         feePayments.map((p) => ({
           id: p._id || p.id,
           label: p.studentName || p.studentId?.name || "Fee payment",
-          sub: p.amount ? `₹${p.amount}` : "",
+          sub: p.amount ? formatCurrencyPrecise(p.amount) : "",
           to: `/fees`,
         }))
       );
@@ -356,7 +357,7 @@ function mapServerResults(serverResults) {
   const fees = pick(serverResults.fees?.results).map((p) => ({
     id: p._id,
     label: p.studentId?.name || p.receiptNumber || "Fee payment",
-    sub: p.amount ? `₹${p.amount}` : "",
+    sub: p.amount ? formatCurrencyPrecise(p.amount) : "",
     to: `/fees`,
   }));
   const exams = pick(serverResults.exams?.results).map((e) => ({
