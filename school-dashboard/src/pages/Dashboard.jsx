@@ -45,6 +45,7 @@ function Dashboard() {
   const {
     paymentSnapshot,
     attendanceSnapshot,
+    studentStats,
     feeDefaultersCount,
     weeklyFeeSeries,
     recentPayments,
@@ -53,7 +54,6 @@ function Dashboard() {
     dashboardError,
     reload,
   } = useDashboardData({
-    classes,
     students,
     staff,
     staffAttendance,
@@ -323,7 +323,7 @@ function Dashboard() {
       <WeeklyTrendPanel
         weeklyFeeSeries={weeklyFeeSeries}
         attendanceSnapshot={attendanceSnapshot}
-        totalStudents={activeStudents.length}
+        totalStudents={studentStats.active}
         totalStaff={activeStaff.length}
         presentToday={attendanceSnapshot.studentPresent || 0}
         onOpenFees={() => navigate("/fees")}

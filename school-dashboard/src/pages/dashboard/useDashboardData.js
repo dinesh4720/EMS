@@ -3,6 +3,7 @@ import { usePermissions } from "../../context/PermissionContext";
 import {
   announcementsApi,
   attendanceApi,
+  dashboardApi,
   feesApi,
   ptmApi,
   studentFeesApi,
@@ -23,7 +24,6 @@ import {
 } from "./dashboardHelpers";
 
 export default function useDashboardData({
-  classes,
   students,
   staff,
   staffAttendance,
@@ -52,6 +52,11 @@ export default function useDashboardData({
   const [attendanceSnapshot, setAttendanceSnapshot] = useState(() =>
     createEmptyAttendanceSnapshot()
   );
+  // [SCH-211] Student KPIs are server-computed. PAG-05 removed the global student
+  // roster from AppContext, so the dashboard reads totals + per-class distribution
+  // from /dashboard/analytics-summary instead of counting an (always empty) roster.
+  const [studentStats, setStudentStats] = useState({ total: 0, active: 0 });
+  const [classDistribution, setClassDistribution] = useState([]);
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [dashboardError, setDashboardError] = useState(null);
   const [paymentsLoaded, setPaymentsLoaded] = useState(false);
@@ -183,17 +188,48 @@ export default function useDashboardData({
     };
   }, [currentAcademicYear, reloadKey, feesEnabled, messagingEnabled]);
 
+  // [SCH-211] Server-computed student totals + per-class distribution. Feeds the
+  // active-student count and the per-class attendance snapshot below, neither of
+  // which can be derived client-side anymore (PAG-05 emptied the roster). Failure
+  // degrades to zero counts rather than erroring the whole dashboard.
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadAnalyticsSummary = async () => {
+      try {
+        const data = await dashboardApi.getAnalyticsSummary();
+        if (cancelled) return;
+        setStudentStats({
+          total: data?.students?.total || 0,
+          active: data?.students?.active || 0,
+        });
+        setClassDistribution(
+          Array.isArray(data?.classDistribution) ? data.classDistribution : []
+        );
+      } catch {
+        if (!cancelled) {
+          setStudentStats({ total: 0, active: 0 });
+          setClassDistribution([]);
+        }
+      }
+    };
+
+    loadAnalyticsSummary();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentAcademicYear, reloadKey]);
+
   useEffect(() => {
     let cancelled = false;
 
     const loadStudentAttendanceSnapshot = async () => {
-      const activeStudents = (students || []).filter(
-        (student) => (student.status || "active") === "active"
-      );
-      const classesWithStudents = (classes || []).filter((classItem) =>
-        activeStudents.some(
-          (student) => String(student.classId) === String(classItem.id)
-        )
+      // classDistribution is `[{ classId, name, count }]` of active students per
+      // class (server-computed). It replaces the old client-side roster grouping,
+      // which returned empty under PAG-05 and zeroed every student attendance KPI.
+      const classesWithStudents = (classDistribution || []).filter(
+        (entry) => entry.classId && (entry.count || 0) > 0
       );
 
       if (!classesWithStudents.length) {
@@ -217,14 +253,11 @@ export default function useDashboardData({
         let totalStudentsInMarkedClasses = 0;
         let markedClassCount = 0;
 
-        classesWithStudents.forEach((classItem) => {
-          const classData = classSummaries[String(classItem.id)];
+        classesWithStudents.forEach((entry) => {
+          const classData = classSummaries[String(entry.classId)];
           if (classData && classData.total > 0) {
             markedClassCount += 1;
-            const classStudentCount = activeStudents.filter(
-              (student) => String(student.classId) === String(classItem.id)
-            ).length;
-            totalStudentsInMarkedClasses += classStudentCount;
+            totalStudentsInMarkedClasses += entry.count || 0;
             totalPresent += classData.present || 0;
           }
         });
@@ -261,7 +294,7 @@ export default function useDashboardData({
     return () => {
       cancelled = true;
     };
-  }, [classes, students, reloadKey]);
+  }, [classDistribution, reloadKey]);
 
   const todayKey = useMemo(
     () => new Date().toISOString().split("T")[0],
@@ -346,6 +379,7 @@ export default function useDashboardData({
     weeklyFeeSeries,
     paymentSnapshot,
     attendanceSnapshot,
+    studentStats,
     feeDefaultersCount,
     dashboardLoading,
     dashboardError,
