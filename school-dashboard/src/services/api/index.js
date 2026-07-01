@@ -37,3 +37,4 @@ export {
   cbseReportCardApi, cceApi, expensesApi,
 } from './extensions.js';
 export { permissionsApi } from './permissions.js';
+export { dashboardApi } from './dashboard.js';

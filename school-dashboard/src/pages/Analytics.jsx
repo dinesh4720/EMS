@@ -1,18 +1,17 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import {
   Users, GraduationCap, BookOpen, IndianRupee,
-  CheckCircle2, Award, Activity, Target, ArrowUpRight, X
+  CheckCircle2, Award, Activity, Target, ArrowUpRight
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { Link } from "react-router-dom";
-import { reportsApi } from "../services/api";
+import { reportsApi, dashboardApi } from "../services/api";
 import {
   AreaChart, Area, BarChart, Bar, PieChart as RePieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import StatCard from "../components/StatCard";
 import { ChartCard, QuickActionTile, Card } from "../components/ui";
-import Drawer from "../components/ui/Drawer";
 import { useChartTheme, CHART_COLORS } from "../utils/chartTheme";
 import { getDateLocale } from '../i18n/index';
 import { useTranslation } from 'react-i18next';
@@ -190,10 +189,12 @@ const DatePresetToggle = ({ value, onChange, size = 'sm' }) => {
 
 export default function Analytics() {
   const { t } = useTranslation();
-  const { students, staff, classesWithTeachers, feeDefaulters, schoolSettings, currentAcademicYear } = useApp();
+  // [SCH-204] `staff` / `classesWithTeachers` are still hydrated by AppContext,
+  // but `students` (and `feeDefaulters`) are intentionally empty since PAG-05.
+  // Student-derived KPIs now come from the server via `dashboardApi` below.
+  const { staff, classesWithTeachers, schoolSettings, currentAcademicYear } = useApp();
   const chart = useChartTheme();
   const [datePreset, setDatePreset] = useState('academic-year');
-  const [drillDown, setDrillDown] = useState(null);
   const [attendanceSummary, setAttendanceSummary] = useState({
     avgAttendance: null,
     weeklyTrend: [],
@@ -201,6 +202,40 @@ export default function Analytics() {
     loading: true,
     error: null,
   });
+  const [summaryReloadKey, setSummaryReloadKey] = useState(0);
+  const [summary, setSummary] = useState({
+    data: null,
+    loading: true,
+    error: null,
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadSummary = async () => {
+      setSummary((prev) => ({ ...prev, loading: true, error: null }));
+      try {
+        const data = await dashboardApi.getAnalyticsSummary();
+        if (!cancelled) setSummary({ data, loading: false, error: null });
+      } catch (error) {
+        logger.error("Failed to load analytics summary:", error);
+        if (!cancelled) {
+          setSummary({
+            data: null,
+            loading: false,
+            error: error?.message || "Failed to load analytics summary",
+          });
+        }
+      }
+    };
+
+    loadSummary();
+    return () => {
+      cancelled = true;
+    };
+  }, [summaryReloadKey]);
+
+  const retrySummary = useCallback(() => setSummaryReloadKey((k) => k + 1), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -286,26 +321,29 @@ export default function Analytics() {
   }, [schoolSettings, currentAcademicYear, datePreset]);
 
   const analytics = useMemo(() => {
-    const safeStudents = students || [];
     const safeStaff = staff || [];
     const safeClasses = classesWithTeachers || [];
 
-    const activeStudents = safeStudents.filter(s => s.status === "active").length;
-    const inactiveStudents = safeStudents.filter(s => s.status === "inactive").length;
-    const transferredStudents = safeStudents.filter(s => s.status === "transferred").length;
-    const alumniStudents = safeStudents.filter(s => s.status === "alumni").length;
+    // Student + fee KPIs and class distribution are aggregated server-side
+    // (PAG-05 removed the client roster). Fall back to zeros before the fetch
+    // resolves so the shape stays stable.
+    const studentStats = summary.data?.students || {};
+    const feeStats = summary.data?.fees || {};
+    const classDistribution = summary.data?.classDistribution || [];
 
-    const studentsByClass = {};
-    safeStudents.forEach(s => {
-      studentsByClass[s.class] = (studentsByClass[s.class] || 0) + 1;
-    });
-    const largestClass = Object.entries(studentsByClass).sort((a, b) => b[1] - a[1])[0];
-    const smallestClass = Object.entries(studentsByClass).sort((a, b) => a[1] - b[1])[0];
-
-    const paidFees = safeStudents.filter(s => s.feeStatus === "paid").length;
-    const pendingFees = safeStudents.filter(s => s.feeStatus === "pending").length;
-    const overdueFees = safeStudents.filter(s => s.feeStatus === "overdue").length;
-    const feeCollectionRate = safeStudents.length > 0 ? ((paidFees / safeStudents.length) * 100).toFixed(1) : "0.0";
+    const totalStudents = studentStats.total || 0;
+    const largestClass = classDistribution.length
+      ? [classDistribution[0].name, classDistribution[0].count]
+      : undefined;
+    const smallestClass = classDistribution.length
+      ? [
+          classDistribution[classDistribution.length - 1].name,
+          classDistribution[classDistribution.length - 1].count,
+        ]
+      : undefined;
+    const collectionRate = (
+      typeof feeStats.collectionRate === "number" ? feeStats.collectionRate : 0
+    ).toFixed(1);
 
     const activeStaff = safeStaff.filter(s => s.status === "active").length;
     const teachers = safeStaff.filter(s => s.role === "Teacher").length;
@@ -322,25 +360,25 @@ export default function Analytics() {
     const totalClasses = safeClasses.length;
     const classesWithTeacher = safeClasses.filter(c => c.classTeacherId).length;
     const classesWithoutTeacher = totalClasses - classesWithTeacher;
-    const avgClassSize = totalClasses > 0 ? (safeStudents.length / totalClasses).toFixed(1) : "0";
+    const avgClassSize = totalClasses > 0 ? (totalStudents / totalClasses).toFixed(1) : "0";
 
     return {
       students: {
-        total: safeStudents.length,
-        active: activeStudents,
-        inactive: inactiveStudents,
-        transferred: transferredStudents,
-        alumni: alumniStudents,
+        total: totalStudents,
+        active: studentStats.active || 0,
+        inactive: studentStats.inactive || 0,
+        transferred: studentStats.transferred || 0,
+        alumni: studentStats.alumni || 0,
         largestClass,
         smallestClass,
         avgAttendance: attendanceSummary.avgAttendance
       },
       fees: {
-        paid: paidFees,
-        pending: pendingFees,
-        overdue: overdueFees,
-        collectionRate: feeCollectionRate,
-        defaulters: (feeDefaulters || []).length
+        paid: feeStats.paid || 0,
+        pending: feeStats.pending || 0,
+        overdue: feeStats.overdue || 0,
+        collectionRate,
+        defaulters: feeStats.defaulters || 0
       },
       staff: {
         total: safeStaff.length,
@@ -359,15 +397,21 @@ export default function Analytics() {
         avgSize: avgClassSize
       }
     };
-  }, [students, staff, classesWithTeachers, feeDefaulters, attendanceSummary.avgAttendance]);
+  }, [staff, classesWithTeachers, summary.data, attendanceSummary.avgAttendance]);
+
+  // Student + fee cards depend on the server summary; staff/classes come from
+  // still-hydrated context. Shimmer while loading, show "—" if the fetch failed.
+  const summaryLoading = summary.loading && !summary.data;
+  const summaryFailed = !!summary.error && !summary.data;
 
   const stats = [
     {
       label: "Total Students",
-      value: analytics.students.total.toString(),
-      subtext: `${analytics.students.active} active students`,
+      value: summaryFailed ? "—" : analytics.students.total.toString(),
+      subtext: summaryFailed ? "Unavailable" : `${analytics.students.active} active students`,
       icon: GraduationCap,
       color: "gray",
+      isLoading: summaryLoading,
     },
     {
       label: "Total Staff",
@@ -379,16 +423,17 @@ export default function Analytics() {
     {
       label: "Total Classes",
       value: analytics.classes.total.toString(),
-      subtext: `Avg ${analytics.classes.avgSize} students/class`,
+      subtext: `Avg ${summaryFailed ? "—" : analytics.classes.avgSize} students/class`,
       icon: BookOpen,
       color: "gray",
     },
     {
       label: "Fee Collection",
-      value: `${analytics.fees.collectionRate}%`,
-      subtext: `${analytics.fees.paid}/${analytics.students.total} paid`,
+      value: summaryFailed ? "—" : `${analytics.fees.collectionRate}%`,
+      subtext: summaryFailed ? "Unavailable" : `${analytics.fees.paid}/${analytics.students.total} paid`,
       icon: IndianRupee,
       color: "gray",
+      isLoading: summaryLoading,
     }
   ];
 
@@ -427,38 +472,6 @@ export default function Analytics() {
       : "—";
   })();
 
-  const handlePieClick = useCallback((chartType, data) => {
-    if (!data || !data.name) return;
-    const safeStudents = students || [];
-    let items = [];
-    let title = '';
-
-    if (chartType === 'studentDistribution') {
-      const statusMap = {
-        'Active': 'active',
-        'Inactive': 'inactive',
-        'Transferred': 'transferred',
-        'Alumni': 'alumni',
-      };
-      const status = statusMap[data.name];
-      items = safeStudents.filter(s => s.status === status);
-      title = `${data.name} Students`;
-    } else if (chartType === 'feeCollection') {
-      const feeMap = {
-        'Paid': 'paid',
-        'Pending': 'pending',
-        'Overdue': 'overdue',
-      };
-      const feeStatus = feeMap[data.name];
-      items = safeStudents.filter(s => s.feeStatus === feeStatus);
-      title = `${data.name} Fees`;
-    }
-
-    setDrillDown({ title, items, type: chartType });
-  }, [students]);
-
-  const closeDrillDown = useCallback(() => setDrillDown(null), []);
-
   return (
     <div className="min-h-screen pb-8">
       <div className="mb-6">
@@ -484,6 +497,9 @@ export default function Analytics() {
               description={t('pages.byEnrollmentStatus')}
               actions={<ViewAllLink to="/students" />}
               height={200}
+              isLoading={summaryLoading}
+              error={summaryFailed ? summary.error : null}
+              onRetry={retrySummary}
               isEmpty={studentDistributionEmpty}
               emptyTitle="No student data"
             >
@@ -497,8 +513,6 @@ export default function Analytics() {
                     label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                     outerRadius={70}
                     dataKey="value"
-                    onClick={(data) => handlePieClick('studentDistribution', data)}
-                    className="cursor-pointer"
                   >
                     {studentDistribution.map((entry, index) => (
                       <Cell key={`cell-${entry.name}`} fill={PIE_PALETTE[index % PIE_PALETTE.length]} />
@@ -514,6 +528,9 @@ export default function Analytics() {
               description={t('pages.paymentDistribution')}
               actions={<ViewAllLink to="/fees" />}
               height={200}
+              isLoading={summaryLoading}
+              error={summaryFailed ? summary.error : null}
+              onRetry={retrySummary}
               isEmpty={feeDataEmpty}
               emptyTitle="No fee data"
             >
@@ -768,41 +785,6 @@ export default function Analytics() {
           </Card>
         </div>
       </div>
-
-      {/* Drill-down Drawer */}
-      <Drawer
-        isOpen={!!drillDown}
-        onClose={closeDrillDown}
-        title={drillDown?.title}
-        size="md"
-      >
-        {drillDown && (
-          <div className="space-y-3">
-            {drillDown.items.length === 0 ? (
-              <p className="text-sm text-fg-muted">No records found.</p>
-            ) : (
-              drillDown.items.map((item) => (
-                <div
-                  key={item.id || item._id}
-                  className="flex items-center justify-between p-3 bg-surface-2 rounded-lg"
-                >
-                  <div>
-                    <div className="text-sm font-medium text-fg">{item.name}</div>
-                    <div className="text-xs text-fg-muted">
-                      {item.classId ? `Class: ${item.class}` : ''}
-                      {item.classId && item.rollNo ? ' · ' : ''}
-                      {item.rollNo ? `Roll: ${item.rollNo}` : ''}
-                    </div>
-                  </div>
-                  <div className="text-xs text-fg-muted capitalize">
-                    {item.status || item.feeStatus}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-      </Drawer>
     </div>
   );
 }
