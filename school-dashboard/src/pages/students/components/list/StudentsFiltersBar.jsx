@@ -178,7 +178,7 @@ const StudentsFiltersBar = forwardRef(function StudentsFiltersBar({
         {
             title: t("pages.communication1"),
             items: [
-                { key: "message", label: "Send Message to Parent", icon: <MessageSquare size={14} aria-hidden />, onClick: () => handleBulkAction("message") },
+                { key: "message", label: "Send Fee Reminder", icon: <MessageSquare size={14} aria-hidden />, onClick: () => handleBulkAction("message") },
             ],
         },
         {

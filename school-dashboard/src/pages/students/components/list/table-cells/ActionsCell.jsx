@@ -89,7 +89,7 @@ function ActionsCell({
             items: [
                 {
                     key: "message",
-                    label: "Send Message to Parent",
+                    label: "Send Fee Reminder",
                     icon: <MessageSquare size={14} />,
                     onClick: () => {
                         setSelectedKeys(new Set([student.id.toString()]));
