@@ -30,37 +30,46 @@ import {
  * on its own — the first panel item is its landing page. A section with
  * only `href` navigates directly.
  */
+/*
+ * `moduleKey` ties a nav entry to a per-school module (see config/moduleRegistry).
+ * When a school switches a module OFF in Settings → Modules, filterNavGroups()
+ * hides the matching sections / panel items. Entries with no moduleKey (or a CORE
+ * key like students/staff/classes) are always shown.
+ */
 export const NAV_GROUPS = [
   {
     cat: null,
     items: [
-      { id: "dashboard", icon: LayoutDashboard, label: "Dashboard", href: "/", end: true },
+      { id: "dashboard", icon: LayoutDashboard, label: "Dashboard", href: "/", end: true, moduleKey: "dashboard" },
     ],
   },
   {
     cat: "School",
     items: [
       {
-        id: "students", icon: GraduationCap, label: "Students",
+        id: "students", icon: GraduationCap, label: "Students", moduleKey: "students", href: "/students",
         panel: [
+          { id: "students-hub", icon: LayoutDashboard, label: "Dashboard", href: "/students/overview" },
           { id: "students-all", icon: Users, label: "All Students", href: "/students", end: true },
           { id: "attendance", icon: CalendarCheck, label: "Attendance", href: "/students/attendance" },
-          { id: "submissions", icon: SendHorizontal, label: "Form Submissions", href: "/students/submissions" },
+          { id: "submissions", icon: SendHorizontal, label: "Form Submissions", href: "/students/submissions", moduleKey: "intake-forms" },
           { id: "promotion", icon: TrendingUp, label: "Promotion", href: "/students/promotion" },
           { id: "tc", icon: FileOutput, label: "Transfer Certificate", href: "/students/transfer-certificate" },
         ],
       },
       {
-        id: "staff", icon: Users, label: "Staff",
+        id: "staff", icon: Users, label: "Staff", moduleKey: "staff", href: "/staffs",
         panel: [
+          { id: "staff-hub", icon: LayoutDashboard, label: "Dashboard", href: "/staffs/overview" },
           { id: "staff-all", icon: ContactRound, label: "All Staff", href: "/staffs", end: true },
-          { id: "payroll", icon: Wallet, label: "Payroll", href: "/staffs/payroll" },
+          { id: "payroll", icon: Wallet, label: "Payroll", href: "/staffs/payroll", moduleKey: "payroll" },
           { id: "subjects", icon: BookMarked, label: "Bulk Subjects", href: "/staffs/bulk-subjects" },
         ],
       },
       {
-        id: "academics", icon: BookOpen, label: "Academics",
+        id: "academics", icon: BookOpen, label: "Academics", moduleKey: "academics", href: "/academics",
         panel: [
+          { id: "academics-hub", icon: LayoutDashboard, label: "Dashboard", href: "/academics/overview" },
           { id: "acad-home", icon: BookOpen, label: "Overview", href: "/academics", end: true },
           { id: "exams", icon: FilePenLine, label: "Exams", href: "/academics/exams" },
           { id: "homework", icon: ClipboardList, label: "Homework", href: "/homework" },
@@ -68,25 +77,25 @@ export const NAV_GROUPS = [
           { id: "timetable", icon: Wand2, label: "Timetable Wizard", href: "/timetable-wizard" },
         ],
       },
-      { id: "classes", icon: School, label: "Classes", href: "/classes" },
-      { id: "calendar", icon: Calendar, label: "Calendar", href: "/calendar" },
+      { id: "classes", icon: School, label: "Classes", href: "/classes", moduleKey: "classes" },
+      { id: "calendar", icon: Calendar, label: "Calendar", href: "/calendar", moduleKey: "timetable" },
     ],
   },
   {
     cat: "Finance & Comms",
     items: [
       {
-        id: "fees", icon: IndianRupee, label: "Fees",
+        id: "fees", icon: IndianRupee, label: "Fees", moduleKey: "fees",
         panel: [
           { id: "fees-collect", icon: HandCoins, label: "Collection", href: "/fees", end: true },
           { id: "fees-defaulters", icon: AlertTriangle, label: "Defaulters", href: "/fees?status=overdue" },
           { id: "fees-structure", icon: Layers, label: "Structures", href: "/settings/fee-templates" },
-          { id: "fees-reports", icon: FileBarChart, label: "Reports", href: "/reports" },
+          { id: "fees-reports", icon: FileBarChart, label: "Reports", href: "/reports", moduleKey: "reports" },
           { id: "fees-refunds", icon: Undo2, label: "Refunds", href: "/fees/refunds" },
         ],
       },
-      { id: "expenses", icon: Receipt, label: "Expenses", href: "/expenses" },
-      { id: "messaging", icon: MessageSquare, label: "Messaging", href: "/messaging", unread: true },
+      { id: "expenses", icon: Receipt, label: "Expenses", href: "/expenses", moduleKey: "expenses" },
+      { id: "messaging", icon: MessageSquare, label: "Messaging", href: "/messaging", unread: true, moduleKey: "messaging" },
     ],
   },
   {
@@ -95,34 +104,60 @@ export const NAV_GROUPS = [
       {
         id: "operations", icon: LayoutGrid, label: "Operations",
         panel: [
-          { id: "front-desk", icon: DoorOpen, label: "Front Desk", href: "/front-desk" },
-          { id: "library", icon: Library, label: "Library", href: "/library" },
-          { id: "inventory", icon: Package, label: "Inventory", href: "/inventory" },
-          { id: "hostel", icon: Building2, label: "Hostel", href: "/hostel" },
-          { id: "transport", icon: Bus, label: "Transport", href: "/transport" },
+          { id: "front-desk", icon: DoorOpen, label: "Front Desk", href: "/front-desk", moduleKey: "front-desk" },
+          { id: "library", icon: Library, label: "Library", href: "/library", moduleKey: "library" },
+          { id: "inventory", icon: Package, label: "Inventory", href: "/inventory", moduleKey: "inventory" },
+          { id: "hostel", icon: Building2, label: "Hostel", href: "/hostel", moduleKey: "hostel" },
+          { id: "transport", icon: Bus, label: "Transport", href: "/transport", moduleKey: "transport" },
         ],
       },
       {
         id: "insights", icon: BarChart3, label: "Insights",
         panel: [
-          { id: "reports", icon: FileBarChart, label: "Reports", href: "/reports" },
-          { id: "analytics", icon: BarChart3, label: "Analytics", href: "/analytics" },
-          { id: "ai", icon: Sparkles, label: "AI Assistant", href: "/ai-assistant" },
+          { id: "reports", icon: FileBarChart, label: "Reports", href: "/reports", moduleKey: "reports" },
+          { id: "analytics", icon: BarChart3, label: "Analytics", href: "/analytics", moduleKey: "analytics" },
+          { id: "ai", icon: Sparkles, label: "AI Assistant", href: "/ai-assistant", moduleKey: "ai-assistant" },
         ],
       },
       {
         id: "admin", icon: Shield, label: "Administration",
         panel: [
-          { id: "intake", icon: ClipboardPen, label: "Intake Forms", href: "/intake-forms/assignments" },
-          { id: "data", icon: Database, label: "Data Tools", href: "/data-tools" },
+          { id: "intake", icon: ClipboardPen, label: "Intake Forms", href: "/intake-forms/assignments", moduleKey: "intake-forms" },
+          { id: "data", icon: Database, label: "Data Tools", href: "/data-tools", moduleKey: "dataTools" },
           { id: "checklist", icon: ListChecks, label: "IA & Checklist", href: "/ia" },
           { id: "style", icon: Palette, label: "Style Guide", href: "/style-guide" },
-          { id: "audit", icon: ScrollText, label: "Audit Logs", href: "/audit-logs" },
+          { id: "audit", icon: ScrollText, label: "Audit Logs", href: "/audit-logs", moduleKey: "audit_logs" },
         ],
       },
     ],
   },
 ];
+
+/**
+ * Hide nav sections / panel items whose module a school has switched off.
+ * `isModuleEnabled(key)` comes from PermissionContext; entries without a
+ * moduleKey are always kept. A panel section with no remaining items is dropped,
+ * and an empty group is dropped entirely.
+ */
+export function filterNavGroups(groups, isModuleEnabled) {
+  if (typeof isModuleEnabled !== "function") return groups;
+  return groups
+    .map((group) => {
+      const items = group.items
+        .map((section) => {
+          if (section.moduleKey && !isModuleEnabled(section.moduleKey)) return null;
+          if (section.panel) {
+            const panel = section.panel.filter((pi) => isModuleEnabled(pi.moduleKey));
+            if (panel.length === 0) return null;
+            return { ...section, panel };
+          }
+          return section;
+        })
+        .filter(Boolean);
+      return { ...group, items };
+    })
+    .filter((group) => group.items.length > 0);
+}
 
 /** Footer item (rendered separately, below the nav). */
 export const SETTINGS_ITEM = { id: "settings", icon: Settings, label: "Settings", href: "/settings" };

@@ -1,6 +1,7 @@
 import { memo, useEffect } from "react";
 import Breadcrumbs from "./Breadcrumbs";
 import MinimalTabs from "./MinimalTabs";
+import PagePin from "./PagePin";
 import { cn } from "../../utils/cn";
 
 const SITE_NAME = "EMS";
@@ -66,6 +67,8 @@ const PageShell = memo(function PageShell({
   description,
   documentTitle,
   metaDescription,
+  pinnable = false,
+  pinLabel,
   breadcrumbs,
   actions,
   tabs,
@@ -119,14 +122,24 @@ const PageShell = memo(function PageShell({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="min-w-0">
               {title && (
-                <h1
-                  className={cn(
-                    "font-medium text-fg truncate",
-                    TITLE_SIZE[size],
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <h1
+                    className={cn(
+                      "font-medium text-fg truncate",
+                      TITLE_SIZE[size],
+                    )}
+                  >
+                    {title}
+                  </h1>
+                  {pinnable && (
+                    <PagePin
+                      label={
+                        pinLabel ||
+                        (typeof title === "string" ? title : "this page")
+                      }
+                    />
                   )}
-                >
-                  {title}
-                </h1>
+                </div>
               )}
               {description && (
                 <p

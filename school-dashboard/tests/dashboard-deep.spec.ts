@@ -45,8 +45,8 @@ test.describe('Dashboard Deep — Admin Widgets', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    // Wait for the payments section to load
-    await expect(page.getByText('Payments').first()).toBeVisible({ timeout: 15_000 });
+    // Wait for the recent activity feed to load (payments live there now)
+    await expect(page.getByText('Recent activity').first()).toBeVisible({ timeout: 15_000 });
 
     // Student names from payments should appear
     await expect(page.getByText('Student A1').first()).toBeVisible({ timeout: 5_000 });
@@ -72,8 +72,8 @@ test.describe('Dashboard Deep — Admin Widgets', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    // Wait for the notices section to load
-    await expect(page.getByText('Notices').first()).toBeVisible({ timeout: 15_000 });
+    // Wait for the latest notice to load (notices live in the Today column now)
+    await expect(page.getByText('Latest notice').first()).toBeVisible({ timeout: 15_000 });
 
     // The announcement title should appear in the notices feed.
     await expect(page.getByText('School Annual Day').first()).toBeVisible({ timeout: 5_000 });
@@ -115,9 +115,9 @@ test.describe('Dashboard Deep — Principal View', () => {
     // Wait for the dashboard to load
     await expect(body.getByText('Attendance today').first()).toBeVisible({ timeout: 15_000 });
 
-    // Your day and Actions sections should be present
-    await expect(body.getByText('Your day').first()).toBeVisible({ timeout: 5_000 });
-    await expect(body.getByText('Actions').first()).toBeVisible({ timeout: 5_000 });
+    // Needs your attention and Recent activity sections should be present
+    await expect(body.getByText('Needs your attention').first()).toBeVisible({ timeout: 5_000 });
+    await expect(body.getByText('Recent activity').first()).toBeVisible({ timeout: 5_000 });
   });
 });
 
@@ -156,8 +156,8 @@ test.describe('Dashboard Deep — Accountant View', () => {
 
     const body = page.locator('body');
 
-    // Wait for the payments section
-    await expect(body.getByText('Payments').first()).toBeVisible({ timeout: 15_000 });
+    // Wait for the recent activity feed (payments live there now)
+    await expect(body.getByText('Recent activity').first()).toBeVisible({ timeout: 15_000 });
 
     // Should see student names in the payments
     await expect(body.getByText('Fee Student 1').first()).toBeVisible({ timeout: 5_000 });
@@ -198,8 +198,8 @@ test.describe('Dashboard Deep — Teacher View', () => {
     // Wait for the dashboard
     await expect(body.getByText('Attendance today').first()).toBeVisible({ timeout: 15_000 });
 
-    // Your day section should be present
-    await expect(body.getByText('Your day').first()).toBeVisible({ timeout: 5_000 });
+    // Needs your attention section should be present
+    await expect(body.getByText('Needs your attention').first()).toBeVisible({ timeout: 5_000 });
   });
 });
 

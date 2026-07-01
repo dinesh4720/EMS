@@ -1,23 +1,21 @@
 /**
  * @vitest-environment jsdom
  *
- * Regression tests for the staff list page.
+ * Regression tests for the staff list page's search + filter pipeline.
  *
- * StaffList previously crashed on every render with
- *   "ReferenceError: Cannot access 'paginatedVisible' before initialization"
- * because `moveSelection` (a useCallback near the top of the component) read
- * `paginatedVisible` in its body and dependency array, while the
- * `paginatedVisible` useMemo was declared ~115 lines lower. A useCallback's
- * dependency array is evaluated eagerly during render, so reading the
- * not-yet-initialized `const` hit the temporal dead zone and threw — which
- * React surfaced as the global "Something went wrong / Try again" boundary.
+ * StaffList delegates all rendering to <StaffDataGrid/>; these tests mock that
+ * grid and assert on the already-filtered `staff` prop it receives. That keeps
+ * the tests focused on StaffList's own responsibility (search / role / tab
+ * filtering via `searchMatch` + `useStaffFilters`) without coupling to the
+ * grid's internal markup.
  *
- * This test mounts the component with empty data and asserts it renders the
- * empty state instead of throwing. The crash happens at the top of render,
- * independent of any fetched data, so empty context is enough to reproduce it.
+ * Covers the DK-891 regression: role search must work whether `role` is an
+ * array (`["Math Teacher"]`) or a string (`"Admin"`), and must not throw when
+ * `role` is undefined. Also guards the historical TDZ crash by mounting with
+ * empty data and asserting no throw.
  */
-import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
+import { render, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
 // Mutable app context so each test can provide its own staff payload.
@@ -26,21 +24,17 @@ vi.mock("../../context/AppContext", () => {
   return { useApp: mockUseApp };
 });
 
-// Closed modal — render nothing to avoid portal noise in jsdom.
-vi.mock("../../components/ui/PrintPreviewModal", () => ({ default: () => null }));
-
-// Render a minimal row so tests can assert on which staff made it through
-// the search/filter pipeline without exercising PhotoAvatar, badges, etc.
-vi.mock("./StaffListRow", () => ({
-  default: function MockStaffListRow({ staff }) {
-    return (
-      <div data-testid="staff-row">
-        {staff.name} /{" "}
-        {Array.isArray(staff.role) ? staff.role.join(", ") : staff.role || "—"}
-      </div>
-    );
+// Capture the props StaffList passes down to the grid (the filtered roster).
+let gridProps;
+vi.mock("./StaffDataGrid", () => ({
+  default: function MockStaffDataGrid(props) {
+    gridProps = props;
+    return <div data-testid="staff-grid">{props.staff.length}</div>;
   },
 }));
+
+// The create-staff composer is irrelevant to the filter pipeline.
+vi.mock("./CreateStaffComposer", () => ({ default: () => null }));
 
 // API is only touched by event handlers, never during render.
 vi.mock("../../services/api", () => ({
@@ -65,46 +59,43 @@ function renderWithQuery(query) {
   );
 }
 
+const visibleNames = () => gridProps.staff.map((s) => s.name);
+
+beforeEach(() => {
+  gridProps = undefined;
+  sessionStorage.clear(); // useStaffFilters persists pill filters here
+});
 afterEach(cleanup);
 
-describe("StaffList", () => {
-  it("renders the empty state without throwing (TDZ regression)", () => {
+describe("StaffList search + filter pipeline", () => {
+  it("renders without throwing on empty data and passes an empty roster down (TDZ regression)", () => {
+    useApp.mockReturnValue({ staff: [], staffAttendance: {}, loading: false });
     expect(() => renderWithQuery(null)).not.toThrow();
-
-    // The page title and the empty-state copy both render.
-    expect(screen.getByText("Staff")).toBeTruthy();
-    expect(screen.getByText("No staff yet")).toBeTruthy();
+    expect(gridProps.staff).toEqual([]);
+    expect(gridProps.totalMembers).toBe(0);
   });
 
   it("searches by role when role is an array (DK-891 regression)", () => {
     useApp.mockReturnValue({ staff: STAFF_FIXTURE, staffAttendance: {}, loading: false });
     renderWithQuery("teacher");
-
-    const rows = screen.getAllByTestId("staff-row");
-    expect(rows).toHaveLength(1);
-    expect(rows[0].textContent).toContain("Alice");
+    expect(visibleNames()).toEqual(["Alice"]);
   });
 
   it("still searches by role when role is a string", () => {
     useApp.mockReturnValue({ staff: STAFF_FIXTURE, staffAttendance: {}, loading: false });
     renderWithQuery("admin");
-
-    expect(screen.getByText("Bob / Admin")).toBeTruthy();
-    expect(screen.queryByText("Alice / Math Teacher")).toBeNull();
+    expect(visibleNames()).toEqual(["Bob"]);
   });
 
   it("does not throw when role is undefined", () => {
     useApp.mockReturnValue({ staff: STAFF_FIXTURE, staffAttendance: {}, loading: false });
     expect(() => renderWithQuery("carol")).not.toThrow();
-    expect(screen.getByText(/Carol/)).toBeTruthy();
+    expect(visibleNames()).toEqual(["Carol"]);
   });
 
   it("shows all staff when no search query is provided", () => {
     useApp.mockReturnValue({ staff: STAFF_FIXTURE, staffAttendance: {}, loading: false });
     renderWithQuery(null);
-
-    expect(screen.getByText("Alice / Math Teacher")).toBeTruthy();
-    expect(screen.getByText("Bob / Admin")).toBeTruthy();
-    expect(screen.getByText(/Carol/)).toBeTruthy();
+    expect(visibleNames()).toEqual(["Alice", "Bob", "Carol"]);
   });
 });

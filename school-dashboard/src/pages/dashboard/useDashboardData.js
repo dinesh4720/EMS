@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { usePermissions } from "../../context/PermissionContext";
 import {
   announcementsApi,
   attendanceApi,
@@ -8,6 +9,7 @@ import {
 import {
   createEmptyAttendanceSnapshot,
   createFeeCollectionSeries,
+  createWeeklyFeeSeries,
   isSameDay,
   isSameMonth,
   isSuccessfulPayment,
@@ -23,9 +25,20 @@ export default function useDashboardData({
   staffAttendance,
   currentAcademicYear,
 }) {
+  // Fees / messaging endpoints are 403 MODULE_DISABLED when the school has those
+  // modules turned off — skip those calls instead of letting them error.
+  const permissions = usePermissions();
+  const permissionsReady = permissions?.ready ?? false;
+  const feesEnabled = permissionsReady && (permissions?.isModuleEnabled ? permissions.isModuleEnabled("fees") : true);
+  const messagingEnabled = permissionsReady && (permissions?.isModuleEnabled ? permissions.isModuleEnabled("messaging") : true);
+
   const [recentPayments, setRecentPayments] = useState([]);
   const [recentAnnouncements, setRecentAnnouncements] = useState([]);
   const [feeCollectionData, setFeeCollectionData] = useState([]);
+  const [weeklyFeeSeries, setWeeklyFeeSeries] = useState({
+    days: [],
+    totals: { thisWeekTotal: 0, lastWeekTotal: 0 },
+  });
   const [paymentSnapshot, setPaymentSnapshot] = useState({
     totalPending: null,
     totalCollected: null,
@@ -53,11 +66,12 @@ export default function useDashboardData({
       setPaymentsLoaded(false);
 
       try {
+        const skip = () => Promise.resolve(null);
         const [paymentsResult, announcementsResult, feeStructuresResult] =
           await Promise.allSettled([
-            feesApi.getPayments({ academicYear: currentAcademicYear }),
-            announcementsApi.getAll({}),
-            studentFeesApi.getAll(currentAcademicYear),
+            feesEnabled ? feesApi.getPayments({ academicYear: currentAcademicYear }) : skip(),
+            messagingEnabled ? announcementsApi.getAll({}) : skip(),
+            feesEnabled ? studentFeesApi.getAll(currentAcademicYear) : skip(),
           ]);
 
         if (cancelled) return;
@@ -106,6 +120,7 @@ export default function useDashboardData({
           ).slice(0, 6)
         );
         setFeeCollectionData(createFeeCollectionSeries(settledPayments));
+        setWeeklyFeeSeries(createWeeklyFeeSeries(settledPayments));
         setPaymentSnapshot({
           totalPending:
             feeStructuresResult.status === "fulfilled" ? totalPending : null,
@@ -155,11 +170,12 @@ export default function useDashboardData({
     };
 
     loadDashboardFeed();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
 
     return () => {
       cancelled = true;
     };
-  }, [currentAcademicYear, reloadKey]);
+  }, [currentAcademicYear, reloadKey, feesEnabled, messagingEnabled]);
 
   useEffect(() => {
     let cancelled = false;
@@ -281,6 +297,7 @@ export default function useDashboardData({
     recentPayments,
     recentAnnouncements,
     feeCollectionData,
+    weeklyFeeSeries,
     paymentSnapshot,
     attendanceSnapshot,
     feeDefaultersCount,

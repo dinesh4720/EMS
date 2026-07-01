@@ -4,6 +4,7 @@
  */
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import logger from "../../utils/logger";
+import { calculatePayrollTotals } from "./utils/payrollMath";
 import { useDisclosure } from "@heroui/react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useValidatedParams } from "../../hooks/useValidatedParams";
@@ -224,14 +225,7 @@ export default function StaffDashboard() {
     ? Math.round(classTeacherAssignments.reduce((sum, cls) => sum + (cls.averageAttendance || cls.attendance || 0), 0) / classTeacherAssignments.length)
     : 0;
 
-  const calculateTotals = (salaryData) => {
-    if (!salaryData) return { totalEarnings: 0, totalDeductions: 0, netSalary: 0 };
-    let totalEarnings = 0;
-    salarySettings?.earnings?.forEach(item => { totalEarnings += Number(salaryData[item.id] || 0); });
-    let totalDeductions = 0;
-    salarySettings?.deductions?.forEach(item => { totalDeductions += Number(salaryData[item.id] || 0); });
-    return { totalEarnings, totalDeductions, netSalary: totalEarnings - totalDeductions };
-  };
+  const calculateTotals = (salaryData) => calculatePayrollTotals(salaryData, salarySettings);
 
   // Initialize picture preview and documents from staff data
   useEffect(() => {

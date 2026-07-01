@@ -1,5 +1,6 @@
 import { usePermissions } from "../../context/PermissionContext";
 import PermissionDenied from "./PermissionDenied";
+import ModuleDisabled from "./ModuleDisabled";
 import { Spinner } from "@heroui/react";
 
 /**
@@ -17,7 +18,7 @@ export default function PermissionGuard({
   children, 
   fallback 
 }) {
-  const { hasPermission, loading } = usePermissions();
+  const { hasPermission, loading, isModuleEnabled } = usePermissions();
 
   if (loading) {
     return (
@@ -25,6 +26,12 @@ export default function PermissionGuard({
         <Spinner size="lg" />
       </div>
     );
+  }
+
+  // Module enablement (per-school) is checked before role permission: a feature
+  // the school hasn't turned on shouldn't prompt the user to "request access".
+  if (module && !isModuleEnabled(module)) {
+    return <ModuleDisabled module={module} />;
   }
 
   const permitted = hasPermission(module, action);

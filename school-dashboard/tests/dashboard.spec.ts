@@ -149,13 +149,13 @@ test.describe('Dashboard — Widgets, Stats & Navigation', () => {
   test('9 — stat cards are clickable and navigate', async ({ page }) => {
     await gotoDashboardAndWait(page);
 
-    // KPI cards are buttons — at least one should be visible and clickable
-    const kpiCard = page.locator('button.kpi-card').first();
-    const hasKpi = await kpiCard.isVisible({ timeout: 5000 }).catch(() => false);
-    if (hasKpi) {
-      await expect(kpiCard).toBeVisible();
+    // Trend panel metric buttons should be visible and clickable
+    const trendMetric = page.locator('button.weekly-trend__metric').first();
+    const hasMetric = await trendMetric.isVisible({ timeout: 5000 }).catch(() => false);
+    if (hasMetric) {
+      await expect(trendMetric).toBeVisible();
       // Clicking should navigate (attendance or fees)
-      await kpiCard.click();
+      await trendMetric.click();
       await page.waitForTimeout(500);
       // URL should have changed from /
       const url = page.url();
@@ -177,32 +177,32 @@ test.describe('Dashboard — Widgets, Stats & Navigation', () => {
     }
   });
 
-  test('11 — actions section shows priority items', async ({ page }) => {
+  test('11 — attention queue shows priority items', async ({ page }) => {
     await gotoDashboardAndWait(page);
 
     const body = page.locator('body');
-    const actionsVisible = await body.getByText('Actions').first().isVisible({ timeout: 10_000 }).catch(() => false);
-    if (actionsVisible) {
-      await expect(body.getByText('Actions').first()).toBeVisible();
+    const attentionVisible = await body.getByText('Needs your attention').first().isVisible({ timeout: 10_000 }).catch(() => false);
+    if (attentionVisible) {
+      await expect(body.getByText('Needs your attention').first()).toBeVisible();
       const bodyText = await body.textContent();
-      // Should show some action items (fees, coverage, ptm, etc.)
+      // Should show some action items (fees, attendance, staff absence)
       expect(
         bodyText?.toLowerCase().includes('fee') ||
-        bodyText?.toLowerCase().includes('unstaffed') ||
-        bodyText?.toLowerCase().includes('ptm')
+        bodyText?.toLowerCase().includes('attendance') ||
+        bodyText?.toLowerCase().includes('absent')
       ).toBeTruthy();
     }
   });
 
-  test('12 — your day schedule section renders', async ({ page }) => {
+  test('12 — today section renders', async ({ page }) => {
     await gotoDashboardAndWait(page);
 
     const body = page.locator('body');
-    const yourDayVisible = await body.getByText('Your day').first().isVisible({ timeout: 10_000 }).catch(() => false);
-    if (yourDayVisible) {
-      await expect(body.getByText('Your day').first()).toBeVisible();
+    const todayVisible = await body.getByText('Today').first().isVisible({ timeout: 10_000 }).catch(() => false);
+    if (todayVisible) {
+      await expect(body.getByText('Today').first()).toBeVisible();
       const bodyText = await body.textContent();
-      expect(bodyText?.toLowerCase().includes('morning') || bodyText?.toLowerCase().includes('assembly') || bodyText?.toLowerCase().includes('no events')).toBeTruthy();
+      expect(bodyText?.toLowerCase().includes('birthday') || bodyText?.toLowerCase().includes('notice') || bodyText?.toLowerCase().includes('caught up')).toBeTruthy();
     }
   });
 

@@ -9,11 +9,20 @@
  */
 
 import { expect } from 'vitest';
+import { configure } from '@testing-library/dom';
 import * as matchers from 'vitest-axe/matchers';
 import '@testing-library/jest-dom/vitest';
 import 'vitest-axe/extend-expect';
 
 expect.extend(matchers);
+
+// `findBy*` / `waitFor` default to a 1000ms ceiling, which flakes for
+// async-data components (axe scans + data fetches) under parallel CPU load —
+// e.g. the Library/Staff a11y suites pass in isolation but intermittently time
+// out in a full run. Raise the ceiling so slow-under-load renders don't time
+// out. Tests that resolve quickly are unaffected: this is only an upper bound,
+// not a fixed delay.
+configure({ asyncUtilTimeout: 5000 });
 
 function createMemoryStorage() {
   const store = new Map();

@@ -7,7 +7,7 @@ const OfflineBanner = lazy(() => import('./components/common/OfflineBanner'));
 const StaleDataBanner = lazy(() => import('./components/common/StaleDataBanner'));
 const FeatureGate = lazy(() => import('./components/billing/FeatureGate'));
 import Sidebar from "./components/Sidebar";
-import Topbar from "./components/Topbar";
+import GlobalCommandPalette from "./components/layout/GlobalCommandPalette";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { useOwlinTracking } from "./hooks/useOwlinTracking";
 import lazyWithRetry from "./utils/lazyWithRetry";
@@ -53,6 +53,9 @@ const ResultsEntry = lazyWithRetry(() => import("./pages/academics/ResultsEntry"
 const EmailCampaignsPage = lazyWithRetry(() => import("./pages/messaging/EmailCampaignsPage"));
 const StudentPromotionPage = lazyWithRetry(() => import("./pages/students/StudentPromotionPage"));
 const TransferCertificatePage = lazyWithRetry(() => import("./pages/students/TransferCertificatePage"));
+const StudentsOverview = lazyWithRetry(() => import("./pages/students/StudentsOverview"));
+const StaffOverview = lazyWithRetry(() => import("./pages/staffs/StaffOverview"));
+const AcademicsOverview = lazyWithRetry(() => import("./pages/academics/AcademicsOverview"));
 const ReportsPage = lazyWithRetry(() => import("./pages/reports"));
 const DataToolsPage = lazyWithRetry(() => import("./pages/data-tools"));
 const StyleGuidePage = lazyWithRetry(() => import("./pages/StyleGuide"));
@@ -69,10 +72,10 @@ const CoachMarks = lazy(() => import("./components/ui/CoachMark"));
 // max per surface; bulk action coach mark lives inside BulkActionBar.
 const SHELL_COACH_MARKS = [
   {
-    target: '[data-coach="topbar-search"]',
+    target: '[data-coach="sidebar-search"]',
     title: 'Find anything fast',
     body: 'Press / or ⌘K to open the command palette and jump to any student, page, or action.',
-    placement: 'bottom',
+    placement: 'right',
   },
   {
     target: '[data-coach="sidebar-pin"]',
@@ -81,9 +84,9 @@ const SHELL_COACH_MARKS = [
     placement: 'right',
   },
   {
-    target: '[data-coach="topbar-pin"]',
+    target: '[data-coach="page-pin"]',
     title: 'Save the current view',
-    body: 'Use Pin on any page to add it to your sidebar shortcuts.',
+    body: 'Use the star next to any page heading to add it to your sidebar shortcuts.',
     placement: 'bottom',
   },
 ];
@@ -102,6 +105,7 @@ import { ChatNotificationProvider } from "./context/ChatNotificationContext";
 import { PermissionProvider } from "./context/PermissionContext";
 import { AiAssistantProvider, AiAssistantLayout } from "./components/AiAssistant/AiAssistantPanel";
 import PermissionGuard from "./components/PermissionGuard";
+import SectionShell from "./components/layout/SectionShell";
 import StructuredData from "./components/StructuredData";
 import { AlertCircle, X } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -142,12 +146,12 @@ function BeforeSchoolAlert() {
 
 function AuthenticatedApp() {
   const location = useLocation();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth >= 1024);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth >= 1280);
   const { showOnboarding, setShowOnboarding } = useApp();
 
-  // Auto-collapse sidebar when viewport is too narrow (resize or zoom)
+  // Auto-collapse sidebar on smaller screens so the wide data grids get room.
   useEffect(() => {
-    const COLLAPSE_WIDTH = 1024;
+    const COLLAPSE_WIDTH = 1280;
     const check = () => {
       const width = document.documentElement.clientWidth;
       setIsSidebarOpen(width >= COLLAPSE_WIDTH);
@@ -215,8 +219,15 @@ function AuthenticatedApp() {
     location.pathname === "/staffs" || location.pathname === "/staffs/" || location.pathname === "/staffs/list";
   const isStudentListPage =
     location.pathname === "/students" || location.pathname === "/students/";
+  // The whole Students section runs full-bleed so every tab (list, attendance,
+  // dashboard, promotion, TC) lines up edge-to-edge with the section tab bar
+  // instead of the centered max-width gutter the other tabs fell into.
+  const isStudentSectionPage = location.pathname.startsWith("/students");
+  // Classes list (grade-grouped data grid) goes full-bleed + full-height too.
+  const isClassListPage =
+    location.pathname === "/classes" || location.pathname === "/classes/";
   const isFullWidthPage =
-    isSettingsPage || location.pathname === "/timetable-wizard" || isStaffListPage || isStudentListPage;
+    isSettingsPage || location.pathname === "/timetable-wizard" || isStaffListPage || isStudentListPage || isStudentSectionPage || isClassListPage;
 
   return (
     <>
@@ -244,11 +255,9 @@ function AuthenticatedApp() {
           </Suspense>
         )}
         <AiAssistantLayout>
-          <div className={`flex-1 flex flex-col ${(isStaffListPage || isStudentListPage) ? 'h-screen overflow-hidden' : 'min-h-screen'} transition-all duration-300 ${isSidebarOpen ? 'ml-[var(--sidebar-width)]' : 'ml-0 lg:ml-[var(--sidebar-width-collapsed)]'} relative z-10 bg-bg max-md:pb-[var(--bottom-bar-h)]`}>
-            <ErrorBoundary message="The top bar encountered an error.">
-              <Topbar isSidebarOpen={isSidebarOpen} />
-            </ErrorBoundary>
-            <div className="mt-11 flex-1 flex flex-col min-h-0">
+          <div className={`flex-1 flex flex-col ${(isStaffListPage || isStudentListPage || isClassListPage) ? 'h-screen overflow-hidden' : 'min-h-screen'} transition-all duration-300 ${isSidebarOpen ? 'ml-[var(--sidebar-width)]' : 'ml-0 lg:ml-[var(--sidebar-width-collapsed)]'} relative z-10 bg-bg max-md:pb-[var(--bottom-bar-h)]`}>
+            <GlobalCommandPalette />
+            <div className="flex-1 flex flex-col min-h-0">
               <Suspense fallback={null}>
                 <TrialBanner />
               </Suspense>
@@ -277,14 +286,34 @@ function AuthenticatedApp() {
                         </PermissionGuard>
                       </RouteEB>
                     } />
-                    <Route path="/staffs/*" element={
+                    {/* Section hub: must precede the /staffs/* wildcard */}
+                    {/* Staff section — shared top tabs via pathless layout route */}
+                    <Route element={<SectionShell sectionId="staff" />}>
+                      <Route path="/staffs/overview" element={
+                        <RouteEB>
+                          <PermissionGuard module="staff">
+                            <StaffOverview />
+                          </PermissionGuard>
+                        </RouteEB>
+                      } />
+                      <Route path="/staffs/*" element={
+                        <RouteEB>
+                          <PermissionGuard module="staff">
+                            <StaffsPage />
+                          </PermissionGuard>
+                        </RouteEB>
+                      } />
+                    </Route>
+                    {/* Students section — shared top tabs via pathless layout route */}
+                    {/* [AUDIT-571] Specific /students/ routes BEFORE wildcard to avoid shadowing */}
+                    <Route element={<SectionShell sectionId="students" />}>
+                    <Route path="/students/overview" element={
                       <RouteEB>
-                        <PermissionGuard module="staff">
-                          <StaffsPage />
+                        <PermissionGuard module="students">
+                          <StudentsOverview />
                         </PermissionGuard>
                       </RouteEB>
                     } />
-                    {/* [AUDIT-571] Specific /students/ routes BEFORE wildcard to avoid shadowing */}
                     <Route path="/students/promotion" element={
                       <RouteEB>
                         <PermissionGuard module="students">
@@ -306,6 +335,7 @@ function AuthenticatedApp() {
                         </PermissionGuard>
                       </RouteEB>
                     } />
+                    </Route>
                     <Route path="/classes/*" element={
                       <RouteEB>
                         <PermissionGuard module="classes">
@@ -385,6 +415,16 @@ function AuthenticatedApp() {
                       </RouteEB>
                     } />
                     <Route path="/accounts/*" element={<Navigate to="/fees" replace />} />
+                    {/* Academics section — shared top tabs (overview + layout pages) */}
+                    <Route element={<SectionShell sectionId="academics" />}>
+                      <Route path="/academics/overview" element={
+                        <RouteEB>
+                          <PermissionGuard module="academics">
+                            <AcademicsOverview />
+                          </PermissionGuard>
+                        </RouteEB>
+                      } />
+                    </Route>
                     <Route path="/academics/class-performance/:classId" element={
                       <RouteEB>
                         <PermissionGuard module="academics">
@@ -406,13 +446,15 @@ function AuthenticatedApp() {
                         </PermissionGuard>
                       </RouteEB>
                     } />
-                    <Route path="/academics/*" element={
-                      <RouteEB>
-                        <PermissionGuard module="academics">
-                          <AcademicLayout />
-                        </PermissionGuard>
-                      </RouteEB>
-                    } />
+                    <Route element={<SectionShell sectionId="academics" />}>
+                      <Route path="/academics/*" element={
+                        <RouteEB>
+                          <PermissionGuard module="academics">
+                            <AcademicLayout />
+                          </PermissionGuard>
+                        </RouteEB>
+                      } />
+                    </Route>
                     <Route path="/homework" element={
                       <RouteEB>
                         <PermissionGuard module="academics">

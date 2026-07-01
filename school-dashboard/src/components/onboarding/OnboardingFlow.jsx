@@ -1,404 +1,160 @@
-import { safeSetItem } from '../../utils/safeStorage';
-import { settingsApi } from '../../services/api';
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Check, ChevronRight, School, Calendar, User, Settings, CheckCircle2, X } from "lucide-react";
-import { useTranslation } from 'react-i18next';
+import React, { useCallback, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import "./onboarding.css";
+import { useApp } from "../../context/AppContext";
+import { settingsApi } from "../../services/api";
+import { safeSetItem } from "../../utils/safeStorage";
+import {
+  useOnboardingState,
+  STEP_META,
+  DONE_KEY,
+  clearOnboardingDraft,
+} from "./useOnboardingState";
+import { launchOnboarding } from "./onboardingLaunch";
+import {
+  WelcomeStep, ProfileStep, SessionStep, TimingsStep, ClassesStep, SubjectsStep, ReviewStep,
+} from "./OnboardingSteps";
 
-// Steps definition
-const ONBOARDING_STEPS = [
-    {
-        id: "welcome",
-        title: "Welcome",
-        description: "Get started with your school setup",
-        icon: School,
-    },
-    {
-        id: "school-details",
-        title: "School Details",
-        description: "Basic information about your institution",
-        icon: School,
-    },
-    {
-        id: "academic-year",
-        title: "Academic Year",
-        description: "Set up your current academic session",
-        icon: Calendar,
-    },
-    {
-        id: "admin-profile",
-        title: "Admin Profile",
-        description: "Configure the main administrator account",
-        icon: User,
-    },
-    {
-        id: "preferences",
-        title: "Preferences",
-        description: "Customize your dashboard experience",
-        icon: Settings,
-    },
-];
-
+/**
+ * OnboardingFlow — pixel-perfect port of the Claude Design "School Onboarding"
+ * reference (project ace763a2-…). A single-column wizard (Shell B / topbar
+ * layout) with a Welcome/resume screen, six guided steps and a Review & launch
+ * step that persists everything to the real settings / academics / classes /
+ * subjects APIs. Draft state auto-saves so the flow can be resumed any time.
+ */
 export default function OnboardingFlow({ onComplete }) {
-  const { t } = useTranslation();
-    const [currentStep, setCurrentStep] = useState(0);
-    const [direction, setDirection] = useState(1);
-    const [formData, setFormData] = useState({
-        schoolName: "",
-        address: "",
-        academicYearStart: "",
-        academicYearEnd: "",
-        adminName: "",
-        theme: "light",
-    });
+  const navigate = useNavigate();
+  const { schoolSettings, currentAcademicYear, classes = [], refetch } = useApp();
+  const ob = useOnboardingState(schoolSettings, currentAcademicYear);
+  const { data, step, maxStep, setStep, setField, toggleClass, toggleDay, setClasses, addSection, removeSection, addSubject, removeSubject, derived } = ob;
 
-    const handleNext = () => {
-        if (currentStep < ONBOARDING_STEPS.length - 1) {
-            setDirection(1);
-            setCurrentStep(prev => prev + 1);
-        } else {
-            handleComplete();
-        }
-    };
+  const [launching, setLaunching] = useState(false);
+  const logoInputRef = useRef(null);
 
-    const handleBack = () => {
-        if (currentStep > 0) {
-            setDirection(-1);
-            setCurrentStep(prev => prev - 1);
-        }
-    };
+  // ── logo picker (preview only — real hosted upload happens in Settings) ──
+  const onPickLogo = useCallback(() => logoInputRef.current?.click(), []);
+  const onLogoChange = useCallback((e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { toast.error("Logo must be under 2 MB"); return; }
+    const reader = new FileReader();
+    reader.onload = () => setField("logo", reader.result);
+    reader.readAsDataURL(file);
+  }, [setField]);
 
-    const handleComplete = async () => {
-        try {
-            const calls = [];
+  // ── exit / complete ──
+  const saveAndExit = useCallback(() => {
+    toast.success("Progress saved — resume any time from Settings.");
+    onComplete?.();
+  }, [onComplete]);
 
-            const schoolPayload = {};
-            if (formData.schoolName?.trim()) schoolPayload.schoolName = formData.schoolName.trim();
-            if (formData.address?.trim()) schoolPayload.address = formData.address.trim();
-            if (Object.keys(schoolPayload).length > 0) {
-                calls.push(settingsApi.updateSchoolSettings(schoolPayload));
-            }
+  const finishComplete = useCallback(() => {
+    safeSetItem(DONE_KEY, "true");
+    clearOnboardingDraft();
+    onComplete?.();
+  }, [onComplete]);
 
-            if (formData.academicYearStart) {
-                const startYear = new Date(formData.academicYearStart).getFullYear();
-                if (!isNaN(startYear)) {
-                    const yearPayload = {
-                        academicYear: `${startYear}-${String(startYear + 1).slice(-2)}`,
-                        academicYearStart: formData.academicYearStart,
-                    };
-                    if (formData.academicYearEnd) yearPayload.academicYearEnd = formData.academicYearEnd;
-                    calls.push(settingsApi.updateAcademicYear(yearPayload));
-                }
-            }
+  // ── launch (last step) ──
+  const launch = useCallback(async () => {
+    setLaunching(true);
+    const t = toast.loading("Launching your dashboard…");
+    try {
+      let existingSubjects = [];
+      try { existingSubjects = (await settingsApi.getSubjects()) || []; } catch { /* ignore */ }
+      const res = await launchOnboarding(data, { existingClasses: classes, existingSubjects });
+      try { await refetch?.(true); } catch { /* non-fatal */ }
+      toast.dismiss(t);
+      if (res.failed.length === 0) {
+        toast.success(`Setup complete — created ${res.created.classes} classes & ${res.created.subjects} subjects.`);
+      } else {
+        toast(`Setup saved with ${res.failed.length} issue(s): ${res.failed.map((f) => f.area).join(", ")}. Finish these in Settings.`, { icon: "⚠️", duration: 6000 });
+      }
+      finishComplete();
+      // "Import a previous session" was on — hand the admin straight to the
+      // data-import tools to bring last year's records over.
+      if (res.importPrev) {
+        toast("Next: import last year's data to finish migrating.", { icon: "⤓", duration: 6000 });
+        navigate("/data-tools");
+      }
+    } catch (e) {
+      toast.dismiss(t);
+      toast.error(e?.message || "Couldn't complete setup. Your progress is saved.");
+    } finally {
+      setLaunching(false);
+    }
+  }, [data, classes, refetch, finishComplete, navigate]);
 
-            if (calls.length > 0) await Promise.allSettled(calls);
-        } catch (_) {
-            // ignore errors — onboarding completes locally regardless
-        }
+  const next = useCallback(() => { if (step === 6) launch(); else setStep(step + 1); }, [step, setStep, launch]);
+  const back = useCallback(() => setStep(step - 1), [step, setStep]);
+  const skip = useCallback(() => setStep(step + 1), [step, setStep]);
 
-        safeSetItem("hasCompletedOnboarding", "true");
-        if (onComplete) onComplete();
-    };
+  // ── topbar step dots ──
+  const steps = STEP_META.map((m, i) => {
+    const n = i + 1;
+    const status = step > n ? "done" : step === n ? "active" : "todo";
+    return { ...m, n, mark: status === "done" ? "✓" : String(n), mod: status === "active" ? " is-active" : status === "done" ? " is-done" : "" };
+  });
 
-    const handleSkip = () => {
-        // Mark as completed/skipped so it doesn't show again
-        safeSetItem("hasCompletedOnboarding", "true");
-        if (onComplete) onComplete();
-    };
+  const pct = step <= 0 ? 0 : Math.round((step / 6) * 100);
+  const progressLabel = step === 0 ? "Not started" : `Step ${step} of 6`;
+  const continueLabel = step === 6 ? "Launch dashboard ✦" : "Save & continue →";
+  const brandLetter = (data.schoolName?.trim()?.[0] || "E").toUpperCase();
 
-    const handleJumpToStep = (index) => {
-        if (index !== currentStep) {
-            setDirection(index > currentStep ? 1 : -1);
-            setCurrentStep(index);
-        }
-    };
+  return (
+    <div className="obx">
+      <input ref={logoInputRef} type="file" accept="image/png,image/svg+xml,image/jpeg" hidden onChange={onLogoChange} />
+      <div className="ob">
+        <div className="ob-body">
+          {/* Topbar */}
+          <header className="ob-topbar">
+            <div className="ob-brand" style={{ margin: 0 }}>
+              <div className="ob-brand__logo" style={{ width: 32, height: 32, borderRadius: 9, fontSize: 13 }}>{brandLetter}</div>
+              <div>
+                <div className="ob-brand__n" style={{ fontSize: 12.5 }}>{data.schoolName?.trim() || "New school"}</div>
+                <div className="ob-brand__s">School setup</div>
+              </div>
+            </div>
+            <div className="ob-top__steps">
+              {steps.map((s) => (
+                <React.Fragment key={s.n}>
+                  <button className={"ob-top__step" + s.mod} onClick={() => setStep(s.n)} title={s.title} style={{ background: "none", border: "none", cursor: "pointer" }}>
+                    <span className="ob-top__dot">{s.mark}</span>
+                    <span className="ob-top__lab">{s.title}</span>
+                  </button>
+                  <span className="ob-top__line"></span>
+                </React.Fragment>
+              ))}
+            </div>
+            <button className="btn btn--ghost btn--sm" onClick={saveAndExit}>Save &amp; exit</button>
+          </header>
 
-    const CurrentStepIcon = ONBOARDING_STEPS[currentStep].icon;
+          {/* Main */}
+          <main className="ob-main">
+            {step === 0 && <WelcomeStep data={data} maxStep={maxStep} onResume={() => setStep(maxStep > 0 ? maxStep : 1)} onStartFresh={() => setStep(1)} />}
+            {step === 1 && <ProfileStep data={data} setField={setField} onPickLogo={onPickLogo} />}
+            {step === 2 && <SessionStep data={data} setField={setField} derived={derived} />}
+            {step === 3 && <TimingsStep data={data} setField={setField} toggleDay={toggleDay} />}
+            {step === 4 && <ClassesStep data={data} derived={derived} toggleClass={toggleClass} setClasses={setClasses} addSection={addSection} removeSection={removeSection} />}
+            {step === 5 && <SubjectsStep data={data} setField={setField} addSubject={addSubject} removeSubject={removeSubject} />}
+            {step === 6 && <ReviewStep data={data} derived={derived} goTo={setStep} />}
+          </main>
 
-    return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-gray-100/90 backdrop-blur-md dark:bg-black/90">
-            <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="w-full max-w-5xl h-[85vh] bg-surface rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row border border-border-token relative"
-            >
-                {/* Skip Button */}
-                <button
-                    onClick={handleSkip}
-                    className="absolute top-4 right-4 z-50 p-2 text-fg-faint hover:text-fg-muted transition-colors rounded-full hover:bg-surface-2"
-                    title={t('components.skipOnboarding')}
-                >
-                    <X size={20} />
-                </button>
-
-                {/* Sidebar */}
-                <div className="w-full md:w-1/3 bg-bg/50 border-r border-border-token p-6 flex flex-col justify-between">
-                    <div>
-                        <div className="flex items-center gap-3 mb-8">
-                            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
-                                <School size={24} />
-                            </div>
-                            <div>
-                                <h2 className="font-bold text-lg text-fg">{t('components.setupWizard')}</h2>
-                                <p className="text-xs text-fg-muted">{t('components.configureYourSchool')}</p>
-                            </div>
-                        </div>
-
-                        <nav className="space-y-2">
-                            {ONBOARDING_STEPS.map((step, index) => {
-                                const isActive = currentStep === index;
-                                const isCompleted = currentStep > index;
-
-                                return (
-                                    <button
-                                        key={step.id}
-                                        onClick={() => handleJumpToStep(index)}
-                                        className={`w-full flex items-center gap-4 p-3 rounded-xl text-left transition-all duration-200 ${isActive
-                                                ? "bg-surface shadow-sm border border-border-token"
-                                                : "hover:bg-surface-2/50 text-fg-muted"
-                                            }`}
-                                    >
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isActive ? "bg-primary text-white" : isCompleted ? "bg-green-100 text-green-600 dark:bg-green-950" : "bg-gray-200 text-gray-500 dark:bg-zinc-700 dark:text-zinc-400"
-                                            }`}>
-                                            {isCompleted ? <Check size={16} /> : <span className="text-sm font-medium">{index + 1}</span>}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className={`text-sm font-medium truncate ${isActive ? "text-fg" : "text-fg-muted"}`}>
-                                                {step.title}
-                                            </p>
-                                            {isActive && (
-                                                <p className="text-xs text-fg-faint truncate">
-                                                    {step.description}
-                                                </p>
-                                            )}
-                                        </div>
-                                        {isActive && <ChevronRight size={16} className="text-primary" />}
-                                    </button>
-                                );
-                            })}
-                        </nav>
-                    </div>
-
-                    <div className="w-full">
-                        <div className="w-full h-1 bg-gray-200 dark:bg-zinc-800 rounded-full overflow-hidden mb-2">
-                            <div
-                                className="h-full bg-primary transition-all duration-300 ease-out"
-                                style={{ width: `${((currentStep + 1) / ONBOARDING_STEPS.length) * 100}%` }}
-                            />
-                        </div>
-                        <p className="text-xs text-fg-muted flex justify-between">
-                            <span>Step {currentStep + 1} of {ONBOARDING_STEPS.length}</span>
-                            <button onClick={handleSkip} className="hover:underline hover:text-gray-700 dark:hover:text-zinc-300 transition-colors">{t('components.skipSetup')}</button>
-                        </p>
-                    </div>
-                </div>
-
-                {/* Content Area */}
-                <div className="flex-1 flex flex-col relative overflow-hidden bg-surface">
-                    {/* Header for Mobile/Title */}
-                    <div className="p-6 border-b border-divider md:hidden flex justify-between items-center">
-                        <h1 className="text-xl font-bold text-fg">
-                            {ONBOARDING_STEPS[currentStep].title}
-                        </h1>
-                        <button onClick={handleSkip} className="text-sm text-fg-muted">{t('components.skip')}</button>
-                    </div>
-
-                    <div className="flex-1 p-8 md:p-12 overflow-y-auto custom-scrollbar">
-                        <AnimatePresence mode="wait" custom={direction}>
-                            <motion.div
-                                key={currentStep}
-                                custom={direction}
-                                initial={{ opacity: 0, x: direction * 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: direction * -20 }}
-                                transition={{ duration: 0.3, ease: "easeInOut" }}
-                                className="h-full flex flex-col max-w-2xl mx-auto"
-                            >
-                                <div className="mb-8">
-                                    <span className="inline-flex items-center justify-center p-3 bg-primary/10 rounded-xl text-primary mb-5 ring-4 ring-primary/5">
-                                        <CurrentStepIcon size={28} />
-                                    </span>
-                                    <h1 className="text-3xl font-bold text-fg mb-2">
-                                        {ONBOARDING_STEPS[currentStep].title}
-                                    </h1>
-                                    <p className="text-fg-muted text-lg leading-relaxed">
-                                        {ONBOARDING_STEPS[currentStep].description}
-                                    </p>
-                                </div>
-
-                                <div className="flex-1">
-                                    {/* Step Content Switcher */}
-                                    {currentStep === 0 && (
-                                        <div className="space-y-6">
-                                            <div className="p-6 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 rounded-2xl">
-                                                <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">{t('components.welcomeToSchoolDashboard')}</h3>
-                                                <p className="text-blue-700 dark:text-blue-300">
-                                                    Let's get your digital campus set up in just a few minutes. We'll guide you through the essential configurations.
-                                                </p>
-                                            </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                {[
-                                                    "Manage Students & Staff",
-                                                    "Track Attendance",
-                                                    "Fee Management",
-                                                    "Analytics & Reports"
-                                                ].map((feature) => (
-                                                    <div key={feature} className="flex items-center gap-3 p-4 border border-border-token rounded-xl bg-gray-50/50 dark:bg-zinc-900/50">
-                                                        <CheckCircle2 className="text-green-500" size={20} />
-                                                        <span className="font-medium text-fg">{feature}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {currentStep === 1 && (
-                                        <div className="space-y-6 animate-fade-in">
-                                            <div className="space-y-2">
-                                                <label className="text-sm font-medium text-fg">{t('components.schoolName')}</label>
-                                                <input
-                                                    type="text"
-                                                    placeholder={t('components.schoolNamePlaceholder')}
-                                                    className="w-full p-4 rounded-xl border border-border-token bg-surface-2 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                                                    value={formData.schoolName}
-                                                    onChange={(e) => setFormData({ ...formData, schoolName: e.target.value })}
-                                                    autoFocus
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-sm font-medium text-fg">{t('components.address1')}</label>
-                                                <textarea
-                                                    placeholder={t('components.enterCompleteSchoolAddress')}
-                                                    className="w-full p-4 rounded-xl border border-border-token bg-surface-2 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all min-h-[120px] resize-none"
-                                                    value={formData.address}
-                                                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {currentStep === 2 && (
-                                        <div className="space-y-6 animate-fade-in">
-                                            <div className="grid grid-cols-2 gap-6">
-                                                <div className="space-y-2">
-                                                    <label className="text-sm font-medium text-fg">{t('components.sessionStart')}</label>
-                                                    <input
-                                                        type="date"
-                                                        className="w-full p-4 rounded-xl border border-border-token bg-surface-2 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                                                        value={formData.academicYearStart}
-                                                        onChange={(e) => setFormData({ ...formData, academicYearStart: e.target.value })}
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-sm font-medium text-fg">{t('components.sessionEnd')}</label>
-                                                    <input
-                                                        type="date"
-                                                        className="w-full p-4 rounded-xl border border-border-token bg-surface-2 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                                                        value={formData.academicYearEnd}
-                                                        onChange={(e) => setFormData({ ...formData, academicYearEnd: e.target.value })}
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="p-4 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-100 dark:border-yellow-900/20 rounded-xl flex gap-3 items-start">
-                                                <Calendar className="text-yellow-600 shrink-0 mt-0.5" size={20} />
-                                                <div>
-                                                    <p className="text-sm font-medium text-yellow-800 dark:text-yellow-500 mb-1">{t('components.importantNote')}</p>
-                                                    <p className="text-sm text-yellow-700 dark:text-yellow-400 leading-relaxed">
-                                                        Data analytics and attendance records will be organized based on these dates. Ensure they align with your official academic calendar.
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {currentStep === 3 && (
-                                        <div className="space-y-6 animate-fade-in">
-                                            <div className="flex items-center gap-6 mb-6 p-4 border border-dashed border-gray-300 dark:border-zinc-700 rounded-2xl bg-surface-2">
-                                                <div className="w-24 h-24 rounded-full bg-surface flex items-center justify-center border-2 border-gray-100 dark:border-zinc-700 shadow-sm">
-                                                    <User className="text-fg-faint" size={40} />
-                                                </div>
-                                                <div className="flex-1">
-                                                    <h4 className="text-sm font-semibold text-fg mb-1">{t('components.profilePhoto')}</h4>
-                                                    <p className="text-xs text-fg-muted mb-3">{t('components.uploadYourAdministratorProfilePicture')}</p>
-                                                    <div className="flex gap-3">
-                                                        <button className="px-4 py-2 bg-surface border border-border-token rounded-lg text-xs font-medium hover:bg-surface-hover transition-colors">{t('components.chooseFile')}</button>
-                                                        <button className="px-4 py-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg text-xs font-medium transition-colors">{t('components.remove')}</button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-sm font-medium text-fg">{t('components.adminName')}</label>
-                                                <input
-                                                    type="text"
-                                                    placeholder={t('components.adminNamePlaceholder')}
-                                                    className="w-full p-4 rounded-xl border border-border-token bg-surface-2 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium"
-                                                    value={formData.adminName}
-                                                    onChange={(e) => setFormData({ ...formData, adminName: e.target.value })}
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {currentStep === 4 && (
-                                        <div className="space-y-6 animate-fade-in">
-                                            <div className="space-y-4">
-                                                <label className="text-lg font-medium text-fg">{t('components.chooseAppearance')}</label>
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <button
-                                                        onClick={() => setFormData({ ...formData, theme: 'light' })}
-                                                        className={`group p-6 rounded-2xl border-2 flex flex-col items-center gap-4 transition-all ${formData.theme === 'light' ? 'border-primary bg-primary/5 ring-4 ring-primary/10' : 'border-border-token hover:border-gray-300 dark:hover:border-zinc-600 bg-surface'}`}
-                                                    >
-                                                        <div className="w-full aspect-video rounded-lg bg-gray-100 border border-gray-200 shadow-sm p-2 flex items-center justify-center">
-                                                            <div className="w-8 h-8 rounded-full bg-white shadow-md"></div>
-                                                        </div>
-                                                        <span className="font-medium text-fg">{t('components.lightMode')}</span>
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setFormData({ ...formData, theme: 'dark' })}
-                                                        className={`group p-6 rounded-2xl border-2 flex flex-col items-center gap-4 transition-all ${formData.theme === 'dark' ? 'border-primary bg-primary/5 ring-4 ring-primary/10' : 'border-border-token hover:border-gray-300 dark:hover:border-zinc-600 bg-surface'}`}
-                                                    >
-                                                        <div className="w-full aspect-video rounded-lg bg-zinc-900 border border-zinc-700 shadow-sm p-2 flex items-center justify-center">
-                                                            <div className="w-8 h-8 rounded-full bg-zinc-700 shadow-md"></div>
-                                                        </div>
-                                                        <span className="font-medium text-fg">{t('components.darkMode')}</span>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </motion.div>
-                        </AnimatePresence>
-                    </div>
-
-                    {/* Footer Actions */}
-                    <div className="p-6 md:p-8 border-t border-divider flex items-center justify-between bg-surface rounded-br-2xl">
-                        <button
-                            onClick={handleBack}
-                            disabled={currentStep === 0}
-                            className={`px-6 py-2.5 rounded-xl border border-border-token font-medium transition-colors ${currentStep === 0 ? "opacity-0 cursor-default" : "hover:bg-surface-2 text-fg"
-                                }`}
-                        >
-                            Back
-                        </button>
-
-                        <div className="flex items-center gap-4">
-                            <div className="hidden md:flex gap-1">
-                                {ONBOARDING_STEPS.map((_, i) => (
-                                    <div key={`step-dot-${i}`} className={`w-2 h-2 rounded-full transition-all duration-300 ${i === currentStep ? 'bg-primary w-4' : i < currentStep ? 'bg-primary/40' : 'bg-surface-2'}`} />
-                                ))}
-                            </div>
-                            <button
-                                onClick={handleNext}
-                                className="px-8 py-2.5 rounded-xl bg-primary text-white font-semibold hover:opacity-90 transition-opacity shadow-lg shadow-primary/25 flex items-center gap-2"
-                            >
-                                {currentStep === ONBOARDING_STEPS.length - 1 ? <span>{t('components.finishSetup')}</span> : <span>Continue <ChevronRight size={16} className="inline opacity-80" /></span>}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </motion.div>
+          {/* Footer */}
+          {step >= 1 && (
+            <footer className="ob-foot">
+              <button className="btn btn--ghost" onClick={back}>← Back</button>
+              <div className="ob-foot__prog">
+                <span className="mono">{progressLabel}</span>
+                <div className="ob-foot__bar"><div className="ob-foot__fill" style={{ width: `${pct}%` }}></div></div>
+              </div>
+              <div className="ob-spacer"></div>
+              {step < 6 && <button className="btn" onClick={skip}>Skip for now</button>}
+              <button className="btn btn--accent" onClick={next} disabled={launching}>{launching ? "Launching…" : continueLabel}</button>
+            </footer>
+          )}
         </div>
-    );
+      </div>
+    </div>
+  );
 }

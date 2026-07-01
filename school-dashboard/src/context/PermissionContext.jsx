@@ -3,6 +3,7 @@ import { useAuth } from "./AuthContext";
 import { getStoredUser } from "../utils/authSession";
 import { request } from "../services/api.js";
 import logger from "../utils/logger";
+import { isCoreModule } from "../config/moduleRegistry";
 
 const PermissionContext = createContext();
 
@@ -151,6 +152,16 @@ export const PermissionProvider = ({ children }) => {
   // when /permissions/me resolves and again when the role is server-verified.
   const [permissions, setPermissions] = useState(() => getDefaultPermissionsForUser(getStoredUser()));
   const [loading, setLoading] = useState(false);
+  // Flips true once the first /permissions/me resolves, so consumers can tell
+  // "modules not fetched yet" (enabledModules === null) apart from "fetched and
+  // this module is genuinely off". Background pollers (e.g. chat unread) wait on
+  // this to avoid hitting module-disabled endpoints before the answer is known.
+  const [ready, setReady] = useState(false);
+
+  // Effective enabled-module set for this school, delivered by /permissions/me.
+  // `null` means "not yet known" — treated as enabled so nav/routes don't flash
+  // hidden before the first fetch resolves. CORE modules are always enabled.
+  const [enabledModules, setEnabledModules] = useState(null);
 
   // Track whether the initial fetch already ran to avoid duplicate requests.
   const initialFetchDoneRef = useRef(false);
@@ -173,11 +184,15 @@ export const PermissionProvider = ({ children }) => {
       } else {
         setPermissions(apiPermissions);
       }
+      if (Array.isArray(data.enabledModules)) {
+        setEnabledModules(data.enabledModules);
+      }
     } catch (error) {
       logger.warn('Permissions system not available, using role-based fallback:', error.message);
       setPermissions(getDefaultPermissionsForUser(targetUser));
     } finally {
       setLoading(false);
+      setReady(true);
     }
   };
 
@@ -260,6 +275,21 @@ export const PermissionProvider = ({ children }) => {
     return false;
   };
 
+  // ---------------------------------------------------------------------------
+  // Module enablement — independent of role permissions. A module a school has
+  // switched OFF in Settings → Modules is hidden from nav and blocked at the
+  // route. CORE modules are always enabled; until the server set loads
+  // (enabledModules === null) everything is treated as enabled to avoid a flash
+  // of hidden nav. Module keys without a registry entry (system/dev routes) are
+  // always allowed.
+  // ---------------------------------------------------------------------------
+  const isModuleEnabled = (module) => {
+    if (!module) return true;
+    if (isCoreModule(module)) return true;
+    if (enabledModules === null) return true; // not loaded yet
+    return enabledModules.includes(module);
+  };
+
   const requestPermission = async (module, action, reason) => {
     try {
       return await request('/permissions/request', {
@@ -303,10 +333,13 @@ export const PermissionProvider = ({ children }) => {
       value={{
         permissions,
         loading,
+        ready,
         hasPermission,
         isAdmin,
         requestPermission,
         refreshPermissions,
+        enabledModules,
+        isModuleEnabled,
       }}
     >
       {children}

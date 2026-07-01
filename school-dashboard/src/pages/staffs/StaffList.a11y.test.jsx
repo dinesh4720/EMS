@@ -3,13 +3,14 @@
  *
  * Accessibility regression tests for the Staffs list page.
  *
- * These tests mount StaffList with realistic mocked data and run axe-core
- * via vitest-axe. They guard the fixes applied in DK-1011 (labels, focus
- * order, ARIA roles, contrast, motion) and catch regressions as the module
- * evolves.
+ * StaffList renders the <StaffDataGrid/> data grid — a semantic <table> labelled
+ * "Staff list", with a labelled tablist for the status filters and a "Select X"
+ * checkbox on every row. These tests mount it with realistic mocked data, assert
+ * that accessible structure, and run axe-core via vitest-axe to catch a11y
+ * regressions as the module evolves (originally DK-1011).
  */
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { render, screen, within, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { axe } from "vitest-axe";
 
@@ -56,62 +57,47 @@ vi.mock("../../services/api", () => ({
 
 import StaffList from "./StaffList";
 
-function getFirstByRole(role, options) {
-  const elements = screen.getAllByRole(role, options);
-  expect(elements.length).toBeGreaterThanOrEqual(1);
-  return elements[0];
+function renderStaffList() {
+  return render(
+    <MemoryRouter initialEntries={["/staffs"]}>
+      <StaffList onStaffClick={vi.fn()} onAddStaff={vi.fn()} />
+    </MemoryRouter>
+  );
 }
+
+afterEach(cleanup);
 
 describe("StaffList accessibility", () => {
   it("has no detectable axe violations with populated data", async () => {
-    const { container } = render(
-      <MemoryRouter initialEntries={["/staffs"]}>
-        <StaffList onStaffClick={vi.fn()} onAddStaff={vi.fn()} />
-      </MemoryRouter>
-    );
+    const { container } = renderStaffList();
 
-    // The list should render the mocked staff.
+    // The grid should render the mocked staff.
     expect(screen.getByText("Ananya Sharma")).toBeTruthy();
 
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
 
-  it("exposes the staff list as a labelled list", () => {
-    render(
-      <MemoryRouter initialEntries={["/staffs"]}>
-        <StaffList onStaffClick={vi.fn()} onAddStaff={vi.fn()} />
-      </MemoryRouter>
-    );
-
-    const list = getFirstByRole("list", { name: "Staff list" });
-    expect(list).toBeTruthy();
+  it("exposes the staff grid as a labelled table", () => {
+    renderStaffList();
+    const table = screen.getByRole("table", { name: "Staff list" });
+    expect(table).toBeTruthy();
   });
 
-  it("renders each staff member as a listitem with a labelled selection toggle", () => {
-    render(
-      <MemoryRouter initialEntries={["/staffs"]}>
-        <StaffList onStaffClick={vi.fn()} onAddStaff={vi.fn()} />
-      </MemoryRouter>
-    );
-
-    const list = getFirstByRole("list", { name: "Staff list" });
-    const items = within(list).getAllByRole("listitem");
-    expect(items.length).toBeGreaterThanOrEqual(2);
-    items.forEach((item) => {
-      const toggle = within(item).getByRole("button", { pressed: false });
-      expect(toggle).toHaveAttribute("aria-label", expect.stringContaining("Select "));
-    });
+  it("gives every staff row a labelled selection checkbox", () => {
+    renderStaffList();
+    const selectToggles = screen
+      .getAllByRole("checkbox")
+      .filter((el) => (el.getAttribute("aria-label") || "").startsWith("Select "));
+    // one "Select all staff" header toggle + one per staff member (2 in fixture)
+    expect(selectToggles.length).toBeGreaterThanOrEqual(3);
+    expect(screen.getByLabelText("Select Ananya Sharma")).toBeTruthy();
+    expect(screen.getByLabelText("Select Ravi Menon")).toBeTruthy();
   });
 
-  it("renders the filter tabs with proper tablist semantics", () => {
-    render(
-      <MemoryRouter initialEntries={["/staffs"]}>
-        <StaffList onStaffClick={vi.fn()} onAddStaff={vi.fn()} />
-      </MemoryRouter>
-    );
-
-    const tablist = getFirstByRole("tablist", { name: "Filter staff" });
+  it("renders the status filters as a labelled tablist", () => {
+    renderStaffList();
+    const tablist = screen.getByRole("tablist", { name: "Filter staff" });
     expect(tablist).toBeTruthy();
     expect(within(tablist).getAllByRole("tab").length).toBeGreaterThanOrEqual(3);
   });

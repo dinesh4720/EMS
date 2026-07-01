@@ -123,11 +123,21 @@ const StudentListRow = forwardRef(function StudentListRow(
             </span>
           )}
           {showPin && (
-            <button
-              type="button"
+            // role="button" span (not <button>) so it doesn't nest inside the
+            // row-main <button> — invalid HTML that broke hydration. Mirrors the
+            // profile-arrow control below.
+            <span
+              role="button"
+              tabIndex={-1}
               aria-label={isPinned ? "Unpin student" : "Pin student"}
               data-testid="student-pin-button"
               onClick={handlePinClick}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handlePinClick(e);
+                }
+              }}
               className={`studentlist__pin-btn ${isPinned ? "is-pinned" : ""}`}
             >
               <Star
@@ -135,7 +145,7 @@ const StudentListRow = forwardRef(function StudentListRow(
                 className={isPinned ? "lucide-star is-filled" : "lucide-star"}
                 fill={isPinned ? "currentColor" : "none"}
               />
-            </button>
+            </span>
           )}
           {onViewProfile && (
             <span

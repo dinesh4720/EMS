@@ -26,6 +26,7 @@ import {
   Network,
   Percent,
   Database,
+  SlidersHorizontal,
 } from "lucide-react";
 
 import lazyWithRetry from "../../utils/lazyWithRetry";
@@ -67,6 +68,7 @@ const PeriodSettings = lazyWithRetry(() => import("./PeriodSettings"));
 const SalaryTemplates = lazyWithRetry(() => import("./SalaryTemplates"));
 const HierarchySettings = lazyWithRetry(() => import("./HierarchySettings"));
 const DataToolsSettings = lazyWithRetry(() => import("./DataToolsSettings"));
+const ModulesSettings = lazyWithRetry(() => import("./ModulesSettings"));
 
 function SettingsPageSkeleton() {
   return (
@@ -110,6 +112,7 @@ export default function SettingsPage() {
       title: "General",
       items: [
         { key: "institution", label: "General settings", icon: Building, path: "/settings" },
+        { key: "modules", label: "Modules", icon: SlidersHorizontal, path: "/settings/modules", isNew: true },
         { key: "workspace", label: "Workspace", icon: Building, path: "/settings/workspace" },
         { key: "academics", label: "Academics", icon: GraduationCap, path: "/settings/academics", isNew: true },
         { key: "admission-form", label: "Admission Form", icon: FileText, path: "/settings/admission-form", isNew: true },
@@ -304,6 +307,9 @@ export default function SettingsPage() {
             <Routes>
               <Route index element={
                 <SettingsErrorBoundary><InstitutionSettings /></SettingsErrorBoundary>
+              } />
+              <Route path="modules" element={
+                <SettingsErrorBoundary><ModulesSettings /></SettingsErrorBoundary>
               } />
               <Route path="workspace" element={
                 <SettingsErrorBoundary><WorkspaceSettings /></SettingsErrorBoundary>

@@ -27,8 +27,9 @@ test.describe('TC019 - Create Student', () => {
     const listCount = page.getByText(/of/i).first();
     await expect(listCount).toBeVisible({ timeout: 10000 });
 
-    // Click "New Student" button
-    const newStudentBtn = page.getByRole('button', { name: /new student/i });
+    // Click "New Student" button (header action; .first() because the empty-state
+    // placeholder also renders an identically labelled button when the list is empty)
+    const newStudentBtn = page.getByRole('button', { name: /new student/i }).first();
     await expect(newStudentBtn).toBeVisible();
     await newStudentBtn.click();
 

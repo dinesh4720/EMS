@@ -208,6 +208,18 @@
   gap: 4px;
 }
 
+.sidebar__utils {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 4px;
+}
+.sidebar__utils--rail {
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
 .sidebar__user {
   display: flex;
   align-items: center;
@@ -1607,6 +1619,22 @@
   border-radius: 999px;
   border: 1.5px solid var(--bg);
 }
+
+/* Pin control that sits next to a page heading (Students, Staff, Classes…) */
+.pagepin {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  display: inline-grid;
+  place-items: center;
+  color: var(--fg-subtle);
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+.pagepin:hover { background: var(--surface-hover); color: var(--fg); }
+.pagepin:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-bg); }
+.pagepin.is-pinned { color: var(--accent); }
 
 /* ============================================================
    Avatar

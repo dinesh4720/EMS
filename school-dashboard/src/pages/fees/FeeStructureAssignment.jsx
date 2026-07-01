@@ -25,6 +25,7 @@ import logger from "../../utils/logger";
 import { ConfirmDialog, EmptyState, Skeleton } from "../../components/ui";
 
 import StudentsPreviewModal from "./feeStructure/StudentsPreviewModal";
+import { calculateAnnualTotal } from "./utils/feeMath";
 
 const COLLECTION_MODES = [
   { value: "term", label: "Term-wise" },
@@ -43,27 +44,6 @@ const buildAcademicYearDate = (academicYear, month, day, useNextYear = false) =>
   const year = useNextYear ? startYear + 1 : startYear;
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 };
-
-// Frequency multipliers for annual sum. Treat unknown frequencies as one-shot
-// instead of silently dropping them — fixes "totals not summing" bug surfaced
-// in the REVAMP-28 brief.
-const FREQUENCY_MULTIPLIER = {
-  monthly: 12,
-  quarterly: 4,
-  yearly: 1,
-  "one-time": 1,
-};
-
-const calculateAnnualTotal = (feeHeads) =>
-  feeHeads.reduce((sum, head) => {
-    const amount = Number(head.amount) || 0;
-    if (head.frequency === "term") {
-      const terms = Array.isArray(head.applicableTerms) ? head.applicableTerms.length : 2;
-      return sum + amount * Math.max(terms, 1);
-    }
-    const mult = FREQUENCY_MULTIPLIER[head.frequency] ?? 1;
-    return sum + amount * mult;
-  }, 0);
 
 export default function FeeStructureAssignment({ classes, onAssignmentComplete }) {
   const { t } = useTranslation();

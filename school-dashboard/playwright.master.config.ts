@@ -7,16 +7,14 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: [
-    ['html', { outputFolder: 'playwright-report-master' }],
     ['json', { outputFile: 'test-results-master/results.json' }],
-    ['junit', { outputFile: 'test-results-master/results.xml' }],
     ['list']
   ],
   use: {
     baseURL: process.env.BASE_URL || 'http://localhost:5173',
-    trace: 'retain-on-failure',
+    trace: 'off',
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    video: 'off',
     actionTimeout: 10000,
     navigationTimeout: 30000,
   },

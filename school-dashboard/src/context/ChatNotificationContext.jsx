@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
+import { usePermissions } from './PermissionContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import socketService from '../services/socketServiceEnhanced';
 import chatService from '../services/chatService';
@@ -17,6 +18,15 @@ export function useChatNotifications() {
 
 export function ChatNotificationProvider({ children }) {
   const { user, isAuthenticated } = useAuth();
+  const permissions = usePermissions();
+  // Chat / conversations live under the "messaging" module. When a school has it
+  // disabled (Settings → Modules) the backend returns 403 MODULE_DISABLED, so we
+  // skip the unread poll + socket setup entirely instead of spamming errors.
+  // Wait for `ready` so we don't fire before the module list is known (until then
+  // isModuleEnabled optimistically returns true to avoid a nav flash).
+  const permissionsReady = permissions?.ready ?? false;
+  const messagingEnabled =
+    permissionsReady && (permissions?.isModuleEnabled ? permissions.isModuleEnabled('messaging') : true);
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -56,7 +66,7 @@ export function ChatNotificationProvider({ children }) {
   const isOnChatPage = location.pathname.includes('/messaging');
 
   useEffect(() => {
-    if (!isAuthenticated || !user?.id) return;
+    if (!isAuthenticated || !user?.id || !messagingEnabled) return;
 
     let isSubscribed = true;
 
@@ -143,11 +153,11 @@ export function ChatNotificationProvider({ children }) {
       // Socket teardown on logout is handled by AuthContext via socketService.destroyAll().
       setIsConnected(false);
     };
-  }, [isAuthenticated, user?.id]); // Removed location.pathname from dependencies
+  }, [isAuthenticated, user?.id, messagingEnabled]); // Removed location.pathname from dependencies
 
   // Fetch actual unread count from conversations
   useEffect(() => {
-    if (!isAuthenticated || !user?.id) return;
+    if (!isAuthenticated || !user?.id || !messagingEnabled) return;
 
     const fetchUnreadCount = async () => {
       try {
@@ -160,7 +170,7 @@ export function ChatNotificationProvider({ children }) {
     };
 
     fetchUnreadCount();
-  }, [isAuthenticated, user?.id]);
+  }, [isAuthenticated, user?.id, messagingEnabled]);
 
   // Reset unread count when user visits chat page
   useEffect(() => {

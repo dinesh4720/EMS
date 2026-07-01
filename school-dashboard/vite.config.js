@@ -15,13 +15,13 @@ export default defineConfig({
   },
   server: {
     watch: {
-      ignored: ['**/playwright-report/**', '**/test-results/**'],
+      ignored: ['**/playwright-report/**', '**/test-results/**', '**/playwright-report-master/**', '**/test-results-master/**'],
     },
     fs: {
       // Allow Vite to serve files from the monorepo root (hoisted node_modules)
       allow: [monorepoRoot],
       // Prevent Vite from serving/processing Playwright artifacts
-      deny: ['playwright-report', 'test-results'],
+      deny: ['playwright-report', 'test-results', 'playwright-report-master', 'test-results-master'],
     },
   },
   preview: {

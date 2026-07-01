@@ -1,15 +1,18 @@
 import React, { useEffect, useCallback, useState, useMemo, useRef } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
-  ChevronRight, ChevronsLeft, ChevronsRight, GraduationCap, Search,
+  ChevronRight, ChevronsLeft, ChevronsRight, GraduationCap, Search, Sun, Moon, Rocket,
 } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useChatNotifications } from "../../context/ChatNotificationContext";
 import { useApp } from "../../context/AppContext";
 import { useSchool } from "../../context/SchoolContext";
+import { usePermissions } from "../../context/PermissionContext";
 import UserMenu from "./UserMenu";
+import NotificationBell from "./NotificationBell";
 import { getPinnedPages, subscribePinnedPages } from "../../utils/pinnedPages";
 import {
-  NAV_GROUPS, SETTINGS_ITEM, getActiveSectionId, resolveIconForHref,
+  NAV_GROUPS, SETTINGS_ITEM, getActiveSectionId, resolveIconForHref, filterNavGroups,
 } from "./nav/navConfig";
 import NavPanel from "./nav/NavPanel";
 import { BottomBar, BottomSheet } from "./nav/MobileNav";
@@ -29,13 +32,26 @@ function openCommandPalette() {
 function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
   const location = useLocation();
   const { schoolSettings } = useSchool();
-  const { currentAcademicYear } = useApp();
+  const { currentAcademicYear, setShowOnboarding } = useApp();
   const chatNotifications = useChatNotifications();
   const unreadCount = chatNotifications?.unreadCount || 0;
+
+  const { isModuleEnabled, enabledModules } = usePermissions();
+
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
 
   const collapsed = !isSidebarOpen;
   const schoolName = schoolSettings?.name?.trim() || "SchoolSync";
   const activeSectionId = getActiveSectionId(location.pathname);
+
+  // Nav with school-disabled modules removed. Recomputed when the enabled-module
+  // set changes (enabledModules); isModuleEnabled is stable per that value.
+  const navGroups = useMemo(
+    () => filterNavGroups(NAV_GROUPS, isModuleEnabled),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [enabledModules]
+  );
 
   const [pinned, setPinned] = useState(() => getPinnedPages());
   useEffect(() => subscribePinnedPages(setPinned), []);
@@ -55,7 +71,7 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
     panelProps,
   } = useNavHover();
   const openSection = openPanelId
-    ? NAV_GROUPS.flatMap((g) => g.items).find((s) => s.id === openPanelId)
+    ? navGroups.flatMap((g) => g.items).find((s) => s.id === openPanelId)
     : null;
 
   // Responsive: mobile uses bottom bar/sheet instead of the rail.
@@ -154,6 +170,28 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
       const cls = `nav-item${isActive ? " is-active" : ""}${isOpen ? " is-open" : ""}`;
 
       if (hasPanel) {
+        // Sections with a landing page (Students/Staff/Academics) NAVIGATE on
+        // click to their main page; the hover overlay still opens for quick
+        // jumps, and in-page tabs handle sub-navigation. Sections without an
+        // href (Operations/Insights/Admin) keep the click-to-toggle overlay.
+        if (section.href) {
+          return (
+            <NavLink
+              key={section.id}
+              to={section.href}
+              className={cls}
+              data-haspanel="true"
+              title={collapsed ? section.label : undefined}
+              aria-haspopup="menu"
+              aria-expanded={isOpen}
+              aria-current={isActive ? "page" : undefined}
+              onClick={closePanel}
+              {...hoverProps(section)}
+            >
+              {inner}
+            </NavLink>
+          );
+        }
         return (
           <button
             key={section.id}
@@ -258,6 +296,7 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
           onClick={openCommandPalette}
           title="Search (⌘K)"
           aria-label="Search"
+          data-coach="sidebar-search"
         >
           <Search size={15} aria-hidden />
           {!collapsed && (
@@ -270,7 +309,7 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
 
         {/* Nav */}
         <nav className="sidebar__nav">
-          {NAV_GROUPS.map((group, gi) => (
+          {navGroups.map((group, gi) => (
             <React.Fragment key={group.cat || `g-${gi}`}>
               {gi > 0 && <div className="nav-divider" aria-hidden />}
               {group.cat && !collapsed && <div className="nav-cat">{group.cat}</div>}
@@ -318,6 +357,27 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }) {
             <SETTINGS_ITEM.icon className="nav-item__icon" size={collapsed ? 18 : 16} strokeWidth={1.6} aria-hidden />
             {!collapsed && <span className="nav-item__label">{SETTINGS_ITEM.label}</span>}
           </NavLink>
+          <div className={`sidebar__utils${collapsed ? " sidebar__utils--rail" : ""}`}>
+            <NotificationBell />
+            <button
+              type="button"
+              onClick={() => setTheme(isDark ? "light" : "dark")}
+              aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              title={isDark ? "Light mode" : "Dark mode"}
+              className="iconbtn"
+            >
+              {isDark ? <Sun size={15} /> : <Moon size={15} />}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowOnboarding(true)}
+              aria-label="Open setup wizard"
+              title="Setup wizard (onboarding)"
+              className="iconbtn"
+            >
+              <Rocket size={15} />
+            </button>
+          </div>
           <UserMenu collapsed={collapsed} />
         </div>
       </aside>

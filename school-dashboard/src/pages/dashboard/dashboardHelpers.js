@@ -163,6 +163,74 @@ export function createFeeCollectionSeries(payments) {
   return months;
 }
 
+/**
+ * Build a 7-day fee collection series ending today.
+ * Each entry: { key, label, weekday, collected, date }
+ * - label: short weekday (Mon, Tue, …)
+ * - weekday: single-letter (M, T, W…)
+ * - collected: total amount collected that day
+ * - date: the Date at midnight local
+ *
+ * Also returns a `thisWeekTotal` and `lastWeekTotal` via the returned
+ * object's `.totals` property so callers can show a WoW delta.
+ */
+export function createWeeklyFeeSeries(payments) {
+  const now = new Date();
+  // Normalize to local-midnight so day comparisons are stable.
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dayLabelFmt = new Intl.DateTimeFormat(getDateLocale(), { weekday: "short" });
+
+  const days = [];
+  for (let offset = 6; offset >= 0; offset -= 1) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - offset);
+    days.push({
+      key: d.toISOString().split("T")[0],
+      label: dayLabelFmt.format(d),
+      weekday: dayLabelFmt.format(d).charAt(0),
+      collected: 0,
+      date: d,
+    });
+  }
+
+  const dayIndex = new Map(days.map((d) => [d.key, d]));
+  payments.forEach((payment) => {
+    const paymentDate = toValidDate(payment.date);
+    if (!paymentDate) return;
+    const localMid = new Date(
+      paymentDate.getFullYear(),
+      paymentDate.getMonth(),
+      paymentDate.getDate()
+    );
+    const key = localMid.toISOString().split("T")[0];
+    const day = dayIndex.get(key);
+    if (day) day.collected += payment.amount;
+  });
+
+  // thisWeek = last 7 days; lastWeek = the 7 days before that.
+  const thisWeekTotal = days.reduce((sum, d) => sum + d.collected, 0);
+
+  const lastWeekDays = new Map();
+  for (let offset = 7; offset <= 13; offset += 1) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - offset);
+    lastWeekDays.set(d.toISOString().split("T")[0], d);
+  }
+  const lastWeekTotal = payments.reduce((sum, payment) => {
+    const paymentDate = toValidDate(payment.date);
+    if (!paymentDate) return sum;
+    const localMid = new Date(
+      paymentDate.getFullYear(),
+      paymentDate.getMonth(),
+      paymentDate.getDate()
+    );
+    const key = localMid.toISOString().split("T")[0];
+    return lastWeekDays.has(key) ? sum + payment.amount : sum;
+  }, 0);
+
+  return { days, totals: { thisWeekTotal, lastWeekTotal } };
+}
+
 export function getRelativeTime(date) {
   if (!date) return "—";
   const parsed = new Date(date);

@@ -1,578 +1,208 @@
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useCallback,
-} from "react";
-import { useSearchParams } from "react-router-dom";
-// Translations removed — all text is plain English to match StaffList style
-import { Plus, Users, Printer } from "lucide-react";
-import EmptyState from "../../components/ui/EmptyState";
-import ErrorState from "../../components/ui/ErrorState";
-import Pagination from "../../components/common/Pagination";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useStudentsListData } from "./hooks/useStudentsListData";
-import EditStudentDrawer from "./EditStudentDrawer";
-import ScrollToTopButton from "../../components/ui/ScrollToTopButton";
-import Skeleton from "../../components/ui/Skeleton";
-import { StudentCsvUploadModal, StudentCsvPreviewModal } from "./components/modals/StudentImportModals";
-import { PageShell } from "../../components/ui";
-import StudentsFiltersBar from "./components/list/StudentsFiltersBar";
-import StudentsBulkModals from "./components/list/StudentsBulkModals";
-// Removed StudentsTableProvider — no longer needed with row-list layout
-import StudentListRow from "./StudentListRow";
-import StudentDetailPane from "./StudentDetailPane";
-import ExportMenu from "../../components/ui/ExportMenu";
-import PrintPreviewModal from "../../components/ui/PrintPreviewModal";
 import toast from "react-hot-toast";
+import { Download, Upload, FileText, Printer, FileSpreadsheet } from "lucide-react";
+import { useStudentsListData } from "./hooks/useStudentsListData";
+import StudentsDataGrid from "./StudentsDataGrid";
+import AttendanceBar from "../../components/dataGrid/AttendanceBar";
+import AttendanceBoard from "../../components/dataGrid/AttendanceBoard";
+import CreateStudentComposer from "./CreateStudentComposer";
+import { buildAttendanceBoard } from "../classes/utils/classesGridHelpers";
+import { useApp } from "../../context/AppContext";
+import EditStudentDrawer from "./EditStudentDrawer";
+import { StudentCsvUploadModal, StudentCsvPreviewModal } from "./components/modals/StudentImportModals";
+import StudentsBulkModals from "./components/list/StudentsBulkModals";
+import PrintPreviewModal from "../../components/ui/PrintPreviewModal";
 
-// Mobile breakpoint — below this the right pane collapses to a Drawer
-const MOBILE_MAX = 1099;
-
-function StudentsListSkeleton() {
-  return (
-    <div className="w-full flex flex-col flex-1 min-h-0" aria-busy="true" aria-live="polite">
-      {/* Row skeletons */}
-      <div className="flex-1 min-h-0 overflow-hidden">
-        {Array.from({ length: 12 }).map((_, i) => (
-          <div
-            key={`student-skeleton-${i}`}
-            className="flex items-center gap-3 px-4"
-            style={{
-              padding: "10px 16px",
-              borderBottom: "1px solid var(--divider)",
-            }}
-          >
-            <Skeleton variant="rect" className="shrink-0" style={{ width: 16, height: 16, borderRadius: 4 }} />
-            <Skeleton variant="circle" className="shrink-0" style={{ width: 28, height: 28 }} />
-            <div className="flex-1 min-w-0 space-y-1.5">
-              <Skeleton variant="text" className="h-3" style={{ width: `${120 + (i % 4) * 24}px` }} />
-              <Skeleton variant="text" className="h-2.5 w-24" />
-            </div>
-            <Skeleton variant="text" className="h-3 hidden lg:block" style={{ width: 64 }} />
-            <Skeleton variant="text" className="h-3 hidden lg:block" style={{ width: 100 }} />
-            <Skeleton variant="rect" className="hidden lg:block" style={{ width: 56, height: 18, borderRadius: 999 }} />
-            <Skeleton variant="rect" className="shrink-0" style={{ width: 24, height: 24, borderRadius: 6 }} />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+const sid = (s) => String(s.id || s._id);
+const isDefaulter = (s) => {
+  const bal = Number(s.balanceAmount ?? s.balance ?? 0);
+  const fs = String(s.feeStatus || "").toLowerCase();
+  return bal > 0 || fs === "overdue" || fs === "partial" || fs === "pending";
+};
+const menuIcon = (Icon) => <Icon size={15} color="#6a6e78" aria-hidden />;
 
 export default function StudentsList({ onAddStudent }) {
   const navigate = useNavigate();
   const {
-    // loading
-    contextLoading, listLoading, listError,
-    // students data
-    students, filteredItems, visibleItems, selectedCount, classes,
-    // filter state
-    searchQuery, setSearchQuery, statusFilter, setStatusFilter,
-    // filter helpers
-    filtersConfig, activeFiltersCount, isSearching,
-    handleFilterChange, clearAllFilters,
-    // dropdown state
-    bulkDropdownOpen, setBulkDropdownOpen,
-    moreDropdownOpen, setMoreDropdownOpen,
-    // sort / selection
-    sortDescriptor, setSortDescriptor, selectedKeys, setSelectedKeys, statusCounts,
-    // column visibility
-    visibleColumns, toggleColumn,
+    listLoading, listError,
+    students, visibleItems,
+    searchQuery, setSearchQuery,
+    statusFilter, setStatusFilter,
+    feeStatusFilter, activeFiltersCount, handleFilterChange, clearAllFilters,
+    selectedKeys, setSelectedKeys,
+    refreshStudentsList,
+    handlePinStudent, handleUnpinStudent,
     // edit drawer
     isEditDrawerOpen, setIsEditDrawerOpen, selectedStudent, setSelectedStudent,
-    // local override
     setLocalStudents,
-    // refresh
-    refreshStudentsList,
-    // pin
-    handlePinStudent, handleUnpinStudent,
     // bulk modals
     isBulkActionOpen, onBulkActionClose,
     isPromoteOpen, onPromoteClose, promotionPreview,
     isReminderOpen, onReminderClose, reminderMessage, setReminderMessage, reminderTime, setReminderTime, reminderTargetCount,
     isTcModalOpen, onTcModalClose, tcStudents,
-    isDeleteOpen, onDeleteClose, studentToDelete, setStudentToDelete, isDeleting, setIsDeleting,
+    isDeleteOpen, onDeleteClose, onDeleteOpen, studentToDelete, setStudentToDelete, isDeleting, setIsDeleting,
     isStatusChangeOpen, onStatusChangeClose, statusChangeData, setStatusChangeData,
     isCsvUploadOpen, onCsvUploadClose, onCsvUploadOpen,
     isPreviewOpen, onPreviewClose,
     // bulk handlers
     bulkAction, handleBulkAction, executeBulkAction, executeBulkDelete, executePromotion, executeSendReminders,
     isBulkDeleteOpen, onBulkDeleteClose, bulkDeleteStudents,
-    // delete/update
     deleteStudent, updateStudent,
-    // csv upload
     csvUpload,
-    // helpers
     getClassOptions,
+    classes,
+    currentAcademicYear,
   } = useStudentsListData();
+  const { addStudent } = useApp();
+  const [createOpen, setCreateOpen] = useState(false);
 
-  // ============ Routing (URL-driven selection) ============
-  const [searchParams, setSearchParams] = useSearchParams();
-  const selectedId = searchParams.get("id") || null;
-
-  const setSelectedId = useCallback(
-    (id) => {
-      setSearchParams(
-        (prev) => {
-          const next = new URLSearchParams(prev);
-          if (id) next.set("id", id);
-          else next.delete("id");
-          return next;
-        },
-        { replace: false }
-      );
-    },
-    [setSearchParams]
-  );
-
-  // ============ Mobile viewport detection ============
-  const [isMobileViewport, setIsMobileViewport] = useState(() =>
-    typeof window !== "undefined"
-      ? window.innerWidth <= MOBILE_MAX
-      : false
-  );
-
+  // This grid manages all status views client-side, so keep the dataset complete.
   useEffect(() => {
-    const onResize = () => setIsMobileViewport(window.innerWidth <= MOBILE_MAX);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-
-  // ============ Selected student ============
-  const selectedStudentRecord = useMemo(() => {
-    if (!selectedId) return null;
-    return visibleItems.find((st) => String(st.id || st._id) === selectedId) || null;
-  }, [selectedId, visibleItems]);
-
-  const handleViewProfile = useCallback(
-    (student) => {
-      const id = student.id || student._id;
-      navigate(`/students/${id}`);
-    },
-    [navigate]
-  );
-
-  // Auto-select first visible student on desktop when nothing is selected
-  useEffect(() => {
-    if (isMobileViewport) return;
-    if (selectedId) return;
-    if (visibleItems.length === 0) return;
-    const first = visibleItems[0];
-    const firstId = String(first.id || first._id);
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        next.set("id", firstId);
-        return next;
-      },
-      { replace: true }
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMobileViewport, selectedId, visibleItems.length]);
-
-  // ============ Pagination ============
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
-
-  const totalPages = useMemo(
-    () => Math.max(1, Math.ceil(visibleItems.length / pageSize)),
-    [visibleItems.length, pageSize]
-  );
-
-  const paginatedItems = useMemo(
-    () => visibleItems.slice((page - 1) * pageSize, page * pageSize),
-    [visibleItems, page, pageSize]
-  );
-
-  useEffect(() => {
-    setPage(1);
-  }, [searchQuery, statusFilter, activeFiltersCount]);
-
-  useEffect(() => {
-    if (page > totalPages) {
-      setPage(totalPages);
-    }
-  }, [page, totalPages]);
-
-  // ============ Keyboard nav ============
-  const listRef = useRef(null);
-  const rowRefs = useRef(new Map());
-
-  const moveSelection = useCallback(
-    (delta) => {
-      if (paginatedItems.length === 0) return;
-      const ids = paginatedItems.map((st) => String(st.id || st._id));
-      const currentIdx = ids.indexOf(selectedId);
-      const nextIdx =
-        currentIdx === -1
-          ? delta > 0
-            ? 0
-            : paginatedItems.length - 1
-          : Math.min(paginatedItems.length - 1, Math.max(0, currentIdx + delta));
-      const nextStudent = paginatedItems[nextIdx];
-      if (!nextStudent) return;
-      const nextId = String(nextStudent.id || nextStudent._id);
-      setSelectedId(nextId);
-      requestAnimationFrame(() => {
-        rowRefs.current.get(nextId)?.scrollIntoView({ block: "nearest" });
-        rowRefs.current.get(nextId)?.focus({ preventScroll: true });
-      });
-    },
-    [paginatedItems, selectedId, setSelectedId]
-  );
-
-  const handleListKeyDown = useCallback(
-    (e) => {
-      const tag = e.target?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA") return;
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        moveSelection(1);
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        moveSelection(-1);
-      } else if (e.key === "Enter") {
-        e.preventDefault();
-        if (selectedStudentRecord) {
-          handleViewProfile(selectedStudentRecord);
-        }
-      } else if (e.key === "Escape") {
-        if (selectedCount > 0) {
-          setSelectedKeys(new Set([]));
-          return;
-        }
-        e.preventDefault();
-        setSelectedId(null);
-      }
-    },
-    [moveSelection, setSelectedId, selectedCount, setSelectedKeys, selectedStudentRecord, handleViewProfile]
-  );
-
-  // ============ Bulk toggle ============
-  const toggleCheck = useCallback(
-    (student, event) => {
-      const id = String(student.id || student._id);
-      if (event?.shiftKey) {
-        // Simple range select
-        const ids = visibleItems.map((st) => String(st.id || st._id));
-        const lastId = rowRefs.current.get("__lastClicked__");
-        if (lastId) {
-          const idxA = ids.indexOf(lastId);
-          const idxB = ids.indexOf(id);
-          if (idxA !== -1 && idxB !== -1) {
-            const [lo, hi] = idxA < idxB ? [idxA, idxB] : [idxB, idxA];
-            const newKeys = new Set(selectedKeys);
-            for (let i = lo; i <= hi; i++) {
-              newKeys.add(ids[i]);
-            }
-            setSelectedKeys(newKeys);
-            rowRefs.current.set("__lastClicked__", id);
-            return;
-          }
-        }
-      }
-      const newKeys = new Set(selectedKeys);
-      if (newKeys.has(id)) newKeys.delete(id);
-      else newKeys.add(id);
-      setSelectedKeys(newKeys);
-      rowRefs.current.set("__lastClicked__", id);
-    },
-    [visibleItems, selectedKeys, setSelectedKeys]
-  );
-
-  const handleClearSelection = useCallback(
-    () => setSelectedKeys(new Set([])),
-    [setSelectedKeys]
-  );
-
-  const handleMessageParent = useCallback(() => {
-    if (!selectedStudentRecord) return;
-    const parentPhone = selectedStudentRecord.parentPhone || selectedStudentRecord.fatherPhone || selectedStudentRecord.motherPhone;
-    const parentEmail = selectedStudentRecord.parentEmail || selectedStudentRecord.fatherEmail || selectedStudentRecord.motherEmail;
-    if (!parentPhone && !parentEmail) {
-      toast("No parent contact available.");
-      return;
-    }
-    navigate(`/messaging?to=${encodeURIComponent(parentPhone || parentEmail)}`);
-  }, [selectedStudentRecord, navigate]);
-
-  const closeDetail = () => setSelectedId(null);
-  const detailVisible = !!selectedStudentRecord;
+    if (statusFilter !== "all") setStatusFilter("all");
+  }, [statusFilter, setStatusFilter]);
 
   const {
     csvFile, setCsvFile, csvDragActive, csvProcessing,
     validatedStudents, previewFilter, setPreviewFilter, importProgress,
-    csvInputRef, handleCSVUpload, handleCsvFileSelect, handleCsvDrag, handleCsvDrop,
+    csvInputRef, handleCsvFileSelect, handleCsvDrag, handleCsvDrop,
     processCsvUpload, importValidStudents, downloadStudentList, downloadSelectedStudents, downloadCsvTemplate,
   } = csvUpload;
 
+  // Status dropdown (replaces the old tab bar) + dues-only filter toggle.
+  const [statusSel, setStatusSel] = useState("active");
+  const [duesOnly, setDuesOnly] = useState(false);
   const [printOpen, setPrintOpen] = useState(false);
+  const [boardOpen, setBoardOpen] = useState(false);
 
-  if (contextLoading || listLoading) {
-    return (
-      <PageShell
-        title="Students"
-        description="Loading…"
-        breadcrumbs={[{ label: "Home", href: "/" }, { label: "Students" }]}
-        bodyPadding="none"
-        scrollable={false}
-      >
-        <StudentsListSkeleton />
-      </PageShell>
-    );
-  }
+  const board = useMemo(() => buildAttendanceBoard(classes || []), [classes]);
 
-  if (listError) {
-    return (
-      <PageShell
-        title="Students"
-        description="Failed to load"
-        breadcrumbs={[{ label: "Home", href: "/" }, { label: "Students" }]}
-        bodyPadding="none"
-        scrollable={false}
-      >
-        <ErrorState
-          title="Failed to load students"
-          description={listError.message || "Something went wrong while fetching the student list."}
-          onRetry={refreshStudentsList}
-          size="md"
-        />
-      </PageShell>
-    );
-  }
+  const isStatus = (s, key) => {
+    const st = String(s.status || "active").toLowerCase();
+    if (key === "active") return st === "active";
+    if (key === "inactive") return st === "inactive" || st === "suspended";
+    if (key === "alumni") return st === "alumni" || st === "graduated";
+    return true;
+  };
+
+  // Counts over the full loaded dataset.
+  const counts = useMemo(() => ({
+    all: students.length,
+    active: students.filter((s) => isStatus(s, "active")).length,
+    inactive: students.filter((s) => isStatus(s, "inactive")).length,
+    alumni: students.filter((s) => isStatus(s, "alumni")).length,
+    defaulters: students.filter(isDefaulter).length,
+  }), [students]);
+
+  const statusOptions = useMemo(() => ([
+    { key: "active", label: "Active", count: counts.active, dot: "#37985f" },
+    { key: "inactive", label: "Inactive", count: counts.inactive, dot: "#b3b7bf" },
+    { key: "alumni", label: "Alumni", count: counts.alumni, dot: "#2a9bb5" },
+  ]), [counts]);
+
+  // ── Displayed list (status dropdown + optional dues filter) ───────────────
+  const displayed = useMemo(() => {
+    let list = visibleItems.filter((s) => isStatus(s, statusSel));
+    if (duesOnly) list = list.filter(isDefaulter);
+    return list;
+  }, [visibleItems, statusSel, duesOnly]);
+
+  const totalDue = useMemo(
+    () => displayed.reduce((sum, s) => sum + Number(s.balanceAmount ?? s.balance ?? 0), 0),
+    [displayed]
+  );
+  const avgAtt = useMemo(() => {
+    const vals = displayed.map((s) => Number(s.attendancePercentage)).filter(Number.isFinite);
+    return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+  }, [displayed]);
+  const attTracked = useMemo(
+    () => displayed.filter((s) => Number.isFinite(Number(s.attendancePercentage))).length,
+    [displayed]
+  );
+
+  // ── Selection ─────────────────────────────────────────────────────────────
+  const onToggleRow = useCallback((id) => {
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, [setSelectedKeys]);
+
+  const onToggleAll = useCallback((ids) => {
+    setSelectedKeys((prev) => {
+      const allOn = ids.length > 0 && ids.every((id) => prev.has(id));
+      return allOn ? new Set() : new Set(ids);
+    });
+  }, [setSelectedKeys]);
+
+  const onClearSelection = useCallback(() => setSelectedKeys(new Set()), [setSelectedKeys]);
+
+  // ── Bulk actions ──────────────────────────────────────────────────────────
+  const onBulkAction = useCallback((key) => {
+    if (selectedKeys.size === 0) {
+      toast("Select one or more students first.");
+      return;
+    }
+    if (key === "export") { downloadSelectedStudents(); return; }
+    handleBulkAction(key);
+  }, [selectedKeys, downloadSelectedStudents, handleBulkAction]);
+
+  // ── Row actions ───────────────────────────────────────────────────────────
+  const onOpenStudent = useCallback((student) => navigate(`/students/${sid(student)}`), [navigate]);
+  const onEditStudent = useCallback((student) => { setSelectedStudent(student); setIsEditDrawerOpen(true); }, [setSelectedStudent, setIsEditDrawerOpen]);
+  const onDeleteStudent = useCallback((student) => { setStudentToDelete(student); onDeleteOpen(); }, [setStudentToDelete, onDeleteOpen]);
+
+  // ── "More actions" kebab menu ─────────────────────────────────────────────
+  const moreActions = useMemo(() => ([
+    { label: "Export list (CSV)", icon: menuIcon(Download), onClick: () => downloadStudentList() },
+    { label: "Import students", icon: menuIcon(Upload), onClick: () => onCsvUploadOpen() },
+    { label: "Download CSV template", icon: menuIcon(FileSpreadsheet), onClick: () => downloadCsvTemplate() },
+    { label: "Print list", icon: menuIcon(Printer), onClick: () => setPrintOpen(true) },
+    { label: "Transfer certificates", icon: menuIcon(FileText), onClick: () => navigate("/students/transfer-certificate") },
+  ]), [downloadStudentList, onCsvUploadOpen, downloadCsvTemplate, navigate]);
 
   return (
-    <PageShell
-      title="Students"
-      description={`${filteredItems.length} of ${students.length}`}
-      actions={
-        <div className="row gap-2">
-          <ExportMenu
-            rows={visibleItems}
-            columns={[
-              { key: "name", label: "Name" },
-              { key: "admissionNo", label: "Admission No", accessor: (s) => s.admissionNo || s.admissionNumber || "—" },
-              { key: "className", label: "Class", accessor: (s) => s.className || s.class || s.classSection || "—" },
-              { key: "rollNo", label: "Roll No", accessor: (s) => s.rollNo || s.rollNumber || "—" },
-              { key: "gender", label: "Gender", accessor: (s) => s.gender || "—" },
-              { key: "parentPhone", label: "Parent Phone", accessor: (s) => s.parentPhone || s.fatherPhone || s.motherPhone || "—" },
-              { key: "parentEmail", label: "Parent Email", accessor: (s) => s.parentEmail || s.fatherEmail || s.motherEmail || "—" },
-              { key: "status", label: "Status", accessor: (s) => s.status || "active" },
-            ]}
-            filename="students-list"
-            title="Students List"
+    <>
+      <StudentsDataGrid
+        students={displayed}
+        totalEnrolled={counts.all}
+        loading={listLoading}
+        error={listError}
+        onRetry={refreshStudentsList}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        statusOptions={statusOptions}
+        statusSel={statusSel}
+        onStatusSelect={setStatusSel}
+        totalDue={totalDue}
+        onDuesClick={() => setDuesOnly((v) => !v)}
+        attendanceBar={
+          <AttendanceBar
+            pct={avgAtt}
+            sub={`${attTracked} tracked`}
+            pending={displayed.length - attTracked}
+            pendingLabel={displayed.length - attTracked > 0 ? `${displayed.length - attTracked} not marked` : null}
+            onBoard={() => setBoardOpen(true)}
           />
-          <button
-            type="button"
-            className="btn btn--sm"
-            onClick={() => setPrintOpen(true)}
-            aria-label="Print preview"
-          >
-            <Printer size={14} aria-hidden />
-          </button>
-          <button
-            type="button"
-            className="btn btn--accent"
-            onClick={onAddStudent}
-          >
-            <Plus size={13} aria-hidden />
-            New Student
-          </button>
-        </div>
-      }
-      toolbar={
-        <StudentsFiltersBar
-          statusFilter={statusFilter}
-          setStatusFilter={setStatusFilter}
-          statusCounts={statusCounts}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          isSearching={isSearching}
-          selectedCount={selectedCount}
-          bulkDropdownOpen={bulkDropdownOpen}
-          setBulkDropdownOpen={setBulkDropdownOpen}
-          handleBulkAction={handleBulkAction}
-          downloadSelectedStudents={downloadSelectedStudents}
-          onClearSelection={handleClearSelection}
-          filtersConfig={filtersConfig}
-          handleFilterChange={handleFilterChange}
-          clearAllFilters={clearAllFilters}
-          activeFiltersCount={activeFiltersCount}
-          sortDescriptor={sortDescriptor}
-          setSortDescriptor={setSortDescriptor}
-          visibleColumns={visibleColumns}
-          toggleColumn={toggleColumn}
-          moreDropdownOpen={moreDropdownOpen}
-          setMoreDropdownOpen={setMoreDropdownOpen}
-          csvInputRef={csvInputRef}
-          handleCSVUpload={handleCSVUpload}
-          setCsvFile={setCsvFile}
-          onCsvUploadOpen={onCsvUploadOpen}
-          downloadStudentList={downloadStudentList}
-          onNavigateToTC={() => navigate('/students/transfer-certificate')}
-        />
-      }
-      breadcrumbs={[{ label: "Home", href: "/" }, { label: "Students" }]}
-      bodyPadding="none"
-      scrollable={false}
-    >
-      <div
-        style={
-          isMobileViewport
-            ? { display: "flex", flexDirection: "column", minHeight: 0, flex: 1 }
-            : {
-                display: "grid",
-                gridTemplateColumns: "minmax(420px, 1fr) 380px",
-                gap: 0,
-                minHeight: 0,
-                flex: 1,
-              }
         }
-      >
-        {/* Left list */}
-        <div
-          style={{
-            borderRight: isMobileViewport ? "none" : "1px solid var(--border)",
-            display: "flex",
-            flexDirection: "column",
-            minHeight: 0,
-          }}
-        >
-
-        {/* List rows */}
-        <div
-          ref={listRef}
-          role="listbox"
-          aria-label="Student list"
-          tabIndex={0}
-          onKeyDown={handleListKeyDown}
-          style={{
-            flex: 1,
-            overflow: "auto",
-            outline: "none",
-            minHeight: 0,
-          }}
-        >
-          {visibleItems.length === 0 ? (
-            <EmptyState
-              icon={Users}
-              title={students.length === 0 ? "No students yet" : "No students matched"}
-              description={
-                students.length === 0
-                  ? "Get started by adding your first student."
-                  : activeFiltersCount > 0 || searchQuery
-                  ? "Try adjusting your filters or search query."
-                  : "No students found for the current view."
-              }
-              action={
-                students.length === 0 ? (
-                  <button type="button" className="btn btn--accent" onClick={onAddStudent} aria-label="Add your first student">
-                    <Plus size={13} aria-hidden /> New Student
-                  </button>
-                ) : (
-                  <button type="button" className="btn btn--ghost" onClick={clearAllFilters}>
-                    Clear filters
-                  </button>
-                )
-              }
-              size="md"
-            />
-          ) : (
-            paginatedItems.map((student) => {
-              const id = String(student.id || student._id);
-              return (
-                <StudentListRow
-                  key={id}
-                  ref={(el) => {
-                    if (el) rowRefs.current.set(id, el);
-                    else rowRefs.current.delete(id);
-                  }}
-                  student={student}
-                  isActive={selectedId === id}
-                  isChecked={selectedKeys.has(id)}
-                  isPinned={student.isPinned}
-                  onSelect={() => setSelectedId(id)}
-                  onToggleCheck={toggleCheck}
-                  onViewProfile={handleViewProfile}
-                  onPin={handlePinStudent}
-                  onUnpin={handleUnpinStudent}
-                  attendancePct={student.attendancePercentage}
-                />
-              );
-            })
-          )}
-        </div>
-
-        {/* Pagination footer */}
-        {visibleItems.length > 0 && (
-          <div
-            className="flex items-center justify-between px-4 py-2 border-t"
-            style={{ borderColor: "var(--divider)" }}
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-sm" style={{ color: "var(--fg-muted)" }}>Show</span>
-              <select
-                className="select select--sm"
-                value={pageSize}
-                onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
-                aria-label="Items per page"
-              >
-                <option value={10}>10</option>
-                <option value={25}>25</option>
-                <option value={50}>50</option>
-                <option value={100}>100</option>
-              </select>
-              <span className="text-sm" style={{ color: "var(--fg-muted)" }}>per page</span>
-            </div>
-            <Pagination
-              currentPage={page}
-              totalPages={totalPages}
-              onPageChange={setPage}
-              totalItems={visibleItems.length}
-              itemLabel="students"
-            />
-          </div>
-        )}
-        </div>
-
-        {/* Right detail pane — desktop only (second grid column) */}
-        {!isMobileViewport && (
-          <StudentDetailPane
-            student={selectedStudentRecord}
-            onClose={closeDetail}
-            onViewProfile={() => selectedStudentRecord && handleViewProfile(selectedStudentRecord)}
-            onMessageParent={handleMessageParent}
-          />
-        )}
-
-      </div>
-
-      {/* Mobile: slide-over drawer for detail */}
-      {isMobileViewport && detailVisible && (
-        <div
-          className="stafflist__drawer-overlay"
-          role="presentation"
-          onClick={closeDetail}
-        >
-          <div
-            className="stafflist__drawer"
-            role="dialog"
-            aria-modal="true"
-            aria-label={`Profile: ${selectedStudentRecord?.name}`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <StudentDetailPane
-              student={selectedStudentRecord}
-              isMobile
-              onClose={closeDetail}
-              onViewProfile={() => selectedStudentRecord && handleViewProfile(selectedStudentRecord)}
-              onMessageParent={handleMessageParent}
-            />
-          </div>
-        </div>
-      )}
+        selectedKeys={selectedKeys}
+        onToggleRow={onToggleRow}
+        onToggleAll={onToggleAll}
+        onClearSelection={onClearSelection}
+        onBulkAction={onBulkAction}
+        onAddStudent={() => setCreateOpen(true)}
+        onOpenStudent={onOpenStudent}
+        onEditStudent={onEditStudent}
+        onDeleteStudent={onDeleteStudent}
+        onPin={handlePinStudent}
+        onUnpin={handleUnpinStudent}
+        activeFiltersCount={activeFiltersCount}
+        feeStatusFilter={feeStatusFilter}
+        onFeeFilterToggle={(val) => handleFilterChange("feeStatus", val)}
+        onClearFilters={clearAllFilters}
+        moreActions={moreActions}
+      />
 
       {/* ── Bulk Modals ── */}
       <StudentsBulkModals
@@ -583,7 +213,7 @@ export default function StudentsList({ onAddStudent }) {
         isBulkActionOpen={isBulkActionOpen}
         onBulkActionClose={onBulkActionClose}
         bulkAction={bulkAction}
-        selectedCount={selectedCount}
+        selectedCount={selectedKeys.size}
         executeBulkAction={executeBulkAction}
         isPromoteOpen={isPromoteOpen}
         onPromoteClose={onPromoteClose}
@@ -644,6 +274,24 @@ export default function StudentsList({ onAddStudent }) {
         importValidStudents={importValidStudents}
       />
 
+      {/* ── New student composer ── */}
+      <CreateStudentComposer
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreated={refreshStudentsList}
+        addStudent={addStudent}
+        classes={classes}
+        currentAcademicYear={currentAcademicYear}
+      />
+
+      {/* ── Attendance board ── */}
+      <AttendanceBoard
+        open={boardOpen}
+        onClose={() => setBoardOpen(false)}
+        board={board}
+        onMarkClass={(c) => { setBoardOpen(false); navigate(`/classes/${c.id}/attendance`); }}
+      />
+
       {/* ── Edit Student Drawer ── */}
       <EditStudentDrawer
         isOpen={isEditDrawerOpen}
@@ -651,7 +299,7 @@ export default function StudentsList({ onAddStudent }) {
         student={selectedStudent}
         onUpdate={(updatedStudent) => {
           setLocalStudents(
-            students.map((st) => String(st.id) === String(updatedStudent.id) ? { ...st, ...updatedStudent } : st)
+            students.map((st) => (String(st.id) === String(updatedStudent.id) ? { ...st, ...updatedStudent } : st))
           );
           setSelectedStudent(updatedStudent);
         }}
@@ -659,13 +307,8 @@ export default function StudentsList({ onAddStudent }) {
         classesWithTeachers={classes}
       />
 
-      <ScrollToTopButton />
-
-      <PrintPreviewModal
-        isOpen={printOpen}
-        onClose={() => setPrintOpen(false)}
-        title="Students List"
-      >
+      {/* ── Print Preview ── */}
+      <PrintPreviewModal isOpen={printOpen} onClose={() => setPrintOpen(false)} title="Students List">
         <div className="p-6">
           <h1 className="text-lg font-semibold mb-4">Students List</h1>
           <table className="w-full text-sm border-collapse">
@@ -681,8 +324,8 @@ export default function StudentsList({ onAddStudent }) {
               </tr>
             </thead>
             <tbody>
-              {visibleItems.map((s) => (
-                <tr key={s.id || s._id} className="border-b">
+              {displayed.map((s) => (
+                <tr key={sid(s)} className="border-b">
                   <td className="py-2 px-3">{s.name}</td>
                   <td className="py-2 px-3">{s.admissionNo || s.admissionNumber || "—"}</td>
                   <td className="py-2 px-3">{s.className || s.class || s.classSection || "—"}</td>
@@ -696,6 +339,6 @@ export default function StudentsList({ onAddStudent }) {
           </table>
         </div>
       </PrintPreviewModal>
-    </PageShell>
+    </>
   );
 }
