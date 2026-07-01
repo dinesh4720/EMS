@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, memo } from 'react';
 import { Card, CardBody, Switch, Input, Button } from '@heroui/react';
 import { TablePageSkeleton } from '../../components/skeletons/PageSkeletons';
+import ErrorState from '../../components/ui/ErrorState';
 import { TrendingUp, Users, ThumbsUp, ThumbsDown, Minus, MessageSquare, Settings, Save, Filter } from 'lucide-react';
 import { npsApi } from '../../services/api';
 import toast from 'react-hot-toast';
@@ -15,6 +16,7 @@ const NpsGauge = memo(function NpsGauge({ score }) {
 export default function NPSAnalyticsPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
 
   // Config state
   const [config, setConfig] = useState({ enabled: true, cooldownDays: 90 });
@@ -29,12 +31,14 @@ export default function NPSAnalyticsPage() {
   const fetchAnalytics = useCallback(async (from, to) => {
     try {
       setLoading(true);
+      setLoadError(null);
       const params = {};
       if (from) params.from = new Date(from).toISOString();
       if (to) params.to = new Date(to + 'T23:59:59').toISOString();
       const res = await npsApi.getAnalytics(params);
       setData(res);
-    } catch {
+    } catch (err) {
+      setLoadError(err);
       toast.error('Failed to load NPS analytics');
     } finally {
       setLoading(false);
@@ -167,6 +171,13 @@ export default function NPSAnalyticsPage() {
 
       {loading ? (
         <TablePageSkeleton />
+      ) : loadError ? (
+        <ErrorState
+          title="Unable to load NPS analytics"
+          error={loadError}
+          onRetry={() => fetchAnalytics(dateFrom, dateTo)}
+          size="lg"
+        />
       ) : !data ? null : (
         <div className="space-y-4">
           {/* Score Cards */}

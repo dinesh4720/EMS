@@ -20,6 +20,7 @@ import {
   Card,
   Chip,
   Divider,
+  ErrorState,
   Input,
   Progress,
   SectionHeading,
@@ -31,6 +32,7 @@ export default function SubscriptionSettings() {
   const { t } = useTranslation();
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [savingAccount, setSavingAccount] = useState(false);
   const [autoRenewLoading, setAutoRenewLoading] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(null);
@@ -54,6 +56,7 @@ export default function SubscriptionSettings() {
 
   const loadSummary = async (skipCache = true, signal) => {
     try {
+      setLoadError(null);
       const data = await billingApi.getSummary(skipCache);
       if (signal?.aborted) return;
       setSummary(data);
@@ -76,6 +79,7 @@ export default function SubscriptionSettings() {
       });
     } catch (error) {
       if (signal?.aborted) return;
+      setLoadError(error);
       toast.error(error.message || "Failed to load billing summary");
     } finally {
       if (!signal?.aborted) setLoading(false);
@@ -221,6 +225,21 @@ export default function SubscriptionSettings() {
             ))}
           </div>
         </Card>
+      </div>
+    );
+  }
+
+  // Initial load failed and we have nothing to show — surface a retry instead of
+  // a page full of blank "Starter" defaults, empty usage, and an empty plan matrix.
+  if (loadError && !summary) {
+    return (
+      <div className="space-y-6">
+        <ErrorState
+          title="Unable to load billing"
+          error={loadError}
+          onRetry={() => loadSummary(true)}
+          size="lg"
+        />
       </div>
     );
   }

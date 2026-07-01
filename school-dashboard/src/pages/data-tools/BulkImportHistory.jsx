@@ -6,6 +6,7 @@ import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import EmptyState from '../../components/ui/EmptyState';
+import ErrorState from '../../components/ui/ErrorState';
 import { SkeletonTable } from '../../components/ui/Skeleton';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
 import { request } from '../../services/api';
@@ -16,17 +17,20 @@ export default function BulkImportHistory() {
   const { t } = useTranslation();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [rollingBack, setRollingBack] = useState(null);
   const { confirmState, showConfirm, closeConfirm } = useConfirmDialog();
 
   const fetchHistory = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       // [SEC-08] Route through request() so a 401 attempts a token refresh
       // before logging the user out, instead of a premature session clear.
       const data = await request('/bulk-import/history');
       setHistory(data?.jobs || []);
-    } catch {
+    } catch (err) {
+      setLoadError(err);
       toast.error(t('dataTools.bulkImport.loadHistoryFailed', 'Failed to load import history'));
     } finally {
       setLoading(false);
@@ -62,6 +66,18 @@ export default function BulkImportHistory() {
   };
 
   if (loading) return <SkeletonTable rows={4} columns={6} />;
+
+  if (loadError) {
+    return (
+      <Card padding="none" radius="lg">
+        <ErrorState
+          title={t('dataTools.bulkImport.loadHistoryFailed', 'Failed to load import history')}
+          error={loadError}
+          onRetry={fetchHistory}
+        />
+      </Card>
+    );
+  }
 
   if (history.length === 0) {
     return (
